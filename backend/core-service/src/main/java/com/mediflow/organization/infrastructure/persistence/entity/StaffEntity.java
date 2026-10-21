@@ -9,7 +9,7 @@ import com.mediflow.organization.domain.model.StaffStatus;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "staff")
+@Table(name = "staff", uniqueConstraints = @UniqueConstraint(name = "uk_staff_identity_number", columnNames = "identity_number"))
 public class StaffEntity {
 
         @Id
@@ -18,6 +18,9 @@ public class StaffEntity {
 
         @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
+
+    @Column(name = "identity_number", length = 12, updatable = false)
+    private String identityNumber;
 
         @Column(name = "department_id", nullable = false)
     private UUID departmentId;
@@ -68,7 +71,9 @@ public class StaffEntity {
             String email,
             StaffStatus status,
             Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt,
+            String identityNumber) {
+        this.identityNumber = identityNumber;
         this.staffId = staffId;
         this.fullName = fullName;
         this.departmentId = departmentId;
@@ -80,6 +85,10 @@ public class StaffEntity {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public String getIdentityNumber() {
+        return identityNumber;
     }
 
     public UUID getStaffId() {

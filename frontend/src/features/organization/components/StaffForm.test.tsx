@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
 import { departmentContractFixture, staffContractFixture } from "../contract.fixture";
 import type { DepartmentDTO, StaffDTO } from "../types";
 
@@ -38,6 +39,7 @@ const targetDepartment: DepartmentDTO = {
 };
 
 describe("StaffForm", () => {
+  afterEach(() => vi.unstubAllGlobals());
   it("uses the reconciled department as the baseline when changing the transfer target", async () => {
     const otherDepartment = { ...targetDepartment, departmentId: "00000000-0000-4000-8000-000000000099" };
     const reconciled = { ...staffContractFixture, departmentId: otherDepartment.departmentId };
@@ -151,6 +153,8 @@ describe("StaffForm", () => {
   });
 
   beforeEach(() => {
+    vi.stubGlobal("crypto", webcrypto);
+    sessionStorage.clear();
     mocks.departments.mockReset();
     mocks.staffMember.mockReset();
     mocks.createStaff.mockReset();
@@ -162,11 +166,71 @@ describe("StaffForm", () => {
     mocks.router.replace.mockReset();
   });
 
-  it("retains the request key on an ambiguous retry and rotates it for changed content", async () => {
+  it.each(["", "12345678901", "1234567890123", "01234567890A"])("rejects invalid CCCD before creating: %s", async (identity) => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    render(<StaffForm />);
+    await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
+    fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("CCCD phải gồm đúng 12 chữ số");
+    expect(mocks.createStaff).not.toHaveBeenCalled();
+  });
+
+  it("allows a different CCCD while an earlier staff creation is unresolved", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.createStaff.mockRejectedValue(new Error("Lost response"));
+    const view = render(<StaffForm />);
+    async function submit(identity: string, name: string) {
+      await screen.findByLabelText(/CCCD/);
+      fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
+      fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: name } });
+      fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+      fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
+      await screen.findByRole("alert");
+    }
+    await submit("012345678901", "Staff A");
+    const firstKey = mocks.createStaff.mock.calls[0][1];
+    view.unmount();
+    const secondView = render(<StaffForm />);
+    await submit("012345678902", "Staff B");
+    expect(mocks.createStaff.mock.calls[1][1]).not.toBe(firstKey);
+    secondView.unmount();
+    render(<StaffForm />);
+    await submit("012345678901", "Staff A");
+    expect(mocks.createStaff.mock.calls[2][1]).toBe(firstKey);
+  });
+
+  it("shows a clear duplicate identity error and keeps the draft", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.createStaff.mockRejectedValue(new ApiRequestError("Duplicate", 409, "STAFF_IDENTITY_DUPLICATE"));
+    render(<StaffForm />);
+    await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("CCCD này đã có hồ sơ nhân sự");
+    expect(screen.getByLabelText(/CCCD/)).toHaveValue("012345678901");
+    expect(mocks.router.push).not.toHaveBeenCalled();
+  });
+
+  it("keeps legacy identity optional and immutable when editing", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, identityNumber: null });
+    mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, identityNumber: null });
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    const identity = await screen.findByLabelText(/CCCD/);
+    expect(identity).toHaveAttribute("readonly");
+    expect(identity).not.toBeRequired();
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.updateStaff.mock.calls[0][1]).not.toHaveProperty("identityNumber");
+  });
+
+  it("reuses the key after an ambiguous retry and refuses changed content until reconciliation", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.createStaff.mockRejectedValue(new Error("Network interrupted"));
     render(<StaffForm />);
     await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
     fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
@@ -180,8 +244,56 @@ describe("StaffForm", () => {
     expect(mocks.createStaff.mock.calls[1][1]).toBe(firstKey);
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van B" } });
     submit();
-    await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledTimes(3));
-    expect(mocks.createStaff.mock.calls[2][1]).not.toBe(firstKey);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Lệnh tạo trước chưa được xác nhận");
+    expect(mocks.createStaff).toHaveBeenCalledTimes(2);
+  });
+
+  it("recovers the same creation key after the form unmounts", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.createStaff.mockRejectedValueOnce(new Error("Lost response")).mockResolvedValueOnce(staffContractFixture);
+    const workspace = render(<StaffForm />);
+    async function submit() {
+      await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
+      fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
+      fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+      fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
+    }
+    await submit();
+    await screen.findByRole("alert");
+    const key = mocks.createStaff.mock.calls[0][1];
+    workspace.unmount();
+    render(<StaffForm />);
+    await submit();
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.createStaff.mock.calls[1][1]).toBe(key);
+    expect(sessionStorage.length).toBe(0);
+    // Navigation may not unmount immediately; a completed command stays locked.
+    const completedButton = screen.getByRole("button", { name: "Đang xử lý…" });
+    expect(completedButton).toBeDisabled();
+    fireEvent.submit(completedButton.closest("form")!);
+    expect(mocks.createStaff).toHaveBeenCalledTimes(2);
+  });
+
+  it("locks every draft field throughout profile save and department transfer", async () => {
+    let resolveProfile!: (staff: StaffDTO) => void;
+    let rejectTransfer!: (cause: Error) => void;
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockReturnValue(new Promise((resolve) => { resolveProfile = resolve; }));
+    mocks.changeStaffDepartment.mockReturnValue(new Promise((_, reject) => { rejectTransfer = reject; }));
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    for (const label of [/Họ tên/, /Khoa/, /Chức danh/, /Chuyên môn/, /Số giấy phép/, /Số điện thoại/, /Email/]) {
+      expect(screen.getByLabelText(label)).toBeDisabled();
+    }
+    await act(async () => { resolveProfile(staffContractFixture); });
+    expect(screen.getByLabelText(/Email/)).toBeDisabled();
+    await act(async () => { rejectTransfer(new Error("Transfer refused")); });
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText(/Email/)).toBeEnabled();
   });
 
   it("blocks a new staff form when department loading fails and retries the lookup", async () => {
@@ -203,11 +315,13 @@ describe("StaffForm", () => {
     mocks.createStaff.mockResolvedValue(staffContractFixture);
     render(<StaffForm />);
     await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: " Nguyen Van A " } });
     fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
 
     await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledWith({
+      identityNumber: "012345678901",
       fullName: "Nguyen Van A",
       departmentId: departmentContractFixture.departmentId,
       jobTitle: "DOCTOR",

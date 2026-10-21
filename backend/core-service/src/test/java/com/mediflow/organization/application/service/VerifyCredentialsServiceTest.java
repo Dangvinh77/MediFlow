@@ -61,7 +61,7 @@ class VerifyCredentialsServiceTest {
                 "Internal Medicine",
                 "MED123",
                 "0901234567",
-                "alex@example.com");
+                "alex@example.com", "012345678901");
 
         when(accountRepository.findByUsername("doctor.one"))
                 .thenReturn(Optional.of(account));

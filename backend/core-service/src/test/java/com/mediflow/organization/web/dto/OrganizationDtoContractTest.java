@@ -37,9 +37,9 @@ class OrganizationDtoContractTest {
                         "A", id, true),
                 "departmentName", "departmentType", "location", "departmentHeadId", "active");
         assertFields(new CreateStaffRequest("Doctor", departmentId, JobTitle.DOCTOR,
-                        "Surgery", "LIC-1", "0123456789", "doctor@example.com"),
+                        "Surgery", "LIC-1", "0123456789", "doctor@example.com", "012345678901"),
                 "fullName", "departmentId", "jobTitle", "specialization", "licenseNumber",
-                "phoneNumber", "email");
+                "phoneNumber", "email", "identityNumber");
         assertFields(new UpdateStaffRequest("Doctor", JobTitle.DOCTOR, "Surgery", "LIC-1",
                         "0123456789", "doctor@example.com"),
                 "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email");
@@ -72,12 +72,12 @@ class OrganizationDtoContractTest {
         assertThat(department.get("departmentType").asText()).isEqualTo("CLINICAL");
 
         assertFields(new StaffResponse(id, "Doctor", departmentId, JobTitle.DOCTOR, "Surgery",
-                        "LIC-1", "0123456789", "doctor@example.com", true, timestamp, timestamp),
+                        "LIC-1", "0123456789", "doctor@example.com", true, timestamp, timestamp, "012345678901"),
                 "staffId", "fullName", "departmentId", "jobTitle", "specialization",
-                "licenseNumber", "phoneNumber", "email", "active", "createdAt", "updatedAt");
+                "licenseNumber", "phoneNumber", "email", "active", "createdAt", "updatedAt", "identityNumber");
         JsonNode staff = mapper.valueToTree(new StaffResponse(id, "Doctor", departmentId,
                 JobTitle.DOCTOR, "Surgery", "LIC-1", "0123456789", "doctor@example.com",
-                true, timestamp, timestamp));
+                true, timestamp, timestamp, "012345678901"));
         assertThat(staff.get("jobTitle").asText()).isEqualTo("DOCTOR");
     }
 

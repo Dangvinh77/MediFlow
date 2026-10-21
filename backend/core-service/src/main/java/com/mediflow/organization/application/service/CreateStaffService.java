@@ -74,9 +74,10 @@ public class CreateStaffService implements CreateStaffUseCase {
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email) {
+            String email,
+            String identityNumber) {
 
-        return create(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email);
+        return create(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber);
     }
 
     @Override
@@ -89,7 +90,8 @@ public class CreateStaffService implements CreateStaffUseCase {
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email) {
+            String email,
+            String identityNumber) {
         if (actorAccountId == null || idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Actor and idempotency key are required");
         }
@@ -97,7 +99,7 @@ public class CreateStaffService implements CreateStaffUseCase {
 
         receipts.lockKey(actorAccountId, idempotencyKey);
         String fingerprint = fingerprint(fullName, departmentId, jobTitle,
-                specialization, licenseNumber, phoneNumber, email);
+                specialization, licenseNumber, phoneNumber, email, identityNumber);
         var existing = receipts.find(actorAccountId, idempotencyKey);
         if (existing.isPresent()) {
             Receipt receipt = existing.get();
@@ -110,7 +112,7 @@ public class CreateStaffService implements CreateStaffUseCase {
         }
 
         Staff staff = create(fullName, departmentId, jobTitle, specialization,
-                licenseNumber, phoneNumber, email);
+                licenseNumber, phoneNumber, email, identityNumber);
         receipts.save(new Receipt(actorAccountId, idempotencyKey, fingerprint, staff.getStaffId()));
         return new CreationResult(staff, false);
     }
@@ -122,7 +124,8 @@ public class CreateStaffService implements CreateStaffUseCase {
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email) {
+            String email,
+            String identityNumber) {
         Department department = departmentRepository
                 .findByIdForUpdate(departmentId)
                 .orElseThrow(() ->
@@ -139,7 +142,8 @@ public class CreateStaffService implements CreateStaffUseCase {
                 specialization,
                 licenseNumber,
                 phoneNumber,
-                email
+                email,
+                identityNumber
         );
 
         Staff savedStaff = staffRepository.save(staff);
@@ -161,7 +165,7 @@ public class CreateStaffService implements CreateStaffUseCase {
 
     private String fingerprint(String fullName, UUID departmentId, JobTitle jobTitle,
                                String specialization, String licenseNumber,
-                               String phoneNumber, String email) {
+                               String phoneNumber, String email, String identityNumber) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -170,7 +174,7 @@ public class CreateStaffService implements CreateStaffUseCase {
                     fullName,
                     departmentId == null ? null : departmentId.toString(),
                     jobTitle == null ? null : jobTitle.name(),
-                    specialization, licenseNumber, phoneNumber, email}) {
+                    specialization, licenseNumber, phoneNumber, email, identityNumber}) {
                 if (value == null) output.writeInt(-1);
                 else {
                     byte[] encoded = value.getBytes(StandardCharsets.UTF_8);

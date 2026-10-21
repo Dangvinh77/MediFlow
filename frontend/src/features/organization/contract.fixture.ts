@@ -25,6 +25,7 @@ export const departmentContractFixture = {
 } satisfies DepartmentDTO;
 
 export const staffContractFixture = {
+  identityNumber: "012345678901",
   staffId: "00000000-0000-4000-8000-000000000002",
   fullName: "Nguyen Van A",
   departmentId: departmentContractFixture.departmentId,
@@ -67,6 +68,7 @@ export const updateDepartmentRequestFixture = {
 } satisfies UpdateDepartmentRequest;
 
 export const createStaffRequestFixture = {
+  identityNumber: "012345678901",
   fullName: "Nguyen Van A",
   departmentId: departmentContractFixture.departmentId,
   jobTitle: "DOCTOR",

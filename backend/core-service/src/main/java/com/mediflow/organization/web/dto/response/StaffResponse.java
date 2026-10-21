@@ -17,7 +17,8 @@ public record StaffResponse(
         String email,
         boolean active,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String identityNumber) {
 
     public static StaffResponse from(Staff staff) {
         return new StaffResponse(
@@ -31,6 +32,7 @@ public record StaffResponse(
                 staff.getEmail(),
                 staff.isActive(),
                 staff.getCreatedAt(),
-                staff.getUpdatedAt());
+                staff.getUpdatedAt(),
+                staff.getIdentityNumber());
     }
 }

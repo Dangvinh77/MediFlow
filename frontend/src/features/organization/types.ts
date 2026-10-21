@@ -45,6 +45,7 @@ export interface UpdateAccountStatusRequest {
 }
 
 export interface CreateStaffRequest {
+  identityNumber: string;
   fullName: string;
   departmentId: string;
   jobTitle: JobTitle;
@@ -54,7 +55,7 @@ export interface CreateStaffRequest {
   email: string | null;
 }
 
-export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId">;
+export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId" | "identityNumber">;
 
 export type AccountRole =
   | "ADMIN" | "DOCTOR" | "NURSE" | "PHARMACIST" | "CASHIER"
@@ -81,6 +82,7 @@ export interface CreateAccountRequest {
 }
 
 export interface StaffDTO {
+  identityNumber: string | null;
   staffId: string;
   fullName: string;
   departmentId: string;

@@ -18,6 +18,8 @@ public class Staff {
 
     private final UUID staffId;
 
+    private final String identityNumber;
+
     private String fullName;
 
 
@@ -55,7 +57,9 @@ public class Staff {
             String email,
             boolean active,
             Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt,
+            String identityNumber) {
+        this.identityNumber = identityNumber;
         this.staffId = staffId;
         this.fullName = fullName;
         this.departmentId = departmentId;
@@ -82,7 +86,11 @@ public class Staff {
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email) {
+            String email,
+            String identityNumber) {
+        if (identityNumber == null || !identityNumber.matches("[0-9]{12}")) {
+            throw new InvalidStaffDataException("Identity number must contain exactly 12 digits");
+        }
 
         validateData(
                 fullName,
@@ -105,7 +113,7 @@ public class Staff {
                 email,
                 true,
                 now,
-                now);
+                now, identityNumber);
     }
 
     // =========================================================
@@ -126,7 +134,8 @@ public class Staff {
             String email,
             boolean active,
             Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt,
+            String identityNumber) {
 
         validateData(
                 fullName,
@@ -147,7 +156,7 @@ public class Staff {
                 email,
                 active,
                 createdAt,
-                updatedAt);
+                updatedAt, identityNumber);
     }
 
     // =========================================================
@@ -288,6 +297,10 @@ public class Staff {
     // =========================================================
     // GETTERS
     // =========================================================
+
+    public String getIdentityNumber() {
+        return identityNumber;
+    }
 
     public UUID getStaffId() {
         return staffId;

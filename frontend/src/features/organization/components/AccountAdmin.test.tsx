@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
 import { accountContractFixture } from "../contract.fixture";
 
 const mocks = vi.hoisted(() => ({ createAccount: vi.fn(), updateAccountStatus: vi.fn(), getToken: vi.fn<() => string | null>(() => "session-a"), router: { replace: vi.fn() } }));
@@ -12,6 +13,7 @@ import { ApiRequestError } from "@/lib/api";
 import { AccountAdmin } from "./AccountAdmin";
 
 describe("AccountAdmin command forms", () => {
+  afterEach(() => vi.unstubAllGlobals());
   it("shares a synchronous submit lock between creation and status commands", async () => {
     let reject!: (cause: Error) => void;
     mocks.createAccount.mockReturnValue(new Promise((_, fail) => { reject = fail; }));
@@ -22,7 +24,7 @@ describe("AccountAdmin command forms", () => {
     const create = screen.getByRole("button", { name: "Tạo tài khoản" }).closest("form")!;
     const status = screen.getByRole("button", { name: "Cập nhật trạng thái" }).closest("form")!;
     act(() => { fireEvent.submit(create); fireEvent.submit(create); fireEvent.submit(status); });
-    expect(mocks.createAccount).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mocks.createAccount).toHaveBeenCalledTimes(1));
     expect(mocks.updateAccountStatus).not.toHaveBeenCalled();
     await act(async () => { reject(new Error("Unavailable")); });
     fireEvent.submit(status);
@@ -43,6 +45,8 @@ describe("AccountAdmin command forms", () => {
   });
 
   beforeEach(() => {
+    vi.stubGlobal("crypto", webcrypto);
+    sessionStorage.clear();
     mocks.router.replace.mockReset();
     mocks.createAccount.mockReset();
     mocks.updateAccountStatus.mockReset();
@@ -64,7 +68,7 @@ describe("AccountAdmin command forms", () => {
       role: "PATIENT",
       staffId: null,
       patientId: accountContractFixture.patientId,
-    }));
+    }, expect.any(String)));
     expect(await screen.findByRole("status")).toHaveTextContent("Đã cập nhật tài khoản");
     expect(screen.getByLabelText(/Mật khẩu/)).toHaveValue("");
     expect(screen.getByText(accountContractFixture.accountId)).toBeVisible();
@@ -100,5 +104,28 @@ describe("AccountAdmin command forms", () => {
     mocks.getToken.mockReturnValue("session-b");
     await act(async () => { resolve(accountContractFixture); await request; });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("recovers an account after losing its creation response using the original key", async () => {
+    mocks.createAccount.mockRejectedValueOnce(new Error("Lost response")).mockResolvedValueOnce(accountContractFixture);
+    const workspace = render(<AccountAdmin />);
+    function submit() {
+      fireEvent.change(screen.getByLabelText(/Tên đăng nhập/), { target: { value: "patient.demo" } });
+      fireEvent.change(screen.getByLabelText(/Mật khẩu/), { target: { value: "secret-password" } });
+      fireEvent.change(screen.getByLabelText(/Vai trò/), { target: { value: "PATIENT" } });
+      fireEvent.change(screen.getByLabelText(/Mã bệnh nhân/), { target: { value: accountContractFixture.patientId } });
+      fireEvent.submit(screen.getByRole("button", { name: "Tạo tài khoản" }).closest("form")!);
+    }
+    submit();
+    expect(screen.getByLabelText(/Mật khẩu/)).toBeDisabled();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác nhận được kết quả");
+    const key = mocks.createAccount.mock.calls[0][1];
+    expect(JSON.stringify(sessionStorage)).not.toContain("secret-password");
+    workspace.unmount();
+    render(<AccountAdmin />);
+    submit();
+    expect(await screen.findByRole("status")).toHaveTextContent(accountContractFixture.accountId);
+    expect(mocks.createAccount.mock.calls[1][1]).toBe(key);
+    expect(sessionStorage.length).toBe(0);
   });
 });
