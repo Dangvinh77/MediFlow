@@ -8,17 +8,24 @@ import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { organizationApi } from "../api";
+import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, JobTitle } from "../types";
 
 interface Props { staffId?: string }
 const jobs: { value: JobTitle; label: string }[] = [{ value: "DOCTOR", label: "Bác sĩ" }, { value: "NURSE", label: "Điều dưỡng" }, { value: "TECHNICIAN", label: "Kỹ thuật viên" }, { value: "PHARMACIST", label: "Dược sĩ" }, { value: "CASHIER", label: "Thu ngân" }, { value: "MANAGER", label: "Quản lý" }, { value: "ADMINISTRATIVE", label: "Hành chính" }];
 
 export function StaffForm({ staffId }: Props) {
+  return <StaffFormWorkspace key={staffId ?? "new"} staffId={staffId} />;
+}
+
+function StaffFormWorkspace({ staffId }: Props) {
   const router = useRouter(); const editing = Boolean(staffId);
-  const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [originalDepartmentId, setOriginalDepartmentId] = useState(""); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
+  const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const mounted = useRef(true);
   const createIntent = useRef<{ fingerprint: string; session: string | null; key: string } | null>(null);
   const submitting = useRef(false);
+  const savedProfile = useRef<{ fingerprint: string; session: string | null } | null>(null);
+  const originalDepartment = useRef<string | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -27,13 +34,14 @@ export function StaffForm({ staffId }: Props) {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([organizationApi.departments(true), staffId ? organizationApi.staffMember(staffId) : Promise.resolve(null)]).then(([departmentList, staff]) => {
-      if (!mounted) return;
-      setDepartments(departmentList);
+    const sessionToken = getToken();
+    Promise.all([organizationApi.departments(!staffId), staffId ? organizationApi.staffMember(staffId) : Promise.resolve(null)]).then(([departmentList, staff]) => {
+      if (!mounted || !isRequestSessionCurrent(sessionToken)) return;
+      setDepartments(departmentList.filter((department) => department.active || department.departmentId === staff?.departmentId));
       if (staff) {
+        originalDepartment.current = staff.departmentId;
         setFullName(staff.fullName);
         setDepartmentId(staff.departmentId);
-        setOriginalDepartmentId(staff.departmentId);
         setJobTitle(staff.jobTitle);
         setSpecialization(staff.specialization ?? "");
         setLicenseNumber(staff.licenseNumber ?? "");
@@ -42,7 +50,7 @@ export function StaffForm({ staffId }: Props) {
       }
       setLoadedStaffId(staffId ?? "new");
     }).catch((cause: unknown) => {
-      if (!mounted) return;
+      if (!mounted || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
       setLoadError({ key: staffId ?? "new", message: cause instanceof Error ? cause.message : "Không thể tải dữ liệu nhân sự." });
     }).finally(() => { if (mounted) setLoading(false); });
@@ -50,13 +58,13 @@ export function StaffForm({ staffId }: Props) {
   }, [staffId, retryToken, router]);
 
   function applyStaff(staff: Awaited<ReturnType<typeof organizationApi.staffMember>>) {
+    originalDepartment.current = staff.departmentId;
     setFullName(staff.fullName);
     setJobTitle(staff.jobTitle);
     setSpecialization(staff.specialization ?? "");
     setLicenseNumber(staff.licenseNumber ?? "");
     setPhoneNumber(staff.phoneNumber ?? "");
     setEmail(staff.email ?? "");
-    setOriginalDepartmentId(staff.departmentId);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -65,13 +73,21 @@ export function StaffForm({ staffId }: Props) {
     submitting.current = true;
     setSaving(true); setError(null);
     const sessionToken = getToken();
+    // Capture the user's transfer intent before a save/read refreshes the baseline.
+    const wantsTransfer = departmentId !== originalDepartment.current;
     const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null };
     try {
       if (staffId) {
-        const updatedStaff = await organizationApi.updateStaff(staffId, shared);
+        const fingerprint = JSON.stringify(shared);
+        // Retry a partially completed transfer against a fresh authoritative read.
+        // Do not repeat the successful profile command when its fields are unchanged.
+        const updatedStaff = savedProfile.current?.fingerprint === fingerprint && savedProfile.current.session === sessionToken
+          ? await organizationApi.staffMember(staffId)
+          : await organizationApi.updateStaff(staffId, shared);
         if (!mounted.current || getToken() !== sessionToken) return;
+        savedProfile.current = { fingerprint, session: sessionToken };
         applyStaff(updatedStaff);
-        if (departmentId !== originalDepartmentId) {
+        if (wantsTransfer && departmentId !== updatedStaff.departmentId) {
           const requestedDepartmentId = departmentId;
           try {
             const movedStaff = await organizationApi.changeStaffDepartment(staffId, requestedDepartmentId);
@@ -81,7 +97,7 @@ export function StaffForm({ staffId }: Props) {
             router.push(`/organization/staff/${movedStaff.staffId}?notice=updated`);
             return;
           } catch (transferCause: unknown) {
-            if (!mounted.current || getToken() !== sessionToken) return;
+            if (!mounted.current || !isRequestSessionCurrent(sessionToken, transferCause)) return;
             if (transferCause instanceof ApiRequestError && transferCause.status === 401) {
               router.replace("/login");
               return;
@@ -99,7 +115,11 @@ export function StaffForm({ staffId }: Props) {
               setDepartmentId(requestedDepartmentId);
               setError(`Thông tin nhân sự đã được lưu, nhưng chưa thể xác nhận việc chuyển khoa: ${transferCause instanceof Error ? transferCause.message : "Lỗi không xác định."} Bạn có thể thử lưu lại để hoàn tất chuyển khoa.`);
             } catch (refreshCause: unknown) {
-              if (!mounted.current || getToken() !== sessionToken) return;
+              if (!mounted.current || !isRequestSessionCurrent(sessionToken, refreshCause)) return;
+              if (refreshCause instanceof ApiRequestError && refreshCause.status === 401) {
+                router.replace("/login");
+                return;
+              }
               applyStaff(updatedStaff);
               setDepartmentId(requestedDepartmentId);
               setError(`Thông tin nhân sự đã được lưu, nhưng chưa xác minh được khoa hiện tại sau lỗi chuyển khoa (${transferCause instanceof Error ? transferCause.message : "lỗi không xác định"}). Hãy thử lưu lại để hệ thống xác minh và hoàn tất chuyển khoa. ${refreshCause instanceof Error ? refreshCause.message : "Không thể tải hồ sơ hiện tại."}`);
@@ -119,7 +139,7 @@ export function StaffForm({ staffId }: Props) {
         router.push(`/organization/staff/${staff.staffId}?notice=created`);
       }
     } catch (cause: unknown) {
-      if (!mounted.current || getToken() !== sessionToken) return;
+      if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
       } else if (!staffId && (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status === 408)) {

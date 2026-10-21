@@ -2,14 +2,48 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { accountContractFixture } from "../contract.fixture";
 
-const mocks = vi.hoisted(() => ({ createAccount: vi.fn(), updateAccountStatus: vi.fn(), getToken: vi.fn(() => "session-a") }));
+const mocks = vi.hoisted(() => ({ createAccount: vi.fn(), updateAccountStatus: vi.fn(), getToken: vi.fn<() => string | null>(() => "session-a"), router: { replace: vi.fn() } }));
+vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
 vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
+
+import { ApiRequestError } from "@/lib/api";
 
 import { AccountAdmin } from "./AccountAdmin";
 
 describe("AccountAdmin command forms", () => {
+  it("shares a synchronous submit lock between creation and status commands", async () => {
+    let reject!: (cause: Error) => void;
+    mocks.createAccount.mockReturnValue(new Promise((_, fail) => { reject = fail; }));
+    mocks.updateAccountStatus.mockResolvedValue(accountContractFixture);
+    render(<AccountAdmin />);
+    fireEvent.change(screen.getByLabelText(/Mã nhân viên/), { target: { value: accountContractFixture.patientId } });
+    fireEvent.change(screen.getByLabelText(/Mã tài khoản/), { target: { value: accountContractFixture.accountId } });
+    const create = screen.getByRole("button", { name: "Tạo tài khoản" }).closest("form")!;
+    const status = screen.getByRole("button", { name: "Cập nhật trạng thái" }).closest("form")!;
+    act(() => { fireEvent.submit(create); fireEvent.submit(create); fireEvent.submit(status); });
+    expect(mocks.createAccount).toHaveBeenCalledTimes(1);
+    expect(mocks.updateAccountStatus).not.toHaveBeenCalled();
+    await act(async () => { reject(new Error("Unavailable")); });
+    fireEvent.submit(status);
+    await waitFor(() => expect(mocks.updateAccountStatus).toHaveBeenCalledTimes(1));
+  });
+
+  it.each([null, "session-b"])("handles account status 401 for session %s", async (token) => {
+    mocks.updateAccountStatus.mockImplementation(async () => {
+      mocks.getToken.mockReturnValue(token);
+      throw new ApiRequestError("Expired", 401);
+    });
+    render(<AccountAdmin />);
+    fireEvent.change(screen.getByLabelText(/Mã tài khoản/), { target: { value: accountContractFixture.accountId } });
+    fireEvent.submit(screen.getByRole("button", { name: "Cập nhật trạng thái" }).closest("form")!);
+    await waitFor(() => expect(mocks.updateAccountStatus).toHaveBeenCalledTimes(1));
+    if (token === null) expect(mocks.router.replace).toHaveBeenCalledWith("/login");
+    else expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
+    mocks.router.replace.mockReset();
     mocks.createAccount.mockReset();
     mocks.updateAccountStatus.mockReset();
     mocks.getToken.mockReturnValue("session-a");

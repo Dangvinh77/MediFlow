@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { organizationApi } from "../api";
+import { getToken } from "@/lib/auth";
+import { isRequestSessionCurrent } from "../request-session";
 import type { JobTitle, StaffDTO } from "../types";
 
 const STAFF_PAGE_SIZE = 20;
@@ -51,63 +53,39 @@ export function StaffTable() {
   const [totalElements, setTotalElements] = useState(0);
   const [lastRequest, setLastRequest] = useState(0);
 
-  const loadStaff = useCallback(async (page: number) => {
+  const [request, setRequest] = useState({ page: 0, attempt: 0 });
+
+  function loadStaff(page: number) {
     setLastRequest(page);
     setLoading(true);
     setError(null);
-
-    try {
-      const result = await organizationApi.staff({ page, size: STAFF_PAGE_SIZE });
-      setStaff(result.content);
-      setPageNumber(result.number);
-      setTotalPages(result.totalPages);
-      setTotalElements(result.totalElements);
-    } catch (cause: unknown) {
-      if (cause instanceof ApiRequestError && cause.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
-      setError(getRequestError(cause));
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+    setRequest((previous) => ({ page, attempt: previous.attempt + 1 }));
+  }
 
   useEffect(() => {
     let disposed = false;
-    const initialPage = 0;
-
-    organizationApi
-      .staff({ page: initialPage, size: STAFF_PAGE_SIZE })
+    const sessionToken = getToken();
+    organizationApi.staff({ page: request.page, size: STAFF_PAGE_SIZE })
       .then((result) => {
-        if (disposed) return;
-
+        if (disposed || !isRequestSessionCurrent(sessionToken)) return;
         setStaff(result.content);
         setPageNumber(result.number);
         setTotalPages(result.totalPages);
         setTotalElements(result.totalElements);
       })
       .catch((cause: unknown) => {
-        if (disposed) return;
-
+        if (disposed || !isRequestSessionCurrent(sessionToken, cause)) return;
         if (cause instanceof ApiRequestError && cause.status === 401) {
           router.replace("/login");
           return;
         }
-
         setError(getRequestError(cause));
       })
       .finally(() => {
-        if (!disposed) {
-          setLoading(false);
-        }
+        if (!disposed && isRequestSessionCurrent(sessionToken)) setLoading(false);
       });
-
-    return () => {
-      disposed = true;
-    };
-  }, [router]);
+    return () => { disposed = true; };
+  }, [router, request]);
 
   return (
     <section className="mt-10" aria-labelledby="organization-staff-heading">

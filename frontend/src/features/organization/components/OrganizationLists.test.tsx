@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PageResult } from "@/lib/types";
 import { departmentContractFixture, staffContractFixture } from "../contract.fixture";
@@ -9,14 +9,18 @@ const mocks = vi.hoisted(() => ({
   staff: vi.fn(),
   router: { replace: vi.fn() },
   getRole: vi.fn(() => "ADMIN"),
+  getToken: vi.fn<() => string | null>(() => "session-a"),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
+  getToken: mocks.getToken,
   subscribeToAuthChanges: () => () => {},
 }));
 vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff } }));
+
+import { ApiRequestError } from "@/lib/api";
 
 import { DepartmentList } from "./DepartmentList";
 import { StaffTable } from "./StaffTable";
@@ -34,11 +38,34 @@ function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<St
 }
 
 describe("Organization browse and actions", () => {
+  it.each(["departments", "staff"] as const)("ignores a retry 401 after %s unmounts", async (resource) => {
+    let reject!: (cause: Error) => void;
+    mocks[resource].mockRejectedValueOnce(new Error("Unavailable"))
+      .mockReturnValueOnce(new Promise((_, fail) => { reject = fail; }));
+    const view = render(resource === "departments" ? <DepartmentList /> : <StaffTable />);
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    await waitFor(() => expect(mocks[resource]).toHaveBeenCalledTimes(2));
+    view.unmount();
+    await act(async () => { reject(new ApiRequestError("Expired", 401)); });
+    expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+
+  it.each(["departments", "staff"] as const)("ignores old-session %s data", async (resource) => {
+    let resolve!: (value: unknown) => void;
+    mocks[resource].mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+    render(resource === "departments" ? <DepartmentList /> : <StaffTable />);
+    mocks.getToken.mockReturnValue("session-b");
+    await act(async () => { resolve(resource === "departments" ? [departmentContractFixture] : staffPage()); });
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
   beforeEach(() => {
     mocks.departments.mockReset();
     mocks.staff.mockReset();
     mocks.router.replace.mockReset();
     mocks.getRole.mockReturnValue("ADMIN");
+    mocks.getToken.mockReturnValue("session-a");
   });
 
   it("loads departments and staff independently and can retry a failed department lookup", async () => {

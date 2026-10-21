@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { departmentContractFixture } from "../contract.fixture";
 
@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   department: vi.fn(),
   createDepartment: vi.fn(),
   updateDepartment: vi.fn(),
-  getToken: vi.fn(() => "session-a"),
+  getToken: vi.fn<() => string | null>(() => "session-a"),
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
 }));
 
@@ -20,9 +20,51 @@ vi.mock("../api", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
 
+import { ApiRequestError } from "@/lib/api";
+
 import { DepartmentForm } from "./DepartmentForm";
 
 describe("DepartmentForm", () => {
+  it("serializes duplicate submits and allows a retry after failure", async () => {
+    let reject!: (cause: Error) => void;
+    const request = new Promise<never>((_, fail) => { reject = fail; });
+    mocks.createDepartment.mockReturnValueOnce(request).mockResolvedValue(departmentContractFixture);
+    render(<DepartmentForm />);
+    const form = screen.getByRole("button", { name: "Tạo khoa" }).closest("form")!;
+    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    expect(mocks.createDepartment).toHaveBeenCalledTimes(1);
+    await act(async () => { reject(new Error("Unavailable")); });
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unavailable");
+    fireEvent.submit(form);
+    await waitFor(() => expect(mocks.createDepartment).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not navigate from an old save after switching to another department", async () => {
+    let resolve!: (value: typeof departmentContractFixture) => void;
+    const request = new Promise<typeof departmentContractFixture>((done) => { resolve = done; });
+    mocks.department.mockResolvedValue(departmentContractFixture);
+    mocks.updateDepartment.mockReturnValue(request);
+    const view = render(<DepartmentForm departmentId={departmentContractFixture.departmentId} />);
+    await screen.findByDisplayValue("Clinical");
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    view.rerender(<DepartmentForm departmentId="00000000-0000-4000-8000-000000000099" />);
+    await act(async () => { resolve(departmentContractFixture); });
+    expect(mocks.router.push).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeEnabled();
+  });
+
+  it.each([null, "session-b"])("handles save 401 without redirecting a newer session (%s)", async (token) => {
+    mocks.createDepartment.mockImplementation(async () => {
+      mocks.getToken.mockReturnValue(token);
+      throw new ApiRequestError("Expired", 401);
+    });
+    render(<DepartmentForm />);
+    fireEvent.submit(screen.getByRole("button", { name: "Tạo khoa" }).closest("form")!);
+    await waitFor(() => expect(mocks.createDepartment).toHaveBeenCalledTimes(1));
+    if (token === null) expect(mocks.router.replace).toHaveBeenCalledWith("/login");
+    else expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     mocks.department.mockReset();
     mocks.createDepartment.mockReset();

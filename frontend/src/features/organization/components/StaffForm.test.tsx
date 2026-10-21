@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   createStaff: vi.fn(),
   updateStaff: vi.fn(),
   changeStaffDepartment: vi.fn(),
-  getToken: vi.fn(() => "session-a"),
+  getToken: vi.fn<() => string | null>(() => "session-a"),
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
 }));
 
@@ -25,6 +25,8 @@ vi.mock("../api", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
 
+import { ApiRequestError } from "@/lib/api";
+
 import { StaffForm } from "./StaffForm";
 
 const targetDepartment: DepartmentDTO = {
@@ -36,6 +38,118 @@ const targetDepartment: DepartmentDTO = {
 };
 
 describe("StaffForm", () => {
+  it("uses the reconciled department as the baseline when changing the transfer target", async () => {
+    const otherDepartment = { ...targetDepartment, departmentId: "00000000-0000-4000-8000-000000000099" };
+    const reconciled = { ...staffContractFixture, departmentId: otherDepartment.departmentId };
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment, otherDepartment]);
+    mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockResolvedValue(reconciled);
+    mocks.updateStaff.mockResolvedValue(staffContractFixture);
+    mocks.changeStaffDepartment.mockRejectedValueOnce(new Error("Lost response"))
+      .mockResolvedValueOnce(staffContractFixture);
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    const select = screen.getByLabelText(/Khoa/);
+    fireEvent.change(select, { target: { value: targetDepartment.departmentId } });
+    const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    submit();
+    await screen.findByRole("alert");
+    // Explicitly select the initial department after reconciliation reported a third one.
+    fireEvent.change(select, { target: { value: departmentContractFixture.departmentId } });
+    submit();
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.changeStaffDepartment).toHaveBeenLastCalledWith(staffContractFixture.staffId, departmentContractFixture.departmentId);
+    expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to repeat a transfer until a fresh read can confirm the result", async () => {
+    const movedStaff = { ...staffContractFixture, departmentId: targetDepartment.departmentId };
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValueOnce(staffContractFixture)
+      .mockRejectedValueOnce(new Error("Read unavailable"))
+      .mockRejectedValueOnce(new Error("Still unavailable"))
+      .mockResolvedValueOnce(movedStaff);
+    mocks.updateStaff.mockResolvedValue(staffContractFixture);
+    mocks.changeStaffDepartment.mockRejectedValue(new Error("Lost response"));
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("chưa xác minh được khoa hiện tại");
+    submit();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Still unavailable"));
+    expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
+    expect(mocks.router.push).not.toHaveBeenCalled();
+    submit();
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
+    expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not reverse a concurrent department move when only the profile was edited", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId });
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Updated Name" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
+  });
+
+  it("keeps an inactive current department when editing a staff profile", async () => {
+    mocks.departments.mockResolvedValue([{ ...departmentContractFixture, active: false }, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    expect(mocks.departments).toHaveBeenCalledWith(false);
+    expect(screen.getByLabelText(/Khoa/)).toHaveValue(staffContractFixture.departmentId);
+  });
+
+  it("uses the saved profile's authoritative department to avoid a redundant transfer", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId });
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+    expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
+  });
+
+  it("does not transfer or navigate after switching staff during a pending profile save", async () => {
+    let resolve!: (staff: StaffDTO) => void;
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockReturnValue(new Promise<StaffDTO>((done) => { resolve = done; }));
+    const view = render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    view.rerender(<StaffForm staffId="00000000-0000-4000-8000-000000000099" />);
+    await act(async () => { resolve(staffContractFixture); });
+    expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
+    expect(mocks.router.push).not.toHaveBeenCalled();
+  });
+
+  it("redirects on a 401 while reconciling a failed transfer after transport clears the token", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockImplementationOnce(async () => {
+      mocks.getToken.mockReturnValue(null);
+      throw new ApiRequestError("Expired", 401);
+    });
+    mocks.updateStaff.mockResolvedValue(staffContractFixture);
+    mocks.changeStaffDepartment.mockRejectedValue(new Error("Lost response"));
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
+    expect(mocks.router.push).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     mocks.departments.mockReset();
     mocks.staffMember.mockReset();
@@ -112,7 +226,7 @@ describe("StaffForm", () => {
     const currentDepartment: StaffDTO = { ...profileSaved, departmentId: departmentContractFixture.departmentId };
     const movedStaff: StaffDTO = { ...profileSaved, departmentId: targetDepartment.departmentId };
     mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
-    mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockResolvedValueOnce(currentDepartment);
+    mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockResolvedValue(currentDepartment);
     mocks.updateStaff.mockResolvedValue(profileSaved);
     mocks.changeStaffDepartment
       .mockRejectedValueOnce(new Error("DEPARTMENT_HEAD_INVALID: cần gỡ trưởng khoa trước"))
@@ -133,7 +247,8 @@ describe("StaffForm", () => {
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(
       `/organization/staff/${staffContractFixture.staffId}?notice=updated`,
     ));
-    expect(mocks.updateStaff).toHaveBeenCalledTimes(2);
+    expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
+    expect(mocks.staffMember).toHaveBeenCalledTimes(3);
     expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(2);
   });
 
