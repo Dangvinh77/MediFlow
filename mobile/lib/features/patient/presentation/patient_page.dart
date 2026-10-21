@@ -565,24 +565,16 @@ class _PatientFormState extends State<_PatientForm> {
             ],
             onChanged: (value) => setState(() => _gender = value ?? 'M'),
           ),
-          if (!_editing)
-            TextFormField(
-              controller: _identity,
-              decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
-              maxLength: 20,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Vui lòng nhập số CCCD/CMND.'
-                  : value.trim().length > 20
-                  ? 'Tối đa 20 ký tự.'
-                  : null,
-            )
-          else
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'CCCD/CMND (không thể sửa)',
-              ),
-              child: Text(_loaded!.identityNumber),
-            ),
+          TextFormField(
+            controller: _identity,
+            decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
+            maxLength: 20,
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Vui lòng nhập số CCCD/CMND.'
+                : value.trim().length > 20
+                ? 'Tối đa 20 ký tự.'
+                : null,
+          ),
           TextFormField(
             controller: _phone,
             decoration: const InputDecoration(labelText: 'Điện thoại'),
@@ -680,7 +672,7 @@ class _PatientFormState extends State<_PatientForm> {
       name: _name.text.trim(),
       birthDate: _birthDate.text,
       gender: _gender,
-      identityNumber: _editing ? null : _identity.text.trim(),
+      identityNumber: _identity.text.trim(),
       address: _address.text,
       phoneNumber: _phone.text,
       email: _email.text,

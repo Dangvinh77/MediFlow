@@ -175,7 +175,7 @@ void main() {
     expect(repository.creates, 0);
   });
 
-  test('Patient wire model uses Vietnamese fields and immutable identity on update', () {
+  test('Patient wire model supports optional identity updates', () {
     final patient = PatientDto.fromJson(patientJson());
     expect(patient.id, patientId);
     expect(patient.gender, 'M');
@@ -204,10 +204,16 @@ void main() {
         name: 'Name',
         birthDate: '1988-02-03',
         gender: 'M',
-        identityNumber: 'ignored',
+        identityNumber: ' 456 ',
       ),
     );
-    expect(update.containsKey('soCmnd'), isFalse);
+    expect(update['soCmnd'], '456');
+    expect(
+      PatientDto.updateBody(
+        const PatientDraft(name: 'Name', birthDate: '1988-02-03', gender: 'M'),
+      ).containsKey('soCmnd'),
+      isFalse,
+    );
   });
 
   test('repository uses exact Gateway paths, query and CRUD verbs', () async {
@@ -343,7 +349,7 @@ void main() {
   });
 
   testWidgets(
-    'female patient edit preserves gender and immutable identity; stale save cannot navigate after session switch',
+    'female patient edit submits changed identity and preserves gender; stale save cannot navigate after session switch',
     (tester) async {
       final update = Completer<Patient>();
       var reads = 0;
@@ -386,10 +392,14 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Nữ'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'CCCD/CMND *'),
+        '987654321',
+      );
       await tester.tap(find.text('Lưu thay đổi'));
       await tester.pump();
       expect(submitted?.gender, 'F');
-      expect(submitted?.identityNumber, isNull);
+      expect(submitted?.identityNumber, '987654321');
       expect(repo.updates, 1);
 
       container.updateOverrides([

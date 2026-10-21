@@ -15,8 +15,9 @@ export const patientContractFixture = {
   updatedAt: "2026-08-13T10:00:00Z",
 } satisfies PatientDTO;
 
-/** Update DTO fixture proves identity is immutable and soCmnd must not be sent. */
+/** Update DTO fixture includes a corrected identity number. */
 export const updatePatientContractFixture = {
+  soCmnd: "001234567891",
   hoTen: "Nguyen Van A",
   ngaySinh: "1990-01-15",
   gioiTinh: "M",

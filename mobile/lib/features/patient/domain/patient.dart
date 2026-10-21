@@ -141,6 +141,9 @@ class SavePatient {
       throw ArgumentError('Số CCCD/CMND là bắt buộc.');
     }
     final identity = draft.identityNumber?.trim();
+    if (identity != null && identity.isEmpty) {
+      throw ArgumentError('Số CCCD/CMND không được để trống.');
+    }
     if (identity != null && identity.length > 20) {
       throw ArgumentError('Số CCCD/CMND tối đa 20 ký tự.');
     }

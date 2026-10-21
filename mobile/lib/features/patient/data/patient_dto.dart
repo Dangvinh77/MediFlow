@@ -37,11 +37,12 @@ abstract final class PatientDto {
     'bhytSo': _nullable(draft.insuranceNumber),
   };
 
-  // Identity number is deliberately absent from UpdatePatientRequest.
+  // Omission preserves the current identity number for callers without an edit.
   static Map<String, Object?> updateBody(PatientDraft draft) => {
     'hoTen': draft.name.trim(),
     'ngaySinh': draft.birthDate,
     'gioiTinh': draft.gender,
+    if (draft.identityNumber != null) 'soCmnd': draft.identityNumber!.trim(),
     'diaChi': _nullable(draft.address),
     'soDienThoai': _nullable(draft.phoneNumber),
     'email': _nullable(draft.email),

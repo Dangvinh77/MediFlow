@@ -11,7 +11,8 @@ not grant another context's data authority to a client.
   endpoint exists. Department-head transfer can fail after profile fields were saved;
   the UI must preserve and explain that partial outcome.
 - Patient: search, zero-based pagination, detail, create/update, admin deletion.
-  `soCmnd` is create-only and cannot be edited. Roles mirror Core controllers.
+  `soCmnd` can be edited under the updated Core contract; omitting it in an update
+  preserves the existing identity number. Roles mirror Core controllers.
 - Billing: patient invoice history, invoice lookup/create/payment; explicit payment
   request discovery, ledger payment and prescription refund discovery/recording;
   authorized department revenue and failed-outbox replay. Ledger/refund flows use
@@ -34,7 +35,8 @@ authorization. DELETE supports the documented empty HTTP 204 response.
 
 Local verification on 2026-10-21:
 
-- Frontend: all 701 tests in 75 files pass, including the 103 Billing/Notification
+- Frontend after syncing Hoàng Anh's Patient update from master: all 745 tests in
+  77 files pass, including the 103 Billing/Notification
   tests; typecheck, lint and production build pass. With Node 26, tests use
   `NODE_OPTIONS=--no-experimental-webstorage` and `--maxWorkers=2`.
 - Mobile: all 138 application and loader-package tests pass. The delegated
