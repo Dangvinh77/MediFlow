@@ -64,11 +64,47 @@ class PatientWriteApplicationServiceTest {
 
         var dto = service.update(patient.patientId(), new UpdatePatientRequest(
                 "Nguyen Van B", LocalDate.of(1991, 1, 1), Gender.F,
-                "Da Nang", "0900000001", "b@example.com", null));
+                "Da Nang", "0900000001", "b@example.com", null, null));
 
         assertThat(dto.soCmnd()).isEqualTo("001");
         assertThat(dto.hoTen()).isEqualTo("Nguyen Van B");
         verify(events).publishUpdated(any());
+    }
+
+    @Test
+    void correctsIdentityAndAllowsKeepingTheSameNumber() {
+        Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
+                "001", null, null, null, null);
+        when(repository.findById(patient.patientId())).thenReturn(Optional.of(patient));
+        var createdAt = patient.createdAt();
+        var request = new UpdatePatientRequest("A", patient.dateOfBirth(), Gender.M,
+                null, null, null, null, " 002 ");
+
+        var corrected = service.update(patient.patientId(), request);
+        var unchanged = service.update(patient.patientId(), request);
+
+        assertThat(corrected.soCmnd()).isEqualTo("002");
+        assertThat(unchanged.soCmnd()).isEqualTo("002");
+        assertThat(corrected.maBenhNhan()).isEqualTo(patient.patientId());
+        assertThat(patient.createdAt()).isEqualTo(createdAt);
+        verify(repository, times(2)).existsByIdentityNumberAndPatientIdNot("002", patient.patientId());
+        verify(events, times(2)).publishUpdated(any());
+    }
+
+    @Test
+    void duplicateCorrectionDoesNotMutateOrSaveOrPublish() {
+        Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
+                "001", null, null, null, null);
+        when(repository.findById(patient.patientId())).thenReturn(Optional.of(patient));
+        when(repository.existsByIdentityNumberAndPatientIdNot("002", patient.patientId())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(patient.patientId(), new UpdatePatientRequest(
+                "B", patient.dateOfBirth(), Gender.M, null, null, null, null, " 002 ")))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class);
+        assertThat(patient.identityNumber()).isEqualTo("001");
+        assertThat(patient.fullName()).isEqualTo("A");
+        verify(repository, never()).save(any());
+        verifyNoInteractions(events);
     }
 
     @Test

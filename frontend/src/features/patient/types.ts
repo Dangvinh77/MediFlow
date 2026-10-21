@@ -25,4 +25,5 @@ export interface CreatePatientRequest {
   bhytSo: string | null;
 }
 
-export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd">;
+/** Omitted/null soCmnd preserves the current number for older clients. */
+export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd"> & { soCmnd?: string | null };

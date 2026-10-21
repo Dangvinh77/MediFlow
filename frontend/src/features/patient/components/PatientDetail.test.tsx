@@ -5,6 +5,7 @@ import { patientContractFixture } from "../contract.fixture";
 
 const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
+  delete: vi.fn(),
   getRole: vi.fn(() => "DOCTOR"),
   router: { replace: vi.fn(), push: vi.fn() },
 }));
@@ -14,7 +15,7 @@ vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ patientApi: { getById: mocks.getById } }));
+vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, delete: mocks.delete } }));
 
 import { PatientDetail } from "./PatientDetail";
 
@@ -31,9 +32,39 @@ function deferred<T>() {
 describe("PatientDetail read logic", () => {
   beforeEach(() => {
     mocks.getById.mockReset();
+    mocks.delete.mockReset();
     mocks.getRole.mockReturnValue("DOCTOR");
     mocks.router.replace.mockReset();
     mocks.router.push.mockReset();
+  });
+
+  it("requires confirmation and prevents duplicate deletion", async () => {
+    mocks.getRole.mockReturnValue("ADMIN");
+    mocks.getById.mockResolvedValue(patientContractFixture);
+    const response = deferred<void>(); mocks.delete.mockReturnValue(response.promise);
+    render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
+    expect(mocks.delete).not.toHaveBeenCalled();
+    const confirm = screen.getByRole("button", { name: "Xác nhận xóa" });
+    fireEvent.click(confirm); fireEvent.click(confirm);
+    expect(mocks.delete).toHaveBeenCalledTimes(1);
+    await act(async () => response.resolve());
+    expect(mocks.router.push).toHaveBeenCalledWith("/patients?notice=deleted");
+  });
+
+  it("drops delete confirmation when switching patients and ignores the old completion", async () => {
+    mocks.getRole.mockReturnValue("ADMIN"); mocks.getById.mockResolvedValue(patientContractFixture);
+    const response = deferred<void>(); mocks.delete.mockReturnValue(response.promise);
+    const view = render(<PatientDetail patientId="one" />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+    view.rerender(<PatientDetail patientId="two" />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await act(async () => response.resolve());
+    expect(mocks.router.push).not.toHaveBeenCalled();
   });
 
   it("represents a missing record as not found", async () => {

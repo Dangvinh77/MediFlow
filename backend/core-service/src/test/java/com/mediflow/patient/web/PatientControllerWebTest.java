@@ -200,6 +200,33 @@ class PatientControllerWebTest {
         verify(deletePatient).delete(id);
     }
 
+    @Test
+    void identityCorrectionKeepsUpdateRolesAndValidatesBlankAndLongNumbers() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(updatePatient.update(any(), any())).thenReturn(dto(id));
+        for (String role : List.of("ADMIN", "NURSE")) {
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/patients/{id}", id)
+                    .header("Authorization", bearer("access", role, UUID.randomUUID().toString()))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"soCmnd\":\"002\"}"))
+                    .andExpect(status().isOk());
+        }
+        verify(updatePatient, org.mockito.Mockito.times(2)).update(org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.argThat(request -> "002".equals(request.soCmnd())));
+        for (String number : List.of("", "   ", "1".repeat(21))) {
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/patients/{id}", id)
+                    .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString()))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"soCmnd\":\"" + number + "\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/patients/{id}", id)
+                .header("Authorization", bearer("access", "DOCTOR", UUID.randomUUID().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"soCmnd\":\"002\"}"))
+                .andExpect(status().isForbidden());
+    }
+
     private String bearer(String type, String role, String subject) {
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         return "Bearer " + Jwts.builder().subject(subject).claim("type", type).claim("role", role)

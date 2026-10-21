@@ -47,8 +47,9 @@ function page(
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject!: (cause: unknown) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
 }
 
 describe("PatientTable read logic", () => {
@@ -56,6 +57,16 @@ describe("PatientTable read logic", () => {
     mocks.search.mockReset();
     mocks.getRole.mockReturnValue("ADMIN");
     mocks.router.replace.mockReset();
+  });
+
+  it("does not redirect on a late 401 after unmount", async () => {
+    const response = deferred<PageResult<PatientDTO>>(); mocks.search.mockReturnValue(response.promise);
+    const view = render(<PatientTable />);
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledTimes(1));
+    view.unmount();
+    const { ApiRequestError } = await import("@/lib/api");
+    await act(async () => response.reject(new ApiRequestError("expired", 401)));
+    expect(mocks.router.replace).not.toHaveBeenCalled();
   });
 
   it("searches from page zero, keeps the active keyword while paging, and resets filters", async () => {

@@ -13,7 +13,7 @@ public final class Patient {
     private String fullName;
     private LocalDate dateOfBirth;
     private Gender gender;
-    private final String identityNumber;
+    private String identityNumber;
     private String address;
     private String phoneNumber;
     private String email;
@@ -95,7 +95,7 @@ public final class Patient {
                 address, normalize(phoneNumber), normalize(email), normalize(healthInsuranceNumber), now, now);
     }
 
-    /** Updates mutable demographics; identityNumber deliberately remains unchanged. */
+    /** Compatibility update retaining the existing identity number. */
     public void update(
             String fullName,
             LocalDate dateOfBirth,
@@ -104,10 +104,19 @@ public final class Patient {
             String phoneNumber,
             String email,
             String healthInsuranceNumber) {
+        update(fullName, dateOfBirth, gender, address, phoneNumber, email, healthInsuranceNumber, identityNumber);
+    }
+
+    /** Corrects demographics and identity without changing the patient UUID or creation time. */
+    public void update(
+            String fullName, LocalDate dateOfBirth, Gender gender, String address,
+            String phoneNumber, String email, String healthInsuranceNumber, String identityNumber) {
         validateFullName(fullName);
         validateDateOfBirth(dateOfBirth);
         validateGender(gender);
+        validateIdentityNumber(identityNumber);
         validateOptionalFields(phoneNumber, email, healthInsuranceNumber);
+        this.identityNumber = identityNumber.trim();
         this.fullName = fullName.trim();
         this.dateOfBirth = dateOfBirth;
         this.gender = gender;
