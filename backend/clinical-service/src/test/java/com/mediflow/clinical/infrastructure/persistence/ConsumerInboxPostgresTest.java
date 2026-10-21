@@ -47,7 +47,7 @@ class ConsumerInboxPostgresTest {
     @org.junit.jupiter.api.Test
     void freshSchema_preservesExactDeliveryBytesAndDedupeSemantics() {
         TestDatabase db = migrateFresh();
-        assertThat(latestVersion(db)).isEqualTo("7");
+        assertThat(latestVersion(db)).isEqualTo("8");
         ConsumerInboxBoundary boundary = boundary(db);
         String operationKey = "clinical:lab-result:v0:" + LAB_ID;
         UUID firstEvent = UUID.fromString("00000000-0000-0000-0000-000000001101");
@@ -163,7 +163,7 @@ class ConsumerInboxPostgresTest {
 
         migrate(db, null);
 
-        assertThat(latestVersion(db)).isEqualTo("7");
+        assertThat(latestVersion(db)).isEqualTo("8");
         createEffectTable(db);
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "attached_result")).isEqualTo(2);

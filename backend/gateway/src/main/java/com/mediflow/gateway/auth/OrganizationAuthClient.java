@@ -28,6 +28,8 @@ public class OrganizationAuthClient {
 
     private static final String ORGANIZATION_URI =
             "http://core-service/api/v1/org/accounts/verify";
+    private static final String ORGANIZATION_IDENTITY_URI =
+            "http://core-service/api/v1/org/accounts/{accountId}/identity";
     private static final Set<String> SUPPORTED_ROLES = Set.of(
             Roles.ADMIN,
             Roles.DOCTOR,
@@ -116,6 +118,43 @@ public class OrganizationAuthClient {
                                 "Organization account verification is unavailable", exception));
     }
 
+    /** Reads current account authority before a refresh token can mint another access token. */
+    public Mono<CurrentIdentity> lookupCurrentIdentity(
+            UUID accountId,
+            String requestedCorrelationId) {
+
+        String correlationId = normalizeCorrelationId(requestedCorrelationId);
+        String serviceToken = jwt.issueServiceToken("gateway", Roles.SYSTEM, correlationId);
+
+        return client.get()
+                .uri(ORGANIZATION_IDENTITY_URI, accountId)
+                .headers(headers -> {
+                    headers.setBearerAuth(serviceToken);
+                    headers.set("X-Correlation-Id", correlationId);
+                })
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        Mono.error(new UpstreamUnavailableException(
+                                "Organization account identity lookup failed with HTTP "
+                                        + response.statusCode().value())))
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<CurrentIdentity>>() {})
+                .switchIfEmpty(Mono.error(new UpstreamUnavailableException(
+                        "Organization returned an empty account identity response")))
+                .map(this::unwrapCurrentIdentity)
+                .timeout(Duration.ofMillis(properties.timeoutMillis()))
+                .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
+                .onErrorMap(exception -> exception instanceof UpstreamUnavailableException
+                        ? exception
+                        : exception instanceof TimeoutException
+                        ? new UpstreamTimeoutException(
+                                "Organization account identity lookup timed out", exception)
+                        : exception instanceof CallNotPermittedException
+                        ? new UpstreamUnavailableException(
+                                "Organization account identity circuit is open", exception)
+                        : new UpstreamUnavailableException(
+                                "Organization account identity lookup is unavailable", exception));
+    }
+
     private VerifiedAccount unwrap(ApiResponse<VerifiedAccount> response) {
         if (!response.success() || response.data() == null) {
             throw new UpstreamUnavailableException(
@@ -145,6 +184,44 @@ public class OrganizationAuthClient {
         return account;
     }
 
+    private CurrentIdentity unwrapCurrentIdentity(ApiResponse<CurrentIdentity> response) {
+        if (!response.success() || response.data() == null) {
+            throw new UpstreamUnavailableException(
+                    "Organization returned an unsuccessful account identity response");
+        }
+        return validateCurrentIdentity(response.data());
+    }
+
+    private CurrentIdentity validateCurrentIdentity(CurrentIdentity identity) {
+        if (!identity.exists()) {
+            if (identity.active() || identity.accountId() != null || identity.role() != null
+                    || identity.staffId() != null || identity.departmentId() != null
+                    || identity.patientId() != null) {
+                throw new UpstreamUnavailableException(
+                        "Organization returned an inconsistent missing account identity");
+            }
+            return identity;
+        }
+        if (identity.accountId() == null
+                || !StringUtils.hasText(identity.role())
+                || !SUPPORTED_ROLES.contains(identity.role())
+                || Roles.SYSTEM.equals(identity.role())) {
+            throw new UpstreamUnavailableException(
+                    "Organization returned an invalid account identity");
+        }
+        if (Roles.PATIENT.equals(identity.role())) {
+            if (identity.patientId() == null || identity.staffId() != null
+                    || identity.departmentId() != null) {
+                throw new UpstreamUnavailableException(
+                        "Organization returned an incomplete patient account identity");
+            }
+        } else if (identity.staffId() == null || identity.patientId() != null) {
+            throw new UpstreamUnavailableException(
+                    "Organization returned an incomplete staff account identity");
+        }
+        return identity;
+    }
+
     static String normalizeCorrelationId(String value) {
         if (StringUtils.hasText(value)) {
             try {
@@ -165,6 +242,16 @@ public class OrganizationAuthClient {
             UUID departmentId,
             UUID patientId,
             String role) {
+    }
+
+    public record CurrentIdentity(
+            boolean exists,
+            boolean active,
+            UUID accountId,
+            String role,
+            UUID staffId,
+            UUID departmentId,
+            UUID patientId) {
     }
 
     public static class UpstreamTimeoutException extends UpstreamUnavailableException {

@@ -29,6 +29,21 @@ class ReportModuleSecurityTest {
     @Autowired MockMvc mvc;
     @MockBean ReadOutpatientReportUseCase reader;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void missingOrExpiredAccessToken_neverReachesOutpatientReads(boolean expired) throws Exception {
+        var builder = io.jsonwebtoken.Jwts.builder().subject(java.util.UUID.randomUUID().toString())
+                .claim("type", "access").claim("role", "MANAGER");
+        if (expired) builder.expiration(java.util.Date.from(java.time.Instant.now().minusSeconds(60)));
+        String token = builder.signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                "isolated-report-module-test-secret-at-least-32-bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8))).compact();
+        for (String route : new String[]{"daily?date=2026-10-19", "monthly?year=2026"}) {
+            mvc.perform(get("/api/v1/reports/outpatient/" + route).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isUnauthorized());
+        }
+        verifyNoInteractions(reader);
+    }
+
     @Test void reportChainDoesNotClaimAnotherContextsUrl() throws Exception {
         mvc.perform(get("/api/v1/notifications/probe").with(user("manager").roles("MANAGER")))
                 .andExpect(status().isForbidden());

@@ -45,6 +45,20 @@ class OutpatientPrescriptionLifecycleControllerTest {
     private final UUID id = UUID.randomUUID();
     private final ActorIdentity pharmacist = new ActorIdentity(UUID.randomUUID(), UUID.randomUUID(), "PHARMACIST");
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void missingOrExpiredAccessToken_neverReachesDispense(boolean expired) throws Exception {
+        var builder = io.jsonwebtoken.Jwts.builder().subject(UUID.randomUUID().toString())
+                .claim("type", "access").claim("role", "PHARMACIST");
+        if (expired) builder.expiration(java.util.Date.from(Instant.now().minusSeconds(60)));
+        String token = builder.signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                "test-secret-must-have-at-least-32-bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8))).compact();
+        mvc.perform(put(path("dispense")).header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("success").value(false));
+        verifyNoInteractions(lifecycle, legacyDispense, reader);
+    }
+
     @Test
     void dispenseRoutesToV1PortWithSignedActorAndCorrelation() throws Exception {
         var dto = new DispenseDTO(UUID.randomUUID(), id, DispenseStatus.DISPENSED, Instant.now(),

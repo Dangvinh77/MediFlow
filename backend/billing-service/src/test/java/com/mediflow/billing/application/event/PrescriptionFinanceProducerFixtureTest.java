@@ -86,12 +86,15 @@ class PrescriptionFinanceProducerFixtureTest {
         when(payments.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
         when(refunds.lockOriginal(originalId)).thenReturn(new LedgerRefundRepositoryPort.RefundContext(account, original,
                 part.equals("remainder") ? new BigDecimal("250.00") : BigDecimal.ZERO));
+        when(refunds.outpatientRefundEligibility(any())).thenReturn(
+                new LedgerRefundRepositoryPort.OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO));
         var command = new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("rx-refund-" + part,
                 p.path("amount").decimalValue(), "Private audit must not enter event", PaymentMethod.CASH);
         new com.mediflow.billing.application.service.LedgerRefundService(payments, refunds, events,
                 Mappers.getMapper(LedgerPaymentMapper.class), Clock.fixed(at, ZoneOffset.UTC))
                 .refund(originalId, command, UUID.randomUUID(), expected.path("correlationId").asText());
-        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(accountId), capture.capture());
+        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        verify(events).appendForOutpatientRequest(eq(accountId), eq(request), capture.capture());
         var actual = (ObjectNode)mapper.valueToTree(capture.getValue()); actual.set("eventId", expected.get("eventId"));
         ((ObjectNode)actual.path("payload")).set("refundTransactionId", p.get("refundTransactionId"));
         assertThat(actual).isEqualTo(expected);

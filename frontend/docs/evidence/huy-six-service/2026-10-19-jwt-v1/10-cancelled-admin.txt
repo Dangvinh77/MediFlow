@@ -1,0 +1,135 @@
+Browser tab: 3, Title: "Chi tiết đơn thuốc | MediFlow", URL: "http://127.0.0.1:3182/pharmacy/prescriptions/e22caa74-4532-4e7a-bb8a-4d2122862999".
+1 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/e22caa74-4532-4e7a-bb8a-4d2122862999
+	2 container
+		3 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+			4 image
+		5 container Điều hướng nghiệp vụ
+			6 text MF
+			7 text MediFlow
+			8 text Hospital workspace
+			9 container
+				10 text NGHIỆP VỤ
+				11 content list
+					12 container
+						13 text TỔ CHỨC & BỆNH NHÂN
+						14 link Description: Tổ chức — Nhân sự & khoa, Value: 127.0.0.1:3182/organization
+					15 link Description: Bệnh nhân — Hồ sơ định danh, Value: 127.0.0.1:3182/patients
+					16 container
+						17 text KHÁM NGOẠI TRÚ
+						18 link Description: Lịch hẹn — Tiếp nhận ngoại trú, Value: 127.0.0.1:3182/appointments
+					19 link Description: Hồ sơ khám — Chẩn đoán & kết luận, Value: 127.0.0.1:3182/records
+					20 container
+						21 text XÉT NGHIỆM
+						22 link Description: Xét nghiệm — Hàng đợi & kết quả, Value: 127.0.0.1:3182/lab
+					23 container
+						24 text DƯỢC
+						25 link Description: Dược — Thuốc & đơn thuốc, Value: 127.0.0.1:3182/pharmacy
+					26 container
+						27 text VIỆN PHÍ
+						28 link Description: Viện phí — Hóa đơn & thanh toán, Value: 127.0.0.1:3182/billing
+					29 container
+						30 text BÁO CÁO & THÔNG BÁO
+						31 link Description: Thông báo — Lịch sử gửi, Value: 127.0.0.1:3182/notifications
+					32 link Description: Báo cáo — Chỉ số vận hành, Value: 127.0.0.1:3182/reports
+			33 text MediFlow · Quản lý ngoại trú
+		34 text Không gian vận hành MediFlow
+		35 text Quản trị viên
+		36 pop up button (collapsed, settable) Description: Giao diện, Value: Theo hệ thống, Secondary Actions: Expand
+			37 menu
+				38 Sáng
+				39 Tối
+				40 (selected) Theo hệ thống
+		41 button Đăng xuất
+		42 heading Chi tiết đơn thuốc, Value: 1
+			43 text Chi tiết đơn thuốc
+		44 text Thông tin đơn thuốc và trạng thái xuất thuốc.
+		45 container Điều hướng phân hệ Dược
+			46 link Description: Danh mục, Value: 127.0.0.1:3182/pharmacy/drugs
+			47 link Description: Kê đơn, Value: 127.0.0.1:3182/pharmacy/prescriptions/new
+			48 link Description: Đơn thuốc, Value: 127.0.0.1:3182/pharmacy/prescriptions
+			49 link Description: Khôi phục outbox, Value: 127.0.0.1:3182/pharmacy/admin/outbox
+		50 container
+			51 text e22caa74-4532-4e7a-bb8a-4d2122862999
+			52 heading Chi tiết đơn thuốc, Value: 2
+				53 text Chi tiết đơn thuốc
+			54 text Ngày kê:  19/10/2026 Đã hủy Đã hủy Thanh toán được kiểm tra khi xuất thuốc
+			55 button Tải lại trạng thái
+			56 text Thanh toán và kết quả xuất thuốc được cập nhật từ hệ thống.
+			57 heading Thông tin kê đơn, Value: 3
+				58 text Thông tin kê đơn
+			59 definition list
+				60 container Mã hồ sơ bệnh án
+					61 text Mã hồ sơ bệnh án
+				62 container
+					63 text d7f2cee5-1211-4afc-8f61-2bc6643d0f09
+					64 button Chép
+				65 container Mã bệnh nhân
+					66 text Mã bệnh nhân
+				67 container
+					68 text ff014d28-0b87-467f-8706-5382ba5f27f1
+					69 button Chép
+				70 container Mã bác sĩ
+					71 text Mã bác sĩ
+				72 container
+					73 text 669b2578-f156-477b-a1a5-138a4d8f810a
+					74 button Chép
+				75 container Mã khoa
+					76 text Mã khoa
+				77 container
+					78 text 44cb8393-ddf4-4eaf-9739-052a58c88033
+					79 button Chép
+				80 container Tổng tiền
+					81 text Tổng tiền
+				82 text 30.000 ₫
+				83 container Ngày kê đơn
+					84 text Ngày kê đơn
+				85 text 19/10/2026
+			86 heading Các dòng thuốc, Value: 3
+				87 text Các dòng thuốc
+			88 table
+				89 row
+					90 cell
+						91 text Thuốc
+					92 cell
+						93 text Số lượng
+					94 cell
+						95 text Đơn giá
+					96 cell
+						97 text Cách dùng
+					98 cell
+						99 text Thành tiền
+				100 row
+					101 cell
+						102 text FE acceptance c85c9e3ab441
+						103 text 13ef9eed-9db2-4273-974a-458186c62695
+					104 cell
+						105 text 3
+					106 cell
+						107 text 10.000 ₫
+					108 cell
+						109 text Acceptance only
+					110 cell
+						111 text 30.000 ₫
+			112 heading Kiểm toán hủy đơn, Value: 3
+				113 text Kiểm toán hủy đơn
+			114 definition list
+				115 container Thời điểm
+					116 text Thời điểm
+				117 text 15:33 19/10/26
+				118 container Người hủy
+					119 text Người hủy
+				120 text 669b2578-f156-477b-a1a5-138a4d8f810a
+				121 container Lý do
+					122 text Lý do
+				123 text Isolated FE acceptance cancellation
+			124 heading Lịch sử bản ghi, Value: 3
+				125 text Lịch sử bản ghi
+			126 definition list
+				127 container Tạo lúc
+					128 text Tạo lúc
+				129 text 15:33 19/10/26
+				130 container Cập nhật lúc
+					131 text Cập nhật lúc
+				132 text 15:33 19/10/26
+
+The focused UI element is 1 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/e22caa74-4532-4e7a-bb8a-4d2122862999

@@ -1,0 +1,505 @@
+{
+  "scenario" : "ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE",
+  "wallTime" : 1792564466.389307400,
+  "reportApplicationClock" : 1798822800.000000000,
+  "systemAndJwtClocksUnchanged" : true,
+  "approval" : {
+    "requestId" : "d8b23575-67e4-4e21-950f-5b9ea451d2fe",
+    "fromDate" : "2026-01-01",
+    "toDate" : "2026-12-31",
+    "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+    "zoneId" : "Asia/Bangkok",
+    "currency" : "VND",
+    "sources" : {
+      "BILLING_CASH" : {
+        "reference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/BILLING_CASH.json",
+        "exportSha256" : "a2792fd48768709847d0ebdfca04847683fcd29a12de3675dc7fefe586932752",
+        "rowCount" : 3,
+        "localFingerprint" : "808c051c111da2834a6de453ee3873a33de245bae7f1d854e6ab21639bbcc826"
+      },
+      "BILLING_REFUND" : {
+        "reference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/BILLING_REFUND.json",
+        "exportSha256" : "39da08bd75ed9053e9c84d554864c14ca780a2b9f3e5344a4728e1f9dbb518bd",
+        "rowCount" : 2,
+        "localFingerprint" : "7853d0bb45fb0898d2f9d549bba0e0fc092a115a0939be7ffd78d170e4550a67"
+      },
+      "CLINICAL" : {
+        "reference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/CLINICAL.json",
+        "exportSha256" : "a6f0760271870a3704394a3d7ede571c8eb35ef4fbb4c6a82d6ae40d5a62fbc3",
+        "rowCount" : 0,
+        "localFingerprint" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "LAB" : {
+        "reference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/LAB.json",
+        "exportSha256" : "53c6dd2793dabd3d4ccaac137b8172c35c8e3326231f986ef0f028465383cb8b",
+        "rowCount" : 0,
+        "localFingerprint" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "PHARMACY" : {
+        "reference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/PHARMACY.json",
+        "exportSha256" : "8393ef9922df0a48330df271a144dda2ece1107e61b11aeeb1d98f056a1a47f1",
+        "rowCount" : 2,
+        "localFingerprint" : "6bf733bac86009043dffcbdeda73348f6ceecd426e3eb2a63ca76f2522b4d8c3"
+      }
+    },
+    "sourceObservedAt" : 1798822800.000000000,
+    "reconciledAt" : 1798822800.000000000,
+    "acceptanceReference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60:sealed-public-receipts",
+    "expectedFingerprint" : "9137e97ac0c64e79109c5489f2cd9f7444b39518d8c31698b8ce2a3aee5122a6"
+  },
+  "checks" : [ {
+    "scenario" : "missing-coverage-before-approval",
+    "httpStatus" : 404,
+    "correlationId" : "2cb05875-0af8-4889-9963-97594bdaf80f",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "REPORT_NOT_FOUND",
+        "message" : "Requested projection does not have accepted coverage",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-21T06:34:25.745018700Z",
+      "correlationId" : "2cb05875-0af8-4889-9963-97594bdaf80f"
+    }
+  }, {
+    "scenario" : "manager-cannot-approve",
+    "httpStatus" : 403,
+    "correlationId" : "30499bca-d453-4778-ad32-5f7be3549b07",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "AUTH_FORBIDDEN",
+        "message" : "Role is not allowed to access this route",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-21T06:34:25.971995200Z",
+      "correlationId" : "30499bca-d453-4778-ad32-5f7be3549b07"
+    }
+  }, {
+    "scenario" : "admin-accepts-reviewed-test-scenario",
+    "httpStatus" : 200,
+    "correlationId" : "null",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "coverageId" : "34733828-128f-4069-8c98-2c5b0ca31641",
+        "from" : "2026-01-01",
+        "to" : "2026-12-31",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "zoneId" : "Asia/Bangkok",
+        "currency" : "VND",
+        "sourceReferences" : {
+          "BILLING_REFUND" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/BILLING_REFUND.json",
+          "CLINICAL" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/CLINICAL.json",
+          "BILLING_CASH" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/BILLING_CASH.json",
+          "PHARMACY" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/PHARMACY.json",
+          "LAB" : "ISOLATED_CALENDAR_TEST:5943b1a86e60/LAB.json"
+        },
+        "sourceObservedAt" : "2027-01-01T17:00:00Z",
+        "reconciledAt" : "2027-01-01T17:00:00Z",
+        "acceptedAt" : "2027-01-01T17:00:00Z",
+        "acceptedBy" : "b1d4bc8f-77c0-4c03-9717-3bc6391bee02",
+        "acceptanceReference" : "ISOLATED_CALENDAR_TEST:5943b1a86e60:sealed-public-receipts",
+        "evidenceFingerprint" : "9137e97ac0c64e79109c5489f2cd9f7444b39518d8c31698b8ce2a3aee5122a6"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:26.094415200Z",
+      "correlationId" : null
+    }
+  }, {
+    "scenario" : "authorized-daily",
+    "httpStatus" : 200,
+    "correlationId" : "null",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "fromDate" : "2026-10-21",
+        "toDate" : "2026-10-21",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "currency" : "VND",
+        "zoneId" : "Asia/Bangkok",
+        "coverageId" : "34733828-128f-4069-8c98-2c5b0ca31641",
+        "sourceObservedAt" : "2027-01-01T17:00:00Z",
+        "reconciledAt" : "2027-01-01T17:00:00Z",
+        "covered" : true,
+        "periods" : [ {
+          "fromDate" : "2026-10-21",
+          "toDate" : "2026-10-21",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 1,
+          "dispensedUnits" : 3,
+          "cashReceived" : 160000.0,
+          "refunds" : 30000.0,
+          "netCash" : 130000.0
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:26.196796600Z",
+      "correlationId" : null
+    }
+  }, {
+    "scenario" : "authorized-monthly",
+    "httpStatus" : 200,
+    "correlationId" : "null",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "fromDate" : "2026-01-01",
+        "toDate" : "2026-12-31",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "currency" : "VND",
+        "zoneId" : "Asia/Bangkok",
+        "coverageId" : "34733828-128f-4069-8c98-2c5b0ca31641",
+        "sourceObservedAt" : "2027-01-01T17:00:00Z",
+        "reconciledAt" : "2027-01-01T17:00:00Z",
+        "covered" : true,
+        "periods" : [ {
+          "fromDate" : "2026-01-01",
+          "toDate" : "2026-01-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-02-01",
+          "toDate" : "2026-02-28",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-03-01",
+          "toDate" : "2026-03-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-04-01",
+          "toDate" : "2026-04-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-05-01",
+          "toDate" : "2026-05-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-06-01",
+          "toDate" : "2026-06-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-07-01",
+          "toDate" : "2026-07-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-08-01",
+          "toDate" : "2026-08-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-09-01",
+          "toDate" : "2026-09-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-10-01",
+          "toDate" : "2026-10-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 1,
+          "dispensedUnits" : 3,
+          "cashReceived" : 160000.0,
+          "refunds" : 30000.0,
+          "netCash" : 130000.0
+        }, {
+          "fromDate" : "2026-11-01",
+          "toDate" : "2026-11-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-12-01",
+          "toDate" : "2026-12-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:26.264428Z",
+      "correlationId" : null
+    }
+  }, {
+    "scenario" : "authorized-daily",
+    "httpStatus" : 200,
+    "correlationId" : "null",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "fromDate" : "2026-10-21",
+        "toDate" : "2026-10-21",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "currency" : "VND",
+        "zoneId" : "Asia/Bangkok",
+        "coverageId" : "34733828-128f-4069-8c98-2c5b0ca31641",
+        "sourceObservedAt" : "2027-01-01T17:00:00Z",
+        "reconciledAt" : "2027-01-01T17:00:00Z",
+        "covered" : true,
+        "periods" : [ {
+          "fromDate" : "2026-10-21",
+          "toDate" : "2026-10-21",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 1,
+          "dispensedUnits" : 3,
+          "cashReceived" : 160000.0,
+          "refunds" : 30000.0,
+          "netCash" : 130000.0
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:26.304480Z",
+      "correlationId" : null
+    }
+  }, {
+    "scenario" : "authorized-monthly",
+    "httpStatus" : 200,
+    "correlationId" : "null",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "fromDate" : "2026-01-01",
+        "toDate" : "2026-12-31",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "currency" : "VND",
+        "zoneId" : "Asia/Bangkok",
+        "coverageId" : "34733828-128f-4069-8c98-2c5b0ca31641",
+        "sourceObservedAt" : "2027-01-01T17:00:00Z",
+        "reconciledAt" : "2027-01-01T17:00:00Z",
+        "covered" : true,
+        "periods" : [ {
+          "fromDate" : "2026-01-01",
+          "toDate" : "2026-01-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-02-01",
+          "toDate" : "2026-02-28",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-03-01",
+          "toDate" : "2026-03-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-04-01",
+          "toDate" : "2026-04-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-05-01",
+          "toDate" : "2026-05-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-06-01",
+          "toDate" : "2026-06-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-07-01",
+          "toDate" : "2026-07-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-08-01",
+          "toDate" : "2026-08-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-09-01",
+          "toDate" : "2026-09-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-10-01",
+          "toDate" : "2026-10-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 1,
+          "dispensedUnits" : 3,
+          "cashReceived" : 160000.0,
+          "refunds" : 30000.0,
+          "netCash" : 130000.0
+        }, {
+          "fromDate" : "2026-11-01",
+          "toDate" : "2026-11-30",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        }, {
+          "fromDate" : "2026-12-01",
+          "toDate" : "2026-12-31",
+          "completedVisits" : 0,
+          "labTests" : 0,
+          "dispensedPrescriptions" : 0,
+          "dispensedUnits" : 0,
+          "cashReceived" : 0.0,
+          "refunds" : 0.0,
+          "netCash" : 0.0
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:26.345473500Z",
+      "correlationId" : null
+    }
+  }, {
+    "scenario" : "doctor-daily-denied",
+    "httpStatus" : 403,
+    "correlationId" : "d55ecac7-aa56-4b83-8aec-9fe9e3bd85fa",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "AUTH_FORBIDDEN",
+        "message" : "Role is not allowed to access this route",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-21T06:34:26.354858300Z",
+      "correlationId" : "d55ecac7-aa56-4b83-8aec-9fe9e3bd85fa"
+    }
+  }, {
+    "scenario" : "doctor-monthly-denied",
+    "httpStatus" : 403,
+    "correlationId" : "bec1dc4c-4233-40f8-b9be-b78dd6f51d55",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "AUTH_FORBIDDEN",
+        "message" : "Role is not allowed to access this route",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-21T06:34:26.358111Z",
+      "correlationId" : "bec1dc4c-4233-40f8-b9be-b78dd6f51d55"
+    }
+  }, {
+    "scenario" : "unapproved-scope-unavailable",
+    "httpStatus" : 404,
+    "correlationId" : "57ab1ee6-67aa-46c2-be89-14c7b7870a1f",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "REPORT_NOT_FOUND",
+        "message" : "Requested projection does not have accepted coverage",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-21T06:34:26.384321500Z",
+      "correlationId" : "57ab1ee6-67aa-46c2-be89-14c7b7870a1f"
+    }
+  } ]
+}

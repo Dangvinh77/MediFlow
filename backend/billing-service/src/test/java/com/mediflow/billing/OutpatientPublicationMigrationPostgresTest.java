@@ -42,7 +42,8 @@ class OutpatientPublicationMigrationPostgresTest {
         flyway.validate();
         assertThat(jdbc.queryForObject("SELECT to_regclass('billing_outpatient_publication_cohort') IS NOT NULL", Boolean.class)).isTrue();
         assertThat(jdbc.queryForObject("SELECT count(DISTINCT version) FROM flyway_schema_history WHERE type='SQL' AND success", Integer.class))
-                .isEqualTo(23);
+                .isEqualTo(25);
+        assertThat(jdbc.queryForObject("SELECT to_regclass('billing_outpatient_refund_publication') IS NOT NULL", Boolean.class)).isTrue();
     }
 
     @Test void upgradeFromV21_preservesExistingHeldRowBytesAndLeavesCohortLinkNull() {

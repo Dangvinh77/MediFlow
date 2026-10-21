@@ -17,7 +17,7 @@ const prescription: PrescriptionDTO = { prescriptionId: id, recordId: id, patien
 const cancelled = { ...prescription, status: "CANCELLED", dispenseStatus: "CANCELLED" } as const;
 const dispensed = { dispenseId: id, prescriptionId: id, status: "DISPENSED", dispensedAt: "2026-10-16T00:00:00Z", dispensedBy: id, failureReason: null } as const;
 async function open(action: "cancel" | "dispense") {
-  render(<PrescriptionDetail prescriptionId={id} />);
+  render(<PrescriptionDetail prescriptionId={id} mode="legacy" />);
   const trigger = await screen.findByRole("button", { name: action === "cancel" ? "Hủy đơn" : "Xuất thuốc" });
   trigger.focus();
   // Browsers can blur a trigger as soon as opening confirmation disables it.
@@ -64,11 +64,11 @@ describe("Prescription terminal actions", () => {
     expect(reason).toHaveValue("Lý do đang nhập"); expect(screen.getByText(/cancel-validation/)).toBeVisible();
   });
   it("offers dispense only for the pharmacist/admin role plus active/pending and confirmed payment", async () => {
-    mocks.role = "DOCTOR"; const view = render(<PrescriptionDetail prescriptionId={id} />);
+    mocks.role = "DOCTOR"; const view = render(<PrescriptionDetail prescriptionId={id} mode="legacy" />);
     await screen.findByRole("button", { name: "Hủy đơn" });
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
     view.unmount(); mocks.role = "PHARMACIST"; mocks.get.mockResolvedValue({ ...prescription, paymentConfirmed: false });
-    render(<PrescriptionDetail prescriptionId={id} />); await screen.findByText("Chờ thanh toán", { exact: true });
+    render(<PrescriptionDetail prescriptionId={id} mode="legacy" />); await screen.findByText("Chờ thanh toán", { exact: true });
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Hủy đơn" })).not.toBeInTheDocument();
   });
@@ -119,6 +119,24 @@ describe("Prescription terminal actions", () => {
     expect(screen.queryByText(/Đã xuất thuốc thành công|Đã hủy đơn thuốc\. Đã giải phóng/)).not.toBeInTheDocument();
     expect(action === "cancel" ? mocks.cancel : mocks.dispense).toHaveBeenCalledTimes(1);
   });
+  it.each(["cancel", "dispense"] as const)("reconciles HTTP 408 for %s and retries only a failed follow-up read", async action => {
+    const mutation = action === "cancel" ? mocks.cancel : mocks.dispense;
+    mutation.mockRejectedValue(new ApiRequestError("Timeout", 408, "REQUEST_TIMEOUT", [], "terminal-timeout"));
+    mocks.get.mockResolvedValueOnce(prescription)
+      .mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, "READ_FAILED", [], "terminal-read"))
+      .mockResolvedValueOnce(action === "cancel" ? cancelled : { ...prescription, status: "FULFILLED", dispenseStatus: "DISPENSED" });
+    await open(action);
+    if (action === "cancel") fireEvent.change(screen.getByLabelText("Lý do hủy", { exact: false }), { target: { value: "Hủy theo yêu cầu" } });
+    submit(action);
+    expect(await screen.findByText(/Chưa tải được chi tiết mới/)).toHaveTextContent("terminal-read");
+    expect(screen.getByText(/Chưa xác định được kết quả/)).toHaveTextContent("terminal-timeout");
+    expect(screen.queryByRole("button", { name: /Xác nhận (hủy đơn|xuất thuốc)/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Đã xuất thuốc thành công|Đã hủy đơn thuốc\. Đã giải phóng/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument());
+    expect(mutation).toHaveBeenCalledTimes(1);
+  });
   it.each(["PAYMENT_PROOF_REQUIRED", "PHARMACY_CLEARANCE_REQUIRED"])("refreshes a rejected %s and removes dispense when payment is no longer confirmed", async code => {
     mocks.dispense.mockRejectedValue(new ApiRequestError("No proof", 422, code, [], "proof-rx"));
     mocks.get.mockResolvedValueOnce(prescription).mockResolvedValue({ ...prescription, paymentConfirmed: false });
@@ -146,14 +164,14 @@ describe("Prescription terminal actions", () => {
   });
   it("ignores a late old mutation after navigating to another prescription", async () => {
     let resolve!: (value: unknown) => void; mocks.dispense.mockReturnValue(new Promise(done => { resolve = done; }));
-    const view = render(<PrescriptionDetail prescriptionId={id} />);
+    const view = render(<PrescriptionDetail prescriptionId={id} mode="legacy" />);
     fireEvent.click(await screen.findByRole("button", { name: "Xuất thuốc" })); submit("dispense");
     const next = "00000000-0000-4000-8000-000000000002";
-    mocks.get.mockResolvedValue({ ...cancelled, prescriptionId: next }); view.rerender(<PrescriptionDetail prescriptionId={next} />);
+    mocks.get.mockResolvedValue({ ...cancelled, prescriptionId: next }); view.rerender(<PrescriptionDetail prescriptionId={next} mode="legacy" />);
     await screen.findByText(next, { selector: "p" }); await act(async () => resolve(dispensed));
     expect(screen.queryByText(/Đã xuất thuốc thành công/)).not.toBeInTheDocument(); expect(mocks.get).toHaveBeenCalledTimes(2);
   });
   it("does not request a malformed prescription UUID", () => {
-    render(<PrescriptionDetail prescriptionId="bad-id" />); expect(screen.getByRole("alert")).toHaveTextContent("UUID hợp lệ"); expect(mocks.get).not.toHaveBeenCalled();
+    render(<PrescriptionDetail prescriptionId="bad-id" mode="legacy" />); expect(screen.getByRole("alert")).toHaveTextContent("UUID hợp lệ"); expect(mocks.get).not.toHaveBeenCalled();
   });
 });

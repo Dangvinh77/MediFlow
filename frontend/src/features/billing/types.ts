@@ -67,7 +67,42 @@ export interface LedgerPaymentDTO {
   amount: number;
   currency: string;
   paymentMethod: string;
-  completedAt: string;
+  completedAt: string | null;
+}
+
+export type PaymentRequestSourcePurpose = "EXAM" | "LAB_TEST" | "PRESCRIPTION";
+
+export interface PaymentRequestSourceQuery {
+  purpose: PaymentRequestSourcePurpose;
+  sourceId: string;
+  patientId: string;
+  careEpisodeId: string;
+}
+
+/** Exact Billing response for GET /payment-requests/by-source. Amounts and state come from Billing. */
+export interface PaymentRequestDiscoveryDTO {
+  paymentRequestId: string;
+  invoiceId: string;
+  accountId: string;
+  patientId: string;
+  departmentId: string;
+  purpose: PaymentRequestSourcePurpose;
+  sourceType: string;
+  sourceId: string;
+  careEpisodeId: string;
+  careEpisodeType: string;
+  appointmentId: string | null;
+  recordId: string | null;
+  prescriptionId: string | null;
+  labTestIds: string[];
+  requestedAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  currency: string;
+  status: "PENDING" | "PARTIALLY_PAID" | "PAID" | "EXPIRED" | "CANCELLED";
+  accountStatus: "OPEN" | "CHARGE_CLOSED" | "SETTLEMENT_PENDING" | "SETTLED" | "CLOSED";
+  expiresAt: string | null;
+  observedAt: string;
 }
 
 export interface RefundDueDTO {

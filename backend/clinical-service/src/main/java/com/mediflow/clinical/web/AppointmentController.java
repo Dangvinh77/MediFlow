@@ -100,7 +100,7 @@ public class AppointmentController {
             @Valid @RequestBody ChangeStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageAppointmentUseCase.changeStatus(id, request.status()),
+                manageAppointmentUseCase.changeStatus(id, request.status(), request.reason()),
                 correlationIds.currentOrCreate().toString()));
     }
 }

@@ -25,8 +25,9 @@ public class LabTestChargeConfiguration {
         return BindingBuilder.bind(billingQueue).to(mediflowEventsExchange).with(RabbitConfig.RK_LAB_REQUEST_CREATED);
     }
     @Bean IssueLabTestChargeUseCase issueLabTestCharges(LabTestChargeRepositoryPort repository, PriceCatalogPort prices,
+            com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort cancellations,
             PlatformTransactionManager manager) {
-        var service = new LabTestPlannedRequestService(repository, prices);
+        var service = new LabTestPlannedRequestService(repository, prices, cancellations);
         var transaction = new TransactionTemplate(manager); transaction.setTimeout(5);
         return command -> transaction.execute(status -> service.issue(command));
     }

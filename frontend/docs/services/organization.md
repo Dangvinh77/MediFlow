@@ -24,8 +24,10 @@ verification endpoints remain outside the browser UI.
 - `FE-ORG-01` — `DONE`: department detail/create/update with exact roles and fields.
 - `FE-ORG-02` — `DONE`: staff detail/create/update/department transfer.
 - `FE-ORG-03` — `DONE`: account create/status commands; SYSTEM account creation remains backend-only.
-- `FE-ORG-04` — `IMPLEMENT`: test independent section failures, pagination, role gates, and retries
-  after the shared harness exists.
+- `FE-ORG-04` — `DONE`: component coverage for independent department/staff failures, inactive
+  department display, staff pagination and same-page retry, admin action visibility, account commands,
+  department/staff create forms, failed form-load retry, and profile-save/department-transfer partial
+  success. Department and staff forms stop submission when required source data fails to load.
 
 ## Handoffs and blockers
 
@@ -38,7 +40,9 @@ verification endpoints remain outside the browser UI.
 ## Contract and verification gate
 
 Confirm live department, staff, and account controller DTOs and role annotations. Keep the two base
-reads independently recoverable so one failure does not hide the other.
+reads independently recoverable so one failure does not hide the other. Department transfer follows
+staff profile update as a separate command; a transfer refusal is now surfaced as partial success,
+the saved profile is refreshed, and retry safely attempts the transfer again.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Organization tests when available.
 Smoke test department/staff partial failure, pagination, empty state, and denied roles.

@@ -64,6 +64,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void validateHuman(Claims claims, String role, String subject) {
+        if (claims.getExpiration() == null
+                || !claims.getExpiration().toInstant().isAfter(java.time.Instant.now())) return;
         if (!HUMAN_ROLES.contains(role) || !isUuid(subject)) return;
         if (Roles.PATIENT.equals(role)) {
             if (!isUuid(claims.get(JwtClaims.PATIENT_ID, String.class))

@@ -4,10 +4,23 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
+  getRole,
   isAuthenticated,
   login,
   subscribeToAuthChanges,
 } from "@/lib/auth";
+
+function landingPage() {
+  switch (getRole()) {
+    case "PATIENT": return "/notifications";
+    case "CASHIER": return "/billing";
+    case "LAB_TECH": return "/lab";
+    case "PHARMACIST": return "/pharmacy";
+    case "MANAGER": return "/reports";
+    case "DOCTOR": case "NURSE": return "/appointments";
+    default: return "/patients";
+  }
+}
 
 const getAuthSnapshot = (): boolean => isAuthenticated();
 const getServerAuthSnapshot = (): boolean | null => null;
@@ -26,7 +39,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (authenticated) {
-      router.replace("/patients");
+      router.replace(landingPage());
     }
   }, [authenticated, router]);
 
@@ -44,7 +57,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-      router.push("/patients");
+      router.replace(landingPage());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
     } finally {

@@ -7,6 +7,7 @@ import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getToken } from "@/lib/session";
 import { formatLocalDate } from "@/lib/format";
 import { patientApi } from "../api";
 import type { PatientDTO } from "../types";
@@ -38,7 +39,12 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function PatientTable({ notice }: { notice?: "deleted" }) {
+export function PatientTable(props: { notice?: "deleted" }) {
+  const session = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerRole);
+  return <PatientTableWorkspace key={session} {...props} />;
+}
+
+function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patients, setPatients] = useState<PatientDTO[]>([]);
@@ -58,6 +64,7 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
   const loadPatients = useCallback(async (request: PatientRequest) => {
     lastRequest.current = request;
     const requestId = ++requestSequence.current;
+    const token = getToken();
     setLoading(true);
     setError(null);
 
@@ -67,14 +74,14 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
         page: request.page,
         size: PATIENT_PAGE_SIZE,
       });
-      if (requestId !== requestSequence.current) return;
+      if (requestId !== requestSequence.current || token !== getToken()) return;
 
       setPatients(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
     } catch (cause: unknown) {
-      if (requestId !== requestSequence.current) return;
+      if (requestId !== requestSequence.current || token !== getToken()) return;
 
       if (cause instanceof ApiRequestError && cause.status === 401) {
         setPatients([]);
@@ -84,7 +91,7 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
 
       setError(getRequestError(cause));
     } finally {
-      if (requestId === requestSequence.current) setLoading(false);
+      if (requestId === requestSequence.current && token === getToken()) setLoading(false);
     }
   }, [router]);
 
@@ -93,7 +100,7 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
       void loadPatients({ keyword: "", page: 0 });
     }, 0);
 
-    return () => window.clearTimeout(initialLoad);
+    return () => { window.clearTimeout(initialLoad); requestSequence.current += 1; };
   }, [loadPatients]);
 
   function onSearch(event: FormEvent<HTMLFormElement>) {

@@ -1,0 +1,23 @@
+{
+  "scenario": "ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE",
+  "date": "2026-10-21",
+  "frontend": "http://localhost:3183",
+  "gateway": "http://127.0.0.1:57283",
+  "reportApplicationClock": "2027-01-01T17:00:00Z",
+  "systemAndJwtClocksUnchanged": true,
+  "issuer": "Actual Core login for ADMIN, MANAGER and DOCTOR",
+  "adminDaily": "PASS; 1 Rx, 3 units, cash 160000, refunds 30000, net 130000",
+  "adminMonthly": "PASS; 12 periods, October matches daily",
+  "managerDaily": "PASS; matches ADMIN",
+  "managerMonthly": "PASS; 12 periods, October matches daily",
+  "missingCoverage": "REPORT_NOT_FOUND; no result region; error group focused; retry remains error; valid scope recovers",
+  "doctorDirectRoute": "Denied; no report form or results",
+  "keyboard": "Enter submits daily/monthly queries and activates month tab/retry",
+  "themes": "System desktop, Light and Dark at 390x844; viewport reset and System restored",
+  "mobile": {
+    "viewportWidth": 390,
+    "documentWidth": 375,
+    "horizontalOverflow": false
+  },
+  "provenance": "Business setup/payment/refund via real public API harness. Report reads and permission/error/theme/keyboard checks via browser. Not all-browser E2E."
+}

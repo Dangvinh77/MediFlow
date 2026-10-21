@@ -1,0 +1,59 @@
+- button "Open Next.js Dev Tools":
+- alert: Viện phí | MediFlow
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Viện phí
+      - link "Viện phí — Hóa đơn & thanh toán":
+        - /url: /billing
+        - generic: Viện phí
+        - generic: Hóa đơn & thanh toán
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Thu ngân
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Viện phí" [level=1]
+  - paragraph: Tra cứu hóa đơn theo mã bệnh nhân.
+  - link "Thanh toán khoản phí đã chọn":
+    - /url: /billing/payment-requests
+  - link "Lập hóa đơn":
+    - /url: /billing/new
+  - generic: Mã bệnh nhân
+  - textbox "Mã bệnh nhân":
+    - /placeholder: Nhập UUID bệnh nhân
+  - button "Tra cứu hóa đơn" [disabled]
+  - status: Nhập mã bệnh nhân để xem hóa đơn.
+  - heading "Hoàn tiền đơn thuốc" [level=2]
+  - paragraph: Tra cứu nghĩa vụ phát sinh khi điều chỉnh hoặc hủy đơn. Nghĩa vụ hoàn tiền chưa phải là khoản đã hoàn; hệ thống kiểm tra số tiền còn được phép ghi nhận.
+  - generic: Mã đơn thuốc*
+  - textbox "Mã đơn thuốcbắt buộc" [disabled]: d537e937-4030-43a9-95f5-cafcf33623a1
+  - button "Tra cứu nghĩa vụ hoàn tiền" [disabled]
+  - paragraph: "Trạng thái điều chỉnh: APPLIED"
+  - paragraph:
+    - text: "Nghĩa vụ theo Billing:"
+    - strong: 30.000 VND
+  - paragraph: "Giao dịch gốc: d407812c-5556-43e5-acb5-f4ce62607da9"
+  - paragraph: Chỉ ghi nhận tiền đã thực tế hoàn cho người bệnh. Thao tác này không chuyển tiền qua ngân hàng.
+  - status: "Đã ghi nhận hoàn tiền: 09efaca8-2f09-4586-b2e0-e941a7b980ff"
+  - generic: Số tiền đã hoàn*
+  - textbox "Số tiền đã hoànbắt buộc" [disabled]: "30000"
+  - generic: Lý do*
+  - textbox "Lý dobắt buộc" [disabled]: "Nghiệm thu dữ liệu giả lập: hủy đơn đã thanh toán"
+  - generic: Hình thức hoàn
+  - combobox "Hình thức hoàn" [disabled]:
+    - option "Tiền mặt" [selected]
+    - option "Chuyển khoản"
+  - checkbox "Tôi đã hoàn tiền và đối soát giao dịch gốc." [checked] [disabled]
+  - text: Tôi đã hoàn tiền và đối soát giao dịch gốc.
+  - button "Ghi nhận hoàn tiền" [disabled]
+  - paragraph: Giữ kết quả trên trang trong lúc đối soát. Để tra cứu đơn khác, quay lại Viện phí sau khi hoàn tất đối soát.

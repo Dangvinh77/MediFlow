@@ -1,0 +1,303 @@
+{
+  "recordedAt": "2026-10-20T11:24:40.7639014+07:00",
+  "base": "26bf2ef70f6429375601236b3d55d14a326b8952",
+  "note": "Full-run failures are retained honestly; final targeted reruns resolve Billing secret fixtures and the stale Support migration assertion. Do not add repeated cases or deliberately RED Core proofs to the green total. No fresh single all-green full-reactor command was run after fixture repairs.",
+  "runs": [
+    {
+      "name": "baseline-full-reactor",
+      "exitCode": 1,
+      "rawLog": "%TEMP%/mediflow-backend-docker-baseline.log",
+      "rawLogSha256": "f85fc522d8b53873f380615c9dbd76f7ca0725a842017cc285740a2396476d12",
+      "summaries": [
+        {
+          "module": "gateway",
+          "plugin": "surefire",
+          "tests": 1451,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "core-service",
+          "plugin": "surefire",
+          "tests": 187,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "clinical-service",
+          "plugin": "surefire",
+          "tests": 339,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "lab-service",
+          "plugin": "surefire",
+          "tests": 221,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "pharmacy-service",
+          "plugin": "surefire",
+          "tests": 851,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "billing-service",
+          "plugin": "surefire",
+          "tests": 1074,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "notification-service",
+          "plugin": "surefire",
+          "tests": 291,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "report-service",
+          "plugin": "surefire",
+          "tests": 1407,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "support-service",
+          "plugin": "surefire",
+          "tests": 18,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "inpatient-service",
+          "plugin": "surefire",
+          "tests": 150,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "surgery-service",
+          "plugin": "surefire",
+          "tests": 991,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "modified-full-reactor-before-fixture-reruns",
+      "exitCode": 1,
+      "rawLog": "%TEMP%/mediflow-backend-fixed-verify.log",
+      "rawLogSha256": "39960ac44aec73f54de0a532cb5e85328428aae913801dbd30e98102d56612d5",
+      "summaries": [
+        {
+          "module": "gateway",
+          "plugin": "surefire",
+          "tests": 1451,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "core-service",
+          "plugin": "surefire",
+          "tests": 187,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "clinical-service",
+          "plugin": "surefire",
+          "tests": 339,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "lab-service",
+          "plugin": "surefire",
+          "tests": 227,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "pharmacy-service",
+          "plugin": "surefire",
+          "tests": 851,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "billing-service",
+          "plugin": "surefire",
+          "tests": 1076,
+          "failures": 0,
+          "errors": 39,
+          "skipped": 0
+        },
+        {
+          "module": "notification-service",
+          "plugin": "surefire",
+          "tests": 293,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "report-service",
+          "plugin": "surefire",
+          "tests": 1407,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "support-service",
+          "plugin": "surefire",
+          "tests": 18,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "inpatient-service",
+          "plugin": "surefire",
+          "tests": 150,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "surgery-service",
+          "plugin": "surefire",
+          "tests": 991,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "billing-final-fixtures-and-recovery",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-billing-fixtures-final.log",
+      "rawLogSha256": "1af169c75e255c58013a3eab14ad62d9d1364aee7a7d197a3f2f10ab13fdc79b",
+      "summaries": [
+        {
+          "module": "billing-service",
+          "plugin": "surefire",
+          "tests": 48,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "module": "billing-service",
+          "plugin": "failsafe",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "support-final-default-suite",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-support-fixture-final.log",
+      "rawLogSha256": "fc1d300f094794a0386adb6b2cc3f5eec702b7f62d170f5183019888fd431e21",
+      "summaries": [
+        {
+          "module": "support-service",
+          "plugin": "surefire",
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "lab-final-process-recovery",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-lab-process-recovery-final.log",
+      "rawLogSha256": "3dacf0588a43ad56985fd61f1d4de609d6ebb999466a933d246e4cdc08e9fbd4",
+      "summaries": [
+        {
+          "module": "lab-service",
+          "plugin": "failsafe",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "lab-final-packaged-slice",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-lab-packaged-final.log",
+      "rawLogSha256": "c1686ac73572d9e0312afe4b3ba79876d7412efc31d44601d6c584b03129ed7a",
+      "summaries": [
+        {
+          "module": "lab-service",
+          "plugin": "failsafe",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "notification-final-receipt-identity",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-notification-receipt-final.log",
+      "rawLogSha256": "c681e47bac3550f6975e440cebb531f4453b1cde2b0507442b5b4b21b61c03fb",
+      "summaries": [
+        {
+          "module": "notification-service",
+          "plugin": "failsafe",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "name": "support-final-six-service",
+      "exitCode": 0,
+      "rawLog": "%TEMP%/mediflow-support-six-final.log",
+      "rawLogSha256": "356fac7f1f80a177746dff8a761d27bcbb14982212ac15bf2426cc7da73fe761",
+      "summaries": [
+        {
+          "module": "support-service",
+          "plugin": "failsafe",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ]
+}

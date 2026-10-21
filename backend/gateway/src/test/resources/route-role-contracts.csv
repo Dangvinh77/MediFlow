@@ -106,6 +106,8 @@ report-service,GET,/api/v1/reports/operations/daily,ADMIN|MANAGER|DOCTOR,true
 report-service,GET,/api/v1/reports/operations/surgery,ADMIN|MANAGER|DOCTOR,true
 report-service,GET,/api/v1/reports/outpatient/daily,ADMIN|MANAGER,true
 report-service,GET,/api/v1/reports/outpatient/monthly,ADMIN|MANAGER,true
+report-service,GET,/api/v1/reports/outpatient/coverage/preview,ADMIN,true
+report-service,POST,/api/v1/reports/outpatient/coverage/acceptances,ADMIN,true
 report-service,GET,/api/v1/reports/financial/capabilities,ADMIN,true
 report-service,GET,/api/v1/reports/financial/coverage,ADMIN|MANAGER,true
 report-service,GET,/api/v1/reports/daily,ADMIN|MANAGER,true

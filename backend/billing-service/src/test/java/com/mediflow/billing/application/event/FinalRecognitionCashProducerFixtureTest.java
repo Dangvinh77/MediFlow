@@ -38,6 +38,8 @@ class FinalRecognitionCashProducerFixtureTest {
         var original=PaymentTransaction.restore(id(11),id(1),id(31),PaymentTransactionType.PAYMENT,PaymentClassification.ADMISSION_DEPOSIT,
                 PaymentTransactionStatus.COMPLETED,new BigDecimal("120.00"),"VND","CASH",null,"final-deposit",null,at,at);
         when(refunds.lockOriginal(id(11))).thenReturn(new LedgerRefundRepositoryPort.RefundContext(account,original,BigDecimal.ZERO));
+        when(refunds.outpatientRefundEligibility(id(11))).thenReturn(
+                new LedgerRefundRepositoryPort.OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO));
         new LedgerRefundService(payments,refunds,events,paymentMapper,Clock.fixed(Instant.parse(returned.get("occurredAt").asText()),ZoneOffset.UTC))
                 .refund(id(11),new RefundLedgerPaymentRequest("unused-20",new BigDecimal("20.00"),"Private audit",PaymentMethod.CASH),id(21),"final-recognition-cash-fixture");
         verify(events).appendHeld(eq(id(1)),captured.capture());compare(captured.getValue(),returned,"refundTransactionId");

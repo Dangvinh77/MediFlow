@@ -44,8 +44,8 @@ class ChangeStaffDepartmentServiceTest {
                 null, null, "0901234567", "alex@example.com");
         Department department = Department.create(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
-        when(staffRepository.findById(staffId)).thenReturn(Optional.of(staff));
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(staffRepository.findByIdForUpdate(staffId)).thenReturn(Optional.of(staff));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
 
         ChangeStaffDepartmentService service = new ChangeStaffDepartmentService(
                 staffRepository, departmentRepository, eventPublisher);
@@ -68,9 +68,9 @@ class ChangeStaffDepartmentServiceTest {
                 newDepartmentId, "Surgery", "SUR", DepartmentType.CLINICAL, "Building B");
         Department oldDepartment = Department.create(
                 oldDepartmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
-        when(staffRepository.findById(staffId)).thenReturn(Optional.of(staff));
-        when(departmentRepository.findById(newDepartmentId)).thenReturn(Optional.of(department));
-        when(departmentRepository.findById(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
+        when(staffRepository.findByIdForUpdate(staffId)).thenReturn(Optional.of(staff));
+        when(departmentRepository.findByIdForUpdate(newDepartmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
         when(staffRepository.save(any(Staff.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -94,9 +94,9 @@ class ChangeStaffDepartmentServiceTest {
         oldDepartment.changeHead(doctor);
         Department newDepartment = Department.create(
                 newDepartmentId, "Surgery", "SUR", DepartmentType.CLINICAL, "Building B");
-        when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
-        when(departmentRepository.findById(newDepartmentId)).thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.findById(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
+        when(staffRepository.findByIdForUpdate(staffId)).thenReturn(Optional.of(doctor));
+        when(departmentRepository.findByIdForUpdate(newDepartmentId)).thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.findByIdForUpdate(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
 
         ChangeStaffDepartmentService service = new ChangeStaffDepartmentService(
                 staffRepository, departmentRepository, eventPublisher);

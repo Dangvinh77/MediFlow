@@ -66,6 +66,11 @@ class SixServiceOutpatientAcceptanceIT {
 
     private Map<String, String> supportEnvironment(String eureka) {
         var env = new java.util.HashMap<>(singleStore("report", eureka));
+        if (reportCalendarAcceptance()) {
+            env.put("MEDIFLOW_FE_REPORT_TIME_FILE", work.resolve("report-test-clock.txt").toAbsolutePath().toString());
+            env.put("MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED", "true");
+        }
+        env.put("MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED", Boolean.toString(refundPublicationAcceptance()));
         for (String context : List.of("REPORT", "NOTIFICATION")) {
             env.put("MEDIFLOW_" + context + "_DB_URL", databaseUrl("mediflow_" + context.toLowerCase(Locale.ROOT)));
             env.put("MEDIFLOW_" + context + "_DB_USER", POSTGRES.getUsername());
@@ -208,10 +213,12 @@ class SixServiceOutpatientAcceptanceIT {
     }
 
     private HttpResponse<String> createRx(String gateway, String token, String key, String body) throws Exception {
-        return HTTP.send(HttpRequest.newBuilder(URI.create(gateway + "/api/v1/pharmacy/prescriptions"))
+        var response = HTTP.send(HttpRequest.newBuilder(URI.create(gateway + "/api/v1/pharmacy/prescriptions"))
                 .timeout(Duration.ofSeconds(30)).header("Authorization", "Bearer " + token)
                 .header("X-Correlation-Id", UUID.randomUUID().toString()).header("Content-Type", "application/json")
                 .header("Idempotency-Key", key).POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        retainPublicReceipt("POST", "/api/v1/pharmacy/prescriptions", response);
+        return response;
     }
 
     private String scopedToken(String role, String type, UUID patient) {
@@ -250,6 +257,10 @@ class SixServiceOutpatientAcceptanceIT {
         Path eurekaJar = requiredJar("eureka-server");
         Path billingJar = requiredJar("billing");
         Files.createDirectories(work);
+        if (reportCalendarAcceptance()) {
+            Files.deleteIfExists(work.resolve("report-test-clock.txt"));
+            Files.deleteIfExists(work.resolve("report-calendar-test-only.jar"));
+        }
         createDatabases();
 
         int eurekaPort = freePort();
@@ -258,6 +269,7 @@ class SixServiceOutpatientAcceptanceIT {
         int gatewayPort = freePort();
         int billingPort = freePort();
         int pharmacyPort = freePort(), supportPort = freePort(), labPort = freePort();
+        boolean frontendAcceptance = "true".equals(System.getenv("MEDIFLOW_FE_ACCEPTANCE_HOLD"));
         String eurekaUrl = "http://127.0.0.1:" + eurekaPort + "/eureka/";
         String organizationUrl = databaseUrl("mediflow_organization");
         String patientUrl = databaseUrl("mediflow_patient");
@@ -314,6 +326,9 @@ class SixServiceOutpatientAcceptanceIT {
                           OUTPATIENT_EXAM:
                             description: Outpatient exam acceptance
                             unit-amount: 100000.00
+                          LAB:
+                            description: Isolated frontend Lab acceptance
+                            unit-amount: 150000.00
                     """);
             processes.add(start("billing", billingJar, billingPort, Map.ofEntries(
                     Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
@@ -331,8 +346,12 @@ class SixServiceOutpatientAcceptanceIT {
                     "--mediflow.billing.refunds.enabled=true",
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
+                    "--mediflow.billing.lab-test-charge-consumer.enabled=" + frontendAcceptance,
                     "--mediflow.billing.outpatient-publication.enabled=true",
-                    "--mediflow.billing.outpatient-publication.purposes=EXAM,PRESCRIPTION",
+                    "--mediflow.billing.outpatient-refund-publication.enabled=" + refundPublicationAcceptance(),
+                    "--mediflow.billing.outpatient-refund-publication.acceptance-reference=Huy-isolated-refund-acceptance",
+                    "--mediflow.billing.outpatient-publication.purposes="
+                            + (frontendAcceptance ? "EXAM,LAB_TEST,PRESCRIPTION" : "EXAM,PRESCRIPTION"),
                     "--mediflow.billing.prescription-charge-consumer.enabled=true",
                     "--mediflow.billing.prescription-charges.allowed-price-codes=DRUG",
                     "--mediflow.billing.clearance-lookup.enabled=true",
@@ -342,10 +361,14 @@ class SixServiceOutpatientAcceptanceIT {
 
             processes.add(startPharmacy(pharmacyPort, billingPort, eurekaUrl));
             processes.add(start("lab", requiredJar("lab"), labPort, singleStore("lab", eurekaUrl),
-                    "--mediflow.features.outpatient-mvp.enabled=true"));
+                    "--mediflow.features.outpatient-mvp.enabled=true",
+                    "--mediflow.features.care-finance-v2=" + frontendAcceptance,
+                    "--mediflow.lab.clinical-context.enabled=" + frontendAcceptance,
+                    "--mediflow.lab.clinical.base-url=http://127.0.0.1:" + clinicalPort));
             processes.add(start("support", requiredJar("support"), supportPort, supportEnvironment(eurekaUrl),
                     "--mediflow.features.care-finance-v2=true", "--mediflow.report.outpatient-consumer.enabled=true",
                     "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
+                    "--mediflow.notification.refund-consumer.enabled=" + refundPublicationAcceptance(),
                     "--mediflow.notification.outpatient-prescription-consumer.enabled=true"));
             awaitHealthy(pharmacyPort, "pharmacy"); awaitRegistered(eurekaPort, "PHARMACY-SERVICE", "pharmacy");
             awaitHealthy(labPort, "lab"); awaitRegistered(eurekaPort, "LAB-SERVICE", "lab");
@@ -476,10 +499,18 @@ class SixServiceOutpatientAcceptanceIT {
             assertThat(payload.path("accountId").asText()).isEqualTo(payment.path("accountId").asText());
             assertThat(data(get(gateway, "/api/v1/appointments/" + appointmentId, nurseToken))
                     .path("examClearanceId").asText()).isEqualTo(payload.path("clearanceId").asText());
+            if ("true".equals(System.getenv("MEDIFLOW_FE_ACCEPTANCE_HOLD"))) {
+                holdForFrontendAcceptance(gateway, setupAdmin, unique, departmentId, doctorId, patientId,
+                        appointmentId, doctorToken, supportPort, eurekaUrl, processes);
+                return;
+            }
             exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken,
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
             exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken,
                     patientId, doctorId, departmentId, appointmentId, recordId);
+            if (reportCalendarAcceptance()) {
+                exerciseAcceptedReport(gateway, setupAdmin, doctorToken, departmentId, unique);
+            }
             Path evidence = Path.of("target", "six-service-paid-exam-evidence.json");
             Files.createDirectories(evidence.getParent());
             Files.writeString(evidence, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(Map.of(
@@ -502,6 +533,164 @@ class SixServiceOutpatientAcceptanceIT {
                 throw cleanupFailure;
             }
         }
+    }
+
+    /** Opt-in, disposable browser environment; normal CI acceptance still runs unchanged. */
+    private void holdForFrontendAcceptance(String gateway, String bootstrap, String unique, UUID department,
+            UUID doctor, UUID patient, UUID appointment, String doctorToken, int supportPort,
+            String eureka, List<Process> processes) throws Exception {
+        UUID adminStaff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "admin");
+        UUID pharmacistStaff = createStaff(gateway, bootstrap, department, unique, "PHARMACIST", "pharmacist");
+        createAccount(gateway, bootstrap, "admin-" + unique, "ADMIN", adminStaff);
+        createAccount(gateway, bootstrap, "pharmacist-" + unique, "PHARMACIST", pharmacistStaff);
+        // All acceptance commands after bootstrap use actual issuer logins, including ADMIN.
+        String admin = login(gateway, "admin-" + unique);
+        String pharmacist = login(gateway, "pharmacist-" + unique);
+        String otherDoctor = login(gateway, "other-doctor-" + unique);
+        JsonNode records = data(get(gateway, "/api/v1/records/patient/" + patient, doctorToken));
+        var matching = new ArrayList<JsonNode>();
+        records.forEach(record -> { if (record.path("appointmentId").asText().equals(appointment.toString())) matching.add(record); });
+        assertThat(matching).hasSize(1);
+        JsonNode record = matching.get(0);
+        assertThat(record.path("doctorId").asText()).isEqualTo(doctor.toString());
+        // This genuine test Lab order exposes an explicit episode through a public DTO.
+        // Do not infer careEpisodeId from appointmentId or call service-only lookup as a human.
+        JsonNode source = data(post(gateway, "/api/v1/records/" + record.path("recordId").asText() + "/lab-orders",
+                doctorToken, "labType", "CBC", "requestedDate", LocalDate.now().toString(), "priceCode", "LAB"));
+        assertThat(source.path("recordId")).isEqualTo(record.path("recordId"));
+        assertThat(source.path("careEpisodeType").asText()).isEqualTo("OUTPATIENT_VISIT");
+        JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
+                "drugName", "FE acceptance " + unique, "unit", "tablet", "price", 10000,
+                "stockQuantity", 40, "expiryDate", LocalDate.now().plusYears(1).toString(), "lowStockThreshold", 0));
+        var body = object("recordId", record.path("recordId").asText(), "patientId", patient, "doctorId", doctor,
+                "departmentId", department, "prescribedDate", LocalDate.now().toString(),
+                "lines", List.of(Map.of("drugId", drug.path("drugId").asText(), "quantity", 3, "dosage", "Acceptance only")),
+                "careContractVersion", 1, "careContext", "OUTPATIENT", "careEpisodeType", "OUTPATIENT_VISIT",
+                "careEpisodeId", source.path("careEpisodeId").asText(), "priceCode", "DRUG");
+        String json = JSON.writeValueAsString(body), key = UUID.randomUUID().toString();
+        var checks = new ArrayList<Map<String, Object>>();
+        recordCheck(checks, "foreign-doctor-create", createRx(gateway, otherDoctor, key, json), 403);
+        JsonNode cancelledRx = data(createRx(gateway, doctorToken, key, json));
+        String cancel = "/api/v1/pharmacy/prescriptions/" + cancelledRx.path("prescriptionId").asText() + "/cancel";
+        String reason = JSON.writeValueAsString(Map.of("reason", "Isolated FE acceptance cancellation"));
+        recordCheck(checks, "foreign-doctor-cancel", request(gateway, "PUT", cancel, otherDoctor, reason), 403);
+        recordCheck(checks, "pharmacist-cancel", request(gateway, "PUT", cancel, pharmacist, reason), 403);
+        var result = request(gateway, "PUT", cancel, doctorToken, reason);
+        recordCheck(checks, "assigned-doctor-cancel", result, 200);
+        assertThat(data(result).path("releasedReservations").asInt()).isEqualTo(1);
+        var manifest = object("gateway", gateway, "createdAt", Instant.now(), "unique", unique,
+                "accounts", Map.of("ADMIN", "admin-" + unique, "DOCTOR", "doctor-" + unique,
+                        "OTHER_DOCTOR", "other-doctor-" + unique, "PHARMACIST", "pharmacist-" + unique,
+                        "CASHIER", "cashier-" + unique, "NURSE", "nurse-" + unique),
+                "sourceRecord", record, "sourceOrder", source, "drug", drug, "prescriptionRequest", body,
+                "cancelledPrescriptionId", cancelledRx.path("prescriptionId").asText(), "roleChecks", checks,
+                "pricePolicy", "mediflow.billing.prescription-charges.allowed-price-codes=DRUG");
+        Path manifestPath = work.resolve("fe-browser-manifest.json");
+        Path commandPath = work.resolve("fe-browser-command.json");
+        Path resultPath = work.resolve("fe-browser-result.json");
+        Files.deleteIfExists(commandPath);
+        Files.deleteIfExists(resultPath);
+        Files.writeString(manifestPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(manifest));
+        long deadline = System.nanoTime() + Duration.ofMinutes(60).toNanos();
+        while (System.nanoTime() < deadline) {
+            assertProcessRunning("gateway");
+            if (Files.exists(commandPath)) {
+                JsonNode command = JSON.readTree(Files.readString(commandPath));
+                Files.delete(commandPath);
+                String action = command.path("action").asText();
+                if (action.equals("STOP")) return;
+                if (action.equals("PAUSE_SUPPORT") || action.equals("RESUME_SUPPORT")) {
+                    if (action.equals("PAUSE_SUPPORT")) stop(processByName("support"));
+                    else {
+                        assertThat(processByName("support").isAlive()).isFalse();
+                        processes.add(start("support", requiredJar("support"), supportPort, supportEnvironment(eureka),
+                                "--mediflow.features.care-finance-v2=true", "--mediflow.report.outpatient-consumer.enabled=true",
+                                "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
+                                "--mediflow.notification.outpatient-prescription-consumer.enabled=true"));
+                        awaitHealthy(supportPort, "support");
+                    }
+                    Files.writeString(resultPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                            object("action", action, "checkedAt", Instant.now(), "supportRunning", processByName("support").isAlive())));
+                    continue;
+                }
+                UUID rx = UUID.fromString(command.path("prescriptionId").asText());
+                String rxPath = "/api/v1/pharmacy/prescriptions/" + rx;
+                String freshAdmin = login(gateway, "admin-" + unique);
+                String freshPharmacist = login(gateway, "pharmacist-" + unique);
+                var evidence = new ArrayList<Map<String, Object>>();
+                if (action.equals("PAY")) {
+                    recordCheck(evidence, "doctor-dispense-denied", request(gateway, "PUT", rxPath + "/dispense",
+                            login(gateway, "doctor-" + unique), null), 403);
+                    recordCheck(evidence, "unpaid-pharmacist-dispense", request(gateway, "PUT", rxPath + "/dispense",
+                            freshPharmacist, null), 422);
+                    String cashier = login(gateway, "cashier-" + unique);
+                    String discovery = "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=" + rx
+                            + "&patientId=" + patient + "&careEpisodeId=" + source.path("careEpisodeId").asText();
+                    JsonNode[] found = new JsonNode[1];
+                    await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> found[0] = data(request(gateway, "GET", discovery, cashier, null)));
+                    JsonNode paymentRequest = found[0];
+                    String paymentPath = "/api/v1/billing/payment-requests/" + paymentRequest.path("paymentRequestId").asText() + "/payments";
+                    String paymentBody = JSON.writeValueAsString(Map.of("idempotencyKey", "fe-paid-" + rx,
+                            "amount", paymentRequest.path("remainingAmount").decimalValue(), "currency", "VND", "paymentMethod", "CASH"));
+                    recordCheck(evidence, "actual-cashier-payment", request(gateway, "POST", paymentPath, cashier, paymentBody), 200);
+                    recordCheck(evidence, "duplicate-payment", request(gateway, "POST", paymentPath, cashier, paymentBody), 200);
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(data(request(gateway, "GET", rxPath, freshPharmacist, null))
+                            .path("paymentConfirmed").asBoolean()).isTrue());
+                    recordCheck(evidence, "paid-still-not-dispensed", request(gateway, "GET", rxPath, freshPharmacist, null), 200);
+                    assertThat(data(request(gateway, "GET", rxPath, freshPharmacist, null)).path("dispenseStatus").asText()).isEqualTo("PENDING");
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(40);
+                } else if (action.equals("VERIFY_DISPENSE")) {
+                    recordCheck(evidence, "terminal-dispense-retry", request(gateway, "PUT", rxPath + "/dispense", freshPharmacist, null), 200);
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM dispense_slip WHERE prescription_id=?", rx)).isOne();
+                    recordCheck(evidence, "final-drug-stock", request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null), 200);
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(37);
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", rx)).isOne();
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(count(store("clinical"),
+                            "SELECT count(*) FROM attached_result WHERE record_id=? AND type='PRESCRIPTION' AND reference_id=?",
+                            UUID.fromString(record.path("recordId").asText()), rx)).isOne());
+                    String bytes = store("pharmacy").queryForObject(
+                            "SELECT payload FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", String.class, rx);
+                    UUID eventId = store("pharmacy").queryForObject(
+                            "SELECT event_id FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", UUID.class, rx);
+                    String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                            .digest(bytes.getBytes(StandardCharsets.UTF_8)));
+                    Files.writeString(work.resolve("fe-replay-origin.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                            object("eventId", eventId, "prescriptionId", rx, "routingKey", "prescription.filled", "payloadSha256", hash)));
+                } else if (action.equals("VERIFY_REPLAY")) {
+                    JsonNode origin = JSON.readTree(Files.readString(work.resolve("fe-replay-origin.json")));
+                    UUID eventId = UUID.fromString(origin.path("eventId").asText());
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(count(store("pharmacy"),
+                            "SELECT count(*) FROM pharmacy_event_outbox WHERE event_id=? AND published_at IS NOT NULL", eventId)).isOne());
+                    String bytes = store("pharmacy").queryForObject("SELECT payload FROM pharmacy_event_outbox WHERE event_id=?", String.class, eventId);
+                    assertThat(java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                            .digest(bytes.getBytes(StandardCharsets.UTF_8)))).isEqualTo(origin.path("payloadSha256").asText());
+                    assertThat(count(store("clinical"), "SELECT count(*) FROM attached_result WHERE record_id=? AND type='PRESCRIPTION' AND reference_id=?",
+                            UUID.fromString(record.path("recordId").asText()), rx)).isOne();
+                    assertThat(count(store("report"), "SELECT count(*) FROM operational_event_journal WHERE event_id=?", eventId)).isOne();
+                    assertThat(count(store("notification"), "SELECT count(*) FROM notification WHERE source_id=? AND template_key='OUTPATIENT_PRESCRIPTION_FILLED'", rx)).isOne();
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM dispense_slip WHERE prescription_id=? AND status='DISPENSED'", rx)).isOne();
+                    recordCheck(evidence, "after-replay-stock", request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null), 200);
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(37);
+                    evidence.add(object("scenario", "replay-effects", "eventId", eventId, "payloadSha256", origin.path("payloadSha256").asText(),
+                            "clinicalAttachments", 1, "reportJournalEntries", 1, "notifications", 1, "dispenseSlips", 1, "stock", 37));
+                } else throw new IllegalArgumentException("Unknown FE acceptance action");
+                Files.writeString(resultPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object(
+                        "action", action, "prescriptionId", rx, "checkedAt", Instant.now(), "checks", evidence)));
+            }
+            Thread.sleep(500);
+        }
+        throw new AssertionError("FE browser acceptance timed out; disposable processes will be stopped");
+    }
+
+    private void recordCheck(List<Map<String, Object>> checks, String scenario, HttpResponse<String> response, int expected)
+            throws IOException {
+        assertThat(response.statusCode()).as(scenario + ": " + response.body()).isEqualTo(expected);
+        JsonNode body = JSON.readTree(response.body());
+        checks.add(object("scenario", scenario, "httpStatus", response.statusCode(),
+                "correlationId", body.path("correlationId").asText(), "response", body));
     }
 
     private void assertExamRollbackAndConcurrentStart(String gateway, UUID appointment, String doctor,
@@ -651,14 +840,169 @@ class SixServiceOutpatientAcceptanceIT {
                 .isEqualByComparingTo("30000.00");
         assertThat(count(store("billing"), """
                 SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'
-                  AND payload::jsonb->'payload'->>'originalTransactionId'=? AND NOT publication_enabled
-                """, original.toString())).isEqualTo(2);
+                  AND payload::jsonb->'payload'->>'originalTransactionId'=? AND publication_enabled=?
+                """, original.toString(), refundPublicationAcceptance())).isEqualTo(2);
+        if (refundPublicationAcceptance()) {
+            await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+                assertThat(count(store("billing"), """
+                        SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'
+                          AND payload::jsonb->'payload'->>'originalTransactionId'=?
+                          AND publication_enabled AND published_at IS NOT NULL
+                        """, original.toString())).isEqualTo(2);
+                assertThat(count(store("notification"), """
+                        SELECT count(*) FROM notification WHERE template_key='PAYMENT_REFUNDED' AND source_id IN (?,?)
+                        """, refundId, UUID.fromString(last.path("refundTransactionId").asText()))).isEqualTo(2);
+                assertThat(count(store("report"), """
+                        SELECT count(*) FROM report_cash_refund WHERE original_transaction_id=? AND state='APPLIED'
+                        """, original)).isEqualTo(2);
+            });
+        }
         assertThat(store("pharmacy").queryForObject("SELECT stock_quantity FROM drug WHERE drug_id=?", Integer.class, drugId)).isEqualTo(20);
         assertThat(request(gateway, "PUT", "/api/v1/pharmacy/prescriptions/" + rx + "/dispense", admin, null).statusCode()).isEqualTo(422);
         Files.writeString(work.resolve("gateway-refund-evidence.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
                 Map.of("prescriptionId", rx, "originalPayment", payment, "firstRefund", refund, "finalRefund", last,
                         "raceStatuses", List.of(201, 422), "signedActorVerified", true, "correlationId", correlation,
                         "remainingObligations", 0, "stock", 20)));
+    }
+
+    private static boolean refundPublicationAcceptance() {
+        return "true".equalsIgnoreCase(System.getenv("MEDIFLOW_FE_REFUND_ACCEPTANCE"));
+    }
+
+    private static boolean reportCalendarAcceptance() {
+        return "true".equalsIgnoreCase(System.getenv("MEDIFLOW_FE_REPORT_CALENDAR_ACCEPTANCE"));
+    }
+
+    private final List<Map<String,Object>> publicReceipts = java.util.Collections.synchronizedList(new ArrayList<>());
+
+    private void retainPublicReceipt(String method, String path, HttpResponse<String> response) throws IOException {
+        if (!reportCalendarAcceptance() || response.statusCode() < 200 || response.statusCode() >= 300) return;
+        String source = path.startsWith("/api/v1/billing/")
+                ? (path.contains("/refund") ? "BILLING_REFUND" : "BILLING_CASH")
+                : path.startsWith("/api/v1/pharmacy/") ? "PHARMACY"
+                : path.startsWith("/api/v1/appointments") || path.startsWith("/api/v1/records") ? "CLINICAL"
+                : path.startsWith("/api/v1/lab/") ? "LAB" : null;
+        if (source != null) publicReceipts.add(object("source", source, "method", method, "path", path,
+                "status", response.statusCode(), "recordedAt", Instant.now().toString(),
+                "response", JSON.readTree(response.body())));
+    }
+
+    /** Finite fresh-container scenario, not production source completeness or historical cutover. */
+    private void exerciseAcceptedReport(String gateway, String bootstrap, String doctor,
+            UUID department, String unique) throws Exception {
+        assertThat(refundPublicationAcceptance()).as("calendar acceptance needs real refund delivery").isTrue();
+        LocalDate day = LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
+        int year = day.getYear();
+        UUID staff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-admin");
+        UUID managerStaff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-manager");
+        String adminName = "report-admin-" + unique, managerName = "report-manager-" + unique;
+        createAccount(gateway, bootstrap, adminName, "ADMIN", staff);
+        createAccount(gateway, bootstrap, managerName, "MANAGER", managerStaff);
+        String admin = login(gateway, adminName), manager = login(gateway, managerName);
+        String scope = "&departmentId=" + department;
+        String daily = "/api/v1/reports/outpatient/daily?fromDate=" + day + "&toDate=" + day + scope;
+        String monthly = "/api/v1/reports/outpatient/monthly?year=" + year + scope;
+        var checks = new ArrayList<Map<String,Object>>();
+        recordCheck(checks, "missing-coverage-before-approval", request(gateway,"GET",daily,admin,null),404);
+        String previewPath = "/api/v1/reports/outpatient/coverage/preview?fromDate=" + year
+                + "-01-01&toDate=" + year + "-12-31" + scope;
+        JsonNode[] snapshot = new JsonNode[1];
+        var expectedRows = Map.of("CLINICAL",0,"LAB",0,"PHARMACY",2,"BILLING_CASH",3,"BILLING_REFUND",2);
+        await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+            snapshot[0] = data(request(gateway,"GET",previewPath,admin,null));
+            assertThat(snapshot[0].path("pendingOrInvalid").asBoolean()).isFalse();
+            expectedRows.forEach((source,count) -> assertThat(snapshot[0].path("sources").path(source)
+                    .path("rowCount").asInt()).as(source).isEqualTo(count));
+        });
+        // Freeze all source writers. Only Core identity, Gateway and Support remain for browser reads.
+        for (String source : List.of("clinical","lab","pharmacy","billing")) stop(processByName(source));
+        List<Map<String,Object>> receipts;
+        synchronized (publicReceipts) { receipts = List.copyOf(publicReceipts); }
+        var payments = new java.util.TreeMap<String,JsonNode>();
+        var refunds = new java.util.TreeMap<String,JsonNode>();
+        for (var receipt : receipts) {
+            JsonNode value = ((JsonNode)receipt.get("response")).path("data");
+            if (receipt.get("method").equals("POST") && ((String)receipt.get("path")).endsWith("/payments")
+                    && value.hasNonNull("transactionId")) payments.put(value.path("transactionId").asText(),value);
+            if (receipt.get("method").equals("POST") && ((String)receipt.get("path")).endsWith("/refunds")
+                    && value.hasNonNull("refundTransactionId")) refunds.put(value.path("refundTransactionId").asText(),value);
+        }
+        assertThat(payments).hasSize(3); assertThat(refunds).hasSize(2);
+        var cash = payments.values().stream().map(v -> v.path("amount").decimalValue())
+                .reduce(java.math.BigDecimal.ZERO,java.math.BigDecimal::add);
+        var refundTotal = refunds.values().stream().map(v -> v.path("amount").decimalValue())
+                .reduce(java.math.BigDecimal.ZERO,java.math.BigDecimal::add);
+        assertThat(cash).isEqualByComparingTo("160000.00");
+        assertThat(refundTotal).isEqualByComparingTo("30000.00");
+        Path exports = work.resolve("report-source-exports"); Files.createDirectories(exports);
+        var proofs = new java.util.TreeMap<String,Object>();
+        for (String source : expectedRows.keySet()) {
+            Path file = exports.resolve(source + ".json");
+            String bytes = JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object(
+                    "provenance", "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+                    "scope", department, "fromDate", year + "-01-01", "toDate", year + "-12-31",
+                    "source", source, "zoneId", "Asia/Bangkok", "currency", "VND",
+                    "allWritersStopped", true, "wallTimeSealedAt", Instant.now().toString(),
+                    "completedOperationEvidenceRows", expectedRows.get(source),
+                    "receipts", receipts.stream().filter(r -> source.equals(r.get("source"))).toList()));
+            Files.writeString(file,bytes);
+            String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(bytes.getBytes(StandardCharsets.UTF_8)));
+            proofs.put(source,object("reference","ISOLATED_CALENDAR_TEST:" + unique + "/" + source + ".json",
+                    "exportSha256",hash,"rowCount",expectedRows.get(source),
+                    "localFingerprint",snapshot[0].path("sources").path(source).path("fingerprint").asText()));
+        }
+        // Advance only an injected test Clock; production uses the original system clock and guards.
+        Instant calendarEnd = LocalDate.of(year+1,1,2).atStartOfDay(java.time.ZoneId.of("Asia/Bangkok")).toInstant();
+        Files.writeString(work.resolve("report-test-clock.txt"),calendarEnd.toString());
+        var approval = object("requestId",UUID.randomUUID(),"fromDate",year+"-01-01","toDate",year+"-12-31",
+                "departmentId",department,"zoneId","Asia/Bangkok","currency","VND","sources",proofs,
+                "sourceObservedAt",calendarEnd,"reconciledAt",calendarEnd,
+                "acceptanceReference","ISOLATED_CALENDAR_TEST:"+unique+":sealed-public-receipts",
+                "expectedFingerprint",snapshot[0].path("fingerprint").asText());
+        String approvalBytes = JSON.writeValueAsString(approval);
+        String approvalPath = "/api/v1/reports/outpatient/coverage/acceptances";
+        recordCheck(checks,"manager-cannot-approve",request(gateway,"POST",approvalPath,manager,approvalBytes),403);
+        HttpResponse<String> accepted = request(gateway,"POST",approvalPath,admin,approvalBytes);
+        recordCheck(checks,"admin-accepts-reviewed-test-scenario",accepted,200);
+        assertThat(data(request(gateway,"POST",approvalPath,admin,approvalBytes))).isEqualTo(data(accepted));
+        for (String token : List.of(admin,manager)) {
+            HttpResponse<String> result = request(gateway,"GET",daily,token,null);
+            recordCheck(checks,"authorized-daily",result,200);
+            JsonNode period = data(result).path("periods").get(0);
+            assertReportPeriod(period,cash,refundTotal);
+            HttpResponse<String> months = request(gateway,"GET",monthly,token,null);
+            recordCheck(checks,"authorized-monthly",months,200);
+            assertThat(data(months).path("periods")).hasSize(12);
+            assertReportPeriod(data(months).path("periods").get(day.getMonthValue()-1),cash,refundTotal);
+        }
+        recordCheck(checks,"doctor-daily-denied",request(gateway,"GET",daily,doctor,null),403);
+        recordCheck(checks,"doctor-monthly-denied",request(gateway,"GET",monthly,doctor,null),403);
+        recordCheck(checks,"unapproved-scope-unavailable",request(gateway,"GET",daily.replace(scope,""),admin,null),404);
+        Files.writeString(work.resolve("report-calendar-api.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                object("scenario","ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE","wallTime",Instant.now(),
+                        "reportApplicationClock",calendarEnd,"systemAndJwtClocksUnchanged",true,
+                        "approval",approval,"checks",checks)));
+        Files.writeString(work.resolve("report-browser-manifest.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                object("gateway",gateway,"unique",unique,"ADMIN",adminName,"MANAGER",managerName,
+                        "DOCTOR","doctor-"+unique,"departmentId",department,"date",day,"year",year,
+                        "reportApplicationClock",calendarEnd,"dailyPath",daily,"monthlyPath",monthly)));
+        if ("true".equals(System.getenv("MEDIFLOW_FE_REPORT_BROWSER_HOLD"))) {
+            Path stopFile = work.resolve("report-browser-stop"); Files.deleteIfExists(stopFile);
+            long deadline = System.nanoTime()+Duration.ofMinutes(45).toNanos();
+            while (!Files.exists(stopFile) && System.nanoTime()<deadline) Thread.sleep(500);
+            assertThat(Files.exists(stopFile)).as("browser acceptance completed before timeout").isTrue();
+        }
+    }
+
+    private void assertReportPeriod(JsonNode period, java.math.BigDecimal cash, java.math.BigDecimal refunds) {
+        assertThat(period.path("completedVisits").asInt()).isZero();
+        assertThat(period.path("labTests").asInt()).isZero();
+        assertThat(period.path("dispensedPrescriptions").asInt()).isEqualTo(1);
+        assertThat(period.path("dispensedUnits").asInt()).isEqualTo(3);
+        assertThat(period.path("cashReceived").decimalValue()).isEqualByComparingTo(cash);
+        assertThat(period.path("refunds").decimalValue()).isEqualByComparingTo(refunds);
+        assertThat(period.path("netCash").decimalValue()).isEqualByComparingTo(cash.subtract(refunds));
     }
 
     private String refundBody(String key, int amount) throws IOException {
@@ -823,6 +1167,7 @@ class SixServiceOutpatientAcceptanceIT {
             try {
                 HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
                 if (!gatewayRouteUnavailable(response) || System.nanoTime() >= deadline) {
+                    retainPublicReceipt(method, path, response);
                     return response;
                 }
             } catch (ConnectException | HttpConnectTimeoutException exception) {
@@ -887,6 +1232,27 @@ class SixServiceOutpatientAcceptanceIT {
                 "--eureka.instance.ip-address=127.0.0.1",
                 "--spring.main.banner-mode=off", "--eureka.client.registry-fetch-interval-seconds=1",
                 "--eureka.instance.lease-renewal-interval-in-seconds=2", "--eureka.client.initial-instance-info-replication-interval-seconds=1"));
+        if (name.equals("support") && reportCalendarAcceptance()) {
+            Path fixtureJar = work.resolve("report-calendar-test-only.jar").toAbsolutePath();
+            if (!Files.exists(fixtureJar)) {
+                String resource = "com/mediflow/acceptance/ReportCalendarAcceptanceInitializer";
+                try (var output = new java.util.jar.JarOutputStream(Files.newOutputStream(fixtureJar))) {
+                    for (String suffix : List.of(".class", "$1.class")) {
+                        String entry = resource + suffix;
+                        output.putNextEntry(new java.util.jar.JarEntry(entry));
+                        try (var input = getClass().getClassLoader().getResourceAsStream(entry)) {
+                            if (input == null) throw new IOException("Missing test clock class " + entry);
+                            input.transferTo(output);
+                        }
+                        output.closeEntry();
+                    }
+                }
+            }
+            command.subList(2, 4).clear();
+            command.addAll(2, List.of("-Dloader.path=" + fixtureJar, "-cp", jar.toString(),
+                    "org.springframework.boot.loader.launch.PropertiesLauncher"));
+            command.add("--context.initializer.classes=com.mediflow.acceptance.ReportCalendarAcceptanceInitializer");
+        }
         if (environment.containsKey("EUREKA_DEFAULT_ZONE"))
             command.add("--eureka.client.service-url.defaultZone=" + environment.get("EUREKA_DEFAULT_ZONE"));
         command.addAll(List.of(arguments));

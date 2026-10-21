@@ -26,6 +26,7 @@ import {
   dispenseStatusPresentation,
   prescriptionStatusPresentation,
 } from "../../presentation";
+import type { PrescriptionMode } from "../../prescriptionMode";
 import type {
   CancelPrescriptionResult,
   DispenseDTO,
@@ -37,6 +38,7 @@ import { DispensePrescriptionDialog } from "./DispensePrescriptionDialog";
 
 interface PrescriptionDetailProps {
   prescriptionId: string;
+  mode: PrescriptionMode | null;
 }
 
 type DetailRequestState =
@@ -116,11 +118,11 @@ function CopyValue({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) {
-  return <PharmacySessionBoundary><PrescriptionDetailContent key={prescriptionId} prescriptionId={prescriptionId} /></PharmacySessionBoundary>;
+export function PrescriptionDetail({ prescriptionId, mode }: PrescriptionDetailProps) {
+  return <PharmacySessionBoundary><PrescriptionDetailContent key={`${prescriptionId}\u0000${mode}`} prescriptionId={prescriptionId} mode={mode} /></PharmacySessionBoundary>;
 }
 
-function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) {
+function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailProps) {
   const isCurrent = usePharmacyRequestScope("canReadPrescription");
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
@@ -290,7 +292,10 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
   const dispenseStatus = dispenseStatusPresentation[prescription.dispenseStatus];
   const showCancelSlot = canCancelPrescription(role, prescription);
   const showDispenseSlot = canDispensePrescription(role, prescription);
-  const canDispenseNow = showDispenseSlot && prescription.paymentConfirmed;
+  // The runtime selects the contract. The read DTO intentionally has no version/grant fields.
+  // V1 authorizes at the command; the legacy receipt boolean cannot block or authorize it.
+  const canDispenseNow = showDispenseSlot && (mode === "outpatient"
+    || (mode === "legacy" && prescription.paymentConfirmed));
 
   return (
     <section className="mt-6 min-w-0 space-y-6 [overflow-wrap:anywhere]">
@@ -305,9 +310,15 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
           <StatusBadge tone={dispenseStatus.tone}>{dispenseStatus.label}</StatusBadge>
-          <StatusBadge tone={prescription.paymentConfirmed ? "success" : "warning"}>
-            {prescription.paymentConfirmed ? "Đã xác nhận thanh toán" : "Chờ thanh toán"}
-          </StatusBadge>
+          {mode === "legacy" ? (
+            <StatusBadge tone={prescription.paymentConfirmed ? "success" : "warning"}>
+              {prescription.paymentConfirmed ? "Đã xác nhận thanh toán" : "Chờ thanh toán"}
+            </StatusBadge>
+          ) : (
+            <StatusBadge tone="info">
+              {mode === "outpatient" ? "Thanh toán được kiểm tra khi xuất thuốc" : "Chế độ xuất thuốc chưa sẵn sàng"}
+            </StatusBadge>
+          )}
         </div>
       </div>
 
@@ -322,9 +333,11 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
         <section className="rounded-xl border border-border bg-surface p-5">
           <h3 className="font-semibold">Thao tác đơn thuốc</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hủy đơn sẽ giải phóng số lượng đang giữ. Chỉ xuất thuốc khi thanh toán đã được xác nhận.
+            {mode === "outpatient"
+              ? "Hủy đơn sẽ giải phóng số lượng đang giữ. Khi xác nhận xuất thuốc, hệ thống kiểm tra lại quyền, thanh toán và tồn kho."
+              : "Hủy đơn sẽ giải phóng số lượng đang giữ. Chỉ xuất thuốc khi thanh toán đã được xác nhận."}
           </p>
-          {showDispenseSlot && !prescription.paymentConfirmed && (
+          {showDispenseSlot && mode === "legacy" && !prescription.paymentConfirmed && (
             <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
               Đơn đang chờ xác nhận thanh toán, nên chưa thể xuất thuốc.
             </p>

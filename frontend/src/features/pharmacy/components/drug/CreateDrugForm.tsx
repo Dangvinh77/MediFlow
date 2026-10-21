@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
+import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
@@ -60,6 +61,7 @@ function CreateDrugFormContent() {
   const [uncertain, setUncertain] = useState(false);
   const [forbidden, setForbidden] = useState(false);
   const focusField = useRef<CreateDrugField | undefined>(undefined);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const active = useRef(true);
   const capabilities = getPharmacyCapabilities(role);
   const today = getLocalTodayIso();
@@ -70,11 +72,12 @@ function CreateDrugFormContent() {
   }, []);
 
   useEffect(() => {
-    if (!submitting && focusField.current) {
+    if (submitting) return;
+    if (focusField.current && !uncertain && !forbidden) {
       document.getElementById(focusField.current)?.focus();
-      focusField.current = undefined;
-    }
-  }, [fieldErrors, submitting]);
+    } else if (formError) feedbackRef.current?.focus();
+    focusField.current = undefined;
+  }, [fieldErrors, submitting, formError, uncertain, forbidden]);
 
   function focusFirstError(errors: CreateDrugFieldErrors) {
     focusField.current = Object.keys(errors)[0] as CreateDrugField | undefined;
@@ -113,7 +116,8 @@ function CreateDrugFormContent() {
         return;
       }
 
-      if (cause instanceof ApiRequestError && cause.details.length > 0) {
+      const unknownOutcome = !(cause instanceof ApiRequestError) || hasUncertainMutationStatus(cause);
+      if (!unknownOutcome && cause instanceof ApiRequestError && cause.details.length > 0) {
         const details = mapFieldErrors(cause.details);
         const mapped: CreateDrugFieldErrors = {};
         for (const key of Object.keys(EMPTY_CREATE_DRUG_FORM) as CreateDrugField[]) {
@@ -122,7 +126,6 @@ function CreateDrugFormContent() {
         setFieldErrors(mapped);
         focusFirstError(mapped);
       }
-      const unknownOutcome = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400;
       if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
       setUncertain(unknownOutcome);
       setFormError(unknownOutcome ? `${errorMessage(cause)} Chưa xác định kết quả; hãy kiểm tra danh mục trước khi lập yêu cầu mới.` : errorMessage(cause));
@@ -154,7 +157,7 @@ function CreateDrugFormContent() {
   return (
     <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
       {formError && (
-        <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+        <div ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
           {formError}
         </div>
       )}

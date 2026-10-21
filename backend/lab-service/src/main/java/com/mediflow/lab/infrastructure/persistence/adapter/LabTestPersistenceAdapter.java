@@ -72,7 +72,8 @@ public class LabTestPersistenceAdapter implements LabTestRepositoryPort {
                 e.getTestType(), e.getRequestedDate(), e.getPerformedDate(), e.getStatus(), e.getConclusion(),
                 e.isPaid(), results, e.getCreatedAt(), e.getUpdatedAt(), e.getCareContractVersion(),
                 e.getCareEpisodeType(), e.getCareEpisodeId(), e.getSourceOrderId(), e.getPriceCode(),
-                e.getClearanceId(), e.getClearanceGrantedAt(), e.getEmergencyOverrideId(), e.getResultVersion());
+                e.getClearanceId(), e.getClearanceGrantedAt(), e.getEmergencyOverrideId(), e.getResultVersion())
+                .restoreCancellation(e.getCancelledBy(), e.getCancellationReason(), e.getCancelledAt());
     }
     private LabTestJpaEntity toEntity(LabTest t) {
         LabTestJpaEntity entity = LabTestJpaEntity.builder().testId(t.getTestId()).recordId(t.getRecordId())
@@ -83,6 +84,7 @@ public class LabTestPersistenceAdapter implements LabTestRepositoryPort {
                 .careEpisodeId(t.getCareEpisodeId()).sourceOrderId(t.getSourceOrderId()).priceCode(t.getPriceCode())
                 .clearanceId(t.getClearanceId()).clearanceGrantedAt(t.getClearanceGrantedAt())
                 .emergencyOverrideId(t.getEmergencyOverrideId()).resultVersion(t.getResultVersion())
+                .cancelledBy(t.getCancelledBy()).cancellationReason(t.getCancellationReason()).cancelledAt(t.getCancelledAt())
                 .createdAt(t.getCreatedAt()).updatedAt(t.getUpdatedAt()).build();
         List<LabResultJpaEntity> results = t.getResults().stream().map(r -> LabResultJpaEntity.builder()
                 .resultId(r.getResultId()).test(entity).indicator(r.getIndicator()).value(r.getValue())

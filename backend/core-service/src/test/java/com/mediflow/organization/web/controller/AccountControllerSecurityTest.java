@@ -1,6 +1,7 @@
 package com.mediflow.organization.web.controller;
 
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.Role;
@@ -42,8 +43,11 @@ class AccountControllerSecurityTest {
     @MockBean
     private VerifyCredentialsUseCase verifyCredentialsUseCase;
 
+    @MockBean
+    private LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
+
     @Test
-    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    @WithMockUser(username = "gateway", authorities = "ROLE_SYSTEM_SERVICE")
     void verify_systemRole_isAllowed() throws Exception {
         when(verifyCredentialsUseCase.execute("admin", "password"))
                 .thenReturn(new VerifyCredentialsUseCase.VerifiedAccount(
@@ -79,7 +83,7 @@ class AccountControllerSecurityTest {
     }
 
     @Test
-    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    @WithMockUser(username = "gateway", authorities = "ROLE_SYSTEM_SERVICE")
     void verify_invalidCredentials_returnsInternal422Contract() throws Exception {
         when(verifyCredentialsUseCase.execute("admin", "bad"))
                 .thenThrow(new InvalidCredentialsException("Invalid username or password"));

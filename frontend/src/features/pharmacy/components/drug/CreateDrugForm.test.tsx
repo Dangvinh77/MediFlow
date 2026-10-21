@@ -81,6 +81,18 @@ describe("CreateDrugForm", () => {
     expect(screen.getByLabelText("Tên thuốc", { exact: false })).toBeDisabled();
     submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
   });
+  it.each([408, 503, 200])("focuses reconciliation feedback and blocks resend after uncertain HTTP %s", async status => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Chưa có phản hồi", status, "UNKNOWN_RESULT", [{ field: "unit", message: "Chưa xác nhận đơn vị" }], "create-timeout"));
+    render(<CreateDrugForm />); validForm(); submit();
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("create-timeout"); expect(alert).toHaveTextContent("Chưa xác định kết quả");
+    expect(screen.getByLabelText("Tên thuốc", { exact: false })).toBeDisabled();
+    expect(screen.getByLabelText("Đơn vị", { exact: false })).not.toHaveAttribute("aria-invalid", "true");
+    fill("Tên thuốc", "Tên thay đổi"); expect(screen.getByLabelText("Tên thuốc", { exact: false })).toHaveValue("  Thuốc mới  ");
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "Kiểm tra danh mục thuốc" })).toHaveAttribute("href", "/pharmacy/drugs");
+  });
   it("keeps a successful command locked until navigation unmounts the form", async () => {
     mocks.create.mockResolvedValue({ drugId: "created" }); render(<CreateDrugForm />); validForm(); submit();
     await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/drugs/created"));

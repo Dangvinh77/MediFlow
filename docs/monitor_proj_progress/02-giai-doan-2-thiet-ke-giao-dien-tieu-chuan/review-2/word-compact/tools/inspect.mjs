@@ -1,0 +1,16 @@
+import fs from 'node:fs/promises';import path from 'node:path';import {fileURLToPath,pathToFileURL} from 'node:url';import {createRequire} from 'node:module';
+const toolDir=path.dirname(fileURLToPath(import.meta.url));const require=createRequire(path.join(process.env.MERMAID_RUNTIME||toolDir,'package.json'));const puppeteer=(await import(pathToFileURL(require.resolve('puppeteer')).href)).default;
+async function writeArtifact(file,data){
+ const temp=file+'.inspect-'+process.pid+'.tmp';
+ try{for(let attempt=0;;attempt++)try{await fs.writeFile(temp,data);await fs.rename(temp,file);return;}catch(e){if(attempt>=4||!['UNKNOWN','EPERM','EACCES','EBUSY'].includes(e.code))throw e;await new Promise(r=>setTimeout(r,200*(attempt+1)));}}
+ finally{await fs.rm(temp,{force:true}).catch(()=>{});}
+}
+const out=path.resolve(toolDir,'..');const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||undefined,headless:true});const page=await browser.newPage();await page.setViewport({width:1400,height:1000});const errors=[];page.on('pageerror',e=>errors.push(String(e)));await page.goto(pathToFileURL(path.join(out,'choose-diagrams.html')).href);const results=[];
+const manifest=JSON.parse(await fs.readFile(path.join(out,'layout-manifest.json'),'utf8'));const numbers=[...new Set(manifest.diagrams.map(d=>Number(d.id.split('-')[0])))].sort((a,b)=>a-b);
+for(const lang of ['vi','en'])for(const n of numbers)for(const mode of ['portrait','landscape','panels']){
+ const id=String(n).padStart(2,'0');await page.select('#lang',lang);await page.select('#figure',id);await page.select('#mode',mode);await page.evaluate(async()=>{await Promise.all([...document.querySelectorAll('.sheet img')].map(i=>i.decode()));await new Promise(r=>setTimeout(r,80));});
+ const checks=await page.$$eval('.sheet',sheets=>sheets.map(s=>{const i=s.querySelector('img'),cap=s.querySelector('.caption');const a=s.getBoundingClientRect(),b=i.getBoundingClientRect(),c=cap.getBoundingClientRect();return {src:i.getAttribute('src'),decoded:i.complete&&i.naturalWidth>0,imageContained:b.left>=a.left&&b.top>=a.top&&b.right<=a.right+1&&b.bottom<=a.bottom+1,captionContained:c.bottom<=a.bottom+1,imageArea:[b.width,b.height]};}));if(!checks.length||checks.some(c=>!c.decoded||!c.imageContained||!c.captionContained))throw Error('Clipped chooser preview '+JSON.stringify({lang,id,mode,checks}));
+ for(const check of checks)await fs.access(path.join(out,check.src));results.push({lang,id,mode,status:'pass',count:checks.length});
+}
+await page.select('#lang','vi');await page.select('#figure','01');await page.select('#mode','compare');await page.evaluate(async()=>{await Promise.all([...document.querySelectorAll('.sheet img')].map(i=>i.decode()))});await writeArtifact(path.join(out,'qa','chooser-compare.png'),await page.screenshot({fullPage:true}));
+if(errors.length)throw Error(errors.join('\n'));await browser.close();await writeArtifact(path.join(out,'chooser-validation.json'),JSON.stringify({checks:results.length,failures:0,consoleErrors:errors,results},null,2));console.log('Chooser:',results.length,'checks passed');

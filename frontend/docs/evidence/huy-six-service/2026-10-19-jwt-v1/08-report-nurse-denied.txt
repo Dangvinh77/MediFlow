@@ -1,0 +1,38 @@
+Browser tab: 3, Title: "Báo cáo | MediFlow", URL: "http://127.0.0.1:3182/reports".
+1 AXWebArea Báo cáo | MediFlow, URL: 127.0.0.1:3182/reports
+	2 container
+		3 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+			4 image
+		5 container Điều hướng nghiệp vụ
+			6 text MF
+			7 text MediFlow
+			8 text Hospital workspace
+			9 container
+				10 text NGHIỆP VỤ
+				11 content list
+					12 container
+						13 text TỔ CHỨC & BỆNH NHÂN
+						14 link Description: Tổ chức — Nhân sự & khoa, Value: 127.0.0.1:3182/organization
+					15 link Description: Bệnh nhân — Hồ sơ định danh, Value: 127.0.0.1:3182/patients
+					16 container
+						17 text KHÁM NGOẠI TRÚ
+						18 link Description: Lịch hẹn — Tiếp nhận ngoại trú, Value: 127.0.0.1:3182/appointments
+					19 link Description: Hồ sơ khám — Chẩn đoán & kết luận, Value: 127.0.0.1:3182/records
+					20 container
+						21 text XÉT NGHIỆM
+						22 link Description: Xét nghiệm — Hàng đợi & kết quả, Value: 127.0.0.1:3182/lab
+					23 container
+						24 text BÁO CÁO & THÔNG BÁO
+						25 link Description: Thông báo — Lịch sử gửi, Value: 127.0.0.1:3182/notifications
+			26 text MediFlow · Quản lý ngoại trú
+		27 text Không gian vận hành MediFlow
+		28 text Điều dưỡng
+		29 pop up button (collapsed, settable) Description: Giao diện, Value: Theo hệ thống, Secondary Actions: Expand
+			30 menu
+				31 Sáng
+				32 Tối
+				33 (selected) Theo hệ thống
+		34 button Đăng xuất
+		35 text Tài khoản hiện tại không có quyền truy cập trang này.
+
+The focused UI element is 1 AXWebArea Báo cáo | MediFlow, URL: 127.0.0.1:3182/reports

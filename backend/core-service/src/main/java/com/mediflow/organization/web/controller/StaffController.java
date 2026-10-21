@@ -18,6 +18,7 @@ import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.web.dto.request.UpdateStaffRequest;
 import com.mediflow.common.api.ApiResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +56,38 @@ public class StaffController {
         @PostMapping
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<StaffResponse>> createStaff(
-                        @Valid @RequestBody CreateStaffRequest request) {
+                        @Valid @RequestBody CreateStaffRequest request,
+                        @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+                        Authentication authentication) {
+
+                if (idempotencyKey != null) {
+                        validateIdempotencyKey(idempotencyKey);
+                        UUID actorAccountId;
+                        try {
+                                actorAccountId = UUID.fromString(authentication.getName());
+                        } catch (RuntimeException invalidPrincipal) {
+                                throw new IllegalArgumentException("Authenticated account identity is invalid");
+                        }
+                        var result = createStaffUseCase.executeWithIdempotency(
+                                        actorAccountId,
+                                        idempotencyKey,
+                                        request.fullName(),
+                                        request.departmentId(),
+                                        request.jobTitle(),
+                                        request.specialization(),
+                                        request.licenseNumber(),
+                                        request.phoneNumber(),
+                                        request.email());
+                        URI location = URI.create("/api/v1/org/staff/" + result.staff().getStaffId());
+                        return ResponseEntity.status(result.replayed()
+                                                ? org.springframework.http.HttpStatus.OK
+                                                : org.springframework.http.HttpStatus.CREATED)
+                                        .location(location)
+                                        .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
+                                        .body(ApiResponse.ok(
+                                                        StaffResponse.from(result.staff()),
+                                                        correlationIds.currentOrCreate().toString()));
+                }
 
                 Staff staff = createStaffUseCase.execute(
                                 request.fullName(),
@@ -71,6 +103,13 @@ public class StaffController {
                                 .body(ApiResponse.ok(
                                                 StaffResponse.from(staff),
                                                 correlationIds.currentOrCreate().toString()));
+        }
+
+        private void validateIdempotencyKey(String key) {
+                if (key.isBlank() || key.length() > 160
+                                || key.chars().anyMatch(character -> character < 0x20 || character == 0x7f)) {
+                        throw new IllegalArgumentException("Invalid Idempotency-Key");
+                }
         }
 
         @PutMapping("/{staffId}/department")

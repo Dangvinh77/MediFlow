@@ -70,12 +70,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 if (!isValidServiceToken(claims)) {
                     return unauthorized(exchange, "Invalid service token");
                 }
+                if ("/api/v1/org/accounts/verify".equals(path)
+                        && !"gateway".equals(claims.getSubject())) {
+                    return forbidden(exchange, "Gateway service token is required");
+                }
                 if (!isInternalOnly(path) && !Roles.SYSTEM.equals(role)) {
                     return unauthorized(exchange, "Invalid service token role");
                 }
                 return continueWithIdentity(exchange, chain, claims, Roles.SYSTEM, true);
             }
 
+            if (JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    && (claims.getExpiration() == null
+                    || !claims.getExpiration().toInstant().isAfter(java.time.Instant.now()))) {
+                return unauthorized(exchange, "Invalid or expired access token");
+            }
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
                     || isInternalOnly(path)
                     || claims.getSubject() == null

@@ -81,13 +81,14 @@ Content-Type: application/json
   "gioiTinh": "M"
 }
 
-### Cập nhật bệnh nhân (ADMIN hoặc NURSE; soCmnd không được gửi vì bất biến)
+### Cập nhật bệnh nhân (ADMIN hoặc NURSE; soCmnd tùy chọn, thiếu/null giữ nguyên; trùng trả 409)
 PUT {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "hoTen": "Nguyễn Văn A (đã đổi)",
+  "soCmnd": "079090001235",
   "ngaySinh": "1990-01-15",
   "gioiTinh": "M",
   "diaChi": "88 Võ Văn Tần, Quận 3, TP.HCM",

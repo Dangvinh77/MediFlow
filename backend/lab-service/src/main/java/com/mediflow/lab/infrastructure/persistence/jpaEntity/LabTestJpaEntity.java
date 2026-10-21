@@ -51,4 +51,7 @@ public class LabTestJpaEntity {
     private List<LabResultJpaEntity> results = new ArrayList<>();
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at") private Instant updatedAt;
+    @Column(name = "cancelled_by") private UUID cancelledBy;
+    @Column(name = "cancellation_reason", length = 1000) private String cancellationReason;
+    @Column(name = "cancelled_at") private Instant cancelledAt;
 }

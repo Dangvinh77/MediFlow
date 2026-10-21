@@ -2,7 +2,6 @@ package com.mediflow.gateway.auth;
 
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.security.JwtClaims;
-import com.mediflow.common.security.Roles;
 import com.mediflow.gateway.auth.AuthDtos.LoginRequest;
 import com.mediflow.gateway.auth.AuthDtos.LoginResponse;
 import com.mediflow.gateway.auth.AuthDtos.RefreshRequest;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.util.Set;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -30,10 +29,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-
-    private static final Set<String> HUMAN_ROLES = Set.of(
-            Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
-            Roles.CASHIER, Roles.LAB_TECH, Roles.MANAGER, Roles.PATIENT);
 
     private final JwtTokenService jwt;
     private final OrganizationAuthClient organizationAuthClient;
@@ -97,7 +92,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(
+    public Mono<ResponseEntity<Object>> refresh(
             @Valid @RequestBody RefreshRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
@@ -106,59 +101,58 @@ public class AuthController {
         String correlationId = OrganizationAuthClient.normalizeCorrelationId(
                 requestedCorrelationId);
 
+        final UUID accountId;
         try {
-            Claims claims =
-                    jwt.parse(request.refreshToken());
-
+            Claims claims = jwt.parse(request.refreshToken());
             if (!JwtClaims.REFRESH_TOKEN_TYPE.equals(
-                    claims.get(JwtClaims.TYPE, String.class))) {
-                throw new IllegalArgumentException("Not a refresh token");
+                    claims.get(JwtClaims.TYPE, String.class))
+                    || claims.getExpiration() == null
+                    || !claims.getExpiration().toInstant().isAfter(Instant.now())) {
+                throw new IllegalArgumentException("Invalid refresh token");
             }
-
-            UUID userId =
-                    UUID.fromString(claims.getSubject());
-
-            String role =
-                    claims.get(
-                            JwtClaims.ROLE,
-                            String.class);
-
-            UUID staffId = optionalUuid(claims, JwtClaims.STAFF_ID);
-            UUID departmentId = optionalUuid(claims, JwtClaims.DEPARTMENT_ID);
-            UUID patientId = optionalUuid(claims, JwtClaims.PATIENT_ID);
-            if (!isRefreshIdentityValid(role, staffId, patientId)) {
-                throw new IllegalArgumentException("Invalid refresh identity");
-            }
-
-            String accessToken =
-                    jwt.issueAccessToken(userId, role, staffId, departmentId, patientId);
-
-            return ResponseEntity.ok(
-                    new RefreshResponse(accessToken));
+            accountId = UUID.fromString(claims.getSubject());
         } catch (Exception exception) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.fail(
-                            ApiResponse.ApiError.of(
-                                    "AUTH_INVALID_REFRESH_TOKEN",
-                                    "Refresh token không hợp lệ hoặc đã hết hạn"),
-                            correlationId));
+            return Mono.just(invalidRefreshResponse(correlationId));
         }
+
+        return organizationAuthClient.lookupCurrentIdentity(accountId, correlationId)
+                .map(identity -> {
+                    if (!identity.exists() || !identity.active()) {
+                        return invalidRefreshResponse(correlationId);
+                    }
+                    if (!accountId.equals(identity.accountId())) {
+                        return errorResponse(
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                "AUTH_UPSTREAM_UNAVAILABLE",
+                                "Organization Service hiện không khả dụng",
+                                correlationId);
+                    }
+                    String accessToken = jwt.issueAccessToken(
+                            accountId,
+                            identity.role(),
+                            identity.staffId(),
+                            identity.departmentId(),
+                            identity.patientId());
+                    return ResponseEntity.ok((Object) new RefreshResponse(accessToken));
+                })
+                .onErrorResume(UpstreamTimeoutException.class, exception -> Mono.just(errorResponse(
+                        HttpStatus.GATEWAY_TIMEOUT,
+                        "AUTH_UPSTREAM_TIMEOUT",
+                        "Organization Service phản hồi quá thời gian",
+                        correlationId)))
+                .onErrorResume(UpstreamUnavailableException.class, exception -> Mono.just(errorResponse(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "AUTH_UPSTREAM_UNAVAILABLE",
+                        "Organization Service hiện không khả dụng",
+                        correlationId)));
     }
 
-    private UUID optionalUuid(Claims claims, String claimName) {
-        String value = claims.get(claimName, String.class);
-        return value == null || value.isBlank() ? null : UUID.fromString(value);
-    }
-
-    private boolean isRefreshIdentityValid(String role, UUID staffId, UUID patientId) {
-        if (role == null || !HUMAN_ROLES.contains(role)) {
-            return false;
-        }
-        if (Roles.PATIENT.equals(role)) {
-            return patientId != null && staffId == null;
-        }
-        return patientId == null;
+    private ResponseEntity<Object> invalidRefreshResponse(String correlationId) {
+        return errorResponse(
+                HttpStatus.UNAUTHORIZED,
+                "AUTH_INVALID_REFRESH_TOKEN",
+                "Refresh token không hợp lệ hoặc đã hết hạn",
+                correlationId);
     }
 
     private ResponseEntity<Object> errorResponse(

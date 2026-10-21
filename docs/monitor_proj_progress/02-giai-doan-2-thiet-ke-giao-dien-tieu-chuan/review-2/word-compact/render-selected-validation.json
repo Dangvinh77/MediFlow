@@ -1,0 +1,149 @@
+{
+  "renderer": "Mermaid CLI 11.12.0 + isolated Chromium SVG replay",
+  "results": [
+    {
+      "orientation": "portrait",
+      "file": "12-en.mmd",
+      "status": "pass",
+      "width": 997,
+      "height": 847,
+      "originalViewBox": "-16 5 996.453125 846.046875",
+      "viewBox": [
+        -16,
+        5,
+        997,
+        847
+      ],
+      "paintedBounds": [
+        8.000000413130874,
+        29.000000732983235,
+        956.4531551050108,
+        827.0468590079458
+      ],
+      "padding": 24,
+      "leafCount": 23,
+      "images": 0,
+      "pngWidth": 2400,
+      "pngHeight": 2039,
+      "estimatedTextPt": 7.3,
+      "preferred": "portrait",
+      "sourceSha256": "4cfef0392e85c8d60409b26ed3dfe204c31a8c122367880502fcd7463f4c0b83",
+      "svgSha256": "4f9430518429b3e7677799bbc55fad399fb915094f24bb6065332ebae98319d9",
+      "pngSha256": "a94ae8a29239fdccba4551749b0dbcfc41950d8b283f68072c6ef1efac9daf46",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "portrait",
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "width": 997,
+      "height": 874,
+      "originalViewBox": "-16 5 996.453125 873.046875",
+      "viewBox": [
+        -16,
+        5,
+        997,
+        874
+      ],
+      "paintedBounds": [
+        8.000000425137248,
+        29.0000003767657,
+        956.4531283896282,
+        854.0468727158515
+      ],
+      "padding": 24,
+      "leafCount": 23,
+      "images": 0,
+      "pngWidth": 2400,
+      "pngHeight": 2104,
+      "estimatedTextPt": 7.3,
+      "preferred": "portrait",
+      "sourceSha256": "99003fe6f3c7ecfa2303534b0199e6358d5f53e4d3ff19640448b0a454164994",
+      "svgSha256": "4562786670b08abeb0424a81374489f6f2420d3e0b4a851673245c9868f7c285",
+      "pngSha256": "49eb67e46d776328b57b4eb1f83ff6101b46d59a13ef82708fd5d8cce38ba717",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "landscape",
+      "file": "12-en.mmd",
+      "status": "pass",
+      "width": 1290,
+      "height": 493,
+      "originalViewBox": "-16 5 1289.21875 493",
+      "viewBox": [
+        -16,
+        5,
+        1290,
+        493
+      ],
+      "paintedBounds": [
+        8,
+        29,
+        1249.21875,
+        474
+      ],
+      "padding": 24,
+      "leafCount": 23,
+      "images": 0,
+      "pngWidth": 3600,
+      "pngHeight": 1376,
+      "estimatedTextPt": 8.7,
+      "preferred": "landscape",
+      "sourceSha256": "362da6c4dfa11b6a8fb586edd00933ced8bcf1dfced589dd04e4419617a7f686",
+      "svgSha256": "07b2127d7bcef00e332ed6fa9a1cf76f155f3a66dbdbaedf9f25c75dc40ada35",
+      "pngSha256": "7240e5ae396d8bd26f6fc89ebaf9569a8ec7c1ce8d1a10eccb2ff9f1f1da40f3",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "landscape",
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "width": 1291,
+      "height": 520,
+      "originalViewBox": "-16 5 1290.25 520",
+      "viewBox": [
+        -16,
+        5,
+        1291,
+        520
+      ],
+      "paintedBounds": [
+        8,
+        29,
+        1250.25,
+        501
+      ],
+      "padding": 24,
+      "leafCount": 23,
+      "images": 0,
+      "pngWidth": 3600,
+      "pngHeight": 1451,
+      "estimatedTextPt": 8.7,
+      "preferred": "landscape",
+      "sourceSha256": "aff491e0f48cc84fedeb974a5cfeb8594b0d7112baf02918bec68167e4138884",
+      "svgSha256": "fbafe4eed9d73f9e54bec70a7070b59fc0ac6663cfa588a91cb8b3159a863057",
+      "pngSha256": "f45968af518bcb41cbb66a561ca896c555c26ebc32228f78df7f04b0a0d3878a",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    }
+  ]
+}

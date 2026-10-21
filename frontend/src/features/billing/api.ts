@@ -1,20 +1,24 @@
 import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
+  PrescriptionAdjustmentDTO,
+  RefundLedgerPaymentRequest,
+  LedgerRefundDTO,
   CompleteLedgerPaymentRequest,
   CreateInvoiceRequest,
   InvoiceDTO,
   LedgerPaymentDTO,
-  LedgerRefundDTO,
   OutboxReplayResult,
   PaymentResultDTO,
   PayInvoiceRequest,
-  PrescriptionAdjustmentDTO,
-  RefundLedgerPaymentRequest,
+  PaymentRequestDiscoveryDTO,
+  PaymentRequestSourceQuery,
   RevenueByDeptDTO,
 } from "./types";
 
 export const billingApi = {
+  refundsDue: (prescriptionId: string) => api.get<PrescriptionAdjustmentDTO>(`/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`),
+  recordRefund: (transactionId: string, body: RefundLedgerPaymentRequest) => api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(transactionId)}/refunds`, body),
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),
   byPatient: (patientId: string, page = 0, size = 20) =>
     api.get<PageResult<InvoiceDTO>>(
@@ -25,12 +29,15 @@ export const billingApi = {
     api.put<PaymentResultDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}/pay`, body),
   completeLedgerPayment: (requestId: string, body: CompleteLedgerPaymentRequest) =>
     api.post<LedgerPaymentDTO>(`/v1/billing/payment-requests/${encodeURIComponent(requestId)}/payments`, body),
-  getPrescriptionAdjustment: (prescriptionId: string) =>
-    api.get<PrescriptionAdjustmentDTO>(
-      `/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`,
-    ),
-  refundLedgerPayment: (originalTransactionId: string, body: RefundLedgerPaymentRequest) =>
-    api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(originalTransactionId)}/refunds`, body),
+  discoverPaymentRequest: (query: PaymentRequestSourceQuery) => {
+    const params = new URLSearchParams({
+      purpose: query.purpose,
+      sourceId: query.sourceId,
+      patientId: query.patientId,
+      careEpisodeId: query.careEpisodeId,
+    });
+    return api.get<PaymentRequestDiscoveryDTO>(`/v1/billing/payment-requests/by-source?${params.toString()}`);
+  },
   revenueByDepartment: (fromDate: string, toDate: string, departmentId?: string) => {
     const params = new URLSearchParams({ fromDate, toDate });
     if (departmentId) params.set("departmentId", departmentId);

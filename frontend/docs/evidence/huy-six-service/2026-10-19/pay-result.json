@@ -1,0 +1,114 @@
+{
+  "action" : "PAY",
+  "prescriptionId" : "26161972-6b4e-433e-84a6-bc8d98d0f4c7",
+  "checkedAt" : 1792395664.709006900,
+  "checks" : [ {
+    "scenario" : "doctor-dispense-denied",
+    "httpStatus" : 403,
+    "correlationId" : "cda5318b-5ae0-4875-93f4-d4afd5fad3f9",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "AUTH_FORBIDDEN",
+        "message" : "Role is not allowed to access this route",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-19T07:41:04.099701100Z",
+      "correlationId" : "cda5318b-5ae0-4875-93f4-d4afd5fad3f9"
+    }
+  }, {
+    "scenario" : "unpaid-pharmacist-dispense",
+    "httpStatus" : 422,
+    "correlationId" : "56177eb1-e317-41c7-90f4-a80abaa6dffc",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "PHARMACY_CLEARANCE_REQUIRED",
+        "message" : "A non-expired matching V1 prescription clearance is required",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-19T07:41:04.148150600Z",
+      "correlationId" : "56177eb1-e317-41c7-90f4-a80abaa6dffc"
+    }
+  }, {
+    "scenario" : "actual-cashier-payment",
+    "httpStatus" : 200,
+    "correlationId" : "c721133d-f7c6-4590-9048-0c64c8480f75",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "a54e8d3e-f3f4-4f8d-917a-91a89c151be0",
+        "accountId" : "88aba60b-59cd-4384-808f-e34cbdcfa838",
+        "paymentRequestId" : "bdb28bf6-1462-4e84-9b25-4b4a5564071c",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 30000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-19T07:41:04.429426Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T07:41:04.455295300Z",
+      "correlationId" : "c721133d-f7c6-4590-9048-0c64c8480f75"
+    }
+  }, {
+    "scenario" : "duplicate-payment",
+    "httpStatus" : 200,
+    "correlationId" : "ea3528db-cc08-44f0-b4d4-341ff9cb1c59",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "a54e8d3e-f3f4-4f8d-917a-91a89c151be0",
+        "accountId" : "88aba60b-59cd-4384-808f-e34cbdcfa838",
+        "paymentRequestId" : "bdb28bf6-1462-4e84-9b25-4b4a5564071c",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 30000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-19T07:41:04.429426Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T07:41:04.480723300Z",
+      "correlationId" : "ea3528db-cc08-44f0-b4d4-341ff9cb1c59"
+    }
+  }, {
+    "scenario" : "paid-still-not-dispensed",
+    "httpStatus" : 200,
+    "correlationId" : "7f889a25-48ef-47b6-9189-7faec02925e1",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "26161972-6b4e-433e-84a6-bc8d98d0f4c7",
+        "recordId" : "7575868e-0f69-4bf6-a648-f2266627f58d",
+        "patientId" : "e714af93-bb07-4e11-9c63-f09929cec827",
+        "doctorId" : "1a9f1809-9df0-430b-aaa0-eba17e70f7f7",
+        "departmentId" : "039cb367-0f31-45bc-acc2-15da3a12e4d3",
+        "prescribedDate" : "2026-10-19",
+        "totalAmount" : 30000.0,
+        "lines" : [ {
+          "lineId" : "6c9f4dae-ae4a-4ef6-80a9-efe7f727b306",
+          "drugId" : "c44a66e5-5a86-420d-9c27-ad26f8441c80",
+          "drugName" : "FE acceptance 63684242eda5",
+          "quantity" : 3,
+          "unitPrice" : 10000.0,
+          "dosage" : "Acceptance only",
+          "lineTotal" : 30000.0
+        } ],
+        "status" : "ACTIVE",
+        "dispenseStatus" : "PENDING",
+        "paymentConfirmed" : true,
+        "cancelledAt" : null,
+        "cancelledBy" : null,
+        "cancellationReason" : null,
+        "createdAt" : "2026-10-19T07:40:18.486986Z",
+        "updatedAt" : "2026-10-19T07:40:18.486986Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T07:41:04.659622200Z",
+      "correlationId" : "7f889a25-48ef-47b6-9189-7faec02925e1"
+    }
+  } ]
+}

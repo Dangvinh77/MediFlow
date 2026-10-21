@@ -70,6 +70,27 @@ Clearance khớp purpose và target, không là patient-wide paid flag. Duplicat
 không tạo thêm payment/charge/grant. Refund/reversal V1 là record mới liên kết payment gốc,
 không sửa lịch sử để balance về zero. Không tự tích hợp bank/card provider ngoài.
 
+Chính sách hoàn phí được chốt ngày 2026-10-21: đã thanh toán hoặc đã nhận phiếu thu không
+tự làm mất quyền đề nghị hoàn. Xét từng dịch vụ và mức độ thực hiện, lý do hủy, phần chi phí
+được duyệt; không mặc định hoàn toàn bộ chỉ vì chưa nhận kết quả. Cashier ghi khoản thực hoàn
+toàn bộ hoặc một phần, người thực hiện và lý do, liên kết giao dịch thu gốc. Nghĩa vụ hoàn do
+hủy dịch vụ là giới hạn để đối soát, không phải bằng chứng tiền đã trả cho người bệnh.
+
+Trước khi bắt đầu EXAM/LAB_TEST, Clinical/Lab phải nhận xác nhận thực hiện từ Billing theo
+đúng clearance và source. Billing quyết định bước bắt đầu và hoàn phí dưới cùng khóa account:
+hoàn trước thì chỉ định cũ không được bắt đầu. Mọi khoản hoàn EXAM/LAB_TEST thông thường phải có
+bằng chứng hủy đúng dịch vụ đã được áp dụng bền vững, kể cả chưa có receipt bắt đầu ở Billing.
+Quy tắc này bao phủ thực hiện cấp cứu có override và lần bắt đầu từ trước nâng cấp, khi Billing
+không có đủ thông tin để kết luận dịch vụ chưa thực hiện. Hủy không sửa phiếu thu gốc,
+không tự thực hiện giao dịch trả tiền. Chỉ định đã hủy không được mở lại bằng event thanh toán
+hoặc clearance đến trễ. Sau khi đã hoàn tất dịch vụ, khiếu nại/thu sai cần luồng điều chỉnh riêng;
+không dùng hủy xét nghiệm/khám để xóa lịch sử thực hiện đã hoàn tất.
+
+Xác nhận bắt đầu ở Billing có thể commit trước khi giao dịch local của Clinical/Lab thất bại.
+Retry phải dùng cùng operationId/source và đọc lại quyết định; không tạo lần bắt đầu mới.
+Nếu local không thể tiếp tục, cần xác nhận hủy có audit để giải phóng nghĩa vụ hoàn. Không
+coi timeout là bằng chứng dịch vụ chưa bắt đầu hoặc tự hoàn tiền trong khoảng chưa rõ kết quả.
+
 MVP không cần admission accounts/deposits/insurance settlement/post-final corrections. Dữ liệu
 và kernel có sẵn vẫn giữ. Không đổi quy tắc earned final-settlement-only đã chốt: số thu tiền
 ngoại trú của MVP được gọi cash received/net cash, không tự công bố earned revenue.

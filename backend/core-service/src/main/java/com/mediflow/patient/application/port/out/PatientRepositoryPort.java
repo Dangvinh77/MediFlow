@@ -19,5 +19,7 @@ public interface PatientRepositoryPort {
 
     boolean existsByIdentityNumber(String identityNumber);
 
+    boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId);
+
     void deleteById(UUID patientId);
 }

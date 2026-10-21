@@ -33,4 +33,7 @@ public class LabOutboxEventJpaEntity {
     @Column(name = "occurred_at", nullable = false) private Instant occurredAt;
     @Column(name = "published_at") private Instant publishedAt;
     @Column(name = "retry_count", nullable = false) private int retryCount;
+    @Column(name = "next_attempt_at") private Instant nextAttemptAt;
+    @Column(name = "quarantined_at") private Instant quarantinedAt;
+    @Column(name = "last_failure_code", length = 32) private String lastFailureCode;
 }

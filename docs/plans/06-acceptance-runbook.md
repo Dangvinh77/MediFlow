@@ -30,6 +30,11 @@ Không xóa volumes, xóa inbox/outbox hay HELD để dựng lại demo.
 | T17 | Inpatient/Surgery off/global flags kết hợp | Không route/call/job deferred; no financial ACK-drop |
 | T18 | Six-service startup/rollback sau accepted writes | 6 apps + infra, data/effects giữ, không dual writer |
 | T19 | Fake nested Gateway path, wrong role/token, FE smoke | Default deny; frontend chỉ Gateway, UI/themes giữ |
+| T20 | Refund trước/sau EXAM/LAB start; stale local grant, Billing unavailable; emergency/legacy thiếu start receipt | Exact durable start serialized với refund; mọi hoàn EXAM/LAB cần applied cancellation và remaining due; stale/unavailable không unlock; audited override riêng; retry receipt cũ vẫn kiểm authority hiện tại |
+| T21 | Hủy Lab/EXAM trước create, duplicate/conflicting cancellation, paid/unpaid | Terminal source không reopen/collect; một adjustment, audit nguyên vẹn, không giả giao dịch hoàn |
+| T22 | Refresh thiếu exp, account bị khóa/đổi quyền, Core unavailable | Không mint từ claims cũ; active identity hiện tại hoặc fail closed |
+| T23 | Report hai acceptance cùng timestamp, clock thay đổi khi chờ khóa | Latest theo durable acceptance order; receipt cũ và coverage history giữ |
+| T24 | Tạo staff rồi broker lỗi/network retry cùng idempotency key | Commit+outbox atomic; retry cùng staff ID, changed payload conflict, relay retry giữ event ID |
 
 ## Demo tối thiểu
 

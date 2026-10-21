@@ -13,6 +13,7 @@ import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.PrescriptionClearancePort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
@@ -29,6 +30,7 @@ import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PaymentReceiptStatus;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -57,6 +59,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
     private final StockReservationRepositoryPort reservationRepository;
     private final PharmacyEventPublisherPort eventPublisher;
     private final PaymentReceiptRepositoryPort paymentReceipts;
+    private final PrescriptionClearancePort clearances;
     private final PrescriptionDtoMapper prescriptionDtoMapper;
     private final Clock clock;
     private final Duration reservationTtl;
@@ -69,6 +72,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
             StockReservationRepositoryPort reservationRepository,
             PharmacyEventPublisherPort eventPublisher,
             PaymentReceiptRepositoryPort paymentReceipts,
+            PrescriptionClearancePort clearances,
             PrescriptionDtoMapper prescriptionDtoMapper,
             Clock clock,
             Duration reservationTtl) {
@@ -81,6 +85,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
         this.reservationRepository = reservationRepository;
         this.eventPublisher = eventPublisher;
         this.paymentReceipts = paymentReceipts;
+        this.clearances = clearances;
         this.prescriptionDtoMapper = prescriptionDtoMapper;
         this.clock = clock;
         this.reservationTtl = reservationTtl;
@@ -160,7 +165,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
                 (first, ignored) -> first,
                 LinkedHashMap::new));
         drugIds.stream().filter(id -> !drugNames.containsKey(id)).forEach(id -> drugNames.put(id, null));
-        return toDto(prescription, slip.getStatus(), hasPaymentConfirmation(prescriptionId), drugNames);
+        return toDto(prescription, slip.getStatus(), hasPaymentConfirmation(prescription), drugNames);
     }
 
     private void validateCreator(CreatePrescriptionCommand command) {
@@ -245,10 +250,17 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
     }
 
     /**
-     * Pharmacy only exposes a confirmed payment after its own durable receipt is present. A
-     * compensated receipt does not authorize a manual dispense.
+     * Reports local payment confirmation, not current permission to dispense. V1 uses only its
+     * verified, matching, unexpired clearance projection; legacy uses its durable receipt.
+     * The dispense command independently rechecks current Billing authority after its locks.
      */
-    private boolean hasPaymentConfirmation(UUID prescriptionId) {
+    private boolean hasPaymentConfirmation(Prescription prescription) {
+        UUID prescriptionId = prescription.getPrescriptionId();
+        if (prescription.getCareContext().contractVersion() == CareContractVersion.V1) {
+            Instant now = clock.instant();
+            return clearances.findVerifiedByTarget(prescriptionId).stream()
+                    .anyMatch(grant -> grant.matches(prescription) && grant.isValidAt(now));
+        }
         List<PaymentReceipt> receipts = paymentReceipts.findByPrescriptionId(prescriptionId);
         return receipts != null && receipts.stream().anyMatch(receipt -> receipt != null
                 && (receipt.getStatus() == PaymentReceiptStatus.RECEIVED

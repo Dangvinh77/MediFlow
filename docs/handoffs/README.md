@@ -1,5 +1,23 @@
 # Registry bàn giao backend MVP
 
+## Docker recheck — 20/10/2026
+
+Audit xác nhận **5 nhóm lỗi**: JWT fallback Billing/Notification và Lab outbox starvation thuộc
+Vinh; Patient event durability, department-head title và department/staff concurrency thuộc
+Hoàng Anh. Race HA-AUDIT-03 đã có PostgreSQL proof, không còn chỉ là nghi vấn static.
+
+- [Core owner handoff, 3 lỗi và tiêu chí nghiệm thu](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
+- [Evidence và trạng thái kiểm thử lượt này](../acceptance/backend-audit-2026-10-20/README.md).
+
+Cập nhật owner 21/10: ba lỗi Core đã có implementation trên `codex/core-audit-reliability`;
+full Core local **205 tests xanh, không skip**, gồm regression PostgreSQL/RabbitMQ.
+[Quy định chức danh/trưởng khoa và outbox](../../backend/core-service/docs.md).
+Handoff còn mở để Vinh nghiệm thu Gateway/Notification/packaged trên commit cuối,
+đặc biệt consumer dedupe khi replay welcome event.
+
+Các số test lịch sử bên dưới không thay kết quả trên revision mới. Không kết luận hết lỗi chỉ
+từ suite mặc định hoặc đóng các packaged profile chưa chạy.
+
 ## Audit API/nghiệp vụ bổ sung — 19/10/2026
 
 PR #439 đã merge; audit tiếp theo khóa base `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.

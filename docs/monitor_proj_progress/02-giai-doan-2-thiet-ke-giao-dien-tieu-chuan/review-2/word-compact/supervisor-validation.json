@@ -1,0 +1,93 @@
+{
+  "figuresChecked": 15,
+  "sequenceFigures": 8,
+  "serviceClassFigures": 5,
+  "failures": 0,
+  "checks": [
+    "bilingual topology",
+    "balanced sequence guards",
+    "complete ordered panel messages",
+    "source-backed domain fields",
+    "one backend boundary",
+    "V1 check-in lifecycle",
+    "separate refresh contract",
+    "41 unique active figures per language"
+  ],
+  "results": [
+    {
+      "figure": 1,
+      "kind": "flowchart",
+      "bilingual": true
+    },
+    {
+      "figure": 3,
+      "kind": "flowchart",
+      "bilingual": true
+    },
+    {
+      "figure": 6,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 4,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 5,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 7,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 8,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 37,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 38,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 9,
+      "kind": "sequence",
+      "bilingual": true
+    },
+    {
+      "figure": 10,
+      "kind": "class",
+      "bilingual": true
+    },
+    {
+      "figure": 11,
+      "kind": "class",
+      "bilingual": true
+    },
+    {
+      "figure": 39,
+      "kind": "class",
+      "bilingual": true
+    },
+    {
+      "figure": 40,
+      "kind": "class",
+      "bilingual": true
+    },
+    {
+      "figure": 41,
+      "kind": "class",
+      "bilingual": true
+    }
+  ]
+}

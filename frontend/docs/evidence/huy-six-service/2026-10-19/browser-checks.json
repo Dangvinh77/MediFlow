@@ -1,0 +1,201 @@
+[
+  {
+    "scenario": "doctor-read-only-catalog",
+    "createDrugVisible": 0,
+    "outboxVisible": 0,
+    "stock": 40
+  },
+  {
+    "scenario": "empty-v1-first-error",
+    "focus": "recordId",
+    "invalid": [
+      "recordId",
+      "patientId",
+      "doctorId",
+      "departmentId",
+      "careEpisodeId",
+      "priceCode",
+      "drugId-prescription-line-1"
+    ]
+  },
+  {
+    "scenario": "record-tab-order",
+    "focus": "patientId"
+  },
+  {
+    "scenario": "add-line-focus",
+    "focus": "drugId-prescription-line-3"
+  },
+  {
+    "scenario": "remove-line-return-focus",
+    "focus": "drugId-prescription-line-1"
+  },
+  {
+    "scenario": "doctor-created-v1",
+    "prescriptionId": "26161972-6b4e-433e-84a6-bc8d98d0f4c7",
+    "dispenseControlCount": 0,
+    "initialStatus": "pending-unpaid"
+  },
+  {
+    "scenario": "cancel-initial-focus",
+    "focus": "cancel-prescription-reason"
+  },
+  {
+    "scenario": "cancel-empty-reason",
+    "focus": "cancel-prescription-reason",
+    "invalid": "true"
+  },
+  {
+    "scenario": "cancel-escape-return",
+    "focusText": "Hủy đơn",
+    "confirmationCount": 0
+  },
+  {
+    "scenario": "pharmacist-unpaid-block",
+    "dispenseControlCount": 0,
+    "cancelControlCount": 0
+  },
+  {
+    "scenario": "dispense-dialog-initial-focus",
+    "focusText": "Đóng"
+  },
+  {
+    "scenario": "dispense-escape-return",
+    "focusText": "Xuất thuốc",
+    "dialogCount": 0
+  },
+  {
+    "scenario": "dispense-terminal-ui",
+    "prescriptionId": "26161972-6b4e-433e-84a6-bc8d98d0f4c7",
+    "dispenseControlCount": 0,
+    "focusText": "Đã xuất thuốc thành công. Đang tải lại chi tiết đơn thuốc."
+  },
+  {
+    "scenario": "catalog-empty",
+    "message": "Không tìm thấy thuốc phù hợp với bộ lọc hiện tại."
+  },
+  {
+    "scenario": "create-drug-empty-focus",
+    "focus": "drugName"
+  },
+  {
+    "scenario": "stock-empty-focus",
+    "focus": "stock-quantity",
+    "invalid": "true"
+  },
+  {
+    "scenario": "admin-create-adjust-stock",
+    "drugId": "662107e4-7994-4dfc-95e8-becc4a380c2c",
+    "initial": 5,
+    "delta": 7,
+    "observed": 12
+  },
+  {
+    "scenario": "outbox-confirm-focus",
+    "focusText": "Xác nhận replay"
+  },
+  {
+    "scenario": "outbox-escape-return",
+    "focusText": ""
+  },
+  {
+    "scenario": "admin-outbox-replay",
+    "eventId": "9ab5df4c-0cbe-41dd-97f6-7131abfb004c",
+    "replayed": true
+  },
+  {
+    "scenario": "report-monthly-live",
+    "detailRows": 32,
+    "url": "http://127.0.0.1:3180/reports?view=monthly&month=10&year=2026"
+  },
+  {
+    "scenario": "daily-first-invalid",
+    "focus": "report-date",
+    "invalid": null
+  },
+  {
+    "scenario": "daily-invalid-department",
+    "focus": "report-department-id",
+    "invalid": null
+  },
+  {
+    "scenario": "daily-live",
+    "url": "http://127.0.0.1:3180/reports?view=daily&month=10&year=2026&date=2026-10-19",
+    "text": "Ngày báo cáo\nMã khoa (tùy chọn)\nXem báo cáo\nBáo cáo ngày 19/10/2026\n\nPhạm vi: Toàn bệnh viện\n\nĐã tải\nLượt khám\n0\nXét nghiệm\n0\nĐơn thuốc\n0\nDoanh thu\n0"
+  },
+  {
+    "scenario": "report-unavailable-error-focus",
+    "text": "Downstream service is unavailable\n\nMã theo dõi: 80b14a90-ae78-458a-b234-264461ef6580\n\nThử lại\n\nMã lỗi: GATEWAY_UPSTREAM_UNAVAILABLE",
+    "focusLabel": "Lỗi tải báo cáo",
+    "focusRole": "group"
+  },
+  {
+    "scenario": "report-error-mobile-system",
+    "documentWidth": 320,
+    "focusedRole": "group",
+    "theme": "h-full antialiased",
+    "width": 320
+  },
+  {
+    "scenario": "report-keyboard-retry-recovered",
+    "errorCount": 0,
+    "text": "Ngày báo cáo\nMã khoa (tùy chọn)\nXem báo cáo\nBáo cáo ngày 19/10/2026\n\nPhạm vi: Toàn bệnh viện\n\nĐã tải\nLượt khám\n0\nXét nghiệm\n0\nĐơn thuốc\n0\nDoanh thu\n0"
+  },
+  {
+    "scenario": "top-medicines-invalid-limit",
+    "focus": "medicine-limit",
+    "invalid": null
+  },
+  {
+    "scenario": "top-medicines-live-empty",
+    "text": "Từ ngày\nĐến ngày\nMã khoa (tùy chọn)\nSố kết quả\nXem xếp hạng\nThuốc xuất nhiều nhất\n\nTừ 19/10/2026 đến 19/10/2026 · Tối đa 10 kết quả\n\nPhạm vi: Toàn bệnh viện\n\nKhông có dữ liệu xuất thuốc trong khoảng đã chọn.",
+    "url": "http://127.0.0.1:3180/reports?view=medicines&month=10&year=2026&date=2026-10-19&fromDate=2026-10-19&toDate=2026-10-19&limit=10"
+  },
+  {
+    "scenario": "report-back-history",
+    "url": "http://127.0.0.1:3180/reports?view=medicines&month=10&year=2026&date=2026-10-19",
+    "heading": "Thuốc xuất nhiều"
+  },
+  {
+    "scenario": "report-forward-history",
+    "url": "http://127.0.0.1:3180/reports?view=medicines&month=10&year=2026&date=2026-10-19&fromDate=2026-10-19&toDate=2026-10-19&limit=10",
+    "heading": "Thuốc xuất nhiều"
+  },
+  {
+    "scenario": "report-monthly-tablet-dark",
+    "documentWidth": 768,
+    "theme": "h-full antialiased dark",
+    "width": 768
+  },
+  {
+    "scenario": "outpatient-report-default-off",
+    "status": "Báo cáo ngoại trú chưa sẵn sàng. Vui lòng liên hệ quản trị viên.",
+    "queryControlCount": 0
+  },
+  {
+    "scenario": "rx-mobile-320-light",
+    "documentWidth": 305,
+    "theme": "h-full antialiased",
+    "width": 320
+  },
+  {
+    "scenario": "catalog-size-50",
+    "url": "http://127.0.0.1:3180/pharmacy/drugs?page=0&size=50",
+    "value": "50"
+  },
+  {
+    "scenario": "catalog-size-10",
+    "url": "http://127.0.0.1:3180/pharmacy/drugs?page=0&size=10",
+    "value": "10"
+  },
+  {
+    "scenario": "catalog-desktop-system",
+    "documentWidth": 1366,
+    "theme": "h-full antialiased",
+    "width": 1366
+  },
+  {
+    "scenario": "doctor-report-route-denied",
+    "message": "Tài khoản hiện tại không có quyền truy cập trang này."
+  }
+]

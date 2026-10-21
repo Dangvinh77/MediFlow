@@ -1,6 +1,41 @@
 # Frontend Workboard
 
-## Lộc — Billing prescription-adjustment refund-due view, 2026-10-19
+## Lộc — resumes Billing/Notification ownership, 2026-10-22
+
+Vinh's 2026-10-20/21 closeout (`2026-10-20-vinh-loc-frontend-closeout.md`,
+`2026-10-21-ha-loc-web-mobile-completion.md`) was a `DELEGATED` task, not a permanent ownership
+change; `frontend/src/features/billing/AGENTS.md` still names Lộc canonical owner. Lộc resumes
+active `IMPLEMENT` work on Billing and Notification from this date.
+
+Merged master into `feat/billing-prescription-adjustment-refund-due`. Resolved the refund-due
+duplicate: kept Vinh's `RefundDueLookup.tsx` (already in master, already used by the live
+`/billing` route) and removed Lộc's own 2026-10-19 parallel implementation
+(`PrescriptionAdjustmentRefundDue.tsx` + `PrescriptionAdjustmentLookupForm.tsx` + their tests +
+the `/billing/prescription-adjustments` route pages) — both did the exact same business function;
+keeping two would confuse the live UI and future reviewers. The now-unused duplicate `api.ts`
+helpers (`getPrescriptionAdjustment`, `refundLedgerPayment`) were dropped in favor of the
+pre-existing `refundsDue`/`recordRefund` that `RefundDueLookup.tsx` already calls.
+
+**Correction to Vinh's 2026-10-20 "DONE" claim for `FE-BILLING-04`:** verified directly against
+code on 2026-10-21/22, not just the doc. `RevenueReport.tsx` has zero test coverage (no component
+test, no `api.test.ts` coverage of `revenueByDepartment`). `InvoiceForm.tsx` and
+`OutboxReplayForm.tsx` only have the two safety-focused cases in `BillingCommands.test.tsx`
+(duplicate-submit / ambiguous-response blocking), not full component coverage. Everything else
+listed under `FE-BILLING-04` (`InvoiceDetail`, `InvoiceLookup`, `LedgerPaymentForm`,
+`PaymentRequestLookupForm`, `RefundDueLookup`) does have real component tests — confirmed by
+running `pnpm vitest run src/features/billing src/features/notification` against `origin/master`
+directly (103/103 passed, including the 68/68 Notification tests Vinh's doc also claimed).
+`FE-NOTIFICATION-03` stays `BLOCKED`: confirmed by grepping `backend/notification-service` — no
+resend/mark-read endpoint exists yet.
+
+Lộc is now closing the real `FE-BILLING-04` gap: `RevenueReport.tsx` tests first, then
+`InvoiceForm.tsx`/`OutboxReplayForm.tsx`.
+
+## Lộc — Billing prescription-adjustment refund-due view, 2026-10-19 (superseded 2026-10-22)
+
+> **Superseded:** this view was removed on 2026-10-22 in favor of Vinh's `RefundDueLookup.tsx`,
+> which already implements the same `refunds-due`/`refunds` contract on the live `/billing` route.
+> Entry kept for history; do not use `/billing/prescription-adjustments` as a reference anymore.
 
 Scope: `frontend/src/features/billing/**` and `frontend/src/app/(dashboard)/billing/**`, per canonical
 ownership in `frontend/docs/services/billing.md`. Closes the `FE-BILLING-07` prescription-adjustment
@@ -32,6 +67,381 @@ half, unblocked by the Gateway allowlist fix merged the night before (`HA-CODE-0
   `pnpm test -- --maxWorkers=2`: **516/517 PASS, 57 files**; the one failure is the pre-existing
   `LabDetail.test.tsx:194` fixture gap already logged above (2026-10-19 sync note), unrelated to this
   change and not touched.
+## Huy — FE isolated acceptance complete, 2026-10-21
+
+**14/14 tasks, 56/56 criteria** for the FE test candidate; plan section 25 supersedes the
+11/14 checkpoint below. [Final evidence](evidence/huy-six-service/2026-10-21-close/README.md).
+Actual Core ADMIN/MANAGER browser daily/monthly checks pass through Gateway → Support,
+including 12 months, correct cash/refund/net metrics, forbidden role, missing coverage,
+error focus/retry/recovery, keyboard and mobile Light/Dark. Existing Pharmacy/Notification
+browser evidence and final 595/595 FE regression remain part of the same source candidate.
+
+The packaged calendar acceptance passed 1/1, exit0, no failures/errors/skips. Its fresh public
+workflow is sealed with five source command journals and a **test-only Report Clock** advanced
+to close the calendar year. System/JWT/source clocks remain unchanged. These are finite test
+receipts, not production source-owner exports. The helper is absent from the production JAR;
+using wall time still refuses the future coverage with404. No validation/gates were weakened.
+
+**FE READY FOR REVIEW; production rollout HOLD.** Default gates stay OFF. Source-owner
+production completeness/cutover remains operational work in the single Huy handoff, not an
+unfinished FE implementation task. All test processes stopped; browser logout/theme reset.
+No branch/commit/push.
+
+## Huy — refund delivered; FE regression complete, 2026-10-21
+
+Current checkpoint supersedes the historical blockers below: **11/14 tasks, 52/56 criteria**.
+Closed **HF6-14.3**. [Evidence](evidence/huy-six-service/2026-10-21-close/README.md), plan
+section 24; all remaining dependencies stay in the single Huy handoff.
+
+- User assigned the concrete missing Billing publication and Lab fixture work. New outpatient
+  refund publication has an independent default-OFF gate, retained approval and persisted-fact
+  validation; historical HELD rows stay unchanged. No branch/commit/push or rollout.
+- Public refund command/retry yielded one transaction/one notice. Actual Core-issued owner
+  browser read the notice; actual foreign patient direct URL denied with error focus. Refund
+  reached Report APPLIED. Signed malformed TEST credentials are labeled separately.
+- Hold harness 1/1 and Support units 18/18 passed. FE **595/595 in 57 files**, focused Lab
+  15/15, typecheck/lint/build passed. Final Docker reruns: Billing **1083/1083**, normal
+  six-service **1/1**, both exit 0 with no failed/errored/skipped tests. Billing fork-JVM
+  shutdown warning is recorded in evidence verification, not hidden as a clean teardown.
+- Remaining **HF6-09.2/.3, HF6-11.2, HF6-12.4** need reviewed five-source coverage for a closed
+  period, successful report metrics and final integrated release. Gateway preview works;
+  today's intake does not establish a completed calendar year's source completeness.
+
+Release **HOLD**. No fake coverage, producer evidence or historical refund release. Earlier
+594/595 and refund-HELD observations below are historical, superseded by this checkpoint.
+
+## Huy — source-invalid matrix complete, 2026-10-21
+
+Current: **10/14 tasks, 51/56 criteria**; closed HF6-11.3. Same candidate, no production
+source change, branch/commit/push. [Matrix evidence](evidence/huy-six-service/2026-10-21-matrix/README.md)
+maps prior unpaid/role/session/unavailable/retry observations plus today's real browser
+source mismatch. DOCTOR form keeps errors/values, no V0 fallback; exact-key API retry returns
+422 twice, on-hand stock 40 → 40. Hold 1/1 PASS exit 0, frontend stopped, browser logout.
+
+Four tasks still open: Report five-source coverage/daily-monthly success (HF6-09), complete
+workflow through Report (HF6-11), Billing refund publication → Notification intake (HF6-14),
+final release/full regression (HF6-12). Previous full FE remains 594/595, Lab fixture outside
+scope. See plan section 23 and single backend handoff; no new environment blocker invented.
+
+## Huy — Docker follow-up: normal six-service + Report gate rollback, 2026-10-21
+
+Current checkpoint supersedes the section below: **10/14 tasks, 50/56 criteria**.
+[Evidence](evidence/huy-six-service/2026-10-21-followup/README.md), plan section 22.
+Same Huy candidate; no new branch/commit/push or default gate changes.
+
+- Normal packaged acceptance: Surefire 18/18, Failsafe 1/1, exit 0; actual refund
+  race/exact retry/over-refund, durable clearance/restart and Support rollback passed.
+  Hold browser runtime 1/1, exit 0, stopped after checks.
+- Closed HF6-09.4: isolated Report UI ON → actual missing-coverage error → restart OFF
+  blocks direct-route form. Actual issuer expired session returns to login. Packaged
+  ADMIN coverage preview 200 with test gate ON; no unsupported acceptance was submitted.
+- Refund command and exact retry passed; delivery did not. Billing appends payment.refunded
+  HELD and publication allowlist excludes it, so consumer ON alone cannot deliver a notice.
+  Vinh publication/contract regression required; no fake event or database release.
+- Valid real-notice positive control plus signed TEST negative credentials: missing patient
+  claim 401, wrong claim 403, missing-exp/expired 401. Explicitly not Core-issued tokens;
+  an earlier undefined-ID helper attempt is retained and excluded from acceptance.
+- Remaining: accepted five-source coverage/successful reports, complete workflow/matrix,
+  refund intake and final release. Previous full FE remains 594/595 (Lab fixture outside
+  assigned scope); typecheck/lint/build PASS at prior checkpoint. Release HOLD.
+
+## Huy — fresh Pharmacy/Support browser checkpoint, 2026-10-21
+
+Candidate `42aab198` plus Gateway coverage allowlist working diff, existing Huy branch.
+No new branch/commit/push. Docker now works; six packaged business apps + Gateway/Eureka
+and disposable PostgreSQL/RabbitMQ ran successfully. [Final-candidate evidence](evidence/huy-six-service/2026-10-21-final/README.md)
+distinguishes browser steps, actual issuer API checks, regressions and missing acceptance.
+
+- Browser DOCTOR created Rx V1 from public Clinical/catalog authority; PHARMACIST unpaid
+  dispense denied, actual cashier API payment/retry returned one transaction, browser refresh
+  and dispense succeeded. Stock **40 → 37 → 37** after terminal command repeat. Cancelled Rx
+  has no dispense button. Paid legacy boolean was true in this run; paid-false is covered by
+  contract/component tests, not claimed as reproduced in this runtime.
+- Generated lifecycle/payment/dispense notices reached the owner. Foreign PATIENT denied in
+  browser; signed owner/foreign/NURSE/MANAGER API matrix passed. Support stop/error focus →
+  resume/Tab/Enter retry → heading focus passed without resending a command.
+- Report ADMIN/MANAGER missing-coverage 404, DOCTOR 403; UI OFF retained. Packaged coverage
+  preview ADMIN 404 with approval gate OFF, other roles 403. Gateway code is complete; no
+  five-source completeness/export proof or coverage approval was fabricated.
+- Pharmacy test focus assertion now awaits the existing effect: **17/17** focused PASS.
+  Full FE **594/595 tests / 57 files**, only Lab's READY-without-clearance fixture fails.
+  Exact Lab test-file delegation pending; no Lab production or test change. Typecheck/lint/
+  production build PASS. Hold harness **1/1 PASS, exit 0**; normal refund branch did not run.
+- **10/14 tasks, 49/56 criteria**; four tasks remain open for the specific evidence in
+  [plan section 21](huy-six-service-frontend-plan.md#21-fresh-pharmacysupport-browser-acceptance--2026-10-21).
+  Integrated release HOLD. Refund/Report approval/Report UI gates unchanged. Runtime stopped,
+  browser logged out, no new handoff file.
+
+## Hoàng Anh/Lộc client completion — 2026-10-21
+
+The user delegates Organization/Patient and Billing/Notification frontend/mobile
+completion to Vinh. Existing web Billing/Notification workflows remain in place;
+this frontend slice closes Organization/Patient form/error-path and FE-04 test gaps.
+The corresponding mobile implementations and app composition are recorded in
+[mobile completion](../../mobile/docs/ha-loc-client-completion.md).
+
+Organization edit forms must not become editable after a failed initial read.
+Staff profile update and department transfer are separate commands: if transfer
+fails after saving the profile, the UI reports the saved portion and retries only
+against refreshed authoritative state. Patient identity is editable on update; the
+service retains the existing UUID and creation time and rejects duplicate corrections.
+The API has no account-list, notification resend or mark-read command; this closeout
+does not invent those workflows or enable deferred Surgery/Inpatient.
+
+Verification before the latest Patient logic merge: full frontend suite **701/701
+tests, 75 files PASS** (two workers, Node 26 with experimental web storage disabled);
+Organization/Patient **39/39, 9 files PASS**. Typecheck, lint and production build PASS.
+Independent review found no actionable defect in that web slice. Mobile evidence is
+recorded separately; older dated evidence below refers to its original candidate.
+
+## Hoàng Anh — đồng bộ master và khôi phục Patient, 2026-10-21
+
+Master sync `07a87477` → `63b5f233` includes PR #477 / Patient logic commit `ac7ed78b`; local
+Patient BE/FE work remains intact. The `patient-cccd-before-master-update-2026-10-21` stash
+remains as a backup. Core/Patient source matches the Docker-verified revision (**194/194**); the
+backend source did not change in this merge. The Patient + shared API regression after the prior
+sync passed **71/71 tests across 7 files**. Master also includes the shared late-401 fix, so earlier
+handoff blockers describe the state before that fix. Final merged frontend verification:
+**745/745 tests across 77 files**, typecheck, lint and production build PASS. The merged
+Patient regression subset passes **64/64 tests across 6 files**.
+
+## Vinh/Lộc — outpatient frontend closeout, 2026-10-20
+
+User delegated completion of both Vinh and Lộc frontend scope. Candidate is based on master
+`8883f49d`, preserving Huy's latest Notification/history and Report work. The earlier sections
+below retain their dated evidence and counts. Master now includes the Report coverage acceptance
+controller/service/adapter; older statements that no writer exists describe the audit at `71328cbc`.
+Accepted five-source reconciliation and runtime approval remain separate from implementing that writer.
+
+- Clinical/Lab: session/resource boundaries, exact source order composition, check-in/start and
+  completion regressions; READY V1 requires clearance, independent of legacy paid boolean.
+- Billing: discover request by source/patient/episode; server-owned remaining amount/currency;
+  duplicate/uncertain payment locks and exact-key retry; authoritative fee refresh after payment;
+  prescription refund obligation lookup and recording with explicit reconciliation confirmation.
+  Gateway rules for adjustment/refund already exist; the old route blocker is superseded.
+- Shared: late old-session 401 cannot clear a new account; command uncertainty includes 408;
+  dashboard hydration preserves valid login and clears private workspaces on account change;
+  role login lands in an authorized workspace (including CASHIER and PATIENT).
+- Signed browser: Clinical source → Lab → cashier payment → clearance → results COMPLETED;
+  diagnosis/record completion reflected on the appointment; prescription refund recorded;
+  manual IN_APP and own/cross-patient privacy checked with actual issuer accounts.
+- Integrated full suite **673/673 tests / 70 files**, typecheck/lint/production build **PASS**.
+  Independent review reports no actionable P1/P2 findings. Complete evidence is in
+  [acceptance evidence](evidence/vinh-loc/2026-10-20/README.md) and its checks.txt.
+  Packaged held acceptance ended **1/1 PASS, 1189s, exit 0**; test containers/processes stopped.
+
+Implemented Vinh/Lộc MVP frontend is ready for review. Production UI stays OFF. Provider delivery,
+Notification resend/read-state commands and external selectors remain separate contract/release
+work; the existing Huy handoff tracks broader Report/source-coverage integration. No foreign
+production backend, deferred Surgery/Inpatient scope, or shared dependency was changed.
+
+## Huy — shared session race fix, 2026-10-20
+
+Base `8883f49d` synchronized with master; current Huy working diff, no branch/commit/push.
+Explicit human DELEGATED scope: `src/lib/api.ts` and `src/lib/api.test.ts`, late-401 session
+protection only. A rejected request clears the session only if its bearer is still current,
+after reading the response body; a newer login survives. Original errors and no-auto-retry remain.
+Four added regression cases failed before the fix and pass after it. Notification error-focus
+test now waits for the focus effect, preserving the actual accessibility assertion.
+
+- Transport + Pharmacy/Report/Notification: **459/459 tests, 32 files**.
+- Final full suite with two workers: **594/595 tests, 57 files**, only existing Lab fixture
+  `LabDetail.test.tsx:194` failing; not a full PASS. Initial unrestricted run had six failures
+  (Lab, Notification focus timing, four deferred Inpatient tests); after the Notification test
+  correction and bounded concurrency, only Lab remains. No Inpatient/Lab source changes.
+- Typecheck/lint/build PASS; no signed Gateway/browser acceptance added in this checkpoint.
+  Raw full-suite reports: `.git/huy-fe-remaining-tests.json` and
+  `.git/huy-fe-remaining-tests-final.json` (local, not committed).
+- **10/14 tasks (71.4%), 49/56 criteria (87.5%)**. HF6-09/11/12/14 remain open. Shared 401 fix
+  is complete at code/regression level; HF6-11.3 still needs the complete runtime matrix.
+- Report writer is now merged. Gateway's two ADMIN coverage policy entries and five-source
+  reviewed reconciliation remain dependencies. Refund stays OFF. Core public account creation
+  requires PATIENT patientId; missing-claim signed negative testing needs backend test support.
+  Report UI stays OFF; integrated release **HOLD**. Current details: [plan section 19](huy-six-service-frontend-plan.md#19-bảo-vệ-phiên-mới-trước-phản-hồi-401-cũ--2026-10-20).
+
+Earlier checkpoints below describe their historical candidates and evidence.
+
+## Huy — signed Support browser closeout, 2026-10-20
+
+Current candidate `44ff1ed7` + Notification focus-test timing correction. **10/14 tasks (71.4%),
+49/56 criteria (87.5%)**, up four criteria: HF6-11.4 and HF6-14.1/.2/.4. Existing branch retained;
+no commit/push/PR. [Plan section 18](huy-six-service-frontend-plan.md#18-signed-notification-acceptance-và-audit-report-source--2026-10-20)
+and [runtime evidence](evidence/huy-six-service/2026-10-20-closeout/README.md) supersede prior counts.
+
+- Actual issuer ADMIN/NURSE/PATIENT via Gateway→Support; owner/cross-patient deny, manual IN_APP,
+  real lifecycle/payment privacy, themes and Support failure→keyboard retry recovery observed.
+- Focused Pharmacy/Report/Notification **446/446 / 31 files**, typecheck/lint/build PASS. Full
+  rerun **590/591 / 57 files**, one existing foreign Lab fixture failure; not a full PASS.
+- Report audit includes fetched master `71328cbc`: no production accepted-coverage writer;
+  five-source export/reconciliation remains missing. Signed ADMIN/MANAGER receive 404, DOCTOR 403.
+  Report UI stays OFF; fixtures are not accepted coverage.
+- Notification refund/missing-claim, full workflow/failure matrix and final release remain open.
+  Refund consumer stays OFF; no EMAIL/SMS provider delivery claim. Verdict **HOLD integration**.
+  Single consolidated Huy handoff updated; disposable runtime stopped, browser logged out.
+
+## Huy — Notification history refresh, 2026-10-20
+
+DELEGATED Support FE, base `26bf2ef7`: explicit GET refresh preserves the submitted patient/page
+even when the UUID draft changes; empty history can discover new notices. Result scope is visible,
+old content clears during loading, and keyboard focus returns to result/error without interrupting
+another control. HTTP 403/session/stale guards remain enforced. Six additional regression cases;
+Notification **68/68 tests / 3 files**, typecheck/lint/build **PASS, exit 0**.
+Plan progress remains **10/14 tasks (71.4%), 45/56 criteria (80.4%)**; see section 17 for the
+remaining 11 criteria. Docker engine is unavailable during this run; no new signed/browser proof.
+## Hoàng Anh — Docker retest CCCD, 2026-10-21
+
+`mvn -q -pl backend/core-service -am test` **PASS, exit 0** với Docker Engine 28.5.1.
+Core **194/194 tests**, zero failures/errors/skips. Ba test `PatientServiceIntegrationTest`
+đạt trên PostgreSQL/RabbitMQ Testcontainers: tạo/publish/lookup, sửa CCCD và giữ UUID/ngày tạo,
+giữ nguyên số hoặc request cũ thiếu số, từ chối số thuộc bệnh nhân khác; hai cập nhật đồng thời
+tranh cùng CCCD chỉ một thành công, hồ sơ thua giữ số cũ. Hai integration classes Organization
+cũng đạt. Blocker Docker ở checkpoint 2026-10-20 đã được giải quyết.
+
+FE checkpoint đã hoàn tất: Patient **58/58**, typecheck/lint/production build **PASS**.
+Không chạy lại FE hôm nay vì không đổi source; chưa có signed Gateway/browser acceptance mới.
+Log backend ignored: `.patient-cccd-docker-retest.log`; Surefire reports ở Core `target/`.
+Chưa commit/push.
+
+## Hoàng Anh — sửa CCCD ở Core Patient và FE, 2026-10-20
+
+Theo yêu cầu người dùng, mở cập nhật `soCmnd` trên chính UUID bệnh nhân. Core giữ quyền
+ADMIN/NURSE, kiểm tra trùng với bệnh nhân khác và giữ unique constraint PostgreSQL. Request cũ
+thiếu/null `soCmnd` giữ nguyên; request mới không được gửi số rỗng/trắng hoặc quá 20 ký tự.
+FE gửi số đã trim, giữ draft/correlation khi bị 409 và cho sửa lại. Chỉ mở khóa trường có sẵn;
+không dựng màn hình/layout mới. Event contract và mã bệnh nhân không đổi.
+
+Patient FE **58/58 tests / 6 files**. Core tests không cần Docker **183/183**, zero skipped;
+full Core chưa đạt vì ba integration classes không khởi tạo được Docker engine. Đã bổ sung test
+PostgreSQL cho lưu CCCD, tương thích request cũ và hai cập nhật tranh cùng số, chưa có runtime
+evidence cho các ca này. Chi tiết build/typecheck/lint cuối ghi ở Patient guide.
+Không chạy lại full FE trong đợt sửa CCCD; kết quả 623/628 dưới đây thuộc checkpoint trước.
+Chưa commit/push.
+
+## Hoàng Anh — Patient logic checkpoint, 2026-10-20
+
+IMPLEMENT on base `26bf2ef7`, branch `codex/patient-fe-logic`. Only Patient feature logic,
+its regression fixtures and Patient documentation change. Existing markup is wired to headless
+logic; no new screen, layout or styling. Backend, shared transport/auth and other features stay
+outside this change.
+
+- Exact public Gateway CRUD/search mapping, normalized paging and request field whitelists.
+- Create/edit validation against live Core Patient DTO/domain, editable `soCmnd`, role checks,
+  preserved draft, server field errors and correlation IDs.
+- Synchronous duplicate mutation guard; unknown network/408/5xx/unreadable-success outcomes block
+  replay. Unmount, patient change and session replacement discard stale local callbacks.
+- Delete requires ADMIN and confirmation; error retry reads the patient rather than repeating DELETE.
+- Focused Patient **56/56 tests / 6 files**; typecheck, lint and production build **PASS**.
+  Full FE suite **623/628 tests / 60 files**, exit 1: one known Lab fixture failure at
+  `LabDetail.test.tsx:194` and four Inpatient `CreateAdmissionForm` timeouts. All Patient cases pass;
+  no Lab/Inpatient source changes or full-suite PASS claim. Logs: ignored `.patient-*.log` files.
+
+Signed Gateway/browser/packaged acceptance remains open. Shared old-request 401 session clearing
+remains tracked in `docs/handoffs/HANDOFF-HUY-MVP.md`; Patient guards cannot fix shared transport.
+Headless entry points, mounting requirements and limits: [Patient guide](services/patient.md).
+Changes are local; no commit or push at this checkpoint.
+
+## Huy — Notification detail refresh/focus, 2026-10-20
+
+IMPLEMENT under the existing user delegation for Support FE. Only Notification detail and its
+feature tests change; backend, shared transport/auth, routes and gates stay unchanged.
+Explicit GET refresh observes delivery status without resend/polling, clears old content while
+pending, and restores keyboard focus after retry. HTTP 403 stays closed; outside focus and session
+boundaries are preserved. Seven additional component regression cases cover these behaviors.
+Verification and limits are recorded in the current plan's 2026-10-20 checkpoint. No additional
+HF6 acceptance criterion is closed by component tests or build.
+Final base `b7146306`: Notification **62/62 tests / 3 files**, typecheck/lint/build **PASS**.
+No new full-suite, signed Gateway, browser or provider acceptance is claimed.
+
+## Huy — signed Gateway/browser acceptance, 2026-10-19
+
+Candidate `51eedfcd` + working diff: **10/14 task, 45/56 subtask**. Đóng thêm
+**HF6-01, HF6-06, HF6-07, HF6-10**; chi tiết ở [plan mục 14](huy-six-service-frontend-plan.md#14-nghiệm-thu-signed-gateway-và-browser--2026-10-19)
+và [evidence](evidence/huy-six-service/2026-10-19/README.md). Các mục bên dưới là lịch sử.
+
+- Sáu packaged business apps + Gateway/Eureka, PostgreSQL/RabbitMQ dùng dữ liệu test độc lập;
+  actual issuer login DOCTOR/PHARMACIST/ADMIN, CASHIER payment bằng public API.
+  Browser tạo Rx V1 → refresh đã thanh toán → xác nhận xuất; stock 40→37, duplicate không thêm effect.
+  Allowed cancel và foreign-doctor/pharmacist denial có HTTP/correlation evidence.
+- Catalog/search/page-size, tạo thuốc và chỉnh stock 5→12, replay known event được kiểm trên browser;
+  Clinical attachment/Report journal/Notification intake/dispense slip vẫn một effect sau replay.
+- Report legacy ngày/tháng/top-medicines qua Support thật: ADMIN 200, DOCTOR 403;
+  Support unavailable → focus lỗi → restart → keyboard retry thành công. Kiểm theme/320px/768px/desktop.
+  Outpatient UI giữ OFF, chưa có accepted coverage hoặc MANAGER acceptance.
+- Phát hiện và sửa Pharmacy V1 read chỉ kiểm V0 receipt nên không hiện thanh toán đã xác nhận.
+  Nay đọc verified clearance đúng target/patient/episode và còn hạn; dispense vẫn kiểm Billing authority.
+  Focused backend rerun **48/48 PASS** trên snapshot source-identical, tránh IDE ghi đè class output.
+  Full Pharmacy lần đầu có 846 tests, tám lỗi class-file; không ghi là full PASS.
+- Opt-in signed browser acceptance **1/1 PASS, 770.5s, exit 0**, zero failures/errors/skips.
+  FE production không đổi trong lượt runtime: checkpoint gần nhất **551/552 / 55 files**,
+  còn lỗi Lab fixture `LabDetail.test.tsx:194`; typecheck/lint/build PASS.
+- Còn **HF6-09/11/12/14**: Report coverage và ON/OFF, workflow Report/Notification privacy,
+  nghiệm thu Notification bằng signed users và release cuối. Dùng một handoff Huy hiện có.
+  Môi trường test đã dọn; Docker Desktop vẫn chạy. Chưa commit/push.
+
+## Huy — hoàn tất 5 đầu việc timeout, 2026-10-19
+
+Candidate `51eedfcd` + working diff; [plan mục 13](huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19)
+ghi chi tiết B5-01…05. Năm work items local này không cộng thành năm HF6 runtime tasks.
+
+1. **B5-01 DONE:** Rx V1 HTTP 408 giữ snapshot/key, khóa input; explicit retry giữ payload và không gọi V0.
+2. **B5-02 DONE:** tạo thuốc HTTP 408 khóa gửi, giữ input/correlation và focus feedback; tra cứu danh mục
+   trước yêu cầu mới. Unknown reply details không tạo lỗi field giả.
+3. **B5-03 DONE:** Notification timeout khóa gửi để tra lịch sử, giữ correlation/focus và không resend.
+4. **B5-04 DONE:** hủy/xuất Rx timeout chuyển sang fresh GET; GET lỗi vẫn giữ evidence; retry chỉ đọc.
+5. **B5-05 DONE:** outbox ambiguous response focus cảnh báo, giữ UUID; Enter không replay, cần xác nhận lại
+   chủ động. Kết quả chỉ nói requeue, không xác nhận consumer effect.
+
+Thêm **13 ca hồi quy trong 5 file**. Red run **12 fail / 112 pass**, 27.82s; case Notification 504
+đã đạt trước sửa. Green focused **124/124**, 20.55s. `pnpm typecheck`, `pnpm lint`, `pnpm build`
+**PASS, exit 0**; typecheck chạy trước build để không tranh chấp generated routes. Logs ignored trong
+`frontend/`: `.fe-five-{red,green,full,typecheck,lint,build}.log`.
+
+Full suite candidate cuối **551/552 trong 55 file**, 143.16s, exit 1. Chỉ lỗi đã có từ master
+`LabDetail.test.tsx:194` (READY V1 thiếu clearance nhưng fixture mong nút bắt đầu); không có diff Lab.
+Cả 13 ca mới và hồi quy Pharmacy/Support/stock đều đạt; Inpatient đạt trong lượt này.
+
+Pharmacy dùng helper feature-local cho 408/5xx/unreadable success, stock giữ flow đối chiếu đã có.
+Không đổi wire/API/shared auth/backend/feature foreign, không đổi theme/frame hoặc runtime flags.
+Chưa có browser/signed Gateway/coverage acceptance mới: **6/14 task, 39/56 subtask** giữ nguyên.
+Các dependency tiếp tục ở một handoff Huy; chưa commit/push.
+
+## Huy — điều chỉnh kho chưa rõ kết quả, 2026-10-19
+
+Candidate `51eedfcd` + working diff; xem [plan mục 12](huy-six-service-frontend-plan.md#12-giữ-kết-quả-điều-chỉnh-kho-chưa-rõ-qua-lỗi-tải-lại--2026-10-19).
+
+- Pharmacy giữ message/correlation và delta/unit của lệnh chưa rõ kết quả qua lỗi refresh,
+  retry read, 403/404. HTTP 408/5xx, unreadable success và network error bỏ draft cũ, không tự gửi lại.
+- Fresh GET không tự xác nhận kết quả mutation. Form chỉ mở draft trống sau khi người dùng xác nhận
+  đã đối chiếu; trong lúc refresh hoặc đọc thất bại không được bỏ trạng thái này. Focus về field số lượng
+  sau đối chiếu; đổi drug/session và response cũ không làm lẫn kết quả giữa tài khoản.
+- **11 ca hồi quy mới đạt**; focused **46/46 trong 3 file**. Red run tái hiện 8 case mới trước sửa.
+- Full suite cuối **538/539 trong 55 file**, 136.68s, exit 1: chỉ lỗi có sẵn
+  `LabDetail.test.tsx:194` (V1 READY fixture thiếu clearance nhưng mong nút bắt đầu), không có diff Lab.
+  Cả 11 ca mới và các hồi quy Pharmacy/Support trước đó đạt; Inpatient đạt trong lượt này.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**. Typecheck cuối chạy sau build;
+  lần chạy đồng thời trước đó gặp generated `.next/types/routes.js` đang được tái tạo, không phải lỗi TS source.
+  Logs ignored trong `frontend/`: `.fe-stock-{red,green,final,full,typecheck,lint,build}.log`.
+- Chỉ thêm code/tests Pharmacy và cập nhật docs/handoff chung, không commit/push. Không có browser,
+  screen-reader hoặc signed Gateway acceptance mới; giữ **6/14 task, 39/56 subtask**, HF6-10.3 OPEN.
+
+## Huy — keyboard/focus Pharmacy và Support, 2026-10-19
+
+Candidate `51eedfcd` + working diff; xem [plan mục 11](huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19).
+
+- Kê đơn giữ focus khi thêm/xóa dòng, chọn lỗi đầu tiên theo thứ tự hiển thị, focus phản hồi khi
+  kết quả chưa rõ và đưa về mã hồ sơ khi người dùng chủ động bắt đầu ý định mới.
+- Gửi Notification focus đúng field hoặc vùng lỗi sau khi pending kết thúc; không resend tự động.
+- Cả bốn Report views có vùng lỗi truy cập được và keyboard retry. Không giành focus khi người dùng
+  đang nhập phạm vi khác hoặc làm việc bên ngoài Report; không phát thêm request khi chỉ sửa draft.
+- **22 ca hồi quy mới đạt** (Pharmacy 8, Notification 4, Report 10). Focused trước guard cuối:
+  392/392 trong 31 file; Report lifecycle cuối 24/24. Full suite cuối:
+  **527/528 PASS, 55 files**, chỉ còn `LabDetail.test.tsx:194` từ master như checkpoint dưới.
+  Hai lỗi Inpatient ở lượt đồng bộ không tái hiện trong lượt full này.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**. Commands/logs local:
+  `.fe-accessibility-{full,typecheck,lint,build}.log`, `.fe-report-focus-final.log` trong `frontend/`
+  (ignored). Không sửa source Lab/Inpatient/shared auth/backend.
+- Chưa browser/screen-reader/Gateway acceptance mới; HF6-10.3 vẫn OPEN, giữ **6/14 task; 39/56 subtask**.
+  Plan/guides và handoff chung được cập nhật; không thêm handoff mới hoặc mở UI/backend gates.
 
 ## Đồng bộ master vào Huy — 2026-10-19
 
@@ -298,7 +708,7 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
 | Lab | Queue/detail/create plus start, result entry and cancel with live role/status guards | `DONE` |
 | Inpatient | Admission list/detail, admission create, and bed list with exact Vietnamese wire names | `IN PROGRESS` command workspace |
 | Organization | Department and staff list/detail/create/update; staff transfer; account create/status | `DONE` |
-| Patient | List/detail/create/update/delete with immutable identity number | `DONE` |
+| Patient | List/detail/create/update/delete; CCCD correction on the same patient UUID | `DONE` |
 | Pharmacy | Drug, stock, prescription, dispense/cancel and ADMIN outbox replay workflows | `DONE` |
 | Billing | Patient invoice lookup/detail/create/payment (V0); V1 selected-charge ledger payment, revenue-by-department, outbox replay | `DONE`, see `frontend/docs/services/billing.md` |
 | Notification | Patient history, secured detail and ADMIN manual send without exposing recipient PII | `DONE` |

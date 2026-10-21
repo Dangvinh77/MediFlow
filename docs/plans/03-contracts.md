@@ -43,6 +43,11 @@ Organization hiện yêu cầu `departmentHeadId` trong request
 `PUT /api/v1/org/departments/{id}`: UUID để bổ nhiệm, `null` để bỏ trưởng khoa;
 thiếu field là request không hợp lệ, không có nghĩa giữ nguyên. Trưởng khoa phải là bác sĩ
 đang hoạt động trong cùng khoa; không chuyển khoa của trưởng khoa trước khi bỏ/đổi bổ nhiệm.
+Đổi chức danh trưởng khoa từ `DOCTOR` sang `NURSE` hoặc chức danh không phải bác sĩ cũng
+phải bỏ/đổi bổ nhiệm trước; yêu cầu đổi khi còn giữ chức bị từ chối với lỗi hiện hành
+`422 DEPARTMENT_HEAD_INVALID`. Sau miễn nhiệm/thay thế, cho phép đổi chức danh theo validation
+nhân viên hiện có. Bổ nhiệm/miễn nhiệm không tự thay `jobTitle`; bảng quy định và giới hạn
+mô hình nằm trong [Core docs](../../backend/core-service/docs.md).
 Giữ nguyên hợp đồng này khi đóng gói Core; kiểm tra consumer theo DTO/test nguồn master.
 
 Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.
@@ -63,6 +68,33 @@ Không sửa original bytes hoặc nới so khớp để bỏ qua revoked/expire
 
 ## Event manifest
 
+### B01–B06 bổ sung ngày 2026-10-21
+
+Clinical/Lab dùng signed SYSTEM subject tương ứng để gọi
+`POST /api/v1/billing/financial-clearances/{id}/execution-starts` với
+`operationId`, `sourceType`, `sourceId`, `patientId`, `careEpisodeType`, `careEpisodeId`.
+Operation ID ổn định bằng source ID; Billing khóa account cùng đường hoàn tiền, kiểm lại quyền
+hiện tại trước cả replay và trả receipt gốc. Thời điểm bắt đầu cũ không làm replay hết hạn;
+không đổi operation ID sau timeout. Lookup hiện tại có thêm `sourceType`/`sourceId` để Lab
+đối chiếu đúng test khi ghi kết quả. Giữ nguyên grant event V1.
+
+ADMIN/CASHIER có thể đọc `GET /api/v1/billing/lab-adjustments/{testId}/refunds-due` và
+`GET /api/v1/billing/exam-adjustments/{appointmentId}/refunds-due` để đối soát nghĩa vụ còn lại.
+Cancellation fact không phải giao dịch trả tiền. Hợp đồng, snapshot lịch sử và quy trình replay
+nguồn nằm trong [Billing README](../../backend/billing-service/README.md).
+
+Gateway refresh phải đọc current identity từ
+`GET /api/v1/org/accounts/{accountId}/identity`; endpoint chỉ cho SYSTEM subject `gateway`.
+Snapshot gồm `exists`, `active`, `accountId`, `role`, `staffId`, `departmentId`, `patientId`.
+Token thiếu expiration, tài khoản khóa hoặc lookup unavailable không cấp access token mới.
+
+`POST /api/v1/org/staff` hỗ trợ `Idempotency-Key` theo actor và exact request fields.
+First create trả 201, exact replay trả 200 cùng staff ID/Location và header
+`Idempotency-Replayed: true`; khác request với cùng key trả 409
+`STAFF_IDEMPOTENCY_KEY_REUSED`. Organization outbox và receipt cùng store/transaction;
+relay giữ event ID/bytes và consumer phải chống lặp. Chi tiết vận hành tại
+[Core README](../../backend/core-service/README.md).
+
 Đây là routing/semantics manifest, không schema mới. Khóa schema bằng fixtures tại M6-02.
 
 | Fact | Logical producer | Consumer/action trong MVP |
@@ -73,6 +105,8 @@ Không sửa original bytes hoặc nới so khớp để bỏ qua revoked/expire
 | medicalrecord.created | clinical-service | Billing compatibility/EXAM source dedupe, Report compatibility |
 | medicalrecord.completed | clinical-service | Report outpatient count, Notification nếu fixture đã có |
 | lab.request.created | lab-service | V1 Billing planned charge |
+| lab.request.cancelled | lab-service | Exact-source cancellation, void unpaid charge / record remaining refund obligation |
+| appointment.exam.cancelled | clinical-service | Exact EXAM cancellation and audit, Billing adjustment evidence |
 | lab.result.created | lab-service | Clinical result, Report Lab count, optional in-app notice |
 | prescription.created | pharmacy-service | Billing Rx charge/request |
 | prescription.filled | pharmacy-service | Billing saga completion, Clinical attachment, Report items/count, in-app |

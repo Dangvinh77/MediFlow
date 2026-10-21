@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-@Transactional
+@Transactional("organizationTransactionManager")
 public class UpdateDepartmentService implements UpdateDepartmentUseCase {
 
     private final DepartmentRepository departmentRepository;
@@ -35,7 +35,7 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
             UUID departmentHeadId,
             Boolean active
     ) {
-        Department department = departmentRepository.findById(departmentId)
+        Department department = departmentRepository.findByIdForUpdate(departmentId)
                 .orElseThrow(() -> new DepartmentNotFoundException(departmentId));
 
         department.update(
@@ -47,7 +47,7 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
 
         if (departmentHeadId == null) {
             department.removeHead();
-        } else if (!departmentHeadId.equals(department.getDepartmentHeadId())) {
+        } else {
             Staff head = staffRepository.findById(departmentHeadId)
                     .orElseThrow(() -> new StaffNotFoundException(departmentHeadId));
             department.changeHead(head);

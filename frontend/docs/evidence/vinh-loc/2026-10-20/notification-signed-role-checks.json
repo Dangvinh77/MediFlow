@@ -1,0 +1,82 @@
+[
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": "2d6d3caf-412f-4fe2-a7ee-7cc5d64be4a0",
+    "role": "DOCTOR",
+    "expected": 403,
+    "scenario": "notification-detail",
+    "status": 403
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": "f1d48b7d-5afd-4343-bb04-b0ab1204b5a2",
+    "role": "DOCTOR",
+    "expected": 403,
+    "scenario": "notification-history",
+    "status": 403
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "PATIENT",
+    "expected": 200,
+    "scenario": "notification-detail",
+    "status": 200
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "PATIENT",
+    "expected": 200,
+    "scenario": "notification-history",
+    "status": 200
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "OTHER_PATIENT",
+    "expected": 403,
+    "scenario": "notification-detail",
+    "status": 403
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "OTHER_PATIENT",
+    "expected": 403,
+    "scenario": "notification-history",
+    "status": 403
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "ADMIN",
+    "expected": 200,
+    "scenario": "notification-detail",
+    "status": 200
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "ADMIN",
+    "expected": 200,
+    "scenario": "notification-history",
+    "status": 200
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": "d32e0579-7b1e-4591-9251-80eced428132",
+    "role": "NURSE",
+    "expected": 403,
+    "scenario": "notification-detail",
+    "status": 403
+  },
+  {
+    "privateFieldsAbsent": true,
+    "correlationId": null,
+    "role": "NURSE",
+    "expected": 200,
+    "scenario": "notification-history",
+    "status": 200
+  }
+]

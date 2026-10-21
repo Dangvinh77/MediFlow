@@ -8,7 +8,7 @@
 |---|---|
 | Project | MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management |
 | Review | Review 2 |
-| Baseline | 2026-10-19 · HEAD `434c609be5ad` + observed working tree |
+| Baseline | 2026-10-19 · source commit `26232b54813d` + this documentation revision |
 | Scope | Outpatient MVP; retained inpatient/surgery source remains deferred |
 | Status | Source-backed design review; not a runtime acceptance certificate |
 
@@ -26,25 +26,35 @@ This Word option uses PNG images to preserve text, technology logos, and actors.
 
 ### 1.1. System / Application Architecture
 
-Web calls same-origin `/api/*`, proxied to Gateway; Flutter calls Gateway through `GATEWAY_URL`. Gateway verifies JWT/route policy; downstream services enforce roles, ownership and business authority again. PostgreSQL 16 is one development container hosting separate context databases. RabbitMQ supplies per-consumer queues; cross-context SQL is prohibited.
+### System architecture — one backend boundary, six business services
 
-### System architecture and data boundaries
+**Part 1/4 · A4 landscape**
 
-**Reading the architecture:** Client side and Server side are explicit boundaries. Labelled request and response arrows show synchronous HTTP traffic; double-headed edges summarize a request and its return path. Dashed event edges are asynchronous messages, not HTTP responses. The Next.js server proxy runs on Server side even though its UI executes on the client. Deployment ports are intentionally omitted.
-
-**Part 1/2 · A4 portrait**
-
-![System architecture and data boundaries — Part 1/2](word-compact/panels/png/01-en-part-01.png)
+![System architecture — one backend boundary, six business services — Part 1/4](word-compact/panels/png/01-en-part-01.png)
 
 [Mermaid](word-compact/panels/mermaid/01-en-part-01.mmd) · [SVG](word-compact/panels/svg/01-en-part-01.svg)
 
-**Part 2/2 · A4 landscape**
+**Part 2/4 · A4 landscape**
 
-![System architecture and data boundaries — Part 2/2](word-compact/panels/png/01-en-part-02.png)
+![System architecture — one backend boundary, six business services — Part 2/4](word-compact/panels/png/01-en-part-02.png)
 
 [Mermaid](word-compact/panels/mermaid/01-en-part-02.mmd) · [SVG](word-compact/panels/svg/01-en-part-02.svg)
 
+**Part 3/4 · A4 landscape**
+
+![System architecture — one backend boundary, six business services — Part 3/4](word-compact/panels/png/01-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/01-en-part-03.mmd) · [SVG](word-compact/panels/svg/01-en-part-03.svg)
+
+**Part 4/4 · A4 landscape**
+
+![System architecture — one backend boundary, six business services — Part 4/4](word-compact/panels/png/01-en-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/01-en-part-04.mmd) · [SVG](word-compact/panels/svg/01-en-part-04.svg)
+
 [Original SVG](assets/svg/01-en.svg) · [Portrait PNG](word-compact/portrait/png/01-en.png) · [Landscape PNG](word-compact/landscape/png/01-en.png)
+
+One Server side boundary groups six business applications; it does not mean one backend process. Core and Support each compose two contexts with separate persistence authorities. Broker edges show configured producer/consumer capabilities, not all-to-all delivery. Next.js web hosting and same-origin /api rewrite are deployment details: frontend/next.config.ts still configures the rewrite and production standalone output. They are not a second business backend. Docker Compose orchestrates local infrastructure; no service ports or deferred Inpatient/Surgery are shown.
 
 ### Technology and tooling architecture
 
@@ -67,162 +77,420 @@ Libraries without an individual logo in the bundled set are named below; they ar
 
 Versions with `^` are manifest constraints, not installed runtime measurements. Technology names/logos do not certify production deployment.
 
-### Application architecture and dependency direction
+### Application architecture — request path and inward dependencies
 
-**Application detail:** The runtime panels describe request/response through client modules, Gateway, controllers, application services, output ports, adapters, and owned stores. The dependency panel describes source-code imports separately: Web routes → features → shared API; Flutter presentation → domain ← data; backend driving adapters → application → domain, with infrastructure implementing application ports. Gateway denial responses and downstream business errors return along the same synchronous path. Raw/legacy API exceptions remain governed by their exact wire contracts. Generic backend boxes describe the context pattern, not identical activation of every feature in every service.
+**Part 1/2 · A4 landscape**
 
-**Part 1/5 · A4 portrait**
-
-![Application architecture and dependency direction — Part 1/5](word-compact/panels/png/03-en-part-01.png)
+![Application architecture — request path and inward dependencies — Part 1/2](word-compact/panels/png/03-en-part-01.png)
 
 [Mermaid](word-compact/panels/mermaid/03-en-part-01.mmd) · [SVG](word-compact/panels/svg/03-en-part-01.svg)
 
-**Part 2/5 · A4 portrait**
+**Part 2/2 · A4 portrait**
 
-![Application architecture and dependency direction — Part 2/5](word-compact/panels/png/03-en-part-02.png)
+![Application architecture — request path and inward dependencies — Part 2/2](word-compact/panels/png/03-en-part-02.png)
 
 [Mermaid](word-compact/panels/mermaid/03-en-part-02.mmd) · [SVG](word-compact/panels/svg/03-en-part-02.svg)
 
-**Part 3/5 · A4 portrait**
-
-![Application architecture and dependency direction — Part 3/5](word-compact/panels/png/03-en-part-03.png)
-
-[Mermaid](word-compact/panels/mermaid/03-en-part-03.mmd) · [SVG](word-compact/panels/svg/03-en-part-03.svg)
-
-**Part 4/5 · A4 landscape**
-
-![Application architecture and dependency direction — Part 4/5](word-compact/panels/png/03-en-part-04.png)
-
-[Mermaid](word-compact/panels/mermaid/03-en-part-04.mmd) · [SVG](word-compact/panels/svg/03-en-part-04.svg)
-
-**Part 5/5 · A4 portrait**
-
-![Application architecture and dependency direction — Part 5/5](word-compact/panels/png/03-en-part-05.png)
-
-[Mermaid](word-compact/panels/mermaid/03-en-part-05.mmd) · [SVG](word-compact/panels/svg/03-en-part-05.svg)
-
 [Original SVG](assets/svg/03-en.svg) · [Portrait PNG](word-compact/portrait/png/03-en.png) · [Landscape PNG](word-compact/landscape/png/03-en.png)
-Java domain code is independent of Spring/JPA; ports live in application and infrastructure adapters implement them. Web remains feature-based rather than copying backend layers. Core/Support provide composition while retaining per-context datasource/Flyway/entity manager/transaction manager boundaries.
+
+Solid edges name runtime requests/results or rule evaluation; dotted implements edges name static interface realization, not HTTP. The import rule is explicit in the bottom note. The same pattern applies within each context; Core/Support composition does not merge the context databases. A local commit is not a distributed transaction. The diagram abstracts web hosting while retaining the configured same-origin gateway route.
 
 ### 1.2. Use Cases Diagrams
 
-These diagrams map MVP actors to use cases. Associations identify user groups and do not replace `@PreAuthorize` or grant access to every record. `NURSE` participates in reception where endpoint policy permits; no RECEPTIONIST role is invented. `SYSTEM` is a machine actor in sequences, not a human account.
+One diagram per human role. Common authentication goals are separate; business tasks require a valid session. Use cases describe goals, not the order of a visit.
 
-### Reception, clinical and laboratory use cases
+<!-- role-usecases:start -->
+### Detailed use cases — one diagram per role
+
+Figures 29–36 follow the supervisor’s presentation: one human actor per diagram, solid arrows to primary tasks, dashed `«include»` arrows for required supporting behavior, and dashed `«extend»` arrows from a conditional extension to its base task. An extension may have its own included subflow. Arrow direction is relational, not chronological. Sign-in and token renewal are independent goals. A valid session is a precondition of protected business tasks. Blue ovals are primary tasks; teal ovals are supporting/extension tasks. These are source capabilities, not proof of UI completeness or production enablement.
+
+**Scope correction:** PATIENT currently has authentication/refresh and own-notification access. No appointment or laboratory self-service is claimed. SYSTEM is a machine identity and has no human-role diagram. All role permissions below are intersected with the Gateway route matrix and downstream guards.
+
+#### ADMIN — Administrator tasks
 
 **A4 portrait**
 
-![Reception, clinical and laboratory use cases](word-compact/portrait/png/04-en.png)
+![ADMIN — Administrator tasks](word-compact/portrait/png/29-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/29-en.mmd) · [SVG](word-compact/portrait/svg/29-en.svg)
+
+[Original SVG](assets/svg/29-en.svg) · [Portrait PNG](word-compact/portrait/png/29-en.png) · [Landscape PNG](word-compact/landscape/png/29-en.png)
+
+This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: None.
+
+Source evidence: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### MANAGER — Manager tasks
+
+**A4 portrait**
+
+![MANAGER — Manager tasks](word-compact/portrait/png/30-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/30-en.mmd) · [SVG](word-compact/portrait/svg/30-en.svg)
+
+[Original SVG](assets/svg/30-en.svg) · [Portrait PNG](word-compact/portrait/png/30-en.png) · [Landscape PNG](word-compact/landscape/png/30-en.png)
+
+Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: E1: Inspect report coverage — coverage inspection requested; E2: Filter appointments by department — department filter selected
+
+Source evidence: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### DOCTOR — Doctor tasks
+
+**A4 portrait**
+
+![DOCTOR — Doctor tasks](word-compact/portrait/png/31-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/31-en.mmd) · [SVG](word-compact/portrait/svg/31-en.svg)
+
+[Original SVG](assets/svg/31-en.svg) · [Portrait PNG](word-compact/portrait/png/31-en.png) · [Landscape PNG](word-compact/landscape/png/31-en.png)
+
+Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: E1: Order lab test — test clinically indicated; E2: Issue prescription — medication clinically indicated
+
+Source evidence: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### NURSE — Nurse tasks
+
+**A4 portrait**
+
+![NURSE — Nurse tasks](word-compact/portrait/png/32-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/32-en.mmd) · [SVG](word-compact/portrait/svg/32-en.svg)
+
+[Original SVG](assets/svg/32-en.svg) · [Portrait PNG](word-compact/portrait/png/32-en.png) · [Landscape PNG](word-compact/landscape/png/32-en.png)
+
+[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: None.
+
+Source evidence: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### LAB_TECH — Laboratory technician tasks
+
+**A4 portrait**
+
+![LAB_TECH — Laboratory technician tasks](word-compact/portrait/png/33-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/33-en.mmd) · [SVG](word-compact/portrait/svg/33-en.svg)
+
+[Original SVG](assets/svg/33-en.svg) · [Portrait PNG](word-compact/portrait/png/33-en.png) · [Landscape PNG](word-compact/landscape/png/33-en.png)
+
+Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: E1: Filter tests by status — status filter selected
+
+Source evidence: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### PHARMACIST — Pharmacist tasks
+
+**A4 landscape**
+
+![PHARMACIST — Pharmacist tasks](word-compact/landscape/png/34-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/34-en.mmd) · [SVG](word-compact/landscape/svg/34-en.svg)
+
+[Original SVG](assets/svg/34-en.svg) · [Portrait PNG](word-compact/portrait/png/34-en.png) · [Landscape PNG](word-compact/landscape/png/34-en.png)
+
+The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: E1: Filter medicine catalogue — catalogue filter selected
+
+Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### CASHIER — Cashier tasks
+
+**A4 landscape**
+
+![CASHIER — Cashier tasks](word-compact/landscape/png/35-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/35-en.mmd) · [SVG](word-compact/landscape/svg/35-en.svg)
+
+[Original SVG](assets/svg/35-en.svg) · [Portrait PNG](word-compact/portrait/png/35-en.png) · [Landscape PNG](word-compact/landscape/png/35-en.png)
+
+This main diagram uses V1 ledger payment requests. Refund is an independent later operation on a refundable payment; it does not extend the act of paying. Legacy invoice commands remain source-supported compatibility operations outside the main V1 journey. Repeating a command preserves intent and must not collect money twice.
+
+Extension conditions: None.
+
+Source evidence: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
+
+#### PATIENT — Patient tasks
+
+**A4 landscape**
+
+![PATIENT — Patient tasks](word-compact/landscape/png/36-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/36-en.mmd) · [SVG](word-compact/landscape/svg/36-en.svg)
+
+[Original SVG](assets/svg/36-en.svg) · [Portrait PNG](word-compact/portrait/png/36-en.png) · [Landscape PNG](word-compact/landscape/png/36-en.png)
+
+This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
+
+Extension conditions: E1: Read notification detail — an owned notification is selected
+
+Source evidence: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+<!-- role-usecases:end -->
+
+### 1.3. Sequences Diagrams
+
+<!-- word-sequence-excerpts:start -->
+Word panels preserve the exact conditions enclosing each message. If a panel shows only one alternative branch, it uses `opt` with that branch condition to mark a guarded excerpt; read the complete figure for the full `alt` and other outcomes.
+<!-- word-sequence-excerpts:end -->
+
+The main journey uses the V1 outpatient contract consistently. Read in this order: schedule → arrive/check in → pay exam fee → consultation → indicated Lab/payment/results → doctor conclusion → optional prescription → payment/explicit dispense. Figures 06 and 04 are independent authentication scenarios. Each actor uses its own authorized session; abbreviated service API lifelines route through Gateway. V1 feature/acceptance gates still apply. Reports and notifications update independently and do not block care.
+
+### Sign in — validation, rejected credentials and recovery
+
+**Part 1/2 · A4 portrait**
+
+![Sign in — validation, rejected credentials and recovery — Part 1/2](word-compact/panels/png/06-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/06-en-part-01.mmd) · [SVG](word-compact/panels/svg/06-en-part-01.svg)
+
+**Part 2/2 · A4 portrait**
+
+![Sign in — validation, rejected credentials and recovery — Part 2/2](word-compact/panels/png/06-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/06-en-part-02.mmd) · [SVG](word-compact/panels/svg/06-en-part-02.svg)
+
+[Original SVG](assets/svg/06-en.svg) · [Portrait PNG](word-compact/portrait/png/06-en.png) · [Landscape PNG](word-compact/landscape/png/06-en.png)
+
+Gateway issues tokens after Core verifies the account; Core does not send a token directly to the client. Renewal is figure 04, an independent use case. Invalid request error shape follows validation handling; login success uses LoginResponse rather than an invented universal envelope.
+
+### Renew session — a separate authentication use case
+
+**A4 portrait**
+
+![Renew session — a separate authentication use case](word-compact/portrait/png/04-en.png)
 
 [Mermaid](word-compact/portrait/mermaid/04-en.mmd) · [SVG](word-compact/portrait/svg/04-en.svg)
 
 [Original SVG](assets/svg/04-en.svg) · [Portrait PNG](word-compact/portrait/png/04-en.png) · [Landscape PNG](word-compact/landscape/png/04-en.png)
 
-### Pharmacy, billing and support use cases
+Refresh validates the signed claims locally in Gateway; it does not call Core again or rotate a refresh token in the current implementation. This diagram describes the endpoint contract, not proof of automatic client refresh.
 
-**A4 portrait**
-
-![Pharmacy, billing and support use cases](word-compact/portrait/png/05-en.png)
-
-[Mermaid](word-compact/portrait/mermaid/05-en.mmd) · [SVG](word-compact/portrait/svg/05-en.svg)
-
-[Original SVG](assets/svg/05-en.svg) · [Portrait PNG](word-compact/portrait/png/05-en.png) · [Landscape PNG](word-compact/landscape/png/05-en.png)
-
-| ID | Business precondition / outcome |
-|---|---|
-| U2 | Valid patient/staff; no past appointment; unique PENDING patient/day; check-in does not authorize examination. |
-| U3 | V1 requires exact EXAM clearance or an existing audited override; completion needs diagnosis/outpatient disposition. |
-| U4–U5 | Explicit order; V1 LAB_TEST clearance matches testId before protected actions; nonempty results and valid dates. |
-| U7–U9 | Server price snapshots; reservations do not decrement stock; atomic deduplicated dispensing; V1 requires actor and clearance. |
-| U10–U11 | Billing owns money; partial payment guards apply; same-key replay returns the receipt, changed intent conflicts. |
-| U12–U13 | Reports are eventually consistent; unavailable differs from zero; notifications do not determine authority. |
-
-### 1.3. Sequences Diagrams
-
-### Login and authorized access — SOURCE
-
-**A4 portrait**
-
-![Login and authorized access — SOURCE](word-compact/portrait/png/06-en.png)
-
-[Mermaid](word-compact/portrait/mermaid/06-en.mmd) · [SVG](word-compact/portrait/svg/06-en.svg)
-
-[Original SVG](assets/svg/06-en.svg) · [Portrait PNG](word-compact/portrait/png/06-en.png) · [Landscape PNG](word-compact/landscape/png/06-en.png)
-
-### Check-in → EXAM payment → examination — V1 GATED
-
-**Part 1/2 · A4 portrait**
-
-![Check-in → EXAM payment → examination — V1 GATED — Part 1/2](word-compact/panels/png/07-en-part-01.png)
-
-[Mermaid](word-compact/panels/mermaid/07-en-part-01.mmd) · [SVG](word-compact/panels/svg/07-en-part-01.svg)
-
-**Part 2/2 · A4 portrait**
-
-![Check-in → EXAM payment → examination — V1 GATED — Part 2/2](word-compact/panels/png/07-en-part-02.png)
-
-[Mermaid](word-compact/panels/mermaid/07-en-part-02.mmd) · [SVG](word-compact/panels/svg/07-en-part-02.svg)
-
-[Original SVG](assets/svg/07-en.svg) · [Portrait PNG](word-compact/portrait/png/07-en.png) · [Landscape PNG](word-compact/landscape/png/07-en.png)
-
-### Laboratory order and result attachment — V1 GATED
+### Schedule appointment before arrival
 
 **Part 1/2 · A4 landscape**
 
-![Laboratory order and result attachment — V1 GATED — Part 1/2](word-compact/panels/png/08-en-part-01.png)
+![Schedule appointment before arrival — Part 1/2](word-compact/panels/png/05-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/05-en-part-01.mmd) · [SVG](word-compact/panels/svg/05-en-part-01.svg)
+
+**Part 2/2 · A4 landscape**
+
+![Schedule appointment before arrival — Part 2/2](word-compact/panels/png/05-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/05-en-part-02.mmd) · [SVG](word-compact/panels/svg/05-en-part-02.svg)
+
+[Original SVG](assets/svg/05-en.svg) · [Portrait PNG](word-compact/portrait/png/05-en.png) · [Landscape PNG](word-compact/landscape/png/05-en.png)
+
+PATIENT requests scheduling through the nurse; no patient self-service API is invented. New patients are registered in Core first, outside this sequence. Only a successful saved appointment is a valid input to check-in (figure 07). Scheduling itself is not proof of payment or permission to start consultation.
+
+### Arrival → exam payment → start consultation (V1)
+
+**Part 1/3 · A4 landscape**
+
+![Arrival → exam payment → start consultation (V1) — Part 1/3](word-compact/panels/png/07-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/07-en-part-01.mmd) · [SVG](word-compact/panels/svg/07-en-part-01.svg)
+
+**Part 2/3 · A4 portrait**
+
+![Arrival → exam payment → start consultation (V1) — Part 2/3](word-compact/panels/png/07-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/07-en-part-02.mmd) · [SVG](word-compact/panels/svg/07-en-part-02.svg)
+
+**Part 3/3 · A4 landscape**
+
+![Arrival → exam payment → start consultation (V1) — Part 3/3](word-compact/panels/png/07-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/07-en-part-03.mmd) · [SVG](word-compact/panels/svg/07-en-part-03.svg)
+
+[Original SVG](assets/svg/07-en.svg) · [Portrait PNG](word-compact/portrait/png/07-en.png) · [Landscape PNG](word-compact/landscape/png/07-en.png)
+
+Normal V1 outpatient path. Check-in precedes fee collection, and fee authorization precedes examination. Audited emergency override remains a separately authorized source capability, not a fallback for ordinary unpaid visits. Actors use their own sessions; API lifelines abbreviate Gateway transport only. Event arrows are asynchronous and duplicate delivery does not create a second fee.
+
+### Lab order → payment → test → doctor reads results (V1)
+
+**Part 1/4 · A4 portrait**
+
+![Lab order → payment → test → doctor reads results (V1) — Part 1/4](word-compact/panels/png/08-en-part-01.png)
 
 [Mermaid](word-compact/panels/mermaid/08-en-part-01.mmd) · [SVG](word-compact/panels/svg/08-en-part-01.svg)
 
-**Part 2/2 · A4 landscape**
+**Part 2/4 · A4 landscape**
 
-![Laboratory order and result attachment — V1 GATED — Part 2/2](word-compact/panels/png/08-en-part-02.png)
+![Lab order → payment → test → doctor reads results (V1) — Part 2/4](word-compact/panels/png/08-en-part-02.png)
 
 [Mermaid](word-compact/panels/mermaid/08-en-part-02.mmd) · [SVG](word-compact/panels/svg/08-en-part-02.svg)
 
+**Part 3/4 · A4 portrait**
+
+![Lab order → payment → test → doctor reads results (V1) — Part 3/4](word-compact/panels/png/08-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/08-en-part-03.mmd) · [SVG](word-compact/panels/svg/08-en-part-03.svg)
+
+**Part 4/4 · A4 landscape**
+
+![Lab order → payment → test → doctor reads results (V1) — Part 4/4](word-compact/panels/png/08-en-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/08-en-part-04.mmd) · [SVG](word-compact/panels/svg/08-en-part-04.svg)
+
 [Original SVG](assets/svg/08-en.svg) · [Portrait PNG](word-compact/portrait/png/08-en.png) · [Landscape PNG](word-compact/landscape/png/08-en.png)
 
-### Payment and dispensing — V0 compatibility saga
+The payment reference imports the complete success/failure payment subflow, not an unconditional successful payment. Starting and entering results both enforce current authority. The technician records results; the doctor interprets them in figure 37. Support projections do not block this path and are omitted. A failed result cannot produce the completion event.
 
-**A4 portrait**
-
-![Payment and dispensing — V0 compatibility saga](word-compact/portrait/png/09-en.png)
-
-[Mermaid](word-compact/portrait/mermaid/09-en.mmd) · [SVG](word-compact/portrait/svg/09-en.svg)
-
-[Original SVG](assets/svg/09-en.svg) · [Portrait PNG](word-compact/portrait/png/09-en.png) · [Landscape PNG](word-compact/landscape/png/09-en.png)
-V1 dispensing is a different path: payment creates a receipt/clearance; PHARMACIST invokes the protected action with exact PRESCRIPTION clearance and authenticated actor. V1 is not drawn as automatic dispensing from a payment event. V1 sequences describe gated source behavior, not universally active workflows.
-
-### 1.4. Class Diagrams
-
-These diagrams summarize real classes with selected fields/methods, omitting getters/constructors. Cross-context references are not Java entity associations.
-
-### Clinical and Lab class diagram
-
-**A4 landscape**
-
-![Clinical and Lab class diagram](word-compact/landscape/png/10-en.png)
-
-[Mermaid](word-compact/landscape/mermaid/10-en.mmd) · [SVG](word-compact/landscape/svg/10-en.svg)
-
-[Original SVG](assets/svg/10-en.svg) · [Portrait PNG](word-compact/portrait/png/10-en.png) · [Landscape PNG](word-compact/landscape/png/10-en.png)
-
-### Pharmacy and Billing class diagram
+### Doctor explains consultation outcome to patient
 
 **Part 1/2 · A4 portrait**
 
-![Pharmacy and Billing class diagram — Part 1/2](word-compact/panels/png/11-en-part-01.png)
+![Doctor explains consultation outcome to patient — Part 1/2](word-compact/panels/png/37-en-part-01.png)
 
-[Mermaid](word-compact/panels/mermaid/11-en-part-01.mmd) · [SVG](word-compact/panels/svg/11-en-part-01.svg)
+[Mermaid](word-compact/panels/mermaid/37-en-part-01.mmd) · [SVG](word-compact/panels/svg/37-en-part-01.svg)
+
+**Part 2/2 · A4 portrait**
+
+![Doctor explains consultation outcome to patient — Part 2/2](word-compact/panels/png/37-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/37-en-part-02.mmd) · [SVG](word-compact/panels/svg/37-en-part-02.svg)
+
+[Original SVG](assets/svg/37-en.svg) · [Portrait PNG](word-compact/portrait/png/37-en.png) · [Landscape PNG](word-compact/landscape/png/37-en.png)
+
+The actor reads Lab results through its authorized API; asynchronous Clinical attachment may arrive later. This figure models professional explanation to the patient, not a new software result-delivery endpoint. Medication fulfilment is a separate Pharmacy/Billing process and is not proof of consultation-result delivery. The clinical completion command uses source lifecycle rules; it is not made dependent on a fabricated dispense condition.
+
+### Create prescription — an optional separate workflow
+
+**Part 1/2 · A4 portrait**
+
+![Create prescription — an optional separate workflow — Part 1/2](word-compact/panels/png/38-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/38-en-part-01.mmd) · [SVG](word-compact/panels/svg/38-en-part-01.svg)
 
 **Part 2/2 · A4 landscape**
 
-![Pharmacy and Billing class diagram — Part 2/2](word-compact/panels/png/11-en-part-02.png)
+![Create prescription — an optional separate workflow — Part 2/2](word-compact/panels/png/38-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/38-en-part-02.mmd) · [SVG](word-compact/panels/svg/38-en-part-02.svg)
+
+[Original SVG](assets/svg/38-en.svg) · [Portrait PNG](word-compact/portrait/png/38-en.png) · [Landscape PNG](word-compact/landscape/png/38-en.png)
+
+Prices come from server catalogue snapshots, not client-supplied amounts. Source context is validated rather than inferred from a diagnosis string or arbitrary UUID. Retry semantics follow the actual endpoint; this diagram does not invent a universal prescription idempotency key.
+
+### Prescription payment and explicit pharmacist dispensing (V1)
+
+**Part 1/3 · A4 portrait**
+
+![Prescription payment and explicit pharmacist dispensing (V1) — Part 1/3](word-compact/panels/png/09-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/09-en-part-01.mmd) · [SVG](word-compact/panels/svg/09-en-part-01.svg)
+
+**Part 2/3 · A4 portrait**
+
+![Prescription payment and explicit pharmacist dispensing (V1) — Part 2/3](word-compact/panels/png/09-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/09-en-part-02.mmd) · [SVG](word-compact/panels/svg/09-en-part-02.svg)
+
+**Part 3/3 · A4 landscape**
+
+![Prescription payment and explicit pharmacist dispensing (V1) — Part 3/3](word-compact/panels/png/09-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/09-en-part-03.mmd) · [SVG](word-compact/panels/svg/09-en-part-03.svg)
+
+[Original SVG](assets/svg/09-en.svg) · [Portrait PNG](word-compact/portrait/png/09-en.png) · [Landscape PNG](word-compact/landscape/png/09-en.png)
+
+The V0 automatic payment.completed saga is a legacy compatibility mechanism, not the main V1 journey. Pharmacist command, current target clearance, lifecycle and locked stock evidence are mandatory. Physical handover is shown as a human action after persisted confirmation; the source does not prove receipt by the patient.
+
+### 1.4. Class Diagrams
+
+Domain classes are grouped by deployed service. Core/Support preserve their internal context boundaries; Pharmacy/Billing share a figure but remain two independent services. Attributes are selective and must match source; dotted integration dependencies are not database relationships.
+
+### Core service — Organization and Patient modules
+
+**A4 landscape**
+
+![Core service — Organization and Patient modules](word-compact/landscape/png/39-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/39-en.mmd) · [SVG](word-compact/landscape/svg/39-en.svg)
+
+[Original SVG](assets/svg/39-en.svg) · [Portrait PNG](word-compact/portrait/png/39-en.png) · [Landscape PNG](word-compact/landscape/png/39-en.png)
+
+Both modules run in Core but retain separate Organization/Patient stores. Identity references are optional and depend on account role; the drawing does not create a cross-database foreign key. Infrastructure classes are excluded from this domain overview.
+
+### Clinical service — domain classes
+
+**Part 1/2 · A4 landscape**
+
+![Clinical service — domain classes — Part 1/2](word-compact/panels/png/10-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/10-en-part-01.mmd) · [SVG](word-compact/panels/svg/10-en-part-01.svg)
+
+**Part 2/2 · A4 landscape**
+
+![Clinical service — domain classes — Part 2/2](word-compact/panels/png/10-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/10-en-part-02.mmd) · [SVG](word-compact/panels/svg/10-en-part-02.svg)
+
+[Original SVG](assets/svg/10-en.svg) · [Portrait PNG](word-compact/portrait/png/10-en.png) · [Landscape PNG](word-compact/landscape/png/10-en.png)
+
+All classes in this figure belong to Clinical. LabTest/LabResult move to figure 40. Dashed UUID references do not imply JPA navigation. Appointment-backed records are distinct from preserved legacy records without an appointment. Selected attributes/methods are copied from source; no generated getters are listed.
+
+### Lab service — tests, results and financial authority
+
+**A4 landscape**
+
+![Lab service — tests, results and financial authority](word-compact/landscape/png/40-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/40-en.mmd) · [SVG](word-compact/landscape/svg/40-en.svg)
+
+[Original SVG](assets/svg/40-en.svg) · [Portrait PNG](word-compact/portrait/png/40-en.png) · [Landscape PNG](word-compact/landscape/png/40-en.png)
+
+Clinical record and indication are external UUID references, not Clinical objects inside Lab. Lab stores its own received clearance evidence; Billing remains the authority for financial effects. Results are empty before completion and must be nonempty when completed.
+
+### Pharmacy and Billing — separate services, explicit contracts
+
+**Part 1/3 · A4 landscape**
+
+![Pharmacy and Billing — separate services, explicit contracts — Part 1/3](word-compact/panels/png/11-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/11-en-part-01.mmd) · [SVG](word-compact/panels/svg/11-en-part-01.svg)
+
+**Part 2/3 · A4 landscape**
+
+![Pharmacy and Billing — separate services, explicit contracts — Part 2/3](word-compact/panels/png/11-en-part-02.png)
 
 [Mermaid](word-compact/panels/mermaid/11-en-part-02.mmd) · [SVG](word-compact/panels/svg/11-en-part-02.svg)
 
+**Part 3/3 · A4 portrait**
+
+![Pharmacy and Billing — separate services, explicit contracts — Part 3/3](word-compact/panels/png/11-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/11-en-part-03.mmd) · [SVG](word-compact/panels/svg/11-en-part-03.svg)
+
 [Original SVG](assets/svg/11-en.svg) · [Portrait PNG](word-compact/portrait/png/11-en.png) · [Landscape PNG](word-compact/landscape/png/11-en.png)
 
+Namespaces are two independent service boundaries, each with its own database. Cross-boundary dependencies denote event/UUID contracts, never an entity relationship or shared transaction. The V1 class view intentionally uses ledger models; legacy Invoice remains in the database dictionary and compatibility source. StockReservation/DispenseSlip are created with a prescription in the represented successful creation workflow.
+
+### Support service — separate reporting and notification models
+
+**A4 portrait**
+
+![Support service — separate reporting and notification models](word-compact/portrait/png/41-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/41-en.mmd) · [SVG](word-compact/portrait/svg/41-en.svg)
+
+[Original SVG](assets/svg/41-en.svg) · [Portrait PNG](word-compact/portrait/png/41-en.png) · [Landscape PNG](word-compact/landscape/png/41-en.png)
+
+Report and Notification are composed in Support but have separate databases and transaction managers. There is no invented domain association between independent projections. Domain events update these models asynchronously; they are not required participants in the consultation/result/dispense request path.
+
 ## 2. Data Flow Diagram
+
+Consistency rule: EXAM, LAB_TEST and PRESCRIPTION are distinct payment targets. A stored payment is not an immediate guarantee of event delivery. Clinical outcome explanation and physical medicine handover are human interactions; neither implies a new patient self-service endpoint. The older V0 invoice/saga tables and algorithms remain compatibility references, outside the main V1 sequences.
 
 The DFD represents business data, not endpoint contracts or cross-service transactions. Context process P0 decomposes into P1–P6 at Level 1; implementation routes all actor requests through clients/Gateway.
 
@@ -340,21 +608,21 @@ The following ERDs are physical slices of each database derived from migrations.
 
 ### ERD — Lab
 
-**A4 landscape**
+**A4 portrait**
 
-![ERD — Lab](word-compact/landscape/png/18-en.png)
+![ERD — Lab](word-compact/portrait/png/18-en.png)
 
-[Mermaid](word-compact/landscape/mermaid/18-en.mmd) · [SVG](word-compact/landscape/svg/18-en.svg)
+[Mermaid](word-compact/portrait/mermaid/18-en.mmd) · [SVG](word-compact/portrait/svg/18-en.svg)
 
 [Original SVG](assets/svg/18-en.svg) · [Portrait PNG](word-compact/portrait/png/18-en.png) · [Landscape PNG](word-compact/landscape/png/18-en.png)
 
 ### ERD — Pharmacy
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Pharmacy](word-compact/portrait/png/19-en.png)
+![ERD — Pharmacy](word-compact/landscape/png/19-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/19-en.mmd) · [SVG](word-compact/portrait/svg/19-en.svg)
+[Mermaid](word-compact/landscape/mermaid/19-en.mmd) · [SVG](word-compact/landscape/svg/19-en.svg)
 
 [Original SVG](assets/svg/19-en.svg) · [Portrait PNG](word-compact/portrait/png/19-en.png) · [Landscape PNG](word-compact/landscape/png/19-en.png)
 
@@ -372,7 +640,7 @@ The following ERDs are physical slices of each database derived from migrations.
 
 [Mermaid](word-compact/panels/mermaid/20-en-part-02.mmd) · [SVG](word-compact/panels/svg/20-en-part-02.svg)
 
-**Part 3/4 · A4 portrait**
+**Part 3/4 · A4 landscape**
 
 ![ERD — Billing — Part 3/4](word-compact/panels/png/20-en-part-03.png)
 
@@ -398,11 +666,11 @@ The following ERDs are physical slices of each database derived from migrations.
 
 ### ERD — Report
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Report](word-compact/portrait/png/22-en.png)
+![ERD — Report](word-compact/landscape/png/22-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/22-en.mmd) · [SVG](word-compact/portrait/svg/22-en.svg)
+[Mermaid](word-compact/landscape/mermaid/22-en.mmd) · [SVG](word-compact/landscape/svg/22-en.svg)
 
 [Original SVG](assets/svg/22-en.svg) · [Portrait PNG](word-compact/portrait/png/22-en.png) · [Landscape PNG](word-compact/landscape/png/22-en.png)
 Additional unique-index cardinality: an appointment has at most one medical_record (`uq_medical_record_appointment`); a prescription has at most one dispense_slip; a financial_clearance belongs to one payment_request. Report is a read model with source UUIDs and no FK to Billing/Pharmacy. PAYMENT_REQUEST.invoice_id must not be inferred as an FK to the V0 INVOICE table.
@@ -1085,11 +1353,11 @@ The following tables represent the outpatient journey. Column definitions are ex
 
 ### Database deployment: one development server, eight authorities
 
-**A4 portrait**
+**A4 landscape**
 
-![Database deployment: one development server, eight authorities](word-compact/portrait/png/23-en.png)
+![Database deployment: one development server, eight authorities](word-compact/landscape/png/23-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/23-en.mmd) · [SVG](word-compact/portrait/svg/23-en.svg)
+[Mermaid](word-compact/landscape/mermaid/23-en.mmd) · [SVG](word-compact/landscape/svg/23-en.svg)
 
 [Original SVG](assets/svg/23-en.svg) · [Portrait PNG](word-compact/portrait/png/23-en.png) · [Landscape PNG](word-compact/landscape/png/23-en.png)
 
@@ -1099,11 +1367,11 @@ The sitemap is derived from `frontend/src/app/**/page.tsx` and `mobile/lib/app/r
 
 ### Web sitemap by route group
 
-**A4 portrait**
+**A4 landscape**
 
-![Web sitemap by route group](word-compact/portrait/png/24-en.png)
+![Web sitemap by route group](word-compact/landscape/png/24-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/24-en.mmd) · [SVG](word-compact/portrait/svg/24-en.svg)
+[Mermaid](word-compact/landscape/mermaid/24-en.mmd) · [SVG](word-compact/landscape/svg/24-en.svg)
 
 [Original SVG](assets/svg/24-en.svg) · [Portrait PNG](word-compact/portrait/png/24-en.png) · [Landscape PNG](word-compact/landscape/png/24-en.png)
 
@@ -1162,11 +1430,11 @@ The sitemap is derived from `frontend/src/app/**/page.tsx` and `mobile/lib/app/r
 
 ### Mobile sitemap and implementation level
 
-**A4 landscape**
+**A4 portrait**
 
-![Mobile sitemap and implementation level](word-compact/landscape/png/25-en.png)
+![Mobile sitemap and implementation level](word-compact/portrait/png/25-en.png)
 
-[Mermaid](word-compact/landscape/mermaid/25-en.mmd) · [SVG](word-compact/landscape/svg/25-en.svg)
+[Mermaid](word-compact/portrait/mermaid/25-en.mmd) · [SVG](word-compact/portrait/svg/25-en.svg)
 
 [Original SVG](assets/svg/25-en.svg) · [Portrait PNG](word-compact/portrait/png/25-en.png) · [Landscape PNG](word-compact/landscape/png/25-en.png)
 Loading/error/empty/retry states must be explicit; 401 requires sign-in and does not automatically resend a mutation with unknown outcome. UI role gating serves UX only. Flutter has real login and read-only Appointment/Lab; remaining workspaces are not presented as completed native functionality.
@@ -1228,7 +1496,6 @@ Source: `LedgerPaymentService.complete`. Lock the idempotency key, then account/
 
 ### 6.3. Event delivery, deduplication and recovery
 
-
 ### Outbox / inbox recovery algorithm
 
 **A4 portrait**
@@ -1267,6 +1534,21 @@ Accept a fact with valid source → verify receipt/fingerprint → update projec
 | Mobile routes | [mobile/lib/app/router.dart](../../../../mobile/lib/app/router.dart) |
 | Review 1 baseline | [docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md](../../01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md) |
 
-This review reads source/config/migrations and cross-checks the graph index; SQL marked parse_partial is read directly from files. Graph node/edge counts do not prove runtime integration. Acceptance logs have their own dates/profiles; default flags are not enabled for this report. Existing working-tree changes are preserved and this task does not commit/push them.
+This review reads source/config/migrations and cross-checks the graph index; SQL marked parse_partial is read directly from files. Graph node/edge counts do not prove runtime integration. Acceptance logs have their own dates/profiles; default flags are not enabled for this report. This revision changes documentation and assets only; production behavior and activation flags are unchanged.
 
 Assets: [Mermaid source](assets/mermaid/), [SVG](assets/svg/), [logos](assets/logos/), [theme configuration](assets/mermaid-config.json). Logos identify their respective projects, sourced from [Devicon](https://github.com/devicons/devicon/tree/v2.17.0); the stick-figure actor is an SVG authored for this report.
+
+<!-- supervisor-evidence:start -->
+### Additional source evidence
+
+Supervisor revision: figures 04/05 replace the former overviews with independent refresh/booking sequences. Use-case overviews are replaced by the eight role diagrams 29–36. Figures 37–41 add outcome, prescribing and service-grouped class models. Readability panels are ordered extracts of a complete figure: they retain guards, and message numbering continues across sequence panels.
+
+| Concern | Source |
+|---|---|
+| Sign-in / refresh | [AuthController.java](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) |
+| Check-in / fee authority / exam start | [ClinicalCareFinanceApplicationService.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalCareFinanceApplicationService.java) |
+| Persisted laboratory indication | [ClinicalLabOrder.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/ClinicalLabOrder.java) |
+| Lab authorization / result commands | [LabController.java](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) |
+| Explicit V1 dispense transaction | [CareDispenseTransactionService.java](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/application/service/CareDispenseTransactionService.java) |
+| Web hosting / gateway rewrite | [next.config.ts](../../../../frontend/next.config.ts) |
+<!-- supervisor-evidence:end -->

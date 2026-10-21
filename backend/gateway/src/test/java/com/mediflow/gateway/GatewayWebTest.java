@@ -41,6 +41,20 @@ import static org.mockito.Mockito.when;
 @AutoConfigureWebTestClient
 class GatewayWebTest {
     @Test
+    void credentialVerificationRequiresSignedGatewayServiceSubject() {
+        for (String caller : java.util.List.of("pharmacy-service", "gateway")) {
+            webTestClient.post().uri("/api/v1/org/accounts/verify")
+                    .header(HttpHeaders.AUTHORIZATION, bearer(jwt.issueServiceToken(
+                            caller, Roles.SYSTEM, UUID.randomUUID().toString())))
+                    .header("X-Service-Id", "gateway")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue("{\"username\":\"admin\",\"password\":\"password\"}")
+                    .exchange().expectStatus().isEqualTo(caller.equals("gateway")
+                            ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @Test
     void reportMaintenanceReadsRequireAdminWhileReportReadersKeepTheirRoles() {
         String id = UUID.randomUUID().toString();
         for (String path : java.util.List.of(
@@ -67,6 +81,14 @@ class GatewayWebTest {
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/operations/daily", Roles.DOCTOR);
         expectForbidden(HttpMethod.GET, "/api/v1/reports/financial/daily", Roles.DOCTOR);
         expectForbidden(HttpMethod.GET, "/api/v1/reports/unknown", Roles.ADMIN);
+    }
+
+    @Test
+    void reportCoverageWithoutSupportReturnsUnavailableRatherThanApproval() {
+        expectDownstreamUnavailable(HttpMethod.GET,
+                "/api/v1/reports/outpatient/coverage/preview", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.POST,
+                "/api/v1/reports/outpatient/coverage/acceptances", Roles.ADMIN);
     }
 
     @Test
@@ -163,6 +185,20 @@ class GatewayWebTest {
         assertUnauthorized(expired);
         assertUnauthorized(tampered);
         assertUnauthorized(refresh);
+    }
+
+    @Test
+    void humanAccessTokenWithoutExpiration_returns401Envelope() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String token = Jwts.builder()
+                .subject(UUID.randomUUID().toString())
+                .claim(JwtClaims.ROLE, Roles.ADMIN)
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .issuedAt(Date.from(Instant.now()))
+                .signWith(key)
+                .compact();
+
+        assertUnauthorized(token);
     }
 
     @Test

@@ -1,14 +1,28 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 45, "boxMargin": 6, "boxTextMargin": 4, "noteMargin": 7, "messageMargin": 20, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 flowchart TB
- GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Spring Cloud Gateway<br/>JWT / route authorization"]
- APPS["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/><b>Server side · 6 deployments</b><br/>Core: Organization + Patient<br/>Clinical · Lab · Pharmacy · Billing<br/>Support: Report + Notification<br/>Java 21 / Spring Boot 3.3.5"]
- DB["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='34' height='34'/><br/>PostgreSQL 16 · 8 context stores<br/>Core → organization / patient<br/>Clinical → clinical · Lab → lab<br/>Pharmacy → pharmacy · Billing → billing<br/>Support → report / notification"]
- EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Eureka<br/>Service registry"]
- MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='34' height='34'/><br/>RabbitMQ · retry / DLQ<br/>Publish: Clinical / Lab / Pharmacy / Billing<br/>Consume: Support and configured contexts"]
- DOCK["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/docker/docker-original.svg' width='34' height='34'/><br/>Docker Compose<br/>Development orchestration"]
- GW <-->|HTTP request / JSON response| APPS
- APPS <-->|Own store read / write| DB
- APPS -. register / discover .-> EU
- APPS -. committed outbox events .-> MQ
- MQ -. configured inbox consumers .-> APPS
- DOCK -. hosts .-> APPS
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+ subgraph SERVICES["Independently deployed business applications"]
+ CORE["Core<br/>Organization + Patient"]
+ CL["Clinical<br/>Appointments / consultation"]
+ LAB["Lab<br/>Tests / results"]
+ PH["Pharmacy<br/>Prescriptions / stock / dispensing"]
+ BI["Billing<br/>Charges / payment / clearance"]
+ SU["Support<br/>Report + Notification"]
+ end
+ MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ<br/>Domain events / retry / DLQ"]
+ EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> Eureka<br/>Service registry"]
+ end
+ CL <-->|Authorized identity lookup| CORE
+ LAB <-->|Clinical order context via REST| CL
+ PH <-->|Clinical prescription context via REST| CL
+ CORE -.->|Publish committed facts| MQ
+ CL -.->|Publish committed facts| MQ
+ LAB -.->|Publish committed facts| MQ
+ PH -.->|Publish committed facts| MQ
+ BI -.->|Publish committed facts| MQ
+ MQ -.->|Deliver to subscribed consumers| CL
+ MQ -.->|Deliver to subscribed consumers| LAB
+ MQ -.->|Deliver to subscribed consumers| PH
+ MQ -.->|Deliver to subscribed consumers| BI
+ MQ -.->|Deliver to subscribed consumers| SU
+ SERVICES -.->|Register / discover| EU

@@ -1,5 +1,45 @@
 # Frontend Service: Notification
 
+## Signed closeout — 2026-10-20
+
+Vinh's delegated Vinh/Lộc closeout preserves the existing Notification implementation and Huy's
+prior work. Real issuer accounts now verify manual IN_APP send and safe detail rendering through
+Gateway: ADMIN and the owning PATIENT receive 200; another PATIENT, DOCTOR and NURSE receive 403
+for detail. History allows ADMIN, owning PATIENT and NURSE; DOCTOR and another PATIENT receive 403.
+Ten signed role checks preserve the privacy DTO (no recipient address/provider payload/retry count).
+Browser evidence shows own-patient detail and cross-patient denial without retry/private content.
+
+`FE-NOTIFICATION-04` now includes this signed IN_APP/browser evidence in addition to local tests.
+This does not close all HF6-14 criteria or email/SMS provider acceptance. `FE-NOTIFICATION-03`
+remains contract-blocked: no resend/read-state command is invented. A verified patient UUID is
+still entered explicitly rather than inferred from account subject. See
+[evidence and limits](../evidence/vinh-loc/2026-10-20/README.md). Older checkpoints below describe
+what had been verified at their dates.
+
+
+2026-10-20 detail follow-up: authorized ADMIN/PATIENT readers can explicitly reload the same
+notification with GET to observe updated delivery status. Refresh clears the previous private
+result while pending; it never resends a notification or polls automatically. Named error feedback
+receives focus after read failure; retry/refresh returns focus to the new title only when the user
+has not moved elsewhere. HTTP 403 still has no retry control. Session/resource guards discard late
+results. This is local FE verification, not signed PATIENT/cross-patient or provider acceptance.
+
+2026-10-19 actual Support intake check: replaying the known PrescriptionFilled event preserved one
+observed Notification notice, alongside one Report journal and Clinical attachment. This is backend
+intake/deduplication evidence, not signed Notification browser privacy, manual delivery or provider
+acceptance. HF6-14 remains open; see [current evidence](../evidence/huy-six-service/2026-10-19/README.md).
+
+2026-10-19 timeout follow-up: HTTP 408 joins network/5xx/unreadable-success outcomes. Manual send
+locks for history reconciliation, retains correlation and focuses feedback; timeout details never
+become editable field errors. No blind resend or idempotency header is introduced. See
+[plan section 13](../huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19).
+
+2026-10-19 keyboard follow-up: send validation focuses the earliest visible field rather than server
+detail order. General errors, denied commands and unknown outcome focus the error feedback after
+saving settles; locked controls are not targeted. No automatic resend is added. See
+[plan section 11](../huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19)
+for local tests; signed Notification acceptance remains open.
+
 **Owner:** Lộc (`locgit-89`)  
 **Backend:** `backend/notification-service/**`  
 **Contract context:** [`docs/ai/services/notification.md`](../../../docs/ai/services/notification.md)
@@ -47,7 +87,7 @@ the history/detail views or newly persisted by the form.
 - `FE-NOTIFICATION-03` — `BLOCKED`: retry/read-state commands do not exist in the live contract.
 - `FE-NOTIFICATION-04` — `DONE — FE local`: API, validation and component tests cover pagination,
   roles, channel/status display, errors, stale/session/unmount guards, privacy and manual send.
-  Real signed-role/provider/browser acceptance remains HF6-14.
+  Signed IN_APP role/browser acceptance is recorded above; remaining provider/HF6-14 scope stays open.
 
 ## Handoffs and blockers
 
@@ -67,3 +107,17 @@ codes. UI role hiding does not replace backend authorization for a patient UUID.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Notification tests when available.
 Smoke test invalid UUID, empty/error/retry, privacy-safe rendering, and cross-patient denial.
+
+2026-10-20 history follow-up: explicit GET refresh retains the submitted patient and current page,
+including empty results, and displays the result patient separately from the editable UUID draft.
+Loading removes old rows. Retry/pagination/refresh can restore focus to a named result/error when
+focus has fallen to the body, preserving another focused control. A forbidden scope has no retry.
+Notification local regression: 68/68 tests in 3 files; signed ownership/provider acceptance stays
+open in HF6-14 and the existing consolidated Huy handoff.
+
+2026-10-20 signed follow-up: actual issuer ADMIN/NURSE/PATIENT browser checks via Gateway→Support
+now cover manual IN_APP, owner/foreign denial, NURSE history-only access, lifecycle/payment detail
+privacy and Support outage→keyboard retry recovery. HF6-14.1/.2/.4 close with an integrated-release
+HOLD verdict. Refund consumer remains OFF, refund and signed missing-patient-claim runtime checks
+remain open under HF6-14.3; EMAIL/SMS external delivery is unverified. See
+[closeout evidence](../evidence/huy-six-service/2026-10-20-closeout/README.md) and plan section 18.

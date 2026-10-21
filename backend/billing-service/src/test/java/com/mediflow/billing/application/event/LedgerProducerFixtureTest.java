@@ -84,11 +84,18 @@ class LedgerProducerFixtureTest {
         var payments = mock(LedgerPaymentRepositoryPort.class); var refunds = mock(LedgerRefundRepositoryPort.class); var events = mock(LedgerEventPort.class);
         when(payments.findByIdempotencyKey("refund")).thenReturn(Optional.empty());
         when(refunds.lockOriginal(p.originalTransactionId())).thenReturn(new LedgerRefundRepositoryPort.RefundContext(account, original, BigDecimal.ZERO));
+        when(refunds.outpatientRefundEligibility(p.originalTransactionId())).thenReturn(
+                new LedgerRefundRepositoryPort.OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO));
         new com.mediflow.billing.application.service.LedgerRefundService(payments, refunds, events, Mappers.getMapper(LedgerPaymentMapper.class),
                 Clock.fixed(p.completedAt(), ZoneOffset.UTC)).refund(p.originalTransactionId(),
                 new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("refund", p.amount(), "Private audit reason", PaymentMethod.CASH),
                 id(9), id(9).toString());
-        var captured = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(p.accountId()), captured.capture());
+        var captured = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        if (account.getCareEpisodeType() == CareEpisodeType.OUTPATIENT_VISIT) {
+            verify(events).appendForOutpatientRequest(eq(p.accountId()), eq(original.getPaymentRequestId()), captured.capture());
+        } else {
+            verify(events).appendHeld(eq(p.accountId()), captured.capture());
+        }
         var actual = mapper.<JsonNode>valueToTree(captured.getValue());
         ((com.fasterxml.jackson.databind.node.ObjectNode) actual).set("eventId", expected.path("eventId"));
         ((com.fasterxml.jackson.databind.node.ObjectNode) actual.path("payload")).set("refundTransactionId", expected.path("payload").path("refundTransactionId"));

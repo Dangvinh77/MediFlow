@@ -11,12 +11,14 @@ import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
 import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.AccountRepository;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.application.port.out.StaffCreationReceiptRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService;
 import com.mediflow.organization.application.service.CreateAccountService;
@@ -28,6 +30,7 @@ import com.mediflow.organization.application.service.GetStaffService;
 import com.mediflow.organization.application.service.LookupDepartmentService;
 import com.mediflow.organization.application.service.LookupRoomService;
 import com.mediflow.organization.application.service.LookupStaffIdentityService;
+import com.mediflow.organization.application.service.LookupAccountIdentityService;
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
@@ -50,6 +53,13 @@ public class ApplicationConfig {
                                 accountRepository,
                                 staffRepository,
                                 passwordHasher);
+        }
+
+        @Bean
+        public LookupAccountIdentityUseCase lookupAccountIdentityUseCase(
+                        AccountRepository accountRepository,
+                        StaffRepository staffRepository) {
+                return new LookupAccountIdentityService(accountRepository, staffRepository);
         }
 
         @Bean
@@ -119,13 +129,15 @@ public class ApplicationConfig {
                         StaffRepository staffRepository,
                         DepartmentRepository departmentRepository,
                         EventPublisher eventPublisher,
-                        CorrelationIdProvider correlationIds) {
+                        CorrelationIdProvider correlationIds,
+                        StaffCreationReceiptRepository receipts) {
 
                 return new CreateStaffService(
                                 staffRepository,
                                 departmentRepository,
                                 eventPublisher,
-                                correlationIds);
+                                correlationIds,
+                                receipts);
         }
 
         @Bean
@@ -153,8 +165,7 @@ public class ApplicationConfig {
 
         @Bean
         public UpdateStaffUseCase updateStaffUseCase(
-                        StaffRepository staffRepository) {
-                return new UpdateStaffService(
-                                staffRepository);
+                        StaffRepository staffRepository, DepartmentRepository departmentRepository) {
+                return new UpdateStaffService(staffRepository, departmentRepository);
         }
 }

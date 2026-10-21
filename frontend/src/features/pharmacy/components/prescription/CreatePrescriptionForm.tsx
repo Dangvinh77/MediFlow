@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api";
 import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
+import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { DrugDTO } from "../../types";
 import { getLocalTodayIso } from "../../utils";
@@ -104,6 +105,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   const submittingRef = useRef(false);
   const active = useRef(true);
   const focusTarget = useRef<string | undefined>(undefined);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const [drugKeyword, setDrugKeyword] = useState("");
   const [activeDrugKeyword, setActiveDrugKeyword] = useState("");
   const [drugOptions, setDrugOptions] = useState<DrugDTO[]>([]);
@@ -122,11 +124,11 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   }, []);
 
   useEffect(() => {
-    if (!submitting && focusTarget.current) {
-      document.getElementById(focusTarget.current)?.focus();
-      focusTarget.current = undefined;
-    }
-  }, [validationErrors, submitting]);
+    if (submitting) return;
+    if (focusTarget.current && !locked) document.getElementById(focusTarget.current)?.focus();
+    else if (formError) feedbackRef.current?.focus();
+    focusTarget.current = undefined;
+  }, [validationErrors, submitting, values.lines, formError, locked]);
 
   useEffect(() => {
     if (!capabilities.canCreatePrescription) return undefined;
@@ -184,17 +186,40 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   }
 
   function focusFirstError(errors: OutpatientPrescriptionValidationErrors) {
-    const field = Object.keys(errors.fields)[0];
-    const lineEntry = Object.entries(errors.lines)[0];
-    const lineKey = lineEntry?.[0];
-    const lineField = lineEntry?.[1]
-      ? (Object.keys(lineEntry[1])[0] as keyof CreatePrescriptionValidationErrors["lines"][string] | undefined)
+    // Backend detail order is not the visual or keyboard order of the form.
+    const field = (["recordId", "patientId", "doctorId", "departmentId", "prescribedDate", "careEpisodeId", "priceCode"] as const)
+      .find(name => errors.fields[name] && (mode === "outpatient" || (name !== "careEpisodeId" && name !== "priceCode")));
+    const lineKey = values.lines.find(line => Object.values(errors.lines[line.rowKey] ?? {}).some(Boolean))?.rowKey;
+    const lineField = lineKey
+      ? (["drugId", "quantity", "dosage"] as const).find(name => errors.lines[lineKey]?.[name])
       : undefined;
     focusTarget.current = field
       ? field
       : lineKey && lineField
         ? `${lineField}-${lineKey}`
         : errors.lineList ? "prescription-add-line" : undefined;
+  }
+
+  function addLine() {
+    if (locked) return;
+    const line = createPrescriptionLine();
+    focusTarget.current = `drugId-${line.rowKey}`;
+    setValues(current => ({ ...current, lines: [...current.lines, line] }));
+    setValidationErrors(current => ({ ...current, lineList: undefined }));
+  }
+
+  function removeLine(rowKey: string) {
+    if (locked || values.lines.length <= 1) return;
+    const index = values.lines.findIndex(line => line.rowKey === rowKey);
+    if (index < 0) return;
+    const next = values.lines[index + 1] ?? values.lines[index - 1];
+    focusTarget.current = `drugId-${next.rowKey}`;
+    setValues(current => ({ ...current, lines: current.lines.filter(line => line.rowKey !== rowKey) }));
+    setValidationErrors(current => {
+      const lines = { ...current.lines };
+      delete lines[rowKey];
+      return { ...current, lines, lineList: undefined };
+    });
   }
 
   function submitDrugSearch() {
@@ -239,6 +264,16 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
         return;
       }
 
+      const unknownOutcome = !(cause instanceof ApiRequestError) || hasUncertainMutationStatus(cause)
+        || (cause.status === 409 && cause.code !== "PRESCRIPTION_DUPLICATE_DRUG" && cause.code !== "INSUFFICIENT_AVAILABLE_STOCK");
+      if (unknownOutcome) {
+        setUncertain(mode === "outpatient");
+        setFormError("Chưa xác định được kết quả tạo đơn. Hãy kiểm tra đơn đã tạo trước khi gửi lại để tránh tạo trùng."
+          + (mode === "outpatient" ? " Thử gửi lại sẽ dùng nguyên nội dung và mã yêu cầu trước đó." : "")
+          + (cause instanceof ApiRequestError ? correlationSuffix(cause) : ""));
+        return;
+      }
+
       if (cause instanceof ApiRequestError && cause.details.length > 0) {
         const mapped = mapPrescriptionValidationDetails(cause.details, values.lines);
         setValidationErrors((current) => ({
@@ -253,13 +288,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
       } else if (cause instanceof ApiRequestError && cause.code === "INSUFFICIENT_AVAILABLE_STOCK") {
         setFormError(`Một hoặc nhiều thuốc không đủ tồn khả dụng. Hãy kiểm tra lại tồn kho rồi thử lại.${correlationSuffix(cause)}`);
       } else {
-        const unknownOutcome = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400 || cause.status === 409;
-        setUncertain(mode === "outpatient" && unknownOutcome);
-        setFormError(unknownOutcome
-          ? "Chưa xác định được kết quả tạo đơn. Hãy kiểm tra đơn đã tạo trước khi gửi lại để tránh tạo trùng."
-            + (mode === "outpatient" ? " Thử gửi lại sẽ dùng nguyên nội dung và mã yêu cầu trước đó." : "")
-            + (cause instanceof ApiRequestError ? correlationSuffix(cause) : "")
-          : apiErrorMessage(cause, "Không thể tạo đơn thuốc."));
+        setFormError(apiErrorMessage(cause, "Không thể tạo đơn thuốc."));
       }
     } finally {
       submittingRef.current = false;
@@ -289,7 +318,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   return (
     <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6">
       {formError && (
-        <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+        <div ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
           {formError}
         </div>
       )}
@@ -338,8 +367,8 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
         onDrugKeywordChange={setDrugKeyword}
         onSearchDrugs={submitDrugSearch}
         onChange={updateLine}
-        onAdd={() => setValues((current) => ({ ...current, lines: [...current.lines, createPrescriptionLine()] }))}
-        onRemove={(rowKey) => setValues((current) => ({ ...current, lines: current.lines.filter((line) => line.rowKey !== rowKey) }))}
+        onAdd={addLine}
+        onRemove={removeLine}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -352,6 +381,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
           {created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}
         </Button>
         {uncertain && <Button type="button" disabled={submitting} onClick={() => {
+          focusTarget.current = "recordId";
           intent.current = null; setUncertain(false); setValues(createEmptyOutpatientPrescriptionForm());
           setValidationErrors({ fields: {}, lines: {} }); setFormError(null);
         }}>Đã kiểm tra đơn cũ, bắt đầu đơn mới</Button>}

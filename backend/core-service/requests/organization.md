@@ -174,7 +174,7 @@ Swagger UI:
 | GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token         |
 | GET    | `/api/v1/org/rooms/{id}/lookup`                      | SYSTEM service token         |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                         |
-| POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
+| POST   | `/api/v1/org/accounts/verify`                       | SYSTEM service token, subject `gateway` |
 
 The staff list uses database pagination. `page` is zero-based and `size` is capped at 100. Its
 `data` payload is a `PageResult` containing `content`, `totalElements`, `totalPages`, `number`,
@@ -276,7 +276,9 @@ Successful response:
 ```
 
 The gateway posts credentials to this endpoint using a short-lived signed service JWT with
-`type=service` and `role=SYSTEM`. The Organization Service verifies the account and BCrypt password
+`type=service`, `role=SYSTEM`, and signed subject `gateway`. Only this caller may invoke
+credential verification; identity headers do not grant this scope. Other internal lookups
+retain their existing caller policies. The Organization Service verifies the account and BCrypt password
 hash, then returns the authenticated identity. The gateway uses the result to mint human JWTs with
 `type=access|refresh`, `sub=accountId`, and optional `staffId`, `departmentId`, and `patientId` claims.
 

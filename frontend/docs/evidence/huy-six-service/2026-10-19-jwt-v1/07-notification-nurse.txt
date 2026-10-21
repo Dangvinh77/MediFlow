@@ -1,0 +1,216 @@
+Browser tab: 3, Title: "Thông báo | MediFlow", URL: "http://127.0.0.1:3182/notifications".
+1 AXWebArea Thông báo | MediFlow, URL: 127.0.0.1:3182/notifications
+	2 container
+		3 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+			4 image
+		5 text Thông báo | MediFlow
+		6 container Điều hướng nghiệp vụ
+			7 text MF
+			8 text MediFlow
+			9 text Hospital workspace
+			10 container
+				11 text NGHIỆP VỤ
+				12 content list
+					13 container
+						14 text TỔ CHỨC & BỆNH NHÂN
+						15 link Description: Tổ chức — Nhân sự & khoa, Value: 127.0.0.1:3182/organization
+					16 link Description: Bệnh nhân — Hồ sơ định danh, Value: 127.0.0.1:3182/patients
+					17 container
+						18 text KHÁM NGOẠI TRÚ
+						19 link Description: Lịch hẹn — Tiếp nhận ngoại trú, Value: 127.0.0.1:3182/appointments
+					20 link Description: Hồ sơ khám — Chẩn đoán & kết luận, Value: 127.0.0.1:3182/records
+					21 container
+						22 text XÉT NGHIỆM
+						23 link Description: Xét nghiệm — Hàng đợi & kết quả, Value: 127.0.0.1:3182/lab
+					24 container
+						25 text BÁO CÁO & THÔNG BÁO
+						26 link Description: Thông báo — Lịch sử gửi, Value: 127.0.0.1:3182/notifications
+			27 text MediFlow · Quản lý ngoại trú
+		28 text Không gian vận hành MediFlow
+		29 text Điều dưỡng
+		30 pop up button (collapsed, settable) Description: Giao diện, Value: Theo hệ thống, Secondary Actions: Expand
+			31 menu
+				32 Sáng
+				33 Tối
+				34 (selected) Theo hệ thống
+		35 button Đăng xuất
+		36 heading Thông báo, Value: 1
+			37 text Thông báo
+		38 text Tra cứu thông báo theo mã bệnh nhân.
+		39 container Lịch sử thông báo
+			40 container
+				41 text Mã bệnh nhân
+				42 text field (settable) Mã bệnh nhân, Value: ff014d28-0b87-467f-8706-5382ba5f27f1, ID: notification-patient-id
+				43 button Tra cứu thông báo
+			44 table
+				45 row
+					46 cell
+						47 text Tiêu đề
+					48 cell
+						49 text Kênh
+					50 cell
+						51 text Trạng thái
+					52 cell
+						53 text Tạo lúc
+					54 cell
+						55 text Gửi lúc
+					56 cell
+						57 text Nội dung
+					58 cell
+						59 text Lý do thất bại
+				60 row
+					61 cell
+						62 text Đã cấp thuốc
+					63 cell
+						64 text Trong ứng dụng
+					65 cell
+						66 text Đã gửi
+					67 cell
+						68 text 15:37 19/10/26
+					69 cell
+						70 text 15:37 19/10/26
+					71 cell
+						72 text Nhà thuốc đã ghi nhận cấp thuốc cho đơn của bạn.
+					73 cell
+						74 text —
+				75 row
+					76 cell
+						77 text Đã ghi nhận thanh toán
+					78 cell
+						79 text Trong ứng dụng
+					80 cell
+						81 text Đã gửi
+					82 cell
+						83 text 15:36 19/10/26
+					84 cell
+						85 text 15:36 19/10/26
+					86 cell
+						87 text Đã ghi nhận khoản thanh toán 30000 VND. Xem tài khoản viện phí để biết số tiền còn lại.
+					88 cell
+						89 text —
+				90 row
+					91 cell
+						92 text Yêu cầu thanh toán đơn thuốc
+					93 cell
+						94 text Trong ứng dụng
+					95 cell
+						96 text Đã gửi
+					97 cell
+						98 text 15:35 19/10/26
+					99 cell
+						100 text 15:35 19/10/26
+					101 cell
+						102 text Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.
+					103 cell
+						104 text —
+				105 row
+					106 cell
+						107 text Đã ghi nhận đơn thuốc
+					108 cell
+						109 text Trong ứng dụng
+					110 cell
+						111 text Đã gửi
+					112 cell
+						113 text 15:35 19/10/26
+					114 cell
+						115 text 15:35 19/10/26
+					116 cell
+						117 text Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.
+					118 cell
+						119 text —
+				120 row
+					121 cell
+						122 text Đơn thuốc đã hủy
+					123 cell
+						124 text Trong ứng dụng
+					125 cell
+						126 text Đã gửi
+					127 cell
+						128 text 15:33 19/10/26
+					129 cell
+						130 text 15:33 19/10/26
+					131 cell
+						132 text Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.
+					133 cell
+						134 text —
+				135 row
+					136 cell
+						137 text Yêu cầu thanh toán đơn thuốc
+					138 cell
+						139 text Trong ứng dụng
+					140 cell
+						141 text Đã gửi
+					142 cell
+						143 text 15:33 19/10/26
+					144 cell
+						145 text 15:33 19/10/26
+					146 cell
+						147 text Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.
+					148 cell
+						149 text —
+				150 row
+					151 cell
+						152 text Đã ghi nhận đơn thuốc
+					153 cell
+						154 text Trong ứng dụng
+					155 cell
+						156 text Đã gửi
+					157 cell
+						158 text 15:33 19/10/26
+					159 cell
+						160 text 15:33 19/10/26
+					161 cell
+						162 text Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.
+					163 cell
+						164 text —
+				165 row
+					166 cell
+						167 text Đã ghi nhận thanh toán
+					168 cell
+						169 text Trong ứng dụng
+					170 cell
+						171 text Đã gửi
+					172 cell
+						173 text 15:33 19/10/26
+					174 cell
+						175 text 15:33 19/10/26
+					176 cell
+						177 text Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.
+					178 cell
+						179 text —
+				180 row
+					181 cell
+						182 text Nhắc lịch khám
+					183 cell
+						184 text Trong ứng dụng
+					185 cell
+						186 text Đã gửi
+					187 cell
+						188 text 15:33 19/10/26
+					189 cell
+						190 text 15:33 19/10/26
+					191 cell
+						192 text Bạn có lịch khám ngày 2026-10-20 lúc 09:00.
+					193 cell
+						194 text —
+				195 row
+					196 cell
+						197 text Chào mừng đến với MediFlow
+					198 cell
+						199 text Email
+					200 cell
+						201 text Đã gửi
+					202 cell
+						203 text 15:33 19/10/26
+					204 cell
+						205 text 15:33 19/10/26
+					206 cell
+						207 text Xin chào Acceptance Patient c85c9e3ab441, hồ sơ của bạn đã được tạo.
+					208 cell
+						209 text —
+			210 container Phân trang
+				211 button (disabled) Trang trước
+				212 text Trang  1 / 1  ·  10  kết quả
+				213 button (disabled) Trang sau
+
+The focused UI element is 43 button Tra cứu thông báo

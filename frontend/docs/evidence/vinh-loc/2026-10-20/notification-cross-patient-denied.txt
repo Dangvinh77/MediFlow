@@ -1,0 +1,31 @@
+- button "Open Next.js Dev Tools":
+- alert
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Báo cáo & thông báo
+      - link "Thông báo — Lịch sử gửi":
+        - /url: /notifications
+        - generic: Thông báo
+        - generic: Lịch sử gửi
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Bệnh nhân
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Chi tiết thông báo" [level=1]
+  - paragraph: Nội dung và trạng thái gửi.
+  - group "Lỗi tải thông báo" [active]:
+    - alert:
+      - paragraph: Bạn không có quyền xem thông báo này.
+  - link "Quay lại tra cứu":
+    - /url: /notifications

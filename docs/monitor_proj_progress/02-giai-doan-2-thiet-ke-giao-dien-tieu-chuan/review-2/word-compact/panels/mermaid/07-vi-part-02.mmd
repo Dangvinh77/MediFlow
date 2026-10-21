@@ -1,18 +1,23 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 65, "boxMargin": 12, "boxTextMargin": 4, "noteMargin": 12, "messageMargin": 35, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
- autonumber 11
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
- participant Q as RabbitMQ
- Q->>C: Store exact EXAM clearance idempotently
- Staff->>UI: Start examination
- UI->>C: Start exact appointment
- C->>C: Recheck authority / target / expiry
- alt Clearance missing or provider unavailable
- C-->>UI: Reject protected action
- else Valid authority
- C->>C: Create or reuse appointment-backed record atomically
- C-->>UI: Open medical record
- end
+autonumber 8
+ actor Cashier as Thu ngân
+ actor Doctor as Bác sĩ
+ participant B as Billing API
+Note over Cashier,B: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Lịch chờ hợp lệ
+B->>B: Tạo khoản thu / yêu cầu thu chống trùng
+Cashier->>B: Tra cứu yêu cầu thu EXAM đúng lượt khám
+alt Yêu cầu thu chưa sẵn sàng hoặc lập phí lỗi
+B-->>Cashier: Chưa sẵn sàng / lỗi, không thu tiền vào yêu cầu tùy ý
+Note over Cashier,Doctor: Chờ phục hồi nguồn rồi tra cứu lại, nhánh này chưa khám.
+else Yêu cầu thu đúng đã sẵn sàng
+Cashier->>B: Ghi tiền đã thu với khóa idempotency
+alt Thanh toán không hợp lệ hoặc retry khác intent
+B-->>Cashier: Từ chối, không tạo tiền / phân bổ / quyền mới
+else Nhận thanh toán hoặc phát lại kết quả đã commit
+B->>B: Atomic payment + allocation + clearance + outbox
+B-->>Cashier: Biên nhận thanh toán
+end
+end
+end

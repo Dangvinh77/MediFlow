@@ -40,6 +40,9 @@ spring:
           default:
             connectTimeout: 2000
             readTimeout: 3000
+          billing-service:
+            connectTimeout: 1000
+            readTimeout: 2000
       circuitbreaker:
         enabled: true
 
@@ -74,6 +77,7 @@ mediflow:
   clients:
     organization-service: ${MEDIFLOW_ORGANIZATION_SERVICE:organization-service}
     patient-service: ${MEDIFLOW_PATIENT_SERVICE:patient-service}
+    billing-service: ${MEDIFLOW_BILLING_SERVICE:billing-service}
   clinical:
     durable-events:
       enabled: ${MEDIFLOW_CLINICAL_DURABLE_EVENTS_ENABLED:false}

@@ -50,6 +50,11 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     }
 
     @Override
+    public boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId) {
+        return repository.existsByIdentityNumberAndPatientIdNot(identityNumber, patientId);
+    }
+
+    @Override
     public void deleteById(UUID patientId) {
         repository.deleteById(patientId);
     }

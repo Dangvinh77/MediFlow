@@ -3,18 +3,18 @@
 <!-- commit-activity:start -->
 ## Commit activity
 
-Changelog updated through **2026-10-19 14:42:45 Asia/Saigon** · **886 unique commits**
+Changelog updated through **2026-10-21 22:43:30 Asia/Saigon** · **941 unique commits**
 
 | Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
 |---|---:|---:|---:|---|---|---|
-| Harori | 569 | 53 | 10.74 | 2026-09-27 (35) | 18:00 (83) | 2026-10-19 14:42:45 |
-| LQHuy0210 | 192 | 34 | 5.65 | 2026-09-13 (27) | 08:00 (33) | 2026-10-19 08:36:40 |
-| TranHoangAnh94 | 67 | 26 | 2.58 | 2026-09-18 (8) | 23:00 (13) | 2026-10-18 20:28:05 |
+| Harori | 598 | 55 | 10.87 | 2026-09-27 (35) | 18:00 (87) | 2026-10-21 17:27:51 |
+| LQHuy0210 | 210 | 36 | 5.83 | 2026-09-13 (27) | 08:00 (34) | 2026-10-21 14:25:53 |
+| TranHoangAnh94 | 75 | 28 | 2.68 | 2026-09-18 (8) | 23:00 (13) | 2026-10-21 22:43:30 |
 | locgit-89 | 58 | 15 | 3.87 | 2026-10-16 (11) | 15:00 (18) | 2026-10-17 14:58:08 |
 
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=7daf74f36bc5)
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=4dd535fdb79a)
 
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=dc439d9681ef)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=3428dcf5e4fc)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->

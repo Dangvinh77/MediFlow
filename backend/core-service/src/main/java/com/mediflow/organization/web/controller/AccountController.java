@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
+import com.mediflow.organization.application.dto.response.AccountIdentityLookupDTO;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.web.dto.request.CreateAccountRequest;
@@ -33,17 +36,29 @@ public class AccountController {
     private final CreateAccountUseCase createAccountUseCase;
     private final UpdateAccountStatusUseCase updateAccountStatusUseCase;
     private final VerifyCredentialsUseCase verifyCredentialsUseCase;
+    private final LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
     private final CorrelationIdProvider correlationIds;
 
     public AccountController(
             CreateAccountUseCase createAccountUseCase,
             UpdateAccountStatusUseCase updateAccountStatusUseCase,
             VerifyCredentialsUseCase verifyCredentialsUseCase,
+            LookupAccountIdentityUseCase lookupAccountIdentityUseCase,
             CorrelationIdProvider correlationIds) {
         this.createAccountUseCase = createAccountUseCase;
         this.updateAccountStatusUseCase = updateAccountStatusUseCase;
         this.verifyCredentialsUseCase = verifyCredentialsUseCase;
+        this.lookupAccountIdentityUseCase = lookupAccountIdentityUseCase;
         this.correlationIds = correlationIds;
+    }
+
+    @GetMapping("/{accountId}/identity")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE') and authentication.name == 'gateway'")
+    public ResponseEntity<ApiResponse<AccountIdentityLookupDTO>> lookupIdentity(
+            @PathVariable UUID accountId) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                lookupAccountIdentityUseCase.lookup(accountId),
+                correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping
@@ -81,7 +96,7 @@ public class AccountController {
     }
 
     @PostMapping("/verify")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE') and authentication.name == 'gateway'")
     public ResponseEntity<ApiResponse<VerifiedAccountResponse>> verifyCredentials(
             @Valid @RequestBody VerifyCredentialsRequest request) {
 

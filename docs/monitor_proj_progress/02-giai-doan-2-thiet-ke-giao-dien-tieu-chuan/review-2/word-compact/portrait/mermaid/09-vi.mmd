@@ -1,25 +1,37 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 65, "boxMargin": 12, "boxTextMargin": 4, "noteMargin": 12, "messageMargin": 35, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Cashier
- participant B as Billing
+ actor Patient as Bệnh nhân
+ actor Cashier as Thu ngân
+ actor Pharmacist as Dược sĩ
+ participant B as Billing API
  participant Q as RabbitMQ
- participant P as Pharmacy
- participant S as Support
- Cashier->>B: Pay prescription invoice via Gateway
- B->>B: Save payment state and outbox atomically
- B-->>Q: payment.completed V0
- Q->>P: Durable delivery / possible redelivery
- P->>P: Claim receipt, lock prescription / reservations / drugs
- alt All dispense rules pass
- P->>P: Atomic stock decrement + fulfilled states + outbox
- P-->>Q: prescription.filled
- Q->>B: Complete saga once
- else Terminal reservation / stock / lifecycle failure
- P->>P: Persist terminal failure and durable fact
- P-->>Q: prescription.dispense.failed
- Q->>B: Apply V0 compensation once
+ participant P as Pharmacy API
+ Note over Cashier,P: Tiền điều kiện: hình 38 đã lưu đơn ngoại trú V1, lệnh API actor qua Gateway.
+ Note over Cashier,B: Tra yêu cầu PRESCRIPTION đúng đơn đã sẵn sàng và ghi tiền, hoặc dừng/thử lại như hình 07
+ Cashier->>B: Tra đúng yêu cầu, rồi gửi thanh toán như hình 07
+ B-->>Cashier: Biên nhận đã commit hoặc lỗi yêu cầu/thanh toán
+ alt Thanh toán lỗi, yêu cầu thu đang chờ hoặc chưa rõ kết quả
+  B-->>Cashier: Xử lý thanh toán / thử lại đúng yêu cầu, chưa cấp thuốc
+ else Đã commit tiền đúng đơn
+ B-)Q: financial.clearance.granted
+ Q-)P: Lưu quyền đúng đơn thuốc
+ Note over Q,P: Nhận clearance không tự cấp thuốc trong V1.
+ Patient->>Pharmacist: Đưa đơn và đề nghị nhận thuốc
+ Pharmacist->>P: Tra cứu đơn và gửi lệnh cấp thuốc
+ P->>P: Xác định actor đã ký, khóa đơn, phiếu, giữ chỗ và thuốc
+ alt Lặp đúng lệnh đã commit
+  P-->>Pharmacist: Trả kết quả cấp thuốc đã commit, không xuất kho lần hai
+ else Thiếu/hết hạn/lệch clearance hoặc actor sai quyền
+  P-->>Pharmacist: Từ chối, xử lý quyền rồi thử lại, chưa đổi tồn
+ else Giữ chỗ hết hạn, sai vòng đời hoặc lỗi tồn
+  P-->>Pharmacist: Từ chối cấp, chuyển lỗi sang luồng điều chỉnh đã hỗ trợ
+  Note over Cashier,Pharmacist: Không xuất kho một phần, hoàn tiền là thao tác Billing riêng có quyền, không mặc định đã trả tiền tự động.
+ else Quyền hiện tại và mọi điều kiện tồn đều đạt
+  P->>P: Atomic trừ tồn + hoàn tất đơn/phiếu + outbox
+  P-->>Pharmacist: Xác nhận cấp thuốc
+  P-)Q: prescription.filled
+  Q-)B: Áp dụng hiệu ứng tài chính đã đăng ký và chống trùng
+  Pharmacist-->>Patient: Giao thuốc và hướng dẫn sử dụng
  end
- Q->>S: Project selected facts independently
- Note over B,P: Redelivery returns committed outcome, no second stock effect
- Note over B,S: V0 reversal is not proof of completed bank refund
+ end

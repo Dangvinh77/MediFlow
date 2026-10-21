@@ -34,3 +34,27 @@ Backend suite hoặc test DTO riêng không được tính thành UI acceptance.
 
 Không tự bổ sung trường authority mới vào DTO hoặc gọi service port trực tiếp. Nếu cần read
 contract mới, owner phải khóa fixture/controller/serializer và bàn giao producer/consumer trước.
+
+## Implementation — 2026-10-19, base `5ccecf83`
+
+Huy đã sửa detail route để truyền server runtime mode qua cùng resolver với form tạo đơn.
+`outpatient` cho phép ADMIN/PHARMACIST mở confirmation khi đơn ACTIVE/PENDING dù boolean
+legacy false; backend command vẫn kiểm clearance hiện hành. UI dùng nhãn trung tính
+“Thanh toán được kiểm tra khi xuất thuốc”, không tự kết luận đã thanh toán. `legacy` giữ
+điều kiện boolean cũ; mode không hợp lệ đóng thao tác xuất. Không đoán version từ response.
+HTTP 408 được reconcile bằng GET mới như network/5xx; không tự gửi lại mutation chưa rõ kết quả.
+
+Regression Pharmacy và route: **233/233 tests, 21 files**; typecheck/lint/build đạt. Các ca
+unpaid/expired/revoked trong component tests cùng dùng wire error 422; chúng kiểm UX nhận lỗi,
+không chứng minh trạng thái clearance thật.
+
+Signed browser/API proof trên candidate FE `9a00d7f` + JWT `5334aa8c` đã kiểm create → unpaid 422
+→ CASHIER payment bằng API → GET vẫn false/PENDING → browser refresh/PHARMACIST dispense.
+Stock 40→37; retry trả phiếu có sẵn, một slip/outbox/Clinical attachment. DOCTOR bị deny xuất,
+foreign-doctor create/cancel và PHARMACIST cancel bị deny; ADMIN browser canceled read-only.
+Enter/Escape/return-focus, success focus, theme và 320px có evidence.
+
+Handoff tiếp tục **OPEN cho Vinh review và matrix còn lại**: browser expired/revoked/Billing
+unavailable, signed V0 runtime và nghiệm thu producer/consumer cuối. Không coi payment bằng API
+là Billing browser acceptance. Evidence và giới hạn đầy đủ ở
+[candidate evidence](../../frontend/docs/evidence/huy-six-service/2026-10-19-jwt-v1/README.md).

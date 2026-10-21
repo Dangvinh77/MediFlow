@@ -24,13 +24,16 @@ import org.mockito.ArgumentCaptor;
 
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
 import com.mediflow.clinical.application.dto.command.FinancialClearanceCommand;
+import com.mediflow.clinical.application.dto.command.FinancialExecutionStartRequest;
 import com.mediflow.clinical.application.dto.request.CompleteRecordRequest;
 import com.mediflow.clinical.application.dto.request.CreateAdmissionReferralRequest;
 import com.mediflow.clinical.application.dto.request.EmergencyOverrideRequest;
 import com.mediflow.clinical.application.dto.request.StartExamRequest;
+import com.mediflow.clinical.application.event.AppointmentExamCancelledPayload;
 import com.mediflow.clinical.application.event.DomainEventEnvelope;
 import com.mediflow.clinical.application.event.MedicalRecordCreatedV2Payload;
 import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
+import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
@@ -38,6 +41,7 @@ import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
 import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
+import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -60,6 +64,7 @@ class ClinicalCareFinanceApplicationServiceTest {
     private final AppointmentRepositoryPort appointments = mock(AppointmentRepositoryPort.class);
     private final MedicalRecordRepositoryPort records = mock(MedicalRecordRepositoryPort.class);
     private final ExamClearanceRepositoryPort clearances = mock(ExamClearanceRepositoryPort.class);
+    private final FinancialExecutionAuthorityPort executionAuthority = mock(FinancialExecutionAuthorityPort.class);
     private final EmergencyOverrideRepositoryPort overrides = mock(EmergencyOverrideRepositoryPort.class);
     private final AdmissionReferralRepositoryPort referrals = mock(AdmissionReferralRepositoryPort.class);
     private final ExamPricePolicyPort prices = mock(ExamPricePolicyPort.class);
@@ -69,10 +74,10 @@ class ClinicalCareFinanceApplicationServiceTest {
     private final ClinicalDtoMapper mapper = mock(ClinicalDtoMapper.class);
     private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
     private final ClinicalCareFinanceApplicationService service = new ClinicalCareFinanceApplicationService(
-            appointments, records, clearances, overrides, referrals, prices, outbox, actors, staff, mapper,
+            appointments, records, clearances, executionAuthority, overrides, referrals, prices, outbox, actors, staff, mapper,
             correlationIds, CLOCK, true);
     private final ClinicalCareFinanceApplicationService outpatientMvpService =
-            new ClinicalCareFinanceApplicationService(appointments, records, clearances, overrides, referrals,
+            new ClinicalCareFinanceApplicationService(appointments, records, clearances, executionAuthority, overrides, referrals,
                     prices, outbox, actors, staff, mapper, correlationIds, CLOCK, false);
 
     @BeforeEach
@@ -113,6 +118,143 @@ class ClinicalCareFinanceApplicationServiceTest {
 
         verify(records, never()).save(any());
         verifyNoOutboxEvent();
+    }
+
+    @Test
+    void cancelCareFinanceExam_persistsAuditAndPublishesExactBillingEvidence() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        UUID actor = UUID.randomUUID();
+        UUID correlation = UUID.randomUUID();
+        when(actors.current()).thenReturn(new ActorIdentity(actor, "ADMIN"));
+        when(correlationIds.currentOrCreate()).thenReturn(correlation);
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(mapper.toDto(any(Appointment.class))).thenReturn(null);
+
+        service.cancelCareFinanceExam(appointment.getAppointmentId(), "Patient declined before examination");
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        assertThat(appointment.getCancelledBy()).isEqualTo(actor);
+        assertThat(appointment.getCancellationReason()).isEqualTo("Patient declined before examination");
+        assertThat(appointment.getCancelledAt()).isEqualTo(NOW);
+        ArgumentCaptor<DomainEventEnvelope<?>> events = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox, org.mockito.Mockito.times(2)).append(events.capture());
+        DomainEventEnvelope<?> cancellation = events.getAllValues().stream()
+                .filter(event -> event.eventType().equals("appointment.exam.cancelled"))
+                .findFirst().orElseThrow();
+        assertThat(cancellation.version()).isEqualTo(1);
+        assertThat(cancellation.producer()).isEqualTo("clinical-service");
+        assertThat(cancellation.occurredAt()).isEqualTo(NOW);
+        assertThat(cancellation.correlationId()).isEqualTo(correlation.toString());
+        assertThat(cancellation.payload()).isEqualTo(new AppointmentExamCancelledPayload(
+                appointment.getAppointmentId(), appointment.getPatientId(), appointment.getDepartmentId(),
+                CareEpisodeType.OUTPATIENT_VISIT, appointment.getAppointmentId(), "EXAM",
+                appointment.getAppointmentId(), actor, "Patient declined before examination", NOW));
+        assertThat(events.getAllValues()).extracting(DomainEventEnvelope::correlationId)
+                .containsOnly(correlation.toString());
+    }
+
+    @Test
+    void cancelCareFinanceExam_requiresSignedClinicalActorBeforeMutation() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(actors.current()).thenReturn(null);
+
+        assertThatThrownBy(() -> service.cancelCareFinanceExam(appointment.getAppointmentId(), "Patient requested it"))
+                .isInstanceOf(com.mediflow.common.exception.ForbiddenOperationException.class)
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_STAFF_IDENTITY_REQUIRED");
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.AWAITING_PAYMENT);
+        verify(appointments, never()).save(any());
+        verifyNoOutboxEvent();
+    }
+
+    @Test
+    void startExam_withOnlyPersistedClearance_failsClosedWhenCurrentBillingAuthorityIsUnavailable() {
+        Appointment appointment = appointment();
+        authorize(appointment);
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        FinancialClearanceCommand grant = clearance(appointment.getPatientId(), appointment.getAppointmentId(),
+                appointment.getAppointmentId());
+        appointment.recordExamClearance(grant.clearanceId(), grant.occurredAt());
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.of(
+                com.mediflow.clinical.domain.model.ExamClearance.grant(grant.eventId(), grant.clearanceId(),
+                        grant.invoiceId(), grant.accountId(), grant.appointmentId(), grant.recordId(), grant.patientId(),
+                        grant.careEpisodeType(), grant.careEpisodeId(), grant.purpose(), grant.amount(), grant.currency(),
+                        grant.expiresAt(), grant.emergencyOverride(), grant.occurredAt())));
+        org.mockito.Mockito.doThrow(new UpstreamUnavailableException("Billing is unavailable"))
+                .when(executionAuthority).start(org.mockito.ArgumentMatchers.eq(grant.clearanceId()), any(), any());
+
+        assertThatThrownBy(() -> service.startExam(appointment.getAppointmentId(), new StartExamRequest(null)))
+                .isInstanceOf(UpstreamUnavailableException.class);
+
+        verify(records, never()).save(any());
+        verify(appointments, never()).save(any());
+        verifyNoOutboxEvent();
+    }
+
+    @Test
+    void startExam_withCurrentGrantRequestsDurableBillingAdmissionForExactAppointment() {
+        Appointment appointment = appointment();
+        authorize(appointment);
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        FinancialClearanceCommand grant = clearance(appointment.getPatientId(), appointment.getAppointmentId(),
+                appointment.getAppointmentId());
+        UUID correlation = UUID.randomUUID();
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.of(
+                com.mediflow.clinical.domain.model.ExamClearance.grant(grant.eventId(), grant.clearanceId(),
+                        grant.invoiceId(), grant.accountId(), grant.appointmentId(), grant.recordId(), grant.patientId(),
+                        grant.careEpisodeType(), grant.careEpisodeId(), grant.purpose(), grant.amount(), grant.currency(),
+                        grant.expiresAt(), grant.emergencyOverride(), grant.occurredAt())));
+        when(records.findByAppointmentId(appointment.getAppointmentId())).thenReturn(Optional.empty());
+        when(correlationIds.currentOrCreate()).thenReturn(correlation);
+        when(mapper.toDto(any(Appointment.class))).thenReturn(null);
+
+        service.startExam(appointment.getAppointmentId(), new StartExamRequest(null));
+
+        ArgumentCaptor<FinancialExecutionStartRequest> admission =
+                ArgumentCaptor.forClass(FinancialExecutionStartRequest.class);
+        verify(executionAuthority).start(org.mockito.ArgumentMatchers.eq(grant.clearanceId()), admission.capture(),
+                org.mockito.ArgumentMatchers.eq(correlation.toString()));
+        assertThat(admission.getValue()).isEqualTo(new FinancialExecutionStartRequest(
+                appointment.getAppointmentId(), "EXAM", appointment.getAppointmentId(), appointment.getPatientId(),
+                "OUTPATIENT_VISIT", appointment.getAppointmentId()));
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
+        assertThat(appointment.getExamClearanceId()).isEqualTo(grant.clearanceId());
+        ArgumentCaptor<DomainEventEnvelope<?>> events = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox, org.mockito.Mockito.times(2)).append(events.capture());
+        assertThat(events.getAllValues()).extracting(DomainEventEnvelope::correlationId)
+                .containsOnly(correlation.toString());
+    }
+
+    @Test
+    void startExam_explicitValidEmergencyOverrideTakesPrecedenceOverLocalGrantAndSkipsBilling() {
+        Appointment appointment = appointment();
+        authorize(appointment);
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        FinancialClearanceCommand grant = clearance(appointment.getPatientId(), appointment.getAppointmentId(),
+                appointment.getAppointmentId());
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.of(
+                com.mediflow.clinical.domain.model.ExamClearance.grant(grant.eventId(), grant.clearanceId(),
+                        grant.invoiceId(), grant.accountId(), grant.appointmentId(), grant.recordId(), grant.patientId(),
+                        grant.careEpisodeType(), grant.careEpisodeId(), grant.purpose(), grant.amount(), grant.currency(),
+                        grant.expiresAt(), grant.emergencyOverride(), grant.occurredAt())));
+        when(records.findByAppointmentId(appointment.getAppointmentId())).thenReturn(Optional.empty());
+        when(mapper.toDto(any(Appointment.class))).thenReturn(null);
+        EmergencyOverrideRequest approval = new EmergencyOverrideRequest(UUID.randomUUID(), appointment.getDoctorId(),
+                "DOCTOR", "Emergency care cannot wait for financial confirmation", NOW);
+
+        service.startExam(appointment.getAppointmentId(), new StartExamRequest(approval));
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
+        assertThat(appointment.getEmergencyOverrideId()).isEqualTo(approval.overrideId());
+        org.mockito.Mockito.verifyNoInteractions(executionAuthority);
+        verify(overrides).save(any());
+        verify(records).save(any(MedicalRecord.class));
     }
 
     @Test

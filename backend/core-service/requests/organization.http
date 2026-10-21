@@ -14,6 +14,7 @@
 ###   POST     /api/v1/org/accounts
 ###   PUT      /api/v1/org/accounts/{id}/status
 ###   POST     /api/v1/org/accounts/verify
+###   GET      /api/v1/org/accounts/{id}/identity (Gateway service token only)
 ###   POST/PUT /api/v1/org/operating-rooms/{id} (ADMIN authority decisions)
 ###   PUT      /api/v1/org/staff/{id}/surgery-roles/{teamRole} (ADMIN)
 ###   GET      /api/v1/org/operating-rooms/{id}/lookup (service token only)
@@ -80,8 +81,12 @@ GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
 ### Create a staff member
+### Reusing the same key and same request returns the original staff id with HTTP 200;
+### the first request returns HTTP 201. Idempotency-Replayed is false/true respectively.
+### Reusing the key with a different request returns 409 STAFF_IDEMPOTENCY_KEY_REUSED.
 POST {{host}}/api/v1/org/staff
 Authorization: Bearer {{token}}
+Idempotency-Key: staff-create-2026-10-21-001
 Content-Type: application/json
 
 {
@@ -198,3 +203,11 @@ Content-Type: application/json
   "username": "alex.morgan",
   "password": "StrongPass123"
 }
+
+### Current account identity (Gateway service token only; refresh authority lookup)
+GET {{host}}/api/v1/org/accounts/00000000-0000-0000-0000-000000000000/identity
+Authorization: Bearer {{token}}
+X-Correlation-Id: 11111111-1111-1111-1111-111111111111
+
+### Expected data: exists, active, accountId, role, staffId, departmentId, patientId.
+### Missing accounts return exists=false; credentials and personal account data are never returned.

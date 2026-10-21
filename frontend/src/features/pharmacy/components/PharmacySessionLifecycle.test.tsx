@@ -50,7 +50,7 @@ describe("Pharmacy session lifecycle", () => {
 
   it("drops a paid prescription and its open cancellation when the account changes", async () => {
     mocks.rx.mockResolvedValueOnce(rx).mockReturnValueOnce(new Promise(() => {}));
-    render(<PrescriptionDetail prescriptionId={id} />); await screen.findByText("Đã xác nhận thanh toán");
+    render(<PrescriptionDetail prescriptionId={id} mode="legacy" />); await screen.findByText("Đã xác nhận thanh toán");
     fireEvent.click(screen.getByRole("button", { name: "Hủy đơn" })); change("Lý do hủy", "private reason");
     act(() => session("session-b"));
     expect(screen.queryByText("Đã xác nhận thanh toán")).not.toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("Pharmacy session lifecycle", () => {
 
   it("ignores prescription cancellation success belonging to the old session", async () => {
     const pending = deferred<unknown>(); mocks.rx.mockResolvedValueOnce(rx).mockReturnValueOnce(new Promise(() => {})); mocks.cancel.mockReturnValue(pending.promise);
-    render(<PrescriptionDetail prescriptionId={id} />); fireEvent.click(await screen.findByRole("button", { name: "Hủy đơn" }));
+    render(<PrescriptionDetail prescriptionId={id} mode="legacy" />); fireEvent.click(await screen.findByRole("button", { name: "Hủy đơn" }));
     change("Lý do hủy", "Test"); fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy đơn" }));
     act(() => session("session-b")); await act(async () => pending.resolve({ prescriptionId: id, status: "CANCELLED", releasedReservations: 1 }));
     expect(screen.queryByText(/Đã hủy đơn thuốc/)).not.toBeInTheDocument();
@@ -90,6 +90,31 @@ describe("Pharmacy session lifecycle", () => {
     act(() => session("session-b")); await act(async () => pending.resolve({ ...drug, stockQuantity: 25 }));
     expect(onSuccess).not.toHaveBeenCalled(); expect(onConflict).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Số lượng điều chỉnh", { exact: false })).toHaveValue(null);
+  });
+
+  it("does not expose an unresolved stock command to a different account with the same role", async () => {
+    mocks.drug.mockResolvedValue(drug); mocks.stock.mockRejectedValueOnce(new ApiRequestError("Mất phản hồi", 503, "UNAVAILABLE", [], "private-stock-correlation"));
+    render(<DrugDetail drugId={id} />); await screen.findByLabelText("Lý do");
+    change("Số lượng điều chỉnh", "5"); fireEvent.click(screen.getByRole("button", { name: "Xem xác nhận" })); fireEvent.click(screen.getByRole("button", { name: "Xác nhận điều chỉnh" }));
+    await screen.findByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" });
+    mocks.drug.mockResolvedValue({ ...drug, drugName: "Thuốc phiên B" });
+    act(() => session("session-b")); await screen.findByRole("heading", { name: "Thuốc phiên B" });
+    expect(screen.queryByText(/private-stock-correlation/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Lý do")).toBeEnabled();
+  });
+
+  it("ignores a late uncertain stock failure after the account changes", async () => {
+    const pending = deferred<DrugDTO>(); mocks.drug.mockResolvedValue(drug); mocks.stock.mockReturnValueOnce(pending.promise);
+    render(<DrugDetail drugId={id} />); await screen.findByLabelText("Lý do");
+    change("Số lượng điều chỉnh", "5"); fireEvent.click(screen.getByRole("button", { name: "Xem xác nhận" })); fireEvent.click(screen.getByRole("button", { name: "Xác nhận điều chỉnh" }));
+    mocks.drug.mockResolvedValue({ ...drug, drugName: "Thuốc phiên B" });
+    act(() => session("session-b")); await screen.findByRole("heading", { name: "Thuốc phiên B" });
+    await act(async () => pending.reject(new ApiRequestError("Mất phản hồi", 503, "UNAVAILABLE", [], "private-old-stock")));
+    expect(screen.queryByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/private-old-stock/)).not.toBeInTheDocument();
+    expect(mocks.drug).toHaveBeenCalledTimes(2); expect(mocks.stock).toHaveBeenCalledOnce();
+    expect(screen.getByLabelText("Lý do")).toBeEnabled();
   });
 
   it("drops pending outbox results when switching between ADMIN accounts", async () => {

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,6 +64,25 @@ class ClinicalPersistenceAdapterTest {
         assertThat(found.getDiagnoses()).singleElement()
                 .satisfies(diagnosis -> assertThat(diagnosis.getIcdCode()).isEqualTo("J10"));
         assertThat(records.findByIdForUpdate(saved.getRecordId())).isPresent();
+    }
+
+    @Test
+    void cancelledCareFinanceAppointmentRoundTrip_preservesAuditEvidence() {
+        Instant now = Instant.now();
+        Appointment appointment = Appointment.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(1), LocalTime.of(9, 0), "Checkup",
+                java.time.Clock.fixed(now, java.time.ZoneOffset.UTC));
+        appointment.checkIn("OUTPATIENT_EXAM", now);
+        UUID cancelledBy = UUID.randomUUID();
+        appointment.cancelCareFinance("Patient declined before examination", cancelledBy, now);
+
+        Appointment saved = appointments.save(appointment);
+        Appointment loaded = appointments.findById(saved.getAppointmentId()).orElseThrow();
+
+        assertThat(loaded.getStatus()).isEqualTo(com.mediflow.clinical.domain.model.AppointmentStatus.CANCELLED);
+        assertThat(loaded.getCancelledBy()).isEqualTo(cancelledBy);
+        assertThat(loaded.getCancellationReason()).isEqualTo("Patient declined before examination");
+        assertThat(loaded.getCancelledAt()).isEqualTo(now);
     }
 
     @Test

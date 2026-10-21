@@ -9,9 +9,18 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.infrastructure.persistence.entity.StaffEntity;
 
 import java.util.UUID;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface StaffJpaRepository
         extends JpaRepository<StaffEntity, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from StaffEntity s where s.staffId = :id")
+    Optional<StaffEntity> findByIdForUpdate(@Param("id") UUID id);
+
 
         boolean existsByDepartmentIdAndStatus(
             UUID departmentId,

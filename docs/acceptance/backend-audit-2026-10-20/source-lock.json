@@ -1,0 +1,84 @@
+{
+  "base": "26bf2ef70f6429375601236b3d55d14a326b8952",
+  "branch": "codex/vinh-backend-audit-fixes",
+  "capturedAt": "2026-10-20T11:22:44.0966457+07:00",
+  "scope": "Uncommitted backend files verified by full reactor plus targeted final reruns and selected opt-in profiles; documentation excluded from this fingerprint.",
+  "backendChanges": [
+    {
+      "path": "backend/billing-service/src/main/resources/application.yml",
+      "sha256": "9b8c1319bfd4137a51804e8062cda0a4aa839993e874c222f5b4221aa5596557"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/AdmissionChargeCloseRabbitIntegrationTest.java",
+      "sha256": "ca460b3f68bf1999680c002fa43f99e14a2f3a940a98a01f88aaf61e6892bbf1"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/infrastructure/config/JwtSecretConfigurationTest.java",
+      "sha256": "279b2d7f44d94c289a5a77705f61f826ef94a208e17ecba0e645ca3e615e4e8b"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/OutpatientPublicationRabbitIntegrationTest.java",
+      "sha256": "33d1eaa05941769c672db140eb0b5e49d3c60cc1c7c77016175ce3789fb9d363"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/PrescriptionChargeRabbitIntegrationTest.java",
+      "sha256": "68775af3226361f47f6c7790b7c2c1ea3dace3de75c4bfc0a34204893edec5e3"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/SurgeryCompletionRabbitIntegrationTest.java",
+      "sha256": "724258476b92c48961a549d8fa0f003401fffc080b6c4cf3ce68d285f19306f1"
+    },
+    {
+      "path": "backend/lab-service/README.md",
+      "sha256": "1b53d4bc2a515b5eb9821e3fed16e57e32ab34d1f757965ff191dbc55493087c"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/messaging/LabOutboxDispatcher.java",
+      "sha256": "1cc82eeb7fd1dad1f7e279b2b3c6eea2dc5538d04052984637bd72a8f86868cb"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/persistence/jpaEntity/LabOutboxEventJpaEntity.java",
+      "sha256": "d724683aab3d6057d120a4cd1a088658a2bbe20fe84a4d87ca767cc1ee1243b2"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/persistence/repository/LabOutboxEventJpaRepository.java",
+      "sha256": "cf50d0d35108966c4b83a8ec76318c7dc937449217cc757ae1e0487458fb21b8"
+    },
+    {
+      "path": "backend/lab-service/src/main/resources/application.yml",
+      "sha256": "45b8256dca4388e914d89f3ffee2fa85631daabb8bc813137e13595b8b264df1"
+    },
+    {
+      "path": "backend/lab-service/src/main/resources/db/migration/V4__outbox_retry_quarantine.sql",
+      "sha256": "3b90836ccc5e4095d6f79211826e6540e707beafdafd89093b1ab8faa922743f"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/messaging/LabOutboxDispatcherTest.java",
+      "sha256": "53f2931b2e9612e738e2aa074962f4e1a567e909c31057d5ab5cf401bda7ca0b"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/messaging/LabOutboxRabbitIntegrationTest.java",
+      "sha256": "48a63b320d320d819958337033f22ad7b34a0507cd237ec789c90cd595ff01bc"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/messaging/OutboxProcessRecoveryIT.java",
+      "sha256": "77ac66b72fb3147857897dbab97403c4f58de4125af8cac7fe8b7c326f3c6e94"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/persistence/ConsumerInboxPostgresTest.java",
+      "sha256": "0ce5e01eeaf070bed3242b61594edf045841951d7d632c4087ab69e0dde04f77"
+    },
+    {
+      "path": "backend/notification-service/src/main/resources/application.yml",
+      "sha256": "05f514dc8881d650d70acccaf7fc5f43dccee9dad3d553ee650fc0711b7819dc"
+    },
+    {
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/infrastructure/config/JwtSecretConfigurationTest.java",
+      "sha256": "05e5afa4c50da6cca3e805057c9a31e7226d7a4f8eabac847d1c24a63aee98de"
+    },
+    {
+      "path": "backend/support-service/src/test/java/com/mediflow/support/SupportStoreIsolationTest.java",
+      "sha256": "11d44178dd455c51058092096595b582f1fca44c669e92279f245ae2a26467f9"
+    }
+  ]
+}

@@ -1,41 +1,40 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 45, "boxMargin": 6, "boxTextMargin": 4, "noteMargin": 7, "messageMargin": 20, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
  direction LR
- class Appointment {
- -UUID appointmentId
- -UUID patientId
- -AppointmentStatus status
- -short careContractVersion
- +checkIn(priceCode, at)
- +startExam(clearanceId, overrideId, at)
- +complete(at)
- }
- class MedicalRecord {
- -UUID recordId
- -UUID appointmentId
- -MedicalRecordStatus status
- -RecordDisposition disposition
- +openForAppointment()
- }
- class Diagnosis {
- -UUID diagnosisId
- -String diagnosisName
- -String icdCode
- }
- class LabTest {
- -UUID testId
- -UUID recordId
- -int resultVersion
- +start(clearance, override, at)
- +recordResults(results, conclusion, performedDate)
- }
- class LabResult {
- -UUID resultId
- -String indicator
- -String value
- -String unit
+ namespace Clinical {
+  class Appointment {
+   UUID appointmentId
+   UUID patientId
+   UUID doctorId
+   UUID departmentId
+   AppointmentStatus status
+   checkIn(priceCode, at)
+   startExam(clearanceId, overrideId, at)
+   complete(at)
+  }
+  class MedicalRecord {
+   UUID recordId
+   UUID appointmentId
+   MedicalRecordStatus status
+   RecordDisposition disposition
+  }
+  class Diagnosis {
+   UUID diagnosisId
+   String diagnosisName
+   String icdCode
+  }
+  class ClinicalLabOrder {
+   UUID sourceOrderId
+   UUID recordId
+   UUID patientId
+  }
+  class ExamClearance {
+   UUID clearanceId
+   UUID appointmentId
+   Instant expiresAt
+  }
  }
  Appointment "0..1" --> "0..1" MedicalRecord : appointmentId
  MedicalRecord "1" *-- "0..*" Diagnosis
- LabTest "1" *-- "0..*" LabResult
- LabTest ..> MedicalRecord : recordId UUID only across contexts
+ ClinicalLabOrder ..> MedicalRecord : recordId
+ ExamClearance ..> Appointment : appointmentId

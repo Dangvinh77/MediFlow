@@ -1,0 +1,103 @@
+Browser tab: 3, Title: "Chi tiết đơn thuốc | MediFlow", URL: "http://127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271".
+1 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271
+	2 container
+		3 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+			4 image
+		5 container Điều hướng nghiệp vụ
+			6 text MF
+			7 text MediFlow
+			8 text Hospital workspace
+			9 container
+				10 text NGHIỆP VỤ
+				11 content list
+					12 container
+						13 text DƯỢC
+						14 link Description: Dược — Thuốc & đơn thuốc, Value: 127.0.0.1:3182/pharmacy
+			15 text MediFlow · Quản lý ngoại trú
+		16 text Không gian vận hành MediFlow
+		17 text Dược sĩ
+		18 pop up button (collapsed, settable) Description: Giao diện, Value: Theo hệ thống, Secondary Actions: Expand
+			19 menu
+				20 Sáng
+				21 Tối
+				22 (selected) Theo hệ thống
+		23 button Đăng xuất
+		24 heading Chi tiết đơn thuốc, Value: 1
+			25 text Chi tiết đơn thuốc
+		26 text Thông tin đơn thuốc và trạng thái xuất thuốc.
+		27 container Điều hướng phân hệ Dược
+			28 link Description: Danh mục, Value: 127.0.0.1:3182/pharmacy/drugs
+			29 link Description: Đơn thuốc, Value: 127.0.0.1:3182/pharmacy/prescriptions
+		30 container
+			31 text 01b5f30c-acca-484d-80d9-46c51030a271
+			32 heading Chi tiết đơn thuốc, Value: 2
+				33 text Chi tiết đơn thuốc
+			34 text Ngày kê:  19/10/2026 Đã hoàn tất Đã xuất thuốc Thanh toán được kiểm tra khi xuất thuốc
+			35 button Tải lại trạng thái
+			36 text Thanh toán và kết quả xuất thuốc được cập nhật từ hệ thống.
+			37 heading Thông tin kê đơn, Value: 3
+				38 text Thông tin kê đơn
+			39 definition list
+				40 container Mã hồ sơ bệnh án
+					41 text Mã hồ sơ bệnh án
+				42 container
+					43 text d7f2cee5-1211-4afc-8f61-2bc6643d0f09
+					44 button Chép
+				45 container Mã bệnh nhân
+					46 text Mã bệnh nhân
+				47 container
+					48 text ff014d28-0b87-467f-8706-5382ba5f27f1
+					49 button Chép
+				50 container Mã bác sĩ
+					51 text Mã bác sĩ
+				52 container
+					53 text 669b2578-f156-477b-a1a5-138a4d8f810a
+					54 button Chép
+				55 container Mã khoa
+					56 text Mã khoa
+				57 container
+					58 text 44cb8393-ddf4-4eaf-9739-052a58c88033
+					59 button Chép
+				60 container Tổng tiền
+					61 text Tổng tiền
+				62 text 30.000 ₫
+				63 container Ngày kê đơn
+					64 text Ngày kê đơn
+				65 text 19/10/2026
+			66 heading Các dòng thuốc, Value: 3
+				67 text Các dòng thuốc
+			68 table
+				69 row
+					70 cell
+						71 text Thuốc
+					72 cell
+						73 text Số lượng
+					74 cell
+						75 text Đơn giá
+					76 cell
+						77 text Cách dùng
+					78 cell
+						79 text Thành tiền
+				80 row
+					81 cell
+						82 text FE acceptance c85c9e3ab441
+						83 text 13ef9eed-9db2-4273-974a-458186c62695
+					84 cell
+						85 text 3
+					86 cell
+						87 text 10.000 ₫
+					88 cell
+						89 text Acceptance only
+					90 cell
+						91 text 30.000 ₫
+			92 heading Lịch sử bản ghi, Value: 3
+				93 text Lịch sử bản ghi
+			94 definition list
+				95 container Tạo lúc
+					96 text Tạo lúc
+				97 text 15:35 19/10/26
+				98 container Cập nhật lúc
+					99 text Cập nhật lúc
+				100 text 15:37 19/10/26
+
+The focused UI element is 1 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271

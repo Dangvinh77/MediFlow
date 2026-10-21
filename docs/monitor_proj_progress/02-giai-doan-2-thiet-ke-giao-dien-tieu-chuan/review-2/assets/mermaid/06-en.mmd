@@ -1,22 +1,30 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor User
- participant Client as Web / Flutter
- participant Gateway
- participant Core as Core Organization
- participant Service as Business context
- User->>Client: Credentials
- Client->>Gateway: Login request
- Gateway->>Core: Verify credentials
- Core->>Core: Account active / BCrypt / signed JWT
- Core-->>Client: Token response via Gateway
- Client->>Gateway: Authorized API request + bearer JWT
- Gateway->>Gateway: Verify token type / role / route
- alt Policy accepted
- Gateway->>Service: Forward authenticated request
- Service->>Service: Verify JWT / PreAuthorize / ownership / authority
- Service-->>Client: ApiResponse via Gateway
- else Unauthorized or forbidden
- Gateway-->>Client: 401 / 403
+ actor User as User
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ participant C as Core Organization
+ User->>UI: Submit credentials
+ UI->>G: POST /auth/login
+ alt Malformed or missing fields
+  G-->>UI: Reject invalid request
+  UI-->>User: Show validation errors, allow correction
+ else Valid request structure
+  G->>C: Verify username and password
+  alt Invalid credentials or locked account
+   C-->>G: Authentication rejected
+   G-->>UI: 401 AUTH_INVALID_CREDENTIALS
+   UI-->>User: Show failure, no session created
+  else Identity provider unavailable or timed out
+   C-->>G: Failure / timeout
+   G-->>UI: 503 AUTH_UPSTREAM_UNAVAILABLE / 504 AUTH_UPSTREAM_TIMEOUT
+   UI-->>User: Show temporary failure, retry later
+  else Active account and valid credentials
+   C-->>G: Verified account / role / identity
+   G->>G: Issue access token and refresh token
+   G-->>UI: LoginResponse
+   UI-->>User: Open authorized workspace
+  end
  end
+ Note over User,UI: After an error, a new submission restarts this sequence, no protected action runs.

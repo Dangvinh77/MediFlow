@@ -41,14 +41,26 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lịch hẹn đọc `/v1/appointments`, lọc ngày/phân trang; Lab đọc `/v1/lab`, lọc trạng thái/phân trang. Có loading/empty/error/retry, correlation ID và bỏ qua phản hồi cũ. Lab hiển thị trạng thái nghiệp vụ riêng với thanh toán.
 
-Các context khác có thư mục và route thông báo đang phát triển, chưa có nghiệp vụ. Inpatient/Surgery vẫn deferred.
+Từ 2026-10-21, theo phân công bổ sung của người dùng, Vinh tiếp nhận hoàn thiện client
+Organization/Patient và Billing/Notification. Chi tiết phạm vi và bằng chứng kiểm tra của
+đợt này ở [client completion](docs/ha-loc-client-completion.md). Inpatient/Surgery vẫn deferred.
+
+2026-10-20, Pharmacy đã có read slice local: model/DTO/Gateway adapter, danh mục tìm kiếm/phân trang,
+chi tiết/refresh và session/stale guards, **MP-HUY-01–03 đạt 3/12 local**. Chưa bind repository/session
+vào shared app nên route hiện chưa có dữ liệu nghiệp vụ; integration và nghiệm thu thật ở task 11/12.
+Full mobile + loader **87/87 tests**, analyzer/format/web build PASS; không thay signed Gateway hoặc native proof.
 
 | Dev | Feature trong lib/features | Tiếp theo |
 |---|---|---|
 | Vinh | appointment, medical_record, lab | Chi tiết/form theo API thật, hồ sơ khám; điều phối app/core/auth |
-| Hoàng Anh | organization, patient | Danh sách/chi tiết/form từ DTO Core |
+| Vinh (tiếp nhận Hoàng Anh) | organization, patient | Đã bổ sung danh sách/chi tiết/form, chuyển khoa và lệnh tài khoản theo DTO Core; cần nghiệm thu Gateway thật |
 | Huy | pharmacy, report | Thuốc, đơn thuốc, báo cáo MVP |
-| Lộc | billing, notification | Hóa đơn/thanh toán, thông báo và handoff backend |
+| Vinh (tiếp nhận Lộc) | billing, notification | Đã bổ sung hóa đơn/thanh toán/hoàn tiền, báo cáo và thông báo theo API hiện có; cần nghiệm thu Gateway thật |
+
+Plan Pharmacy riêng của Huy: [12 task triển khai mobile Pharmacy](docs/huy-pharmacy-mobile-plan.md)
+(2026-10-20). Bắt đầu từ danh mục/chi tiết/tra cứu đơn, sau đó các command ngoại trú V1;
+phân biệt feature implementation, shared integration và nghiệm thu thật. Bảng ownership bên trên
+không tự mở quyền shared hoặc mở thêm Notification cho Huy.
 
 Đọc [hướng dẫn bổ sung feature](docs/contributing.md), AGENTS từng feature và blueprint `../docs/ai/14-flutter.md`.
 

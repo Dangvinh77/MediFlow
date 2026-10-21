@@ -1,0 +1,308 @@
+{
+  "roles": 8,
+  "fullDiagramVariants": 48,
+  "failures": 0,
+  "checks": [
+    "eight human roles",
+    "one actor per diagram",
+    "source evidence paths",
+    "bilingual node/edge parity",
+    "true exported ellipses",
+    "solid primary arrows",
+    "dashed include arrows",
+    "extension-to-base arrowheads",
+    "panel union equals full graph",
+    "reports include all roles",
+    "independent sign-in and renewal per role"
+  ],
+  "results": [
+    {
+      "id": "29-en",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "29-en",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "29-en",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "29-vi",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "29-vi",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "29-vi",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "30-en",
+      "variant": "assets",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "30-en",
+      "variant": "portrait",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "30-en",
+      "variant": "landscape",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "30-vi",
+      "variant": "assets",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "30-vi",
+      "variant": "portrait",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "30-vi",
+      "variant": "landscape",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "31-en",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "31-en",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "31-en",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "31-vi",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "31-vi",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "31-vi",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 13
+    },
+    {
+      "id": "32-en",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "32-en",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "32-en",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "32-vi",
+      "variant": "assets",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "32-vi",
+      "variant": "portrait",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "32-vi",
+      "variant": "landscape",
+      "nodes": 13,
+      "edges": 12
+    },
+    {
+      "id": "33-en",
+      "variant": "assets",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "33-en",
+      "variant": "portrait",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "33-en",
+      "variant": "landscape",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "33-vi",
+      "variant": "assets",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "33-vi",
+      "variant": "portrait",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "33-vi",
+      "variant": "landscape",
+      "nodes": 9,
+      "edges": 8
+    },
+    {
+      "id": "34-en",
+      "variant": "assets",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "34-en",
+      "variant": "portrait",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "34-en",
+      "variant": "landscape",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "34-vi",
+      "variant": "assets",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "34-vi",
+      "variant": "portrait",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "34-vi",
+      "variant": "landscape",
+      "nodes": 10,
+      "edges": 9
+    },
+    {
+      "id": "35-en",
+      "variant": "assets",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "35-en",
+      "variant": "portrait",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "35-en",
+      "variant": "landscape",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "35-vi",
+      "variant": "assets",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "35-vi",
+      "variant": "portrait",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "35-vi",
+      "variant": "landscape",
+      "nodes": 7,
+      "edges": 6
+    },
+    {
+      "id": "36-en",
+      "variant": "assets",
+      "nodes": 5,
+      "edges": 4
+    },
+    {
+      "id": "36-en",
+      "variant": "portrait",
+      "nodes": 5,
+      "edges": 4
+    },
+    {
+      "id": "36-en",
+      "variant": "landscape",
+      "nodes": 5,
+      "edges": 4
+    },
+    {
+      "id": "36-vi",
+      "variant": "assets",
+      "nodes": 5,
+      "edges": 4
+    },
+    {
+      "id": "36-vi",
+      "variant": "portrait",
+      "nodes": 5,
+      "edges": 4
+    },
+    {
+      "id": "36-vi",
+      "variant": "landscape",
+      "nodes": 5,
+      "edges": 4
+    }
+  ]
+}

@@ -309,6 +309,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         // with publication OFF. No SQL seed or mocked enrollment stands in for historical issuance.
         try (var beforeActivation = new org.springframework.boot.builder.SpringApplicationBuilder(BillingServiceApplication.class).run(
                 "--server.port=0", "--eureka.client.enabled=false",
+                "--mediflow.jwt.secret=billing-integration-test-only-key-at-least-32-bytes",
                 "--spring.datasource.url=" + PG.getJdbcUrl(), "--spring.datasource.username=" + PG.getUsername(),
                 "--spring.datasource.password=" + PG.getPassword(), "--spring.rabbitmq.host=" + MQ.getHost(),
                 "--spring.rabbitmq.port=" + MQ.getAmqpPort(), "--spring.rabbitmq.username=" + MQ.getAdminUsername(),

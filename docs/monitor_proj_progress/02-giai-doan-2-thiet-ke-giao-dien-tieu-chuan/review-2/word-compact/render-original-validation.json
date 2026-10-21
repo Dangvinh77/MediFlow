@@ -1,0 +1,77 @@
+{
+  "renderer": "Mermaid CLI 11.12.0 + isolated Chromium SVG replay",
+  "results": [
+    {
+      "orientation": "original",
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "width": 1039,
+      "height": 305,
+      "originalViewBox": "0 0 1005.25 272.017333984375",
+      "viewBox": [
+        -17,
+        -16,
+        1039,
+        305
+      ],
+      "paintedBounds": [
+        7.999999524852477,
+        8.000000193142895,
+        997.2499947530657,
+        264.0173447585557
+      ],
+      "padding": 24,
+      "leafCount": 31,
+      "images": 0,
+      "pngWidth": 3600,
+      "pngHeight": 1057,
+      "estimatedTextPt": 10.8,
+      "preferred": "landscape",
+      "sourceSha256": "531a2e4f464e0d04632196df68bca5ae4d5e1467bc229c54f33f75c6ebf55e22",
+      "svgSha256": "24fc4fca5d20d48c8378fd5ff21c3c49b6792b766da0cc88e61b856adb09fb43",
+      "pngSha256": "e644b7d343dc5222dcad15d14786505a5c6758d2486edfeb0e69fd1e5595d20a",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "12-en.mmd",
+      "status": "pass",
+      "width": 1035,
+      "height": 305,
+      "originalViewBox": "0 0 1002.5625 271.95819091796875",
+      "viewBox": [
+        -16,
+        -17,
+        1035,
+        305
+      ],
+      "paintedBounds": [
+        8.000000025141677,
+        7.999999770458442,
+        994.5624723177879,
+        263.9581944854326
+      ],
+      "padding": 24,
+      "leafCount": 31,
+      "images": 0,
+      "pngWidth": 3600,
+      "pngHeight": 1061,
+      "estimatedTextPt": 10.8,
+      "preferred": "landscape",
+      "sourceSha256": "fcab1f6b007751f9e001acb41c052818aadee3ecc84dc4d406d0260a506f6d75",
+      "svgSha256": "1b3ca5a3f04bb0ce6766665f656319e2cfecabe528f5ff9af7e335e5c72d4dc5",
+      "pngSha256": "9f518c343ce4fe910544ee94156a17626ddbf1d211af5208e056cad448a981f3",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    }
+  ]
+}

@@ -47,8 +47,9 @@ function page(
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject!: (cause: unknown) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
 }
 
 describe("PatientTable read logic", () => {
@@ -56,6 +57,16 @@ describe("PatientTable read logic", () => {
     mocks.search.mockReset();
     mocks.getRole.mockReturnValue("ADMIN");
     mocks.router.replace.mockReset();
+  });
+
+  it("does not redirect on a late 401 after unmount", async () => {
+    const response = deferred<PageResult<PatientDTO>>(); mocks.search.mockReturnValue(response.promise);
+    const view = render(<PatientTable />);
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledTimes(1));
+    view.unmount();
+    const { ApiRequestError } = await import("@/lib/api");
+    await act(async () => response.reject(new ApiRequestError("expired", 401)));
+    expect(mocks.router.replace).not.toHaveBeenCalled();
   });
 
   it("searches from page zero, keeps the active keyword while paging, and resets filters", async () => {
@@ -159,5 +170,14 @@ describe("PatientTable read logic", () => {
     await act(async () => older.resolve(page({ content: [olderPatient] })));
     expect(screen.queryByText("Patient Older")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Patient Newer" })).toBeVisible();
+  });
+
+  it("keeps patient browsing available to doctors without showing create controls", async () => {
+    mocks.getRole.mockReturnValue("DOCTOR");
+    mocks.search.mockResolvedValue(page({ content: [patient], totalPages: 1 }));
+    render(<PatientTable />);
+
+    expect(await screen.findByRole("link", { name: "Nguyen Van A" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Thêm bệnh nhân" })).not.toBeInTheDocument();
   });
 });

@@ -1,28 +1,47 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 65, "boxMargin": 12, "boxTextMargin": 4, "noteMargin": 12, "messageMargin": 35, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
+ actor Patient as Bệnh nhân
+ actor Nurse as Điều dưỡng
+ actor Cashier as Thu ngân
+ actor Doctor as Bác sĩ
+ participant C as Clinical API
  participant Q as RabbitMQ
- Staff->>UI: Check in exact appointment
- UI->>C: Check-in command
- C->>C: Save appointment + durable outbox
- C-->>Q: Appointment fact with exact visit identity
- Q->>B: Consume selected V1 fact
- B->>B: Claim source / issue EXAM charge and request
- Staff->>UI: Record payment
- UI->>B: Complete request with idempotency key
- B->>B: Atomic payment + allocation + clearance + outbox
- B-->>Q: financial.clearance.granted
- Q->>C: Store exact EXAM clearance idempotently
- Staff->>UI: Start examination
- UI->>C: Start exact appointment
- C->>C: Recheck authority / target / expiry
- alt Clearance missing or provider unavailable
- C-->>UI: Reject protected action
- else Valid authority
- C->>C: Create or reuse appointment-backed record atomically
- C-->>UI: Open medical record
+ participant B as Billing API
+ Note over Nurse,C: Tiền điều kiện: hình 05 đã lưu lịch, các lệnh API đi qua Gateway.
+ Patient->>Nurse: Đến theo lịch đã đặt
+ Nurse->>C: Check-in đúng lịch hẹn
+ alt Không có lịch, sai trạng thái hoặc không có quyền
+  C-->>Nurse: Từ chối, xử lý lịch / quyền, dừng lượt thao tác
+ else Lịch chờ hợp lệ
+  C->>C: Commit lịch AWAITING_PAYMENT + outbox
+  C-->>Nurse: Tiếp nhận thành công, chưa được bắt đầu khám
+  C-)Q: Phát fact đúng lịch sau commit
+  Q-)B: Gửi fact để lập khoản thu EXAM
+  B->>B: Tạo khoản thu / yêu cầu thu chống trùng
+  Cashier->>B: Tra cứu yêu cầu thu EXAM đúng lượt khám
+  alt Yêu cầu thu chưa sẵn sàng hoặc lập phí lỗi
+   B-->>Cashier: Chưa sẵn sàng / lỗi, không thu tiền vào yêu cầu tùy ý
+   Note over Cashier,Doctor: Chờ phục hồi nguồn rồi tra cứu lại, nhánh này chưa khám.
+  else Yêu cầu thu đúng đã sẵn sàng
+   Cashier->>B: Ghi tiền đã thu với khóa idempotency
+   alt Thanh toán không hợp lệ hoặc retry khác intent
+    B-->>Cashier: Từ chối, không tạo tiền / phân bổ / quyền mới
+   else Nhận thanh toán hoặc phát lại kết quả đã commit
+    B->>B: Atomic payment + allocation + clearance + outbox
+    B-->>Cashier: Biên nhận thanh toán
+    Cashier-->>Patient: Xác nhận đã thu phí khám
+    B-)Q: financial.clearance.granted
+    Q-)C: Lưu EXAM clearance đúng lịch và chống trùng
+    Doctor->>C: Bắt đầu khám đúng lịch hẹn
+    alt Quyền chưa tới, hết hạn, lệch đối tượng hoặc sai actor/trạng thái
+     C-->>Doctor: Từ chối bắt đầu, chưa vào trạng thái khám
+     Note over Doctor,C: Thử lại khi có bằng chứng hợp lệ, không thu phí lần hai vì chậm sự kiện.
+    else Đúng bác sĩ và quyền đúng lượt còn hạn
+     C->>C: Atomic bắt đầu khám và tạo/dùng lại hồ sơ đúng lịch
+     C-->>Doctor: Mở hồ sơ khám
+     Doctor-->>Patient: Bắt đầu thăm khám
+    end
+   end
+  end
  end

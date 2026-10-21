@@ -41,4 +41,7 @@ public class AppointmentJpaEntity {
     @Column(name = "checked_in_at") private Instant checkedInAt;
     @Column(name = "examination_started_at") private Instant examinationStartedAt;
     @Column(name = "completed_at") private Instant completedAt;
+    @Column(name = "cancelled_by") private UUID cancelledBy;
+    @Column(name = "cancellation_reason", columnDefinition = "text") private String cancellationReason;
+    @Column(name = "cancelled_at") private Instant cancelledAt;
 }

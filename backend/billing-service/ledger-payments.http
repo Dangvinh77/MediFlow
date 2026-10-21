@@ -6,8 +6,10 @@
 ### endpoints are unchanged. INSURANCE is not a cash receipt method on this new endpoint.
 
 @host = http://localhost:8080
+@billingServiceHost = http://localhost:8086
 @paymentRequestId = replace-with-authoritative-payment-request-uuid
 # @token = paste-access-token-here
+# @serviceToken = signed SYSTEM token for clinical-service or lab-service
 
 ### Record an installment (200); retry with the SAME key and business fields for safe replay.
 ### Change the key only for another real installment. Amount must not exceed the remainder.
@@ -68,3 +70,37 @@ X-Correlation-Id: admission-settlement-preview
 POST {{billingDiagnosticHost}}/api/v1/billing/accounts/{{accountId}}/settlement-reconciliations
 Authorization: Bearer {{token}}
 Idempotency-Key: replace-with-unique-cashier-reconciliation-key
+
+### Admit an exact EXAM or LAB_TEST execution (200); SYSTEM service identity only.
+### clinical-service may start EXAM; lab-service may start LAB_TEST. Use the target UUID as both
+### operationId and sourceId so local transaction retries use the same one-time receipt. A replay
+### rechecks current Billing eligibility and returns 409 after cancellation/refund revokes the grant.
+@financialClearanceId = replace-with-current-clearance-uuid
+@executionSourceId = replace-with-exact-exam-or-lab-test-uuid
+@patientId = replace-with-clearance-patient-uuid
+@careEpisodeId = replace-with-clearance-episode-uuid
+POST {{billingServiceHost}}/api/v1/billing/financial-clearances/{{financialClearanceId}}/execution-starts
+Authorization: Bearer {{serviceToken}}
+Content-Type: application/json
+X-Correlation-Id: 9e6c524e-a2e0-4ca9-ac20-6c61f93ae092
+
+{
+  "operationId": "{{executionSourceId}}",
+  "sourceType": "LAB_TEST",
+  "sourceId": "{{executionSourceId}}",
+  "patientId": "{{patientId}}",
+  "careEpisodeType": "OUTPATIENT_VISIT",
+  "careEpisodeId": "{{careEpisodeId}}"
+}
+
+### Read the cancellation adjustment for one exact LAB_TEST (ADMIN/CASHIER access token).
+### EXAM uses /exam-adjustments/{appointmentId}/refunds-due. This is a read-only due view;
+### every outpatient refund still requires accepted cancellation and is capped by remaining due.
+GET {{billingServiceHost}}/api/v1/billing/lab-adjustments/{{executionSourceId}}/refunds-due
+Authorization: Bearer {{token}}
+X-Correlation-Id: lab-adjustment-read
+
+### Read the cancellation adjustment for one exact EXAM appointment.
+GET {{billingServiceHost}}/api/v1/billing/exam-adjustments/{{executionSourceId}}/refunds-due
+Authorization: Bearer {{token}}
+X-Correlation-Id: exam-adjustment-read

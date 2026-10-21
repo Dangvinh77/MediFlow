@@ -1,0 +1,152 @@
+{
+  "frontendCode": "9a00d7f1749f141ed57544c998587dc04e269375",
+  "backendCode": "5334aa8cdda83f749915997b11ff824b12624fbc",
+  "base": "5ccecf83a628c855beb8c4de363704dd0cc03efc",
+  "testOverlaySha256": "5a7863e74c67fe5ea677151a61e9bf4572852994fc00fb8118a3b095a30be98f",
+  "runtime": "Disposable PG16/RabbitMQ, packaged six business apps plus Gateway/Eureka; same-origin Next development server",
+  "frontendMode": "outpatient",
+  "reportUiGate": "OFF",
+  "sourceRecord": {
+    "recordId": "d7f2cee5-1211-4afc-8f61-2bc6643d0f09",
+    "patientId": "ff014d28-0b87-467f-8706-5382ba5f27f1",
+    "doctorId": "669b2578-f156-477b-a1a5-138a4d8f810a",
+    "departmentId": "44cb8393-ddf4-4eaf-9739-052a58c88033",
+    "examinationDate": "2026-10-19",
+    "symptoms": null,
+    "appointmentId": "3ca17806-ac9f-48be-83d3-9e1b5447b856",
+    "diagnoses": [],
+    "createdAt": "2026-10-19T08:33:18.605369Z",
+    "updatedAt": null,
+    "status": "OPEN",
+    "disposition": null,
+    "dispositionNote": null,
+    "completedAt": null
+  },
+  "sourceLabOrder": {
+    "sourceOrderId": "dd9e178e-d125-4432-920d-066549c948cf",
+    "recordId": "d7f2cee5-1211-4afc-8f61-2bc6643d0f09",
+    "patientId": "ff014d28-0b87-467f-8706-5382ba5f27f1",
+    "requestingDoctorId": "669b2578-f156-477b-a1a5-138a4d8f810a",
+    "requestingDepartmentId": "44cb8393-ddf4-4eaf-9739-052a58c88033",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "3ca17806-ac9f-48be-83d3-9e1b5447b856",
+    "labType": "CBC",
+    "requestedDate": "2026-10-19",
+    "priceCode": "LAB",
+    "orderedAt": "2026-10-19T08:33:19.690540800Z"
+  },
+  "testPricePolicy": "mediflow.billing.prescription-charges.allowed-price-codes=DRUG",
+  "prescriptionId": "01b5f30c-acca-484d-80d9-46c51030a271",
+  "cancelledPrescriptionId": "e22caa74-4532-4e7a-bb8a-4d2122862999",
+  "roleChecks": [
+    {
+      "scenario": "foreign-doctor-create",
+      "httpStatus": 403,
+      "correlationId": "f0862585-2d04-4b38-86cf-df19631bd8fe",
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "PRESCRIPTION_CREATION_FORBIDDEN",
+          "message": "Only an authenticated prescribing doctor or administrator may create",
+          "details": []
+        },
+        "timestamp": "2026-10-19T08:33:20.413689900Z",
+        "correlationId": "f0862585-2d04-4b38-86cf-df19631bd8fe"
+      }
+    },
+    {
+      "scenario": "foreign-doctor-cancel",
+      "httpStatus": 403,
+      "correlationId": "f9a3a63d-d951-43f1-8581-0cfb8e0f5093",
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "PRESCRIPTION_CANCELLATION_FORBIDDEN",
+          "message": "Only the prescribing doctor or an administrator may cancel",
+          "details": []
+        },
+        "timestamp": "2026-10-19T08:33:21.204670700Z",
+        "correlationId": "f9a3a63d-d951-43f1-8581-0cfb8e0f5093"
+      }
+    },
+    {
+      "scenario": "pharmacist-cancel",
+      "httpStatus": 403,
+      "correlationId": "17b5b70c-7896-4ec4-a2c5-747b0e3e9686",
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-19T08:33:21.213685100Z",
+        "correlationId": "17b5b70c-7896-4ec4-a2c5-747b0e3e9686"
+      }
+    },
+    {
+      "scenario": "assigned-doctor-cancel",
+      "httpStatus": 200,
+      "correlationId": "86ab7f7f-75d5-4859-8e39-dc1d1642f402",
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "e22caa74-4532-4e7a-bb8a-4d2122862999",
+          "status": "CANCELLED",
+          "releasedReservations": 1,
+          "cancelledAt": "2026-10-19T08:33:21.257170100Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-19T08:33:21.296815600Z",
+        "correlationId": "86ab7f7f-75d5-4859-8e39-dc1d1642f402"
+      }
+    }
+  ],
+  "browserPayment": "Cashier payment through public API harness; create, unpaid denial, refresh and dispense through browser",
+  "jars": [
+    {
+      "module": "core",
+      "file": "core-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "3ec58bfa4980a8f1c8be3e8eaf1e15669dfefd9eb6d52dce39759770bfe2db8a"
+    },
+    {
+      "module": "clinical",
+      "file": "clinical-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "586cff1e95e743d9d844c3dcd2117203dcc330db6576644d6972884dc59dcc45"
+    },
+    {
+      "module": "lab",
+      "file": "lab-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "580c7bf2cc538dac22d274e3cb01c3dd48d900ab3e1d124640f489da11259b17"
+    },
+    {
+      "module": "pharmacy",
+      "file": "pharmacy-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "9b74e8180a16579237045e5f81b96e4f46705e6a5bb9332726c87cc4a885e085"
+    },
+    {
+      "module": "billing",
+      "file": "billing-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "15092218f1e19f0c15b9c4edce7fbdcff23e5565bda318693318772f9b1444f2"
+    },
+    {
+      "module": "support",
+      "file": "support-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "0e9f1898101933d806282470a422537ec3dc4cf0f4f47cc854f4df794a231b88"
+    },
+    {
+      "module": "gateway",
+      "file": "gateway-0.0.1-SNAPSHOT.jar",
+      "sha256": "c2fb3835aab27f4af1519c4dcde67a98cf09e78953b3c4ef16b31dc61a05938b"
+    },
+    {
+      "module": "eureka",
+      "file": "eureka-server-0.0.1-SNAPSHOT.jar",
+      "sha256": "298608c97c3bd171890b8607113a400587ea8d105caf08910185a34a613e9810"
+    }
+  ],
+  "testOverlayNormalizedLfSha256": "bdd0f24e6b2af3425f5e845883a45ef03245ce591fb3d79fddfa0f834f42a377"
+}

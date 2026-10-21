@@ -1,22 +1,30 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 65, "boxMargin": 12, "boxTextMargin": 4, "noteMargin": 12, "messageMargin": 35, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor User
- participant Client as Web / Flutter
- participant Gateway
- participant Core as Core Organization
- participant Service as Business context
- User->>Client: Credentials
- Client->>Gateway: Login request
- Gateway->>Core: Verify credentials
- Core->>Core: Account active / BCrypt / signed JWT
- Core-->>Client: Token response via Gateway
- Client->>Gateway: Authorized API request + bearer JWT
- Gateway->>Gateway: Verify token type / role / route
- alt Policy accepted
- Gateway->>Service: Forward authenticated request
- Service->>Service: Verify JWT / PreAuthorize / ownership / authority
- Service-->>Client: ApiResponse via Gateway
- else Unauthorized or forbidden
- Gateway-->>Client: 401 / 403
+ actor User as Người dùng
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ participant C as Core Organization
+ User->>UI: Gửi thông tin đăng nhập
+ UI->>G: POST /auth/login
+ alt Thiếu trường hoặc dữ liệu sai định dạng
+  G-->>UI: Từ chối request không hợp lệ
+  UI-->>User: Hiện lỗi dữ liệu, cho sửa lại
+ else Request đúng cấu trúc
+  G->>C: Kiểm tra tên đăng nhập và mật khẩu
+  alt Sai thông tin hoặc tài khoản bị khóa
+   C-->>G: Từ chối xác thực
+   G-->>UI: 401 AUTH_INVALID_CREDENTIALS
+   UI-->>User: Hiện lỗi, không tạo phiên
+  else Dịch vụ định danh lỗi hoặc quá thời gian
+   C-->>G: Lỗi / timeout
+   G-->>UI: 503 AUTH_UPSTREAM_UNAVAILABLE / 504 AUTH_UPSTREAM_TIMEOUT
+   UI-->>User: Hiện lỗi tạm thời, thử lại sau
+  else Tài khoản hoạt động và thông tin đúng
+   C-->>G: Tài khoản / role / định danh đã xác minh
+   G->>G: Cấp access token và refresh token
+   G-->>UI: LoginResponse
+   UI-->>User: Mở khu vực theo quyền
+  end
  end
+ Note over User,UI: Sau lỗi, gửi lại bắt đầu từ đầu sequence, không chạy tác vụ được bảo vệ.

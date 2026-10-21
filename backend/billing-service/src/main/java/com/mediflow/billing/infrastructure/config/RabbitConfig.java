@@ -55,6 +55,8 @@ public class RabbitConfig {
     // Opt-in only: bound by LabTestChargeConfiguration, not in SUBSCRIBED_ROUTING_KEYS below, so this
     // queue stays unbound to it (messages simply drop, as today) until both feature flags are true.
     public static final String RK_LAB_REQUEST_CREATED = "lab.request.created";
+    public static final String RK_LAB_REQUEST_CANCELLED = "lab.request.cancelled";
+    public static final String RK_APPOINTMENT_EXAM_CANCELLED = "appointment.exam.cancelled";
 
     // Subscribe — CONTRACT-CARE-BILLING-01 / HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT (inpatient-service).
     // Opt-in only: bound by AdmissionDepositRequestConfiguration, same unbound-by-default pattern.

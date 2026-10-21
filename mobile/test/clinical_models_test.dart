@@ -43,7 +43,7 @@ void main() {
     );
     expect(() => LabTestDto.fromJson({'testId': 't'}), throwsFormatException);
   });
-  test('menu allows only each route role and records four owners', () {
+  test('menu allows only each route role and records current owners', () {
     expect(
       modules.where((m) => m.allows(UserRole.cashier)).map((m) => m.path),
       ['/billing'],
@@ -52,12 +52,7 @@ void main() {
       modules.where((m) => m.allows(UserRole.labTech)).map((m) => m.path),
       ['/lab'],
     );
-    expect(modules.map((m) => m.owner).toSet(), {
-      'Vinh',
-      'Huy',
-      'Hoàng Anh',
-      'Lộc',
-    });
+    expect(modules.map((m) => m.owner).toSet(), {'Vinh', 'Huy'});
     expect(
       modules.any((m) => m.path == '/inpatient' || m.path == '/surgery'),
       isFalse,

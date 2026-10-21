@@ -1,0 +1,13 @@
+{
+  "provenance" : "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+  "scope" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+  "fromDate" : "2026-01-01",
+  "toDate" : "2026-12-31",
+  "source" : "LAB",
+  "zoneId" : "Asia/Bangkok",
+  "currency" : "VND",
+  "allWritersStopped" : true,
+  "wallTimeSealedAt" : "2026-10-21T06:34:25.957062800Z",
+  "completedOperationEvidenceRows" : 0,
+  "receipts" : [ ]
+}

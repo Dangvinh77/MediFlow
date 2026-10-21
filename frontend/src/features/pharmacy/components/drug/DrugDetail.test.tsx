@@ -93,4 +93,66 @@ describe("DrugDetail", () => {
     expect(await screen.findByText("6")).toBeVisible();
     expect(mocks.adjust).toHaveBeenCalledOnce();
   });
+
+  it.each([408, 500, 503, 200])("requires reconciliation after uncertain HTTP %s even when the refreshed stock is unchanged", async status => {
+    mocks.adjust.mockRejectedValueOnce(new ApiRequestError("Mất phản hồi", status, "UNKNOWN_RESULT", [], "corr-adjustment"));
+    render(<DrugDetail drugId={drug.drugId} />); await screen.findByLabelText("Lý do"); prepare();
+    const notice = await screen.findByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" });
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(2));
+    expect(notice).toHaveTextContent("corr-adjustment");
+    expect(notice).toHaveTextContent("-5 Viên");
+    expect(notice).toHaveTextContent("không xác nhận lệnh trước đã thành công hay thất bại");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Đã đối chiếu kết quả" })).toBeEnabled());
+    expect(notice).toHaveFocus();
+    expect(screen.getByLabelText("Lý do")).toBeDisabled();
+    fireEvent.submit(screen.getByLabelText("Lý do").closest("form")!);
+    expect(mocks.adjust).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Đã đối chiếu kết quả" }));
+    expect(screen.queryByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Số lượng điều chỉnh", { exact: false })).toHaveValue(null);
+    expect(screen.getByLabelText("Số lượng điều chỉnh", { exact: false })).toHaveFocus();
+    expect(mocks.adjust).toHaveBeenCalledOnce();
+  });
+
+  it("retains the uncertain command across refresh failure and explicit read retry", async () => {
+    let resolve!: (value: DrugDTO) => void;
+    mocks.adjust.mockRejectedValueOnce(new TypeError("Network error"));
+    mocks.get.mockResolvedValueOnce(drug)
+      .mockRejectedValueOnce(new ApiRequestError("Không tải được", 503, "UNAVAILABLE", [], "corr-refresh"))
+      .mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    render(<DrugDetail drugId={drug.drugId} />); await screen.findByLabelText("Lý do"); prepare();
+    expect(await screen.findByRole("alert")).toHaveTextContent("corr-refresh");
+    expect(screen.getByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).toHaveTextContent("-5 Viên");
+    expect(screen.getByRole("button", { name: "Đã đối chiếu kết quả" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(screen.getByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Đã đối chiếu kết quả" })).toBeDisabled();
+    await act(async () => resolve({ ...drug, stockQuantity: 15 }));
+    expect(screen.getByRole("button", { name: "Đã đối chiếu kết quả" })).toBeEnabled();
+    expect(screen.getByLabelText("Lý do")).toBeDisabled();
+    expect(mocks.get).toHaveBeenCalledTimes(3); expect(mocks.adjust).toHaveBeenCalledOnce();
+  });
+
+  it.each([403, 404])("keeps unknown outcome evidence when reconciliation read returns %s", async status => {
+    mocks.adjust.mockRejectedValueOnce(new ApiRequestError("Mất phản hồi", 503, "UNAVAILABLE", [], "corr-stock-write"));
+    mocks.get.mockResolvedValueOnce(drug).mockRejectedValueOnce(new ApiRequestError("Không đọc được", status, "READ_DENIED", [], "corr-stock-read"));
+    render(<DrugDetail drugId={drug.drugId} />); await screen.findByLabelText("Lý do"); prepare();
+    await waitFor(() => expect(screen.queryByLabelText("Lý do")).not.toBeInTheDocument());
+    expect(screen.getByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).toHaveTextContent("corr-stock-write");
+    expect(screen.getByText(/corr-stock-read/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Đã đối chiếu kết quả" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+    expect(mocks.adjust).toHaveBeenCalledOnce();
+  });
+
+  it("does not carry an unresolved adjustment to another drug", async () => {
+    mocks.adjust.mockRejectedValueOnce(new TypeError("Network error"));
+    const view = render(<DrugDetail drugId={drug.drugId} />); await screen.findByLabelText("Lý do"); prepare();
+    await screen.findByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" });
+    const second = { ...drug, drugId: "00000000-0000-4000-8000-000000000002", drugName: "Thuốc B" };
+    mocks.get.mockResolvedValue(second); view.rerender(<DrugDetail drugId={second.drugId} />);
+    await screen.findByRole("heading", { name: "Thuốc B" });
+    expect(screen.queryByRole("region", { name: "Kết quả điều chỉnh cần đối chiếu" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Lý do")).toBeEnabled();
+  });
 });

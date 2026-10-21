@@ -1,0 +1,550 @@
+{
+  "candidate": "42aab198 + Gateway coverage and new outpatient refund publication",
+  "gateway": "http://127.0.0.1:50409",
+  "unique": "47407fee0335",
+  "checks": [
+    {
+      "name": "create-refundable-prescription",
+      "method": "POST",
+      "path": "/api/v1/pharmacy/prescriptions",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "b3607cb5-b914-43cf-9ea3-5434d596cb5c",
+          "recordId": "978bd269-9b03-4cc1-83ba-b4416db33221",
+          "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+          "doctorId": "d38cf764-9d8b-4159-b16f-2192bcc3ca48",
+          "departmentId": "b96298ed-c81e-45fa-a070-b4657bb91dfb",
+          "prescribedDate": "2026-10-21",
+          "totalAmount": 30000,
+          "lines": [
+            {
+              "lineId": "31913753-39b5-4ddb-9542-24a5c8f83ed0",
+              "drugId": "f3c256ea-459b-473d-bd7e-9ab59ef14b0c",
+              "drugName": "FE acceptance 47407fee0335",
+              "quantity": 3,
+              "unitPrice": 10000,
+              "dosage": "Disposable refund acceptance only",
+              "lineTotal": 30000
+            }
+          ],
+          "status": "ACTIVE",
+          "dispenseStatus": "PENDING",
+          "paymentConfirmed": false,
+          "cancelledAt": null,
+          "cancelledBy": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-21T02:34:04.112493Z",
+          "updatedAt": "2026-10-21T02:34:04.112493Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:04.149299Z",
+        "correlationId": "f4cc76e1-1322-43ae-97ae-e5b8bcf23b2a"
+      }
+    },
+    {
+      "name": "cashier-payment",
+      "method": "POST",
+      "path": "/api/v1/billing/payment-requests/13ef4ea4-fa50-40d4-a2cd-352a3d05bd70/payments",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "transactionId": "ac1956d1-e528-476e-a04c-462ec7745c08",
+          "accountId": "3c03c9ae-7642-4530-bd76-4ed2cdc17f2b",
+          "paymentRequestId": "13ef4ea4-fa50-40d4-a2cd-352a3d05bd70",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T02:34:05.241996Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:05.268392400Z",
+        "correlationId": "34e48634-a614-419e-bfa9-a2d044c16377"
+      }
+    },
+    {
+      "name": "cancel-paid-prescription",
+      "method": "PUT",
+      "path": "/api/v1/pharmacy/prescriptions/b3607cb5-b914-43cf-9ea3-5434d596cb5c/cancel",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "b3607cb5-b914-43cf-9ea3-5434d596cb5c",
+          "status": "CANCELLED",
+          "releasedReservations": 1,
+          "cancelledAt": "2026-10-21T02:34:05.308531Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:05.336427300Z",
+        "correlationId": "fc4f64c9-1101-4997-98a8-9d534361de63"
+      }
+    },
+    {
+      "name": "refund-due",
+      "method": "GET",
+      "path": "/api/v1/billing/prescription-adjustments/b3607cb5-b914-43cf-9ea3-5434d596cb5c/refunds-due",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "b3607cb5-b914-43cf-9ea3-5434d596cb5c",
+          "eventType": "prescription.cancelled",
+          "status": "APPLIED",
+          "rejectionCode": null,
+          "refundsDue": [
+            {
+              "originalTransactionId": "ac1956d1-e528-476e-a04c-462ec7745c08",
+              "amount": 30000,
+              "currency": "VND"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:06.432849800Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "cashier-completed-refund",
+      "method": "POST",
+      "path": "/api/v1/billing/transactions/ac1956d1-e528-476e-a04c-462ec7745c08/refunds",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "refundTransactionId": "921ef690-b34c-47c8-ba5c-9f15201f4cc3",
+          "originalTransactionId": "ac1956d1-e528-476e-a04c-462ec7745c08",
+          "accountId": "3c03c9ae-7642-4530-bd76-4ed2cdc17f2b",
+          "paymentRequestId": "13ef4ea4-fa50-40d4-a2cd-352a3d05bd70",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T02:34:06.483647Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:06.539191800Z",
+        "correlationId": "ea7e708a-5272-4373-b270-9317997d2124"
+      }
+    },
+    {
+      "name": "same-key-refund-retry",
+      "method": "POST",
+      "path": "/api/v1/billing/transactions/ac1956d1-e528-476e-a04c-462ec7745c08/refunds",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "refundTransactionId": "921ef690-b34c-47c8-ba5c-9f15201f4cc3",
+          "originalTransactionId": "ac1956d1-e528-476e-a04c-462ec7745c08",
+          "accountId": "3c03c9ae-7642-4530-bd76-4ed2cdc17f2b",
+          "paymentRequestId": "13ef4ea4-fa50-40d4-a2cd-352a3d05bd70",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T02:34:06.483647Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:06.576957100Z",
+        "correlationId": "f34b53f7-0123-40d5-8ad1-c8f856d6cd89"
+      }
+    },
+    {
+      "name": "refund-notice-one-effect",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/cd808c02-219f-4fd2-b18a-fded0a3c3f86?page=0&size=100",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Biên nhận hoàn tiền",
+              "content": "Thu ngân đã ghi nhận hoàn tiền 30000.00 VND cho giao dịch ac1956d1-e528-476e-a04c-462ec7745c08. Đây không phải quyết toán cuối cùng hoặc xác nhận trạng thái điều trị.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:07.705262Z",
+              "sentAt": "2026-10-21T02:34:07.705262Z"
+            },
+            {
+              "notificationId": "410372e0-7eb8-479d-8cde-63c937ffb65f",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 30000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:06.666678Z",
+              "sentAt": "2026-10-21T02:34:06.666678Z"
+            },
+            {
+              "notificationId": "51a5f505-4f2c-4d88-b459-0a19a977f27b",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:05.470931Z",
+              "sentAt": "2026-10-21T02:34:05.470931Z"
+            },
+            {
+              "notificationId": "a57cd67a-c314-4e79-a8a9-f84dd2fe5ab9",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:04.597373Z",
+              "sentAt": "2026-10-21T02:34:04.597373Z"
+            },
+            {
+              "notificationId": "d2d2e7ea-4fcd-4619-9aa7-823e2d1bc269",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:04.442224Z",
+              "sentAt": "2026-10-21T02:34:04.442224Z"
+            },
+            {
+              "notificationId": "30cb6856-1d0a-4fca-b1aa-b4bd5331069d",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:51.271360Z",
+              "sentAt": "2026-10-21T02:33:51.271360Z"
+            },
+            {
+              "notificationId": "8a224cbe-a4a2-43b3-b32d-95fc4fa00130",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:50.414829Z",
+              "sentAt": "2026-10-21T02:33:50.414829Z"
+            },
+            {
+              "notificationId": "970f4bfc-5630-4b55-b991-8c859c37de53",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:50.235365Z",
+              "sentAt": "2026-10-21T02:33:50.235365Z"
+            },
+            {
+              "notificationId": "a452a989-7e80-4f89-a30e-d9e5ee52c298",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:45.311613Z",
+              "sentAt": "2026-10-21T02:33:45.311613Z"
+            },
+            {
+              "notificationId": "9f6f02dd-4bec-411a-9821-71d71be569b4",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-22 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:43.296844Z",
+              "sentAt": "2026-10-21T02:33:43.301500Z"
+            },
+            {
+              "notificationId": "964092d6-d220-43b5-acdd-0ca502294ba4",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 47407fee0335, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:42.003949Z",
+              "sentAt": "2026-10-21T02:33:42.142253Z"
+            }
+          ],
+          "totalElements": 11,
+          "totalPages": 1,
+          "number": 0,
+          "size": 100
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:07.998103700Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "negative-owner-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/cd808c02-219f-4fd2-b18a-fded0a3c3f86?page=0&size=100",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Biên nhận hoàn tiền",
+              "content": "Thu ngân đã ghi nhận hoàn tiền 30000.00 VND cho giao dịch ac1956d1-e528-476e-a04c-462ec7745c08. Đây không phải quyết toán cuối cùng hoặc xác nhận trạng thái điều trị.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:07.705262Z",
+              "sentAt": "2026-10-21T02:34:07.705262Z"
+            },
+            {
+              "notificationId": "410372e0-7eb8-479d-8cde-63c937ffb65f",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 30000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:06.666678Z",
+              "sentAt": "2026-10-21T02:34:06.666678Z"
+            },
+            {
+              "notificationId": "51a5f505-4f2c-4d88-b459-0a19a977f27b",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:05.470931Z",
+              "sentAt": "2026-10-21T02:34:05.470931Z"
+            },
+            {
+              "notificationId": "a57cd67a-c314-4e79-a8a9-f84dd2fe5ab9",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:04.597373Z",
+              "sentAt": "2026-10-21T02:34:04.597373Z"
+            },
+            {
+              "notificationId": "d2d2e7ea-4fcd-4619-9aa7-823e2d1bc269",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:34:04.442224Z",
+              "sentAt": "2026-10-21T02:34:04.442224Z"
+            },
+            {
+              "notificationId": "30cb6856-1d0a-4fca-b1aa-b4bd5331069d",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:51.271360Z",
+              "sentAt": "2026-10-21T02:33:51.271360Z"
+            },
+            {
+              "notificationId": "8a224cbe-a4a2-43b3-b32d-95fc4fa00130",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:50.414829Z",
+              "sentAt": "2026-10-21T02:33:50.414829Z"
+            },
+            {
+              "notificationId": "970f4bfc-5630-4b55-b991-8c859c37de53",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:50.235365Z",
+              "sentAt": "2026-10-21T02:33:50.235365Z"
+            },
+            {
+              "notificationId": "a452a989-7e80-4f89-a30e-d9e5ee52c298",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:45.311613Z",
+              "sentAt": "2026-10-21T02:33:45.311613Z"
+            },
+            {
+              "notificationId": "9f6f02dd-4bec-411a-9821-71d71be569b4",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-22 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:43.296844Z",
+              "sentAt": "2026-10-21T02:33:43.301500Z"
+            },
+            {
+              "notificationId": "964092d6-d220-43b5-acdd-0ca502294ba4",
+              "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 47407fee0335, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T02:33:42.003949Z",
+              "sentAt": "2026-10-21T02:33:42.142253Z"
+            }
+          ],
+          "totalElements": 11,
+          "totalPages": 1,
+          "number": 0,
+          "size": 100
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:30.794670400Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "negative-positive-owner-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "notificationId": "19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+          "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+          "title": "Biên nhận hoàn tiền",
+          "content": "Thu ngân đã ghi nhận hoàn tiền 30000.00 VND cho giao dịch ac1956d1-e528-476e-a04c-462ec7745c08. Đây không phải quyết toán cuối cùng hoặc xác nhận trạng thái điều trị.",
+          "channel": "IN_APP",
+          "status": "SENT",
+          "failureReason": null,
+          "createdAt": "2026-10-21T02:34:07.705262Z",
+          "sentAt": "2026-10-21T02:34:07.705262Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:34:30.944415600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "signed-missing-patient-claim-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid access token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:34:30.955533300Z",
+        "correlationId": "ec09b52c-a8d7-48d9-90c1-4d87f902bc1e"
+      }
+    },
+    {
+      "name": "signed-wrong-patient-claim-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Không có quyền xem thông báo này",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:34:30.975765600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "signed-expired-access-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid or expired token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:34:30.988441600Z",
+        "correlationId": "46d4e890-8c92-45ff-affd-bc8becb58780"
+      }
+    },
+    {
+      "name": "signed-no-exp-access-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid or expired access token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:34:30.994018Z",
+        "correlationId": "f9e2d400-c858-42e1-a956-1ebcee9f5f86"
+      }
+    }
+  ],
+  "prescriptionId": "b3607cb5-b914-43cf-9ea3-5434d596cb5c",
+  "originalTransactionId": "ac1956d1-e528-476e-a04c-462ec7745c08",
+  "refundTransactionId": "921ef690-b34c-47c8-ba5c-9f15201f4cc3",
+  "refundNoticeId": "19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+  "refundNotice": {
+    "notificationId": "19064d74-9ecb-4e97-b922-9b2161cb8ad9",
+    "patientId": "cd808c02-219f-4fd2-b18a-fded0a3c3f86",
+    "title": "Biên nhận hoàn tiền",
+    "content": "Thu ngân đã ghi nhận hoàn tiền 30000.00 VND cho giao dịch ac1956d1-e528-476e-a04c-462ec7745c08. Đây không phải quyết toán cuối cùng hoặc xác nhận trạng thái điều trị.",
+    "channel": "IN_APP",
+    "status": "SENT",
+    "failureReason": null,
+    "createdAt": "2026-10-21T02:34:07.705262Z",
+    "sentAt": "2026-10-21T02:34:07.705262Z"
+  },
+  "negativeTokenProvenance": "Deliberately malformed signed TEST credential using existing disposable harness signing key, matching backend CareReceiptIntegrationTest pattern; not a Core-issued user token. Subject equals target patient to detect forbidden accountId fallback. No token retained."
+}

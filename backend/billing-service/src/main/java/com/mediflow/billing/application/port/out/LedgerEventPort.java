@@ -12,6 +12,8 @@ public interface LedgerEventPort {
      * writes it HELD (same as {@link #appendHeld}) if the request is simply not enrolled — the
      * default, expected case while the global flag is off. A mismatch on an enrolled request is
      * conflict, not a silent fallback to HELD.
+     * Refunds additionally require the separate new-refund publication approval; otherwise they
+     * remain HELD even on an enrolled request. No retry or gate toggle releases historical facts.
      */
     void appendForOutpatientRequest(UUID accountId, UUID paymentRequestId, LedgerIntegrationEvent event);
 }

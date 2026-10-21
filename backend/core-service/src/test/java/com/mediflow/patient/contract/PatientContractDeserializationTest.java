@@ -18,6 +18,15 @@ class PatientContractDeserializationTest {
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Test
+    void updateIdentityIsAdditiveAndOldRequestsRemainReadable() throws Exception {
+        String oldRequest = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\"}";
+        var type = com.mediflow.patient.application.dto.request.UpdatePatientRequest.class;
+        assertThat(objectMapper.readValue(oldRequest, type).soCmnd()).isNull();
+        assertThat(objectMapper.readValue(oldRequest.replace("}", ",\"soCmnd\":\"002\"}"), type).soCmnd())
+                .isEqualTo("002");
+    }
+
+    @Test
     void lookupFixtureDeserializesTheServiceOnlyEnvelope() throws Exception {
         try (InputStream fixture = getClass().getResourceAsStream("/contracts/patient.lookup.exists.json")) {
             assertThat(fixture).isNotNull();

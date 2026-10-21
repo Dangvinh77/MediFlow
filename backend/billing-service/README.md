@@ -38,15 +38,15 @@ Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Bil
 ## Status
 
 The gated `GET /api/v1/billing/financial-clearances/{id}/lookup` accepts signed service
-credentials from `pharmacy-service` and the existing `surgery-service` caller only. It requires
+credentials from `pharmacy-service`, `surgery-service`, `clinical-service` and `lab-service`. It requires
 `type=service`, `role=SYSTEM`, issue/expiry timestamps and a lifetime of at most 60 seconds;
 these credentials cannot call other Billing paths or methods. Pharmacy uses this read-only
 authority to revalidate a PRESCRIPTION grant before dispensing. The endpoint remains opt-in
 through `MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED`; this does not activate deferred Surgery.
 
-Current eligibility supports outpatient PRESCRIPTION as well as the preserved Surgery predicate.
+Current eligibility supports outpatient PRESCRIPTION, EXAM and LAB_TEST as well as the preserved Surgery predicate.
 It checks the exact patient/account/episode, request target, posted source charges, currency,
-completed net payment and each requested charge's net allocation in one database snapshot.
+completed net payment and each requested charge's net same-account, same-currency allocation in one database snapshot.
 Refunded, revoked, expired, overridden or mismatched grants cannot authorize dispensing.
 The live prescription issuer's target may omit `recordId`; lookup compares that nullable wire
 value exactly and does not invent a Clinical identifier. The immutable Pharmacy grant binds
@@ -58,16 +58,45 @@ the exact source instant. This preserves exact comparison without relaxing autho
 rewriting historical events. Outbox cleanup remains disabled by default; a missing original
 falls back to the persisted instant and cannot bypass Pharmacy's exact-match check.
 
+The existing lookup response adds `sourceType` and `sourceId`, derived from Billing's exact
+validated target. A multi-target or otherwise non-unique source has a null `sourceId`; clinical and
+lab callers must require an eligible response and exact source, patient, account, invoice and episode
+matches before acting. A durable
+`POST /api/v1/billing/financial-clearances/{id}/execution-starts` receipt uses the source UUID as
+its idempotent operation ID. Billing serializes the start against payment, cancellation and refund
+under the episode account lock, then rechecks current eligibility even when replaying a receipt.
+The endpoint accepts SYSTEM calls from `clinical-service` for EXAM or `lab-service` for LAB_TEST,
+with `X-Correlation-Id` and an exact source/patient/episode body; an exact retry still rechecks current
+ledger eligibility. Every EXAM/LAB refund requires an accepted durable source cancellation and is
+bounded by the remaining allocation-backed amount due, whether or not an execution-start receipt
+exists. This covers emergency-bypass and historical grants without a Billing start receipt.
+
 Automatic published-outbox cleanup defaults OFF via `MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED`.
 Review archived source completeness and backup/restore before enabling it; 7-day retention is not a
 historical replay archive. Dispatch and operator replay remain available with cleanup disabled.
 
-Opt-in pre-start cancellation adjustment now uses the same `billing.q` dispatcher/issuer gates.
-V10 durable cancellation receipts and pending recovery atomically void exact unperformed charges,
-cancel exact requests, revoke grants and record original-only refund obligations. No cancellation
-creates a completed refund or emits a refund receipt. The gated ADMIN/CASHIER read
+Opt-in cancellation adjustment uses the same `billing.q` dispatcher/issuer gates. V10 durable
+Surgery cancellation receipts and V25 outpatient cancellation receipts and pending recovery
+atomically void exact charges, cancel exact requests, revoke grants and record
+original-transaction-only refund obligations. No cancellation creates a completed refund or emits a
+refund receipt. EXAM cancellations use `appointment.exam.cancelled` V1; Lab cancellations use
+`lab.request.cancelled` V1 and retain the producer's reason (up to 1,000 characters; EXAM supports
+500). The gated ADMIN/CASHIER reads
 `GET /api/v1/billing/surgery-cancellations/{id}/refunds-due` returns remaining own-allocation budgets;
-the existing cashier refund endpoint records money actually returned. Raw narrative is not retained.
+`GET /api/v1/billing/lab-adjustments/{id}/refunds-due` and
+`GET /api/v1/billing/exam-adjustments/{id}/refunds-due` expose remaining due by original payment;
+these responses include the exact source identity, event type, cancellation status/rejection code and
+remaining due entries (`originalTransactionId`, `amount`, `currency`). The existing cashier refund
+endpoint records only money actually returned. Refund reason, actor, amount and actual refund
+transaction remain audited, while the original receipt stays immutable.
+Cancelled targets cannot execute through a prior grant because Billing revokes it and revalidates
+start retries against the current ledger.
+For legacy Billing rows whose exact-source snapshots are incomplete, a cancellation remains `PENDING`.
+Recovery uses the original, identical Lab/Exam creation event: Billing checks its persisted source
+fingerprint, fills only null snapshot fields and retries cancellation without issuing a new request,
+charge or outbox fact. A conflicting source fingerprint is rejected; missing Lab metadata is never
+inferred from another service. If the original event cannot be replayed, the incomplete source stays
+pending for operator reconciliation.
 Gateway/default false/held fences remain unchanged. See the canonical Surgery/Billing contract and
 [current Surgery/Billing contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md). The retired 2026-10-08 verification plan is not current acceptance evidence.
 
@@ -120,6 +149,27 @@ mvn -pl backend/billing-service -am spring-boot:run
 Swagger UI: http://localhost:8086/swagger-ui.html
 
 ## Events
+
+### New outpatient refund publication (default OFF)
+
+The additional Spring property `mediflow.billing.outpatient-refund-publication.enabled`
+defaults to false. Enabling it requires a nonblank `acceptance-reference` under the same
+prefix (maximum 200 characters). Existing refund/ledger command gates and roles still apply.
+Only a **new completed refund** of a request already enrolled in the immutable outpatient
+publication cohort can publish `payment.refunded` V1. The original JSON payload and public
+redacted reason remain unchanged. Admission/deposit facts and requests outside that cohort
+remain HELD.
+
+V24 records the per-refund approval and outbox fact in the refund transaction. The SQL fence
+checks the authoritative original/refund/account/request/target/charge, amount, currency and
+completion timestamps. Failed publication validation rolls back the business transaction.
+Retry returns the original refund without another outbox fact or approval. Toggling this
+property never releases historical HELD facts; retroactive approval and audit mutation are
+rejected. This does not enable a deployment gate or start a rollout.
+
+For isolated six-service acceptance only, `MEDIFLOW_FE_REFUND_ACCEPTANCE=true` opts the
+packaged test harness into this producer flag and the existing Notification refund consumer.
+The normal harness leaves both off and continues checking that refund facts are held.
 
 - **Publish:** `invoice.created`, `payment.completed`, `payment.failed`
 - **Subscribe:** `prescription.created`, `lab.result.created`, `medicalrecord.created`, `appointment.status.changed`
