@@ -1,5 +1,72 @@
 # Frontend Workboard
 
+## Lộc — resumes Billing/Notification ownership, 2026-10-22
+
+Vinh's 2026-10-20/21 closeout (`2026-10-20-vinh-loc-frontend-closeout.md`,
+`2026-10-21-ha-loc-web-mobile-completion.md`) was a `DELEGATED` task, not a permanent ownership
+change; `frontend/src/features/billing/AGENTS.md` still names Lộc canonical owner. Lộc resumes
+active `IMPLEMENT` work on Billing and Notification from this date.
+
+Merged master into `feat/billing-prescription-adjustment-refund-due`. Resolved the refund-due
+duplicate: kept Vinh's `RefundDueLookup.tsx` (already in master, already used by the live
+`/billing` route) and removed Lộc's own 2026-10-19 parallel implementation
+(`PrescriptionAdjustmentRefundDue.tsx` + `PrescriptionAdjustmentLookupForm.tsx` + their tests +
+the `/billing/prescription-adjustments` route pages) — both did the exact same business function;
+keeping two would confuse the live UI and future reviewers. The now-unused duplicate `api.ts`
+helpers (`getPrescriptionAdjustment`, `refundLedgerPayment`) were dropped in favor of the
+pre-existing `refundsDue`/`recordRefund` that `RefundDueLookup.tsx` already calls.
+
+**Correction to Vinh's 2026-10-20 "DONE" claim for `FE-BILLING-04`:** verified directly against
+code on 2026-10-21/22, not just the doc. `RevenueReport.tsx` has zero test coverage (no component
+test, no `api.test.ts` coverage of `revenueByDepartment`). `InvoiceForm.tsx` and
+`OutboxReplayForm.tsx` only have the two safety-focused cases in `BillingCommands.test.tsx`
+(duplicate-submit / ambiguous-response blocking), not full component coverage. Everything else
+listed under `FE-BILLING-04` (`InvoiceDetail`, `InvoiceLookup`, `LedgerPaymentForm`,
+`PaymentRequestLookupForm`, `RefundDueLookup`) does have real component tests — confirmed by
+running `pnpm vitest run src/features/billing src/features/notification` against `origin/master`
+directly (103/103 passed, including the 68/68 Notification tests Vinh's doc also claimed).
+`FE-NOTIFICATION-03` stays `BLOCKED`: confirmed by grepping `backend/notification-service` — no
+resend/mark-read endpoint exists yet.
+
+Lộc is now closing the real `FE-BILLING-04` gap: `RevenueReport.tsx` tests first, then
+`InvoiceForm.tsx`/`OutboxReplayForm.tsx`.
+
+## Lộc — Billing prescription-adjustment refund-due view, 2026-10-19 (superseded 2026-10-22)
+
+> **Superseded:** this view was removed on 2026-10-22 in favor of Vinh's `RefundDueLookup.tsx`,
+> which already implements the same `refunds-due`/`refunds` contract on the live `/billing` route.
+> Entry kept for history; do not use `/billing/prescription-adjustments` as a reference anymore.
+
+Scope: `frontend/src/features/billing/**` and `frontend/src/app/(dashboard)/billing/**`, per canonical
+ownership in `frontend/docs/services/billing.md`. Closes the `FE-BILLING-07` prescription-adjustment
+half, unblocked by the Gateway allowlist fix merged the night before (`HA-CODE-01/02`,
+`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+
+- New routes `/billing/prescription-adjustments` (lookup by prescription UUID) and
+  `/billing/prescription-adjustments/[prescriptionId]` (detail + refund). Detail calls
+  `GET /api/v1/billing/prescription-adjustments/{id}/refunds-due` on mount; each refund-due row opens
+  an inline form calling `POST /api/v1/billing/transactions/{originalTransactionId}/refunds`.
+- Refund method is restricted to CASH/TRANSFER (matches live `LedgerRefundService.validate`'s
+  `BILLING_INVALID_REFUND_METHOD` rule — INSURANCE is rejected server-side here too, same as the
+  existing ledger-payment form). Refund amount is validated client-side against the due amount; the
+  server's `BILLING_REFUND_EXCEEDS_PAYMENT`/idempotency rules remain authoritative. A successful
+  refund shows a confirmation banner and refetches the adjustment so a partial refund's remaining
+  due amount reflects the server's state, not a client guess.
+- A 404 (`BILLING_PRESCRIPTION_ADJUSTMENT_NOT_FOUND`) renders a neutral empty state, not an error —
+  most prescriptions never have a terminal rejection/cancellation event. 401 redirects to `/login`;
+  other errors show the message and correlation id with retry, matching existing Billing forms.
+- `FE-NOTIFICATION-03` (mark-as-read) was NOT picked up: `backend/notification-service/AGENTS.md`
+  moved that module's ownership to Vinh on 2026-10-18, so adding the missing endpoint is no longer
+  this owner's call to make; it stays `BLOCKED` pending a Vinh-side contract.
+- New component tests: 11 tests across `PrescriptionAdjustmentLookupForm.test.tsx` and
+  `PrescriptionAdjustmentRefundDue.test.tsx` (loading, 404-empty, 401 redirect, error+retry, render,
+  empty-due state, client validation, success+refetch, refund API error+correlation id). Broader
+  `FE-BILLING-04` coverage for the older Billing components remains open — see
+  `frontend/docs/services/billing.md`.
+- `pnpm typecheck`, `pnpm lint` (scoped to Billing), and `pnpm build`: PASS, exit 0. Full
+  `pnpm test -- --maxWorkers=2`: **516/517 PASS, 57 files**; the one failure is the pre-existing
+  `LabDetail.test.tsx:194` fixture gap already logged above (2026-10-19 sync note), unrelated to this
+  change and not touched.
 ## Huy — FE isolated acceptance complete, 2026-10-21
 
 **14/14 tasks, 56/56 criteria** for the FE test candidate; plan section 25 supersedes the
@@ -659,8 +726,8 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
   authority handoff is open.
 - Refund, notification read-state/retry and other commands absent from live controllers are not
   represented as UI controls.
-- Billing's prescription-adjustment refund-due view is not exposed: the controller is live but the
-  Gateway has no allowlist rule for it yet (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+- Billing's prescription-adjustment refund-due view shipped 2026-10-19 (`/billing/prescription-adjustments`)
+  once the Gateway allowlist rule landed (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
   Its Surgery-cancellation counterpart stays unavailable because Surgery itself is deferred.
 
 ## Next tasks tại baseline 2026-10-09 (historical; ưu tiên hiện tại ở trên)
