@@ -1087,7 +1087,8 @@ class SixServiceOutpatientAcceptanceIT {
                 "departmentId", departmentId.toString(), "jobTitle", jobTitle,
                 "specialization", jobTitle.equals("DOCTOR") ? "General medicine" : null,
                 "licenseNumber", jobTitle.equals("DOCTOR") ? "LIC-" + label + "-" + unique : null,
-                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test"));
+                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test",
+                "identityNumber", digits(12)));
         return UUID.fromString(staff.path("staffId").asText());
     }
 
