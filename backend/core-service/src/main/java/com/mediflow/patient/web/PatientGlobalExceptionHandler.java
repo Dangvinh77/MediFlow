@@ -68,7 +68,8 @@ public class PatientGlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Request không đúng định dạng");
     }
 
-    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class,
+            com.mediflow.patient.domain.exception.PatientProfileAccessDeniedException.class})
     ResponseEntity<ApiResponse<Void>> forbidden(Exception ex) {
         return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "Bạn không có quyền thực hiện thao tác này");
     }

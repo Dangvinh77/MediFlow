@@ -39,6 +39,28 @@ verification endpoints remain outside the browser UI.
 
 ## Contract and verification gate
 
+### Personal profile split — 2026-10-22
+
+`/organization` gives ADMIN the existing department/staff/account management workspace;
+other human roles see their own profile. `/organization/profile` is available through the
+shared header (explicit user delegation for `DashboardHeader.tsx` and its test).
+MANAGER/DOCTOR/NURSE retain the public work directory at `/organization/directory`.
+Personal profiles are read-only and link to the existing `/organization/security` password form.
+
+No new HTTP endpoint or wire field: the profile selects `staffId` from the access token and
+calls existing GET `/api/v1/org/staff/{id}`. Core verifies the token locally and returns private
+fields only for ADMIN or the signed owner. PHARMACIST/CASHIER/LAB_TECH may read their own
+detail, without list, foreign detail or write authority. Directory responses remain redacted
+for non-ADMIN. JWT parsing in the UI selects a URL; it never grants authority.
+Unlinked accounts show an explicit empty state without querying the directory. The app route
+composes the separate Patient profile; no cross-feature imports or cross-context DB reads.
+Profile workspaces remount by session/identity and ignore stale request completion.
+
+Verification for this split: Organization/Patient/profile/header 177/177 tests in 20 files
+(`--maxWorkers=2`), typecheck, lint and production build pass. Core/Gateway unit/web checks
+and packaging pass; Docker-dependent Core acceptance remains unavailable. See the dated
+workboard entry for the transient parallel-test timeout and exact verification limits.
+
 Confirm live department, staff, and account controller DTOs and role annotations. Keep the two base
 reads independently recoverable so one failure does not hide the other. Department transfer follows
 staff profile update as a separate command; a transfer refusal is now surfaced as partial success,

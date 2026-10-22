@@ -227,6 +227,32 @@ class PatientControllerWebTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void patientCanOnlyReadSignedOwnProfileAndCannotUseDirectoryOrMutations() throws Exception {
+        UUID ownId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        when(patients.getOwnProfile(ownId, ownId)).thenReturn(dto(ownId));
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String access = "Bearer " + Jwts.builder().subject(UUID.randomUUID().toString())
+                .claim("type", "access").claim("role", "PATIENT").claim("patientId", ownId.toString())
+                .expiration(java.util.Date.from(java.time.Instant.now().plusSeconds(60)))
+                .signWith(key).compact();
+        mvc.perform(get("/api/v1/patients/{id}", ownId).header("Authorization", access))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.maBenhNhan").value(ownId.toString()));
+        mvc.perform(get("/api/v1/patients/{id}", otherId).header("Authorization", access)
+                        .header("X-Patient-Id", otherId.toString()))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/patients").header("Authorization", access)).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/v1/patients/{id}", ownId).header("Authorization", access)).andExpect(status().isForbidden());
+        mvc.perform(put("/api/v1/patients/{id}", ownId).header("Authorization", access)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"soCmnd\":\"002\"}"))
+                .andExpect(status().isForbidden());
+        verify(patients).getOwnProfile(ownId, ownId);
+        org.mockito.Mockito.verifyNoMoreInteractions(patients);
+    }
+
     private String bearer(String type, String role, String subject) {
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         return "Bearer " + Jwts.builder().subject(subject).claim("type", type).claim("role", role)

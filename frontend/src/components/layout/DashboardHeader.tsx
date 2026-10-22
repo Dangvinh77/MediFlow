@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Role } from "@/lib/roles";
 
@@ -45,6 +46,7 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardH
         </div>
 
         <div className="ml-auto flex items-center gap-2 text-sm">
+          {role && role !== "SYSTEM" ? <Link href="/organization/profile" className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-2 font-medium transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Hồ sơ cá nhân</Link> : null}
           <ThemeToggle />
           <button
             type="button"

@@ -10,7 +10,7 @@
 ###       dòng "@token = ..." bên dưới và dán token vào.
 ###
 ### Endpoint theo spec 02-patient.md (base /api/v1/patients):
-###  - GET    /{id}                 — ADMIN, DOCTOR, NURSE   (404 nếu không tồn tại)
+###  - GET    /{id}                 — ADMIN, DOCTOR, NURSE; PATIENT chỉ được đọc signed patientId của mình
 ###  - GET    ?keyword=&page=&size= — ADMIN, DOCTOR, NURSE
 ###  - POST                        — ADMIN, NURSE          (201; 409 nếu soCmnd trùng)
 ###  - PUT    /{id}                 — ADMIN, NURSE          (400 Bean Validation / 422 bất biến)

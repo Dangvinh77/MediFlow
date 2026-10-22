@@ -53,7 +53,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String subject = claims.getSubject();
             if (!StringUtils.hasText(type) || !StringUtils.hasText(role) || !StringUtils.hasText(subject)) return;
             if (JwtClaims.ACCESS_TOKEN_TYPE.equals(type)) {
-                validateHuman(claims, role, subject);
+                validateHuman(request, claims, role, subject);
             } else if (JwtClaims.SERVICE_TOKEN_TYPE.equals(type)) {
                 if (!Roles.SYSTEM.equals(role) || hasIdentityClaim(claims)) return;
                 setAuthentication(request, subject, Roles.SYSTEM);
@@ -63,7 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
     }
 
-    private void validateHuman(Claims claims, String role, String subject) {
+    private void validateHuman(HttpServletRequest request, Claims claims, String role, String subject) {
         if (claims.getExpiration() == null
                 || !claims.getExpiration().toInstant().isAfter(java.time.Instant.now())) return;
         if (!HUMAN_ROLES.contains(role) || !isUuid(subject)) return;
@@ -71,7 +71,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (!isUuid(claims.get(JwtClaims.PATIENT_ID, String.class))
                     || claims.get(JwtClaims.STAFF_ID) != null) return;
         } else if (claims.get(JwtClaims.PATIENT_ID) != null) return;
-        setAuthentication(null, subject, role);
+        var auth = new UsernamePasswordAuthenticationToken(subject, null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        auth.setDetails(new PatientIdentityDetails(request, claims.get(JwtClaims.PATIENT_ID, String.class)));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     private boolean hasIdentityClaim(Claims claims) {

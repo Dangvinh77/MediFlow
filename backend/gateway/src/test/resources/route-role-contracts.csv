@@ -43,12 +43,14 @@ core-service,POST,/api/v1/org/staff,ADMIN,true
 core-service,PUT,/api/v1/org/staff/{staffId}/department,ADMIN,true
 core-service,GET,/api/v1/org/staff,ADMIN|MANAGER|DOCTOR|NURSE,true
 core-service,PUT,/api/v1/org/staff/{staffId},ADMIN,true
-core-service,GET,/api/v1/org/staff/{id},ADMIN|MANAGER|DOCTOR|NURSE,true
+# Extra staff roles may read only their signed staffId; Core enforces ownership.
+core-service,GET,/api/v1/org/staff/{id},ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
 core-service,POST,/api/v1/org/operating-rooms,ADMIN,true
 core-service,PUT,/api/v1/org/operating-rooms/{id},ADMIN,true
 core-service,PUT,/api/v1/org/staff/{id}/surgery-roles/{teamRole},ADMIN,false
 core-service,POST,/api/v1/patients,ADMIN|NURSE,true
-core-service,GET,/api/v1/patients/{id},ADMIN|DOCTOR|NURSE,true
+# PATIENT may read only the signed patientId; Core checks it before data access.
+core-service,GET,/api/v1/patients/{id},ADMIN|DOCTOR|NURSE|PATIENT,true
 core-service,GET,/api/v1/patients,ADMIN|DOCTOR|NURSE,true
 core-service,PUT,/api/v1/patients/{id},ADMIN|NURSE,true
 core-service,DELETE,/api/v1/patients/{id},ADMIN,true

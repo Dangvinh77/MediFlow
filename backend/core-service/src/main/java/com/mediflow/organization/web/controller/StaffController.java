@@ -165,11 +165,14 @@ public class StaffController {
         }
 
         @GetMapping("/{id}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE') or "
+                        + "(hasAnyRole('PHARMACIST', 'CASHIER', 'LAB_TECH') and "
+                        + "authentication.details instanceof T(com.mediflow.organization.infrastructure.security.StaffIdentityDetails) "
+                        + "and authentication.details.staffId == #id)")
         public ResponseEntity<ApiResponse<StaffResponse>> getStaffById(@PathVariable UUID id, Authentication authentication) {
                 Staff staff = getStaffUseCase.getStaffById(id);
                 return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
-                                readableStaff(staff, authentication),
+                                isOwnProfile(id, authentication) ? StaffResponse.from(staff) : readableStaff(staff, authentication),
                                 correlationIds.currentOrCreate().toString()));
         }
 
@@ -196,6 +199,12 @@ public class StaffController {
                 boolean admin = authentication != null && authentication.getAuthorities().stream()
                                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
                 return admin ? StaffResponse.from(staff) : StaffResponse.directory(staff);
+        }
+
+        private boolean isOwnProfile(UUID id, Authentication authentication) {
+                return authentication != null
+                                && authentication.getDetails() instanceof com.mediflow.organization.infrastructure.security.StaffIdentityDetails details
+                                && id.equals(details.getStaffId());
         }
 
 }

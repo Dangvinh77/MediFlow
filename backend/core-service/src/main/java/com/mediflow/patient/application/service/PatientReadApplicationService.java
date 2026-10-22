@@ -37,6 +37,14 @@ public class PatientReadApplicationService implements GetPatientUseCase, ReadPat
     }
 
     @Override
+    public PatientDTO getOwnProfile(UUID patientId, UUID authenticatedPatientId) {
+        if (authenticatedPatientId == null || !authenticatedPatientId.equals(patientId)) {
+            throw new com.mediflow.patient.domain.exception.PatientProfileAccessDeniedException();
+        }
+        return getById(patientId);
+    }
+
+    @Override
     public PageResult<PatientDTO> search(String keyword, PageQuery page) {
         String normalizedKeyword = keyword == null || keyword.isBlank()
                 ? null

@@ -1,5 +1,26 @@
 # Frontend Workboard
 
+## Hoàng Anh — tách quản trị và hồ sơ cá nhân, 2026-10-22
+
+User-assigned Organization/Patient/Gateway work; explicit delegation also covers
+`src/components/layout/DashboardHeader.tsx` and its test to add the personal-profile link.
+ADMIN retains management at `/organization`; other human roles land on their own read-only
+profile. All human roles can open `/organization/profile` and the existing change-password
+form. MANAGER/DOCTOR/NURSE keep the work directory at `/organization/directory`.
+
+Existing detail endpoints are reused. Core exposes full staff fields only to ADMIN or the
+signed owner; the new staff self-read roles do not gain directory/foreign-detail/write access.
+PATIENT may read only the signed patient UUID, with a use-case ownership check before storage.
+The profile never fetches a private directory to filter locally. Unlinked identities, retry,
+expired sessions and stale responses have explicit handling.
+
+Verification: focused Organization/Patient/profile/header **177/177 / 20 files**, with
+`--maxWorkers=2`; TypeScript, lint and production build pass. One existing PatientTable test
+timed out during the earlier concurrent build/test run and passed with two workers.
+Core non-Docker suite and final **55/55** focused web/use-case tests pass; Gateway suite and
+Core/Gateway JAR packaging pass. Full Core integration remains blocked by the unavailable
+Docker engine (four Testcontainers classes); no signed live Gateway/browser acceptance claimed.
+
 ## Hiển thị tên và bộ chọn tham chiếu — 2026-10-22
 
 Task `FE-REF-01` (Vinh shared/Clinical/Lab, Lộc Billing/Notification): đã có local
