@@ -17,6 +17,8 @@ class AppModule {
   final List<UserRole> roles;
   final bool implemented;
   bool allows(UserRole role) => roles.contains(role);
+  bool matches(String location) =>
+      location == path || location.startsWith('$path/');
 }
 
 const modules = [
@@ -77,6 +79,7 @@ const modules = [
     'Huy',
     Icons.medication_outlined,
     [UserRole.admin, UserRole.doctor, UserRole.pharmacist],
+    implemented: true,
   ),
   AppModule(
     '/billing',

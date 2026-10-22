@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-22",
+  "branch": "Huy",
+  "base": "d5373058436463d5640a36423c66620103967b4c",
+  "candidate": "Working tree; MP-HUY-07 source procedure/manual context and 09 local done; 08 partial without real POST writer/header",
+  "command": "mobile/tool/check.ps1",
+  "exitCode": 0,
+  "dependencies": "PASS; no package/lockfile changes",
+  "format": {
+    "files": 100,
+    "changed": 0
+  },
+  "analyze": "PASS; no issues",
+  "tests": {
+    "scope": "full app and mediflow_loader",
+    "passed": 234,
+    "failed": 0,
+    "addedRxTests": 48
+  },
+  "webBuild": {
+    "result": "PASS",
+    "seconds": 77.5,
+    "wasmDryRun": "PASS",
+    "gatewayUrl": "http://localhost:4300/api",
+    "warning": "Existing CupertinoIcons font warning retained"
+  },
+  "frameAudit": {
+    "result": "PASS",
+    "scannedDartFiles": 14,
+    "violations": [],
+    "structure": "presentation -> domain <- data",
+    "gateway": "shared ApiClient only; V1 writer intentionally unbound",
+    "theme": "inherits existing Material3 light/dark; no new ThemeData/MaterialApp",
+    "navigation": "existing feature Navigator pattern; shared shell/DI/router unchanged",
+    "widgetChecks": "320px, font scale2, light/dark",
+    "visualBrowserComparison": "NOT_RUN"
+  },
+  "progress": {
+    "tasksComplete": 8,
+    "tasksTotal": 12,
+    "complete": [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "09"
+    ],
+    "partial": [
+      "08"
+    ]
+  },
+  "limitations": [
+    "Shared POST Idempotency-Key intentionally remains dependency per user; no real V1 writer adapter",
+    "Task07 closes documented source procedure/manual verified input only; no generic public episode/catalog producer added",
+    "Shared root DI/session/mode/routes pending task11",
+    "Actual Gateway/browser/device and native acceptance NOT_RUN",
+    "Test doubles are not authority/ownership/clearance acceptance"
+  ],
+  "verdict": "LOCAL_IMPLEMENTATION_PASS; V1_POST_INTEGRATION_PENDING",
+  "sharedPathsChanged": false,
+  "backendGatesChanged": false,
+  "sourceHashes": {
+    "mobile/test/pharmacy_commands_test.dart": "7baafd4bb44b3351dba91c62b596667c6745db7d5683a5c7e6c8be3b3760e22c",
+    "mobile/test/pharmacy_contract_test.dart": "65480ed3c993f9d6a3be301695cedc7a663a696158e1b0ef04809908d8b18890",
+    "mobile/test/pharmacy_fixtures.dart": "512cb6f4ad1756321376bd29926f7eb092531d37855546e0a0f16af612fdf7a2",
+    "mobile/test/pharmacy_prescription_commands_test.dart": "73993e79a355725cde64613225c2f0b5b6753cca7eb6d37b1e4fd2fd50378504",
+    "mobile/test/pharmacy_prescription_widget_test.dart": "c627513dfe7d7f91363cdbb87c44d5c1aab3cd69cb878d8fb683455e1205dcea",
+    "mobile/test/pharmacy_repository_test.dart": "dc80b01436a9e987486f4aeb44b50c0c8ea551e1e4aa8b1d500b77f35ea48a54",
+    "mobile/test/pharmacy_widget_test.dart": "940499d62d1a50a7b4c6a8c2d6e9c549a335dffb6323b127c47a8658567b8b3c",
+    "mobile/test/pharmacy_workflow_widget_test.dart": "8dd5142cbcca754c83b858a6657e320949ad2b895d727c58b7ebe2c2628ef313",
+    "mobile/lib/features/pharmacy/data/gateway_pharmacy_repository.dart": "dc622847f5728ef3cdb10ce825af32ff5d6aa441966f0e6edfb68f1209cb268e",
+    "mobile/lib/features/pharmacy/data/pharmacy_dto.dart": "0514c159cf37de0003f093da13b87db02b5760ea17e5861cf66d40f8613ef389",
+    "mobile/lib/features/pharmacy/data/prescription_request_dto.dart": "65ee09aa291bdfc23d96eb5d6a7e287d59d0cd28c30e811741c4d070e5ed0049",
+    "mobile/lib/features/pharmacy/domain/drug.dart": "c2072c2d1a1bad6a594d646b50800d40dad1030d29cdd5bc8e158847252ab07d",
+    "mobile/lib/features/pharmacy/domain/drug_commands.dart": "284e4edce5bf7de5403ca576aa7f633904eefba12a22bec0abe570baaa7e006f",
+    "mobile/lib/features/pharmacy/domain/pharmacy_repository.dart": "56b7415501fe0f21cf15461519834245046db2b7e6cbed6328e6ab9530afdc4b",
+    "mobile/lib/features/pharmacy/domain/prescription.dart": "5a144ed7046b4ebb49a3cb3e38be9c32e4e6b3661655f72a3fa1c1a4177e06f9",
+    "mobile/lib/features/pharmacy/domain/prescription_commands.dart": "aa4f3f46eb24d69410635e601f0ab4603653b9413f6b788b470970b72595f40a",
+    "mobile/lib/features/pharmacy/presentation/create_prescription_page.dart": "4d5416631dc818196afa45e04c12faa4a55ab21f64d729df1304436295e409ec",
+    "mobile/lib/features/pharmacy/presentation/drug_forms.dart": "d0ee81ca2f8fc6c07b197b2cff517e56da21caf81aacd16bb00bfc49986198be",
+    "mobile/lib/features/pharmacy/presentation/pharmacy_boundary.dart": "aeb657d2ee69ea846da9514211d5c9ebcc1e774570bbcdce3ef9ae799e83c49a",
+    "mobile/lib/features/pharmacy/presentation/pharmacy_page.dart": "375c87a1181d4af61bd4f8324cbe590ba0baf340441473611aaffd6f07576639",
+    "mobile/lib/features/pharmacy/presentation/prescription_page.dart": "e0532b88688a064261408d519fc405d10875ce8cb916a34746e03198a9fc282c",
+    "mobile/lib/features/pharmacy/presentation/providers.dart": "79ed69bd12bc09a44b2e564ae35b0e67436174aa9be76c812fd26f56fc8dedc3"
+  }
+}

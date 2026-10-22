@@ -125,6 +125,7 @@ void main() {
       'status': 'PENDING',
       'dispensedAt': null,
       'dispensedBy': null,
+      'dispensedActorType': null,
       'failureReason': null,
     });
     expect(result.dispensedAt, isNull);

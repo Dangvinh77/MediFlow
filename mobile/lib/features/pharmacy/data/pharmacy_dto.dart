@@ -171,6 +171,14 @@ abstract final class PharmacyDto {
       status: dispenseStatus(json, 'status'),
       dispensedAt: optionalInstant(json, 'dispensedAt'),
       dispensedBy: optionalId(json, 'dispensedBy'),
+      dispensedActorType: switch (field(json, 'dispensedActorType')) {
+        null => null,
+        'STAFF' => DispenseActorType.staff,
+        'ACCOUNT' => DispenseActorType.account,
+        'SYSTEM' => DispenseActorType.system,
+        'LEGACY_UNKNOWN' => DispenseActorType.legacyUnknown,
+        _ => throw const FormatException('Loại người xuất chưa được hỗ trợ.'),
+      },
       failureReason: optionalText(json, 'failureReason'),
     );
   }

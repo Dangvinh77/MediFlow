@@ -49,9 +49,17 @@ class ApiClient {
     Object body, {
     bool raw = false,
     bool public = false,
-  }) => _request(path, 'POST', body: body, raw: raw, public: public);
+    String? idempotencyKey,
+  }) => _request(
+    path,
+    'POST',
+    body: body,
+    raw: raw,
+    public: public,
+    idempotencyKey: idempotencyKey,
+  );
 
-  Future<Object?> put(String path, Object body) =>
+  Future<Object?> put(String path, [Object? body]) =>
       _request(path, 'PUT', body: body);
 
   Future<Object?> patch(String path, Object body) =>
@@ -66,7 +74,13 @@ class ApiClient {
     Map<String, dynamic>? query,
     bool raw = false,
     bool public = false,
+    String? idempotencyKey,
   }) async {
+    if (idempotencyKey != null &&
+        (idempotencyKey.isEmpty ||
+            idempotencyKey.contains(RegExp(r'[\r\n]')))) {
+      throw ArgumentError('Idempotency-Key không hợp lệ.');
+    }
     // Prevent absolute URLs, context paths and credentials leaking outside Gateway.
     if (!path.startsWith('/v1/') ||
         path.contains('..') ||
@@ -79,7 +93,11 @@ class ApiClient {
         path.substring(1),
         data: body,
         queryParameters: query,
-        options: Options(method: method, extra: {'public': public}),
+        options: Options(
+          method: method,
+          extra: {'public': public},
+          headers: {'Idempotency-Key': ?idempotencyKey},
+        ),
       );
       if (method == 'DELETE' && response.statusCode == 204) return null;
       if (raw) return response.data;

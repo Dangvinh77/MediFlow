@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-22",
+  "branch": "Huy",
+  "build": "Maven package selected modules -DskipTests PASS; tests not rerun",
+  "services": [
+    {
+      "port": 8080,
+      "status": "UP"
+    },
+    {
+      "port": 8089,
+      "status": "UP"
+    },
+    {
+      "port": 8085,
+      "status": "UP"
+    },
+    {
+      "port": 8761,
+      "status": "UP"
+    }
+  ],
+  "proxyUnauthenticatedPharmacyHttp": 401,
+  "web": "http://localhost:4300/#/login",
+  "database": "mediflow_pharmacy_mobile_20261022",
+  "existingPharmacyDatabaseModified": false,
+  "sharedAppOrNetworkChanged": false,
+  "gatesEnabledByAgent": false,
+  "acceptance": "LOGIN_SCREEN_ONLY; root Pharmacy integration and commands still pending; no stock/clearance acceptance"
+}
+

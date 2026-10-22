@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-22",
+  "branch": "Huy",
+  "base": "d5373058436463d5640a36423c66620103967b4c",
+  "candidate": "Working tree: Pharmacy mobile tasks04/05/06; no shared app/core/backend/package changes",
+  "command": "mobile/tool/check.ps1",
+  "exitCode": 0,
+  "dependencies": "PASS; no lockfile change",
+  "format": {
+    "files": 95,
+    "changed": 0
+  },
+  "analyze": "PASS; no issues",
+  "tests": {
+    "scope": "full app and mediflow_loader",
+    "passed": 186,
+    "failed": 0
+  },
+  "webBuild": {
+    "result": "PASS",
+    "seconds": 108.2,
+    "wasmDryRun": "PASS",
+    "gatewayUrl": "http://localhost:4300/api",
+    "warning": "Existing CupertinoIcons font missing; not hidden or addressed outside feature scope"
+  },
+  "verdict": "LOCAL_IMPLEMENTATION_PASS",
+  "progress": {
+    "tasksComplete": 6,
+    "tasksTotal": 12
+  },
+  "integratedGateway": "NOT_RUN; Pharmacy app DI/session/mode binding remains MP-HUY-11",
+  "browser": "NOT_RUN; small viewport/keyboard/theme checks are widget tests",
+  "native": "NOT_RUN",
+  "sharedPathsChanged": false,
+  "backendGatesChanged": false,
+  "commitOrPush": false,
+  "sourceSha256": {
+    "mobile/lib/features/pharmacy/data/gateway_pharmacy_repository.dart": "c27fc29394abd626216b9b43d3ea5b60723e0e79dfb0bea8f952e854a0c5aa78",
+    "mobile/lib/features/pharmacy/data/pharmacy_dto.dart": "0514c159cf37de0003f093da13b87db02b5760ea17e5861cf66d40f8613ef389",
+    "mobile/lib/features/pharmacy/domain/drug.dart": "c2072c2d1a1bad6a594d646b50800d40dad1030d29cdd5bc8e158847252ab07d",
+    "mobile/lib/features/pharmacy/domain/drug_commands.dart": "284e4edce5bf7de5403ca576aa7f633904eefba12a22bec0abe570baaa7e006f",
+    "mobile/lib/features/pharmacy/domain/pharmacy_repository.dart": "711b78b1ab02fbefbc8776e1e0a7e318273dd49aa3de9b6154f807ea10ac4134",
+    "mobile/lib/features/pharmacy/domain/prescription.dart": "5a144ed7046b4ebb49a3cb3e38be9c32e4e6b3661655f72a3fa1c1a4177e06f9",
+    "mobile/lib/features/pharmacy/presentation/drug_forms.dart": "d0ee81ca2f8fc6c07b197b2cff517e56da21caf81aacd16bb00bfc49986198be",
+    "mobile/lib/features/pharmacy/presentation/pharmacy_boundary.dart": "aeb657d2ee69ea846da9514211d5c9ebcc1e774570bbcdce3ef9ae799e83c49a",
+    "mobile/lib/features/pharmacy/presentation/pharmacy_page.dart": "bb22a0e105d744e19c11d6fe832f053b04151aa2dc6b9de0efef6dd9db9a8822",
+    "mobile/lib/features/pharmacy/presentation/prescription_page.dart": "5a14f422af5b323f1708333d18e849c1bb831dacf135591971263cd02e1c2c29",
+    "mobile/lib/features/pharmacy/presentation/providers.dart": "ed21b27ca1dee5c0a662c65acc7d50e86d7200ba584de90b95e9aad5296e98da",
+    "mobile/test/pharmacy_commands_test.dart": "7baafd4bb44b3351dba91c62b596667c6745db7d5683a5c7e6c8be3b3760e22c",
+    "mobile/test/pharmacy_contract_test.dart": "65480ed3c993f9d6a3be301695cedc7a663a696158e1b0ef04809908d8b18890",
+    "mobile/test/pharmacy_fixtures.dart": "71e6e10ae686b32fa1090d730db4f35acbaeb177d8f1ccb4ebe941aeda965102",
+    "mobile/test/pharmacy_repository_test.dart": "dc80b01436a9e987486f4aeb44b50c0c8ea551e1e4aa8b1d500b77f35ea48a54",
+    "mobile/test/pharmacy_widget_test.dart": "940499d62d1a50a7b4c6a8c2d6e9c549a335dffb6323b127c47a8658567b8b3c",
+    "mobile/test/pharmacy_workflow_widget_test.dart": "8dd5142cbcca754c83b858a6657e320949ad2b895d727c58b7ebe2c2628ef313"
+  }
+}

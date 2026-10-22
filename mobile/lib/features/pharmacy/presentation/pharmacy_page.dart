@@ -7,6 +7,10 @@ import '../../../core/widgets/request_state.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
 import 'providers.dart';
+import 'pharmacy_boundary.dart';
+import 'drug_forms.dart';
+import 'prescription_page.dart';
+import 'create_prescription_page.dart';
 
 bool _canRetry(Object? error) =>
     error is! FormatException &&
@@ -16,38 +20,81 @@ bool _canRetry(Object? error) =>
         error.status! >= 500 ||
         error.status == 429);
 
-class _PharmacyBoundary extends ConsumerWidget {
-  const _PharmacyBoundary({required this.builder});
-  final Widget Function(PharmacyRepository) builder;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final access = ref.watch(pharmacyAccessProvider);
-    final repository = ref.watch(pharmacyRepositoryProvider);
-    if (access == null || repository == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('Chức năng Dược chưa sẵn sàng trên ứng dụng này.'),
-        ),
-      );
-    }
-    if (!access.canRead) {
-      return const Center(child: Text('Bạn không có quyền xem Dược.'));
-    }
-    return KeyedSubtree(
-      key: ValueKey((access.sessionIdentity, repository)),
-      child: builder(repository),
-    );
-  }
-}
-
-class PharmacyPage extends StatelessWidget {
-  const PharmacyPage({super.key, this.onOpenDrug});
+class PharmacyPage extends ConsumerWidget {
+  const PharmacyPage({
+    super.key,
+    this.onOpenDrug,
+    this.onCreateDrug,
+    this.onLookupPrescription,
+    this.onCreatePrescription,
+  });
   final ValueChanged<String>? onOpenDrug;
+  final VoidCallback? onCreateDrug, onLookupPrescription, onCreatePrescription;
   @override
-  Widget build(BuildContext context) => _PharmacyBoundary(
+  Widget build(BuildContext context, WidgetRef ref) => PharmacyBoundary(
     builder: (repository) => _DrugCatalog(
       repository: repository,
+      onPrescribe:
+          ref.watch(pharmacyAccessProvider)?.canPrescribe == true &&
+              ref.watch(pharmacyModeProvider) == PharmacyMode.outpatient
+          ? onCreatePrescription ??
+                () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Kê đơn ngoại trú')),
+                      body: CreatePrescriptionPage(
+                        onCreated: (rx) =>
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute<void>(
+                                builder: (_) => Scaffold(
+                                  appBar: AppBar(
+                                    title: const Text('Chi tiết đơn thuốc'),
+                                  ),
+                                  body: PrescriptionDetailPage(
+                                    prescriptionId: rx.id,
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ),
+                    ),
+                  ),
+                )
+          : null,
+      onLookup:
+          onLookupPrescription ??
+          () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Tra cứu đơn thuốc')),
+                body: const PrescriptionLookupPage(),
+              ),
+            ),
+          ),
+      onCreate: ref.watch(pharmacyAccessProvider)?.canManageDrugs == true
+          ? onCreateDrug ??
+                () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Thêm thuốc')),
+                      body: CreateDrugPage(
+                        onCreated: (drug) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute<void>(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(
+                                  title: const Text('Chi tiết thuốc'),
+                                ),
+                                body: DrugDetailPage(drugId: drug.id),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                )
+          : null,
       onOpenDrug:
           onOpenDrug ??
           (id) {
@@ -65,9 +112,18 @@ class PharmacyPage extends StatelessWidget {
 }
 
 class _DrugCatalog extends StatefulWidget {
-  const _DrugCatalog({required this.repository, required this.onOpenDrug});
+  const _DrugCatalog({
+    required this.repository,
+    required this.onOpenDrug,
+    required this.onLookup,
+    this.onCreate,
+    this.onPrescribe,
+  });
   final PharmacyRepository repository;
   final ValueChanged<String> onOpenDrug;
+  final VoidCallback onLookup;
+  final VoidCallback? onCreate;
+  final VoidCallback? onPrescribe;
   @override
   State<_DrugCatalog> createState() => _DrugCatalogState();
 }
@@ -126,47 +182,69 @@ class _DrugCatalogState extends State<_DrugCatalog> {
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _keyword,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                labelText: 'Tên thuốc',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _search(),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+      Flexible(
+        flex: 2,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FilledButton.icon(
-                  onPressed: _search,
-                  icon: const Icon(Icons.search),
-                  label: const Text('Tìm kiếm'),
+                TextField(
+                  controller: _keyword,
+                  textInputAction: TextInputAction.search,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên thuốc',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _search(),
                 ),
-                OutlinedButton.icon(
-                  onPressed: _loading ? null : () => _load(_requestedPage),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Làm mới'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (widget.onCreate != null)
+                      FilledButton.icon(
+                        onPressed: widget.onCreate,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Thêm thuốc'),
+                      ),
+                    if (widget.onPrescribe != null)
+                      FilledButton.icon(
+                        onPressed: widget.onPrescribe,
+                        icon: const Icon(Icons.edit_note),
+                        label: const Text('Kê đơn ngoại trú'),
+                      ),
+                    OutlinedButton(
+                      onPressed: widget.onLookup,
+                      child: const Text('Tra cứu đơn'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: _search,
+                      icon: const Icon(Icons.search),
+                      label: const Text('Tìm kiếm'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : () => _load(_requestedPage),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Làm mới'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _submitted == null
+                      ? 'Danh mục thuốc'
+                      : 'Kết quả cho: $_submitted',
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _submitted == null
-                  ? 'Danh mục thuốc'
-                  : 'Kết quả cho: $_submitted',
-            ),
-          ],
+          ),
         ),
       ),
       Expanded(
+        flex: 3,
         child: _loading
             ? const Center(
                 child: CircularProgressIndicator(
@@ -246,31 +324,37 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                 ),
         ),
       ),
-      SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            children: [
-              IconButton(
-                tooltip: 'Trang trước',
-                onPressed: page.number > 0
-                    ? () => _load(page.number - 1)
-                    : null,
-                icon: const Icon(Icons.chevron_left),
+      Flexible(
+        child: SingleChildScrollView(
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  IconButton(
+                    tooltip: 'Trang trước',
+                    onPressed: page.number > 0
+                        ? () => _load(page.number - 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  Text(
+                    'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} thuốc',
+                  ),
+                  IconButton(
+                    tooltip: 'Trang sau',
+                    onPressed: page.hasNext
+                        ? () => _load(page.number + 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
               ),
-              Text(
-                'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} thuốc',
-              ),
-              IconButton(
-                tooltip: 'Trang sau',
-                onPressed: page.hasNext ? () => _load(page.number + 1) : null,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -278,15 +362,16 @@ class _DrugCatalogState extends State<_DrugCatalog> {
   );
 }
 
-class DrugDetailPage extends StatelessWidget {
+class DrugDetailPage extends ConsumerWidget {
   const DrugDetailPage({super.key, required this.drugId});
   final String drugId;
   @override
-  Widget build(BuildContext context) => _PharmacyBoundary(
+  Widget build(BuildContext context, WidgetRef ref) => PharmacyBoundary(
     builder: (repository) => _DrugDetail(
       key: ValueKey(drugId),
       drugId: drugId,
       repository: repository,
+      canManage: ref.watch(pharmacyAccessProvider)?.canManageDrugs == true,
     ),
   );
 }
@@ -296,9 +381,11 @@ class _DrugDetail extends StatefulWidget {
     super.key,
     required this.drugId,
     required this.repository,
+    required this.canManage,
   });
   final String drugId;
   final PharmacyRepository repository;
+  final bool canManage;
   @override
   State<_DrugDetail> createState() => _DrugDetailState();
 }
@@ -372,6 +459,21 @@ class _DrugDetailState extends State<_DrugDetail> {
           Text('Nhà sản xuất: ${drug.manufacturer ?? 'Chưa cung cấp'}'),
           Text('Cập nhật: ${drug.updatedAt.toIso8601String()}'),
           const SizedBox(height: 16),
+          if (widget.canManage)
+            FilledButton(
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Điều chỉnh tồn kho')),
+                      body: AdjustDrugStockPage(drugId: drug.id),
+                    ),
+                  ),
+                );
+                if (mounted) _load();
+              },
+              child: const Text('Điều chỉnh tồn kho'),
+            ),
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
