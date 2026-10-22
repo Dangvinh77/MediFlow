@@ -77,7 +77,7 @@ describe("PatientTable read logic", () => {
       .mockResolvedValueOnce(page());
 
     render(<PatientTable />);
-    await screen.findByRole("link", { name: "Nguyen Van A" });
+    await screen.findByRole("link", { name: "Detail Nguyen Van A" });
     expect(mocks.search).toHaveBeenNthCalledWith(1, {
       keyword: undefined,
       page: 0,
@@ -128,7 +128,7 @@ describe("PatientTable read logic", () => {
       .mockRejectedValueOnce(new Error("Mất kết nối"))
       .mockResolvedValueOnce(page());
     render(<PatientTable />);
-    await screen.findByRole("link", { name: "Nguyen Van A" });
+    await screen.findByRole("link", { name: "Detail Nguyen Van A" });
 
     fireEvent.change(screen.getByLabelText("Từ khóa bệnh nhân"), {
       target: { value: "retry me" },
@@ -138,7 +138,7 @@ describe("PatientTable read logic", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
-    await screen.findByRole("link", { name: "Nguyen Van A" });
+    await screen.findByRole("link", { name: "Detail Nguyen Van A" });
     expect(mocks.search).toHaveBeenNthCalledWith(3, {
       keyword: "retry me",
       page: 0,
@@ -154,7 +154,7 @@ describe("PatientTable read logic", () => {
       .mockReturnValueOnce(older.promise)
       .mockReturnValueOnce(newer.promise);
     render(<PatientTable />);
-    await screen.findByRole("link", { name: "Nguyen Van A" });
+    await screen.findByRole("link", { name: "Detail Nguyen Van A" });
 
     const keyword = screen.getByLabelText("Từ khóa bệnh nhân");
     fireEvent.change(keyword, { target: { value: "older" } });
@@ -164,12 +164,12 @@ describe("PatientTable read logic", () => {
 
     const newerPatient = { ...patient, maBenhNhan: "new-id", hoTen: "Patient Newer" };
     await act(async () => newer.resolve(page({ content: [newerPatient] })));
-    expect(await screen.findByRole("link", { name: "Patient Newer" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Detail Patient Newer" })).toBeVisible();
 
     const olderPatient = { ...patient, maBenhNhan: "old-id", hoTen: "Patient Older" };
     await act(async () => older.resolve(page({ content: [olderPatient] })));
     expect(screen.queryByText("Patient Older")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Patient Newer" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Detail Patient Newer" })).toBeVisible();
   });
 
   it("keeps patient browsing available to doctors without showing create controls", async () => {
@@ -177,7 +177,7 @@ describe("PatientTable read logic", () => {
     mocks.search.mockResolvedValue(page({ content: [patient], totalPages: 1 }));
     render(<PatientTable />);
 
-    expect(await screen.findByRole("link", { name: "Nguyen Van A" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Detail Nguyen Van A" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Thêm bệnh nhân" })).not.toBeInTheDocument();
   });
 });

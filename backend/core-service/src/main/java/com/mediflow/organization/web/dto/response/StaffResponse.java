@@ -18,7 +18,12 @@ public record StaffResponse(
         boolean active,
         Instant createdAt,
         Instant updatedAt,
-        String identityNumber) {
+        String identityNumber,
+        java.time.LocalDate dateOfBirth,
+        com.mediflow.organization.domain.model.StaffProfile.Gender gender,
+        String address,
+        java.time.LocalDate hireDate,
+        String qualification) {
 
     public static StaffResponse from(Staff staff) {
         return new StaffResponse(
@@ -33,7 +38,8 @@ public record StaffResponse(
                 staff.isActive(),
                 staff.getCreatedAt(),
                 staff.getUpdatedAt(),
-                staff.getIdentityNumber());
+                staff.getIdentityNumber(),
+                staff.getProfile().dateOfBirth(), staff.getProfile().gender(), staff.getProfile().address(), staff.getProfile().hireDate(), staff.getProfile().qualification());
     }
     /** Public work directory: personal and administrative fields are never populated. */
     public static StaffResponse directory(Staff staff) {
@@ -49,7 +55,8 @@ public record StaffResponse(
                 staff.isActive(),
                 null,
                 null,
-                null);
+                null, null, null, null, null, staff.getProfile().qualification());
     }
 
+    public StaffResponse(UUID staffId, String fullName, UUID departmentId, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email, boolean active, Instant createdAt, Instant updatedAt, String identityNumber) { this(staffId, fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, active, createdAt, updatedAt, identityNumber, null, null, null, null, null); }
 }

@@ -15,5 +15,9 @@ public record CreateDepartmentRequest(
         @NotNull(message = "Department type must not be null")
         DepartmentType departmentType,
         @Size(max = 255, message = "Location must not exceed 255 characters")
-        String location) {
+        String location,
+        @jakarta.validation.Valid DepartmentProfileRequest profile) {
+    public CreateDepartmentRequest(String departmentName, String abbreviation, DepartmentType departmentType, String location) {
+        this(departmentName, abbreviation, departmentType, location, null);
+    }
 }

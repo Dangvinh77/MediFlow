@@ -37,12 +37,13 @@ beforeEach(() => {
 });
 
 describe("Role-specific organization workspace", () => {
-  it("gives ADMIN management tools and a separate personal profile link", () => {
+  it("gives ADMIN management tools without personal profile information in the management page", () => {
     signIn("ADMIN");
     render(<OrganizationWorkspace />);
     expect(screen.getByRole("heading", { name: "Quản trị tổ chức" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Quản lý tài khoản" })).toHaveAttribute("href", "/organization/accounts");
     expect(screen.getByText("Danh bạ quản trị")).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Xem hồ sơ cá nhân/ })).not.toBeInTheDocument();
     expect(mocks.staff).not.toHaveBeenCalled();
     expect(mocks.patient).not.toHaveBeenCalled();
   });
@@ -52,6 +53,8 @@ describe("Role-specific organization workspace", () => {
     render(<OrganizationWorkspace />);
     expect(await screen.findByRole("heading", { name: staffContractFixture.fullName })).toBeVisible();
     expect(screen.getByText(staffContractFixture.identityNumber)).toBeVisible();
+    expect(screen.queryByText("Định danh tài khoản")).not.toBeInTheDocument();
+    expect(screen.queryByText("Thông tin kỹ thuật")).not.toBeInTheDocument();
     expect(mocks.staff).toHaveBeenCalledExactlyOnceWith(staffContractFixture.staffId);
     expect(mocks.directory).not.toHaveBeenCalled();
     expect(mocks.patient).not.toHaveBeenCalled();

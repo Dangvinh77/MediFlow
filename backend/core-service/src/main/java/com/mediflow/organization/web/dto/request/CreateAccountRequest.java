@@ -26,5 +26,10 @@ public record CreateAccountRequest(
         UUID patientId,
 
         @NotNull(message = "Role must not be null")
-        Role role) {
+        Role role,
+        boolean replaceActiveAccount) {
+
+    public CreateAccountRequest(String username, String password, UUID staffId, UUID patientId, Role role) {
+        this(username, password, staffId, patientId, role, false);
+    }
 }

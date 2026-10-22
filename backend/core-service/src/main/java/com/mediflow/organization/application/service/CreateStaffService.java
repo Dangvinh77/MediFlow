@@ -24,6 +24,7 @@ import com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflict
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
+import com.mediflow.organization.domain.model.StaffProfile;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional("organizationTransactionManager")
@@ -77,7 +78,12 @@ public class CreateStaffService implements CreateStaffUseCase {
             String email,
             String identityNumber) {
 
-        return create(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber);
+        return execute(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber, null);
+    }
+
+    @Override
+    public Staff execute(String fullName, UUID departmentId, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email, String identityNumber, StaffProfile profile) {
+        return create(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber, profile);
     }
 
     @Override
@@ -92,6 +98,11 @@ public class CreateStaffService implements CreateStaffUseCase {
             String phoneNumber,
             String email,
             String identityNumber) {
+        return executeWithIdempotency(actorAccountId, idempotencyKey, fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber, null);
+    }
+
+    @Override
+    public CreationResult executeWithIdempotency(UUID actorAccountId, String idempotencyKey, String fullName, UUID departmentId, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email, String identityNumber, StaffProfile profile) {
         if (actorAccountId == null || idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Actor and idempotency key are required");
         }
@@ -99,7 +110,7 @@ public class CreateStaffService implements CreateStaffUseCase {
 
         receipts.lockKey(actorAccountId, idempotencyKey);
         String fingerprint = fingerprint(fullName, departmentId, jobTitle,
-                specialization, licenseNumber, phoneNumber, email, identityNumber);
+                specialization, licenseNumber, phoneNumber, email, identityNumber, profile);
         var existing = receipts.find(actorAccountId, idempotencyKey);
         if (existing.isPresent()) {
             Receipt receipt = existing.get();
@@ -112,7 +123,7 @@ public class CreateStaffService implements CreateStaffUseCase {
         }
 
         Staff staff = create(fullName, departmentId, jobTitle, specialization,
-                licenseNumber, phoneNumber, email, identityNumber);
+                licenseNumber, phoneNumber, email, identityNumber, profile);
         receipts.save(new Receipt(actorAccountId, idempotencyKey, fingerprint, staff.getStaffId()));
         return new CreationResult(staff, false);
     }
@@ -125,7 +136,7 @@ public class CreateStaffService implements CreateStaffUseCase {
             String licenseNumber,
             String phoneNumber,
             String email,
-            String identityNumber) {
+            String identityNumber, StaffProfile profile) {
         Department department = departmentRepository
                 .findByIdForUpdate(departmentId)
                 .orElseThrow(() ->
@@ -146,6 +157,7 @@ public class CreateStaffService implements CreateStaffUseCase {
                 identityNumber
         );
 
+        if (profile != null) staff.withProfile(profile);
         Staff savedStaff = staffRepository.save(staff);
 
         eventPublisher.publishStaffCreated(
@@ -165,7 +177,7 @@ public class CreateStaffService implements CreateStaffUseCase {
 
     private String fingerprint(String fullName, UUID departmentId, JobTitle jobTitle,
                                String specialization, String licenseNumber,
-                               String phoneNumber, String email, String identityNumber) {
+                               String phoneNumber, String email, String identityNumber, StaffProfile profile) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -180,6 +192,14 @@ public class CreateStaffService implements CreateStaffUseCase {
                     byte[] encoded = value.getBytes(StandardCharsets.UTF_8);
                     output.writeInt(encoded.length);
                     output.write(encoded);
+                }
+            }
+            if (profile != null && !profile.equals(StaffProfile.EMPTY)) {
+                for (String value : new String[] { profile.dateOfBirth() == null ? null : profile.dateOfBirth().toString(),
+                        profile.gender() == null ? null : profile.gender().name(), profile.address(),
+                        profile.hireDate() == null ? null : profile.hireDate().toString(), profile.qualification() }) {
+                    if (value == null) output.writeInt(-1);
+                    else { byte[] encoded = value.getBytes(StandardCharsets.UTF_8); output.writeInt(encoded.length); output.write(encoded); }
                 }
             }
             return HexFormat.of().formatHex(digest.digest(bytes.toByteArray()));

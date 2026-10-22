@@ -37,7 +37,10 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function DepartmentList({ onLoaded }: { onLoaded?: (departments: DepartmentDTO[]) => void }) {
+export function DepartmentList({ onLoaded, category = "all" }: {
+  onLoaded?: (departments: DepartmentDTO[]) => void;
+  category?: "all" | "departments" | "offices";
+}) {
   const router = useRouter();
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,8 +75,13 @@ export function DepartmentList({ onLoaded }: { onLoaded?: (departments: Departme
     return () => { disposed = true; };
   }, [router, attempt, onLoaded]);
 
+  const title = category === "departments" ? "Khoa" : category === "offices" ? "Phòng" : "Khoa phòng";
+  const visibleDepartments = departments.filter(department => category === "all"
+    || (category === "offices" ? department.departmentType === "ADMINISTRATIVE"
+      : department.departmentType === "CLINICAL" || department.departmentType === "PARACLINICAL"));
+
   return (
-    <DataTableShell title="Khoa phòng" description="Danh sách khoa phòng và trạng thái hoạt động.">
+    <DataTableShell title={title} description={category === "departments" ? "Danh sách khoa lâm sàng, cận lâm sàng và trạng thái hoạt động." : category === "offices" ? "Danh sách phòng hành chính và trạng thái hoạt động." : "Danh sách khoa phòng và trạng thái hoạt động."}>
       {loading ? <AsyncState kind="loading" message="Đang tải danh sách khoa…" /> : null}
 
       {!loading && error ? (
@@ -85,27 +93,28 @@ export function DepartmentList({ onLoaded }: { onLoaded?: (departments: Departme
         />
       ) : null}
 
-      {!loading && !error && departments.length === 0 ? (
-        <AsyncState kind="empty" message="Chưa có khoa phòng nào." />
+      {!loading && !error && visibleDepartments.length === 0 ? (
+        <AsyncState kind="empty" message={category === "offices" ? "Chưa có phòng nào." : category === "departments" ? "Chưa có khoa nào." : "Chưa có khoa phòng nào."} />
       ) : null}
 
-      {!loading && !error && departments.length > 0 ? (
+      {!loading && !error && visibleDepartments.length > 0 ? (
         <div className="overflow-x-auto border-t border-border">
           <table className="w-full min-w-3xl text-left text-sm">
-            <caption className="sr-only">Khoa phòng</caption>
+            <caption className="sr-only">{title}</caption>
             <thead className="border-b border-border bg-surface-muted">
               <tr>
-                <th scope="col" className="px-4 py-3">Tên khoa</th>
+                <th scope="col" className="px-4 py-3">{category === "offices" ? "Tên phòng" : "Tên khoa"}</th>
                 <th scope="col" className="px-4 py-3">Viết tắt</th>
                 <th scope="col" className="px-4 py-3">Loại</th>
                 <th scope="col" className="px-4 py-3">Địa điểm</th>
                 <th scope="col" className="px-4 py-3">Trạng thái</th>
+                <th scope="col" className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody>
-              {departments.map((department) => (
+              {visibleDepartments.map((department) => (
                 <tr key={department.departmentId} className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0">
-                  <td className="px-4 py-3 font-medium"><Link href={`/organization/departments/${department.departmentId}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">{department.departmentName}</Link></td>
+                  <td className="px-4 py-3 font-medium">{department.departmentName}</td>
                   <td className="px-4 py-3">{department.abbreviation}</td>
                   <td className="px-4 py-3">
                     {departmentTypeLabels[department.departmentType] ?? "Không xác định"}
@@ -116,6 +125,7 @@ export function DepartmentList({ onLoaded }: { onLoaded?: (departments: Departme
                       {department.active ? "Đang hoạt động" : "Ngừng hoạt động"}
                     </StatusBadge>
                   </td>
+                  <td className="px-4 py-3"><Link href={`/organization/departments/${department.departmentId}`} aria-label={`Detail ${department.departmentName}`} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Detail</Link></td>
                 </tr>
               ))}
             </tbody>

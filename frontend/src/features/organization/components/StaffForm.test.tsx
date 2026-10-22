@@ -50,7 +50,7 @@ describe("StaffForm", () => {
       .mockResolvedValueOnce(staffContractFixture);
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    const select = screen.getByLabelText(/Khoa/);
+    const select = screen.getByLabelText(/Đơn vị công tác/);
     fireEvent.change(select, { target: { value: targetDepartment.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     submit();
@@ -74,7 +74,7 @@ describe("StaffForm", () => {
     mocks.changeStaffDepartment.mockRejectedValue(new Error("Lost response"));
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("chưa xác minh được khoa hiện tại");
@@ -106,7 +106,7 @@ describe("StaffForm", () => {
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
     expect(mocks.departments).toHaveBeenCalledWith(false);
-    expect(screen.getByLabelText(/Khoa/)).toHaveValue(staffContractFixture.departmentId);
+    expect(screen.getByLabelText(/Đơn vị công tác/)).toHaveValue(staffContractFixture.departmentId);
   });
 
   it("uses the saved profile's authoritative department to avoid a redundant transfer", async () => {
@@ -115,7 +115,7 @@ describe("StaffForm", () => {
     mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId });
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
     expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
@@ -128,7 +128,7 @@ describe("StaffForm", () => {
     mocks.updateStaff.mockReturnValue(new Promise<StaffDTO>((done) => { resolve = done; }));
     const view = render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     view.rerender(<StaffForm staffId="00000000-0000-4000-8000-000000000099" />);
     await act(async () => { resolve(staffContractFixture); });
@@ -146,7 +146,7 @@ describe("StaffForm", () => {
     mocks.changeStaffDepartment.mockRejectedValue(new Error("Lost response"));
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
     expect(mocks.router.push).not.toHaveBeenCalled();
@@ -184,7 +184,7 @@ describe("StaffForm", () => {
       await screen.findByLabelText(/CCCD/);
       fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: name } });
-      fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+      fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
       fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
       await screen.findByRole("alert");
     }
@@ -232,7 +232,7 @@ describe("StaffForm", () => {
     await screen.findByLabelText(/Họ tên/);
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác nhận được kết quả tạo nhân sự");
@@ -256,7 +256,7 @@ describe("StaffForm", () => {
       await screen.findByLabelText(/Họ tên/);
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
-      fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+      fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
       fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     }
     await submit();
@@ -284,9 +284,9 @@ describe("StaffForm", () => {
     mocks.changeStaffDepartment.mockReturnValue(new Promise((_, reject) => { rejectTransfer = reject; }));
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
-    for (const label of [/Họ tên/, /Khoa/, /Chức danh/, /Chuyên môn/, /Số giấy phép/, /Số điện thoại/, /Email/]) {
+    for (const label of [/Họ tên/, /Đơn vị công tác/, /Chức danh/, /Chuyên môn/, /Số giấy phép/, /Số điện thoại/, /Email/]) {
       expect(screen.getByLabelText(label)).toBeDisabled();
     }
     await act(async () => { resolveProfile(staffContractFixture); });
@@ -310,6 +310,18 @@ describe("StaffForm", () => {
     expect(mocks.createStaff).not.toHaveBeenCalled();
   });
 
+  it("loads new personal fields and submits normalized values", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, dateOfBirth: "1990-01-02", gender: "FEMALE", address: "Address", hireDate: "2020-03-01", qualification: "Degree" });
+    mocks.updateStaff.mockResolvedValue(staffContractFixture);
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    expect(await screen.findByDisplayValue("Address")).toBeVisible();
+    expect(screen.getByLabelText("Ngày sinh")).toHaveValue("1990-01-02");
+    fireEvent.change(screen.getByLabelText("Địa chỉ liên hệ"), { target: { value: " New address " } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.updateStaff).toHaveBeenCalledWith(staffContractFixture.staffId, expect.objectContaining({ profile: { dateOfBirth: "1990-01-02", gender: "FEMALE", address: "New address", hireDate: "2020-03-01", qualification: "Degree" } })));
+  });
+
   it("creates a staff profile with explicit nullable optional fields", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.createStaff.mockResolvedValue(staffContractFixture);
@@ -317,11 +329,11 @@ describe("StaffForm", () => {
     await screen.findByLabelText(/Họ tên/);
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: " Nguyen Van A " } });
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
 
     await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledWith({
-      identityNumber: "012345678901",
+      identityNumber: "012345678901", profile: { dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null },
       fullName: "Nguyen Van A",
       departmentId: departmentContractFixture.departmentId,
       jobTitle: "DOCTOR",
@@ -348,13 +360,13 @@ describe("StaffForm", () => {
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Updated Name" } });
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
 
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("Thông tin nhân sự đã được lưu");
     expect(screen.getByLabelText(/Họ tên/)).toHaveValue("Updated Name");
-    expect(screen.getByLabelText(/Khoa/)).toHaveValue(targetDepartment.departmentId);
+    expect(screen.getByLabelText(/Đơn vị công tác/)).toHaveValue(targetDepartment.departmentId);
     expect(mocks.staffMember).toHaveBeenCalledTimes(2);
 
     submit();
@@ -375,7 +387,7 @@ describe("StaffForm", () => {
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Updated Name" } });
-    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: targetDepartment.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.updateStaff).toHaveBeenCalledTimes(1));
 

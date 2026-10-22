@@ -61,6 +61,170 @@ import java.nio.charset.StandardCharsets;
 @Testcontainers
 @org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class OrganizationServiceIntegrationTest {
+    @Test
+    void differentConcurrentCreatesForOneOwnerLeaveExactlyOneActiveAccount() throws Exception {
+        UUID patient = UUID.randomUUID();
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.Callable<Boolean> command = () -> {
+                start.await();
+                try {
+                    createAccountUseCase.execute("owner." + UUID.randomUUID(), "original-password", null, patient, Role.PATIENT);
+                    return true;
+                } catch (com.mediflow.common.exception.DuplicateResourceException conflict) {
+                    assertThat(conflict.getCode()).isEqualTo("ACCOUNT_OWNER_ACTIVE");
+                    return false;
+                }
+            };
+            var first = executor.submit(command);
+            var second = executor.submit(command);
+            start.countDown();
+            assertThat(java.util.List.of(first.get(30, java.util.concurrent.TimeUnit.SECONDS),
+                    second.get(30, java.util.concurrent.TimeUnit.SECONDS))).containsExactlyInAnyOrder(true, false);
+        }
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM account WHERE patient_id=? AND is_active", Integer.class, patient)).isEqualTo(1);
+    }
+
+    @Test
+    void concurrentReactivationsSerializeByOwnerAndConfirmedReplayDoesNotDisableLaterAccount() throws Exception {
+        UUID patient = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        String key = UUID.randomUUID().toString();
+        String username = "replace." + UUID.randomUUID();
+        var first = createAccountUseCase.executeWithIdempotency(actor, key, username,
+                "original-password", null, patient, Role.PATIENT, true).account();
+        var second = createAccountUseCase.execute("switch." + UUID.randomUUID(), "original-password", null, patient, Role.PATIENT, true);
+        var replay = createAccountUseCase.executeWithIdempotency(actor, key, username,
+                "original-password", null, patient, Role.PATIENT, true);
+        assertThat(replay.replayed()).isTrue();
+        assertThat(replay.account().isActive()).isFalse();
+        assertThat(manageAccounts.getById(second.getAccountId()).isActive()).isTrue();
+        updateAccountStatusUseCase.execute(second.getAccountId(), false);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            var ids = java.util.List.of(first.getAccountId(), second.getAccountId());
+            var futures = ids.stream().map(id -> executor.submit(() -> {
+                start.await();
+                try { updateAccountStatusUseCase.execute(id, true); return true; }
+                catch (com.mediflow.common.exception.DuplicateResourceException conflict) {
+                    assertThat(conflict.getCode()).isEqualTo("ACCOUNT_OWNER_ACTIVE"); return false;
+                }
+            })).toList();
+            start.countDown();
+            assertThat(java.util.List.of(futures.get(0).get(30, java.util.concurrent.TimeUnit.SECONDS),
+                    futures.get(1).get(30, java.util.concurrent.TimeUnit.SECONDS))).containsExactlyInAnyOrder(true, false);
+        }
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM account WHERE patient_id=? AND is_active", Integer.class, patient)).isEqualTo(1);
+    }
+
+    @Test
+    void failedReplacementRollsBackOldStatusAndCredentialRevocation() {
+        UUID patient = UUID.randomUUID();
+        var previous = createAccountUseCase.execute("previous." + UUID.randomUUID(), "original-password", null, patient, Role.PATIENT);
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        long version = jdbc.queryForObject("SELECT credential_version FROM account WHERE account_id=?", Long.class, previous.getAccountId());
+        jdbc.execute("""
+                CREATE FUNCTION fail_replacement_receipt() RETURNS trigger AS $$
+                BEGIN RAISE EXCEPTION 'forced replacement receipt failure'; END; $$ LANGUAGE plpgsql
+                """);
+        jdbc.execute("CREATE TRIGGER test_fail_replacement BEFORE INSERT ON account_creation_receipt FOR EACH ROW EXECUTE FUNCTION fail_replacement_receipt()");
+        String username = "failed." + UUID.randomUUID();
+        try {
+            assertThrows(RuntimeException.class, () -> createAccountUseCase.executeWithIdempotency(UUID.randomUUID(), UUID.randomUUID().toString(),
+                    username, "original-password", null, patient, Role.PATIENT, true));
+        } finally {
+            jdbc.execute("DROP TRIGGER test_fail_replacement ON account_creation_receipt");
+            jdbc.execute("DROP FUNCTION fail_replacement_receipt()");
+        }
+        assertThat(manageAccounts.getById(previous.getAccountId()).isActive()).isTrue();
+        assertThat(jdbc.queryForObject("SELECT credential_version FROM account WHERE account_id=?", Long.class, previous.getAccountId())).isEqualTo(version);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM account WHERE username=?", Integer.class, username)).isZero();
+    }
+    @Test
+    void enrichedProfilesPersistAndLegacyUpdatesPreserveThemWhileExplicitEmptyClears() {
+        var departmentProfile = new com.mediflow.organization.domain.model.DepartmentProfile("Outpatient care", "1234", "unit@example.test");
+        var staffProfile = new com.mediflow.organization.domain.model.StaffProfile(java.time.LocalDate.of(1990, 1, 1), com.mediflow.organization.domain.model.StaffProfile.Gender.FEMALE, "Address", java.time.LocalDate.of(2020, 1, 1), "Degree");
+        var department = createDepartmentUseCase.execute("Profile Office", "P" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), DepartmentType.ADMINISTRATIVE, "Floor 2", departmentProfile);
+        var staff = createStaffUseCase.execute("Office Head", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, "0901234567", "head@example.test", nextIdentityNumber(), staffProfile);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile()).isEqualTo(departmentProfile);
+        assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile()).isEqualTo(staffProfile);
+        updateDepartment.execute(department.getDepartmentId(), "Renamed", DepartmentType.ADMINISTRATIVE, "Floor 3", staff.getStaffId(), true);
+        updateStaff.execute(staff.getStaffId(), "Updated Head", JobTitle.ADMINISTRATIVE, null, null, "0901234567", "head@example.test");
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile()).isEqualTo(departmentProfile);
+        assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile()).isEqualTo(staffProfile);
+        updateStaff.execute(staff.getStaffId(), "Updated Head", JobTitle.ADMINISTRATIVE, null, null, null, null, com.mediflow.organization.domain.model.StaffProfile.EMPTY);
+        updateDepartment.execute(department.getDepartmentId(), "Renamed", DepartmentType.ADMINISTRATIVE, null, null, true, com.mediflow.organization.domain.model.DepartmentProfile.EMPTY);
+        assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile()).isEqualTo(com.mediflow.organization.domain.model.StaffProfile.EMPTY);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile()).isEqualTo(com.mediflow.organization.domain.model.DepartmentProfile.EMPTY);
+    }
+
+    @Test
+    void staffCreationReplayIncludesNewFieldsAndKeepsLegacyEmptyCompatibility() {
+        var department = createDepartmentUseCase.execute("Retry Office", "R" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), DepartmentType.ADMINISTRATIVE, null);
+        UUID actor = UUID.randomUUID(); String key = UUID.randomUUID().toString(), identity = nextIdentityNumber();
+        var profile = new com.mediflow.organization.domain.model.StaffProfile(null, null, "Original", null, "Degree");
+        var first = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, profile);
+        var replay = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, profile);
+        assertThat(replay.replayed()).isTrue();
+        assertThat(replay.staff().getStaffId()).isEqualTo(first.staff().getStaffId());
+        assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class, () -> createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, com.mediflow.organization.domain.model.StaffProfile.EMPTY));
+        String legacyKey = UUID.randomUUID().toString(), legacyIdentity = nextIdentityNumber();
+        var legacy = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, legacyIdentity);
+        var compatible = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, legacyIdentity, com.mediflow.organization.domain.model.StaffProfile.EMPTY);
+        assertThat(compatible.replayed()).isTrue();
+        assertThat(compatible.staff().getStaffId()).isEqualTo(legacy.staff().getStaffId());
+    }
+
+    @Autowired
+    private com.mediflow.organization.application.port.in.GetDepartmentUseCase getDepartments;
+    @Autowired
+    private com.mediflow.organization.application.port.in.GetStaffUseCase getStaff;
+
+    @Test
+    void concurrentSeedRestartsBackfillTrackedMastersOnceAndPreserveLaterClears() throws Exception {
+        var department = createDepartmentUseCase.execute("Edited office", "B" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), DepartmentType.ADMINISTRATIVE, "Edited location",
+                new com.mediflow.organization.domain.model.DepartmentProfile(null, "9999", null));
+        String identity = nextIdentityNumber();
+        var staff = createStaffUseCase.execute("Edited member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity);
+        var jdbc = new JdbcTemplate(organizationDataSource);
+        String unitKey = "backfill-dept-" + UUID.randomUUID(), staffKey = "backfill-staff-" + UUID.randomUUID();
+        jdbc.update("insert into local_demo_seed_receipt(seed_key,entity_id) values (?,?)", unitKey, department.getDepartmentId());
+        jdbc.update("insert into local_demo_seed_receipt(seed_key,entity_id) values (?,?)", staffKey, staff.getStaffId());
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var data = mapper.createObjectNode();
+        var unit = data.putArray("departments").addObject();
+        unit.put("key", unitKey).put("departmentName", "Seed name").put("abbreviation", department.getAbbreviation()).put("departmentType", "ADMINISTRATIVE").put("location", "Seed location")
+                .put("description", "Care").put("phoneNumber", "1234").put("email", "unit@example.test");
+        var person = data.putArray("staff").addObject();
+        person.put("key", staffKey).put("fullName", "Seed person").put("identityNumber", identity).put("departmentKey", unitKey).put("jobTitle", "ADMINISTRATIVE")
+                .put("dateOfBirth", "1990-01-02").put("gender", "FEMALE").put("address", "Seed address").put("hireDate", "2020-03-01").put("qualification", "Degree");
+        var seeder = new com.mediflow.organization.infrastructure.config.OrganizationDemoSeeder(jdbc,
+                new org.springframework.transaction.support.TransactionTemplate(organizationTransactions), getDepartments, createDepartmentUseCase, getStaff, createStaffUseCase, manageAccounts, createAccountUseCase);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.Callable<java.util.Map<String, UUID>> command = () -> { start.await(); return seeder.seedMasters(data); };
+            var first = executor.submit(command); var second = executor.submit(command);
+            start.countDown();
+            assertThat(first.get(30, java.util.concurrent.TimeUnit.SECONDS).get(unitKey)).isEqualTo(department.getDepartmentId());
+            assertThat(second.get(30, java.util.concurrent.TimeUnit.SECONDS).get(staffKey)).isEqualTo(staff.getStaffId());
+        }
+        var savedDepartment = departmentStore.findById(department.getDepartmentId()).orElseThrow();
+        var savedStaff = staffStore.findById(staff.getStaffId()).orElseThrow();
+        assertThat(savedDepartment.getDepartmentName()).isEqualTo("Edited office");
+        assertThat(savedDepartment.getProfile().description()).isEqualTo("Care");
+        assertThat(savedDepartment.getProfile().phoneNumber()).isEqualTo("9999");
+        assertThat(savedStaff.getFullName()).isEqualTo("Edited member");
+        assertThat(savedStaff.getProfile().address()).isEqualTo("Seed address");
+        jdbc.update("update department set description=null where department_id=?", department.getDepartmentId());
+        jdbc.update("update staff set address=null where staff_id=?", staff.getStaffId());
+        seeder.seedMasters(data);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile().description()).isNull();
+        assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile().address()).isNull();
+        assertThat(jdbc.queryForObject("select count(*) from local_demo_profile_receipt where seed_key in (?,?)", Integer.class, unitKey, staffKey)).isEqualTo(2);
+    }
+
     private static final java.util.concurrent.atomic.AtomicLong IDENTITIES = new java.util.concurrent.atomic.AtomicLong(100000000000L);
     private static String nextIdentityNumber() { return Long.toString(IDENTITIES.incrementAndGet()); }
 

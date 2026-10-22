@@ -9,6 +9,10 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class Staff {
+    private StaffProfile profile = StaffProfile.EMPTY;
+    public StaffProfile getProfile() { return profile; }
+    public Staff withProfile(StaffProfile profile) { this.profile = java.util.Objects.requireNonNull(profile); return this; }
+
 
     private static final Pattern PHONE_PATTERN =
             Pattern.compile("\\d{10,15}");

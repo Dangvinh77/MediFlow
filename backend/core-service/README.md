@@ -121,6 +121,28 @@ frontend tests passed **11 tests**, with typecheck and lint also passing. These 
 and contract results; they do not certify deployed browser or six-application acceptance.
 
 
+## Account detail and one active account per owner — 2026-10-22
+
+ADMIN can GET `/api/v1/org/accounts/{accountId}` using the existing password-free
+`AccountResponse` envelope, with `Cache-Control: no-store`; other roles are denied.
+Create-account and update-status request DTOs accept optional `replaceActiveAccount`
+(omission means false). The account role and existing identifiers retain their wire names.
+
+Creation and activation serialize by the linked staff/patient using an Organization
+transaction-scoped PostgreSQL advisory lock. An existing active account returns 409
+`ACCOUNT_OWNER_ACTIVE`, without changing any account. With explicit confirmation=true,
+other active accounts become inactive and their credential versions increment in the
+same transaction as saving the target. Any failed save/receipt rolls back all changes.
+Inactive account history and existing passwords remain intact. This affects login and
+refresh; already issued access tokens still follow their existing TTL.
+
+Idempotent creation fingerprints include the confirmation flag in the SHA-256 digest.
+Replaying a confirmed receipt returns that original account without deactivating an account
+activated later. Historical requests without the flag keep their original fingerprints.
+Contract fixtures: `AccountControllerSecurityTest`, `AccountManagementControllerTest`,
+`AccountOwnerPolicyTest`, and `OrganizationServiceIntegrationTest`; Gateway role matrix:
+`backend/gateway/src/test/resources/route-role-contracts.csv`.
+
 ## Staff privacy and account security — 2026-10-22
 
 Human staff GET list/detail responses expose private fields only to ADMIN. Other permitted
@@ -169,3 +191,59 @@ Stop the existing Core instance before launching another on the same port. This 
 starts a local jar; Docker Compose containers do not inherit these host variables automatically.
 Subsequent starts need no bootstrap settings. Flyway applies Organization V9 automatically;
 deploy updated Core before updated Gateway so both understand credentialVersion.
+
+
+## Organization detail enrichment — 2026-10-22
+
+Organization Flyway **V11** adds nullable department `description`, `phoneNumber`, `email`
+and staff `dateOfBirth`, `gender` (MALE/FEMALE/OTHER), `address`, `hireDate`, `qualification`.
+Existing routes and all existing field names remain valid. Human department/staff responses
+include the new fields at the top level; service lookup/event contracts are unchanged.
+
+Create/update requests accept an optional **profile** object. Department profile contains
+`description`, `phoneNumber`, `email`; staff profile contains the five new staff fields above.
+On update, omitted/null profile preserves existing enrichment. An object replaces the entire
+profile: omitted members become null, and `{}` clears all new fields. FE always submits the
+complete loaded profile, including explicit nullable members. The HTTP examples and DTO contract
+tests lock these shapes. No new endpoint is introduced.
+
+Birth dates must be in the past and hire date must follow birth date when both are present.
+Description is limited to 2000 characters, address to 255, qualification/email to 100, and
+unit phone/extension to 3–30 characters. Non-ADMIN directory responses redact birth date,
+gender, address and hire date along with existing personal fields; qualification remains public.
+ADMIN and the signed staff owner receive full detail under existing authorization.
+
+ADMINISTRATIVE offices may assign any active employee in that same office as head.
+CLINICAL/PARACLINICAL heads must still be active doctors in their own department.
+The department form and staff-title update guard follow this rule.
+
+Fresh demo inserts populate enrichment for all 10 departments and 20 employees in
+`src/main/resources/demo-seed.json`. Existing master creation receipts still prevent duplicates.
+The one-time enrichment described below fills missing new fields on previously tracked demo rows.
+Start the updated Core jar normally; Flyway applies V11/V12 to the Organization store automatically.
+
+
+### One-time enrichment of existing demo masters — 2026-10-22
+
+When the local/default demo runner is enabled, `seedMasters` also completes one enrichment pass
+for each previously tracked department/staff seed key. It uses the UUID in
+`local_demo_seed_receipt`, never guesses identity from a renamed record. Only the new nullable
+profile columns are eligible: department description/phone/email and staff birth date/gender/
+address/hire date/qualification. Null or blank text gets the value from the bundled JSON;
+nonempty values and all original fields, account credentials/status, and Patient data stay intact.
+An edited date that conflicts with the seed's other date is preserved and the incompatible
+missing date stays empty. No record is recreated when a tracked row has been deleted.
+
+Flyway V12 adds `local_demo_profile_receipt`. The Organization transaction/advisory lock covers
+updates and receipts together, serializing concurrent starts. Failure rolls both back; a later
+startup retries. Once a key is completed, replay skips it even if the user later clears fields.
+New inserts already contain profile data; newly adopted untracked rows are only marked complete
+without enrichment. Changing the JSON later does not rerun this completed enrichment pass.
+
+No manual SQL, database reset, extra script or new API is required. Rebuild/restart Core with
+normal demo seed enabled (`MEDIFLOW_DEMO_SEED_ENABLED`, default true in development). Existing
+profile exclusions still disable this runner in production/test/acceptance configurations.
+
+Verification: full Core suite **308 tests, 0 failures/errors/skips**, including PostgreSQL
+concurrent startup/replay and V12 migration; seven focused backfill tests cover preservation,
+clear-after-completion, rollback/retry, untracked adoption, deletion and date conflicts.

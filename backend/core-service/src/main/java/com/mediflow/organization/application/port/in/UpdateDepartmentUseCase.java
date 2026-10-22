@@ -5,6 +5,8 @@ import com.mediflow.organization.domain.model.DepartmentType;
 
 import java.util.UUID;
 
+import com.mediflow.organization.domain.model.DepartmentProfile;
+
 public interface UpdateDepartmentUseCase {
 
     Department execute(
@@ -15,4 +17,5 @@ public interface UpdateDepartmentUseCase {
             UUID departmentHeadId,
             Boolean active
     );
+    Department execute(UUID departmentId, String departmentName, DepartmentType departmentType, String location, UUID departmentHeadId, Boolean active, DepartmentProfile profile);
 }

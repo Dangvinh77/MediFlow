@@ -54,7 +54,7 @@ public class LocalDemoSeedConfiguration {
                 var patientIds = patient.seed(data);
                 organization.seedAccounts(data, staffIds, patientIds);
                 LoggerFactory.getLogger(LocalDemoSeedConfiguration.class)
-                        .info("Local demo seed complete; existing records and credentials preserved");
+                        .info("Local demo seed complete; one-time profile enrichment checked; existing edits and credentials preserved");
             }
         };
     }

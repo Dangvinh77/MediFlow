@@ -35,10 +35,9 @@ export function PersonalStaffProfile({ staffId }: { staffId: string }) {
   return <div className="space-y-5">
     <RecordIdentity name={staff.fullName} subtitle={jobs[staff.jobTitle]} />
     <div className="grid items-start gap-5 xl:grid-cols-2">
-      <DetailSection title="Thông tin cá nhân"><Info label="Họ và tên" value={staff.fullName} /><Info label="CCCD" value={staff.identityNumber} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection>
-      <DetailSection title="Thông tin công tác"><Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} /><Info label="Giấy phép" value={staff.licenseNumber} /><Info label="Trạng thái" value={staff.active ? "Đang làm việc" : "Đã ngừng làm việc"} /></DetailSection>
+      <DetailSection title="Thông tin cá nhân"><Info label="Họ và tên" value={staff.fullName} /><Info label="CCCD" value={staff.identityNumber} /><Info label="Ngày sinh" value={staff.dateOfBirth?.split("-").reverse().join("/") ?? null} /><Info label="Giới tính" value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label="Địa chỉ" value={staff.address} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection>
+      <DetailSection title="Thông tin công tác"><Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} /><Info label="Trình độ chuyên môn" value={staff.qualification} /><Info label="Giấy phép" value={staff.licenseNumber} /><Info label="Ngày vào làm" value={staff.hireDate?.split("-").reverse().join("/") ?? null} /><Info label="Trạng thái" value={staff.active ? "Đang làm việc" : "Đã ngừng làm việc"} /></DetailSection>
     </div>
-    <details className="rounded-xl border border-border bg-surface p-5"><summary className="cursor-pointer text-sm font-semibold">Thông tin kỹ thuật</summary><dl className="mt-4 grid gap-4 sm:grid-cols-2"><Info label="Mã nhân sự" value={staff.staffId} /><Info label="Mã khoa công tác" value={staff.departmentId} /></dl></details>
     <p className="text-sm text-muted-foreground">Nếu cần cập nhật thông tin cá nhân hoặc công tác, vui lòng liên hệ quản trị viên.</p>
   </div>;
 }

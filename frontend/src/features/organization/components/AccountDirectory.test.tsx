@@ -8,9 +8,8 @@ import { AccountDirectory } from "./AccountDirectory";
 const page = { content: [accountContractFixture], totalPages: 2, totalElements: 21, number: 0, size: 20 };
 beforeEach(() => { mocks.accounts.mockReset(); mocks.getSessionKey.mockReturnValue("session-a"); });
 it("retries the failed filtered page, then selects the exact account", async () => {
-  const select = vi.fn();
   mocks.accounts.mockResolvedValueOnce(page).mockRejectedValueOnce(new Error("Unavailable")).mockResolvedValueOnce({ ...page, number: 1 });
-  render(<AccountDirectory onSelect={select} />);
+  render(<AccountDirectory />);
   await screen.findByText(accountContractFixture.username);
   fireEvent.click(screen.getByRole("button", { name: /Trang sau|Sau/ }));
   await screen.findByRole("alert");
@@ -19,13 +18,13 @@ it("retries the failed filtered page, then selects the exact account", async () 
   await screen.findByText(accountContractFixture.username);
   expect(mocks.accounts.mock.calls[2][0]).toEqual(mocks.accounts.mock.calls[1][0]);
   expect(mocks.accounts.mock.calls[2][0].page).toBe(1);
-  fireEvent.click(screen.getByRole("button", { name: `Chọn ${accountContractFixture.username}` }));
-  expect(select).toHaveBeenCalledWith(accountContractFixture);
+  expect(screen.getByRole("link", { name: `Detail ${accountContractFixture.username}` })).toHaveAttribute("href", `/organization/accounts/${accountContractFixture.accountId}`);
+  expect(screen.getByRole("link", { name: "Tạo tài khoản" })).toHaveAttribute("href", "/organization/accounts/new");
 });
 it("ignores the old search result after a new filter is submitted", async () => {
   let resolve!: (value: typeof page) => void;
   mocks.accounts.mockReturnValueOnce(new Promise(done => { resolve = done; })).mockResolvedValueOnce({ ...page, content: [] });
-  render(<AccountDirectory onSelect={vi.fn()} />);
+  render(<AccountDirectory />);
   fireEvent.change(screen.getByLabelText("Tên đăng nhập"), { target: { value: "other" } });
   fireEvent.click(screen.getByRole("button", { name: "Tìm tài khoản" }));
   await screen.findByText("Không tìm thấy tài khoản.");

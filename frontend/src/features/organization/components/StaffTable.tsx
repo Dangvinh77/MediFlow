@@ -122,22 +122,24 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
                   <th scope="col" className="px-4 py-3">Chuyên môn</th>
                   <th scope="col" className="px-4 py-3">Khoa công tác</th>
                   <th scope="col" className="px-4 py-3">Trạng thái</th>
+                  <th scope="col" className="px-4 py-3">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {staff.map((member) => (
                   <tr key={member.staffId} className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0">
-                    <td className="px-4 py-3 font-medium"><Link href={`/organization/staff/${member.staffId}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{member.fullName.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><span>{member.fullName}</span></span></Link></td>
+                    <td className="px-4 py-3 font-medium"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{member.fullName.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><span>{member.fullName}</span></span></td>
                     <td className="px-4 py-3">
                       {jobTitleLabels[member.jobTitle] ?? "Không xác định"}
                     </td>
                     <td className="px-4 py-3">{member.specialization ?? "—"}</td>
-                    <td className="px-4 py-3"><Link href={`/organization/departments/${member.departmentId}`} aria-label={`Xem khoa của ${member.fullName}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">{departments.find(department => department.departmentId === member.departmentId)?.departmentName ?? "Xem khoa →"}</Link></td>
+                    <td className="px-4 py-3">{departments.find(department => department.departmentId === member.departmentId)?.departmentName ?? "Chưa có thông tin khoa/phòng"}</td>
                     <td className="px-4 py-3">
                       <StatusBadge tone={member.active ? "success" : "neutral"}>
                         {member.active ? "Đang làm việc" : "Đã ngừng làm việc"}
                       </StatusBadge>
                     </td>
+                    <td className="px-4 py-3"><Link href={`/organization/staff/${member.staffId}`} aria-label={`Detail ${member.fullName}`} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Detail</Link></td>
                   </tr>
                 ))}
               </tbody>

@@ -12,8 +12,9 @@ import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 import org.springframework.transaction.annotation.Transactional;
+import com.mediflow.organization.domain.model.DepartmentProfile;
 
-@Transactional
+@Transactional("organizationTransactionManager")
 public class CreateDepartmentService
                 implements CreateDepartmentUseCase {
 
@@ -43,6 +44,11 @@ public class CreateDepartmentService
                         String abbreviation,
                         DepartmentType departmentType,
                         String location) {
+                return execute(departmentName, abbreviation, departmentType, location, null);
+        }
+
+        @Override
+        public Department execute(String departmentName, String abbreviation, DepartmentType departmentType, String location, DepartmentProfile profile) {
 
                 /*
                  *
@@ -66,6 +72,7 @@ public class CreateDepartmentService
 
                 /*
                  */
+                if (profile != null) department.withProfile(profile);
                 Department savedDepartment = departmentRepository.save(department);
 
                 /*

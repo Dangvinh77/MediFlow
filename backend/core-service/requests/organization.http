@@ -47,7 +47,12 @@ Content-Type: application/json
   "departmentName": "Outpatient Department",
   "abbreviation": "OUT",
   "departmentType": "CLINICAL",
-  "location": "Building A, Floor 1"
+  "location": "Building A, Floor 1",
+  "profile": {
+    "description": "Outpatient assessment, consultation and follow-up care",
+    "phoneNumber": "1234",
+    "email": "outpatient@mediflow.example"
+  }
 }
 
 ### Create a duplicate department abbreviation (expected: 409)
@@ -100,9 +105,17 @@ Content-Type: application/json
   "specialization": "Internal Medicine",
   "licenseNumber": "MED123456",
   "phoneNumber": "0901234567",
-  "email": "alex.morgan@mediflow.example"
+  "email": "alex.morgan@mediflow.example",
+  "profile": {
+    "dateOfBirth": "1990-01-02",
+    "gender": "FEMALE",
+    "address": "District 5, Ho Chi Minh City",
+    "hireDate": "2020-03-01",
+    "qualification": "Medical doctor"
+  }
 }
 
+### Optional profile object: omit/null preserves existing new fields; {} clears them all.
 ### Update staff profile (ADMIN only; department changes use the endpoint below)
 PUT {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}

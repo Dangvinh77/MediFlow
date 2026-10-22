@@ -21,5 +21,9 @@ public record UpdateStaffRequest(
         String phoneNumber,
         @Email(message = "Email must be valid")
         @Size(max = 100, message = "Email must not exceed 100 characters")
-        String email) {
+        String email,
+        @jakarta.validation.Valid StaffProfileRequest profile) {
+    public UpdateStaffRequest(String fullName, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email) {
+        this(fullName, jobTitle, specialization, licenseNumber, phoneNumber, email, null);
+    }
 }

@@ -7,6 +7,10 @@ import com.mediflow.organization.domain.model.Account;
 
 public interface AccountRepository {
 
+    void lockOwner(UUID staffId, UUID patientId);
+
+    java.util.List<Account> findActiveByOwner(UUID staffId, UUID patientId);
+
     boolean existsByUsername(String username);
 
     Optional<Account> findById(UUID accountId);

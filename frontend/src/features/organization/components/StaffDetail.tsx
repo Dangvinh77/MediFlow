@@ -7,8 +7,8 @@ import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
-import { formatInstant } from "@/lib/format";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
+import { StaffDepartment } from "./StaffDepartment";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
 import type { JobTitle, StaffDTO } from "../types";
@@ -30,10 +30,11 @@ function StaffDetailWorkspace({ staffId, notice }: { staffId: string; notice?: "
     <RecordIdentity name={staff.fullName} subtitle={jobs[staff.jobTitle]}><StatusBadge tone={staff.active ? "success" : "neutral"}>{staff.active ? "Đang làm việc" : "Đã ngừng"}</StatusBadge></RecordIdentity>
     <div className="flex flex-wrap gap-3">{role === "ADMIN" ? <Link href={`/organization/staff/${staffId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Chỉnh sửa</Link> : null}<Link href="/organization" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">Quay lại</Link></div>
     <div className="grid items-start gap-5 xl:grid-cols-2">
-      <DetailSection title={role === "ADMIN" ? "Định danh & chuyên môn" : "Thông tin công tác"}>{role === "ADMIN" ? <Info label="CCCD" value={staff.identityNumber} mono /> : null}<Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} />{role === "ADMIN" ? <Info label="Giấy phép" value={staff.licenseNumber} /> : null}<div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Khoa công tác</dt><dd className="mt-1"><Link href={`/organization/departments/${staff.departmentId}`} className="rounded text-sm text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Xem thông tin khoa →</Link></dd></div></DetailSection>
-      {role === "ADMIN" ? <DetailSection title="Thông tin liên hệ"><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection> : null}
+      <DetailSection title="Thông tin công tác"><Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} /><Info label="Trình độ chuyên môn" value={staff.qualification} />{role === "ADMIN" ? <><Info label="Giấy phép hành nghề" value={staff.licenseNumber} /><Info label="Ngày vào làm" value={date(staff.hireDate)} /></> : null}<StaffDepartment key={staff.departmentId} departmentId={staff.departmentId} /></DetailSection>
+      {role === "ADMIN" ? <DetailSection title="Thông tin cá nhân và liên hệ"><Info label="CCCD" value={staff.identityNumber} /><Info label="Ngày sinh" value={date(staff.dateOfBirth)} /><Info label="Giới tính" value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label="Địa chỉ" value={staff.address} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection> : null}
     </div>
-    {role === "ADMIN" ? <DetailSection title="Thông tin hồ sơ"><Info label="Mã nhân sự" value={staff.staffId} mono /><Info label="Mã khoa" value={staff.departmentId} mono /><Info label="Ngày tạo" value={formatInstant(staff.createdAt)} /><Info label="Cập nhật" value={formatInstant(staff.updatedAt)} /></DetailSection> : null}
   </section>;
 }
 function Info({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) { return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-words text-sm ${mono ? "font-mono" : ""}`}>{value ?? "—"}</dd></div>; }
+
+function date(value: string | null) { return value ? value.split("-").reverse().join("/") : null; }

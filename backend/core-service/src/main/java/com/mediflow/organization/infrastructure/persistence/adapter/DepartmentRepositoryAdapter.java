@@ -87,7 +87,7 @@ public class DepartmentRepositoryAdapter
                 entity.isActive(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
-        );
+        ).withProfile(entity.getProfile());
     }
 
         private DepartmentEntity toEntity(
@@ -104,7 +104,7 @@ public class DepartmentRepositoryAdapter
                 department.isActive(),
                 department.getCreatedAt(),
                 department.getUpdatedAt()
-        );
+        ).withProfile(department.getProfile());
     }
 
     @Override

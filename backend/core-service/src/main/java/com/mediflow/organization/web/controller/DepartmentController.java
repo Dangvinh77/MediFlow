@@ -47,11 +47,15 @@ public class DepartmentController {
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<DepartmentResponse>> createDepartment(
                         @Valid @RequestBody CreateDepartmentRequest request) {
-                Department department = createDepartmentUseCase.execute(
+                Department department = (request.profile() == null ? createDepartmentUseCase.execute(
                                 request.departmentName(),
                                 request.abbreviation(),
                                 request.departmentType(),
-                                request.location());
+                                request.location()) : createDepartmentUseCase.execute(
+                                request.departmentName(),
+                                request.abbreviation(),
+                                request.departmentType(),
+                                request.location(), request.profile().toDomain()));
 
                 return ResponseEntity
                                 .created(URI.create("/api/v1/org/departments/"
@@ -99,13 +103,19 @@ public class DepartmentController {
         public ResponseEntity<ApiResponse<DepartmentResponse>> updateDepartment(
                         @PathVariable UUID id,
                         @Valid @RequestBody UpdateDepartmentRequest request) {
-                Department department = updateDepartmentUseCase.execute(
+                Department department = (request.profile() == null ? updateDepartmentUseCase.execute(
                                 id,
                                 request.departmentName(),
                                 request.departmentType(),
                                 request.location(),
                                 request.departmentHeadId(),
-                                request.active());
+                                request.active()) : updateDepartmentUseCase.execute(
+                                id,
+                                request.departmentName(),
+                                request.departmentType(),
+                                request.location(),
+                                request.departmentHeadId(),
+                                request.active(), request.profile().toDomain()));
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 DepartmentResponse.from(department),

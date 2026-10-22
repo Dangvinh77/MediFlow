@@ -91,6 +91,16 @@ describe("DepartmentForm", () => {
     expect(mocks.updateDepartment).not.toHaveBeenCalled();
   });
 
+  it("preserves existing description and contact details during an edit", async () => {
+    mocks.department.mockResolvedValue({ ...departmentContractFixture, description: "Care", phoneNumber: "1234", email: "unit@example.test" });
+    mocks.updateDepartment.mockResolvedValue(departmentContractFixture);
+    render(<DepartmentForm departmentId={departmentContractFixture.departmentId} />);
+    expect(await screen.findByDisplayValue("Care")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Chức năng / nhiệm vụ"), { target: { value: " Updated care " } });
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await waitFor(() => expect(mocks.updateDepartment).toHaveBeenCalledWith(departmentContractFixture.departmentId, expect.objectContaining({ profile: { description: "Updated care", phoneNumber: "1234", email: "unit@example.test" } })));
+  });
+
   it("sends the create request and routes to the returned department", async () => {
     mocks.createDepartment.mockResolvedValue(departmentContractFixture);
     render(<DepartmentForm />);
@@ -102,7 +112,7 @@ describe("DepartmentForm", () => {
       departmentName: "Clinical",
       abbreviation: "CLN",
       departmentType: "CLINICAL",
-      location: null,
+      location: null, profile: { description: null, phoneNumber: null, email: null },
     }));
     expect(mocks.router.push).toHaveBeenCalledWith(
       `/organization/departments/${departmentContractFixture.departmentId}?notice=created`,
@@ -130,7 +140,7 @@ describe("DepartmentForm", () => {
       {
         departmentName: "Clinical",
         departmentType: "CLINICAL",
-        location: "West Wing",
+        location: "West Wing", profile: { description: null, phoneNumber: null, email: null },
         departmentHeadId: null,
         active: true,
       },

@@ -28,5 +28,9 @@ public record CreateStaffRequest(
         String email,
         @NotBlank(message = "Identity number must not be blank")
         @Pattern(regexp = "[0-9]{12}", message = "Identity number must contain exactly 12 digits")
-        String identityNumber) {
+        String identityNumber,
+        @jakarta.validation.Valid StaffProfileRequest profile) {
+    public CreateStaffRequest(String fullName, UUID departmentId, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email, String identityNumber) {
+        this(fullName, departmentId, jobTitle, specialization, licenseNumber, phoneNumber, email, identityNumber, null);
+    }
 }
