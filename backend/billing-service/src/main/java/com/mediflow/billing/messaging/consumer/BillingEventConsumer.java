@@ -60,6 +60,7 @@ public class BillingEventConsumer {
     private final AdmissionDepositRequestConsumer admissionDepositRequestConsumer;
     private final DischargeApprovalConsumer dischargeApprovalConsumer;
     private final ExamChargeConsumer examChargeConsumer;
+    private final OutpatientCancellationConsumer outpatientCancellationConsumer;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
@@ -155,7 +156,6 @@ public class BillingEventConsumer {
                 labTestChargeConsumer, admissionDepositRequestConsumer, dischargeApprovalConsumer, null);
     }
 
-    @Autowired
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
                                 @Nullable SurgeryChargeConsumer plannedRequestConsumer,
@@ -167,6 +167,25 @@ public class BillingEventConsumer {
                                 @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
                                 @Nullable DischargeApprovalConsumer dischargeApprovalConsumer,
                                 @Nullable ExamChargeConsumer examChargeConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, prescriptionChargeConsumer, admissionChargeClose, surgeryCompletionProof,
+                labTestChargeConsumer, admissionDepositRequestConsumer, dischargeApprovalConsumer,
+                examChargeConsumer, null);
+    }
+
+    @Autowired
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer,
+                                @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
+                                @Nullable DischargeApprovalConsumer dischargeApprovalConsumer,
+                                @Nullable ExamChargeConsumer examChargeConsumer,
+                                @Nullable OutpatientCancellationConsumer outpatientCancellationConsumer) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
@@ -180,6 +199,7 @@ public class BillingEventConsumer {
         this.admissionDepositRequestConsumer = admissionDepositRequestConsumer;
         this.dischargeApprovalConsumer = dischargeApprovalConsumer;
         this.examChargeConsumer = examChargeConsumer;
+        this.outpatientCancellationConsumer = outpatientCancellationConsumer;
     }
 
     @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
@@ -229,6 +249,11 @@ public class BillingEventConsumer {
             case RabbitConfig.RK_LAB_REQUEST_CREATED -> {
                 // Bound only when LabTestChargeConfiguration's flags are both true; see RabbitConfig.
                 if (labTestChargeConsumer != null) labTestChargeConsumer.receive(message);
+                else throw new IllegalArgumentException(
+                        "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
+            }
+            case RabbitConfig.RK_LAB_REQUEST_CANCELLED, RabbitConfig.RK_APPOINTMENT_EXAM_CANCELLED -> {
+                if (outpatientCancellationConsumer != null) outpatientCancellationConsumer.receive(message);
                 else throw new IllegalArgumentException(
                         "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
             }

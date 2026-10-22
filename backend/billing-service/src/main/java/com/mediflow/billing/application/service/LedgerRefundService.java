@@ -67,6 +67,12 @@ public class LedgerRefundService implements RefundLedgerPaymentUseCase {
                 "BILLING_REFUND_REQUIRES_ACCOUNT_REOPEN");
         require(context.completedRefunds().add(command.amount()).compareTo(original.getAmount()) <= 0,
                 "BILLING_REFUND_EXCEEDS_PAYMENT");
+        var outpatient = refunds.outpatientRefundEligibility(original.getTransactionId());
+        if (outpatient.outpatientServicePayment()) {
+            require(outpatient.cancellationApplied(), "BILLING_REFUND_REQUIRES_CANCELLATION_EVIDENCE");
+            require(command.amount().compareTo(outpatient.refundDue()) <= 0,
+                    "BILLING_REFUND_EXCEEDS_OUTPATIENT_DUE");
+        }
         // New server-recorded cash time must match PostgreSQL TIMESTAMPTZ precision on replay.
         // Producer-supplied clinical/source times are never truncated by this command.
         var now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);

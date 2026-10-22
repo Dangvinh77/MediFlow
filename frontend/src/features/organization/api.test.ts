@@ -95,8 +95,9 @@ describe("organizationApi facade contract", () => {
     expect(get).toHaveBeenCalledWith(`/v1/org/staff/${staffContractFixture.staffId}`);
 
     post.mockResolvedValueOnce(staffContractFixture);
-    await organizationApi.createStaff(createStaffRequestFixture);
-    expect(post).toHaveBeenCalledWith("/v1/org/staff", createStaffRequestFixture);
+    await organizationApi.createStaff(createStaffRequestFixture, "staff-intent-1");
+    expect(post).toHaveBeenCalledWith("/v1/org/staff", createStaffRequestFixture,
+      { idempotencyKey: "staff-intent-1" });
 
     put.mockResolvedValueOnce(staffContractFixture);
     await organizationApi.updateStaff(staffContractFixture.staffId, updateStaffRequestFixture);
@@ -118,8 +119,8 @@ describe("organizationApi facade contract", () => {
 
   it("creates accounts and locks them with the isActive request property", async () => {
     post.mockResolvedValueOnce(accountContractFixture);
-    await organizationApi.createAccount(createAccountRequestFixture);
-    expect(post).toHaveBeenCalledWith("/v1/org/accounts", createAccountRequestFixture);
+    await organizationApi.createAccount(createAccountRequestFixture, "account-command-1");
+    expect(post).toHaveBeenCalledWith("/v1/org/accounts", createAccountRequestFixture, { idempotencyKey: "account-command-1" });
 
     put.mockResolvedValueOnce(accountContractFixture);
     await organizationApi.updateAccountStatus(accountContractFixture.accountId, false);

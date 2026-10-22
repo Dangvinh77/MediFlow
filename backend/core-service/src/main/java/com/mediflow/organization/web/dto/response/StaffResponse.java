@@ -17,7 +17,8 @@ public record StaffResponse(
         String email,
         boolean active,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String identityNumber) {
 
     public static StaffResponse from(Staff staff) {
         return new StaffResponse(
@@ -31,6 +32,24 @@ public record StaffResponse(
                 staff.getEmail(),
                 staff.isActive(),
                 staff.getCreatedAt(),
-                staff.getUpdatedAt());
+                staff.getUpdatedAt(),
+                staff.getIdentityNumber());
     }
+    /** Public work directory: personal and administrative fields are never populated. */
+    public static StaffResponse directory(Staff staff) {
+        return new StaffResponse(
+                staff.getStaffId(),
+                staff.getFullName(),
+                staff.getDepartmentId(),
+                staff.getJobTitle(),
+                staff.getSpecialization(),
+                null,
+                null,
+                null,
+                staff.isActive(),
+                null,
+                null,
+                null);
+    }
+
 }

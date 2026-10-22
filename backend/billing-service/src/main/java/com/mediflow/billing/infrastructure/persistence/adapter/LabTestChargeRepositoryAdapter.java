@@ -37,7 +37,31 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
         if (recorded.isEmpty()) return Optional.empty();
         var source = recorded.getFirst();
         same(command.sourceOrderId(), source.get("source_order_id")); same(command.sourceFingerprint(), source.get("source_fingerprint"));
+        enrichLegacySnapshot(command);
         return Optional.of((UUID) source.get("payment_request_id"));
+    }
+
+    /** A matching immutable producer fingerprint is the only authority to fill fields absent from old rows. */
+    private void enrichLegacySnapshot(LabTestChargeCommand command) {
+        var current = jdbc.queryForMap("SELECT * FROM lab_test_charge_source WHERE lab_id=? FOR UPDATE", command.labId());
+        sameIfPresent(command.patientId(), current.get("patient_id"));
+        sameIfPresent(command.departmentId(), current.get("department_id"));
+        sameIfPresent(command.recordId(), current.get("record_id"));
+        sameIfPresent(command.careEpisodeType(), current.get("care_episode_type"));
+        sameIfPresent(command.careEpisodeId(), current.get("care_episode_id"));
+        sameIfPresent(command.priceCode(), current.get("price_code"));
+        sameIfPresent(command.labType(), current.get("lab_type"));
+        sameIfPresent(command.requestedAt().toString(), current.get("requested_at_iso"));
+        int updated = jdbc.update("""
+                UPDATE lab_test_charge_source SET patient_id=COALESCE(patient_id,?), department_id=COALESCE(department_id,?),
+                    record_id=COALESCE(record_id,?), care_episode_type=COALESCE(care_episode_type,?),
+                    care_episode_id=COALESCE(care_episode_id,?), price_code=COALESCE(price_code,?),
+                    lab_type=COALESCE(lab_type,?), requested_at_iso=COALESCE(requested_at_iso,?)
+                WHERE lab_id=? AND source_fingerprint=?
+                """, command.patientId(), command.departmentId(), command.recordId(), command.careEpisodeType(),
+                command.careEpisodeId(), command.priceCode(), command.labType(), command.requestedAt().toString(),
+                command.labId(), command.sourceFingerprint());
+        require(updated == 1, "BILLING_LAB_TEST_SOURCE_CONFLICT");
     }
     @Override public UUID openAndLockExactAccount(LabTestChargeCommand command) {
         jdbc.update("""
@@ -66,9 +90,12 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
             return statement;
         });
         jdbc.update("""
-                INSERT INTO lab_test_charge_source(lab_id,source_order_id,source_fingerprint,payment_request_id,requested_at)
-                VALUES (?,?,?,?,?)
-                """, command.labId(), command.sourceOrderId(), command.sourceFingerprint(), request, Timestamp.from(command.requestedAt()));
+                INSERT INTO lab_test_charge_source(lab_id,source_order_id,source_fingerprint,payment_request_id,requested_at,
+                    patient_id,department_id,record_id,care_episode_type,care_episode_id,price_code,lab_type,requested_at_iso)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, command.labId(), command.sourceOrderId(), command.sourceFingerprint(), request, Timestamp.from(command.requestedAt()),
+                command.patientId(), command.departmentId(), command.recordId(), command.careEpisodeType(), command.careEpisodeId(),
+                command.priceCode(), command.labType(), command.requestedAt().toString());
         jdbc.update("""
                 INSERT INTO CHARGE(charge_id,account_id,patient_id,department_id,source_type,source_id,price_code,
                     description,quantity,unit_amount,gross_amount,incurred_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
@@ -81,5 +108,8 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
         return new IssuedRequest(request, invoice, charge.getGrossAmount());
     }
     private static void same(Object expected, Object actual) { require(Objects.equals(expected, actual), "BILLING_LAB_TEST_SOURCE_CONFLICT"); }
+    private static void sameIfPresent(Object expected, Object actual) {
+        if (actual != null) same(expected, actual);
+    }
     private static void require(boolean valid, String code) { if (!valid) throw new BillingRuleException(code, code); }
 }

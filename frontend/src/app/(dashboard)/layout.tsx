@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import {
   getRole,
-  getToken,
+  getSessionKey,
   logout,
   subscribeToAuthChanges,
 } from "@/lib/auth";
@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   const [navigationOpen, setNavigationOpen] = useState(false);
   const token = useSyncExternalStore(
     subscribeToAuthChanges,
-    getToken,
+    getSessionKey,
     getServerTokenSnapshot,
   );
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSnapshot);

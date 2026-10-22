@@ -69,10 +69,18 @@ class BillingMergedMigrationPostgresTest {
                     .as("merged table %s", table).isTrue();
         }
         assertThat(jdbc.queryForObject("SELECT count(DISTINCT version) FROM flyway_schema_history "
-                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(24);
+                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(25);
     }
     private List<String> rows(String table) {
         // These table identifiers are a private fixed test list, never user input.
+        if (table.equals("lab_test_charge_source")) {
+            return jdbc.queryForList("""
+                    SELECT jsonb_build_object('lab_id',lab_id,'source_order_id',source_order_id,
+                        'source_fingerprint',source_fingerprint,'payment_request_id',payment_request_id,
+                        'requested_at',requested_at)::text
+                    FROM lab_test_charge_source ORDER BY lab_id
+                    """, String.class);
+        }
         return jdbc.queryForList("SELECT to_jsonb(t)::text FROM " + table + " t ORDER BY to_jsonb(t)::text", String.class);
     }
     private Flyway flyway(String target) {

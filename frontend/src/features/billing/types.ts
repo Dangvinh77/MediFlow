@@ -105,6 +105,40 @@ export interface PaymentRequestDiscoveryDTO {
   observedAt: string;
 }
 
+export interface RefundDueDTO {
+  originalTransactionId: string;
+  amount: number;
+  currency: string;
+}
+
+export interface PrescriptionAdjustmentDTO {
+  prescriptionId: string;
+  eventType: string;
+  status: string;
+  rejectionCode: string | null;
+  refundsDue: RefundDueDTO[];
+}
+
+export interface RefundLedgerPaymentRequest {
+  idempotencyKey: string;
+  amount: number;
+  reason: string;
+  paymentMethod: LedgerPaymentMethod;
+}
+
+export interface LedgerRefundDTO {
+  refundTransactionId: string;
+  originalTransactionId: string;
+  accountId: string;
+  paymentRequestId: string | null;
+  classification: PaymentClassification;
+  status: PaymentTransactionStatus;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  completedAt: string;
+}
+
 export interface RevenueByDeptDTO {
   departmentId: string;
   totalRevenue: number;
@@ -114,30 +148,4 @@ export interface RevenueByDeptDTO {
 export interface OutboxReplayResult {
   eventId: string;
   replayed: boolean;
-}
-
-export interface PrescriptionAdjustmentDTO {
-  prescriptionId: string;
-  eventType: string;
-  status: string;
-  rejectionCode: string | null;
-  refundsDue: { originalTransactionId: string; amount: number; currency: string }[];
-}
-export interface RefundLedgerPaymentRequest {
-  idempotencyKey: string;
-  amount: number;
-  reason: string;
-  paymentMethod: LedgerPaymentMethod;
-}
-export interface LedgerRefundDTO {
-  refundTransactionId: string;
-  originalTransactionId: string;
-  accountId: string;
-  paymentRequestId: string;
-  classification: PaymentClassification;
-  status: PaymentTransactionStatus;
-  amount: number;
-  currency: string;
-  paymentMethod: string;
-  completedAt: string | null;
 }

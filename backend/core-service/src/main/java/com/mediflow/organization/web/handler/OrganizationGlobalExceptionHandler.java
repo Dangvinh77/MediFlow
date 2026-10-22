@@ -16,6 +16,7 @@ import com.mediflow.organization.domain.exception.InvalidCredentialsException;
 import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
 import com.mediflow.organization.domain.exception.StaffAlreadyInDepartmentException;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
+import com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataAccessException;
@@ -65,6 +66,14 @@ public class OrganizationGlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage());
     }
 
+    @ExceptionHandler(StaffCreateIdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStaffIdempotencyConflict(
+            StaffCreateIdempotencyConflictException exception) {
+        return buildResponse(HttpStatus.CONFLICT,
+                "STAFF_IDEMPOTENCY_KEY_REUSED",
+                "Idempotency key was already used for another staff request");
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(
             MethodArgumentNotValidException exception) {
@@ -99,6 +108,10 @@ public class OrganizationGlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException exception) {
         String constraint = findConstraint(exception);
+        if ("uk_staff_identity_number".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "STAFF_IDENTITY_DUPLICATE", "A staff member with this identity number already exists");
+        }
         if ("uk_account_username".equals(constraint)) {
             return buildResponse(HttpStatus.CONFLICT,
                     "ACCOUNT_USERNAME_DUPLICATE", "Account username already exists");
@@ -240,6 +253,9 @@ public class OrganizationGlobalExceptionHandler {
             String message = current.getMessage();
             if (message == null) {
                 continue;
+            }
+            if (message.contains("uk_staff_identity_number")) {
+                return "uk_staff_identity_number";
             }
             if (message.contains("uk_account_username")) {
                 return "uk_account_username";

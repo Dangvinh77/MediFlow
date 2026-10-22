@@ -19,7 +19,7 @@ public class UpdateAccountStatusService implements UpdateAccountStatusUseCase {
 
     @Override
     public Account execute(UUID accountId, boolean active) {
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
         if (active && !account.isActive()) {

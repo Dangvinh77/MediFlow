@@ -37,7 +37,27 @@ public class ExamChargeRepositoryAdapter implements ExamChargeRepositoryPort {
         if (recorded.isEmpty()) return Optional.empty();
         var source = recorded.getFirst();
         same(command.sourceFingerprint(), source.get("source_fingerprint"));
+        enrichLegacySnapshot(command);
         return Optional.of((UUID) source.get("payment_request_id"));
+    }
+
+    /** A matching immutable producer fingerprint is the only authority to fill fields absent from old rows. */
+    private void enrichLegacySnapshot(ExamChargeCommand command) {
+        var current = jdbc.queryForMap("SELECT * FROM exam_charge_source WHERE appointment_id=? FOR UPDATE", command.appointmentId());
+        sameIfPresent(command.patientId(), current.get("patient_id"));
+        sameIfPresent(command.departmentId(), current.get("department_id"));
+        sameIfPresent(command.careEpisodeType(), current.get("care_episode_type"));
+        sameIfPresent(command.careEpisodeId(), current.get("care_episode_id"));
+        sameIfPresent(command.priceCode(), current.get("price_code"));
+        sameIfPresent(command.changedAt().toString(), current.get("requested_at_iso"));
+        int updated = jdbc.update("""
+                UPDATE exam_charge_source SET patient_id=COALESCE(patient_id,?), department_id=COALESCE(department_id,?),
+                    care_episode_type=COALESCE(care_episode_type,?), care_episode_id=COALESCE(care_episode_id,?),
+                    price_code=COALESCE(price_code,?), requested_at_iso=COALESCE(requested_at_iso,?)
+                WHERE appointment_id=? AND source_fingerprint=?
+                """, command.patientId(), command.departmentId(), command.careEpisodeType(), command.careEpisodeId(),
+                command.priceCode(), command.changedAt().toString(), command.appointmentId(), command.sourceFingerprint());
+        require(updated == 1, "BILLING_EXAM_CHARGE_SOURCE_CONFLICT");
     }
     @Override public UUID openAndLockExactAccount(ExamChargeCommand command) {
         jdbc.update("""
@@ -60,9 +80,12 @@ public class ExamChargeRepositoryAdapter implements ExamChargeRepositoryPort {
         jdbc.update("INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,appointment_id) VALUES (?,?)",
                 request, command.appointmentId());
         jdbc.update("""
-                INSERT INTO exam_charge_source(appointment_id,source_fingerprint,payment_request_id,requested_at)
-                VALUES (?,?,?,?)
-                """, command.appointmentId(), command.sourceFingerprint(), request, Timestamp.from(command.changedAt()));
+                INSERT INTO exam_charge_source(appointment_id,source_fingerprint,payment_request_id,requested_at,
+                    patient_id,department_id,care_episode_type,care_episode_id,price_code,requested_at_iso)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+                """, command.appointmentId(), command.sourceFingerprint(), request, Timestamp.from(command.changedAt()),
+                command.patientId(), command.departmentId(), command.careEpisodeType(), command.careEpisodeId(),
+                command.priceCode(), command.changedAt().toString());
         jdbc.update("""
                 INSERT INTO CHARGE(charge_id,account_id,patient_id,department_id,source_type,source_id,price_code,
                     description,quantity,unit_amount,gross_amount,incurred_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
@@ -75,5 +98,8 @@ public class ExamChargeRepositoryAdapter implements ExamChargeRepositoryPort {
         return new IssuedRequest(request, invoice, charge.getGrossAmount());
     }
     private static void same(Object expected, Object actual) { require(Objects.equals(expected, actual), "BILLING_EXAM_CHARGE_SOURCE_CONFLICT"); }
+    private static void sameIfPresent(Object expected, Object actual) {
+        if (actual != null) same(expected, actual);
+    }
     private static void require(boolean valid, String code) { if (!valid) throw new BillingRuleException(code, code); }
 }

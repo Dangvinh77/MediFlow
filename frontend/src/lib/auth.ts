@@ -10,7 +10,7 @@ import {
   storeSession,
 } from "./session";
 
-export { subscribeToAuthChanges } from "./session";
+export { getSessionKey, subscribeToAuthChanges } from "./session";
 
 export interface LoginResponse {
   accessToken: string;

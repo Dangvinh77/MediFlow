@@ -128,6 +128,54 @@ public class LedgerRefundRepositoryAdapter implements LedgerRefundRepositoryPort
                 """, Timestamp.from(revokedAt), requestId);
     }
 
+    @Override
+    public OutpatientRefundEligibility outpatientRefundEligibility(UUID originalTransactionId) {
+        var rows = jdbc.queryForList("""
+                SELECT EXISTS (
+                    SELECT 1 FROM PAYMENT_TRANSACTION p
+                    JOIN PAYMENT_REQUEST r ON r.payment_request_id=p.payment_request_id
+                    WHERE p.transaction_id=? AND r.purpose IN ('EXAM','LAB_TEST')
+                ) AS outpatient_service_payment,
+                EXISTS (
+                    SELECT 1 FROM PAYMENT_TRANSACTION p
+                    JOIN PAYMENT_REQUEST_CHARGE rc ON rc.payment_request_id=p.payment_request_id
+                    JOIN CHARGE c ON c.charge_id=rc.charge_id
+                    JOIN outpatient_execution_start e ON e.source_type=c.source_type AND e.source_id=c.source_id
+                    WHERE p.transaction_id=?
+                ) AS execution_started,
+                EXISTS (
+                    SELECT 1 FROM PAYMENT_TRANSACTION p
+                    JOIN PAYMENT_REQUEST r ON r.payment_request_id=p.payment_request_id
+                    JOIN PAYMENT_ALLOCATION a ON a.transaction_id=p.transaction_id
+                    JOIN CHARGE c ON c.charge_id=a.charge_id
+                    JOIN outpatient_cancellation_source s ON s.source_type=c.source_type AND s.source_id=c.source_id
+                    JOIN outpatient_cancellation_refund_due d ON d.source_type=s.source_type AND d.source_id=s.source_id
+                        AND d.original_transaction_id=p.transaction_id
+                    WHERE p.transaction_id=? AND r.purpose IN ('EXAM','LAB_TEST') AND s.status='APPLIED'
+                ) AS cancellation_applied,
+                COALESCE((
+                    SELECT SUM(GREATEST(0, LEAST(d.amount, a.amount - COALESCE((
+                        SELECT SUM(r.amount) FROM PAYMENT_ALLOCATION r
+                        JOIN PAYMENT_TRANSACTION t ON t.transaction_id=r.transaction_id
+                        WHERE t.original_transaction_id=p.transaction_id AND r.charge_id=d.charge_id
+                          AND t.transaction_type IN ('REFUND','REVERSAL') AND t.status='COMPLETED'
+                    ),0))))
+                    FROM PAYMENT_TRANSACTION p
+                    JOIN PAYMENT_REQUEST r ON r.payment_request_id=p.payment_request_id
+                    JOIN PAYMENT_ALLOCATION a ON a.transaction_id=p.transaction_id
+                    JOIN CHARGE c ON c.charge_id=a.charge_id
+                    JOIN outpatient_cancellation_source s ON s.source_type=c.source_type AND s.source_id=c.source_id
+                    JOIN outpatient_cancellation_refund_due d ON d.source_type=s.source_type AND d.source_id=s.source_id
+                        AND d.original_transaction_id=p.transaction_id
+                    WHERE p.transaction_id=? AND r.purpose IN ('EXAM','LAB_TEST') AND s.status='APPLIED'
+                ),0) AS refund_due
+                """, originalTransactionId, originalTransactionId, originalTransactionId, originalTransactionId);
+        var row = rows.getFirst();
+        return new OutpatientRefundEligibility((Boolean) row.get("outpatient_service_payment"),
+                (Boolean) row.get("execution_started"), (Boolean) row.get("cancellation_applied"),
+                (BigDecimal) row.get("refund_due"));
+    }
+
     private record Budget(UUID chargeId, UUID accountId, UUID patientId, BigDecimal available) { }
     private static UUID id(ResultSet rs, String column) throws SQLException { return rs.getObject(column, UUID.class); }
     private static Instant time(ResultSet rs, String column) throws SQLException {

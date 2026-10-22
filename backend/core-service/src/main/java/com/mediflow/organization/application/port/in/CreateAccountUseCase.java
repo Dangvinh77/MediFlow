@@ -7,6 +7,13 @@ import com.mediflow.organization.domain.model.Role;
 
 public interface CreateAccountUseCase {
 
+    default CreationResult executeWithIdempotency(UUID actorAccountId, String idempotencyKey,
+            String username, String rawPassword, UUID staffId, UUID patientId, Role role) {
+        throw new UnsupportedOperationException("Account creation receipts are not configured");
+    }
+
+    record CreationResult(Account account, boolean replayed) {}
+
     default Account execute(
             String username,
             String rawPassword,

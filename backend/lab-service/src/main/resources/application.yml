@@ -43,6 +43,9 @@ spring:
           labClinicalOrderContextClient:
             connectTimeout: 1000
             readTimeout: 2000
+          labBillingExecutionClient:
+            connectTimeout: 1000
+            readTimeout: 2000
 
 mediflow:
   profile: ${MEDIFLOW_PROFILE:compatibility-v0}

@@ -90,7 +90,7 @@ class LedgerPaymentIntegrationTest {
         String path = "/api/v1/billing/payment-requests/" + request + "/payments";
         var first = http.postForEntity(path, new HttpEntity<>(command("precision", "100"), headers("CASHIER")), String.class);
         var retry = http.postForEntity(path, new HttpEntity<>(command("precision", "100"), headers("CASHIER")), String.class);
-        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(first.getStatusCode()).as(first.getBody()).isEqualTo(HttpStatus.OK);
         assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
         var original = mapper.readTree(first.getBody()).path("data");
         var replayed = mapper.readTree(retry.getBody()).path("data");
@@ -347,6 +347,153 @@ class LedgerPaymentIntegrationTest {
                 .isEqualTo(Instant.parse(originalGrant.path("occurredAt").asText()));
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"EXAM", "LAB_TEST"})
+    void outpatientClearanceLookup_exactPaidLedgerIsEligibleAndUsesOriginalGrantInstant(String purpose) throws Exception {
+        seedOutpatient(purpose, "100");
+        Instant exactGrant = Instant.now().minusSeconds(2).plusNanos(123_456_789);
+        jdbc.update("UPDATE PAYMENT_REQUEST SET created_at=?", java.sql.Timestamp.from(exactGrant.minusSeconds(1)));
+        org.mockito.Mockito.when(clock.instant()).thenReturn(exactGrant);
+        var payment = payments.complete(request, command("outpatient-lookup", "100"), actor, "lookup-trace");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+
+        var response = lookup(clearance, serviceHeaders("service", "SYSTEM", purpose.equals("EXAM") ? "clinical-service" : "lab-service", 60));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var data = mapper.readTree(response.getBody()).path("data");
+        assertThat(data.path("purpose").asText()).isEqualTo(purpose);
+        assertThat(data.path("sourceType").asText()).isEqualTo(purpose);
+        assertThat(data.path("sourceId").asText()).isEqualTo(source.toString());
+        assertThat(data.path("eligible").asBoolean()).isTrue();
+        assertThat(data.path("patientId").asText()).isEqualTo(patient.toString());
+        assertThat(data.path("careEpisodeId").asText()).isEqualTo(episode.toString());
+        var grant = mapper.readTree(jdbc.queryForObject(
+                "SELECT payload FROM BILLING_EVENT_OUTBOX WHERE routing_key='financial.clearance.granted'", String.class));
+        assertThat(Instant.parse(data.path("grantedAt").asText()))
+                .as("The lookup returns the original V1 grant instant without PostgreSQL microsecond rounding")
+                .isEqualTo(Instant.parse(grant.path("occurredAt").asText()));
+        assertThat(payment.transactionId()).isNotNull();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "EXAM,wrong-target", "EXAM,wrong-source", "EXAM,wrong-patient", "EXAM,wrong-invoice",
+            "EXAM,wrong-currency", "EXAM,missing-charge", "EXAM,missing-allocation", "EXAM,partial-allocation",
+            "EXAM,voided-charge", "EXAM,cancelled-request", "EXAM,revoked",
+            "LAB_TEST,wrong-target", "LAB_TEST,wrong-record", "LAB_TEST,wrong-source", "LAB_TEST,wrong-patient",
+            "LAB_TEST,wrong-invoice", "LAB_TEST,wrong-currency", "LAB_TEST,missing-charge", "LAB_TEST,missing-allocation",
+            "LAB_TEST,partial-allocation", "LAB_TEST,multi-target", "LAB_TEST,voided-charge", "LAB_TEST,cancelled-request", "LAB_TEST,revoked"
+    })
+    void outpatientClearanceLookup_invalidCurrentLedgerNeverGrantsReadiness(String purpose, String changed) throws Exception {
+        seedOutpatient(purpose, "100");
+        var payment = payments.complete(request, command("outpatient-invalid", "100"), actor, "lookup-trace");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        switch (changed) {
+            case "wrong-target" -> {
+                if (purpose.equals("EXAM")) jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET appointment_id=?", UUID.randomUUID());
+                else jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET lab_test_ids=ARRAY[?::uuid]", UUID.randomUUID());
+            }
+            case "multi-target" -> jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET lab_test_ids=ARRAY[?::uuid,?::uuid]", source, UUID.randomUUID());
+            case "wrong-record" -> jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET record_id=?", UUID.randomUUID());
+            case "wrong-source" -> jdbc.update("UPDATE CHARGE SET source_id=?", UUID.randomUUID());
+            case "wrong-patient" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET patient_id=?", UUID.randomUUID());
+            case "wrong-invoice" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET invoice_id=?", UUID.randomUUID());
+            case "wrong-currency" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET currency='USD'");
+            case "missing-charge" -> jdbc.update("DELETE FROM PAYMENT_REQUEST_CHARGE");
+            case "missing-allocation" -> jdbc.update("DELETE FROM PAYMENT_ALLOCATION");
+            case "partial-allocation" -> jdbc.update("UPDATE PAYMENT_ALLOCATION SET amount=1");
+            case "voided-charge" -> jdbc.update("UPDATE CHARGE SET status='VOIDED'");
+            case "cancelled-request" -> jdbc.update("UPDATE PAYMENT_REQUEST SET status='CANCELLED'");
+            case "revoked" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET revoked_at=now()");
+            default -> throw new AssertionError(changed);
+        }
+
+        var data = mapper.readTree(lookup(clearance, serviceHeaders("service", "SYSTEM",
+                purpose.equals("EXAM") ? "clinical-service" : "lab-service", 60)).getBody()).path("data");
+        assertThat(data.path("exists").asBoolean()).isTrue();
+        assertThat(data.path("eligible").asBoolean()).as(purpose + " / " + changed).isFalse();
+        if (changed.equals("multi-target")) assertThat(data.path("sourceId").isNull()).isTrue();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"EXAM", "LAB_TEST"})
+    void executionStartPersistsOneTargetReceiptAndRevalidatesBeforeReplay(String purpose) throws Exception {
+        seedOutpatient(purpose, "100");
+        var payment = payments.complete(request, command("execution-start-paid", "100"), actor, "execution-start-paid");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        String service = purpose.equals("EXAM") ? "clinical-service" : "lab-service";
+        var start = new com.mediflow.billing.application.dto.command.StartOutpatientExecutionCommand(source, purpose, source,
+                patient, "OUTPATIENT_VISIT", episode);
+        String path = "/api/v1/billing/financial-clearances/" + clearance + "/execution-starts";
+
+        var first = http.postForEntity(path, new HttpEntity<>(start, serviceHeaders("service", "SYSTEM", service, 60)), String.class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var originalReceipt = mapper.readTree(first.getBody()).path("data");
+        assertThat(originalReceipt.path("operationId").asText()).isEqualTo(source.toString());
+        assertThat(originalReceipt.path("state").asText()).isEqualTo("STARTED");
+        var replay = http.postForEntity(path, new HttpEntity<>(start, serviceHeaders("service", "SYSTEM", service, 60)), String.class);
+        assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(mapper.readTree(replay.getBody()).path("data")).isEqualTo(originalReceipt);
+        assertThat(count("outpatient_execution_start")).isOne();
+
+        assertThatThrownBy(() -> refunds.refund(payment.transactionId(), refundCommand("started-without-cancel", "1"), actor, "refund"))
+                .hasMessage("BILLING_REFUND_REQUIRES_CANCELLATION_EVIDENCE");
+        var wrongOperation = new com.mediflow.billing.application.dto.command.StartOutpatientExecutionCommand(
+                UUID.randomUUID(), purpose, source, patient, "OUTPATIENT_VISIT", episode);
+        var conflict = http.postForEntity(path, new HttpEntity<>(wrongOperation, serviceHeaders("service", "SYSTEM", service, 60)), String.class);
+        assertThat(conflict.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(count("outpatient_execution_start")).isOne();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"EXAM", "LAB_TEST"})
+    void refundBeforeAcceptedCancellationIsRejectedAndDoesNotBlockExecutionStart(String purpose) throws Exception {
+        seedOutpatient(purpose, "100");
+        var payment = payments.complete(request, command("unrefundable-before-start", "100"), actor, "paid");
+        assertThatThrownBy(() -> refunds.refund(payment.transactionId(), refundCommand("before-start-refund", "1"), actor, "refund"))
+                .hasMessage("BILLING_REFUND_REQUIRES_CANCELLATION_EVIDENCE");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        String service = purpose.equals("EXAM") ? "clinical-service" : "lab-service";
+        var start = new com.mediflow.billing.application.dto.command.StartOutpatientExecutionCommand(source, purpose, source,
+                patient, "OUTPATIENT_VISIT", episode);
+        var response = http.postForEntity("/api/v1/billing/financial-clearances/" + clearance + "/execution-starts",
+                new HttpEntity<>(start, serviceHeaders("service", "SYSTEM", service, 60)), String.class);
+        assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.OK);
+        assertThat(count("outpatient_execution_start")).isOne();
+        assertThat(count("ledger_refund_evidence")).isZero();
+    }
+
+    @Test void executionStartAndRefundRaceKeepsUncancelledOutpatientPaymentSafe() throws Exception {
+        seedOutpatient("LAB_TEST", "100");
+        var payment = payments.complete(request, command("start-refund-race", "100"), actor, "paid");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        var start = new com.mediflow.billing.application.dto.command.StartOutpatientExecutionCommand(source, "LAB_TEST", source,
+                patient, "OUTPATIENT_VISIT", episode);
+        String path = "/api/v1/billing/financial-clearances/" + clearance + "/execution-starts";
+        var gate = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var startTask = workers.submit(() -> {
+                gate.await();
+                var response = http.postForEntity(path,
+                        new HttpEntity<>(start, serviceHeaders("service", "SYSTEM", "lab-service", 60)), String.class);
+                return response.getStatusCode().value() == 200 ? "STARTED" : "START_REJECTED";
+            });
+            var refundTask = workers.submit(() -> {
+                gate.await();
+                try {
+                    refunds.refund(payment.transactionId(), refundCommand("start-refund-race-key", "1"), actor, "refund-race");
+                    return "REFUNDED";
+                } catch (BillingRuleException rejected) { return rejected.getCode(); }
+            });
+            gate.countDown();
+            var startResult = startTask.get(20, TimeUnit.SECONDS);
+            var refundResult = refundTask.get(20, TimeUnit.SECONDS);
+            assertThat(startResult).isEqualTo("STARTED");
+            assertThat(refundResult).isEqualTo("BILLING_REFUND_REQUIRES_CANCELLATION_EVIDENCE");
+        }
+        assertThat(count("outpatient_execution_start")).isOne();
+        assertThat(count("ledger_refund_evidence")).isZero();
+    }
+
     private UUID paidSurgery() {
         seed("SURGERY","ADMISSION","100");
         payments.complete(request,command("lookup-paid","100"),actor,"lookup-trace");
@@ -526,6 +673,7 @@ class LedgerPaymentIntegrationTest {
     }
     private HttpHeaders serviceHeaders(String type,String role,String subject,int ttl) {
         var headers = new HttpHeaders();
+        headers.set("X-Correlation-Id", "billing-ledger-test");
         Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         headers.setBearerAuth(Jwts.builder().subject(subject).claim("role",role).claim("type",type)
                 .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(ttl)))
@@ -574,5 +722,51 @@ class LedgerPaymentIntegrationTest {
             jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
                     request, charge, new BigDecimal(total));
         }
+    }
+
+    private void seedOutpatient(String purpose, String total) {
+        if (purpose.equals("EXAM")) episode = source;
+        UUID record = UUID.randomUUID();
+        UUID sourceOrder = UUID.randomUUID();
+        Instant requestedAt = Instant.now().minusSeconds(60).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        jdbc.update("""
+                INSERT INTO BILLING_ACCOUNT(account_id,patient_id,department_id,care_episode_type,care_episode_id,opened_at)
+                VALUES (?,?,?,'OUTPATIENT_VISIT',?,now())
+                """, account, patient, department, episode);
+        jdbc.update("""
+                INSERT INTO PAYMENT_REQUEST(payment_request_id,invoice_id,account_id,purpose,requested_amount,created_by)
+                VALUES (?,?,?,?,?,?)
+                """, request, invoice, account, purpose, new BigDecimal(total), actor);
+        if (purpose.equals("EXAM")) {
+            jdbc.update("INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,appointment_id) VALUES (?,?)", request, source);
+            jdbc.update("""
+                    INSERT INTO exam_charge_source(appointment_id,source_fingerprint,payment_request_id,requested_at,
+                        patient_id,department_id,care_episode_type,care_episode_id,price_code,requested_at_iso)
+                    VALUES (?,repeat('a',64),?,?,?,?,'OUTPATIENT_VISIT',?,'TEST_PRICE',?)
+                    """, source, request, java.sql.Timestamp.from(requestedAt), patient, department, episode, requestedAt.toString());
+        } else {
+            jdbc.update(connection -> {
+                var statement = connection.prepareStatement(
+                        "INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,record_id,lab_test_ids) VALUES (?,?,?)");
+                statement.setObject(1, request);
+                statement.setObject(2, record);
+                statement.setArray(3, connection.createArrayOf("uuid", new UUID[]{source}));
+                return statement;
+            });
+            jdbc.update("""
+                    INSERT INTO lab_test_charge_source(lab_id,source_order_id,source_fingerprint,payment_request_id,requested_at,
+                        patient_id,department_id,record_id,care_episode_type,care_episode_id,price_code,lab_type,requested_at_iso)
+                    VALUES (?,?,repeat('b',64),?,?,?,? ,?,'OUTPATIENT_VISIT',?,'TEST_PRICE','CBC',?)
+                    """, source, sourceOrder, request, java.sql.Timestamp.from(requestedAt), patient, department, record,
+                    episode, requestedAt.toString());
+        }
+        UUID charge = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO CHARGE(charge_id,account_id,patient_id,department_id,source_type,source_id,price_code,
+                    description,unit_amount,gross_amount,incurred_at) VALUES (?,?,?,?,?,?,?,?,?,?,now())
+                """, charge, account, patient, department, purpose, source, "TEST_PRICE", "Test-only price",
+                new BigDecimal(total), new BigDecimal(total));
+        jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
+                request, charge, new BigDecimal(total));
     }
 }

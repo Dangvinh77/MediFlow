@@ -109,6 +109,39 @@ class OutpatientPublicationPostgresTest {
         });
     }
 
+    private void acceptExamCancellation(UUID requestId, UUID originalTransactionId) {
+        var row = jdbc.queryForMap("""
+                SELECT r.account_id,a.patient_id,a.department_id,a.care_episode_type,a.care_episode_id,
+                       c.source_id,c.charge_id,p.amount AS allocated_amount,t.currency
+                FROM PAYMENT_REQUEST r JOIN BILLING_ACCOUNT a USING(account_id)
+                JOIN PAYMENT_REQUEST_CHARGE rc USING(payment_request_id) JOIN CHARGE c USING(charge_id)
+                JOIN PAYMENT_ALLOCATION p ON p.charge_id=c.charge_id AND p.transaction_id=?
+                JOIN PAYMENT_TRANSACTION t ON t.transaction_id=p.transaction_id
+                WHERE r.payment_request_id=? AND r.purpose='EXAM'
+                """, originalTransactionId, requestId);
+        UUID sourceId = (UUID) row.get("source_id");
+        UUID eventId = UUID.randomUUID();
+        String cancelledAt = Instant.now().toString();
+        jdbc.update("""
+                INSERT INTO outpatient_cancellation_source(source_type,source_id,event_type,source_fingerprint,
+                    first_event_id,correlation_id,source_order_id,patient_id,department_id,record_id,
+                    care_episode_type,care_episode_id,price_code,lab_type,cancelled_by,reason,cancelled_at_iso,
+                    status,applied_at)
+                VALUES ('EXAM',?,'appointment.exam.cancelled',?,?,'cancellation-test',NULL,?,?,NULL,?,?,NULL,NULL,
+                    ?,'Patient declined',?,'APPLIED',now())
+                """, sourceId, "a".repeat(64), eventId, row.get("patient_id"), row.get("department_id"),
+                row.get("care_episode_type"), row.get("care_episode_id"), UUID.randomUUID(), cancelledAt);
+        jdbc.update("""
+                INSERT INTO outpatient_cancellation_refund_due(source_type,source_id,original_transaction_id,
+                    charge_id,account_id,amount,currency)
+                SELECT 'EXAM',?, ?, c.charge_id, ?, p.amount, t.currency
+                FROM PAYMENT_REQUEST_CHARGE rc JOIN CHARGE c USING(charge_id)
+                JOIN PAYMENT_ALLOCATION p ON p.charge_id=c.charge_id AND p.transaction_id=?
+                JOIN PAYMENT_TRANSACTION t ON t.transaction_id=p.transaction_id
+                WHERE rc.payment_request_id=? AND c.source_id=?
+                """, sourceId, originalTransactionId, row.get("account_id"), originalTransactionId, requestId, sourceId);
+    }
+
     private UUID cohortAccountOf(UUID request) {
         var rows = jdbc.queryForList("SELECT account_id FROM billing_outpatient_publication_cohort WHERE payment_request_id=?", UUID.class, request);
         return rows.isEmpty() ? null : rows.getFirst();
@@ -359,6 +392,7 @@ class OutpatientPublicationPostgresTest {
         UUID actor = UUID.randomUUID();
         var paid = tx().execute(status -> new LedgerPaymentService(repository, outbox, mapper, Clock.systemUTC())
                 .complete(request, new CompleteLedgerPaymentRequest("pay", new BigDecimal("100000"), "VND", PaymentMethod.CASH, null), actor, "corr"));
+        acceptExamCancellation(request, paid.transactionId());
         var service = new com.mediflow.billing.application.service.LedgerRefundService(repository,
                 new com.mediflow.billing.infrastructure.persistence.adapter.LedgerRefundRepositoryAdapter(jdbc), outbox, mapper, Clock.systemUTC());
         var command = new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("refund", new BigDecimal("10000"), "private reason", PaymentMethod.CASH);

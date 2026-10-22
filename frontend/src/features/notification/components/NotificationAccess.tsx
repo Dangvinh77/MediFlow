@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
-import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 
 export type NotificationPermission = "lookup" | "detail" | "send";
@@ -19,7 +19,7 @@ export function NotificationDenied({ message, correlationId }: { message: string
 
 export function NotificationAccess({ permission, children }: { permission: NotificationPermission; children: ReactNode }) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
-  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   if (role === null) return <p role="status" className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
   if (!roles[permission].includes(role)) return <p role="alert" className="mt-6 text-sm text-danger">Bạn không có quyền thực hiện thao tác thông báo này.</p>;
   // Drop private results, drafts and pending callbacks on any session change.
@@ -27,11 +27,11 @@ export function NotificationAccess({ permission, children }: { permission: Notif
 }
 
 export function useNotificationRequestScope(permission: NotificationPermission) {
-  const token = useRef(getToken());
+  const token = useRef(getSessionKey());
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
-  return useCallback(() => mounted.current && getToken() === token.current && canUseNotification(permission), [permission]);
+  return useCallback(() => mounted.current && getSessionKey() === token.current && canUseNotification(permission), [permission]);
 }

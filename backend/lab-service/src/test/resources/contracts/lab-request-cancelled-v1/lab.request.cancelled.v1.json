@@ -1,0 +1,24 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000013",
+  "eventType": "lab.request.cancelled",
+  "version": 1,
+  "occurredAt": "2026-09-28T07:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "lab-service",
+  "payload": {
+    "testId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "recordId": "00000000-0000-4000-8000-000000000004",
+    "requestingDepartmentId": "00000000-0000-4000-8000-000000000005",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+    "sourceOrderId": "00000000-0000-4000-8000-000000000008",
+    "sourceType": "LAB_TEST",
+    "sourceId": "00000000-0000-4000-8000-000000000002",
+    "priceCode": "LAB-CBC",
+    "labType": "CBC",
+    "cancelledBy": "00000000-0000-4000-8000-000000000009",
+    "reason": "Patient declined",
+    "cancelledAt": "2026-09-28T07:00:00Z"
+  }
+}

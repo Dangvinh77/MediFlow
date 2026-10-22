@@ -3,6 +3,7 @@ package com.mediflow.organization.web.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +52,9 @@ class StaffControllerContractTest {
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
     private static final SecretKey SIGNING_KEY = Keys.hmacShaKeyFor(
             SECRET.getBytes(StandardCharsets.UTF_8));
+    private static final String ACTOR_ID = "22222222-2222-2222-2222-222222222222";
+    private static final String IDEMPOTENCY_KEY = "staff-create-contract-1";
+    private static final UUID DEPARTMENT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
     @Autowired
     private MockMvc mockMvc;
@@ -70,6 +74,67 @@ class StaffControllerContractTest {
     @MockBean
     private UpdateStaffUseCase updateStaffUseCase;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"null", "\"\"", "\"12345678901\"", "\"1234567890123\"", "\"01234567890A\""})
+    @WithMockUser(roles = "ADMIN")
+    void createStaff_requiresValidIdentity(String identityJson) throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Staff\",\"departmentId\":\"" + DEPARTMENT_ID
+                                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":" + identityJson + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("identityNumber"));
+        org.mockito.Mockito.verifyNoInteractions(createStaffUseCase);
+    }
+
+    @Test
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
+    void createStaff_keyedReplayReturnsSameLocationWithExplicitReplayFlag() throws Exception {
+        var staff = com.mediflow.organization.domain.model.Staff.create(
+                "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE,
+                null, null, null, null, "012345678901");
+        when(createStaffUseCase.executeWithIdempotency(
+                UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901"))
+                .thenReturn(new CreateStaffUseCase.CreationResult(staff, false),
+                        new CreateStaffUseCase.CreationResult(staff, true));
+        String body = "{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
+                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}";
+
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed", "false"))
+                .andExpect(header().string("Location", "/api/v1/org/staff/" + staff.getStaffId()))
+                .andExpect(jsonPath("$.data.staffId").value(staff.getStaffId().toString()))
+                .andExpect(jsonPath("$.data.identityNumber").value("012345678901"));
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Idempotency-Replayed", "true"))
+                .andExpect(header().string("Location", "/api/v1/org/staff/" + staff.getStaffId()))
+                .andExpect(jsonPath("$.data.staffId").value(staff.getStaffId().toString()))
+                .andExpect(jsonPath("$.data.identityNumber").value("012345678901"));
+    }
+
+    @Test
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
+    void createStaff_keyedDifferentPayloadReturnsStableConflict() throws Exception {
+        when(createStaffUseCase.executeWithIdempotency(
+                UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901"))
+                .thenThrow(new com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException());
+
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
+                                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("STAFF_IDEMPOTENCY_KEY_REUSED"));
+    }
+
     @Test
     @WithMockUser(roles = "ADMIN")
     void changingDepartmentHeadTitleReturnsExistingBusinessErrorContract() throws Exception {
@@ -80,7 +145,7 @@ class StaffControllerContractTest {
                         "Remove or reassign the department head before changing their professional title"));
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(BASE_PATH + "/{id}", staffId)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"fullName\":\"Audit Nurse\",\"jobTitle\":\"NURSE\"}"))
+                        .content("{\"fullName\":\"Audit Nurse\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("DEPARTMENT_HEAD_INVALID"))
@@ -280,6 +345,39 @@ class StaffControllerContractTest {
         mockMvc.perform(get(BASE_PATH + "?page=abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE"})
+    void staffReads_onlyAdminReceivesPersonalInformation(String role) throws Exception {
+        var staff = com.mediflow.organization.domain.model.Staff.create(
+                "Directory Person", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.DOCTOR,
+                "Cardiology", "LICENSE-PRIVATE", "0901234567", "private@example.test", "012345678901");
+        when(getStaffUseCase.getStaffById(staff.getStaffId())).thenReturn(staff);
+        when(getStaffUseCase.search(org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(PageResult.of(List.of(staff), 1, 0, 20));
+        for (String suffix : List.of("", "/" + staff.getStaffId())) {
+            String root = suffix.isEmpty() ? "$.data.content[0]" : "$.data";
+            var result = mockMvc.perform(get(BASE_PATH + suffix)
+                            .header("Authorization", "Bearer " + token(ACTOR_ID, role, JwtClaims.ACCESS_TOKEN_TYPE)))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Cache-Control", "no-store"))
+                    .andExpect(jsonPath(root + ".fullName").value("Directory Person"))
+                    .andExpect(jsonPath(root + ".departmentId").value(DEPARTMENT_ID.toString()));
+            if ("ADMIN".equals(role)) {
+                result.andExpect(jsonPath(root + ".identityNumber").value("012345678901"))
+                        .andExpect(jsonPath(root + ".licenseNumber").value("LICENSE-PRIVATE"))
+                        .andExpect(jsonPath(root + ".phoneNumber").value("0901234567"))
+                        .andExpect(jsonPath(root + ".email").value("private@example.test"))
+                        .andExpect(jsonPath(root + ".createdAt").isNotEmpty());
+            } else {
+                for (String field : List.of("identityNumber", "licenseNumber", "phoneNumber", "email", "createdAt", "updatedAt")) {
+                    result.andExpect(jsonPath(root + "." + field).doesNotExist());
+                }
+            }
+        }
     }
 
     private String systemToken() {

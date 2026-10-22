@@ -34,6 +34,31 @@ import com.mediflow.lab.domain.model.LabTestStatus;
 
 class LabApplicationServiceTest {
 
+    @Test
+    void cancellationPublishesDurableFactWithVerifiedActorAndStoredAudit() {
+        UUID actor = UUID.randomUUID();
+        var test = LabTest.createV2(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), com.mediflow.lab.domain.model.CareEpisodeType.OUTPATIENT_VISIT,
+                UUID.randomUUID(), "CBC", "LAB-CBC", LocalDate.now());
+        var events = new java.util.ArrayList<com.mediflow.lab.application.event.DomainEventEnvelope<?>>();
+        var now = java.time.Instant.parse("2026-10-21T00:00:00Z");
+        var app = new LabApplicationService(tests, publisher, mapper, correlationIds,
+                events::add, null, null, () -> Optional.of(new com.mediflow.lab.application.port.out.AuthenticatedStaffContext(
+                        actor, "DOCTOR")), true, true, java.time.Clock.fixed(now, java.time.ZoneOffset.UTC));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(correlationIds.currentOrCreate()).thenReturn(UUID.randomUUID());
+        app.cancel(test.getTestId(), new CancelLabTestRequest("Declined", actor));
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.eventType()).isEqualTo("lab.request.cancelled");
+            assertThat(event.occurredAt()).isEqualTo(now);
+            assertThat(event.payload()).hasFieldOrPropertyWithValue("cancelledBy", actor)
+                    .hasFieldOrPropertyWithValue("reason", "Declined");
+        });
+        app.cancel(test.getTestId(), new CancelLabTestRequest("Declined", actor));
+        assertThat(events).hasSize(1);
+    }
+
     private final LabTestRepositoryPort tests = mock(LabTestRepositoryPort.class);
     private final LabEventPublisherPort publisher = mock(LabEventPublisherPort.class);
     private final LabTestDtoMapper mapper = mock(LabTestDtoMapper.class);

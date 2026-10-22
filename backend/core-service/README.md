@@ -44,3 +44,91 @@ Verification 2026-10-21: `mvn -q -pl backend/core-service -am test` passed with 
 against PostgreSQL/RabbitMQ Testcontainers, including correction/legacy request compatibility
 and concurrent assignment of the same identity number to two patients (exactly one succeeds).
 This is module integration evidence; signed Gateway/browser acceptance is separate.
+
+## Organization delivery and staff retries — 2026-10-21
+
+Organization mutations now append their existing event bytes to
+`organization_event_outbox` in the Organization transaction. The relay publishes persistent
+messages with mandatory routing and publisher confirmation. Delivery remains at least once:
+after a crash between broker confirmation and the database commit, consumers may receive the
+same stored event ID and payload again. Patient persistence and its outbox remain separate.
+
+The relay runs every 5 seconds by default, with exponential retry delay capped at 300 seconds
+and quarantine after 8 failed attempts. Settings are
+`mediflow.organization.event-outbox.scheduling-enabled`, `delay-ms`, and `maximum-attempts`.
+Monitor PENDING age and QUARANTINED rows in this context's own store. After repairing routing
+or broker availability, an operator may reset a reviewed quarantined row to PENDING with
+`attempts=0`, `next_attempt_at=CURRENT_TIMESTAMP`, and `last_error=NULL`; preserve its event ID,
+payload and routing fields. This recovery does not create another staff record.
+
+`POST /api/v1/org/staff` accepts an optional `Idempotency-Key`. The receipt is scoped to the
+authenticated actor and exact create request fields, including null values. First creation returns 201; a matching
+retry returns 200 with the original staff ID and Location, plus `Idempotency-Replayed: true`.
+Reusing that actor/key for different data returns 409 `STAFF_IDEMPOTENCY_KEY_REUSED`.
+Clients must keep the same key across uncertain responses, and use a new key for a new intent.
+The Organization StaffForm now follows that rule. Unkeyed legacy clients retain their existing
+create semantics; previously created duplicate records require separate reconciliation.
+
+Gateway refresh reads `GET /api/v1/org/accounts/{accountId}/identity` using its own service
+identity. Only the Gateway service can call this endpoint. Refresh requires an expiring,
+valid refresh token and the current active account identity; stale roles and identity links
+are replaced by the current snapshot. An unavailable lookup cannot issue a new access token.
+
+Verification for these changes: `mvn -q -pl backend/core-service -am test` passed **213 Core
+tests**, zero failures/errors/skips, with PostgreSQL/RabbitMQ Testcontainers. The first full
+run exposed a web-slice fixture missing the new identity use-case mock; the fixture was fixed
+and the full command then passed. Gateway's final full suite and separate refund-route
+acceptance run passed **1,500 tests** in total, including the exact EXAM refund-due route
+role/method/path checks. Organization API/StaffForm focused
+frontend tests passed **11 tests**, with typecheck and lint also passing. These are module
+and contract results; they do not certify deployed browser or six-application acceptance.
+
+
+## Staff privacy and account security — 2026-10-22
+
+Human staff GET list/detail responses expose private fields only to ADMIN. Other permitted
+roles receive the work directory: staff ID, full name, department, job title, specialization
+and active status. Identity number, license, telephone, email and audit timestamps are null.
+Both responses use Cache-Control: no-store. Service lookup contracts remain separate.
+
+ADMIN can search `GET /api/v1/org/accounts` using `keyword`, `role`, `active`, `page`, `size`.
+Keyword matches a literal username substring; results never contain password hashes.
+Human accounts can `PUT /api/v1/org/accounts/me/password` with currentPassword/newPassword.
+Successful password commands return HTTP 200 with the standard ApiResponse and data=true.
+ADMIN can `PUT /api/v1/org/accounts/{accountId}/password` with newPassword after verifying
+the account owner. SYSTEM accounts cannot be reset using this human management endpoint.
+There is no email/SMS password recovery provider in this implementation.
+Passwords require at least 8 characters and at most 72 UTF-8 bytes; unchanged passwords
+are rejected. Password changes increment credential_version in the same locked transaction.
+Verify credentials and the Gateway-only identity snapshot include credentialVersion.
+Gateway refresh tokens must match the current version, so old refresh tokens stop working
+after password changes. Already issued access tokens remain valid until their configured TTL
+(default 30 minutes); this does not implement immediate access-token revocation.
+
+### Explicit first administrator for local development
+
+Bootstrap is disabled by default, requires Spring profile `local` and the explicit enabled
+property, and skips creation when any ADMIN account already exists (including inactive).
+It creates a department, staff with required unique 12-digit identity number, and ADMIN in
+one Organization transaction. An advisory lock prevents duplicate concurrent bootstraps.
+Do not use this as a production recovery endpoint. After building Core, run in PowerShell
+from the repository root with PostgreSQL/RabbitMQ/Eureka available:
+
+```powershell
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED = "true"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME = Read-Host "Admin username"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME = Read-Host "Full name"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER = Read-Host "12-digit identity number"
+$secret = Read-Host "Admin password (8+ characters, max 72 UTF-8 bytes)" -AsSecureString
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $secret).Password
+try {
+    java -jar backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
+} finally {
+    Remove-Item Env:MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED, Env:MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME, Env:MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME, Env:MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER, Env:MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+}
+```
+
+Stop the existing Core instance before launching another on the same port. This example
+starts a local jar; Docker Compose containers do not inherit these host variables automatically.
+Subsequent starts need no bootstrap settings. Flyway applies Organization V9 automatically;
+deploy updated Core before updated Gateway so both understand credentialVersion.

@@ -38,10 +38,14 @@ public class OutpatientCoverageAcceptanceService implements AcceptOutpatientCove
     public OutpatientCoverageDTO accept(AcceptOutpatientCoverageRequest request, UUID actor) {
         if (request == null || actor == null) throw new ReportPeriodValidationException();
         validatePeriod(request.fromDate(), request.toDate());
-        Instant now = clock.instant();
         var references = new TreeMap<String,String>();
         if (request.requestId() == null || !zone.getId().equals(request.zoneId()) || !"VND".equals(request.currency())
-                || request.sources() == null || !request.sources().keySet().equals(OutpatientCoverage.REQUIRED_SOURCES))
+                || request.sources() == null || !request.sources().keySet().equals(OutpatientCoverage.REQUIRED_SOURCES)
+                || !hash(request.expectedFingerprint()) || request.acceptanceReference() == null
+                || request.acceptanceReference().isBlank() || request.acceptanceReference().length() > 255
+                || request.sourceObservedAt() == null || request.reconciledAt() == null
+                || request.reconciledAt().isBefore(request.sourceObservedAt())
+                || request.sourceObservedAt().isBefore(firstInstantAfter(request.toDate())))
             throw new ReportPeriodValidationException();
         request.sources().forEach((source, proof) -> {
             if (proof == null || proof.reference() == null || proof.reference().isBlank() || proof.reference().length() > 255
@@ -49,15 +53,8 @@ public class OutpatientCoverageAcceptanceService implements AcceptOutpatientCove
                 throw new ReportPeriodValidationException();
             references.put(source, proof.reference());
         });
-        // Validate every temporal/scope field before touching persistence, including complete final day.
-        OutpatientCoverage candidate;
-        try {
-            candidate = new OutpatientCoverage(UUID.randomUUID(), request.fromDate(), request.toDate(), request.departmentId(),
-                    request.zoneId(), request.currency(), references, request.sourceObservedAt(), request.reconciledAt(), now,
-                    actor, request.acceptanceReference(), request.expectedFingerprint());
-        } catch (IllegalArgumentException | DateTimeException invalid) {
-            throw new ReportPeriodValidationException();
-        }
+        // Validate caller-controlled temporal and scope fields before touching persistence, including the complete final day.
+        if (clock.instant().isBefore(request.reconciledAt())) throw new ReportPeriodValidationException();
         store.lock();
         var prior = store.find(request.requestId());
         if (prior.isPresent()) {
@@ -76,6 +73,16 @@ public class OutpatientCoverageAcceptanceService implements AcceptOutpatientCove
             if (actual.rowCount() != expected.rowCount() || !actual.fingerprint().equals(expected.localFingerprint()))
                 throw new OutpatientCoverageConflictException();
         }
+        Instant now = clock.instant();
+        if (now.isBefore(request.reconciledAt())) throw new ReportPeriodValidationException();
+        OutpatientCoverage candidate;
+        try {
+            candidate = new OutpatientCoverage(UUID.randomUUID(), request.fromDate(), request.toDate(), request.departmentId(),
+                    request.zoneId(), request.currency(), references, request.sourceObservedAt(), request.reconciledAt(), now,
+                    actor, request.acceptanceReference(), request.expectedFingerprint());
+        } catch (IllegalArgumentException | DateTimeException invalid) {
+            throw new ReportPeriodValidationException();
+        }
         store.save(request, actor, candidate);
         return OutpatientCoverageDTO.from(candidate);
     }
@@ -83,6 +90,13 @@ public class OutpatientCoverageAcceptanceService implements AcceptOutpatientCove
     private void validatePeriod(LocalDate from, LocalDate to) {
         if (from == null || to == null || to.isBefore(from) || from.getYear() < 2000 || to.getYear() > 2100
                 || ChronoUnit.DAYS.between(from, to) >= 366) throw new ReportPeriodValidationException();
+    }
+    private Instant firstInstantAfter(LocalDate finalDate) {
+        try {
+            return finalDate.plusDays(1).atStartOfDay(zone).toInstant();
+        } catch (DateTimeException invalid) {
+            throw new ReportPeriodValidationException();
+        }
     }
     private boolean hash(String value) { return value != null && value.matches("[0-9a-f]{64}"); }
 }

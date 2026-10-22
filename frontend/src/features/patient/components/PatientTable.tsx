@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { controlClassName, Field } from "@/components/ui/Field";
+import { DataTableShell } from "@/components/ui/DataTableShell";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
-import { getToken } from "@/lib/session";
+import { getSessionKey } from "@/lib/session";
 import { formatLocalDate } from "@/lib/format";
 import { patientApi } from "../api";
 import type { PatientDTO } from "../types";
@@ -40,7 +43,7 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function PatientTable(props: { notice?: "deleted" }) {
-  const session = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerRole);
+  const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, getServerRole);
   return <PatientTableWorkspace key={session} {...props} />;
 }
 
@@ -64,7 +67,7 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
   const loadPatients = useCallback(async (request: PatientRequest) => {
     lastRequest.current = request;
     const requestId = ++requestSequence.current;
-    const token = getToken();
+    const token = getSessionKey();
     setLoading(true);
     setError(null);
 
@@ -74,14 +77,14 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
         page: request.page,
         size: PATIENT_PAGE_SIZE,
       });
-      if (requestId !== requestSequence.current || token !== getToken()) return;
+      if (requestId !== requestSequence.current || token !== getSessionKey()) return;
 
       setPatients(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
     } catch (cause: unknown) {
-      if (requestId !== requestSequence.current || token !== getToken()) return;
+      if (requestId !== requestSequence.current || token !== getSessionKey()) return;
 
       if (cause instanceof ApiRequestError && cause.status === 401) {
         setPatients([]);
@@ -91,7 +94,7 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
 
       setError(getRequestError(cause));
     } finally {
-      if (requestId === requestSequence.current && token === getToken()) setLoading(false);
+      if (requestId === requestSequence.current && token === getSessionKey()) setLoading(false);
     }
   }, [router]);
 
@@ -117,37 +120,13 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
   }
 
   return (
-    <section className="mt-6">
+    <section>
       {notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xóa bệnh nhân.</p> : null}
-      {(role === "ADMIN" || role === "NURSE") ? <div className="mb-4 flex justify-end"><Link href="/patients/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">Thêm bệnh nhân</Link></div> : null}
-      <form onSubmit={onSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="min-w-0 flex-1">
-          <label htmlFor="patient-keyword" className="mb-1 block text-sm font-medium">
-            Từ khóa bệnh nhân
-          </label>
-          <input
-            id="patient-keyword"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Tên hoặc mã bệnh nhân"
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="min-h-12 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
-        >
-          Tìm kiếm
-        </button>
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={loading}
-          className="min-h-12 rounded-lg border border-border bg-surface px-4 py-2 font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
-        >
-          Xóa lọc
-        </button>
+      <DataTableShell title="Hồ sơ bệnh nhân" description="Tra cứu theo họ tên hoặc CMND/CCCD. Chọn tên để xem hồ sơ." actions={(role === "ADMIN" || role === "NURSE") ? <Link href="/patients/new" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Thêm bệnh nhân</Link> : undefined}>
+      <form onSubmit={onSearch} className="flex flex-col gap-3 border-t border-border bg-surface-muted/40 p-4 sm:flex-row sm:items-end sm:px-5">
+        <div className="min-w-0 flex-1 sm:max-w-lg"><Field label="Từ khóa bệnh nhân" htmlFor="patient-keyword"><input id="patient-keyword" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Nhập họ tên hoặc CMND/CCCD" className={controlClassName} /></Field></div>
+        <Button type="submit" variant="primary" disabled={loading}>Tìm kiếm</Button>
+        <Button type="button" onClick={onReset} disabled={loading}>Xóa lọc</Button>
       </form>
 
       {loading ? <AsyncState kind="loading" message="Đang tải bệnh nhân…" /> : null}
@@ -167,14 +146,14 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
 
       {!loading && !error && patients.length > 0 ? (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-3xl text-left text-sm">
+          <div className="overflow-x-auto border-t border-border">
+            <table className="w-full min-w-3xl text-left text-sm"><caption className="sr-only">Danh sách hồ sơ bệnh nhân</caption>
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3">Họ tên</th>
                   <th scope="col" className="px-4 py-3">Ngày sinh</th>
                   <th scope="col" className="px-4 py-3">Giới tính</th>
-                  <th scope="col" className="px-4 py-3">Số CMND</th>
+                  <th scope="col" className="px-4 py-3">CMND/CCCD</th>
                   <th scope="col" className="px-4 py-3">Điện thoại</th>
                 </tr>
               </thead>
@@ -182,11 +161,11 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
                 {patients.map((patient) => (
                   <tr
                     key={patient.maBenhNhan}
-                    className="border-b border-border last:border-0"
+                    className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0"
                   >
-                    <td className="px-4 py-3"><Link href={`/patients/${patient.maBenhNhan}`} className="font-medium text-primary hover:underline">{patient.hoTen}</Link></td>
+                    <td className="px-4 py-3"><Link href={`/patients/${patient.maBenhNhan}`} className="rounded font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{patient.hoTen.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><span>{patient.hoTen}</span></span></Link></td>
                     <td className="px-4 py-3">{formatLocalDate(patient.ngaySinh)}</td>
-                    <td className="px-4 py-3">{patient.gioiTinh}</td>
+                    <td className="px-4 py-3">{patient.gioiTinh === "M" ? "Nam" : "Nữ"}</td>
                     <td className="px-4 py-3">{patient.soCmnd}</td>
                     <td className="px-4 py-3">{patient.soDienThoai ?? "—"}</td>
                   </tr>
@@ -194,15 +173,16 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
               </tbody>
             </table>
           </div>
-          <Pagination
+          <div className="border-t border-border px-4 pb-4"><Pagination
             loading={loading}
             page={pageNumber}
             totalPages={totalPages}
             totalElements={totalElements}
             onPageChange={(page) => void loadPatients({ keyword: activeKeyword, page })}
-          />
+          /></div>
         </>
       ) : null}
+      </DataTableShell>
     </section>
   );
 }

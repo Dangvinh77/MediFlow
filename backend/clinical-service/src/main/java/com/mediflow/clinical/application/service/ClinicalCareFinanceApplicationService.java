@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
 import com.mediflow.clinical.application.dto.command.FinancialClearanceCommand;
+import com.mediflow.clinical.application.dto.command.FinancialExecutionStartRequest;
 import com.mediflow.clinical.application.dto.request.CompleteRecordRequest;
 import com.mediflow.clinical.application.dto.request.CreateAdmissionReferralRequest;
 import com.mediflow.clinical.application.dto.request.EmergencyOverrideRequest;
@@ -18,12 +19,14 @@ import com.mediflow.clinical.application.dto.response.AdmissionReferralDTO;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.event.AdmissionRequestedPayload;
+import com.mediflow.clinical.application.event.AppointmentExamCancelledPayload;
 import com.mediflow.clinical.application.event.AppointmentStatusChangedV2Payload;
 import com.mediflow.clinical.application.event.DomainEventEnvelope;
 import com.mediflow.clinical.application.event.MedicalRecordCompletedPayload;
 import com.mediflow.clinical.application.event.MedicalRecordCreatedV2Payload;
 import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.in.CompleteMedicalRecordUseCase;
+import com.mediflow.clinical.application.port.in.CancelCareFinanceExamUseCase;
 import com.mediflow.clinical.application.port.in.ManageExamGateUseCase;
 import com.mediflow.clinical.application.port.in.ReactToFinancialClearanceUseCase;
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
@@ -33,6 +36,7 @@ import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
 import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
+import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -53,9 +57,11 @@ import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 
 public class ClinicalCareFinanceApplicationService
-        implements ManageExamGateUseCase, CompleteMedicalRecordUseCase, ReactToFinancialClearanceUseCase {
+        implements ManageExamGateUseCase, CompleteMedicalRecordUseCase, ReactToFinancialClearanceUseCase,
+        CancelCareFinanceExamUseCase {
 
     private static final String APPOINTMENT_STATUS_CHANGED = "appointment.status.changed";
+    private static final String APPOINTMENT_EXAM_CANCELLED = "appointment.exam.cancelled";
     private static final String MEDICAL_RECORD_CREATED = "medicalrecord.created";
     private static final String MEDICAL_RECORD_COMPLETED = "medicalrecord.completed";
     private static final String ADMISSION_REQUESTED = "admission.requested";
@@ -63,6 +69,7 @@ public class ClinicalCareFinanceApplicationService
     private final AppointmentRepositoryPort appointments;
     private final MedicalRecordRepositoryPort records;
     private final ExamClearanceRepositoryPort clearances;
+    private final FinancialExecutionAuthorityPort executionAuthority;
     private final EmergencyOverrideRepositoryPort overrides;
     private final AdmissionReferralRepositoryPort referrals;
     private final ExamPricePolicyPort prices;
@@ -77,6 +84,7 @@ public class ClinicalCareFinanceApplicationService
     public ClinicalCareFinanceApplicationService(AppointmentRepositoryPort appointments,
                                                   MedicalRecordRepositoryPort records,
                                                   ExamClearanceRepositoryPort clearances,
+                                                  FinancialExecutionAuthorityPort executionAuthority,
                                                   EmergencyOverrideRepositoryPort overrides,
                                                   AdmissionReferralRepositoryPort referrals,
                                                   ExamPricePolicyPort prices,
@@ -90,6 +98,7 @@ public class ClinicalCareFinanceApplicationService
         this.appointments = appointments;
         this.records = records;
         this.clearances = clearances;
+        this.executionAuthority = java.util.Objects.requireNonNull(executionAuthority);
         this.overrides = overrides;
         this.referrals = referrals;
         this.prices = prices;
@@ -116,6 +125,38 @@ public class ClinicalCareFinanceApplicationService
 
     @Override
     @Transactional
+    public AppointmentDTO cancelCareFinanceExam(UUID appointmentId, String reason) {
+        Appointment appointment = lockedAppointment(appointmentId);
+        if (appointment.getCareContractVersion() != 1) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a V1 outpatient examination uses the audited cancellation flow");
+        }
+        ActorIdentity actor = actors.current();
+        if (actor == null || actor.staffId() == null
+                || (!"ADMIN".equals(actor.role()) && !"DOCTOR".equals(actor.role())
+                && !"NURSE".equals(actor.role()))) {
+            throw new ForbiddenOperationException("CLINICAL_STAFF_IDENTITY_REQUIRED",
+                    "An authenticated clinical staff identity is required for cancellation");
+        }
+        if ("DOCTOR".equals(actor.role())) {
+            staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        }
+
+        AppointmentStatus oldStatus = appointment.getStatus();
+        Instant cancelledAt = clock.instant();
+        appointment.cancelCareFinance(reason, actor.staffId(), cancelledAt);
+        Appointment saved = appointments.save(appointment);
+        String correlationId = correlationIds.currentOrCreate().toString();
+        appendStatusChanged(saved, null, oldStatus, AppointmentStatus.CANCELLED, cancelledAt, null, correlationId);
+        append(APPOINTMENT_EXAM_CANCELLED, correlationId, cancelledAt, new AppointmentExamCancelledPayload(
+                saved.getAppointmentId(), saved.getPatientId(), saved.getDepartmentId(),
+                CareEpisodeType.OUTPATIENT_VISIT, saved.getAppointmentId(), "EXAM", saved.getAppointmentId(),
+                actor.staffId(), reason, cancelledAt));
+        return mapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional
     public AppointmentDTO startExam(UUID appointmentId, StartExamRequest request) {
         if (request == null) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
@@ -125,15 +166,22 @@ public class ClinicalCareFinanceApplicationService
         staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
         AppointmentStatus oldStatus = appointment.getStatus();
         Instant now = clock.instant();
-        Optional<ExamClearance> found = clearances.findByAppointment(appointmentId);
-        ExamClearance clearance = found.orElse(null);
+        EmergencyOverrideRequest overrideRequest = request.emergencyOverride();
+        EmergencyOverride emergencyOverride = overrideRequest == null
+                ? null : validatedOverride(appointment, overrideRequest, now);
+        // An explicitly authenticated emergency approval is the audited authorization for this start.
+        // It takes precedence over any persisted grant, so an old local clearance can neither reject
+        // emergency care nor make the service depend on Billing availability.
+        ExamClearance clearance = emergencyOverride == null
+                ? clearances.findByAppointment(appointmentId).orElse(null)
+                : null;
         boolean validClearance = false;
         if (clearance != null) {
             if (!clearance.matchesAppointment(appointment)) {
                 throw clearanceMismatch();
             }
             validClearance = clearance.isValidAt(now);
-            if (!validClearance && request.emergencyOverride() == null) {
+            if (!validClearance) {
                 throw new InvalidClinicalDataException("CLINICAL_CLEARANCE_EXPIRED",
                         "Exam clearance expired before examination started");
             }
@@ -142,12 +190,6 @@ public class ClinicalCareFinanceApplicationService
             }
         }
 
-        EmergencyOverride emergencyOverride = null;
-        EmergencyOverrideRequest overrideRequest = request.emergencyOverride();
-        if (overrideRequest != null) {
-            emergencyOverride = validatedOverride(appointment, overrideRequest, now);
-            overrides.save(emergencyOverride);
-        }
         UUID clearanceId = validClearance ? clearance.getClearanceId() : null;
         UUID overrideId = emergencyOverride == null ? null : emergencyOverride.getOverrideId();
         if (appointment.getCareContractVersion() == 0 && (clearanceId != null || overrideId != null)) {
@@ -168,15 +210,23 @@ public class ClinicalCareFinanceApplicationService
                     "Appointment record does not match the examination target");
         }
 
+        String correlationId = correlationIds.currentOrCreate().toString();
+        if (clearanceId != null) {
+            executionAuthority.start(clearanceId, new FinancialExecutionStartRequest(
+                    appointmentId, "EXAM", appointmentId, appointment.getPatientId(),
+                    "OUTPATIENT_VISIT", appointmentId), correlationId);
+        }
+        if (emergencyOverride != null) {
+            overrides.save(emergencyOverride);
+        }
         MedicalRecord savedRecord = records.save(record);
         Appointment savedAppointment = appointments.save(appointment);
-        String correlationId = correlationIds.currentOrCreate().toString();
         append(MEDICAL_RECORD_CREATED, correlationId, now, new MedicalRecordCreatedV2Payload(
                 savedRecord.getRecordId(), appointmentId, appointment.getPatientId(), appointment.getDoctorId(),
                 appointment.getDepartmentId(), CareEpisodeType.OUTPATIENT_VISIT, appointmentId,
                 "EXAM", appointmentId, appointment.getExamPriceCode(), savedRecord.getExaminationDate()));
         appendStatusChanged(savedAppointment, savedRecord.getRecordId(), oldStatus,
-                savedAppointment.getStatus(), now, savedAppointment.getEmergencyOverrideId());
+                savedAppointment.getStatus(), now, savedAppointment.getEmergencyOverrideId(), correlationId);
         return mapper.toDto(savedAppointment);
     }
 
@@ -308,7 +358,14 @@ public class ClinicalCareFinanceApplicationService
 
     private void appendStatusChanged(Appointment appointment, UUID recordId, AppointmentStatus oldStatus,
                                      AppointmentStatus newStatus, Instant at, UUID overrideId) {
-        append(APPOINTMENT_STATUS_CHANGED, correlationIds.currentOrCreate().toString(), at,
+        appendStatusChanged(appointment, recordId, oldStatus, newStatus, at, overrideId,
+                correlationIds.currentOrCreate().toString());
+    }
+
+    private void appendStatusChanged(Appointment appointment, UUID recordId, AppointmentStatus oldStatus,
+                                     AppointmentStatus newStatus, Instant at, UUID overrideId,
+                                     String correlationId) {
+        append(APPOINTMENT_STATUS_CHANGED, correlationId, at,
                 new AppointmentStatusChangedV2Payload(appointment.getAppointmentId(), recordId,
                         appointment.getPatientId(), appointment.getDepartmentId(), oldStatus, newStatus,
                         CareEpisodeType.OUTPATIENT_VISIT, appointment.getAppointmentId(), "EXAM",

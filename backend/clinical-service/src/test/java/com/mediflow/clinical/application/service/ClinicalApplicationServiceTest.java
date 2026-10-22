@@ -36,6 +36,7 @@ import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
+import com.mediflow.clinical.application.port.in.CancelCareFinanceExamUseCase;
 import com.mediflow.clinical.domain.exception.DuplicatePendingAppointmentException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.model.Appointment;
@@ -223,6 +224,28 @@ class ClinicalApplicationServiceTest {
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
         verify(publisher).publishAppointmentStatusChanged(any(AppointmentStatusChangedEvent.class));
+    }
+
+    @Test
+    void v1ExamCancellation_routesToAuditedCareFinanceUseCase() {
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.create(patientId, doctorId, departmentId,
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        appointment.checkIn("OUTPATIENT_EXAM", java.time.Instant.now());
+        UUID appointmentId = appointment.getAppointmentId();
+        CancelCareFinanceExamUseCase cancellation = mock(CancelCareFinanceExamUseCase.class);
+        AppointmentApplicationService service = new AppointmentApplicationService(appointments, patients, staff,
+                publisher, mapper, correlationIds, false, cancellation);
+        when(appointments.findById(appointmentId)).thenReturn(Optional.of(appointment));
+
+        service.changeStatus(appointmentId, AppointmentStatus.CANCELLED, "Patient requested cancellation");
+
+        verify(cancellation).cancelCareFinanceExam(appointmentId, "Patient requested cancellation");
+        verify(appointments, never()).findByIdForUpdate(appointmentId);
+        verify(appointments, never()).save(any());
+        verifyNoInteractions(publisher);
     }
 
     @Test

@@ -46,7 +46,7 @@ class CreateStaffServiceTest {
 
         assertThrows(DepartmentInactiveException.class, () -> service.execute(
                 "Alex Morgan", departmentId, JobTitle.NURSE, null, null,
-                "0901234567", "alex@example.com"));
+                "0901234567", "alex@example.com", "012345678901"));
     }
 
     @Test
@@ -62,7 +62,7 @@ class CreateStaffServiceTest {
                 staffRepository, departmentRepository, eventPublisher);
 
         service.execute("Alex Morgan", departmentId, JobTitle.NURSE, null, null,
-                "0901234567", "alex@example.com");
+                "0901234567", "alex@example.com", "012345678901");
 
         org.mockito.Mockito.verify(eventPublisher)
                 .publishStaffCreated(any(com.mediflow.organization.application.event.StaffCreatedEvent.class));

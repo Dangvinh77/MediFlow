@@ -11,6 +11,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class StaffTest {
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {" ", "12345678901", "1234567890123", "01234567890A", " 012345678901"})
+    void create_requiresTwelveDigitIdentity(String identity) {
+        assertThrows(InvalidStaffDataException.class, () -> Staff.create(
+                "Staff", UUID.randomUUID(), JobTitle.NURSE, null, null, null, null, identity));
+    }
+
+    @Test
+    void leadingZeroIdentitySurvivesProfileUpdate() {
+        Staff staff = Staff.create("Staff", UUID.randomUUID(), JobTitle.NURSE,
+                null, null, null, null, "012345678901");
+        staff.update("Updated Staff", JobTitle.NURSE, null, null, null, null);
+        org.junit.jupiter.api.Assertions.assertEquals("012345678901", staff.getIdentityNumber());
+    }
+
     @Test
     void create_validStaff_succeeds() {
         assertDoesNotThrow(() ->
@@ -21,7 +37,8 @@ class StaffTest {
                         null,
                         null,
                         "0912345678",
-                        "nurse@example.com"
+                        "nurse@example.com",
+                        "012345678901"
                 )
         );
     }
@@ -37,7 +54,8 @@ class StaffTest {
                         "Internal Medicine",
                         null,
                         "0912345678",
-                        "doctor@example.com"
+                        "doctor@example.com",
+                        "012345678901"
                 )
         );
     }
@@ -53,7 +71,8 @@ class StaffTest {
                         null,
                         null,
                         "0912345678",
-                        "nurse@example.com"
+                        "nurse@example.com",
+                        "012345678901"
                 )
         );
     }
@@ -69,7 +88,8 @@ class StaffTest {
                         null,
                         null,
                         "123",
-                        "nurse@example.com"
+                        "nurse@example.com",
+                        "012345678901"
                 )
         );
     }
@@ -85,7 +105,8 @@ class StaffTest {
                         null,
                         null,
                         "0912345678",
-                        "invalid-email"
+                        "invalid-email",
+                        "012345678901"
                 )
         );
     }

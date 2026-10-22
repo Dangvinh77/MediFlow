@@ -18,13 +18,13 @@ public class FinancialClearanceAuthorityAdapter implements FinancialClearanceAut
     public Optional<FinancialClearanceAuthority> find(UUID id) {
         return jdbc.query("""
                 SELECT f.*, statement_timestamp() AS observed_at,
-                    CASE WHEN f.purpose='PRESCRIPTION' THEN (
+                    CASE WHEN f.purpose IN ('PRESCRIPTION','EXAM','LAB_TEST') THEN (
                         SELECT o.payload::jsonb->>'occurredAt' FROM BILLING_EVENT_OUTBOX o
                         WHERE o.aggregate_id=f.account_id AND o.routing_key='financial.clearance.granted'
                             AND o.payload::jsonb->'payload'->>'clearanceId'=f.clearance_id::text
                         ORDER BY o.created_at, o.event_id LIMIT 1
                     ) END AS source_granted_at,
-                    COALESCE(f.purpose IN ('SURGERY','PRESCRIPTION') AND r.purpose=f.purpose AND r.status='PAID'
+                    COALESCE(r.purpose=f.purpose AND r.status='PAID'
                     AND a.status NOT IN ('CLOSED','SETTLED') AND NOT f.emergency_override
                     AND r.account_id=f.account_id AND r.invoice_id=f.invoice_id
                     AND a.patient_id=f.patient_id AND a.care_episode_type=f.care_episode_type
@@ -44,17 +44,43 @@ public class FinancialClearanceAuthorityAdapter implements FinancialClearanceAut
                     AND t.appointment_id IS NULL AND f.appointment_id IS NULL
                     AND t.admission_id IS NULL AND f.admission_id IS NULL
                     AND t.surgery_case_id IS NULL AND f.surgery_case_id IS NULL
+                    AND cardinality(t.lab_test_ids)=0 AND cardinality(f.lab_test_ids)=0)
+                    OR (f.purpose='EXAM' AND f.care_episode_type='OUTPATIENT_VISIT'
+                    AND f.appointment_id IS NOT NULL AND f.care_episode_id=f.appointment_id
+                    AND t.appointment_id=f.appointment_id AND t.record_id IS NULL AND f.record_id IS NULL
+                    AND t.prescription_id IS NULL AND f.prescription_id IS NULL
+                    AND t.admission_id IS NULL AND f.admission_id IS NULL
+                    AND t.surgery_case_id IS NULL AND f.surgery_case_id IS NULL
                     AND cardinality(t.lab_test_ids)=0 AND cardinality(f.lab_test_ids)=0
+                    AND EXISTS (SELECT 1 FROM exam_charge_source s WHERE s.appointment_id=f.appointment_id
+                        AND s.payment_request_id=r.payment_request_id AND s.patient_id=f.patient_id
+                        AND s.care_episode_id=f.care_episode_id AND s.department_id=a.department_id))
+                    OR (f.purpose='LAB_TEST' AND cardinality(f.lab_test_ids)=1
+                    AND t.lab_test_ids=f.lab_test_ids AND t.record_id IS NOT DISTINCT FROM f.record_id
+                    AND t.appointment_id IS NULL AND f.appointment_id IS NULL
+                    AND t.prescription_id IS NULL AND f.prescription_id IS NULL
+                    AND t.admission_id IS NULL AND f.admission_id IS NULL
+                    AND t.surgery_case_id IS NULL AND f.surgery_case_id IS NULL
+                    AND EXISTS (SELECT 1 FROM lab_test_charge_source s WHERE s.lab_id=f.lab_test_ids[1]
+                        AND s.payment_request_id=r.payment_request_id AND s.patient_id=f.patient_id
+                        AND s.record_id IS NOT DISTINCT FROM f.record_id AND s.care_episode_type=f.care_episode_type
+                        AND s.care_episode_id=f.care_episode_id AND s.department_id=a.department_id)))
+                    AND (f.purpose NOT IN ('EXAM','LAB_TEST') OR
+                        (SELECT COUNT(*) FROM PAYMENT_REQUEST_CHARGE x WHERE x.payment_request_id=r.payment_request_id)=1)
+                    AND EXISTS(SELECT 1 FROM PAYMENT_REQUEST_CHARGE x WHERE x.payment_request_id=r.payment_request_id)
                     AND NOT EXISTS(SELECT 1 FROM PAYMENT_REQUEST_CHARGE x WHERE x.payment_request_id=r.payment_request_id
                         AND (SELECT COALESCE(SUM(CASE WHEN p.transaction_type='PAYMENT' THEN pa.amount ELSE -pa.amount END),0)
                             FROM PAYMENT_ALLOCATION pa JOIN PAYMENT_TRANSACTION p ON p.transaction_id=pa.transaction_id
                             WHERE pa.charge_id=x.charge_id AND p.payment_request_id=r.payment_request_id
-                                AND p.status='COMPLETED' AND p.account_id=f.account_id)<x.requested_amount)))
-                    AND EXISTS(SELECT 1 FROM PAYMENT_REQUEST_CHARGE x WHERE x.payment_request_id=r.payment_request_id)
+                                AND p.status='COMPLETED' AND p.account_id=f.account_id AND p.currency=f.currency
+                                AND p.classification='SERVICE_PAYMENT'
+                                AND p.transaction_type IN ('PAYMENT','REFUND','REVERSAL'))<x.requested_amount)
                     AND NOT EXISTS(SELECT 1 FROM PAYMENT_REQUEST_CHARGE x JOIN CHARGE c ON c.charge_id=x.charge_id
                         WHERE x.payment_request_id=r.payment_request_id AND
                         (c.status<>'POSTED' OR c.source_type<>f.purpose
-                        OR c.source_id<>CASE WHEN f.purpose='SURGERY' THEN f.surgery_case_id ELSE f.prescription_id END
+                        OR c.source_id<>CASE WHEN f.purpose='SURGERY' THEN f.surgery_case_id
+                            WHEN f.purpose='PRESCRIPTION' THEN f.prescription_id
+                            WHEN f.purpose='EXAM' THEN f.appointment_id ELSE f.lab_test_ids[1] END
                         OR c.account_id<>f.account_id OR c.patient_id<>f.patient_id OR x.requested_amount>c.gross_amount))
                     AND (SELECT COALESCE(SUM(x.requested_amount),0) FROM PAYMENT_REQUEST_CHARGE x
                         WHERE x.payment_request_id=r.payment_request_id)=r.requested_amount
@@ -78,6 +104,14 @@ public class FinancialClearanceAuthorityAdapter implements FinancialClearanceAut
                         : java.time.Instant.parse(rs.getString("source_granted_at")),
                 rs.getTimestamp("expires_at") == null ? null : rs.getTimestamp("expires_at").toInstant(),
                 rs.getTimestamp("revoked_at") == null ? null : rs.getTimestamp("revoked_at").toInstant(),
-                rs.getBoolean("ledger_eligible"), rs.getTimestamp("observed_at").toInstant()), id).stream().findFirst();
+                rs.getBoolean("ledger_eligible"), rs.getTimestamp("observed_at").toInstant(),
+                rs.getObject("appointment_id", UUID.class), rs.getObject("record_id", UUID.class), labIds(rs),
+                rs.getObject("prescription_id", UUID.class)), id).stream().findFirst();
+    }
+
+    private static java.util.List<UUID> labIds(java.sql.ResultSet rs) throws java.sql.SQLException {
+        var value = rs.getArray("lab_test_ids");
+        if (value == null) return java.util.List.of();
+        return java.util.Arrays.asList((UUID[]) value.getArray());
     }
 }

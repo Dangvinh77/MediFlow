@@ -41,7 +41,7 @@ class ChangeStaffDepartmentServiceTest {
         UUID departmentId = UUID.randomUUID();
         UUID staffId = UUID.randomUUID();
         Staff staff = Staff.create("Alex Morgan", departmentId, JobTitle.NURSE,
-                null, null, "0901234567", "alex@example.com");
+                null, null, "0901234567", "alex@example.com", "012345678901");
         Department department = Department.create(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
         when(staffRepository.findByIdForUpdate(staffId)).thenReturn(Optional.of(staff));
@@ -63,7 +63,7 @@ class ChangeStaffDepartmentServiceTest {
         UUID newDepartmentId = UUID.randomUUID();
         UUID staffId = UUID.randomUUID();
         Staff staff = Staff.create("Alex Morgan", oldDepartmentId, JobTitle.NURSE,
-                null, null, "0901234567", "alex@example.com");
+                null, null, "0901234567", "alex@example.com", "012345678901");
         Department department = Department.create(
                 newDepartmentId, "Surgery", "SUR", DepartmentType.CLINICAL, "Building B");
         Department oldDepartment = Department.create(
@@ -88,7 +88,7 @@ class ChangeStaffDepartmentServiceTest {
         UUID newDepartmentId = UUID.randomUUID();
         UUID staffId = UUID.randomUUID();
         Staff doctor = Staff.create("Dr. Alex Morgan", oldDepartmentId, JobTitle.DOCTOR,
-                "Cardiology", "MED-1", "0901234567", "alex@example.com");
+                "Cardiology", "MED-1", "0901234567", "alex@example.com", "012345678901");
         Department oldDepartment = Department.create(
                 oldDepartmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
         oldDepartment.changeHead(doctor);

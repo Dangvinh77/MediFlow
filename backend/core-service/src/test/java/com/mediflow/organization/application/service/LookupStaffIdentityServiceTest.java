@@ -53,6 +53,6 @@ class LookupStaffIdentityServiceTest {
     private Staff staff(UUID departmentId, boolean active) {
         return Staff.reconstitute(
                 UUID.randomUUID(), "Test Staff", departmentId, JobTitle.NURSE,
-                null, null, null, null, active, Instant.now(), Instant.now());
+                null, null, null, null, active, Instant.now(), Instant.now(), "012345678901");
     }
 }

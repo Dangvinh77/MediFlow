@@ -1,8 +1,10 @@
 # Frontend Service: Billing
 
-**Frontend owner:** Lộc (`locgit-89`); Vinh is delegated this closeout by the user's 2026-10-20 assignment. Backend ownership follows the root AGENTS.md.
+**Frontend owner:** Lộc (`locgit-89`). Vinh's 2026-10-20/21 closeout was a temporary `DELEGATED`
+task; Lộc resumes active `IMPLEMENT` on this feature from 2026-10-22. Backend ownership follows
+the root AGENTS.md.
 
-**Backend:** `backend/billing-service/**`  
+**Backend:** `backend/billing-service/**`
 **Contract context:** [`docs/ai/services/billing.md`](../../../docs/ai/services/billing.md)
 
 ## Current implementation — 2026-10-20
@@ -38,6 +40,12 @@ The returned obligation remains server-owned; the client does not subtract recor
 The previous Gateway blocker is superseded by implemented rules (PR #431); the existing handoff's
 broader acceptance criteria remain owned by its maintainers.
 
+This route (`RefundDueLookup.tsx`, Vinh's 2026-10-20 closeout) is the single implementation for
+prescription-adjustment refund lookup. Lộc's own 2026-10-19 parallel implementation
+(`PrescriptionAdjustmentRefundDue.tsx` + `PrescriptionAdjustmentLookupForm.tsx` under
+`/billing/prescription-adjustments`) duplicated this exact business function and was removed on
+2026-10-22 to avoid two components doing the same job; see the frontend workboard for the decision.
+
 Revenue remains ADMIN/MANAGER; outbox replay remains ADMIN only. Replay feedback distinguishes
 `replayed: false` and successful requeue from downstream processing. Invoice/refund/payment UI is
 ADMIN/CASHIER, with backend authorization authoritative.
@@ -46,10 +54,16 @@ ADMIN/CASHIER, with backend authorization authoritative.
 
 - `FE-BILLING-01/02` — DONE: exact invoice DTO, create/detail/fee flows.
 - `FE-BILLING-03` — DONE for implemented MVP payment and prescription refund recording.
-- `FE-BILLING-04` — DONE: API/component regression coverage for pagination, money, terminal states,
-  errors, session changes, duplicate submits and uncertain outcomes; signed browser payment/refund.
+- `FE-BILLING-04` — **CORRECTION 2026-10-22:** this was marked DONE by Vinh's 2026-10-20 closeout,
+  but verified directly against code on that date: `RevenueReport.tsx` had zero test coverage
+  (no component test, no `api.test.ts` coverage of `revenueByDepartment`); `InvoiceForm.tsx` and
+  `OutboxReplayForm.tsx` only had the two safety-focused cases in `BillingCommands.test.tsx`, not
+  full component coverage. `InvoiceDetail`, `InvoiceLookup`, `LedgerPaymentForm`,
+  `PaymentRequestLookupForm`, `RefundDueLookup` did have real component tests. Lộc is closing this
+  gap now — see the dated workboard entry for current status.
 - `FE-BILLING-05/06` — DONE: existing revenue and outbox routes; replay feedback hardened.
-- `FE-BILLING-07` — DONE for prescription adjustment/refund; Surgery remains deferred from MVP.
+- `FE-BILLING-07` — DONE for prescription adjustment/refund (Vinh's `RefundDueLookup`); Surgery
+  remains deferred from MVP.
 - `FE-BILLING-08` — DONE: source discovery and server-backed selected-charge ledger payment.
 
 ## Acceptance and remaining dependencies
@@ -59,3 +73,20 @@ verification and limits. Legacy V0 invoice amounts still have no currency field;
 without inventing VND. V1 currency is the server response currency. Patient/staff display selectors
 and cross-context enrichment require their own authorized contracts. No client-side joins.
 Production flag rollout and external payment/provider acceptance are separate release work.
+
+- Currency labels are blocked until Billing or a product decision defines currency semantics.
+  Acceptance: explicit currency/display rule; never assume VND from locale. The ledger-payment
+  form (`FE-BILLING-08`) works around this by asking the cashier for the 3-letter currency code
+  directly instead of assuming VND.
+- Patient display enrichment requires Patient's live contract. Producer: Patient / Hoàng Anh.
+- Lab/Pharmacy references and saga state must come from Billing DTOs/events; do not query or import
+  those frontend features to reconstruct an invoice.
+
+## Contract and verification gate
+
+Verify live controller paths, roles, request validation, monetary serialization, idempotency, and
+saga enums. Java `BigDecimal` responses are display-only numbers in the current frontend; do not
+perform authoritative financial arithmetic in JavaScript.
+
+Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Billing tests when available. Smoke test
+invalid patient UUID, empty/error/retry, pagination, permission denial, and the changed payment flow.

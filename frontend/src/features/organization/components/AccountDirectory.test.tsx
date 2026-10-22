@@ -1,0 +1,35 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, expect, it, vi } from "vitest";
+import { accountContractFixture } from "../contract.fixture";
+const mocks = vi.hoisted(() => ({ accounts: vi.fn(), getSessionKey: vi.fn(() => "session-a") }));
+vi.mock("../api", () => ({ organizationApi: { accounts: mocks.accounts } }));
+vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey }));
+import { AccountDirectory } from "./AccountDirectory";
+const page = { content: [accountContractFixture], totalPages: 2, totalElements: 21, number: 0, size: 20 };
+beforeEach(() => { mocks.accounts.mockReset(); mocks.getSessionKey.mockReturnValue("session-a"); });
+it("retries the failed filtered page, then selects the exact account", async () => {
+  const select = vi.fn();
+  mocks.accounts.mockResolvedValueOnce(page).mockRejectedValueOnce(new Error("Unavailable")).mockResolvedValueOnce({ ...page, number: 1 });
+  render(<AccountDirectory onSelect={select} />);
+  await screen.findByText(accountContractFixture.username);
+  fireEvent.click(screen.getByRole("button", { name: /Trang sau|Sau/ }));
+  await screen.findByRole("alert");
+  fireEvent.change(screen.getByLabelText("Tên đăng nhập"), { target: { value: "unsent-filter" } });
+  fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+  await screen.findByText(accountContractFixture.username);
+  expect(mocks.accounts.mock.calls[2][0]).toEqual(mocks.accounts.mock.calls[1][0]);
+  expect(mocks.accounts.mock.calls[2][0].page).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: `Chọn ${accountContractFixture.username}` }));
+  expect(select).toHaveBeenCalledWith(accountContractFixture);
+});
+it("ignores the old search result after a new filter is submitted", async () => {
+  let resolve!: (value: typeof page) => void;
+  mocks.accounts.mockReturnValueOnce(new Promise(done => { resolve = done; })).mockResolvedValueOnce({ ...page, content: [] });
+  render(<AccountDirectory onSelect={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText("Tên đăng nhập"), { target: { value: "other" } });
+  fireEvent.click(screen.getByRole("button", { name: "Tìm tài khoản" }));
+  await screen.findByText("Không tìm thấy tài khoản.");
+  await act(async () => resolve(page));
+  expect(screen.queryByText(accountContractFixture.username)).not.toBeInTheDocument();
+  await waitFor(() => expect(mocks.accounts).toHaveBeenLastCalledWith({ keyword: "other", role: "", active: undefined, page: 0 }));
+});

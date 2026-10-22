@@ -154,7 +154,7 @@ class AppointmentControllerTest {
     void changeStatus_delegatesRequestedStatus() throws Exception {
         UUID appointmentId = UUID.randomUUID();
         when(manageAppointmentUseCase.changeStatus(
-                appointmentId, AppointmentStatus.ARRIVED))
+                appointmentId, AppointmentStatus.ARRIVED, null))
                 .thenReturn(appointment(appointmentId));
 
         mockMvc.perform(put(BASE_PATH + "/{id}/status", appointmentId)
@@ -164,7 +164,25 @@ class AppointmentControllerTest {
                 .andExpect(status().isOk());
 
         verify(manageAppointmentUseCase)
-                .changeStatus(appointmentId, AppointmentStatus.ARRIVED);
+                .changeStatus(appointmentId, AppointmentStatus.ARRIVED, null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void changeStatus_cancellationPassesReasonToAuditedUseCase() throws Exception {
+        UUID appointmentId = UUID.randomUUID();
+        when(manageAppointmentUseCase.changeStatus(appointmentId, AppointmentStatus.CANCELLED,
+                "patient requested cancellation"))
+                .thenReturn(appointment(appointmentId));
+
+        mockMvc.perform(put(BASE_PATH + "/{id}/status", appointmentId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\",\"reason\":\"patient requested cancellation\"}"))
+                .andExpect(status().isOk());
+
+        verify(manageAppointmentUseCase).changeStatus(appointmentId, AppointmentStatus.CANCELLED,
+                "patient requested cancellation");
     }
 
     @Test

@@ -22,6 +22,17 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  accounts: (params: { keyword?: string; role?: string; active?: boolean; page?: number } = {}) => {
+    const query = new URLSearchParams({ page: String(params.page ?? 0), size: "20" });
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    if (params.role) query.set("role", params.role);
+    if (params.active !== undefined) query.set("active", String(params.active));
+    return api.get<PageResult<AccountDTO>>(`/v1/org/accounts?${query}`);
+  },
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put<boolean>("/v1/org/accounts/me/password", { currentPassword, newPassword }),
+  resetPassword: (accountId: string, newPassword: string) =>
+    api.put<boolean>(`/v1/org/accounts/${encodeURIComponent(accountId)}/password`, { newPassword }),
   departments: (activeOnly = true) =>
     api.get<DepartmentDTO[]>(`/v1/org/departments?activeOnly=${activeOnly}`),
   department: (departmentId: string) =>
@@ -38,7 +49,8 @@ export const organizationApi = {
   },
   staffMember: (staffId: string) =>
     api.get<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`),
-  createStaff: (body: CreateStaffRequest) => api.post<StaffDTO>("/v1/org/staff", body),
+  createStaff: (body: CreateStaffRequest, idempotencyKey: string) =>
+    api.post<StaffDTO>("/v1/org/staff", body, { idempotencyKey }),
   updateStaff: (staffId: string, body: UpdateStaffRequest) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`, body),
   changeStaffDepartment: (staffId: string, newDepartmentId: string) =>
@@ -46,7 +58,8 @@ export const organizationApi = {
       `/v1/org/staff/${encodeURIComponent(staffId)}/department`,
       { newDepartmentId } satisfies ChangeStaffDepartmentRequest,
     ),
-  createAccount: (body: CreateAccountRequest) => api.post<AccountDTO>("/v1/org/accounts", body),
+  createAccount: (body: CreateAccountRequest, idempotencyKey: string) =>
+    api.post<AccountDTO>("/v1/org/accounts", body, { idempotencyKey }),
   updateAccountStatus: (accountId: string, isActive: boolean) =>
     api.put<AccountDTO>(
       `/v1/org/accounts/${encodeURIComponent(accountId)}/status`,

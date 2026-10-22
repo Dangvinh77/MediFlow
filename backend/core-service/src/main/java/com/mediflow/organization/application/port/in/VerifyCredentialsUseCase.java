@@ -13,6 +13,10 @@ public interface VerifyCredentialsUseCase {
             UUID staffId,
             UUID departmentId,
             UUID patientId,
-            Role role) {
+            Role role,
+            long credentialVersion) {
+        public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, Role role) {
+            this(accountId, staffId, departmentId, patientId, role, 0);
+        }
     }
 }

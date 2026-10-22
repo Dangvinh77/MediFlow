@@ -1,6 +1,7 @@
 package com.mediflow.organization.web.controller;
 
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.Role;
@@ -30,6 +31,56 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class AccountControllerSecurityTest {
 
+    private static final String KEYED_BODY = """
+            {"username":"patient.demo","password":"password",
+             "patientId":"00000000-0000-4000-8000-000000000001","role":"PATIENT"}
+            """;
+
+    @Test
+    @WithMockUser(username = "00000000-0000-4000-8000-000000000002", roles = "ADMIN")
+    void keyedCreateUsesSignedActorAndReplaysSameAccount() throws Exception {
+        UUID actor = UUID.fromString("00000000-0000-4000-8000-000000000002");
+        UUID patient = UUID.fromString("00000000-0000-4000-8000-000000000001");
+        var account = com.mediflow.organization.domain.model.Account.create(
+                UUID.randomUUID(), "patient.demo", "hash", null, patient, Role.PATIENT);
+        when(createAccountUseCase.executeWithIdempotency(actor, "account-key", "patient.demo", "password",
+                null, patient, Role.PATIENT))
+                .thenReturn(new CreateAccountUseCase.CreationResult(account, false))
+                .thenReturn(new CreateAccountUseCase.CreationResult(account, true));
+        mockMvc.perform(post("/api/v1/org/accounts").header("Idempotency-Key", "account-key")
+                        .contentType("application/json").content(KEYED_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed", "false"));
+        mockMvc.perform(post("/api/v1/org/accounts").header("Idempotency-Key", "account-key")
+                        .contentType("application/json").content(KEYED_BODY))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed", "true"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.data.accountId").value(account.getAccountId().toString()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.data.passwordHash").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "00000000-0000-4000-8000-000000000002", roles = "ADMIN")
+    void keyedCreateRejectsMalformedKey() throws Exception {
+        mockMvc.perform(post("/api/v1/org/accounts").header("Idempotency-Key", " ")
+                        .contentType("application/json").content(KEYED_BODY))
+                .andExpect(status().isBadRequest());
+        org.mockito.Mockito.verifyNoInteractions(createAccountUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void keyedCreateStillRequiresAdmin() throws Exception {
+        mockMvc.perform(post("/api/v1/org/accounts").header("Idempotency-Key", "account-key")
+                        .contentType("application/json").content(KEYED_BODY))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(createAccountUseCase);
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -41,6 +92,9 @@ class AccountControllerSecurityTest {
 
     @MockBean
     private VerifyCredentialsUseCase verifyCredentialsUseCase;
+
+    @MockBean
+    private LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
 
     @Test
     @WithMockUser(username = "gateway", authorities = "ROLE_SYSTEM_SERVICE")

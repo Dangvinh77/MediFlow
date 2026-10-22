@@ -36,6 +36,9 @@ public final class Appointment {
     private Instant checkedInAt;
     private Instant examinationStartedAt;
     private Instant completedAt;
+    private UUID cancelledBy;
+    private String cancellationReason;
+    private Instant cancelledAt;
     @Getter(AccessLevel.NONE)
     private final Clock clock;
 
@@ -52,7 +55,7 @@ public final class Appointment {
         validateSchedule(date, time, clock);
         return new Appointment(UUID.randomUUID(), patientId, doctorId, departmentId, date, time,
                 AppointmentStatus.PENDING, reason, clock.instant(), null, (short) 0,
-                null, null, null, null, null, null, null, clock);
+                null, null, null, null, null, null, null, null, null, null, clock);
     }
 
     /** Loading history must not reapply the new-appointment 'not in the past' rule. */
@@ -60,7 +63,7 @@ public final class Appointment {
                                       LocalDate date, LocalTime time, AppointmentStatus status,
                                       String reason, Instant createdAt, Instant updatedAt) {
         return restore(id, patientId, doctorId, departmentId, date, time, status, reason, createdAt, updatedAt,
-                (short) 0, null, null, null, null, null, null, null);
+                (short) 0, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static Appointment restore(UUID id, UUID patientId, UUID doctorId, UUID departmentId,
@@ -69,6 +72,18 @@ public final class Appointment {
                                       short careContractVersion, UUID examClearanceId, Instant examClearanceAt,
                                       UUID emergencyOverrideId, String examPriceCode, Instant checkedInAt,
                                       Instant examinationStartedAt, Instant completedAt) {
+        return restore(id, patientId, doctorId, departmentId, date, time, status, reason, createdAt, updatedAt,
+                careContractVersion, examClearanceId, examClearanceAt, emergencyOverrideId, examPriceCode,
+                checkedInAt, examinationStartedAt, completedAt, null, null, null);
+    }
+
+    public static Appointment restore(UUID id, UUID patientId, UUID doctorId, UUID departmentId,
+                                      LocalDate date, LocalTime time, AppointmentStatus status,
+                                      String reason, Instant createdAt, Instant updatedAt,
+                                      short careContractVersion, UUID examClearanceId, Instant examClearanceAt,
+                                      UUID emergencyOverrideId, String examPriceCode, Instant checkedInAt,
+                                      Instant examinationStartedAt, Instant completedAt, UUID cancelledBy,
+                                      String cancellationReason, Instant cancelledAt) {
         validateReferences(patientId, doctorId, departmentId);
         if (careContractVersion != 0 && careContractVersion != 1) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
@@ -85,11 +100,21 @@ public final class Appointment {
             throw new InvalidClinicalDataException("CLINICAL_EXAM_CLEARANCE_REQUIRED",
                     "Exam clearance or emergency override is required");
         }
+        boolean anyCancellationAudit = cancelledBy != null || cancellationReason != null || cancelledAt != null;
+        boolean completeCancellationAudit = cancelledBy != null && cancellationReason != null
+                && !cancellationReason.isBlank() && cancellationReason.length() <= 500 && cancelledAt != null
+                && createdAt != null && !cancelledAt.isBefore(createdAt);
+        if (anyCancellationAudit != completeCancellationAudit
+                || (careContractVersion == 1 && status == AppointmentStatus.CANCELLED && !completeCancellationAudit)
+                || (completeCancellationAudit
+                && (careContractVersion != 1 || status != AppointmentStatus.CANCELLED))) {
+            throw invalidCancellation();
+        }
         return new Appointment(Objects.requireNonNull(id), patientId, doctorId, departmentId,
                 Objects.requireNonNull(date), Objects.requireNonNull(time), Objects.requireNonNull(status),
                 reason, Objects.requireNonNull(createdAt), updatedAt, careContractVersion, examClearanceId,
                 examClearanceAt, emergencyOverrideId, examPriceCode, checkedInAt, examinationStartedAt,
-                completedAt, Clock.systemDefaultZone());
+                completedAt, cancelledBy, cancellationReason, cancelledAt, Clock.systemDefaultZone());
     }
 
     public void update(LocalDate date, LocalTime time, String reason) {
@@ -209,6 +234,24 @@ public final class Appointment {
         updatedAt = at;
     }
 
+    /** Records the terminal, auditable V1 cancellation fact used by Billing before a refund. */
+    public void cancelCareFinance(String cancellationReason, UUID cancelledBy, Instant at) {
+        if (careContractVersion != 1
+                || (status != AppointmentStatus.AWAITING_PAYMENT
+                && status != AppointmentStatus.READY_FOR_EXAM
+                && status != AppointmentStatus.IN_EXAM)
+                || cancelledBy == null || cancellationReason == null || cancellationReason.isBlank()
+                || cancellationReason.length() > 500 || at == null || at.isBefore(createdAt)
+                || at.isAfter(clock.instant())) {
+            throw invalidCancellation();
+        }
+        status = AppointmentStatus.CANCELLED;
+        this.cancelledBy = cancelledBy;
+        this.cancellationReason = cancellationReason;
+        this.cancelledAt = at;
+        updatedAt = at;
+    }
+
     /** BR-R4 compatibility helper. */
     public void markArrived() {
         changeStatus(AppointmentStatus.ARRIVED);
@@ -221,6 +264,11 @@ public final class Appointment {
     private static boolean isCareFinanceState(AppointmentStatus value) {
         return value == AppointmentStatus.AWAITING_PAYMENT || value == AppointmentStatus.READY_FOR_EXAM
                 || value == AppointmentStatus.IN_EXAM || value == AppointmentStatus.COMPLETED;
+    }
+
+    private static InvalidClinicalDataException invalidCancellation() {
+        return new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                "Only an active V1 outpatient examination may be cancelled with a reason and authenticated actor");
     }
 
     private static void validateReferences(UUID patientId, UUID doctorId, UUID departmentId) {
