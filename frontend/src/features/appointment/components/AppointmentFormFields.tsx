@@ -1,3 +1,4 @@
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import type {
   AppointmentFieldErrors,
   AppointmentFormField,
@@ -28,40 +29,40 @@ export function AppointmentFormFields({
     <div className="grid gap-5 md:grid-cols-2">
       {includeReferences ? (
         <>
-          <FormField label="Mã bệnh nhân" name="patientId" error={errors.patientId} required hint="Nhập UUID từ hồ sơ bệnh nhân.">
-            <input
+          <FormField label="Mã bệnh nhân" name="patientId" error={errors.patientId} required hint="Tìm và chọn đúng bệnh nhân theo tên và ngày sinh.">
+            <ReferenceInput kind="patient"
               {...accessibility("patientId")}
               id="patientId"
               value={values.patientId}
               disabled={disabled}
               autoComplete="off"
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              onChange={(event) => onChange("patientId", event.target.value)}
+              onValueChange={(selectedId) => onChange("patientId", selectedId)}
               className={inputClass(Boolean(errors.patientId))}
             />
           </FormField>
-          <FormField label="Mã bác sĩ" name="doctorId" error={errors.doctorId} required hint="Nhập UUID nhân sự bác sĩ.">
-            <input
-              {...accessibility("doctorId")}
-              id="doctorId"
-              value={values.doctorId}
-              disabled={disabled}
-              autoComplete="off"
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              onChange={(event) => onChange("doctorId", event.target.value)}
-              className={inputClass(Boolean(errors.doctorId))}
-            />
-          </FormField>
-          <FormField label="Mã khoa" name="departmentId" error={errors.departmentId} required hint="Nhập UUID khoa tiếp nhận.">
-            <input
+          <FormField label="Mã khoa" name="departmentId" error={errors.departmentId} required hint="Tìm khoa theo tên hoặc tên viết tắt.">
+            <ReferenceInput kind="department"
               {...accessibility("departmentId")}
               id="departmentId"
               value={values.departmentId}
               disabled={disabled}
               autoComplete="off"
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              onChange={(event) => onChange("departmentId", event.target.value)}
+              onValueChange={(selectedId) => { onChange("departmentId", selectedId); onChange("doctorId", ""); }}
               className={inputClass(Boolean(errors.departmentId))}
+            />
+          </FormField>
+          <FormField label="Mã bác sĩ" name="doctorId" error={errors.doctorId} required hint="Chọn bác sĩ trong khoa tiếp nhận.">
+            <ReferenceInput kind="doctor" scope={values.departmentId}
+              {...accessibility("doctorId")}
+              id="doctorId"
+              value={values.doctorId}
+              disabled={disabled}
+              autoComplete="off"
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              onValueChange={(selectedId) => onChange("doctorId", selectedId)}
+              className={inputClass(Boolean(errors.doctorId))}
             />
           </FormField>
         </>

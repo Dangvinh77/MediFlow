@@ -65,7 +65,7 @@ describe("RefundDueLookup", () => {
    expect(screen.getByRole("checkbox")).not.toBeChecked();
    mocks.recordRefund.mockResolvedValue({ refundTransactionId: "receipt-2", status: "COMPLETED", amount: 25.5, currency: "USD" });
    submitRefund();
-   expect(await screen.findByText(/receipt-2/)).toBeVisible();
+   expect(await screen.findByText(/receipt-2/)).not.toBeVisible();
    expect(screen.getAllByText(/Đã ghi nhận hoàn tiền/)).toHaveLength(2);
    expect(mocks.recordRefund.mock.calls[1][1].idempotencyKey).not.toBe(mocks.recordRefund.mock.calls[0][1].idempotencyKey);
  });

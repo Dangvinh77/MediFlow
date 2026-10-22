@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { useCallback, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -86,7 +88,7 @@ export function RevenueReport() {
           <input id="revenue-to-date" required type="date" min={fromDate || undefined} value={toDate} onChange={(event) => setToDate(event.target.value)} className={controlClassName} />
         </Field>
         <Field label="Khoa (tuỳ chọn)" htmlFor="revenue-department-id" hint="Để trống xem mọi khoa.">
-          <input id="revenue-department-id" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="UUID khoa" className={controlClassName} />
+          <ReferenceInput kind="department" id="revenue-department-id" value={departmentId} onValueChange={(selectedId) => setDepartmentId(selectedId)} placeholder="UUID khoa" className={controlClassName} />
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
       </form>
@@ -116,7 +118,7 @@ export function RevenueReport() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.departmentId} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-mono text-xs">{row.departmentId}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={row.departmentId} fallback="Khoa" /></td>
                   <td className="px-4 py-3">{row.invoiceCount}</td>
                   <td className="px-4 py-3 font-medium">{formatDecimal(row.totalRevenue)}</td>
                 </tr>

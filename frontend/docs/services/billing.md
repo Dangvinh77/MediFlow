@@ -54,13 +54,13 @@ ADMIN/CASHIER, with backend authorization authoritative.
 
 - `FE-BILLING-01/02` — DONE: exact invoice DTO, create/detail/fee flows.
 - `FE-BILLING-03` — DONE for implemented MVP payment and prescription refund recording.
-- `FE-BILLING-04` — **CORRECTION 2026-10-22:** this was marked DONE by Vinh's 2026-10-20 closeout,
-  but verified directly against code on that date: `RevenueReport.tsx` had zero test coverage
-  (no component test, no `api.test.ts` coverage of `revenueByDepartment`); `InvoiceForm.tsx` and
-  `OutboxReplayForm.tsx` only had the two safety-focused cases in `BillingCommands.test.tsx`, not
-  full component coverage. `InvoiceDetail`, `InvoiceLookup`, `LedgerPaymentForm`,
-  `PaymentRequestLookupForm`, `RefundDueLookup` did have real component tests. Lộc is closing this
-  gap now — see the dated workboard entry for current status.
+- `FE-BILLING-04` — **Lộc, source recheck 2026-10-22:** current tracked source has dedicated
+  `RevenueReport.test.tsx`, `InvoiceForm.test.tsx` and `OutboxReplayForm.test.tsx`, alongside
+  the existing command, invoice, payment and refund suites. The earlier handoff's missing-test
+  description is historical and must not assign those files as new work again. This reference UI
+  change reruns the component suites and preserves duplicate/uncertain command safeguards.
+  Current verification is recorded in the [reference UI plan](../../../docs/superpowers/plans/2026-10-22-frontend-human-readable-references.md);
+  full signed-runtime/coverage acceptance remains a distinct owner checkpoint.
 - `FE-BILLING-05/06` — DONE: existing revenue and outbox routes; replay feedback hardened.
 - `FE-BILLING-07` — DONE for prescription adjustment/refund (Vinh's `RefundDueLookup`); Surgery
   remains deferred from MVP.
@@ -74,10 +74,9 @@ without inventing VND. V1 currency is the server response currency. Patient/staf
 and cross-context enrichment require their own authorized contracts. No client-side joins.
 Production flag rollout and external payment/provider acceptance are separate release work.
 
-- Currency labels are blocked until Billing or a product decision defines currency semantics.
-  Acceptance: explicit currency/display rule; never assume VND from locale. The ledger-payment
-  form (`FE-BILLING-08`) works around this by asking the cashier for the 3-letter currency code
-  directly instead of assuming VND.
+- Legacy V0 currency labels are blocked until Billing or a product decision defines currency
+  semantics. Acceptance: explicit currency/display rule; never assume VND from locale.
+  `FE-BILLING-08` already uses the V1 response currency; do not reopen free-text currency input.
 - Patient display enrichment requires Patient's live contract. Producer: Patient / Hoàng Anh.
 - Lab/Pharmacy references and saga state must come from Billing DTOs/events; do not query or import
   those frontend features to reconstruct an invoice.

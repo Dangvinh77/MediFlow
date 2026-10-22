@@ -19,7 +19,7 @@ describe("InvoiceLookup", () => {
    expect(screen.getByText("Hoàn tất")).toBeVisible();
    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "unsubmitted-draft" } });
    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
-   expect(await screen.findByText("invoice-2")).toBeVisible();
+   expect(await screen.findByRole("link", { name: /Hóa đơn/ })).toHaveAttribute("href", "/billing/invoice-2");
    expect(mocks.byPatient).toHaveBeenLastCalledWith(patient, 1, 20);
    expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
  });

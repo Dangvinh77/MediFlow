@@ -75,13 +75,13 @@ describe("InvoiceDetail", () => {
     const nextInvoice = deferred<InvoiceDTO>();
     mocks.getById.mockResolvedValueOnce(invoice(firstId, 100)).mockReturnValueOnce(nextInvoice.promise).mockResolvedValue(invoice(secondId, 200));
     const view = render(<InvoiceDetail invoiceId={firstId} />);
-    expect(await screen.findByText(firstId)).toBeVisible();
+    expect(await screen.findByText(firstId)).not.toBeVisible();
 
     view.rerender(<InvoiceDetail invoiceId={secondId} />);
 
     expect(screen.queryByText(firstId)).not.toBeInTheDocument();
     await act(async () => nextInvoice.resolve(invoice(secondId, 200)));
-    expect(await screen.findByText(secondId)).toBeVisible();
+    expect(await screen.findByText(secondId)).not.toBeVisible();
   });
 
   it("does not offer blind retry after an invoice payment response is uncertain", async () => {
@@ -105,14 +105,14 @@ describe("InvoiceDetail", () => {
     mocks.getById.mockReturnValueOnce(oldRead.promise).mockResolvedValueOnce(invoice(secondId, 200)).mockResolvedValue(invoice(secondId, 200));
     const view = render(<InvoiceDetail invoiceId={firstId} />);
     view.rerender(<InvoiceDetail invoiceId={secondId} />);
-    expect(await screen.findByText(secondId)).toBeVisible();
+    expect(await screen.findByText(secondId)).not.toBeVisible();
 
     act(() => storeSession({ accessToken: "session-b", refreshToken: "refresh-b", role: "CASHIER" }));
-    expect(await screen.findByText(secondId)).toBeVisible();
+    expect(await screen.findByText(secondId)).not.toBeVisible();
     await act(async () => oldRead.reject(new ApiRequestError("Expired old token", 401)));
 
     expect(mocks.router.replace).not.toHaveBeenCalled();
-    expect(screen.getByText(secondId)).toBeVisible();
+    expect(screen.getByText(secondId)).not.toBeVisible();
   });
 
   it("locks synchronously while a payment request is in flight", async () => {

@@ -1,5 +1,12 @@
 # Registry bàn giao backend MVP
 
+## Frontend tra cứu tên — 22/10/2026
+
+- [Core reference directory handoff](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md):
+  cần contract tối thiểu đúng quyền cho CASHIER/LAB_TECH/PATIENT và tìm tên nhân viên.
+  Frontend Vinh/Lộc đã dùng API hiện có cho các vai trò được phép; chưa đóng chọn tên
+  cho mọi vai trò. Không mở rộng quyền PatientDTO chỉ để phục vụ dropdown.
+
 ## Docker recheck — 20/10/2026
 
 Audit xác nhận **5 nhóm lỗi**: JWT fallback Billing/Notification và Lab outbox starvation thuộc

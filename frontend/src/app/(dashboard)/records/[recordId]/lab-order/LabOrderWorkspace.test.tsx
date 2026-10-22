@@ -82,7 +82,7 @@ describe("Clinical and Lab order workspace composition", () => {
     expect(await screen.findByRole("heading", { name: "1. Lập chỉ định xét nghiệm" })).toBeVisible();
     await act(async () => pending.resolve(sourceOrder));
 
-    expect(screen.queryByText(`Mã chỉ định: ${sourceOrder.sourceOrderId}`)).not.toBeInTheDocument();
+    expect(screen.queryByText(sourceOrder.sourceOrderId)).not.toBeInTheDocument();
     expect(mocks.createLabRequest).not.toHaveBeenCalled();
   });
 
@@ -90,11 +90,11 @@ describe("Clinical and Lab order workspace composition", () => {
     mocks.createLabOrder.mockResolvedValue(sourceOrder);
     const view = render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
     await act(async () => startClinicalOrder());
-    expect(await screen.findByText(`Mã chỉ định: ${sourceOrder.sourceOrderId}`)).toBeVisible();
+    expect(await screen.findByText(sourceOrder.sourceOrderId)).not.toBeVisible();
 
     act(() => storeSession({ accessToken: "session-b", refreshToken: "refresh-b", role: "DOCTOR" }));
     expect(await screen.findByRole("heading", { name: "1. Lập chỉ định xét nghiệm" })).toBeVisible();
-    expect(screen.queryByText(`Mã chỉ định: ${sourceOrder.sourceOrderId}`)).not.toBeInTheDocument();
+    expect(screen.queryByText(sourceOrder.sourceOrderId)).not.toBeInTheDocument();
     expect(view.container).not.toHaveTextContent(sourceOrder.patientId);
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
@@ -94,7 +95,7 @@ function RefundDueLookupSession() {
       <Button type="submit" loading={busy} disabled={result !== null}>Tra cứu nghĩa vụ hoàn tiền</Button>
     </form>
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {receipts.map((receipt) => <p key={receipt.refundTransactionId} role="status" className="rounded-lg border border-border p-4">Đã ghi nhận hoàn tiền {formatDecimal(receipt.amount)} {receipt.currency}: <span className="font-mono">{receipt.refundTransactionId}</span></p>)}
+    {receipts.map((receipt) => <p key={receipt.refundTransactionId} role="status" className="rounded-lg border border-border p-4">Đã ghi nhận hoàn tiền {formatDecimal(receipt.amount)} {receipt.currency}: <span className="font-mono"><ReferenceText value={receipt.refundTransactionId} fallback="Giao dịch hoàn tiền" /></span></p>)}
     {result ? <div className="space-y-4"><p className="text-sm">Trạng thái điều chỉnh: {result.status}{result.rejectionCode ? ` — ${result.rejectionCode}` : ""}</p>
       {busy ? <p role="status">Đang cập nhật nghĩa vụ hoàn tiền…</p> : null}
       {refreshError ? <div className="space-y-2"><p role="alert" className="text-sm text-danger">Đã giữ biên nhận hoàn tiền. Chưa cập nhật được nghĩa vụ: {refreshError}</p><Button type="button" onClick={() => void refresh()}>Tải lại nghĩa vụ hoàn tiền</Button></div> : null}
@@ -135,11 +136,11 @@ function RefundForm({ due, blocked, onStart, onRejected, onRefunded }: {
   }
   return <form onSubmit={submit} noValidate className="max-w-xl space-y-4 rounded-lg border border-border p-4">
     <p>Nghĩa vụ theo Billing: <strong>{formatDecimal(due.amount)} {due.currency}</strong></p>
-    <p className="break-all font-mono text-xs">Giao dịch gốc: {due.originalTransactionId}</p>
+    <p><ReferenceText value={due.originalTransactionId} fallback="Giao dịch gốc" /></p>
     <p className="text-sm text-muted-foreground">Chỉ ghi nhận tiền đã thực tế hoàn cho người bệnh. Thao tác này không chuyển tiền qua ngân hàng.</p>
     <CommandFeedback error={command.error} uncertain={command.uncertain} />
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {result && result.status !== "COMPLETED" ? <p role="status">Chưa xác nhận hoàn tất; cần đối soát giao dịch: <span className="font-mono">{result.refundTransactionId}</span></p> : null}
+    {result && result.status !== "COMPLETED" ? <p role="status">Chưa xác nhận hoàn tất; cần đối soát giao dịch: <span className="font-mono"><ReferenceText value={result.refundTransactionId} fallback="Giao dịch hoàn tiền" /></span></p> : null}
     <Field label="Số tiền đã hoàn" htmlFor={`refund-amount-${due.originalTransactionId}`} required><input id={`refund-amount-${due.originalTransactionId}`} inputMode="decimal" value={amount} disabled={disabled} onChange={(event) => setAmount(event.target.value)} className={controlClassName} /></Field>
     <Field label="Lý do" htmlFor={`refund-reason-${due.originalTransactionId}`} required><textarea id={`refund-reason-${due.originalTransactionId}`} maxLength={500} value={reason} disabled={disabled} onChange={(event) => setReason(event.target.value)} className={controlClassName} /></Field>
     <Field label="Hình thức hoàn" htmlFor={`refund-method-${due.originalTransactionId}`}><select id={`refund-method-${due.originalTransactionId}`} disabled={disabled} value={method} onChange={(event) => setMethod(event.target.value as LedgerPaymentMethod)} className={controlClassName}><option value="CASH">Tiền mặt</option><option value="TRANSFER">Chuyển khoản</option></select></Field>

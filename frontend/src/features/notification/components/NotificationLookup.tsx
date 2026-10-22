@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -160,12 +162,12 @@ function LookupWorkspace() {
           >
             Mã bệnh nhân
           </label>
-          <input
+          <ReferenceInput kind="patient"
             ref={inputRef}
             id="notification-patient-id"
             value={patientId}
-            onChange={(event) => {
-              setPatientId(event.target.value);
+            onValueChange={(selectedId) => {
+              setPatientId(selectedId);
               setValidationError(null);
             }}
             placeholder="Nhập UUID bệnh nhân"
@@ -222,7 +224,7 @@ function LookupWorkspace() {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Kết quả tra cứu thông báo</h2>
-            <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: {activePatientId}</p>
+            <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: <ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p>
           </div>
           <button type="button" onClick={() => void loadNotifications(lastRequest.patientId, lastRequest.page)}
             className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">

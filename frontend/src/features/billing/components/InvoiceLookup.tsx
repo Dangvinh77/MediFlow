@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -142,11 +144,11 @@ export function InvoiceLookup() {
           <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium">
             Mã bệnh nhân
           </label>
-          <input
+          <ReferenceInput kind="patient"
             id="billing-patient-id"
             value={patientId}
-            onChange={(event) => {
-              setPatientId(event.target.value);
+            onValueChange={(selectedId) => {
+              setPatientId(selectedId);
               setValidationError(null);
             }}
             placeholder="Nhập UUID bệnh nhân"
@@ -213,7 +215,7 @@ export function InvoiceLookup() {
                   return (
                     <tr key={invoice.invoiceId} className="border-b border-border align-top last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(invoice.createdDate)}</td>
-                      <td className="px-4 py-3 font-mono text-xs"><Link href={`/billing/${invoice.invoiceId}`} className="text-primary hover:underline">{invoice.invoiceId}</Link></td>
+                      <td className="px-4 py-3 font-mono text-xs"><Link href={`/billing/${invoice.invoiceId}`} className="text-primary hover:underline"><ReferenceText value={invoice.invoiceId} fallback={`Hóa đơn ${formatLocalDate(invoice.createdDate)}`} technical={false} /></Link></td>
                       <td className="px-4 py-3 font-medium">{formatDecimal(invoice.totalAmount)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge tone={invoice.isPaid ? "success" : "warning"}>

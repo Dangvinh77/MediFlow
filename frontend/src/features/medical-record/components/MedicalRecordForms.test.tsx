@@ -26,8 +26,8 @@ function deferred<T>() {
 
 function fillCreateRecord() {
   fireEvent.change(screen.getByLabelText("Mã bệnh nhân", { exact: false }), { target: { value: record.patientId } });
-  fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: record.doctorId } });
   fireEvent.change(screen.getByLabelText("Mã khoa", { exact: false }), { target: { value: record.departmentId } });
+  fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: record.doctorId } });
   fireEvent.change(screen.getByLabelText("Ngày khám", { exact: false }), { target: { value: record.examinationDate } });
   fireEvent.change(screen.getByLabelText("Tên chẩn đoán", { exact: false }), { target: { value: "Acute condition" } });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { FinancialStatus } from "./FinancialStatus";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -178,10 +180,10 @@ export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: bo
           <label htmlFor="lab-department" className="mb-1 block text-sm font-medium">
             Mã khoa
           </label>
-          <input
+          <ReferenceInput kind="department"
             id="lab-department"
             value={departmentId}
-            onChange={(event) => setDepartmentId(event.target.value)}
+            onValueChange={(selectedId) => setDepartmentId(selectedId)}
             placeholder="UUID khoa"
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
@@ -309,8 +311,8 @@ export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: bo
                           </Link>
                         ) : test.labType}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs">{test.patientId}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{test.recordId}</td>
+                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="patient" value={test.patientId} fallback="Bệnh nhân" /></td>
+                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="record" value={test.recordId} fallback="Hồ sơ khám" /></td>
                       <td className="px-4 py-3">
                         <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
                       </td>

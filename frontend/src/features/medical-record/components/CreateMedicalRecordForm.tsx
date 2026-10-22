@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -117,17 +118,17 @@ export function CreateMedicalRecordForm() {
         />
       ) : null}
       <div className="grid gap-5 md:grid-cols-2">
-        <RecordInput label="Mã bệnh nhân" name="patientId" error={fieldErrors.patientId} required hint="UUID bệnh nhân đã được Patient xác nhận.">
-          <input {...field("patientId")} id="patientId" value={values.patientId} disabled={submitting} onChange={(event) => updateField("patientId", event.target.value)} className={inputClass(Boolean(fieldErrors.patientId))} />
-        </RecordInput>
-        <RecordInput label="Mã bác sĩ" name="doctorId" error={fieldErrors.doctorId} required hint="Bác sĩ phải thuộc đúng khoa.">
-          <input {...field("doctorId")} id="doctorId" value={values.doctorId} disabled={submitting} onChange={(event) => updateField("doctorId", event.target.value)} className={inputClass(Boolean(fieldErrors.doctorId))} />
+        <RecordInput label="Mã bệnh nhân" name="patientId" error={fieldErrors.patientId} required hint="Chọn bệnh nhân từ hồ sơ đã đăng ký.">
+          <ReferenceInput kind="patient" {...field("patientId")} id="patientId" value={values.patientId} disabled={submitting} onValueChange={(selectedId) => { updateField("patientId", selectedId); updateField("appointmentId", ""); }} className={inputClass(Boolean(fieldErrors.patientId))} />
         </RecordInput>
         <RecordInput label="Mã khoa" name="departmentId" error={fieldErrors.departmentId} required>
-          <input {...field("departmentId")} id="departmentId" value={values.departmentId} disabled={submitting} onChange={(event) => updateField("departmentId", event.target.value)} className={inputClass(Boolean(fieldErrors.departmentId))} />
+          <ReferenceInput kind="department" {...field("departmentId")} id="departmentId" value={values.departmentId} disabled={submitting} onValueChange={(selectedId) => { updateField("departmentId", selectedId); updateField("doctorId", ""); }} className={inputClass(Boolean(fieldErrors.departmentId))} />
+        </RecordInput>
+        <RecordInput label="Mã bác sĩ" name="doctorId" error={fieldErrors.doctorId} required hint="Bác sĩ phải thuộc đúng khoa.">
+          <ReferenceInput kind="doctor" scope={values.departmentId} {...field("doctorId")} id="doctorId" value={values.doctorId} disabled={submitting} onValueChange={(selectedId) => updateField("doctorId", selectedId)} className={inputClass(Boolean(fieldErrors.doctorId))} />
         </RecordInput>
         <RecordInput label="Mã lịch hẹn" name="appointmentId" error={fieldErrors.appointmentId} hint="Không bắt buộc. Nếu có, backend cập nhật lịch hẹn trong cùng giao dịch.">
-          <input {...field("appointmentId")} id="appointmentId" value={values.appointmentId} disabled={submitting} onChange={(event) => updateField("appointmentId", event.target.value)} className={inputClass(Boolean(fieldErrors.appointmentId))} />
+          <ReferenceInput kind="appointment" scope={values.patientId} {...field("appointmentId")} id="appointmentId" value={values.appointmentId} disabled={submitting} onValueChange={(selectedId) => updateField("appointmentId", selectedId)} className={inputClass(Boolean(fieldErrors.appointmentId))} />
         </RecordInput>
         <RecordInput label="Ngày khám" name="examinationDate" error={fieldErrors.examinationDate} required>
           <input {...field("examinationDate")} id="examinationDate" type="date" max={today} value={values.examinationDate} disabled={submitting} onChange={(event) => updateField("examinationDate", event.target.value)} className={inputClass(Boolean(fieldErrors.examinationDate))} />

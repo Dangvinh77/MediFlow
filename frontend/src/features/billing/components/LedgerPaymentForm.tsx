@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -115,12 +116,12 @@ function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLock
       ) : null}
       {result?.status === "COMPLETED" ? (
         <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          Thanh toán thành công. Mã giao dịch: <span className="font-mono">{result.transactionId}</span>
+          Thanh toán thành công. Mã giao dịch: <span className="font-mono"><ReferenceText value={result.transactionId} fallback="Giao dịch" /></span>
         </p>
       ) : null}
       {result?.status === "PENDING" ? (
         <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-          Giao dịch đang chờ xác nhận. Mã giao dịch: <span className="font-mono">{result.transactionId}</span>
+          Giao dịch đang chờ xác nhận. Mã giao dịch: <span className="font-mono"><ReferenceText value={result.transactionId} fallback="Giao dịch" /></span>
         </p>
       ) : null}
       {result && result.status !== "COMPLETED" ? (

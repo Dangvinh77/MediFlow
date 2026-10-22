@@ -6,7 +6,7 @@ belong in [`docs/handoffs/README.md`](../../../docs/handoffs/README.md).
 
 ## Active handoffs
 
-- [Review 3 — hiển thị tên bệnh nhân, bác sĩ và khoa thay UUID](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md): Hoàng Anh đối chiếu identity contract/quyền đọc; Vinh điều phối shared và các consumer nhận theo ownership. ACTIVE; Huy đã code web Pharmacy/Report và mobile Pharmacy, chờ nghiệm thu Gateway/ảnh mới. Consumer của owner khác vẫn theo tiến độ riêng.
+- [Review 3 — hiển thị tên bệnh nhân, bác sĩ và khoa thay UUID](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md): Hoàng Anh đối chiếu identity contract/quyền đọc; Vinh điều phối shared và các consumer nhận theo ownership. ACTIVE; Huy đã code web Pharmacy/Report và mobile Pharmacy, chờ nghiệm thu Gateway/ảnh mới. Vinh/Lộc đã có implementation selector/nhãn trong Clinical/Lab/Billing/Notification; còn chờ nghiệm thu Gateway/ảnh mới và contract tên cho role thiếu quyền.
 
 | Handoff | Producer owner | Consumer owner | Unblocks |
 |---|---|---|---|

@@ -1,5 +1,21 @@
 # Frontend Service: Notification
 
+## Current owner queue update — 2026-10-22
+
+Lộc resumes active frontend ownership of Notification and Billing. Vinh's 20–21/10 client
+completion and Huy's earlier Support FE assignment are dated task delegations, not a transfer
+of canonical ownership. Vinh owns the Notification backend; frontend owner remains Lộc.
+
+`FE-NOTIFICATION-01/02/04` retain their completed implemented/signed IN_APP scope.
+`FE-NOTIFICATION-03` remains BLOCKED pending a live resend/read-state contract from backend
+owner Vinh. Resume with Lộc only after endpoint, DTO, roles, errors and retry/idempotency
+semantics are confirmed; this queue does not authorize adding unsupported commands.
+
+The [21/10 Huy closeout](../evidence/huy-six-service/2026-10-21-close/README.md) supersedes older
+HF6-14/refund-intake blockers below for the isolated test candidate. Do not assign those
+completed checks again. EMAIL/SMS provider certification and production rollout remain separate.
+See the [current Vinh/Lộc task table](../frontend-workboard.md) for execution priority.
+
 ## Signed closeout — 2026-10-20
 
 Vinh's delegated Vinh/Lộc closeout preserves the existing Notification implementation and Huy's

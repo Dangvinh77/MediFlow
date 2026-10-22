@@ -29,7 +29,7 @@ describe("RevenueReport", () => {
     submit();
 
     const table = await screen.findByRole("table");
-    expect(within(table).getByText(deptA)).toBeVisible();
+    expect(within(table).getByText(deptA)).not.toBeVisible();
     expect(within(table).getByText(formatDecimal(1250.5))).toBeVisible();
     expect(within(table).getByText(formatDecimal(500))).toBeVisible();
     // footer sums invoice count (4) and revenue (1750.5) from server rows, not recomputed client totals
@@ -87,7 +87,7 @@ describe("RevenueReport", () => {
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
 
     const table = await screen.findByRole("table");
-    expect(within(table).getByText(deptA)).toBeVisible();
+    expect(within(table).getByText(deptA)).not.toBeVisible();
     expect(mocks.revenueByDepartment).toHaveBeenCalledTimes(2);
   });
 

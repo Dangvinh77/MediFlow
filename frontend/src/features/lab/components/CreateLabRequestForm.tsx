@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -101,14 +102,14 @@ export function CreateLabRequestForm() {
         Yêu cầu này dùng hợp đồng tương thích hiện hành. Trình duyệt không suy luận trạng thái thanh toán hoặc tự tạo quyền tài chính.
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Field label="Mã hồ sơ khám" name="recordId" error={fieldErrors.recordId} required hint="UUID hồ sơ Clinical đã phê duyệt.">
-          <input id="recordId" value={values.recordId} disabled={submitting} onChange={(event) => updateField("recordId", event.target.value)} className={inputClass(Boolean(fieldErrors.recordId))} aria-invalid={fieldErrors.recordId ? true : undefined} aria-describedby={fieldErrors.recordId ? "recordId-error" : undefined} />
-        </Field>
         <Field label="Mã bệnh nhân" name="patientId" error={fieldErrors.patientId} required>
-          <input id="patientId" value={values.patientId} disabled={submitting} onChange={(event) => updateField("patientId", event.target.value)} className={inputClass(Boolean(fieldErrors.patientId))} aria-invalid={fieldErrors.patientId ? true : undefined} aria-describedby={fieldErrors.patientId ? "patientId-error" : undefined} />
+          <ReferenceInput kind="patient" id="patientId" value={values.patientId} disabled={submitting} onValueChange={(selectedId) => { updateField("patientId", selectedId); updateField("recordId", ""); }} className={inputClass(Boolean(fieldErrors.patientId))} aria-invalid={fieldErrors.patientId ? true : undefined} aria-describedby={fieldErrors.patientId ? "patientId-error" : undefined} />
+        </Field>
+        <Field label="Mã hồ sơ khám" name="recordId" error={fieldErrors.recordId} required hint="Chọn bệnh nhân trước, sau đó chọn hồ sơ khám.">
+          <ReferenceInput kind="record" scope={values.patientId} id="recordId" value={values.recordId} disabled={submitting} onValueChange={(selectedId) => updateField("recordId", selectedId)} className={inputClass(Boolean(fieldErrors.recordId))} aria-invalid={fieldErrors.recordId ? true : undefined} aria-describedby={fieldErrors.recordId ? "recordId-error" : undefined} />
         </Field>
         <Field label="Mã khoa yêu cầu" name="requestingDepartmentId" error={fieldErrors.requestingDepartmentId} required>
-          <input id="requestingDepartmentId" value={values.requestingDepartmentId} disabled={submitting} onChange={(event) => updateField("requestingDepartmentId", event.target.value)} className={inputClass(Boolean(fieldErrors.requestingDepartmentId))} aria-invalid={fieldErrors.requestingDepartmentId ? true : undefined} aria-describedby={fieldErrors.requestingDepartmentId ? "requestingDepartmentId-error" : undefined} />
+          <ReferenceInput kind="department" id="requestingDepartmentId" value={values.requestingDepartmentId} disabled={submitting} onValueChange={(selectedId) => updateField("requestingDepartmentId", selectedId)} className={inputClass(Boolean(fieldErrors.requestingDepartmentId))} aria-invalid={fieldErrors.requestingDepartmentId ? true : undefined} aria-describedby={fieldErrors.requestingDepartmentId ? "requestingDepartmentId-error" : undefined} />
         </Field>
         <Field label="Loại xét nghiệm" name="labType" error={fieldErrors.labType} required hint={`${values.labType.length}/50 ký tự`}>
           <input id="labType" value={values.labType} maxLength={50} disabled={submitting} onChange={(event) => updateField("labType", event.target.value)} className={inputClass(Boolean(fieldErrors.labType))} aria-invalid={fieldErrors.labType ? true : undefined} aria-describedby={fieldErrors.labType ? "labType-error" : undefined} />

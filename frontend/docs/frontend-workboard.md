@@ -1,5 +1,49 @@
 # Frontend Workboard
 
+## Hiển thị tên và bộ chọn tham chiếu — 2026-10-22
+
+Task `FE-REF-01` (Vinh shared/Clinical/Lab, Lộc Billing/Notification): đã có local
+implementation tìm/chọn Patient, bác sĩ, khoa, hồ sơ/lịch hẹn bằng public read API;
+request vẫn gửi ID từ server. Đổi khoa xóa bác sĩ, đổi bệnh nhân xóa hồ sơ/lịch hẹn
+phụ thuộc; kết quả tìm kiếm cũ và nhãn phiên cũ không được dùng lại.
+
+Bảng/chi tiết hiển thị tên hoặc nhãn nghiệp vụ/ngày khi có dữ liệu. UUID để trong
+“Thông tin kỹ thuật” đóng mặc định, mở lại khi cần đối soát. Không suy tên khi thiếu
+quyền hoặc tải thất bại. Cache chỉ sống trong dashboard session.
+
+**Còn mở:** các vai trò chưa có Patient/Organization read dùng fallback thu gọn;
+financial source/event/transaction, đợt chăm sóc và đơn thuốc chưa có đủ lookup
+contract. [Backend handoff](../../docs/handoffs/HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md).
+Staff và lịch hẹn lọc trong từng trang vì API không có keyword; UI giải thích và có
+Trang trước/Trang sau. Chưa đánh DONE toàn bộ selector hoặc signed-role runtime.
+
+Kiểm chứng của đợt sửa này ghi tại
+[implementation plan](../../docs/superpowers/plans/2026-10-22-frontend-human-readable-references.md).
+Các task kiểm thử rộng và resend/read-state dưới đây vẫn là việc riêng.
+
+## Task hiện hành — Vinh/Lộc frontend, đồng bộ 2026-10-22
+
+Áp dụng cập nhật bàn giao Billing/Notification ngày 22/10 bên dưới và
+[ownership canonical](../../docs/ai/15-frontend-ownership.md). Bảng này thay các trạng thái
+OPEN/IN PROGRESS lịch sử của Vinh bên dưới trong phạm vi đã có evidence 20/10;
+không biến kết quả kiểm thử cũ thành kết quả trên revision hiện tại.
+
+| Dev | Task | Trạng thái hiện hành / việc tiếp theo | Điều kiện đóng hoặc giới hạn |
+|---|---|---|---|
+| Vinh | `FE-VINH-MVP-01`, `FE-CLINICAL-04`, `FE-LAB-04` | DONE trong phạm vi DTO/API, role/session và regression/runtime ngoại trú đã nghiệm thu 20/10 | [Evidence](evidence/vinh-loc/2026-10-20/README.md); enrichment/selectors ngoài contract chưa được chứng nhận |
+| Vinh | `FE-VINH-MVP-02`, `FE-CLINICAL-05` | DONE cho UI check-in → start → completion có gate và matched opt-in runtime | Check-in/start có API harness evidence; không ghi là đã thao tác browser hai bước này; rollout production còn OFF |
+| Vinh | `FE-VINH-MVP-03` | DONE cho Clinical source order → Lab → thanh toán → clearance → kết quả | Dùng nguyên sourceOrderId từ server và clearance V1; không mở lại producer/UI đã hoàn tất |
+| Vinh | `FE-VINH-MVP-04` | DONE cho role/session/error và signed Gateway/browser scope đã ghi nhận | Rx attachment/enrichment ngoài public contract và provider/release acceptance là dependency riêng |
+| Lộc | `FE-BILLING-04` | Đã có suite riêng RevenueReport/InvoiceForm/OutboxReplayForm trong source hiện tại; đối chiếu acceptance thay vì tạo lại test | Test quyền truy cập, validation, loading/empty/error/retry và response/correlation phù hợp từng flow; giữ regression duplicate/uncertain command; chạy focused Billing và các gate frontend trước khi đánh DONE |
+| Lộc | `FE-BILLING-01/02/03/05/06/07/08` | DONE cho implementation MVP hiện có; tiếp nhận bảo trì | Dùng duy nhất RefundDueLookup trên /billing; không dựng lại route /billing/prescription-adjustments đã bỏ; Surgery deferred |
+| Lộc → Vinh backend | `FE-NOTIFICATION-03` | BLOCKED — thiếu contract resend/read-state | Lộc chỉ tiếp tục FE khi có endpoint/DTO/roles/error và semantics retry/idempotency được backend owner Vinh chốt; đây không tự giao việc thêm API backend |
+| Lộc | `FE-NOTIFICATION-01/02/04` | DONE cho UI/tests và signed IN_APP scope đã có evidence | HF6-14 đã có [closeout 21/10](evidence/huy-six-service/2026-10-21-close/README.md); không giao lại phần refund intake đã nghiệm thu; EMAIL/SMS provider và rollout vẫn riêng |
+
+Shared frontend tiếp tục thuộc Vinh. Billing/Notification frontend thuộc Lộc; việc Vinh tiếp nhận
+hai backend tương ứng từ 18/10 không chuyển ownership frontend. Handoff shared → Surgery vẫn
+deferred, không đưa thành việc chặn MVP. Các số test và checklist ở các checkpoint dưới đây là
+lịch sử theo ngày, không cộng dồn để kết luận task hiện tại DONE.
+
 ## Lộc — resumes Billing/Notification ownership, 2026-10-22
 
 Vinh's 2026-10-20/21 closeout (`2026-10-20-vinh-loc-frontend-closeout.md`,
@@ -15,6 +59,11 @@ the `/billing/prescription-adjustments` route pages) — both did the exact same
 keeping two would confuse the live UI and future reviewers. The now-unused duplicate `api.ts`
 helpers (`getPrescriptionAdjustment`, `refundLedgerPayment`) were dropped in favor of the
 pre-existing `refundsDue`/`recordRefund` that `RefundDueLookup.tsx` already calls.
+
+> Source recheck của lượt sửa UI 22/10: source hiện tại đã track đủ ba suite
+> RevenueReport/InvoiceForm/OutboxReplayForm. Nhận định thiếu test trong đoạn lịch sử
+> dưới đây không còn là backlog tạo file test mới. Kết quả trên revision hiện tại
+> xem implementation plan `FE-REF-01` ở đầu workboard.
 
 **Correction to Vinh's 2026-10-20 "DONE" claim for `FE-BILLING-04`:** verified directly against
 code on 2026-10-21/22, not just the doc. `RevenueReport.tsx` has zero test coverage (no component

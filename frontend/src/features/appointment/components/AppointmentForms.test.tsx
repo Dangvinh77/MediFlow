@@ -27,8 +27,8 @@ function deferred<T>() {
 
 function fillCreateAppointment() {
   fireEvent.change(screen.getByLabelText("Mã bệnh nhân", { exact: false }), { target: { value: appointment.patientId } });
-  fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: appointment.doctorId } });
   fireEvent.change(screen.getByLabelText("Mã khoa", { exact: false }), { target: { value: appointment.departmentId } });
+  fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: appointment.doctorId } });
   fireEvent.change(screen.getByLabelText("Ngày hẹn", { exact: false }), { target: { value: appointment.appointmentDate } });
   fireEvent.change(screen.getByLabelText("Giờ hẹn", { exact: false }), { target: { value: appointment.appointmentTime } });
 }

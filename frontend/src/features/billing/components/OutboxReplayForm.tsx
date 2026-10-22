@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -41,7 +42,7 @@ export function OutboxReplayForm() {
 
       {result ? (
         <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          {result.replayed ? "Đã đưa event vào hàng đợi phát lại; chưa xác nhận bên nhận xử lý" : "Event không được phát lại"} <span className="font-mono">{result.eventId}</span>.
+          {result.replayed ? "Đã đưa event vào hàng đợi phát lại; chưa xác nhận bên nhận xử lý" : "Event không được phát lại"} <span className="font-mono"><ReferenceText value={result.eventId} fallback="Sự kiện" /></span>.
         </p>
       ) : null}
 
