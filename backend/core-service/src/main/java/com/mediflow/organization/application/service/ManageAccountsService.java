@@ -25,6 +25,12 @@ public class ManageAccountsService implements ManageAccountsUseCase {
 
     @Override
     @Transactional(value = "organizationTransactionManager", readOnly = true)
+    public Account getById(UUID accountId) {
+        return accounts.findById(accountId).orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    @Override
+    @Transactional(value = "organizationTransactionManager", readOnly = true)
     public PageResult<Account> search(String keyword, Role role, Boolean active, PageQuery page) {
         return accounts.search(keyword, role, active, page);
     }

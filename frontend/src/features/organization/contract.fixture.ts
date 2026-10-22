@@ -13,6 +13,7 @@ import type {
 
 /** Static TypeScript fixtures only; they do not replace a real-data Gateway smoke test. */
 export const departmentContractFixture = {
+  description: null, phoneNumber: null, email: null,
   departmentId: "00000000-0000-4000-8000-000000000001",
   departmentName: "Clinical",
   abbreviation: "CLN",
@@ -25,6 +26,7 @@ export const departmentContractFixture = {
 } satisfies DepartmentDTO;
 
 export const staffContractFixture = {
+  dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null,
   identityNumber: "012345678901",
   staffId: "00000000-0000-4000-8000-000000000002",
   fullName: "Nguyen Van A",
@@ -100,3 +102,7 @@ export const changeStaffDepartmentRequestFixture = {
 } satisfies ChangeStaffDepartmentRequest;
 
 export const lockAccountRequestFixture = { isActive: false } satisfies UpdateAccountStatusRequest;
+
+export const replaceActiveAccountRequestFixture = {
+  ...createAccountRequestFixture, replaceActiveAccount: true,
+} satisfies CreateAccountRequest;

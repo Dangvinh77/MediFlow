@@ -32,17 +32,17 @@ class OrganizationDtoContractTest {
     @Test
     void requestRecordsKeepExistingEnglishJsonFieldNames() throws Exception {
         assertFields(new CreateDepartmentRequest("Clinical", "CLIN", DepartmentType.CLINICAL, "A"),
-                "departmentName", "abbreviation", "departmentType", "location");
+                "departmentName", "abbreviation", "departmentType", "location", "profile");
         assertFields(new UpdateDepartmentRequest("Clinical", DepartmentType.CLINICAL,
                         "A", id, true),
-                "departmentName", "departmentType", "location", "departmentHeadId", "active");
+                "departmentName", "departmentType", "location", "departmentHeadId", "active", "profile");
         assertFields(new CreateStaffRequest("Doctor", departmentId, JobTitle.DOCTOR,
                         "Surgery", "LIC-1", "0123456789", "doctor@example.com", "012345678901"),
                 "fullName", "departmentId", "jobTitle", "specialization", "licenseNumber",
-                "phoneNumber", "email", "identityNumber");
+                "phoneNumber", "email", "identityNumber", "profile");
         assertFields(new UpdateStaffRequest("Doctor", JobTitle.DOCTOR, "Surgery", "LIC-1",
                         "0123456789", "doctor@example.com"),
-                "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email");
+                "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email", "profile");
         assertFields(new ChangeStaffDepartmentRequest(departmentId), "newDepartmentId");
     }
 
@@ -66,7 +66,7 @@ class OrganizationDtoContractTest {
         assertFields(new DepartmentResponse(id, "Clinical", "CLIN", DepartmentType.CLINICAL,
                         departmentId, "A", true, timestamp, timestamp),
                 "departmentId", "departmentName", "abbreviation", "departmentType",
-                "departmentHeadId", "location", "active", "createdAt", "updatedAt");
+                "departmentHeadId", "location", "active", "createdAt", "updatedAt", "description", "phoneNumber", "email");
         JsonNode department = mapper.valueToTree(new DepartmentResponse(id, "Clinical", "CLIN",
                 DepartmentType.CLINICAL, departmentId, "A", true, timestamp, timestamp));
         assertThat(department.get("departmentType").asText()).isEqualTo("CLINICAL");
@@ -74,7 +74,7 @@ class OrganizationDtoContractTest {
         assertFields(new StaffResponse(id, "Doctor", departmentId, JobTitle.DOCTOR, "Surgery",
                         "LIC-1", "0123456789", "doctor@example.com", true, timestamp, timestamp, "012345678901"),
                 "staffId", "fullName", "departmentId", "jobTitle", "specialization",
-                "licenseNumber", "phoneNumber", "email", "active", "createdAt", "updatedAt", "identityNumber");
+                "licenseNumber", "phoneNumber", "email", "active", "createdAt", "updatedAt", "identityNumber", "dateOfBirth", "gender", "address", "hireDate", "qualification");
         JsonNode staff = mapper.valueToTree(new StaffResponse(id, "Doctor", departmentId,
                 JobTitle.DOCTOR, "Surgery", "LIC-1", "0123456789", "doctor@example.com",
                 true, timestamp, timestamp, "012345678901"));

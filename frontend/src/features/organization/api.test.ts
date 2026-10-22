@@ -33,6 +33,13 @@ const staffPage: PageResult<StaffDTO> = {
 };
 
 describe("organizationApi facade contract", () => {
+  it("loads account detail and forwards explicit replacement confirmation", async () => {
+    get.mockResolvedValueOnce(accountContractFixture);
+    await organizationApi.account(accountContractFixture.accountId);
+    expect(get).toHaveBeenCalledWith(`/v1/org/accounts/${accountContractFixture.accountId}`);
+    await organizationApi.updateAccountStatus(accountContractFixture.accountId, true, true);
+    expect(put).toHaveBeenCalledWith(`/v1/org/accounts/${accountContractFixture.accountId}/status`, { isActive: true, replaceActiveAccount: true });
+  });
   beforeEach(() => {
     get.mockReset();
     post.mockReset();

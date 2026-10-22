@@ -44,18 +44,22 @@ public class OrganizationDemoSeeder {
         return transaction.execute(status -> {
             lock();
             Map<String, UUID> ids = new HashMap<>();
+            var profiles = new OrganizationDemoProfileBackfill(jdbc);
             List<Department> existingDepartments = departments.getAllDepartments();
             for (JsonNode row : data.required("departments")) {
+                boolean previouslyTracked = profiles.isTracked(text(row, "key"));
                 UUID id = once(row.required("key").asText(), () -> existingDepartments.stream()
                         .filter(d -> d.getAbbreviation().equals(row.required("abbreviation").asText()))
                         .findFirst().map(Department::getDepartmentId)
                         .orElseGet(() -> createDepartment.execute(text(row, "departmentName"),
                                 text(row, "abbreviation"), DepartmentType.valueOf(text(row, "departmentType")),
-                                text(row, "location")).getDepartmentId()));
+                                text(row, "location"), new DepartmentProfile(optional(row, "description"), optional(row, "phoneNumber"), optional(row, "email"))).getDepartmentId()));
+                profiles.department(row, id, previouslyTracked);
                 ids.put(text(row, "key"), id);
             }
             List<Staff> existingStaff = allStaff();
             for (JsonNode row : data.required("staff")) {
+                boolean previouslyTracked = profiles.isTracked(text(row, "key"));
                 UUID id = once(text(row, "key"), () -> existingStaff.stream()
                         .filter(s -> Objects.equals(s.getIdentityNumber(), text(row, "identityNumber")))
                         .findFirst().map(Staff::getStaffId)
@@ -63,7 +67,10 @@ public class OrganizationDemoSeeder {
                                 Objects.requireNonNull(ids.get(text(row, "departmentKey"))),
                                 JobTitle.valueOf(text(row, "jobTitle")), text(row, "specialization"),
                                 text(row, "licenseNumber"), text(row, "phoneNumber"), text(row, "email"),
-                                text(row, "identityNumber")).getStaffId()));
+                                text(row, "identityNumber"), new StaffProfile(date(row, "dateOfBirth"),
+                                optional(row, "gender") == null ? null : StaffProfile.Gender.valueOf(optional(row, "gender")),
+                                optional(row, "address"), date(row, "hireDate"), optional(row, "qualification"))).getStaffId()));
+                profiles.staff(row, id, previouslyTracked);
                 ids.put(text(row, "key"), id);
             }
             return ids;
@@ -128,6 +135,9 @@ public class OrganizationDemoSeeder {
         jdbc.update("insert into local_demo_seed_receipt(seed_key,entity_id) values (?,?)", key, id);
         return id;
     }
+
+    private static String optional(JsonNode row, String field) { return row.path(field).isMissingNode() || row.path(field).isNull() ? null : row.path(field).asText(); }
+    private static java.time.LocalDate date(JsonNode row, String field) { String value = optional(row, field); return value == null ? null : java.time.LocalDate.parse(value); }
 
     private static String text(JsonNode row, String field) {
         return row.required(field).isNull() ? null : row.required(field).asText();

@@ -81,8 +81,11 @@ public class AccountController {
             } catch (RuntimeException invalidPrincipal) {
                 throw new IllegalArgumentException("Authenticated account identity is invalid");
             }
-            var result = createAccountUseCase.executeWithIdempotency(actorAccountId, idempotencyKey,
-                    request.username(), request.password(), request.staffId(), request.patientId(), request.role());
+            var result = request.replaceActiveAccount()
+                    ? createAccountUseCase.executeWithIdempotency(actorAccountId, idempotencyKey,
+                            request.username(), request.password(), request.staffId(), request.patientId(), request.role(), true)
+                    : createAccountUseCase.executeWithIdempotency(actorAccountId, idempotencyKey,
+                            request.username(), request.password(), request.staffId(), request.patientId(), request.role());
             return ResponseEntity.status(result.replayed()
                             ? org.springframework.http.HttpStatus.OK : org.springframework.http.HttpStatus.CREATED)
                     .location(URI.create("/api/v1/org/accounts/" + result.account().getAccountId()))
@@ -91,12 +94,11 @@ public class AccountController {
                             correlationIds.currentOrCreate().toString()));
         }
 
-        Account account = createAccountUseCase.execute(
-                request.username(),
-                request.password(),
-                request.staffId(),
-                request.patientId(),
-                request.role());
+        Account account = request.replaceActiveAccount()
+                ? createAccountUseCase.execute(request.username(), request.password(),
+                        request.staffId(), request.patientId(), request.role(), true)
+                : createAccountUseCase.execute(request.username(), request.password(),
+                        request.staffId(), request.patientId(), request.role());
 
         return ResponseEntity
                 .created(URI.create("/api/v1/org/accounts/" + account.getAccountId()))
@@ -111,9 +113,9 @@ public class AccountController {
             @PathVariable UUID accountId,
             @Valid @RequestBody UpdateAccountStatusRequest request) {
 
-        Account account = updateAccountStatusUseCase.execute(
-                accountId,
-                request.isActive());
+        Account account = request.replaceActiveAccount()
+                ? updateAccountStatusUseCase.execute(accountId, request.isActive(), true)
+                : updateAccountStatusUseCase.execute(accountId, request.isActive());
 
         return ResponseEntity.ok(ApiResponse.ok(
                 AccountResponse.from(account),

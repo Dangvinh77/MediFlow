@@ -7,70 +7,100 @@
       "departmentName": "Khoa Nội tổng quát Demo",
       "abbreviation": "DEMO-NOI",
       "departmentType": "CLINICAL",
-      "location": "Tầng 1, khu Demo"
+      "location": "Tầng 1, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220010",
+      "email": "demo-noi@demo.mediflow.local"
     },
     {
       "key": "department-02",
       "departmentName": "Khoa Nhi Demo",
       "abbreviation": "DEMO-NHI",
       "departmentType": "CLINICAL",
-      "location": "Tầng 1, khu Demo"
+      "location": "Tầng 1, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220011",
+      "email": "demo-nhi@demo.mediflow.local"
     },
     {
       "key": "department-03",
       "departmentName": "Phòng Hành chính Demo",
       "abbreviation": "DEMO-HC",
       "departmentType": "ADMINISTRATIVE",
-      "location": "Tầng 2, khu Demo"
+      "location": "Tầng 2, khu Demo",
+      "description": "Điều phối công tác hành chính, hỗ trợ vận hành và quản lý nguồn lực của đơn vị.",
+      "phoneNumber": "02838220012",
+      "email": "demo-hc@demo.mediflow.local"
     },
     {
       "key": "department-04",
       "departmentName": "Khoa Tim mạch Demo",
       "abbreviation": "DEMO-TIM",
       "departmentType": "CLINICAL",
-      "location": "Tầng 2, khu Demo"
+      "location": "Tầng 2, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220013",
+      "email": "demo-tim@demo.mediflow.local"
     },
     {
       "key": "department-05",
       "departmentName": "Khoa Tai Mũi Họng Demo",
       "abbreviation": "DEMO-TMH",
       "departmentType": "CLINICAL",
-      "location": "Tầng 3, khu Demo"
+      "location": "Tầng 3, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220014",
+      "email": "demo-tmh@demo.mediflow.local"
     },
     {
       "key": "department-06",
       "departmentName": "Khoa Da liễu Demo",
       "abbreviation": "DEMO-DL",
       "departmentType": "CLINICAL",
-      "location": "Tầng 3, khu Demo"
+      "location": "Tầng 3, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220015",
+      "email": "demo-dl@demo.mediflow.local"
     },
     {
       "key": "department-07",
       "departmentName": "Khoa Mắt Demo",
       "abbreviation": "DEMO-MAT",
       "departmentType": "CLINICAL",
-      "location": "Tầng 4, khu Demo"
+      "location": "Tầng 4, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220016",
+      "email": "demo-mat@demo.mediflow.local"
     },
     {
       "key": "department-08",
       "departmentName": "Khoa Xét nghiệm Demo",
       "abbreviation": "DEMO-XN",
       "departmentType": "PARACLINICAL",
-      "location": "Tầng 4, khu Demo"
+      "location": "Tầng 4, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220017",
+      "email": "demo-xn@demo.mediflow.local"
     },
     {
       "key": "department-09",
       "departmentName": "Khoa Dược Demo",
       "abbreviation": "DEMO-DUOC",
       "departmentType": "PARACLINICAL",
-      "location": "Tầng 5, khu Demo"
+      "location": "Tầng 5, khu Demo",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220018",
+      "email": "demo-duoc@demo.mediflow.local"
     },
     {
       "key": "department-10",
       "departmentName": "Phòng Tài chính Kế toán Demo",
       "abbreviation": "DEMO-TCKT",
       "departmentType": "ADMINISTRATIVE",
-      "location": "Tầng 5, khu Demo"
+      "location": "Tầng 5, khu Demo",
+      "description": "Điều phối công tác hành chính, hỗ trợ vận hành và quản lý nguồn lực của đơn vị.",
+      "phoneNumber": "02838220019",
+      "email": "demo-tckt@demo.mediflow.local"
     }
   ],
   "staff": [
@@ -83,7 +113,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800001",
-      "email": "demo.staff01@example.test"
+      "email": "demo.staff01@example.test",
+      "dateOfBirth": "1980-06-01",
+      "gender": "MALE",
+      "address": "10 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2015-03-01",
+      "qualification": "Cử nhân quản trị"
     },
     {
       "key": "staff-02",
@@ -94,7 +129,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800002",
-      "email": "demo.staff02@example.test"
+      "email": "demo.staff02@example.test",
+      "dateOfBirth": "1981-06-02",
+      "gender": "FEMALE",
+      "address": "11 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2016-03-01",
+      "qualification": "Thạc sĩ quản lý y tế"
     },
     {
       "key": "staff-03",
@@ -105,7 +145,12 @@
       "specialization": "Khoa Nội tổng quát",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-003",
       "phoneNumber": "0908800003",
-      "email": "demo.staff03@example.test"
+      "email": "demo.staff03@example.test",
+      "dateOfBirth": "1982-06-03",
+      "gender": "MALE",
+      "address": "12 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2017-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-04",
@@ -116,7 +161,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800004",
-      "email": "demo.staff04@example.test"
+      "email": "demo.staff04@example.test",
+      "dateOfBirth": "1983-06-04",
+      "gender": "FEMALE",
+      "address": "13 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2018-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-05",
@@ -127,7 +177,12 @@
       "specialization": "Khoa Nhi",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-005",
       "phoneNumber": "0908800005",
-      "email": "demo.staff05@example.test"
+      "email": "demo.staff05@example.test",
+      "dateOfBirth": "1984-06-05",
+      "gender": "MALE",
+      "address": "14 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2019-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-06",
@@ -138,7 +193,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800006",
-      "email": "demo.staff06@example.test"
+      "email": "demo.staff06@example.test",
+      "dateOfBirth": "1985-06-06",
+      "gender": "FEMALE",
+      "address": "15 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2020-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-07",
@@ -149,7 +209,12 @@
       "specialization": "Khoa Tim mạch",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-007",
       "phoneNumber": "0908800007",
-      "email": "demo.staff07@example.test"
+      "email": "demo.staff07@example.test",
+      "dateOfBirth": "1986-06-07",
+      "gender": "MALE",
+      "address": "16 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2021-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-08",
@@ -160,7 +225,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800008",
-      "email": "demo.staff08@example.test"
+      "email": "demo.staff08@example.test",
+      "dateOfBirth": "1987-06-08",
+      "gender": "FEMALE",
+      "address": "17 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2022-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-09",
@@ -171,7 +241,12 @@
       "specialization": "Khoa Tai Mũi Họng",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-009",
       "phoneNumber": "0908800009",
-      "email": "demo.staff09@example.test"
+      "email": "demo.staff09@example.test",
+      "dateOfBirth": "1988-06-09",
+      "gender": "MALE",
+      "address": "18 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2023-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-10",
@@ -182,7 +257,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800010",
-      "email": "demo.staff10@example.test"
+      "email": "demo.staff10@example.test",
+      "dateOfBirth": "1989-06-10",
+      "gender": "FEMALE",
+      "address": "19 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2015-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-11",
@@ -193,7 +273,12 @@
       "specialization": "Khoa Da liễu",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-011",
       "phoneNumber": "0908800011",
-      "email": "demo.staff11@example.test"
+      "email": "demo.staff11@example.test",
+      "dateOfBirth": "1990-06-11",
+      "gender": "MALE",
+      "address": "20 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2016-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-12",
@@ -204,7 +289,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800012",
-      "email": "demo.staff12@example.test"
+      "email": "demo.staff12@example.test",
+      "dateOfBirth": "1991-06-12",
+      "gender": "FEMALE",
+      "address": "21 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2017-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-13",
@@ -215,7 +305,12 @@
       "specialization": "Khoa Mắt",
       "licenseNumber": "LOCAL-DEMO-DOCTOR-013",
       "phoneNumber": "0908800013",
-      "email": "demo.staff13@example.test"
+      "email": "demo.staff13@example.test",
+      "dateOfBirth": "1992-06-13",
+      "gender": "MALE",
+      "address": "22 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2018-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
     },
     {
       "key": "staff-14",
@@ -226,7 +321,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800014",
-      "email": "demo.staff14@example.test"
+      "email": "demo.staff14@example.test",
+      "dateOfBirth": "1993-06-14",
+      "gender": "FEMALE",
+      "address": "23 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2019-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     },
     {
       "key": "staff-15",
@@ -237,7 +337,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800015",
-      "email": "demo.staff15@example.test"
+      "email": "demo.staff15@example.test",
+      "dateOfBirth": "1994-06-15",
+      "gender": "MALE",
+      "address": "24 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2020-03-01",
+      "qualification": "Cử nhân kỹ thuật y học"
     },
     {
       "key": "staff-16",
@@ -248,7 +353,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800016",
-      "email": "demo.staff16@example.test"
+      "email": "demo.staff16@example.test",
+      "dateOfBirth": "1980-06-16",
+      "gender": "FEMALE",
+      "address": "25 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2021-03-01",
+      "qualification": "Cử nhân kỹ thuật y học"
     },
     {
       "key": "staff-17",
@@ -259,7 +369,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800017",
-      "email": "demo.staff17@example.test"
+      "email": "demo.staff17@example.test",
+      "dateOfBirth": "1981-06-17",
+      "gender": "MALE",
+      "address": "26 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2022-03-01",
+      "qualification": "Dược sĩ đại học"
     },
     {
       "key": "staff-18",
@@ -270,7 +385,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800018",
-      "email": "demo.staff18@example.test"
+      "email": "demo.staff18@example.test",
+      "dateOfBirth": "1982-06-18",
+      "gender": "FEMALE",
+      "address": "27 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2023-03-01",
+      "qualification": "Dược sĩ đại học"
     },
     {
       "key": "staff-19",
@@ -281,7 +401,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800019",
-      "email": "demo.staff19@example.test"
+      "email": "demo.staff19@example.test",
+      "dateOfBirth": "1983-06-19",
+      "gender": "MALE",
+      "address": "28 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2015-03-01",
+      "qualification": "Cử nhân kế toán"
     },
     {
       "key": "staff-20",
@@ -292,7 +417,12 @@
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800020",
-      "email": "demo.staff20@example.test"
+      "email": "demo.staff20@example.test",
+      "dateOfBirth": "1984-06-20",
+      "gender": "FEMALE",
+      "address": "29 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2016-03-01",
+      "qualification": "Cử nhân quản trị"
     }
   ],
   "patients": [

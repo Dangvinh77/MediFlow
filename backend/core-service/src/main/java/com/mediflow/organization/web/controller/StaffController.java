@@ -69,7 +69,7 @@ public class StaffController {
                         } catch (RuntimeException invalidPrincipal) {
                                 throw new IllegalArgumentException("Authenticated account identity is invalid");
                         }
-                        var result = createStaffUseCase.executeWithIdempotency(
+                        var result = (request.profile() == null ? createStaffUseCase.executeWithIdempotency(
                                         actorAccountId,
                                         idempotencyKey,
                                         request.fullName(),
@@ -78,7 +78,16 @@ public class StaffController {
                                         request.specialization(),
                                         request.licenseNumber(),
                                         request.phoneNumber(),
-                                        request.email(), request.identityNumber());
+                                        request.email(), request.identityNumber()) : createStaffUseCase.executeWithIdempotency(
+                                        actorAccountId,
+                                        idempotencyKey,
+                                        request.fullName(),
+                                        request.departmentId(),
+                                        request.jobTitle(),
+                                        request.specialization(),
+                                        request.licenseNumber(),
+                                        request.phoneNumber(),
+                                        request.email(), request.identityNumber(), request.profile().toDomain()));
                         URI location = URI.create("/api/v1/org/staff/" + result.staff().getStaffId());
                         return ResponseEntity.status(result.replayed()
                                                 ? org.springframework.http.HttpStatus.OK
@@ -90,14 +99,21 @@ public class StaffController {
                                                         correlationIds.currentOrCreate().toString()));
                 }
 
-                Staff staff = createStaffUseCase.execute(
+                Staff staff = (request.profile() == null ? createStaffUseCase.execute(
                                 request.fullName(),
                                 request.departmentId(),
                                 request.jobTitle(),
                                 request.specialization(),
                                 request.licenseNumber(),
                                 request.phoneNumber(),
-                                request.email(), request.identityNumber());
+                                request.email(), request.identityNumber()) : createStaffUseCase.execute(
+                                request.fullName(),
+                                request.departmentId(),
+                                request.jobTitle(),
+                                request.specialization(),
+                                request.licenseNumber(),
+                                request.phoneNumber(),
+                                request.email(), request.identityNumber(), request.profile().toDomain()));
 
                 return ResponseEntity
                                 .created(URI.create("/api/v1/org/staff/" + staff.getStaffId()))
@@ -150,14 +166,21 @@ public class StaffController {
         public ResponseEntity<ApiResponse<StaffResponse>> updateStaff(
                         @PathVariable UUID staffId,
                         @Valid @RequestBody UpdateStaffRequest request) {
-                Staff staff = updateStaffUseCase.execute(
+                Staff staff = (request.profile() == null ? updateStaffUseCase.execute(
                                 staffId,
                                 request.fullName(),
                                 request.jobTitle(),
                                 request.specialization(),
                                 request.licenseNumber(),
                                 request.phoneNumber(),
-                                request.email());
+                                request.email()) : updateStaffUseCase.execute(
+                                staffId,
+                                request.fullName(),
+                                request.jobTitle(),
+                                request.specialization(),
+                                request.licenseNumber(),
+                                request.phoneNumber(),
+                                request.email(), request.profile().toDomain()));
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 StaffResponse.from(staff),

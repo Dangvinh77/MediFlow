@@ -89,6 +89,33 @@ class StaffControllerContractTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void createStaffAcceptsNestedProfileAndFlattensResponse() throws Exception {
+        var profile = new com.mediflow.organization.domain.model.StaffProfile(java.time.LocalDate.of(1990, 1, 2), com.mediflow.organization.domain.model.StaffProfile.Gender.FEMALE, "Address", java.time.LocalDate.of(2020, 3, 1), "Degree");
+        var staff = com.mediflow.organization.domain.model.Staff.create("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901").withProfile(profile);
+        when(createStaffUseCase.execute("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901", profile)).thenReturn(staff);
+        mockMvc.perform(post(BASE_PATH).contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("""
+                {"fullName":"Member","departmentId":"33333333-3333-3333-3333-333333333333","jobTitle":"NURSE","identityNumber":"012345678901",
+                 "profile":{"dateOfBirth":"1990-01-02","gender":"FEMALE","address":"Address","hireDate":"2020-03-01","qualification":"Degree"}}
+                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.dateOfBirth").value("1990-01-02"))
+                .andExpect(jsonPath("$.data.qualification").value("Degree"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void nestedProfileValidationRejectsFutureBirthDateBeforeCallingUseCase() throws Exception {
+        mockMvc.perform(post(BASE_PATH).contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("""
+                {"fullName":"Member","departmentId":"33333333-3333-3333-3333-333333333333","jobTitle":"NURSE","identityNumber":"012345678901",
+                 "profile":{"dateOfBirth":"2999-01-01"}}
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        org.mockito.Mockito.verifyNoInteractions(createStaffUseCase);
+    }
+
+    @Test
     @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
     void createStaff_keyedReplayReturnsSameLocationWithExplicitReplayFlag() throws Exception {
         var staff = com.mediflow.organization.domain.model.Staff.create(

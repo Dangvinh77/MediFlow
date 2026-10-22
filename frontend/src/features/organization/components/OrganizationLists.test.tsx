@@ -25,6 +25,7 @@ import { ApiRequestError } from "@/lib/api";
 import { DepartmentList } from "./DepartmentList";
 import { StaffTable } from "./StaffTable";
 import { OrganizationAdminActions } from "./OrganizationAdminActions";
+import { OrganizationDirectory } from "./OrganizationDirectory";
 
 function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<StaffDTO> {
   return {
@@ -38,6 +39,33 @@ function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<St
 }
 
 describe("Organization browse and actions", () => {
+  it("switches between khoa, phòng and staff without mixing department categories", async () => {
+    mocks.departments.mockResolvedValue([
+      { ...departmentContractFixture, departmentName: "Khoa Nội", departmentType: "CLINICAL" },
+      { ...departmentContractFixture, departmentId: "lab", departmentName: "Khoa Xét nghiệm", departmentType: "PARACLINICAL" },
+      { ...departmentContractFixture, departmentId: "office", departmentName: "Phòng Hành chính", departmentType: "ADMINISTRATIVE" },
+    ]);
+    mocks.staff.mockResolvedValue(staffPage());
+    render(<OrganizationDirectory />);
+    expect(screen.getByRole("button", { name: /Khoa/ })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("link", { name: "Detail Khoa Nội" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Detail Khoa Xét nghiệm" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Detail Phòng Hành chính" })).not.toBeInTheDocument();
+    expect(mocks.staff).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /Phòng/ }));
+    expect(screen.getByRole("link", { name: "Detail Phòng Hành chính" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Detail Khoa Nội" })).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Tên phòng" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Nhân sự/ }));
+    expect(await screen.findByRole("link", { name: "Detail Nguyen Van A" })).toBeVisible();
+    expect(screen.queryByRole("table", { name: "Khoa" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Lọc theo khoa" })).toHaveTextContent("Phòng Hành chính");
+    fireEvent.click(screen.getByRole("button", { name: /Khoa/ }));
+    expect(screen.getByRole("link", { name: "Detail Khoa Nội" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Detail Nguyen Van A" })).not.toBeInTheDocument();
+    expect(mocks.departments).toHaveBeenCalledTimes(1);
+  });
+
   it.each(["departments", "staff"] as const)("ignores a retry 401 after %s unmounts", async (resource) => {
     let reject!: (cause: Error) => void;
     mocks[resource].mockRejectedValueOnce(new Error("Unavailable"))
@@ -75,7 +103,7 @@ describe("Organization browse and actions", () => {
     mocks.staff.mockResolvedValue(staffPage());
     render(<><DepartmentList /><StaffTable /></>);
 
-    expect(await screen.findByRole("link", { name: "Nguyen Van A" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Detail Nguyen Van A" })).toBeVisible();
     expect(await screen.findByRole("alert")).toHaveTextContent("Khoa tạm thời chưa tải được");
     expect(screen.queryByRole("table", { name: "Khoa phòng" })).not.toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
@@ -94,11 +122,11 @@ describe("Organization browse and actions", () => {
       .mockRejectedValueOnce(new Error("Trang nhân sự chưa tải được"))
       .mockResolvedValueOnce(staffPage({ number: 1, content: [{ ...staffContractFixture, fullName: "Second Page" }] }));
     render(<StaffTable />);
-    expect(await screen.findByRole("link", { name: "Nguyen Van A" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Detail Nguyen Van A" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Trang nhân sự chưa tải được");
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
-    expect(await screen.findByRole("link", { name: "Second Page" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Detail Second Page" })).toBeVisible();
     await waitFor(() => expect(mocks.staff).toHaveBeenNthCalledWith(3, { page: 1, size: 20 }));
   });
 

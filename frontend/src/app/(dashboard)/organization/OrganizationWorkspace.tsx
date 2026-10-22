@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -14,7 +13,6 @@ export function OrganizationWorkspace() {
   if (role !== "ADMIN") return <PageShell title="Hồ sơ cá nhân" description="Thông tin của bạn và bảo mật tài khoản."><ProfileWorkspace /></PageShell>;
   return <PageShell title="Quản trị tổ chức" description="Quản lý khoa phòng, nhân sự và tài khoản trong bệnh viện.">
     <RoleGate allowed={["ADMIN"]}>
-      <div className="mt-5"><Link href="/organization/profile" className="text-sm font-semibold text-primary hover:underline">Xem hồ sơ cá nhân →</Link></div>
       <OrganizationAdminActions />
       <OrganizationDirectory />
     </RoleGate>

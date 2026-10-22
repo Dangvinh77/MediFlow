@@ -30,6 +30,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class AccountControllerSecurityTest {
+    @Test
+    @WithMockUser(username = "00000000-0000-4000-8000-000000000002", roles = "ADMIN")
+    void confirmedReplacementFlagReachesKeyedAndUnkeyedCommands() throws Exception {
+        UUID actor = UUID.fromString("00000000-0000-4000-8000-000000000002");
+        UUID patient = UUID.fromString("00000000-0000-4000-8000-000000000001");
+        var account = com.mediflow.organization.domain.model.Account.create(UUID.randomUUID(), "patient.demo", "hash", null, patient, Role.PATIENT);
+        when(createAccountUseCase.executeWithIdempotency(actor, "replace-key", "patient.demo", "password", null, patient, Role.PATIENT, true))
+                .thenReturn(new CreateAccountUseCase.CreationResult(account, false));
+        when(createAccountUseCase.execute("patient.demo", "password", null, patient, Role.PATIENT, true)).thenReturn(account);
+        String body = KEYED_BODY.replace("\"role\":\"PATIENT\"", "\"role\":\"PATIENT\",\"replaceActiveAccount\":true");
+        mockMvc.perform(post("/api/v1/org/accounts").header("Idempotency-Key", "replace-key")
+                .contentType("application/json").content(body)).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/org/accounts").contentType("application/json").content(body)).andExpect(status().isCreated());
+        org.mockito.Mockito.verify(createAccountUseCase).executeWithIdempotency(actor, "replace-key", "patient.demo", "password", null, patient, Role.PATIENT, true);
+        org.mockito.Mockito.verify(createAccountUseCase).execute("patient.demo", "password", null, patient, Role.PATIENT, true);
+    }
+
+    @Test @WithMockUser(roles = "ADMIN")
+    void confirmedActivationFlagAndOwnerConflictArePreservedOnWire() throws Exception {
+        UUID id = UUID.randomUUID();
+        var account = com.mediflow.organization.domain.model.Account.create(id, "doctor.detail", "hash", UUID.randomUUID(), null, Role.DOCTOR);
+        when(updateAccountStatusUseCase.execute(id, true)).thenThrow(new com.mediflow.common.exception.DuplicateResourceException("ACCOUNT_OWNER_ACTIVE", "previous active"));
+        when(updateAccountStatusUseCase.execute(id, true, true)).thenReturn(account);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/org/accounts/" + id + "/status")
+                .contentType("application/json").content("{\"isActive\":true}"))
+                .andExpect(status().isConflict())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error.code").value("ACCOUNT_OWNER_ACTIVE"));
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/org/accounts/" + id + "/status")
+                .contentType("application/json").content("{\"isActive\":true,\"replaceActiveAccount\":true}"))
+                .andExpect(status().isOk());
+        org.mockito.Mockito.verify(updateAccountStatusUseCase).execute(id, true, true);
+    }
 
     private static final String KEYED_BODY = """
             {"username":"patient.demo","password":"password",

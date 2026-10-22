@@ -15,7 +15,10 @@ public record DepartmentResponse(
         String location,
         boolean active,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String description,
+        String phoneNumber,
+        String email) {
 
     public static DepartmentResponse from(Department domain) {
         return new DepartmentResponse(
@@ -27,6 +30,8 @@ public record DepartmentResponse(
                 domain.getLocation(),
                 domain.isActive(),
                 domain.getCreatedAt(),
-                domain.getUpdatedAt());
+                domain.getUpdatedAt(),
+                domain.getProfile().description(), domain.getProfile().phoneNumber(), domain.getProfile().email());
     }
+    public DepartmentResponse(UUID departmentId, String departmentName, String abbreviation, DepartmentType departmentType, UUID departmentHeadId, String location, boolean active, Instant createdAt, Instant updatedAt) { this(departmentId, departmentName, abbreviation, departmentType, departmentHeadId, location, active, createdAt, updatedAt, null, null, null); }
 }

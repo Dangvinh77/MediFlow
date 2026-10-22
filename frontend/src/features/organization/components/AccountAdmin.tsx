@@ -3,84 +3,120 @@
 import { useEffect, useRef, useState, type ReactNode, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
-import { isRequestSessionCurrent } from "../request-session";
+import { getSessionKey } from "@/lib/auth";
+import { isUuid } from "@/lib/validation";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { isUuid } from "@/lib/validation";
-import { getSessionKey } from "@/lib/auth";
 import { organizationApi } from "../api";
-import { StaffPicker } from "./StaffPicker";
-import { AccountDirectory } from "./AccountDirectory";
-import { PasswordForm } from "./PasswordForm";
+import { accountRoleLabels, roleForJobTitle } from "../account-roles";
+import { isRequestSessionCurrent } from "../request-session";
 import { CreationIntentError, prepareCreation } from "../creation-intent";
-import type { AccountDTO, AccountRole } from "../types";
+import type { CreateAccountRequest, StaffDTO } from "../types";
+import { StaffPicker } from "./StaffPicker";
 
-const roleLabels: Record<AccountRole, string> = { ADMIN: "Quản trị viên", DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", LAB_TECH: "Kỹ thuật viên xét nghiệm", MANAGER: "Quản lý", PATIENT: "Bệnh nhân", SYSTEM: "Hệ thống" };
-const roles: AccountRole[] = ["ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "MANAGER", "PATIENT"];
-
+/** Account creation only; account management lives on the detail route. */
 export function AccountAdmin({ renderPatientPicker }: { renderPatientPicker?: (value: string, onChange: (id: string) => void, disabled: boolean) => ReactNode }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<AccountDTO | null>(null);
-  const [revision, setRevision] = useState(0);
   const mounted = useRef(true);
   const submitting = useRef(false);
-  const [username, setUsername] = useState(""); const [password, setPassword] = useState(""); const [role, setRole] = useState<AccountRole>("DOCTOR"); const [ownerId, setOwnerId] = useState("");
-  const [accountId, setAccountId] = useState(""); const [active, setActive] = useState(true); const [result, setResult] = useState<AccountDTO | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [ownerType, setOwnerType] = useState("staff");
+  const [ownerId, setOwnerId] = useState("");
+  const [staff, setStaff] = useState<StaffDTO | null>(null);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [staffAttempt, setStaffAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{ body: CreateAccountRequest; message: string } | null>(null);
+  const [unresolved, setUnresolved] = useState<CreateAccountRequest | null>(null);
+  const role = ownerType === "patient" ? "PATIENT" : staff?.staffId === ownerId && staff.active ? roleForJobTitle[staff.jobTitle] : null;
+  const locked = busy || confirmation !== null || unresolved !== null;
 
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
+    if (ownerType !== "staff" || !isUuid(ownerId)) return;
+    let disposed = false;
+    const session = getSessionKey();
+    organizationApi.staffMember(ownerId).then(value => {
+      if (!disposed && getSessionKey() === session) {
+        if (!value.active) setStaffError("Nhân viên đã ngừng làm việc. Hãy chọn nhân viên khác.");
+        else setStaff(value);
+      }
+    }).catch((cause: unknown) => {
+      if (disposed || !isRequestSessionCurrent(session, cause)) return;
+      if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
+      else setStaffError(cause instanceof Error ? cause.message : "Không tải được chức danh nhân viên.");
+    });
+    return () => { disposed = true; };
+  }, [ownerId, ownerType, staffAttempt, router]);
 
-  async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function selectOwner(id: string) { setOwnerId(id); setStaff(null); setStaffError(null); setError(null); }
+
+  async function send(body: CreateAccountRequest) {
     if (submitting.current) return;
-    const id = ownerId.trim(); if (!isUuid(id)) { setError(`Mã ${role === "PATIENT" ? "bệnh nhân" : "nhân viên"} phải là UUID hợp lệ.`); return; }
-    const sessionToken = getSessionKey();
-    submitting.current = true;
-    setBusy(true); setError(null); setResult(null);
+    const session = getSessionKey();
+    submitting.current = true; setBusy(true); setError(null);
     let intent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
+    let replacementKey: string | undefined;
     try {
-      const body = { username: username.trim(), password, role, staffId: role === "PATIENT" ? null : id, patientId: role === "PATIENT" ? id : null };
-      // The server checks the password against a salted hash on replay. Never
-      // persist the password or a fast password digest in browser storage.
-      intent = await prepareCreation("account", sessionToken, { username: body.username, role, staffId: body.staffId, patientId: body.patientId });
-      if (!mounted.current || getSessionKey() !== sessionToken) { intent.cancelUnsent(); return; }
+      // Store only command metadata. Passwords stay in this mounted form's memory.
+      const identity = { username: body.username, role: body.role, staffId: body.staffId, patientId: body.patientId };
+      intent = await prepareCreation("account", session, identity);
+      if (!mounted.current || getSessionKey() !== session) { intent.cancelUnsent(); return; }
+      replacementKey = `organization:account-replacement:${intent.key}`;
+      if (!body.replaceActiveAccount && sessionStorage.getItem(replacementKey) === "true") {
+        setConfirmation({ body, message: "Yêu cầu trước đã xác nhận thay tài khoản active nhưng chưa nhận được kết quả. Tiếp tục để đối soát chính yêu cầu đó; không tạo thêm tài khoản." });
+        return;
+      }
+      if (body.replaceActiveAccount) sessionStorage.setItem(replacementKey, "true");
       const account = await organizationApi.createAccount(body, intent.key);
       intent.settle();
-      if (!mounted.current || getSessionKey() !== sessionToken) return;
-      setResult(account);
-      setRevision(value => value + 1);
-      setPassword("");
+      sessionStorage.removeItem(replacementKey);
+      if (!mounted.current || getSessionKey() !== session) return;
+      setPassword(""); setConfirmation(null); setUnresolved(null);
+      router.push(`/organization/accounts/${account.accountId}`);
     } catch (cause: unknown) {
       intent?.settle(cause);
-      if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
+      if (replacementKey && cause instanceof ApiRequestError && cause.status >= 400 && cause.status < 500 && cause.status !== 408 && !cause.code?.endsWith("IDEMPOTENCY_KEY_REUSED")) sessionStorage.removeItem(replacementKey);
+      if (!mounted.current || !isRequestSessionCurrent(session, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) { router.replace("/login"); return; }
-      if (cause instanceof CreationIntentError) setError(cause.message);
-      else if (!(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500) {
-        setError("Chưa xác nhận được kết quả tạo tài khoản. Hãy gửi lại cùng thông tin và mật khẩu để lấy lại tài khoản bằng khóa đối soát cũ.");
-      } else setError(cause instanceof Error ? cause.message : "Không thể tạo tài khoản.");
-    } finally { submitting.current = false; if (mounted.current && getSessionKey() === sessionToken) setBusy(false); }
+      if (cause instanceof ApiRequestError && cause.status === 409 && cause.code?.endsWith("ACCOUNT_OWNER_ACTIVE")) {
+        setUnresolved(null); setConfirmation({ body, message: cause.message });
+      } else if ((!(cause instanceof ApiRequestError) && !(cause instanceof CreationIntentError))
+        || (cause instanceof ApiRequestError && (cause.status < 400 || cause.status === 408 || cause.status >= 500))) {
+        setConfirmation(null); setUnresolved(body);
+        setError("Chưa xác nhận được kết quả tạo. Thử lại cùng yêu cầu để đối soát bằng khóa cũ.");
+      } else {
+        setConfirmation(null); setUnresolved(null);
+        setError(cause instanceof Error ? cause.message : "Không thể tạo tài khoản.");
+      }
+    } finally { submitting.current = false; if (mounted.current && getSessionKey() === session) setBusy(false); }
   }
 
-  async function updateStatus(event: FormEvent<HTMLFormElement>) {
+  function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting.current) return;
-    const id = accountId.trim(); if (!isUuid(id)) { setError("Mã tài khoản phải là UUID hợp lệ."); return; }
-    const sessionToken = getSessionKey();
-    submitting.current = true;
-    setBusy(true); setError(null); setResult(null);
-    try {
-      const account = await organizationApi.updateAccountStatus(id, active);
-      if (!mounted.current || getSessionKey() !== sessionToken) return;
-      setResult(account);
-      setRevision(value => value + 1);
-    } catch (cause: unknown) {
-      if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
-      if (cause instanceof ApiRequestError && cause.status === 401) { router.replace("/login"); return; }
-      setError(cause instanceof Error ? cause.message : "Không thể cập nhật tài khoản.");
-    } finally { submitting.current = false; if (mounted.current && getSessionKey() === sessionToken) setBusy(false); }
+    if (locked || !role) return;
+    if (!isUuid(ownerId)) { setError("Vui lòng chọn hồ sơ liên kết hợp lệ."); return; }
+    if (new TextEncoder().encode(password).length > 72) { setError("Mật khẩu không được quá 72 byte UTF-8."); return; }
+    void send({ username: username.trim(), password, role, staffId: ownerType === "staff" ? ownerId : null, patientId: ownerType === "patient" ? ownerId : null });
   }
 
-  return <section className="mt-6 space-y-6"><AccountDirectory revision={revision} onSelect={account => { setSelected(account); setAccountId(account.accountId); setActive(account.isActive); setResult(null); }} />{selected && selected.role !== "SYSTEM" ? <PasswordForm accountId={selected.accountId} username={selected.username} /> : null}{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}{result ? <div role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><p className="font-semibold">Đã cập nhật tài khoản {result.username}</p><p className="mt-2 text-xs">Mã tài khoản</p><p className="mt-1 break-all font-mono text-xs select-all">{result.accountId}</p><p className="mt-1">{roleLabels[result.role]} · {result.isActive ? "Đang hoạt động" : "Đã khóa"}</p></div> : null}<div className="grid items-start gap-6 xl:grid-cols-2"><form onSubmit={create} className="space-y-4 rounded-xl border border-border bg-surface p-6"><fieldset disabled={busy} className="space-y-4"><div><h2 className="text-lg font-semibold">Tạo tài khoản</h2><p className="mt-1 text-sm text-muted-foreground">Liên kết tài khoản với hồ sơ nhân sự hoặc bệnh nhân đã có.</p></div><Field label="Tên đăng nhập" htmlFor="account-username" required hint="3–50 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang."><input id="account-username" aria-describedby="account-username-hint" autoComplete="username" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" value={username} onChange={(event) => setUsername(event.target.value)} className={controlClassName} /></Field><Field label="Mật khẩu" htmlFor="account-password" required hint="Từ 8 đến 72 ký tự."><input id="account-password" aria-describedby="account-password-hint" autoComplete="new-password" required type="password" minLength={8} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} className={controlClassName} /></Field><Field label="Vai trò" htmlFor="account-role" required><select id="account-role" value={role} onChange={(event) => { setRole(event.target.value as AccountRole); setOwnerId(""); }} className={controlClassName}>{roles.map((value) => <option key={value} value={value}>{roleLabels[value]}</option>)}</select></Field>{role === "PATIENT" && renderPatientPicker ? renderPatientPicker(ownerId, setOwnerId, busy) : role !== "PATIENT" ? <StaffPicker id="account-owner" label="Nhân viên" value={ownerId} onChange={setOwnerId} disabled={busy} required /> : <Field label="Mã bệnh nhân" htmlFor="account-owner" required><input id="account-owner" required value={ownerId} onChange={event => setOwnerId(event.target.value)} className={controlClassName} /></Field>}<Button type="submit" className="w-full sm:w-auto" variant="primary" loading={busy}>Tạo tài khoản</Button></fieldset></form><form onSubmit={updateStatus} className="space-y-4 rounded-xl border border-border bg-surface p-6"><fieldset disabled={busy} className="space-y-4"><div><h2 className="text-lg font-semibold">Khóa hoặc mở tài khoản</h2><p className="mt-1 text-sm text-muted-foreground">Nhập mã tài khoản cần quản lý và chọn trạng thái truy cập.</p></div><Field label="Mã tài khoản" htmlFor="account-id" required><input id="account-id" required value={accountId} onChange={(event) => setAccountId(event.target.value)} className={controlClassName} /></Field><Field label="Trạng thái" htmlFor="account-active"><select id="account-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true">Đang hoạt động</option><option value="false">Khóa tài khoản</option></select></Field><Button type="submit" className="w-full sm:w-auto" variant="primary" loading={busy}>Cập nhật trạng thái</Button></fieldset></form></div></section>;
+  return <section className="mt-6 max-w-3xl space-y-5">
+    <form onSubmit={create} className="rounded-xl border border-border bg-surface p-5 sm:p-6">
+      <fieldset disabled={locked} className="space-y-5">
+        <div><h2 className="text-lg font-semibold">Thông tin tài khoản mới</h2><p className="mt-1 text-sm text-muted-foreground">Chọn hồ sơ liên kết để tự động xác định vai trò truy cập.</p></div>
+        <Field label="Tên đăng nhập" htmlFor="account-username" required hint="3–50 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang."><input id="account-username" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Mật khẩu" htmlFor="account-password" required hint="Từ 8 đến 72 ký tự."><input id="account-password" required type="password" minLength={8} maxLength={72} autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Loại hồ sơ liên kết" htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value); selectOwner(""); }}><option value="staff">Nhân viên</option><option value="patient">Bệnh nhân</option></select></Field>
+        {ownerType === "staff" ? <StaffPicker id="account-owner" label="Nhân viên" value={ownerId} onChange={selectOwner} disabled={locked} required /> : renderPatientPicker ? renderPatientPicker(ownerId, selectOwner, locked) : <Field label="Mã bệnh nhân" htmlFor="account-owner" required><input id="account-owner" required className={controlClassName} value={ownerId} onChange={event => selectOwner(event.target.value)} /></Field>}
+        <Field label="Vai trò tự động" htmlFor="account-role" hint="Vai trò được xác định từ chức danh của nhân viên hoặc hồ sơ bệnh nhân."><input id="account-role" readOnly className={controlClassName} value={role ? accountRoleLabels[role] : ownerId ? "Đang tải chức danh…" : "Chưa chọn hồ sơ"} /></Field>
+        {staffError ? <div role="alert" className="text-sm text-danger">{staffError} <Button type="button" onClick={() => { setStaffError(null); setStaffAttempt(value => value + 1); }}>Tải lại chức danh</Button></div> : null}
+        <Button type="submit" variant="primary" loading={busy} disabled={!role || !isUuid(ownerId)}>Tạo tài khoản</Button>
+      </fieldset>
+    </form>
+    {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
+    {unresolved ? <Button type="button" loading={busy} onClick={() => void send(unresolved)}>Thử lại yêu cầu tạo</Button> : null}
+    {confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-message" className="space-y-4 rounded-xl border border-warning/40 bg-surface p-5"><h2 id="account-confirm-title" className="font-semibold">Xác nhận thay tài khoản đang active</h2><p id="account-confirm-message" className="text-sm">{confirmation.message}</p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}>Hủy</Button><Button type="button" variant="primary" loading={busy} onClick={() => void send({ ...confirmation.body, replaceActiveAccount: true })}>Tiếp tục tạo tài khoản</Button></div></div> : null}
+  </section>;
 }

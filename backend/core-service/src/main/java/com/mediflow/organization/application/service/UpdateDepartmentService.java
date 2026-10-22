@@ -9,6 +9,7 @@ import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.Staff;
 import org.springframework.transaction.annotation.Transactional;
+import com.mediflow.organization.domain.model.DepartmentProfile;
 
 import java.util.UUID;
 
@@ -35,6 +36,11 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
             UUID departmentHeadId,
             Boolean active
     ) {
+        return execute(departmentId, departmentName, departmentType, location, departmentHeadId, active, null);
+    }
+
+    @Override
+    public Department execute(UUID departmentId, String departmentName, DepartmentType departmentType, String location, UUID departmentHeadId, Boolean active, DepartmentProfile profile) {
         Department department = departmentRepository.findByIdForUpdate(departmentId)
                 .orElseThrow(() -> new DepartmentNotFoundException(departmentId));
 
@@ -62,6 +68,7 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
             }
         }
 
+        if (profile != null) department.withProfile(profile);
         return departmentRepository.save(department);
     }
 }

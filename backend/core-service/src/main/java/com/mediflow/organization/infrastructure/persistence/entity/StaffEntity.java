@@ -11,6 +11,27 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "staff", uniqueConstraints = @UniqueConstraint(name = "uk_staff_identity_number", columnNames = "identity_number"))
 public class StaffEntity {
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 10)
+    private com.mediflow.organization.domain.model.StaffProfile.Gender gender;
+    @Column(name = "address", length = 255)
+    private String address;
+    @Column(name = "hire_date")
+    private java.time.LocalDate hireDate;
+    @Column(name = "qualification", length = 100)
+    private String qualification;
+    public com.mediflow.organization.domain.model.StaffProfile getProfile() { return new com.mediflow.organization.domain.model.StaffProfile(dateOfBirth, gender, address, hireDate, qualification); }
+    public StaffEntity withProfile(com.mediflow.organization.domain.model.StaffProfile profile) {
+        this.dateOfBirth = profile.dateOfBirth();
+        this.gender = profile.gender();
+        this.address = profile.address();
+        this.hireDate = profile.hireDate();
+        this.qualification = profile.qualification();
+        return this;
+    }
+
 
         @Id
     @Column(name = "staff_id", nullable = false, updatable = false)

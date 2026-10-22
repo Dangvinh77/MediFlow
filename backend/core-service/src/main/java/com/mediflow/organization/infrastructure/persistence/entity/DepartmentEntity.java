@@ -19,6 +19,20 @@ import com.mediflow.organization.domain.model.DepartmentType;
         }
 )
 public class DepartmentEntity {
+    @Column(name = "description", length = 2000)
+    private String description;
+    @Column(name = "phone_number", length = 30)
+    private String phoneNumber;
+    @Column(name = "email", length = 100)
+    private String email;
+    public com.mediflow.organization.domain.model.DepartmentProfile getProfile() { return new com.mediflow.organization.domain.model.DepartmentProfile(description, phoneNumber, email); }
+    public DepartmentEntity withProfile(com.mediflow.organization.domain.model.DepartmentProfile profile) {
+        this.description = profile.description();
+        this.phoneNumber = profile.phoneNumber();
+        this.email = profile.email();
+        return this;
+    }
+
 
         @Id
     @Column(

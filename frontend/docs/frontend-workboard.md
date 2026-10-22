@@ -1,5 +1,116 @@
 # Frontend Workboard
 
+## Hoàng Anh — mở rộng chi tiết khoa/phòng/nhân sự, 2026-10-22
+
+User-approved Organization scope adds optional business/contact fields for departments and
+personal/employment fields for staff through existing endpoints (nested request profile, flat
+response). Core V11 and adapters persist them; legacy omitted-profile updates preserve values.
+Department details include a named head and paginated members with counts and Action/Detail;
+staff details resolve the unit name. Forms load/create/edit enrichment and retain privacy rules.
+Office head selection now accepts active same-office employees; clinical heads remain doctors.
+Fresh seed includes enrichment; receipts still preserve all existing rows and edits.
+
+Verification: Organization/profile **117/117**, TypeScript, ESLint and production build pass.
+Core **300 tests** pass across the full Docker suite and added HTTP contract checks,
+including V11 persistence, omission/clear semantics,
+head eligibility, personal-field redaction, idempotency and seed restart safety, passes.
+HTTP nested-profile validation/serialization checks and final Core jar packaging also pass.
+No signed-in browser acceptance or running-service restart is claimed.
+
+## Hoàng Anh — nhãn trang chi tiết phòng, 2026-10-22
+
+Department detail now derives its page heading, breadcrumb, section labels, head-of-unit
+link and success notice from the loaded departmentType. ADMINISTRATIVE uses **phòng**;
+CLINICAL/PARACLINICAL use **khoa**. Loading/invalid-ID states use neutral **khoa/phòng**.
+The detail component owns its loaded page heading to avoid duplicate requests or trusting
+a URL label. OrganizationDetails **16/16** and TypeScript pass.
+
+## Hoàng Anh — bỏ các khối Thông tin hồ sơ, 2026-10-22
+
+User clarification targets the metadata sections rather than the profile navigation link.
+Removed **Thông tin hồ sơ** blocks from DepartmentDetail (Khoa/Phòng), StaffDetail and
+PatientDetail, including their UUID/audit timestamp rows. A source-wide TSX search finds
+no remaining section with this title. Business information and actions remain available.
+OrganizationDetails/PatientDetail regression tests **22/22** and TypeScript pass.
+
+## Hoàng Anh — bỏ mục hồ sơ khỏi trang quản trị admin, 2026-10-22
+
+User-assigned Organization change removes the **Xem hồ sơ cá nhân** link from the ADMIN
+management page. The separate profile route and header entry remain available.
+ProfileWorkspace regression suite **19/19** and TypeScript pass.
+
+## Hoàng Anh — cột Action / Detail cho Organization và Patient, 2026-10-22
+
+User confirmed scope is Organization and Patient only. DepartmentList (both Khoa and
+Phòng), StaffTable and PatientTable now render names as text and put the detail link
+in a final **Action** column with a **Detail** button. The staff department name is
+also text; account lists already follow this convention. Existing detail routes,
+permissions, filters, pagination and empty/error/retry behavior remain.
+Updated list tests use the explicit Detail accessible names. OrganizationLists and
+PatientTable **14/14** pass; TypeScript passes. No signed-in browser acceptance claimed.
+
+## Hoàng Anh — chọn danh sách Khoa / Phòng / Nhân sự, 2026-10-22
+
+User-assigned Organization IMPLEMENT UI change: three responsive selection tiles show
+one corresponding directory below, defaulting to Khoa. Khoa includes CLINICAL and
+PARACLINICAL; Phòng includes ADMINISTRATIVE, using the existing departmentType contract
+rather than parsing names. Selected tiles expose pressed state and keyboard focus.
+Department data remains available for all staff-filter options when switching to Nhân sự.
+Existing detail links, status, retry and staff paging remain. No new backend API.
+TypeScript and ESLint pass; OrganizationLists **8/8** including category switching pass.
+Signed-in browser verification was not performed.
+
+## Hoàng Anh — tìm kiếm nhân viên liên kết, 2026-10-22
+
+User-assigned Organization IMPLEMENT change: StaffPicker now exposes the same search input
+pattern as PatientPicker. Search matches name, Vietnamese job title and department name,
+ignoring case and Vietnamese accents. The current staff API has no keyword contract, so
+nonempty searches read all filtered staff pages (100 per request) and paginate matching
+active staff locally in groups of 20. Empty searches retain existing server pagination.
+Later-page errors fail the whole search with retry, never present partial results; session
+changes stop further page requests. No persistent directory cache or new backend API.
+TypeScript and ESLint pass; real picker tests **4/4** cover later-page matching, UUID
+selection, title/department search, inactive exclusion and failed-search retry.
+Signed-in browser acceptance was not performed; large directories may need server search later.
+
+## Hoàng Anh — nhãn bộ chọn nhân viên, 2026-10-22
+
+User-assigned IMPLEMENT change in Organization `StaffPicker.tsx`: options now show
+**Họ tên · Chức danh · Khoa/phòng**, using the existing staff page and department list
+APIs. All departments are loaded so references to inactive departments retain their name.
+Missing department references display **Chưa có thông tin khoa/phòng**; request failures
+use the existing picker retry state. Selection still sends the original staff UUID.
+TypeScript and ESLint pass; AccountAdmin/DepartmentForm regression tests **14/14** pass.
+These form tests mock the picker; signed-in browser verification was not performed.
+
+## Hoàng Anh — quản lý tài khoản và hồ sơ cá nhân, 2026-10-22
+
+User-assigned Organization/Patient/Gateway work. Account list now has a **Tạo tài khoản**
+link beside its heading and an **Action / Detail** column. Creation lives at
+`/organization/accounts/new`; account detail at `/organization/accounts/[accountId]`
+contains password reset and active/inactive actions. ADMIN detail uses the new private,
+password-free Organization endpoint through Gateway.
+
+Staff role is derived from the selected staff member's job title, including
+`ADMINISTRATIVE → ADMIN` per the user's answer; there is no manual role selector.
+Patient account creation retains the fixed PATIENT role. Existing active accounts for
+the same person require explicit confirmation before replacement. Core serializes owner
+writes and atomically deactivates previous accounts with creation/activation; cancellation,
+transaction rollback and idempotent replay preserve the existing account state.
+Unknown creation outcomes retain the original command key for safe retry.
+
+Personal profiles no longer display **Định danh tài khoản** or **Thông tin kỹ thuật**.
+Inactive accounts cannot log in or refresh; previously issued access tokens retain their
+existing expiry semantics, which the detail page explains.
+
+Verification: Organization/profile frontend suite **106/106 / 13 files**; subsequent
+focused profile/account checks and final creation recovery tests pass. TypeScript,
+ESLint and production build pass. Core **293/293 / 49 files**, including **22/22**
+Organization PostgreSQL integration tests for concurrent creation/reactivation, replay
+and rollback; Gateway **1527/1527 / 15 files**. Signed-in browser end-to-end acceptance
+is not claimed: the browser could not connect to the local frontend and live Gateway
+was not running during that check.
+
 ## Hoàng Anh — tách quản trị và hồ sơ cá nhân, 2026-10-22
 
 User-assigned Organization/Patient/Gateway work; explicit delegation also covers

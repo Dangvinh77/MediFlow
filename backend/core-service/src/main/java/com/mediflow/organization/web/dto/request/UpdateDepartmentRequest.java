@@ -18,5 +18,9 @@ public record UpdateDepartmentRequest(
         String location,
         @JsonProperty(value = "departmentHeadId", required = true)
         UUID departmentHeadId,
-        Boolean active) {
+        Boolean active,
+        @jakarta.validation.Valid DepartmentProfileRequest profile) {
+    public UpdateDepartmentRequest(String departmentName, DepartmentType departmentType, String location, UUID departmentHeadId, Boolean active) {
+        this(departmentName, departmentType, location, departmentHeadId, active, null);
+    }
 }

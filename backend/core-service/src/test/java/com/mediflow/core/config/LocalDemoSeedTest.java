@@ -68,16 +68,16 @@ public class LocalDemoSeedTest {
                 page(accounts, call.getArgument(3)));
         when(getPatients.search(isNull(), any())).thenAnswer(call ->
                 page(patients, call.getArgument(1)));
-        when(createDepartment.execute(anyString(), anyString(), any(), anyString())).thenAnswer(call -> {
+        when(createDepartment.execute(anyString(), anyString(), any(), anyString(), any(DepartmentProfile.class))).thenAnswer(call -> {
             var row = Department.create(UUID.randomUUID(), call.getArgument(0), call.getArgument(1),
-                    call.getArgument(2), call.getArgument(3));
+                    call.getArgument(2), call.getArgument(3)).withProfile(call.getArgument(4));
             departments.add(row);
             return row;
         });
         when(createStaff.execute(anyString(), any(), any(), nullable(String.class), nullable(String.class),
-                anyString(), anyString(), anyString())).thenAnswer(call -> {
+                anyString(), anyString(), anyString(), any(StaffProfile.class))).thenAnswer(call -> {
             var row = Staff.create(call.getArgument(0), call.getArgument(1), call.getArgument(2),
-                    call.getArgument(3), call.getArgument(4), call.getArgument(5), call.getArgument(6), call.getArgument(7));
+                    call.getArgument(3), call.getArgument(4), call.getArgument(5), call.getArgument(6), call.getArgument(7)).withProfile(call.getArgument(8));
             staff.add(row);
             return row;
         });
@@ -97,6 +97,8 @@ public class LocalDemoSeedTest {
         runSeed();
         assertThat(departments).hasSize(10);
         assertThat(staff).hasSize(20);
+        assertThat(departments).allSatisfy(row -> assertThat(row.getProfile().description()).isNotBlank());
+        assertThat(staff).allSatisfy(row -> assertThat(row.getProfile().qualification()).isNotBlank());
         assertThat(patients).hasSize(10);
         assertThat(accounts).hasSize(10);
         assertThat(accounts.stream().filter(a -> a.getRole() == Role.PATIENT).map(Account::getPatientId))
@@ -208,6 +210,7 @@ public class LocalDemoSeedTest {
     private static JdbcTemplate database() {
         var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
         var jdbc = new JdbcTemplate(source);
+        jdbc.execute("create table local_demo_profile_receipt(seed_key varchar(100) primary key,entity_id uuid not null)");
         jdbc.execute("create table local_demo_seed_receipt(seed_key varchar(100) primary key,entity_id uuid not null)");
         jdbc.execute("create alias pg_advisory_xact_lock for 'com.mediflow.core.config.LocalDemoSeedTest.advisoryLock'");
         return jdbc;

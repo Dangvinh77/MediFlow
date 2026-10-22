@@ -43,12 +43,18 @@ public class CreateAccountService implements CreateAccountUseCase {
     @Override
     public CreationResult executeWithIdempotency(UUID actorAccountId, String idempotencyKey,
             String username, String rawPassword, UUID staffId, UUID patientId, Role role) {
+        return executeWithIdempotency(actorAccountId, idempotencyKey, username, rawPassword, staffId, patientId, role, false);
+    }
+
+    @Override
+    public CreationResult executeWithIdempotency(UUID actorAccountId, String idempotencyKey,
+            String username, String rawPassword, UUID staffId, UUID patientId, Role role, boolean replaceActiveAccount) {
         if (actorAccountId == null || idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Actor and idempotency key are required");
         }
         if (receipts == null) throw new IllegalStateException("Account receipt store is unavailable");
         receipts.lockKey(actorAccountId, idempotencyKey);
-        String fingerprint = fingerprint(username, staffId, patientId, role);
+        String fingerprint = fingerprint(username, staffId, patientId, role, replaceActiveAccount);
         var existing = receipts.find(actorAccountId, idempotencyKey);
         if (existing.isPresent()) {
             Receipt receipt = existing.get();
@@ -61,13 +67,13 @@ public class CreateAccountService implements CreateAccountUseCase {
                     .orElseThrow(() -> new IllegalStateException("Account creation receipt target is missing"));
             return new CreationResult(account, true);
         }
-        Account account = execute(username, rawPassword, staffId, patientId, role);
+        Account account = execute(username, rawPassword, staffId, patientId, role, replaceActiveAccount);
         receipts.save(new Receipt(actorAccountId, idempotencyKey, fingerprint,
                 account.getPasswordHash(), account.getAccountId()));
         return new CreationResult(account, false);
     }
 
-    private String fingerprint(String username, UUID staffId, UUID patientId, Role role) {
+    private String fingerprint(String username, UUID staffId, UUID patientId, Role role, boolean replaceActiveAccount) {
         // Passwords are checked using the original salted hash, never a fast digest.
         StringBuilder canonical = new StringBuilder();
         for (String value : new String[] { username, staffId == null ? null : staffId.toString(),
@@ -75,12 +81,20 @@ public class CreateAccountService implements CreateAccountUseCase {
             canonical.append(value == null ? -1 : value.length()).append(':');
             if (value != null) canonical.append(value);
         }
+        if (replaceActiveAccount) canonical.append(":replace-active");
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(canonical.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException unavailable) {
             throw new IllegalStateException("SHA-256 is unavailable", unavailable);
         }
+    }
+
+    // Keep the legacy staff-only entry point on the concrete transactional bean.
+    // An inherited interface default can bypass Spring's transaction advice.
+    @Override
+    public Account execute(String username, String rawPassword, UUID staffId, Role role) {
+        return execute(username, rawPassword, staffId, null, role, false);
     }
 
     @Override
@@ -90,6 +104,13 @@ public class CreateAccountService implements CreateAccountUseCase {
             UUID staffId,
             UUID patientId,
             Role role) {
+
+        return execute(username, rawPassword, staffId, patientId, role, false);
+    }
+
+    @Override
+    public Account execute(String username, String rawPassword, UUID staffId, UUID patientId,
+            Role role, boolean replaceActiveAccount) {
 
         if (role == Role.SYSTEM) {
             throw new InvalidAccountException(
@@ -114,6 +135,7 @@ public class CreateAccountService implements CreateAccountUseCase {
                 patientId,
                 role);
 
+        AccountOwnerPolicy.check(accountRepository, account, replaceActiveAccount);
         return accountRepository.save(account);
     }
 

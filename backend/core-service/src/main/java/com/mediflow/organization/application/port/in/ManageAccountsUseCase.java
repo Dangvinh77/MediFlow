@@ -7,6 +7,7 @@ import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.domain.model.Role;
 
 public interface ManageAccountsUseCase {
+    Account getById(UUID accountId);
     PageResult<Account> search(String keyword, Role role, Boolean active, PageQuery page);
     void changePassword(UUID accountId, String currentPassword, String newPassword);
     void resetPassword(UUID accountId, String newPassword);

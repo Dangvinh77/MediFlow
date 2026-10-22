@@ -39,6 +39,30 @@ verification endpoints remain outside the browser UI.
 
 ## Contract and verification gate
 
+### Account management pages — 2026-10-22
+
+User-assigned IMPLEMENT scope: Organization feature/routes, Core Organization and Gateway.
+`/organization/accounts` is the searchable list; its heading has a Create action and each
+row has a Detail link. `/organization/accounts/new` creates accounts; the ADMIN-only
+`/organization/accounts/{accountId}` page fetches detail directly and owns password reset
+and active/inactive controls. Loading, denied, empty/error and same-request retry states
+remain explicit; workspaces remount by session and discard old completions.
+
+The create form selects a staff or patient profile, never an editable role. Staff job title
+maps DOCTOR→DOCTOR, NURSE→NURSE, TECHNICIAN→LAB_TECH, PHARMACIST→PHARMACIST,
+CASHIER→CASHIER, MANAGER→MANAGER, ADMINISTRATIVE→ADMIN (explicit user decision).
+Patient profiles use PATIENT. Staff lookup must finish successfully before submission.
+
+The live Core contract adds ADMIN GET `/api/v1/org/accounts/{accountId}` (existing
+AccountDTO fields) and optional `replaceActiveAccount` on creation/status requests.
+409 `ACCOUNT_OWNER_ACTIVE` opens an explicit confirmation before retrying with true;
+Core performs deactivation and creation/activation atomically. The browser never disables
+another account with a separate command. Lost creation responses reuse the original key
+and exact draft; confirmed replacement recovery survives remount without storing passwords.
+An unknown status result requires a detail reload before another status command.
+
+Personal profile no longer renders “Định danh tài khoản” or “Thông tin kỹ thuật”.
+
 ### Personal profile split — 2026-10-22
 
 `/organization` gives ADMIN the existing department/staff/account management workspace;
@@ -68,3 +92,29 @@ the saved profile is refreshed, and retry safely attempts the transfer again.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Organization tests when available.
 Smoke test department/staff partial failure, pagination, empty state, and denied roles.
+
+
+### Department and staff enrichment — 2026-10-22
+
+User-approved expansion uses the existing Organization endpoints. Responses add nullable
+DepartmentDTO description/phoneNumber/email and StaffDTO dateOfBirth/gender/address/hireDate/
+qualification. Create/update requests send those new fields inside a complete optional
+`profile` object. Omission/null preserves existing enrichment; `{}` clears it. Forms preserve
+loaded values, normalize blank text to null and validate date order.
+
+Department detail shows function, location, contact, the actual head name and members with
+active/total counts. It reads all pages from the existing department-filtered staff API,
+paginates display locally and offers Action/Detail links. Staff detail resolves the actual
+unit name using the existing department endpoint. Both secondary reads have independent
+retry and ignore stale sessions; the base detail stays usable when a secondary read fails.
+The head picker permits active same-office staff for ADMINISTRATIVE and doctors for clinical
+units. Titles use phòng/khoa according to the loaded type.
+
+Staff detail exposes new private fields only for ADMIN; personal profile uses its existing
+owner-authorized detail payload. Other directory roles see qualification but no birth date,
+gender, address or hire date. No UUID/audit metadata section is reintroduced.
+
+Deploy/restart updated Core (V11/V12 migrations) before the frontend. Core now fills empty new
+profile fields on previously tracked seed masters exactly once, preserving nonempty edits.
+A completion receipt prevents later restarts from refilling fields the user clears. Fresh seed
+data has sample values. See Core README for transaction, adoption and date-conflict behavior.

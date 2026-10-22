@@ -1,6 +1,10 @@
 "use client";
-import { AccountAdmin } from "@/features/organization/components/AccountAdmin";
-import { PatientPicker } from "@/features/patient/components/PatientPicker";
+
+import { useSyncExternalStore } from "react";
+import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
+import { AccountDirectory } from "@/features/organization/components/AccountDirectory";
+
 export function AccountWorkspace() {
-  return <AccountAdmin renderPatientPicker={(value, onChange, disabled) => <PatientPicker id="account-owner" value={value} onChange={onChange} disabled={disabled} />} />;
+  const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
+  return <section className="mt-6"><AccountDirectory key={session} /></section>;
 }

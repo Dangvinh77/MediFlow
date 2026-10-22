@@ -14,14 +14,38 @@ import com.mediflow.organization.infrastructure.persistence.repository.AccountJp
 public class AccountRepositoryAdapter implements AccountRepository {
 
     private final AccountJpaRepository jpaRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @jakarta.persistence.PersistenceContext(unitName = "organization")
+    private jakarta.persistence.EntityManager entityManager;
 
-    public AccountRepositoryAdapter(AccountJpaRepository jpaRepository) {
+    public AccountRepositoryAdapter(AccountJpaRepository jpaRepository,
+            @org.springframework.beans.factory.annotation.Qualifier("organizationDataSource") javax.sql.DataSource source) {
         this.jpaRepository = jpaRepository;
+        this.jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
+    }
+
+    @Override
+    public void lockOwner(UUID staffId, UUID patientId) {
+        if (staffId == null && patientId == null) return;
+        String owner = staffId != null ? "staff:" + staffId : "patient:" + patientId;
+        jdbc.query("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))",
+                (org.springframework.jdbc.core.ResultSetExtractor<Void>) result -> { result.next(); return null; },
+                "account-owner:" + owner);
+    }
+
+    @Override
+    public java.util.List<Account> findActiveByOwner(UUID staffId, UUID patientId) {
+        return jpaRepository.findActiveByOwner(staffId, patientId).stream().map(this::toDomain).toList();
     }
 
     @Override
     public Optional<Account> findByIdForUpdate(UUID id) {
-        return jpaRepository.findByIdForUpdate(id).map(this::toDomain);
+        return jpaRepository.findByIdForUpdate(id).map(entity -> {
+            // A status command may have read its owner before waiting for the owner lock.
+            // Refresh the managed snapshot after acquiring the row lock.
+            entityManager.refresh(entity, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            return toDomain(entity);
+        });
     }
 
     @Override

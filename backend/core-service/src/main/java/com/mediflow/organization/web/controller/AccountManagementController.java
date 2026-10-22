@@ -40,6 +40,13 @@ public class AccountManagementController {
                 .body(ApiResponse.ok(result, correlationIds.currentOrCreate().toString()));
     }
 
+    @GetMapping("/{accountId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AccountResponse>> getById(@PathVariable UUID accountId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
+                AccountResponse.from(accounts.getById(accountId)), correlationIds.currentOrCreate().toString()));
+    }
+
     @PutMapping("/me/password")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','PATIENT')")
     public ResponseEntity<ApiResponse<Boolean>> changePassword(Authentication authentication,

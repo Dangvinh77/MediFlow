@@ -9,6 +9,10 @@ import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException
 import com.mediflow.organization.domain.exception.InvalidDepartmentException;
 
 public class Department {
+    private DepartmentProfile profile = DepartmentProfile.EMPTY;
+    public DepartmentProfile getProfile() { return profile; }
+    public Department withProfile(DepartmentProfile profile) { this.profile = java.util.Objects.requireNonNull(profile); return this; }
+
 
         private final UUID departmentId;
 
@@ -152,7 +156,7 @@ public class Department {
         /*
          *
          */
-        if (staff.getJobTitle() != JobTitle.DOCTOR) {
+        if (departmentType != DepartmentType.ADMINISTRATIVE && staff.getJobTitle() != JobTitle.DOCTOR) {
             throw new InvalidDepartmentHeadException(
                     "Department head must be a doctor");
         }

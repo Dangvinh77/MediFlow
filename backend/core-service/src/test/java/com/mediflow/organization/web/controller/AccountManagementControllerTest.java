@@ -24,6 +24,23 @@ import com.mediflow.organization.domain.model.Role;
 @Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 @TestPropertySource(properties = "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class AccountManagementControllerTest {
+    @Test @WithMockUser(roles = "ADMIN")
+    void adminDetailContainsAccountMetadataAndNeverPasswordHash() throws Exception {
+        var account = com.mediflow.organization.domain.model.Account.create(UUID.fromString(ACTOR),
+                "admin.detail", "secret-hash", UUID.randomUUID(), null, Role.ADMIN);
+        when(accounts.getById(UUID.fromString(ACTOR))).thenReturn(account);
+        mvc.perform(get("/api/v1/org/accounts/" + ACTOR))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.username").value("admin.detail"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test @WithMockUser(roles = "DOCTOR")
+    void nonAdminCannotReadAccountDetail() throws Exception {
+        mvc.perform(get("/api/v1/org/accounts/" + ACTOR)).andExpect(status().isForbidden());
+        verifyNoInteractions(accounts);
+    }
     static final String ACTOR = "22222222-2222-2222-2222-222222222222";
     @Autowired MockMvc mvc;
     @MockBean ManageAccountsUseCase accounts;

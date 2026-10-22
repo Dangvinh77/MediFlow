@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
-import { formatInstant, formatLocalDate } from "@/lib/format";
+import { formatLocalDate } from "@/lib/format";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
 import { patientApi } from "../api";
 import { patientPermissions } from "../logic";
@@ -82,7 +82,6 @@ function PatientDetailWorkspace({ patientId, notice }: PatientDetailProps) {
         <DetailSection title="Thông tin cá nhân"><Info label="Ngày sinh" value={formatLocalDate(patient.ngaySinh)} /><Info label="Giới tính" value={patient.gioiTinh === "M" ? "Nam" : "Nữ"} /><Info label="CMND/CCCD" value={patient.soCmnd} /><Info label="BHYT" value={patient.bhytSo} /></DetailSection>
         <DetailSection title="Thông tin liên hệ"><Info label="Điện thoại" value={patient.soDienThoai} /><Info label="Email" value={patient.email} /><Info label="Địa chỉ" value={patient.diaChi} /></DetailSection>
       </div>
-      <DetailSection title="Thông tin hồ sơ"><Info label="Mã bệnh nhân" value={patient.maBenhNhan} /><Info label="Ngày tạo" value={formatInstant(patient.createdAt)} /><Info label="Cập nhật" value={formatInstant(patient.updatedAt)} /></DetailSection>
       <div className="flex flex-wrap gap-2">
         {permissions.write ? <Link href={`/patients/${patientId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">Chỉnh sửa</Link> : null}
         {permissions.delete ? <button type="button" ref={deleteTrigger} disabled={mutation.blocked} onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-danger bg-danger px-4 py-2 text-sm font-semibold text-danger-foreground hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-55">Xóa bệnh nhân</button> : null}

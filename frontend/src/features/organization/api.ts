@@ -22,6 +22,8 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  account: (accountId: string) =>
+    api.get<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}`),
   accounts: (params: { keyword?: string; role?: string; active?: boolean; page?: number } = {}) => {
     const query = new URLSearchParams({ page: String(params.page ?? 0), size: "20" });
     if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
@@ -60,9 +62,9 @@ export const organizationApi = {
     ),
   createAccount: (body: CreateAccountRequest, idempotencyKey: string) =>
     api.post<AccountDTO>("/v1/org/accounts", body, { idempotencyKey }),
-  updateAccountStatus: (accountId: string, isActive: boolean) =>
+  updateAccountStatus: (accountId: string, isActive: boolean, replaceActiveAccount = false) =>
     api.put<AccountDTO>(
       `/v1/org/accounts/${encodeURIComponent(accountId)}/status`,
-      { isActive } satisfies UpdateAccountStatusRequest,
+      { isActive, ...(replaceActiveAccount ? { replaceActiveAccount: true } : {}) } satisfies UpdateAccountStatusRequest,
     ),
 };

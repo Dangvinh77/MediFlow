@@ -1,3 +1,16 @@
+export interface DepartmentProfile {
+  description: string | null;
+  phoneNumber: string | null;
+  email: string | null;
+}
+export interface StaffProfile {
+  dateOfBirth: string | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
+  address: string | null;
+  hireDate: string | null;
+  qualification: string | null;
+}
+
 export type DepartmentType = "CLINICAL" | "PARACLINICAL" | "ADMINISTRATIVE";
 
 export type JobTitle =
@@ -9,7 +22,7 @@ export type JobTitle =
   | "MANAGER"
   | "ADMINISTRATIVE";
 
-export interface DepartmentDTO {
+export interface DepartmentDTO extends DepartmentProfile {
   departmentId: string;
   departmentName: string;
   abbreviation: string;
@@ -22,6 +35,7 @@ export interface DepartmentDTO {
 }
 
 export interface CreateDepartmentRequest {
+  profile?: DepartmentProfile;
   departmentName: string;
   abbreviation: string;
   departmentType: DepartmentType;
@@ -29,6 +43,7 @@ export interface CreateDepartmentRequest {
 }
 
 export interface UpdateDepartmentRequest {
+  profile?: DepartmentProfile;
   departmentName: string;
   departmentType: DepartmentType;
   location: string | null;
@@ -42,9 +57,11 @@ export interface ChangeStaffDepartmentRequest {
 
 export interface UpdateAccountStatusRequest {
   isActive: boolean;
+  replaceActiveAccount?: boolean;
 }
 
 export interface CreateStaffRequest {
+  profile?: StaffProfile;
   identityNumber: string;
   fullName: string;
   departmentId: string;
@@ -74,6 +91,7 @@ export interface AccountDTO {
 }
 
 export interface CreateAccountRequest {
+  replaceActiveAccount?: boolean;
   username: string;
   password: string;
   staffId: string | null;
@@ -81,7 +99,7 @@ export interface CreateAccountRequest {
   role: AccountRole;
 }
 
-export interface StaffDTO {
+export interface StaffDTO extends StaffProfile {
   identityNumber: string | null;
   staffId: string;
   fullName: string;

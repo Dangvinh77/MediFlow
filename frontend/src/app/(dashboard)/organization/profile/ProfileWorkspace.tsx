@@ -31,7 +31,6 @@ export function ProfileWorkspace() {
         <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vai trò</dt><dd className="mt-1 text-sm">{role ? labels[role] : "—"}</dd></div>
         <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Loại hồ sơ</dt><dd className="mt-1 text-sm">{role === "PATIENT" ? "Bệnh nhân" : "Nhân viên"}</dd></div>
       </DetailSection>
-      {identity ? <details className="rounded-xl border border-border bg-surface p-5"><summary className="cursor-pointer text-sm font-semibold">Định danh tài khoản</summary><p className="mt-3 break-words text-sm">Mã tài khoản: {identity.accountId}</p></details> : null}
       {!identity ? <AsyncState kind="empty" message="Không đọc được định danh tài khoản. Vui lòng đăng nhập lại." />
         : !identity.profileId ? <AsyncState kind="empty" message="Tài khoản chưa được liên kết với hồ sơ nhân sự. Vui lòng liên hệ quản trị viên." />
         : role === "PATIENT" ? <PersonalPatientProfile key={`${session}:${identity.profileId}`} patientId={identity.profileId} />

@@ -4,5 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateAccountStatusRequest(
         @NotNull(message = "Active status must be provided")
-        Boolean isActive) {
+        Boolean isActive, boolean replaceActiveAccount) {
+    public UpdateAccountStatusRequest(Boolean isActive) { this(isActive, false); }
 }
