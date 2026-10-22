@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/pharmacy_repository.dart';
+import '../domain/pharmacy_identity.dart';
+import 'pharmacy_identity_label.dart';
 import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
 import '../domain/drug_commands.dart';
@@ -515,9 +517,21 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
             }}',
           ),
           SelectableText('Hồ sơ: ${result.recordId ?? 'Chưa cung cấp'}'),
-          SelectableText('Bệnh nhân: ${result.patientId}'),
-          SelectableText('Bác sĩ: ${result.doctorId}'),
-          SelectableText('Khoa: ${result.departmentId}'),
+          PharmacyIdentityLabel(
+            kind: PharmacyIdentityKind.patient,
+            id: result.patientId,
+            label: 'Bệnh nhân',
+          ),
+          PharmacyIdentityLabel(
+            kind: PharmacyIdentityKind.doctor,
+            id: result.doctorId,
+            label: 'Bác sĩ kê đơn',
+          ),
+          PharmacyIdentityLabel(
+            kind: PharmacyIdentityKind.department,
+            id: result.departmentId,
+            label: 'Khoa',
+          ),
           Text('Ngày kê đơn: ${result.prescribedDate}'),
           Text(
             'Trạng thái đơn: ${switch (result.status) {

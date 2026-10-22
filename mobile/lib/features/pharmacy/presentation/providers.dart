@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/pharmacy_repository.dart';
+import '../domain/pharmacy_identity.dart';
 import '../domain/prescription_commands.dart';
 export '../domain/pharmacy_mode.dart';
 import '../domain/pharmacy_mode.dart';
@@ -23,6 +24,25 @@ final pharmacyModeProvider = Provider<PharmacyMode>(
 
 final pharmacyAccessProvider = Provider<PharmacyAccess?>((ref) => null);
 final pharmacyRepositoryProvider = Provider<PharmacyRepository?>((ref) => null);
+
+// Shared among mounted consumers, disposed on navigation/session change. No global PII cache.
+final pharmacyIdentityNameProvider = FutureProvider.autoDispose
+    .family<String, (PharmacyIdentityKind, String)>((ref, identity) async {
+      final access = ref.watch(pharmacyAccessProvider);
+      final repository = ref.watch(pharmacyRepositoryProvider);
+      if (access == null || !access.canPrescribe) {
+        throw StateError('Tài khoản chưa được cấp quyền tra cứu tên');
+      }
+      if (repository is! PharmacyIdentityReader) {
+        throw StateError('Chưa kết nối nguồn tra cứu tên');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!ref.mounted) throw StateError('Phiên tra cứu đã thay đổi');
+      return (repository as PharmacyIdentityReader).identityName(
+        identity.$1,
+        identity.$2,
+      );
+    }, retry: (_, _) => null);
 // Feature defaults fail closed; the app root binds verified transport by mode.
 final outpatientPrescriptionWriterProvider =
     Provider<OutpatientPrescriptionWriter?>((ref) => null);

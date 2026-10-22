@@ -1,5 +1,7 @@
 "use client";
 
+import { ReportDepartmentName } from "./ReportDepartmentName";
+
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -55,6 +57,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="report-department-id">
           <input id="report-department-id" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger md:col-span-3">{validationError}</p>}
@@ -65,7 +68,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
           <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-lg font-semibold">Báo cáo ngày {formatLocalDate(state.data.reportDate)}</h2>
-              <p className="mt-1 break-all text-sm text-muted-foreground">Phạm vi: {state.data.departmentId ?? "Toàn bệnh viện"}</p>
+              <p className="mt-1 break-all text-sm text-muted-foreground">Phạm vi: <ReportDepartmentName id={state.data.departmentId} /></p>
             </div>
             <StatusBadge tone="success">Đã tải</StatusBadge>
           </div>

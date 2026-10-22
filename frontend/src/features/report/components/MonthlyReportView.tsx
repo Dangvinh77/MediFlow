@@ -1,5 +1,7 @@
 "use client";
 
+import { ReportDepartmentName } from "./ReportDepartmentName";
+
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -65,6 +67,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="monthly-department">
           <input id="monthly-department" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger sm:col-span-2 xl:col-span-4">{validationError}</p>}
@@ -82,7 +85,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
             </section>
             <section className="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5">
               <h2 className="text-base font-semibold">Tháng {state.data.month}/{state.data.year}</h2>
-              <p className="mt-1 break-all text-xs text-muted-foreground">Phạm vi: {state.data.departmentId ?? "Toàn bệnh viện"}</p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">Phạm vi: <ReportDepartmentName id={state.data.departmentId} /></p>
               <dl className="mt-4 divide-y divide-border">
                 <div className="py-4"><dt className="text-sm text-muted-foreground">Tổng doanh thu</dt><dd className="mt-2 break-words text-3xl font-semibold tracking-tight tabular-nums">{formatDecimal(state.data.totalRevenue)}</dd></div>
                 <div className="py-4"><dt className="text-sm text-muted-foreground">Số hóa đơn</dt><dd className="mt-2 text-3xl font-semibold tabular-nums">{state.data.invoiceCount.toLocaleString("vi-VN")}</dd></div>

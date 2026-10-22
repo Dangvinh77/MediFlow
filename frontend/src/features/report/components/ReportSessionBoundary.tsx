@@ -3,6 +3,7 @@
 import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 import { getRole } from "@/lib/auth";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
+import { ReportDepartmentProvider } from "./ReportDepartmentName";
 
 export function canReadReports() {
   const role = getRole();
@@ -15,5 +16,5 @@ export function ReportSessionBoundary({ children }: { children: ReactNode }) {
   const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   if (role === null) return <p role="status" className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
   if (role !== "ADMIN" && role !== "MANAGER") return <p role="alert" className="mt-6 text-sm text-danger">Bạn không có quyền xem báo cáo.</p>;
-  return <Fragment key={`${role}:${token}`}>{children}</Fragment>;
+  return <Fragment key={`${role}:${token}`}><ReportDepartmentProvider>{children}</ReportDepartmentProvider></Fragment>;
 }

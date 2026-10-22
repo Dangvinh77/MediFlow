@@ -1,5 +1,16 @@
 # Pharmacy mobile — contract và integration manifest
 
+## Review3 — tên hiển thị, 2026-10-22
+
+Chi tiết và form kê đơn có tên bệnh nhân/bác sĩ/khoa từ public Gateway, ID vẫn là thông tin
+đối chiếu và đầu vào command. Domain `PharmacyIdentityReader` tách presentation khỏi adapter;
+repository đang được app bind đã implement reader nên không sửa app/core/shared.
+Riverpod dedupe theo resource, tự bỏ cache khi không còn consumer và reload khi đổi phiên;
+không tự retry lookup lỗi. Lookup lỗi không chặn nghiệp vụ hoặc giả lập tên.
+PHARMACIST giữ fallback vì Core/Gateway chưa cấp quyền public lookup; ADMIN/DOCTOR tra theo
+quyền hiện hành. Gap và acceptance mới ở [handoff chung](../../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+Chưa có nghiệm thu thật/ảnh Review3 mới; mốc 11/12 bên dưới không tự đổi thành 12/12.
+
 ## Hiện hành — shared integration đã code, 2026-10-22
 
 **11/12 task implementation DONE; task12 nghiệm thu thật để sau theo yêu cầu người dùng.**
