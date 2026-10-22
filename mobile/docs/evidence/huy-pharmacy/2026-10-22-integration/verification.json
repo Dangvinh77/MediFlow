@@ -1,0 +1,1020 @@
+{
+  "recordedAt": "2026-10-22T10:53:47.3971086+07:00",
+  "candidate": {
+    "baseCommit": "d5373058436463d5640a36423c66620103967b4c",
+    "branch": "Huy",
+    "workingTree": "uncommitted",
+    "files": [
+      {
+        "path": "mobile/lib/app/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/app/AGENTS.md",
+        "sha256": "84c54f4e52892f9aa79cc04e4a1797ca75520ec6837afd24f54bf5b892b9414e"
+      },
+      {
+        "path": "mobile/lib/app/app_shell.dart",
+        "sha256": "b7be85c1425a0999039bfaeb3644882e6d3292e753e3f0a9e0bbfd02a317adca"
+      },
+      {
+        "path": "mobile/lib/app/app.dart",
+        "sha256": "84e231452faa8b5ff69a9027750a2366b94ae6a295362ed5905063e718827f7b"
+      },
+      {
+        "path": "mobile/lib/app/dependencies.dart",
+        "sha256": "d23449c3e54418dde4ed6cd5aa507aef5f16f694e780e79d9c7478fab69521e1"
+      },
+      {
+        "path": "mobile/lib/app/modules.dart",
+        "sha256": "d42ea8bb2620647c56f3dba0a9449859fceb3b5a5161831b13123ddcc88f5cc7"
+      },
+      {
+        "path": "mobile/lib/app/router.dart",
+        "sha256": "cebb118689e6545acc950b3a9d830424d77f982786a5ba8bfffcac878f96cfa3"
+      },
+      {
+        "path": "mobile/lib/core/AGENTS.md",
+        "sha256": "aa4dec16acca4eead590922de19a7a2362387484a722bfa62d88029789761821"
+      },
+      {
+        "path": "mobile/lib/core/config/app_config.dart",
+        "sha256": "e4f164cd2a68f3d5c683d13e529e2a6ad3f69c1441d3933d53b311f63d1ee21f"
+      },
+      {
+        "path": "mobile/lib/core/constants/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/core/domain/page_result.dart",
+        "sha256": "6f8d8667b8d2eb8a502c24592e7fdc6ac6bf7482afe828289d929a422531b693"
+      },
+      {
+        "path": "mobile/lib/core/domain/workspace_access.dart",
+        "sha256": "a0973e96de6a2d4c30a22b00903df23ac8739d8105fb50e24dce59a306bd42ad"
+      },
+      {
+        "path": "mobile/lib/core/network/api_client.dart",
+        "sha256": "8fdd3c0ed1fa2b8294a9702cb6efa5f868d473cacf9a2b7c35d64a3247454ead"
+      },
+      {
+        "path": "mobile/lib/core/network/api_failure.dart",
+        "sha256": "fa3679b0e82b59476ddccdea8c94638c03daf4140c4b0b76dfd8b773bb336a3c"
+      },
+      {
+        "path": "mobile/lib/core/network/interceptors/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/core/network/json_reader.dart",
+        "sha256": "c5896e27c6d38d8dd2c31941bdc5bb980b8aab704803555f1a82e76b70a9e934"
+      },
+      {
+        "path": "mobile/lib/core/network/page_decoder.dart",
+        "sha256": "a29a76dd2d00e87e908c5de600e5c834941b8841400e0755d935158322c0a1bb"
+      },
+      {
+        "path": "mobile/lib/core/providers.dart",
+        "sha256": "6a4e42e5d3dd57df1510387d3647bb49e72e18767383112d5cf48869b0b9441a"
+      },
+      {
+        "path": "mobile/lib/core/storage/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/core/theme/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/core/utils/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/core/widgets/feature_workspace.dart",
+        "sha256": "86b6a9d9191777af116ccf307681b6ecaf2874c6a8a03e220d59beacd204f9ad"
+      },
+      {
+        "path": "mobile/lib/core/widgets/paged_list.dart",
+        "sha256": "8e1350fe821c9f9266ce5bc5d3565a5d66f3daab26d5e88379cd225d359639ef"
+      },
+      {
+        "path": "mobile/lib/core/widgets/request_state.dart",
+        "sha256": "7eb35c93cf2dbfd1e8f23492520bcae612704ff5aa447d79c4dac6b74d98c330"
+      },
+      {
+        "path": "mobile/lib/features/appointment/AGENTS.md",
+        "sha256": "1fadc34165a2b8c42305cd52e819a00c4cbb1fab382e07c3ac5a44deeb6ec305"
+      },
+      {
+        "path": "mobile/lib/features/appointment/data/appointment_dto.dart",
+        "sha256": "a0c1b2c99c709311c5bcf82dde817bf8064e4836df29f50206df79fc3a5d5b64"
+      },
+      {
+        "path": "mobile/lib/features/appointment/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/data/gateway_appointment_repository.dart",
+        "sha256": "f79c264481a0255e146f2920fa7ebcc5586c12b7a4e404d02890e72977cf7454"
+      },
+      {
+        "path": "mobile/lib/features/appointment/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/domain/appointment.dart",
+        "sha256": "bc2e05247c0b09b23aab55762883b82d7d7550c1661278ba5af7fbb128628132"
+      },
+      {
+        "path": "mobile/lib/features/appointment/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/presentation/appointment_page.dart",
+        "sha256": "3a17aa7c974d007275fbea825409ddf45d57f38a5a1efcaa4e877a891b11ef16"
+      },
+      {
+        "path": "mobile/lib/features/appointment/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/appointment/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/AGENTS.md",
+        "sha256": "b5ab338832bebcc19dacc5593edf55bea834e6ed33813d7136ec88367efa6f31"
+      },
+      {
+        "path": "mobile/lib/features/auth/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/data/gateway_auth_repository.dart",
+        "sha256": "93ea7644058aaa5aea646f802a62bd03715d0421ba298ce2c0848a6554e0e8b7"
+      },
+      {
+        "path": "mobile/lib/features/auth/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/data/session_dto.dart",
+        "sha256": "8ca2c79e1677bdce6fadc4e7c195b189df6d2fc77becd0bc4769f88df6c3b7a9"
+      },
+      {
+        "path": "mobile/lib/features/auth/domain/auth_repository.dart",
+        "sha256": "9e11bfda1df1d1c252bc6600df8ed400a01dbe016a6ea4df5962b1b2087ba0a0"
+      },
+      {
+        "path": "mobile/lib/features/auth/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/domain/session.dart",
+        "sha256": "292e23b3b17aa67ccd357d1b8d5cd3157e470adff8ac1c538cd276f42294788a"
+      },
+      {
+        "path": "mobile/lib/features/auth/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/login_page.dart",
+        "sha256": "8ff540266175a4a747a39077672adf77dc42e8baa619e73a57be9acdba58606b"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/providers.dart",
+        "sha256": "c5fe11e03af8dbaa0d74d6b9062b1a5c3c0756c3a92d2220e9221cefb2dc390d"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/session_controller.dart",
+        "sha256": "6ef19681f82adaac624168ba41ae6b8ea52b8fe6a357a20c15ecdea29c8e30a3"
+      },
+      {
+        "path": "mobile/lib/features/auth/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/AGENTS.md",
+        "sha256": "ff9d9324e11b21e314a954e30ded7f21985e986749d80b065a1751aee631458d"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/billing_dto.dart",
+        "sha256": "9ab6bd9173cb6a56ca4d7d196ed076c1b7a343f37f9676fcb87bde29a518a27d"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/gateway_billing_repository.dart",
+        "sha256": "23e8981e70fc16241004390dfe688b47897b1b88a1146742da0df68c7e2df823"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/README.md",
+        "sha256": "1c14faea17ba6d6d632a46d6e26463462e98940b5ac62802c48d347ebf4a6103"
+      },
+      {
+        "path": "mobile/lib/features/billing/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/billing_commands.dart",
+        "sha256": "31ad57b6a833d125a383e373bd1de6d65742a9d5ec67c0aae9f6cd4a3b2f3192"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/billing_models.dart",
+        "sha256": "ce3f26dfed974ff3c7c188a995b1cfcc0ecbfa8b503197364a8608397e1d4dc1"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/README.md",
+        "sha256": "215ef1de03aa2c86ed4133d95b77c30e7c6d7014a96856c22e293d48b3f4ca34"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/billing_page.dart",
+        "sha256": "44cb728021fe7ecd9f0622f33ab2946ca162ea299e759bd8357c251b4fd60687"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/billing_reports_page.dart",
+        "sha256": "40013f4a476dfa8f8e802661e4a39ce1a317fb1ec7178dd461d167be89f257d7"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/invoice_page.dart",
+        "sha256": "6ecba3cb6defe534f65264c117f666edac675e13555350c953a212d4725f7cfb"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/ledger_payment_page.dart",
+        "sha256": "6ac3cd68f2017ebee9652fda35277ab403fff7ab2c4d278ec301d1115e1ebc98"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/providers.dart",
+        "sha256": "ff0fa725d801817c5bf4b710ae17d566b740c29d96ab2b698fbaf0243891d451"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/refund_due_page.dart",
+        "sha256": "380ba15bbd8eb69cda573f5de14ccad91c10307bba4d24531ef724b9cf523c25"
+      },
+      {
+        "path": "mobile/lib/features/billing/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/AGENTS.md",
+        "sha256": "5e1a29772226ab942be34d20da509ec03eff40cc554bade615e2cc11dd3108fa"
+      },
+      {
+        "path": "mobile/lib/features/lab/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/data/gateway_lab_repository.dart",
+        "sha256": "2acdfd9f06083dba6813e57fb3e0c37e4d4cbf5762bdb0613f4f8a2a8a12c751"
+      },
+      {
+        "path": "mobile/lib/features/lab/data/lab_test_dto.dart",
+        "sha256": "ece1785d06991eb725b282ea919c643596f105c29b74e86790e0af7d77d67a9c"
+      },
+      {
+        "path": "mobile/lib/features/lab/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/domain/lab_test.dart",
+        "sha256": "20ac626c3f94e23dcbf98110aabc6998948831a57b3bc8c21d15ff59a134df68"
+      },
+      {
+        "path": "mobile/lib/features/lab/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/presentation/lab_page.dart",
+        "sha256": "2307eb4a6740861faa28a6563ee7fc6bba35b2a3c64e25c661ab46fb836f2d49"
+      },
+      {
+        "path": "mobile/lib/features/lab/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/lab/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/AGENTS.md",
+        "sha256": "6e649063bca99ade858a42ecf49d06021f508addd3a6362fbed4ef832b5048df"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/data/README.md",
+        "sha256": "c26d9aa1b07cd85dd4f2c4ea291aa060a539d3e4ed2d11cbc711f41f38d7bc9e"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/domain/README.md",
+        "sha256": "2d8f19d7a58a40ff58585c46ba6903f2a307d8b0b8d49cf92a317f40c4f63906"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/presentation/medical_record_page.dart",
+        "sha256": "4b2396c44c0c51932407e7e1b7633c0f0a4b5520666cfc710ca302fccb2efcc6"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/medical_record/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/AGENTS.md",
+        "sha256": "08c2173f67ead3bfc609a55287bce4e601de9300e1f2caa78d0125064b1ad838"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/gateway_notification_repository.dart",
+        "sha256": "ff47624e7b577598773705430a91faa0ada4764b86d0144fed93f0cdbb6a33ee"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/notification_dto.dart",
+        "sha256": "6e85f2a5a90c7dbf4edc0aa67fdc9323de8aa1b58f658d627510324120644014"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/README.md",
+        "sha256": "4a7eb63e1fef9950e8b5f83f3350fa55839c81cedb29045a0f5aca3d14c0fc2c"
+      },
+      {
+        "path": "mobile/lib/features/notification/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/domain/notification.dart",
+        "sha256": "ba0436bfd839e20ba7a5042f14f988a55f15e1487224d6655031a7a6adfd7d9f"
+      },
+      {
+        "path": "mobile/lib/features/notification/domain/README.md",
+        "sha256": "455aac2f74983d6d46a7f1e9e8cfcebf3f143da6904941652db8ac8ff017a76d"
+      },
+      {
+        "path": "mobile/lib/features/notification/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/notification_detail_page.dart",
+        "sha256": "8347076dcddc78347a8fd9ddb4c03fc8ec6e2e3a57af991ec47c849132235603"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/notification_page.dart",
+        "sha256": "4ef6f28fae0a1b2d6154b914a7bd34e6384af8a3decc6a7594f8cf7fa8034e1b"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/providers.dart",
+        "sha256": "08c4a3ec986d8c40a92f5b1b87e1eba7d20626127a54f1859dd5685bb3ce6abe"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/notification/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/AGENTS.md",
+        "sha256": "0ef0bd8f25ebbc3c1244f1b7fded0e9b0cb20a463a39634d87f468ff261ea7d1"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/gateway_organization_repository.dart",
+        "sha256": "3003c3eeb9ef7585bf836c3e409162671a267dfe40c1f3bebdd92358c49e4ab0"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/organization_dto.dart",
+        "sha256": "4b7d6925c6aff655e845ae3cc6b14c368771db9933cadd82a0a15094f42bc38d"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/README.md",
+        "sha256": "a6436820b75165709c616897a034aae2c0adce4118180859dda4a032086131ca"
+      },
+      {
+        "path": "mobile/lib/features/organization/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/domain/organization.dart",
+        "sha256": "fa4961f1df45cde4d3bc82bcbed5594291942f6f8640234f0294946d88273767"
+      },
+      {
+        "path": "mobile/lib/features/organization/domain/README.md",
+        "sha256": "4cba148a1e57de66546b2f33662e69ba59a675e8844d67567c7bcf3376d06a3c"
+      },
+      {
+        "path": "mobile/lib/features/organization/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/access_boundary.dart",
+        "sha256": "3b3c1d001cf5674577ec898529c4c6c48e18c4f9c93c30b608324d8467101a3f"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/department_staff_pages.dart",
+        "sha256": "e8703603dc42e9442b158bdb164a972bf4b8cdb01cb877b57f0fedb2c7cf70b6"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/organization_page.dart",
+        "sha256": "24fb625e6b9995a986c4bd19107ad0e731632dec272f2bd504ab11d13bae99bd"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/providers.dart",
+        "sha256": "1f5ef4f2c3b4480c52780412d16c9f80af11cbfa944839f7284a1ffe0826b52e"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/organization/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/AGENTS.md",
+        "sha256": "6c313a0a3fa3156ccc163e5ee72c57bfa973b80f5184b109ed38e521ccfd895b"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/gateway_patient_repository.dart",
+        "sha256": "c97e987a948ddad15cb1c38dfd0e88010b08d1b9d539ba22ea6d81708107046a"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/patient_dto.dart",
+        "sha256": "0c1b90f98779f6e8637cb1ec4a58039d9e3e3f5b09f0fcc2eebc3cd44f017e49"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/README.md",
+        "sha256": "fe02af0b8f15ece1de1fbbd380b3eb00ca28a870bf36941436e50e6470cc8884"
+      },
+      {
+        "path": "mobile/lib/features/patient/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/domain/patient.dart",
+        "sha256": "2962da0104337ba88120e3dc2c4199ae39868946c871b40d7ef851ce469c2b24"
+      },
+      {
+        "path": "mobile/lib/features/patient/domain/README.md",
+        "sha256": "e8c4f0acf63b9d4aaf9c7f71e0a2cb29a7d61a0d61e771e8964ca8010e9b072c"
+      },
+      {
+        "path": "mobile/lib/features/patient/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/presentation/patient_page.dart",
+        "sha256": "ca53680c5d29d2e7e180aac26a23eb0519b9d2360b89ad7438ea8244d4dbcd9f"
+      },
+      {
+        "path": "mobile/lib/features/patient/presentation/providers.dart",
+        "sha256": "bfd069cb729ebba56fc8d6f19a40b3d4620e5eefc35004be5894696b23432db1"
+      },
+      {
+        "path": "mobile/lib/features/patient/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/patient/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/AGENTS.md",
+        "sha256": "c5fcae3aeb191f754f0fcb1a244ea3daf53623be94a5b3a519fa4480503084b5"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/gateway_pharmacy_repository.dart",
+        "sha256": "80b2449d4fec686baec231f23ed38999390f2d10779aff28d6a3e853d8ae6b3f"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/pharmacy_dto.dart",
+        "sha256": "b119b9e95890cd4bf8e31ff5978a35c854d8b45e7fc29f599b9d15e2d6c063a9"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/prescription_request_dto.dart",
+        "sha256": "65ee09aa291bdfc23d96eb5d6a7e287d59d0cd28c30e811741c4d070e5ed0049"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/README.md",
+        "sha256": "51a835354f25fddfa5c8d5bbfde9ce0a8d7c2a7a64c827520c6cc0e116f78026"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/drug_commands.dart",
+        "sha256": "284e4edce5bf7de5403ca576aa7f633904eefba12a22bec0abe570baaa7e006f"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/drug.dart",
+        "sha256": "c2072c2d1a1bad6a594d646b50800d40dad1030d29cdd5bc8e158847252ab07d"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/pharmacy_mode.dart",
+        "sha256": "e44537aaa3633442d184cba39975162df567ee2f6ff576bf98f7ecc456f987a3"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/pharmacy_repository.dart",
+        "sha256": "56b7415501fe0f21cf15461519834245046db2b7e6cbed6328e6ab9530afdc4b"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/prescription_commands.dart",
+        "sha256": "7ffa78cbaf2715798a79511388aa77894473bd38a73875b6692a5b467976fa8c"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/prescription.dart",
+        "sha256": "f34811365ffba2c7c0ab068e5d0c824d1bbd18d8de151647dd31d208fd7fbef8"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/README.md",
+        "sha256": "da3fbd86bcbd00ec3d0d0cd2d2bbc85db8accdd7c9726e887adaaf9c275c16bf"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/create_prescription_page.dart",
+        "sha256": "5766b05a0c728e2b9f4711b206ece224be3f21862ac3117c9323b02685395567"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/drug_forms.dart",
+        "sha256": "d0ee81ca2f8fc6c07b197b2cff517e56da21caf81aacd16bb00bfc49986198be"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/pharmacy_boundary.dart",
+        "sha256": "53900b1bd3d1b6c9dd7cecfc16bc6cb9146b66ece8c6cf1abd56e163b79c41b4"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/pharmacy_page.dart",
+        "sha256": "7992d2c5d5f25b96ebd8d075f01d2c2a1d1a7669c7f463e55b53c19c0b65e54f"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/prescription_page.dart",
+        "sha256": "e397645b514f7b1342b44cadc235690c7ba6da6f8f38c59ff0922fd8454eeec1"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/providers.dart",
+        "sha256": "a45afb4a3cb98a5b384447da5361824cc70bef575f3c720240eb8e3fc8913d7b"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/pharmacy/README.md",
+        "sha256": "e557007006694f15d273932322a43f45a19c706de5834bdd7b92d9e22be0cbe1"
+      },
+      {
+        "path": "mobile/lib/features/report/AGENTS.md",
+        "sha256": "092cd818934517568e6844ef65701f2cdb87c51db471f20c39101b28512a0195"
+      },
+      {
+        "path": "mobile/lib/features/report/data/datasources/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/data/models/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/data/README.md",
+        "sha256": "712f295b79a7e8ee8ab27af6bd9bef019a033e957074ca45d71273a5f18182cc"
+      },
+      {
+        "path": "mobile/lib/features/report/data/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/domain/entities/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/domain/README.md",
+        "sha256": "0046311a2021d246048b6b78e8eb19324cda18704a8bc796bb0d78786e696870"
+      },
+      {
+        "path": "mobile/lib/features/report/domain/repositories/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/domain/usecases/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/presentation/pages/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/presentation/providers/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/features/report/presentation/report_page.dart",
+        "sha256": "18b713b1d5926461e5c5694659fb97f28eced1ab97be7fe43c0c3a0d415bcc1b"
+      },
+      {
+        "path": "mobile/lib/features/report/presentation/widgets/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/l10n/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/lib/main.dart",
+        "sha256": "56efec2d0bf709a0258960bfeb413de9270d629caa1995d55f45f328d2039f26"
+      },
+      {
+        "path": "mobile/packages/mediflow_loader/lib/mediflow_loader.dart",
+        "sha256": "002a15f0f006524bf2fbdaeafbe44e19b65ef58b7e9916826bd2a583f096b733"
+      },
+      {
+        "path": "mobile/packages/mediflow_loader/lib/src/mediflow_loader.dart",
+        "sha256": "e584649be61b7bb05e7e2c40163a39e14127f5835fafd7317827e1c550123455"
+      },
+      {
+        "path": "mobile/packages/mediflow_loader/pubspec.yaml",
+        "sha256": "2003ab9db5a7c154da897e99060e09bd377e2d687e3002c2255694f994d74b38"
+      },
+      {
+        "path": "mobile/packages/mediflow_loader/README.md",
+        "sha256": "4f00397932a0a7b07c5f374ff1f8ec6d795ca8269c9117cbd0bafd7436966a77"
+      },
+      {
+        "path": "mobile/packages/mediflow_loader/test/mediflow_loader_test.dart",
+        "sha256": "c0e5042a36fb884d0adfed9215891fc207f4a566bcc93763d481a24054cbcc64"
+      },
+      {
+        "path": "mobile/pubspec.lock",
+        "sha256": "c5e3e3ac1b8dbd0bed22413d66c71cf4add742d57ba324c252d9deb479d93443"
+      },
+      {
+        "path": "mobile/pubspec.yaml",
+        "sha256": "cbe1c82ef085b25a499d255604ac4b76927541027306bc9b830558e748f81e4f"
+      },
+      {
+        "path": "mobile/test/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "mobile/test/api_client_test.dart",
+        "sha256": "4aeaab009dd1070b2f6df47b60245b380711adf77613ee86d241474d9b8ed929"
+      },
+      {
+        "path": "mobile/test/billing_notification_fixtures.dart",
+        "sha256": "7ff2ac4c92fb4feea1375fa2a5f958c861559128f33cb69b294cb35f8dfcc3eb"
+      },
+      {
+        "path": "mobile/test/billing_repository_test.dart",
+        "sha256": "32bfee0bb34c8086aec28fb29fd1a83d8d3deba5aed3c9879bb8d60e5333a564"
+      },
+      {
+        "path": "mobile/test/billing_widget_test.dart",
+        "sha256": "11fc1ff340246e06a8a99a720d556be57cfbf89cf519c2e6fa00e2f6e6216cd7"
+      },
+      {
+        "path": "mobile/test/client_composition_test.dart",
+        "sha256": "930728bacc1187bc727410be7d989738122bc605e69a089b666dbaa613a19822"
+      },
+      {
+        "path": "mobile/test/clinical_models_test.dart",
+        "sha256": "9bd29e67e1f25d6d193cda16f6485890fc0be4a6553ed1cacdb3915c38272244"
+      },
+      {
+        "path": "mobile/test/foundation_test.dart",
+        "sha256": "74fe11d77e21e08e925eb3e67f447b799918a15018429a7b591f089c53d9846b"
+      },
+      {
+        "path": "mobile/test/notification_repository_test.dart",
+        "sha256": "30c5552388aa4d1f44ce07d318d002fd475ff30f151eb7a095d831a78194792d"
+      },
+      {
+        "path": "mobile/test/notification_widget_test.dart",
+        "sha256": "5ec3213647367dea35479f1c03820e3bc1d1259cc487a54371bc7fd25b1b2b7e"
+      },
+      {
+        "path": "mobile/test/organization_feature_test.dart",
+        "sha256": "bae49f743536698be7e333e3dc8f44ab6d49f934f6f53917d099d3604325fcf9"
+      },
+      {
+        "path": "mobile/test/paged_list_test.dart",
+        "sha256": "5b7ee07d5bc1571fdfc2a747bdb70ade0bc6af3fc23326ae33a66ccce10ed28a"
+      },
+      {
+        "path": "mobile/test/patient_feature_test.dart",
+        "sha256": "ff957a50172c1d7f33a0f65c1759dcb3214659a6be04463d87e56a151342f919"
+      },
+      {
+        "path": "mobile/test/pharmacy_commands_test.dart",
+        "sha256": "7baafd4bb44b3351dba91c62b596667c6745db7d5683a5c7e6c8be3b3760e22c"
+      },
+      {
+        "path": "mobile/test/pharmacy_composition_test.dart",
+        "sha256": "29c86a5a940a62ab7fd13775f953c6ae1d65a4fc96092ee3875c417a52e6986a"
+      },
+      {
+        "path": "mobile/test/pharmacy_contract_test.dart",
+        "sha256": "16c409e205afef6fc999736a2132f9f823695ad55368896898bff230075d9eec"
+      },
+      {
+        "path": "mobile/test/pharmacy_dispense_test.dart",
+        "sha256": "6e808a6011460eea4cee0e7a40352f0d13b4892312c678bad8446031ac97b183"
+      },
+      {
+        "path": "mobile/test/pharmacy_fixtures.dart",
+        "sha256": "512cb6f4ad1756321376bd29926f7eb092531d37855546e0a0f16af612fdf7a2"
+      },
+      {
+        "path": "mobile/test/pharmacy_gateway_commands_test.dart",
+        "sha256": "7dcfbf39c6a14ac880a937b64bbb4e514487712f080142f503c5e52256f483e5"
+      },
+      {
+        "path": "mobile/test/pharmacy_navigation_widget_test.dart",
+        "sha256": "8ebeef5bbac2960607ad8ccec66100352a251776963345195bdd5db00807b84d"
+      },
+      {
+        "path": "mobile/test/pharmacy_prescription_commands_test.dart",
+        "sha256": "73993e79a355725cde64613225c2f0b5b6753cca7eb6d37b1e4fd2fd50378504"
+      },
+      {
+        "path": "mobile/test/pharmacy_prescription_widget_test.dart",
+        "sha256": "c627513dfe7d7f91363cdbb87c44d5c1aab3cd69cb878d8fb683455e1205dcea"
+      },
+      {
+        "path": "mobile/test/pharmacy_repository_test.dart",
+        "sha256": "dc80b01436a9e987486f4aeb44b50c0c8ea551e1e4aa8b1d500b77f35ea48a54"
+      },
+      {
+        "path": "mobile/test/pharmacy_rx_validation_widget_test.dart",
+        "sha256": "7c2fc5891bd8c3767d9ee98df0a0d93df1fca742736acc7b49f55e88b7ac8af3"
+      },
+      {
+        "path": "mobile/test/pharmacy_widget_test.dart",
+        "sha256": "940499d62d1a50a7b4c6a8c2d6e9c549a335dffb6323b127c47a8658567b8b3c"
+      },
+      {
+        "path": "mobile/test/pharmacy_workflow_widget_test.dart",
+        "sha256": "e1cfcdbd297bc573b0f0f66872aa4b89d100195cdbc370cfb4557b681abc8420"
+      },
+      {
+        "path": "mobile/test/session_controller_test.dart",
+        "sha256": "cc0372dc5901ae434e3302bf7e5c7ff4f7b915824bee3c40854967476975daa5"
+      },
+      {
+        "path": "mobile/test/widget_test.dart",
+        "sha256": "c5717655b595eaf8b148b0cffe9aeab4749279ba46e05e4703510eb27ec5b4f9"
+      },
+      {
+        "path": "mobile/test/workspace_access_test.dart",
+        "sha256": "3afcfabf4f542483f9fd13986713e059eb793704257cb88d3c1886d543a515fb"
+      },
+      {
+        "path": "mobile/tool/check.ps1",
+        "sha256": "ad0fe22819ca86881284f4ed3fb28046676a24d3ff546d828e06f32ea6649ec7"
+      },
+      {
+        "path": "mobile/tool/dev_server.dart",
+        "sha256": "a551256121845e1339757cf57298958d88b6559d463390af1915bdbbea7c30e2"
+      },
+      {
+        "path": "mobile/tool/run_web.ps1",
+        "sha256": "47a8f4984cf0a0ed347ba355e2da00581f0010cb36786933e52b36d94de3ef02"
+      }
+    ]
+  },
+  "progress": {
+    "implementationDone": 11,
+    "total": 12,
+    "remaining": "MP-HUY-12 actual acceptance deferred by user"
+  },
+  "checks": {
+    "command": "mobile/tool/check.ps1",
+    "format": {
+      "verdict": "PASS",
+      "files": 106,
+      "changed": 0
+    },
+    "analyzer": "PASS no issues",
+    "tests": {
+      "verdict": "PASS",
+      "passed": 299,
+      "failed": 0,
+      "suite": "mobile/test and mediflow_loader/test",
+      "usesHttpDoubles": true
+    },
+    "webBuild": "PASS release web, 98.5 seconds; Wasm dry run PASS",
+    "diffCheck": "PASS",
+    "exitCode": 0
+  },
+  "realAcceptance": {
+    "gatewayWorkflow": "NOT RUN",
+    "browserCandidate": "NOT RUN",
+    "native": "NOT RUN",
+    "reason": "User explicitly requested finish code, test actual environment later"
+  },
+  "config": {
+    "gatewayUrl": "http://localhost:4300/api",
+    "pharmacyModeDefault": "unavailable",
+    "acceptedModes": [
+      "outpatient",
+      "legacy"
+    ],
+    "backendGatesChanged": false
+  },
+  "scope": {
+    "sharedNetworkAndAppAuthorized": true,
+    "backendChanged": false,
+    "packagesOrPlatformsChanged": false,
+    "newBranch": false,
+    "commit": false,
+    "push": false
+  },
+  "warnings": [
+    "Existing CupertinoIcons font warning; no package/platform changes"
+  ]
+}

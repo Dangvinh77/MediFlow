@@ -1,5 +1,124 @@
 # Handoff chung Huy — Pharmacy, Report và Support
 
+## Mobile Pharmacy — shared dependencies đã triển khai, 2026-10-22
+
+**Trạng thái hiện hành:11/12 task code, task12 nghiệm thu thật còn lại.** Người dùng đổi quyết
+định, giao Huy shared network/app/config và sau đó yêu cầu **hoàn thành code, test thật sau**.
+Đã có optional POST Idempotency-Key, bodyless PUT, adapter create/dispense thật, root DI reactive
+session/mode, nested routes/role guards và selected module. Không còn chờ Vinh nối những phần này.
+Các đoạn8/12/giữ shared dependency bên dưới là lịch sử trước khi người dùng giao thêm quyền.
+
+PHARMACY_MODE=outpatient/legacy phải khớp backend được operator xác nhận; mặc định/invalid khóa
+command cần mode. Không tự bật gates, tạo account/authority IDs hoặc sửa producer backend.
+Phần còn lại chỉ nghiệm thu public workflow thật với dữ liệu/tài khoản test, clearance/one-effect,
+role/session matrix và thiết bị/toolchain. Thiếu nguồn episode tổng quát cho visit chỉ kê thuốc
+vẫn cần phối hợp Clinical; không tạo Lab order thừa hoặc gọi SYSTEM endpoint để lấy authority.
+Evidence và candidate ở [integration](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-integration/README.md).
+Không tạo handoff mới, nhánh mới, commit hoặc push.
+
+## Mobile Pharmacy — runtime đã chạy, 2026-10-22
+
+Docker đã hoạt động; đã start PostgreSQL/RabbitMQ healthy, đóng gói source và chạy Eureka8761,
+Gateway8080/Core8089/Pharmacy8085 đều health UP. Mobile web4300 mở login thật; proxy Pharmacy
+không token trả401. [Evidence runtime](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-runtime/README.md).
+Các ghi chú Docker/Gateway chưa chạy bên dưới là lịch sử, không còn là trạng thái runtime hiện tại.
+
+Pharmacy database cũ có bảng nhưng thiếu Flyway history; không repair/baseline/delete. Runtime
+Pharmacy dùng database kiểm thử riêng `mediflow_pharmacy_mobile_20261022`, migration20/v20 đạt.
+Không bật gates hoặc tự thêm tài khoản/authority IDs. Task11 và shared network vẫn dependency
+theo lựa chọn người dùng;08/10 adapters và12 signed workflow acceptance chưa đóng. Startup/login
+và401 không thay stock/clearance acceptance. Tổng vẫn8/12, không mark implemented.
+
+## Mobile Pharmacy — task11 dependency, task12 local verification, 2026-10-22
+
+Người dùng đã xác nhận **giữ cả phần nối app thành dependency**, ngoài shared network đã giữ
+trước đó. Không sửa app/core/shared tests và không tạo app/harness runtime riêng để thay integration.
+Tiến độ đóng task vẫn8/12;08/10 chờ transport/adapters,11 chờ composition,12 PARTIAL local.
+
+Kiểm task12 phát hiện catalog overflow khi landscape720×320/font2 và bàn phím mở. Huy đã sửa
+header và pagination trong feature thành vùng cuộn có giới hạn; giữ catalog list, Material/theme
+hiện có. Regression thêm4 widget cases cho rotation/keyboard/back ở cả Sáng/Tối; không gọi đó là
+nghiệm thu thiết bị hoặc browser thật. Candidate/evidence ở
+[readiness](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-readiness/README.md).
+
+Môi trường kiểm hiện tại: Docker Linux Engine không kết nối được; không có listener Gateway8080
+hoặc mobile4300/4301. Flutter3.47/Dart3.13 và Chrome/Edge có sẵn. Android SDK36 nhưng thiếu
+cmdline-tools/license status unknown; AVD Pixel_7 có cấu hình nhưng chưa chạy/không có Android
+device kết nối. Windows native thiếu C++ toolchain; iOS cần macOS. Không tự cài tooling/nhận licenses.
+
+Để nghiệm thu thật cần shared owner bind repository/reactive access/session/explicit mode/routes,
+thêm header/bodyless transport và Huy nối data adapters; sau đó issuer/Gateway/backend test chạy
+với workflow IDs/price policy thật. Không cần endpoint Gateway mới. Root shell hiện chọn module
+bằng exact path nên nested route selection là dependency nếu dùng deep links mới. Chưa bật gates,
+chưa mark Pharmacy implemented hoặc claim stock/clearance/one-effect acceptance.
+
+## Mobile Pharmacy — cập nhật MP-HUY-08/10, 2026-10-22
+
+**8/12 task DONE local;08/10 PARTIAL;11/12 chưa hoàn tất.** Giữ các dependency chung
+đã nêu bên dưới, theo lựa chọn người dùng không sửa shared network. Không tạo handoff mới.
+
+08 đã bổ sung lỗi Java field path, focus khi sửa draft và catalog rỗng, kiểm same-intent retry.
+10 đã có domain policy/use case/strict receipt và UI xác nhận xuất: V1 không bị boolean legacy
+chặn, V0 vẫn yêu cầu boolean; quyền/trạng thái/session/pending giữ chặt. Phiếu FAILED tách khỏi
+DISPENSED; receipt giữ qua read lỗi. Unknown/conflict/5xx không replay; unpaid/expired/revoked
+giữ lỗi, không tự gán paid/stock. Đây là feature tests với doubles, chưa gọi dispense thật.
+
+Vinh/shared cần **hai khả năng đúng contract**, không cần Gateway endpoint mới:
+POST hỗ trợ header Idempotency-Key theo request; PUT cho phép không body thật. Giữ Bearer,
+envelope/errors/late401 và không tự replay mutation. Khi shared client có đủ, Huy nối
+`OutpatientPrescriptionWriter` và `PrescriptionDispenser` bằng data adapters + request tests;
+task11 bind hai provider cùng repo/access/explicit mode. Hai provider hiện mặc định null,
+nút gửi command khóa, không dùng raw Dio hoặc payload giả. Source IDs/policy dependency giữ nguyên.
+
+[Evidence candidate 08/10](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-dispense/README.md)
+phân biệt local tests/build với Gateway/browser/device NOT RUN. Không bật gates/backend/FE,
+không tự tạo nhánh/commit/push.
+
+## Mobile Pharmacy — 8/12 local, MP-HUY-07/08/09, 2026-10-22
+
+Thay checkpoint6/12 bên dưới:01–07 và09 local DONE;08 PARTIAL. Giữ **một file handoff này**.
+Nguồn kê đơn đã đối chiếu live MedicalRecordDTO/ClinicalLabOrderDTO/Billing policy và workflow FE
+đã ký 2026-10-19; mobile nhập giá trị đã xác minh, không tự sinh authority IDs hoặc default DRUG.
+Public nguồn episode tổng quát cho visit chỉ kê thuốc và public Billing catalog selection chưa có;
+Clinical/Billing owner Vinh phối hợp source context/policy. Không tạo Lab chỉ để lấy episode,
+không gọi SYSTEM-only `/records/{id}/prescription-context`, không query DB.
+
+Task08 có pure Dart immutable intent/UUID key, exact V1 body mapping, form catalog/lines/context,
+confirmation và same-intent retry tests. **Chưa có POST V1 adapter thật**; writer provider null
+thì nút gửi khóa. Người dùng chọn **giữ mạng thành dependency**, do đó không sửa shared client/test.
+Vinh cần optional `Idempotency-Key` trong POST ở `mobile/lib/core/network/api_client.dart` và regression
+`mobile/test/api_client_test.dart`: per-request header không rò, giữ Bearer/late401/envelope/errors,
+không auto replay. Sau đó Huy nối Pharmacy writer adapter dùng header thật + exact body và tests;
+composition bind capability cùng repo/access/mode ở task11. Không giả header bằng body/query.
+Bodyless PUT cho task10 vẫn cần shared owner; không gửi `{}` thay bodyless.
+
+Task09 đã có PUT cancel reason500, role/state/pending/session/ID guards, strict result ID/status,
+unknown chỉ GET, success giữ receipt qua lỗi refresh. Local doubles không chứng minh assigned
+doctor/cross-doctor authority thật; signed Gateway matrix ở12. Task11 DI/routes/session/mode và12
+Gateway/browser/native vẫn chưa chạy. Frame/source giữ Flutter/Riverpod/Material3/theme hiện có,
+không sửa app/core/package/platform/backend/gates hoặc FE. Evidence mới ở
+[checkpoint Rx](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-rx/README.md).
+
+## Mobile Pharmacy — 6/12 local, 2026-10-22
+
+MP-HUY-01–06 local DONE: thêm thuốc, điều chỉnh kho và tra cứu/chi tiết đơn nối qua
+domain repository → shared ApiClient. [Plan](../../mobile/docs/huy-pharmacy-mobile-plan.md)
+và [evidence](../../mobile/docs/evidence/huy-pharmacy/2026-10-22-local/README.md).
+Full mobile+loader **186/186 PASS**, analyzer không lỗi, format đạt. Đây là local implementation,
+chưa phải signed Gateway/browser/device acceptance; checkpoint mobile 3/12 phía dưới là lịch sử.
+
+Master đã có POST/PUT JSON, nên không còn dependency transport cho task 04/05. Không sửa
+shared hoặc backend trong lượt này. MP-HUY-11 vẫn cần Vinh phối hợp `mobile/lib/app/dependencies.dart`,
+`router.dart`, `modules.dart`, `core/config/app_config.dart` và tests tương ứng: bind Pharmacy
+repository, reactive actual session/opaque identity, explicit mode và nested-route role checks.
+Feature đã có Navigator nội bộ; module chưa mark implemented trước smoke. MP-HUY-08/10 còn cần
+optional Idempotency-Key và bodyless PUT trong `core/network/api_client.dart` + regression tests.
+Không bypass ApiClient hoặc gửi `{}` để giả bodyless contract. Public source IDs/priceCode
+cho Rx phải được đối chiếu qua workflow; không nhập IDs tự sinh hay tự đoán context.
+
+Task tiếp:07 nguồn kê đơn,08 tạo V1,09 hủy,10 xuất;11 binding và12 nghiệm thu thật. Không cần
+Report coverage/Gateway API mới cho Pharmacy mobile. Dependency mobile chỉ giữ trong file này.
+
 ## Hiện hành — FE nghiệm thu cô lập hoàn tất, 2026-10-21
 
 **14/14 task, 56/56 tiêu chí FE**, theo mục 25 của plan và

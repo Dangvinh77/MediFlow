@@ -2,8 +2,10 @@
 
 **Ngày lập:** 2026-10-20. **Owner:** Huy (`LQHuy0210`).
 **Baseline:** `8883f49d`, nhánh Huy; FE working diff hiện có giữ nguyên.
-**Tiến độ implementation:** **3/12 task (25%)** — MP-HUY-01/02/03 hoàn tất local;
-shared app integration và nghiệm thu Gateway/native nằm ở MP-HUY-11/12, chưa thực hiện.
+**Tiến độ code:** **11/12 task (91,7%)** — MP-HUY-01–11 hoàn tất implementation.
+Người dùng đã giao thêm shared network/app/config và chọn **hoàn thành code, test thật sau**.
+Task12 còn nghiệm thu Gateway/native; không lấy test mock hoặc build thay nghiệm thu thật.
+Checkpoint hiện hành ở mục13; các mục7–12 là lịch sử trước khi quyền shared được giao.
 
 ## 1. Kết quả cần đạt
 
@@ -20,7 +22,8 @@ Outbox replay là công cụ quản trị riêng, ngoài đợt mobile Pharmacy 
 ## 2. Hiện trạng và phạm vi
 
 Đã có Flutter/Riverpod/GoRouter/Dio/SecureStorage, auth và Gateway client, shared paged widgets.
-PharmacyPage mới là FeatureWorkspace; domain/data chỉ có README, chưa có nghiệp vụ hay test riêng.
+Trạng thái lúc lập plan: PharmacyPage còn placeholder. Sau mục 7–8 đã có danh mục/chi tiết,
+form thêm thuốc/điều chỉnh tồn và tra cứu đơn cùng domain/data/tests. App binding vẫn ở task 11.
 
 | Phạm vi | Trách nhiệm |
 |---|---|
@@ -34,7 +37,8 @@ PharmacyPage mới là FeatureWorkspace; domain/data chỉ có README, chưa có
 | `mobile/lib/app/app_shell.dart` | Vinh/shared: chỉ kiểm và sửa nếu nested route cần chọn đúng module |
 | Clinical/Core/Billing mobile hoặc backend | VERIFY-CONTRACT, không sửa trong plan này |
 
-Đây là phân công dự kiến, không tự cấp quyền shared paths cho Huy. Không import feature khác;
+Override ngày2026-10-22: người dùng giao Huy các shared paths trong bảng để nối Pharmacy.
+Không import feature khác;
 composition root truyền context/adapter, presentation không tự dựng concrete repository.
 Dependency phối hợp ghi trong [handoff chung Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md),
 không tạo thêm file handoff. Đọc AGENTS gần nhất trước mỗi đợt sửa.
@@ -112,92 +116,103 @@ contract backend hiện hành là authority, không sao chép cấu trúc Next.j
 
 Đóng local khi tests đạt; mở route thật sau composition, signed proof ghi MP-HUY-12.
 
-### MP-HUY-04 — Thêm thuốc
+### MP-HUY-04 — Thêm thuốc — LOCAL DONE
 
-- [ ] Form đúng CreateDrugRequest: tên/đơn vị/giá/tồn/hạn dùng/threshold và fields optional.
-- [ ] Mirror backend limits: tên 150, đơn vị 20, giá không âm với precision contract,
+- [x] Form đúng CreateDrugRequest: tên/đơn vị/giá/tồn/hạn dùng/threshold và fields optional.
+- [x] Mirror backend limits: tên 150, đơn vị 20, giá không âm với precision contract,
   stock/threshold không âm, expiry không quá khứ. Server vẫn quyết định kết quả cuối.
-- [ ] ADMIN/PHARMACIST, pending khóa submit đồng bộ, field errors/focus và thành công mở ID server.
-- [ ] Test invalid/403/409/network/503. Request này chưa có idempotency contract:
+- [x] ADMIN/PHARMACIST, pending khóa submit đồng bộ, field errors/focus và thành công mở ID server.
+- [x] Test invalid/403/409/network/503. Request này chưa có idempotency contract:
   response không rõ phải kiểm kết quả trước lệnh mới, không tự resend hoặc tuyên bố exactly-once.
 
-### MP-HUY-05 — Điều chỉnh tồn kho
+### MP-HUY-05 — Điều chỉnh tồn kho — LOCAL DONE
 
-- [ ] PUT delta quantity không bằng 0; lý do có giới hạn backend, confirmation nêu rõ tăng/giảm.
-- [ ] Chỉ ADMIN/PHARMACIST; không cho âm stock bằng optimistic update; dùng DrugDTO trả về.
-- [ ] Pending khóa đôi, conflict/unknown outcome refresh trước lệnh mới; không auto retry delta.
-- [ ] Test số âm/dương/0, reservation constraint, forbidden, lỗi refresh và không áp delta hai lần.
+- [x] PUT delta quantity không bằng 0; lý do có giới hạn backend, confirmation nêu rõ tăng/giảm.
+- [x] Chỉ ADMIN/PHARMACIST; không cho âm stock bằng optimistic update; dùng DrugDTO trả về.
+- [x] Pending khóa đôi, conflict/unknown outcome refresh trước lệnh mới; không auto retry delta.
+- [x] Test số âm/dương/0, reservation constraint, forbidden, lỗi refresh và không áp delta hai lần.
 
-MP-HUY-04/05 chờ shared PUT/transport thích hợp; không bypass ApiClient bằng Dio riêng.
+MP-HUY-04/05 dùng POST/PUT JSON đã có trên master qua shared ApiClient, không còn chờ transport
+cho hai lệnh này. Chưa cần Idempotency-Key/bodyless PUT trong hai task này; binding ở task 11.
 
-### MP-HUY-06 — Tra cứu và chi tiết đơn thuốc
+### MP-HUY-06 — Tra cứu và chi tiết đơn thuốc — LOCAL DONE
 
-- [ ] UUID lookup, chi tiết lines/amounts, trạng thái đơn và xuất kho tách biệt, cancellation audit.
-- [ ] Refresh explicit GET, loading/error/empty-not-found/403 riêng, correlation và stale/session guards.
-- [ ] Mode lấy từ cấu hình app đã khóa; unknown mode đóng command, không đoán từ GET hoặc lỗi API.
-- [ ] Test nullable recordId, paymentConfirmed=false, các trạng thái terminal, 401/403/404/503.
+- [x] UUID lookup, chi tiết lines/amounts, trạng thái đơn và xuất kho tách biệt, cancellation audit.
+- [x] Refresh explicit GET, loading/error/empty-not-found/403 riêng, correlation và stale/session guards.
+- [x] Mode là input composition tường minh qua provider, mặc định unavailable; unknown đóng command,
+  không đoán từ GET hoặc lỗi API. Root config binding còn ở task 11, read slice chưa có Rx commands.
+- [x] Test nullable recordId, paymentConfirmed=false, các trạng thái terminal, 401/403/404/503.
 
 Không có GET danh sách prescriptions: không làm fake history, không suy dữ liệu từ thuốc hoặc DB.
 
-### MP-HUY-07 — Đầu vào kê đơn từ public workflow
+### MP-HUY-07 — Đầu vào kê đơn từ public workflow — LOCAL DONE (nhập nguồn đã xác minh)
 
-- [ ] Xác minh recordId/patientId/doctorId/departmentId từ hồ sơ và identity staff thật.
-- [ ] Xác minh careEpisodeId từ public workflow có explicit OUTPATIENT_VISIT;
+- [x] Xác minh recordId/patientId/doctorId/departmentId từ hồ sơ và identity staff thật.
+- [x] Xác minh careEpisodeId từ public workflow có explicit OUTPATIENT_VISIT;
   không dùng recordId/appointmentId/accountId thay episodeId.
-- [ ] priceCode từ catalog/policy Billing được xác nhận; không mặc định DRUG chỉ vì test từng dùng.
-- [ ] Context thiếu thì hiển thị thiếu đầu vào và chặn submit. Nếu chưa có mobile Clinical handoff,
+- [x] priceCode từ catalog/policy Billing được xác nhận; không mặc định DRUG chỉ vì test từng dùng.
+- [x] Context thiếu thì hiển thị thiếu đầu vào và chặn submit. Nếu chưa có mobile Clinical handoff,
   cho nhập giá trị đã đối chiếu từ public workflow trong môi trường test, ghi nguồn evidence;
   không import Clinical repository vào feature Pharmacy hoặc gọi DB/internal authority APIs.
 
 Đóng khi có quy trình lấy đầy đủ nguồn thật và test không suy authority; entrypoint mobile tích hợp
 cần Vinh composition. Không bắt Clinical tạo Lab order chỉ để đoán episode cho kê đơn.
 
-### MP-HUY-08 — Tạo Rx ngoại trú V1 và retry
+### MP-HUY-08 — Tạo Rx ngoại trú V1 và retry — LOCAL DONE
 
-- [ ] Form chọn thuốc từ catalog thật, lines/quantity/dosage/date/context, confirmation trước gửi.
-- [ ] Một intent giữ frozen payload + UUID key trong memory; explicit retry giữ nguyên cả hai.
-- [ ] Unknown outcome khóa sửa draft; hướng dẫn kiểm kết quả, không tạo key mới để resend cùng ý định.
+- [x] Form chọn thuốc qua repository catalog, lines/quantity/dosage/date/context, confirmation trước gửi.
+- [x] Một intent giữ frozen payload + UUID key trong memory; explicit retry giữ nguyên cả hai.
+- [x] Unknown outcome khóa sửa draft; hướng dẫn kiểm kết quả, không tạo key mới để resend cùng ý định.
   Đổi phiên/mode hoặc rời flow hủy local intent; không lưu PII/intents vào storage mới.
-- [ ] Test double tap, 400/401/403/409/422/503, timeout, retry/success, stale session, V1 disabled.
+- [x] Widget/domain tests double tap, 400/401/403/409/422/503, timeout, retry/success, stale session, V1 disabled.
   Không fallback V0 khi V1 lỗi; legacy chỉ khi cấu hình compatibility tường minh.
 
-Đóng local sau transport header thật được bind/test. Native/web process restart chưa có recovery
-command nếu backend không cung cấp public lookup theo key; ghi giới hạn thay vì hứa khôi phục.
+- [x] Adapter dùng shared POST với header Idempotency-Key; tests xác nhận retry cùng body/key,
+  không gửi sourceReference hoặc giá tự tính, kiểm context của response.
+App root bind writer chỉ khi cấu hình outpatient. Feature default vẫn null khi dùng độc lập.
+Native/web process restart chưa có public recovery lookup theo key; không hứa khôi phục intent.
+Request tests dùng HTTP adapter double, chưa gọi là signed Gateway acceptance.
 
-### MP-HUY-09 — Hủy đơn
+### MP-HUY-09 — Hủy đơn — LOCAL DONE
 
-- [ ] ADMIN/DOCTOR, confirmation có reason; assigned-doctor authority do backend kiểm.
-- [ ] Terminal status không mở lại thao tác; pending khóa đôi, success dùng result server rồi refresh.
-- [ ] Unknown/conflict refresh để xác nhận, không tự resend; failed refresh không phủ nhận command đã thành công.
-- [ ] Test owner/foreign doctor, pharmacist deny, cancelled/dispensed/expired/failed và đổi ID giữa request.
+- [x] ADMIN/DOCTOR, confirmation có reason; assigned-doctor authority do backend kiểm.
+- [x] Terminal status không mở lại thao tác; pending khóa đôi, success dùng result server rồi refresh.
+- [x] Unknown/conflict refresh để xác nhận, không tự resend; failed refresh không phủ nhận command đã thành công.
+- [x] Local tests role hợp lệ/backend403 (gồm foreign-doctor denial contract), pharmacist deny,
+  cancelled/dispensed/expired/failed và đổi ID giữa request. Actual doctor ownership còn ở12.
 
-### MP-HUY-10 — Xuất thuốc V1 và compatibility V0
+### MP-HUY-10 — Xuất thuốc V1 và compatibility V0 — LOCAL DONE
 
-- [ ] Mode outpatient: paymentConfirmed=false không là điều kiện chặn xuất duy nhất;
+- [x] Mode outpatient: paymentConfirmed=false không là điều kiện chặn xuất duy nhất;
   hiển thị trạng thái quan sát, cho role hợp lệ gửi command với confirmation khi state cho phép.
-- [ ] Backend quyết định clearance tại PUT: unpaid/expired/revoked/Billing unavailable phải giữ lỗi,
+- [x] Feature giữ quyết định clearance ở backend: unpaid/expired/revoked/Billing unavailable giữ lỗi,
   không tự gán paid hoặc giảm stock. GET refresh không là chứng nhận command sẽ được chấp nhận.
-- [ ] Mode legacy giữ quy tắc V0 explicit; giữ role, terminal và pending guards; PUT không body.
-- [ ] Test V1 false→command, unpaid/clearance errors, V0 unpaid deny, duplicate click,
+- [x] Mode legacy giữ quy tắc V0 explicit; giữ role, terminal và pending guards.
+- [x] Widget/domain tests V1 false→command, unpaid/clearance errors, V0 unpaid deny, duplicate click,
   lost response→refresh, successful command nhưng follow-up read lỗi, không fallback/auto retry.
 
-Đóng local bằng contract/widget tests; một phiếu xuất/stock giảm đúng một lần cần MP-HUY-12 thật.
+- [x] Adapter PUT không body qua shared ApiClient và request contract tests.
 
-### MP-HUY-11 — Nối ứng dụng cùng Vinh
+App root bind dispenser khi mode explicit outpatient/legacy; mode invalid/unavailable khóa command.
+Không dùng raw Dio hoặc gửi `{}` thay bodyless. Một phiếu xuất/stock giảm đúng một lần còn ở
+MP-HUY-12 thật; local request tests không thay backend acceptance.
 
-- [ ] Bind repository tại app/dependencies.dart; register catalog/detail/new/stock/Rx/new/detail routes
+### MP-HUY-11 — Nối ứng dụng — LOCAL DONE, actual smoke chuyển task12 theo người dùng
+
+- [x] Bind repository tại app/dependencies.dart; register catalog/detail/new/stock/Rx/new/detail routes
   với thứ tự tránh `new` bị đọc thành UUID. Routes chỉ là navigation, không là context API mới.
-- [ ] Nested route guard và selected module theo prefix; ADMIN/DOCTOR/PHARMACIST đúng role từng action.
-- [ ] Mode outpatient/legacy/invalid từ config, không có public toggle tự chuyển backend profile.
+- [x] Nested route guard và selected module theo prefix; ADMIN/DOCTOR/PHARMACIST đúng role từng action.
+- [x] Mode outpatient/legacy/invalid từ config, không có public toggle tự chuyển backend profile.
   Shared session tiếp tục bỏ callback token cũ; không cho response phiên cũ thay nội dung người mới.
-- [ ] Integration widget tests root routing/DI/role/deep link/back; update implemented chỉ sau
-  feature đã bind và có smoke thực tế, không đánh dấu xong bằng placeholder.
+- [x] Root composition tests kiểm routing/DI/role; module implemented vì có feature và adapter thật.
+  Theo yêu cầu mới **code trước, test thật sau**, actual smoke nằm task12, chưa nghiệm thu release.
 
-Đây là task phối hợp, chưa giao quyền shared cho Huy; feature tests dùng repository overrides hợp lệ.
+Người dùng đã đổi quyết định và giao sửa shared app/core. Không còn dependency chờ owner nối app.
+Test composition dùng production appOverrides/router, với HTTP double; không giả là backend thật.
 
-### MP-HUY-12 — Nghiệm thu thật và bàn giao
+### MP-HUY-12 — Nghiệm thu thật và bàn giao — PARTIAL (local verification)
 
-- [ ] Chạy format/analyze/tests/web build bằng tool/check.ps1; lưu candidate và failure counts,
+- [x] Chạy format/analyze/tests/web build bằng tool/check.ps1; lưu candidate và failure counts,
   phân biệt focused và full. Tests không thay device/browser acceptance.
 - [ ] Actual issuer DOCTOR tạo V1, CASHIER thanh toán qua Billing public flow hiện có,
   PHARMACIST refresh/xuất; API IDs/correlation, stock và một effect được backend verification chứng minh.
@@ -213,10 +228,10 @@ command nếu backend không cung cấp public lookup theo key; ghi giới hạn
 
 ## 5. Shared deliverables và thứ tự chạy
 
-Hiện ApiClient chỉ GET/POST, POST body bắt buộc và chưa có command headers. Cần Vinh bổ sung
-PUT JSON/bodyless và optional Idempotency-Key theo contract; giữ Gateway guard/envelope/errors,
-không tự retry mutations. Test request headers không rò sang request khác, bodyless không gửi
-JSON giả và 401 của token cũ không xóa phiên mới. Không cần thay package/framework để làm bước này.
+Đã bổ sung optional POST Idempotency-Key và bodyless PUT theo quyền người dùng giao cho Huy.
+Giữ Gateway guard/envelope/errors và token của request401; không tự retry mutation. Tests kiểm
+header không rò sang request khác, bodyless không gửi JSON giả và request bị từ chối không replay.
+Không thay package/framework. Cấu hình PHARMACY_MODE không bật backend gates.
 
 Thứ tự: **01 → 02 → 03 → 06** để có lát cắt đọc; **11** nối read slice ngay khi sẵn sàng.
 Tiếp **04/05**, **07 → 08**, **09/10**, rồi hoàn tất **11 → 12**.
@@ -267,3 +282,169 @@ DTOs/page/errors, mode không suy từ read response và composition cần phố
 
 MP-HUY-04/05 và 06 là các bước tiếp theo theo plan. Shared transport/DI/routes/session composition
 vẫn thuộc MP-HUY-11, ghi một đầu mối trong handoff chung hiện có.
+
+## 8. MP-HUY-04/05/06 — 2026-10-22
+
+**6/12 task local,50%**, base `d5373058` trên Huy, working diff chưa commit/push.
+[Evidence và verification](evidence/huy-pharmacy/2026-10-22-local/README.md) ghi candidate,
+checks và giới hạn. Không sửa FE, backend, shared app/core hoặc dependency versions.
+
+- **04:** domain CreateDrug và adapter POST exact DTO; form validate tên/đơn vị/giá Java
+  BigDecimal precision13/2, Java Integer, ngày thật không quá khứ, text optional/threshold
+  nullable. ADMIN/PHARMACIST, confirmation, khóa đồng bộ, giữ draft/lỗi/correlation/focus,
+  callback mở ID do server cấp. Ambiguous outcome/conflict khóa resend, hướng dẫn tra danh mục.
+- **05:** PUT delta signed khác0/reason255, confirmation tăng/giảm, chỉ role quản lý kho.
+  Không optimistic stock; success dùng snapshot server. Unknown response giữ khóa; GET lỗi
+  không mở thao tác; GET thành công mới cho bắt đầu intent mới với delta/reason rỗng.
+  Backend vẫn kiểm reservations/tồn/authority; GET không chứng minh lệnh cũ chưa thực hiện.
+- **06:** UUID lookup/keyboard Search, detail lines/server totals/order-vs-dispense/audit,
+  explicit refresh, loading/permission/not-found/unavailable/correlation riêng. Mode input
+  composition mặc định unavailable; không suy V1 từ nullable record/false legacy flag.
+  Chưa expose Rx mutation; binding config thật còn ở11.
+- Boundary giữ session/role/repository/mode identity; đổi phiên đóng confirmation và xóa draft,
+  late response không navigate hoặc thay facts; đổi ID bỏ kết quả cũ. Widget checks gồm
+  320px/font-scale2 cả Sáng/Tối, invalid fields/focus,403/409/422/503/network, double-submit,
+  failed-refresh và terminal Rx. Không dùng test fixtures làm dữ liệu runtime.
+
+Standard `tool/check.ps1` **PASS exit0**: dependencies resolved, format **95 files/0 changed**,
+analyzer **no issues**, full app+loader **186/186 PASS**, web release build **PASS108,2s**.
+Wasm dry run PASS; cảnh báo font CupertinoIcons từ cấu hình hiện có vẫn được ghi ở evidence,
+không thêm package/shared asset ngoài scope. Các lỗi test helper/focus/lint ban đầu đã được
+sửa và chạy lại; không nới backend validation. Raw log local `.git/mobile-pharmacy-next-check.log`.
+
+Verdict **LOCAL IMPLEMENTATION PASS**, integrated Gateway/browser/native **NOT RUN**. App
+composition chưa bind Pharmacy, module chưa mark implemented. Task07 nguồn kê đơn và08–10
+Rx commands tiếp theo;11 cần exact shared integration/transport header/bodyless theo mục5,
+12 cần actual issuer/Gateway và device. Không cần Report coverage hoặc Gateway route mới
+cho Pharmacy mobile; chỉ một handoff chung, không tự tạo nhánh/commit/push.
+
+## 9. MP-HUY-07/08/09 và kiểm khung mobile — 2026-10-22
+
+**8/12 task local,66,7%**:01–07 và09 DONE;08 PARTIAL. Base `d5373058`, nhánh Huy,
+working diff chưa commit/push. [Evidence Rx](evidence/huy-pharmacy/2026-10-22-rx/README.md)
+thay checkpoint kiểm tra186 tests cho candidate mới, không sửa evidence lịch sử.
+
+- **07 LOCAL DONE ở luồng nhập nguồn đã xác minh:** public MedicalRecordDTO có đúng record,
+  patient, doctor staff và department. ClinicalLabOrderDTO của Lab order thực có nhu cầu có
+  explicit episode/type; workflow disposable đã được ký ở evidence FE2026-10-19. Billing policy
+  xác nhận mã giá theo môi trường. Form để trống IDs/priceCode, yêu cầu nguồn đối chiếu; validate
+  thiếu/sai UUID/ngày/lines thì chặn. Không gọi SYSTEM-only prescription-context, không suy từ
+  appointment/record hoặc tự tạo Lab order. Chưa có automatic Clinical mobile context producer,
+  public episode source tổng quát cho visit chỉ kê thuốc hoặc public catalog selection; đây là
+  dependency tích hợp production trong handoff, không giả đã có public API tương ứng.
+- **08 PARTIAL:** form dùng repository catalog, lines/quantity/dosage/date, confirmation và
+  pure Dart immutable intent+canonical UUID key; wire mapping V1 chính xác, không gửi giá/actor.
+  Retry explicit cùng object/key/body, unknown khóa sửa draft, 400/422 cho chủ động sửa bản nháp
+  bị từ chối, không fallback V0. Người dùng chọn giữ shared network thành dependency: chưa có
+  header POST, chưa có real writer adapter; provider mặc định null và nút gửi khóa. Tests writer
+  doubles kiểm behavior, không là bằng chứng header hoặc POST integration. Task này chưa tick DONE.
+- **09 LOCAL DONE:** PUT cancel qua ApiClient với reason bắt buộc/max500, role ADMIN/DOCTOR,
+  ACTIVE/PENDING, explicit mode, synchronous pending lock và confirmation. Server kiểm doctor
+  ownership. Decode strict ID/status, không tự release stock/reservations. Thành công giữ receipt
+  qua read503;403/conflict/unknown không resend, explicit GET giữ lỗi/correlation và khóa lệnh.
+  Đổi ID/session bỏ late response; mode/role đổi remount và đóng confirmation.
+- **Khung hiện có:** inward imports, domain thuần Dart, presentation không data/cross-feature,
+  data chỉ shared ApiClient/Gateway. Giữ Riverpod/Material3 theme từ app, Navigator nội bộ,
+  shell/sidebar/drawer/router/config/package/platform. Không tạo app con/HTTP client khác.
+  Widget320px/font2 light/dark đạt. App DI/session/mode/routes chưa bind; không gọi source/theme
+  checks là nghiệm thu browser so ảnh hoặc native thực tế.
+
+`tool/check.ps1` **PASS exit0**: pub get đạt, format **100 files/0 changed**, analyze **no issues**,
+full app+loader **234/234 PASS** (thêm48 tests domain/data/widget), web release **PASS77,5s**,
+Wasm dry run PASS. Warning CupertinoIcons từ cấu hình có sẵn vẫn ghi trong evidence. Các lỗi
+helper cuộn/transition và lint ban đầu đã sửa rồi chạy lại toàn bộ; không bỏ assertion hoặc nới
+backend validation. Raw log local `.git/mobile-pharmacy-rx-check.log`.
+
+Verdict LOCAL IMPLEMENTATION PASS; actual Gateway/browser/native **NOT RUN**. Task08 còn transport
+và real writer adapter;10 bodyless dispense,11 shared composition,12 actual acceptance. Không sửa
+shared/foreign/backend/gates hoặc FE, không thêm package và không tự tạo nhánh/commit/push.
+
+## 10. MP-HUY-08/10 — 2026-10-22
+
+**8/12 task đóng local (66,7%)**, gồm01–07 và09; **08/10 PARTIAL**,11/12 chưa hoàn tất.
+Hai task lượt này đã triển khai hết phần feature độc lập, chưa đủ tiêu chí đóng vì shared network
+được người dùng giữ thành dependency. [Evidence hiện hành](evidence/huy-pharmacy/2026-10-22-dispense/README.md)
+và source hashes ghi đúng working candidate trên Huy/base `d5373058`; chưa commit/push.
+
+| Task | Đã triển khai trong lượt này | Phần còn lại |
+|---|---|---|
+|08 Tạo Rx V1| Lỗi Java field path đúng quantity/dosage; sửa draft focus field lỗi; catalog rỗng totalPages0; retry network/429 và đóng confirmation giữ nguyên intent/key/body | Shared POST header, real writer adapter/request tests |
+|10 Xuất thuốc| Explicit mode V1/V0; ADMIN/PHARMACIST, ACTIVE/PENDING; confirmation/pending/session guards; strict server receipt gồm actor type; phân biệt FAILED/DISPENSED; giữ receipt qua read lỗi; denial/unknown không tự resend/paid/stock | Shared PUT không body, real dispenser adapter/request tests |
+|11 Nối app| Feature giữ khung hiện có, hai capability provider mặc định null và command khóa | Root DI/routes/access/session/mode và integration tests |
+|12 Nghiệm thu| Full local checks và evidence candidate | Signed Gateway/browser/device/native và stock/one-effect thật |
+
+Standard `tool/check.ps1` **PASS exit0**: pub get đạt, format **103 files/0 changed**, analyzer
+**no issues**, full app+loader **284/284 PASS** (thêm50 so checkpoint Rx), web release
+**PASS78,3s**, Wasm dry run PASS. Warning CupertinoIcons có sẵn được ghi, không sửa shared asset.
+Raw log local `.git/mobile-pharmacy-dispense-check.log`. Đã sửa lint/helper và cập nhật kỳ vọng
+cũ của V1 trước khi chạy lại toàn bộ; không bỏ kiểm quyền/trạng thái hoặc nới backend validation.
+
+Các tests mới gồm V1 legacy false, V0 paid/unpaid, role và cả hai terminal state axes,
+unpaid/expired/revoked denial,401/403/timeout/conflict/503, pending và late response/session đổi,
+receipt sau read503, FAILED receipt, strict actor fields và 320px/font2/light/dark.
+Đây là doubles kiểm behavior client; clearance thật/stock không trừ hai lần và actual UI qua
+Gateway chưa nghiệm thu. Không gọi test/build là browser acceptance; không bật gates.
+
+Giữ presentation → domain ← data, Material3/theme/Riverpod/Navigator có sẵn; shared app/core,
+package/platform/backend/FE không sửa. Dependency cập nhật đúng một handoff chung hiện có.
+
+## 11. MP-HUY-11/12 — giới hạn được xác nhận và regression UX, 2026-10-22
+
+Người dùng chọn **giữ cả phần nối app thành dependency**. Vì vậy11 chưa sửa shared production
+hoặc tests; không dựng runtime harness để thay app composition. Task12 PARTIAL: đã kiểm phần
+local và môi trường, actual Gateway/browser/device/native vẫn NOT RUN. Tổng **8/12 DONE**,
+08/10/12 PARTIAL,11 DEPENDENCY. Không tăng số task đóng khi chưa đạt đủ tiêu chí.
+
+- Phát hiện lỗi catalog RenderFlex overflow khi xoay landscape720×320/font2. Header và
+  pagination được giới hạn và cuộn theo chiều cao khả dụng; giữ danh sách, theme và shell có sẵn.
+  Thêm4 widget regression cases về rotation/keyboard search/back bỏ draft ở cả Sáng/Tối.
+- Full local suite **288/288 PASS**, format **104 files/0 changed**, analyzer **no issues**.
+  Web build và source hashes ghi ở [verification hiện hành](evidence/huy-pharmacy/2026-10-22-readiness/verification.json),
+  không dùng evidence284 tests cho source mới. Không đổi API/schema/gates/package/shared paths.
+- Docker Linux Engine không kết nối được; Gateway8080/mobile4300/4301 không có listener lúc kiểm.
+  Flutter nhận Chrome/Edge/Windows; Android SDK36 thiếu cmdline-tools/license status unknown,
+  có AVD Pixel_7 nhưng không có Android device kết nối. Windows native thiếu C++ toolchain,
+  iOS cần macOS. Không tự cài/accept licenses để che NOT RUN.
+- Các điều kiện còn lại: shared owner nối reactive access/session/config/repo/routes và transport,
+  Huy thêm real command adapters; môi trường issuer/Gateway/backend với nguồn IDs/price policy
+  thật để nghiệm thu clearance/stock/one-effect. Không yêu cầu endpoint Gateway mới.
+
+[Evidence task11/12](evidence/huy-pharmacy/2026-10-22-readiness/README.md) và handoff chung giữ
+phân biệt phần code, local tests và integrated/native acceptance. Chưa commit/push/tạo nhánh.
+
+## 12. Runtime sau khi người dùng mở Docker — 2026-10-22
+
+Đã start PostgreSQL/RabbitMQ healthy, package current source Eureka/Gateway/Core/Pharmacy
+(-DskipTests, không ghi là backend test PASS) và chạy local Java21. Health cả bốn service UP.
+Mobile web4300 dùng build readiness đã có, browser mở login thật; proxy Pharmacy không token401.
+[Evidence runtime](evidence/huy-pharmacy/2026-10-22-runtime/README.md) ghi health và screenshot.
+
+Pharmacy boot với database cũ bị chặn do bảng có sẵn nhưng thiếu Flyway history. Không sửa/xóa
+hoặc baseline dữ liệu cũ; dùng database test riêng `mediflow_pharmacy_mobile_20261022`, đủ20
+migrations đếnv20. Runtime này chưa có dữ liệu nghiệp vụ Pharmacy, không gọi là acceptance cũ.
+
+Docker/Gateway không còn là blocker startup. Shared network/root app binding vẫn dependency
+theo người dùng; chưa issuer login/command adapters/Rx→payment→dispense acceptance, chưa bật gates.
+Tiến độ đóng task vẫn8/12. Không sửa production app/core/shared hoặc tạo nhánh/commit/push.
+
+## 13. Shared integration sau khi người dùng giao quyền — 2026-10-22
+
+**11/12 task code (91,7%)**. Người dùng thay đổi quyết định giữ dependency, giao triển khai mạng
+và app; sau đó chọn **hoàn thành code, test thật sau**. Các giới hạn ownership của checkpoint cũ
+không còn chặn những shared paths đã được giao. Không tạo nhánh/commit/push.
+
+- MP-HUY-08: shared POST optional Idempotency-Key, adapter tạo V1 và retry cùng frozen intent;
+  kiểm response khớp record/patient/doctor/department, không gửi authority giả hoặc giá tự tính.
+- MP-HUY-10: shared PUT optional body; dispense adapter không body, strict audit receipt và
+  backend errors giữ nguyên. Không đổi paymentConfirmed, retry tự động hoặc giảm tồn ở client.
+- MP-HUY-11: repository/session/mode/writer/dispenser bind tại composition root; catalog/new/
+  detail/stock/Rx lookup/new/detail routes, prefix role guard/selected module, back về catalog.
+  Giữ Riverpod/GoRouter/Material3 sáng/tối/package/platform; implemented là trạng thái code.
+- PHARMACY_MODE nhận outpatient/legacy, mặc định và invalid unavailable; không suy mode từ
+  response thiếu metadata, không public toggle hoặc tự bật backend gates.
+- MP-HUY-12 còn actual issuer/Gateway workflow, clearance/stock một effect và native acceptance.
+  Việc nghiệm thu thật để sau do người dùng chọn; không gọi tests/build là đã đạt nghiệp vụ thật.
+
+Kết quả kiểm tra và source hashes cuối ở [integration evidence](evidence/huy-pharmacy/2026-10-22-integration/README.md).
+Handoff shared network/app được đóng trong đúng handoff chung; chỉ giữ phần nghiệm thu/nguồn
+workflow còn lại. Không mở Report/Notification mobile, Surgery/Inpatient/full V2.

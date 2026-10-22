@@ -1,6 +1,8 @@
 import '../../../core/domain/page_result.dart';
 import 'drug.dart';
 import 'prescription.dart';
+import 'drug_commands.dart';
+import 'prescription_commands.dart';
 
 abstract interface class PharmacyRepository {
   Future<PageResult<Drug>> searchDrugs({
@@ -10,6 +12,12 @@ abstract interface class PharmacyRepository {
   });
   Future<Drug> getDrug(String id);
   Future<Prescription> getPrescription(String id);
+  Future<Drug> createDrug(CreateDrug command);
+  Future<Drug> adjustStock(String id, AdjustDrugStock command);
+  Future<CancelPrescriptionResult> cancelPrescription(
+    String id,
+    CancelPrescription command,
+  );
 }
 
 bool isPharmacyId(String value) => RegExp(

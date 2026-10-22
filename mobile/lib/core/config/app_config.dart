@@ -1,5 +1,9 @@
 class AppConfig {
-  AppConfig(String gatewayUrl, {bool allowInsecureHttp = false}) {
+  AppConfig(
+    String gatewayUrl, {
+    bool allowInsecureHttp = false,
+    this.pharmacyMode = 'unavailable',
+  }) {
     final uri = Uri.tryParse(gatewayUrl);
     if (uri == null ||
         !['http', 'https'].contains(uri.scheme) ||
@@ -34,7 +38,12 @@ class AppConfig {
       defaultValue: 'http://localhost:8080/api',
     ),
     allowInsecureHttp: const bool.fromEnvironment('ALLOW_INSECURE_HTTP'),
+    pharmacyMode: const String.fromEnvironment(
+      'PHARMACY_MODE',
+      defaultValue: 'unavailable',
+    ),
   );
 
   late final String baseUrl;
+  final String pharmacyMode;
 }

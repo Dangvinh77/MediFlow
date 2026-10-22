@@ -55,6 +55,8 @@ class Prescription {
   // The read contract contains no version metadata. Do not infer a care mode.
 }
 
+enum DispenseActorType { staff, account, system, legacyUnknown }
+
 class DispenseResult {
   const DispenseResult({
     required this.id,
@@ -63,11 +65,13 @@ class DispenseResult {
     required this.dispensedAt,
     required this.dispensedBy,
     required this.failureReason,
+    this.dispensedActorType,
   });
   final String id, prescriptionId;
   final DispenseStatus status;
   final DateTime? dispensedAt;
   final String? dispensedBy, failureReason;
+  final DispenseActorType? dispensedActorType;
 }
 
 class CancelPrescriptionResult {

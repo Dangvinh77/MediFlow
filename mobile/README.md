@@ -45,10 +45,19 @@ Từ 2026-10-21, theo phân công bổ sung của người dùng, Vinh tiếp nh
 Organization/Patient và Billing/Notification. Chi tiết phạm vi và bằng chứng kiểm tra của
 đợt này ở [client completion](docs/ha-loc-client-completion.md). Inpatient/Surgery vẫn deferred.
 
-2026-10-20, Pharmacy đã có read slice local: model/DTO/Gateway adapter, danh mục tìm kiếm/phân trang,
-chi tiết/refresh và session/stale guards, **MP-HUY-01–03 đạt 3/12 local**. Chưa bind repository/session
-vào shared app nên route hiện chưa có dữ liệu nghiệp vụ; integration và nghiệm thu thật ở task 11/12.
-Full mobile + loader **87/87 tests**, analyzer/format/web build PASS; không thay signed Gateway hoặc native proof.
+2026-10-22, Pharmacy đạt **11/12 task code (MP-HUY-01–11)**. Người dùng đã giao thêm shared
+network/app/config: POST tạo V1 gửi Idempotency-Key, PUT xuất thuốc không body; repository,
+reactive session, mode và nested routes đã nối vào app có sẵn. Giữ light/dark Material3,
+Riverpod/GoRouter và Gateway client; không thêm package hoặc đổi backend gates.
+**Task12 chưa nghiệm thu thật**, theo lựa chọn mới của người dùng: hoàn thành code, test thật sau.
+Mock tests/build không xác nhận clearance, quyền issuer hoặc một lần trừ kho.
+[Evidence hiện hành](docs/evidence/huy-pharmacy/2026-10-22-integration/README.md) ghi candidate/checks/giới hạn.
+
+Pharmacy mode cấu hình lúc build bằng `--dart-define=PHARMACY_MODE=outpatient` cho backend V1
+được operator xác nhận, hoặc `legacy` cho V0. Mặc định/giá trị khác là `unavailable`:
+vẫn đọc danh mục nhưng khóa các command cần mode. Không suy V1 từ prescription response
+hoặc tự chuyển backend profile. Cấu hình này không bật backend gates.
+Checkpoint186 tests trước đây là [lịch sử task04–06](docs/evidence/huy-pharmacy/2026-10-22-local/README.md).
 
 | Dev | Feature trong lib/features | Tiếp theo |
 |---|---|---|

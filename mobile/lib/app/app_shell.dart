@@ -15,7 +15,7 @@ class AppShell extends ConsumerWidget {
     final accessible = modules
         .where((m) => session != null && m.allows(session.role))
         .toList();
-    final selected = modules.where((m) => m.path == location).firstOrNull;
+    final selected = modules.where((m) => m.matches(location)).firstOrNull;
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
@@ -101,7 +101,7 @@ class _Navigation extends StatelessWidget {
         ListTile(
           leading: Icon(module.icon),
           title: Text(module.title),
-          selected: location == module.path,
+          selected: module.matches(location),
           onTap: () {
             if (closeDrawer) Navigator.pop(context);
             context.go(module.path);

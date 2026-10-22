@@ -51,6 +51,50 @@ void main() {
   });
   tearDown(() => client.close());
   test(
+    'idempotency is request scoped and bodyless PUT stays bodyless',
+    () async {
+      await client.post('/v1/pharmacy/prescriptions', {
+        'recordId': 'r',
+      }, idempotencyKey: 'attempt-a');
+      await client.post('/v1/example', {'value': 1});
+      await client.put('/v1/pharmacy/prescriptions/r/dispense');
+      expect(adapter.requests.first.headers['Idempotency-Key'], 'attempt-a');
+      expect(
+        adapter.requests.first.headers['Authorization'],
+        'Bearer signed-token',
+      );
+      expect(
+        adapter.requests
+            .skip(1)
+            .every((r) => !r.headers.containsKey('Idempotency-Key')),
+        isTrue,
+      );
+      expect(adapter.requests.last.data, isNull);
+      expect(adapter.requests.last.method, 'PUT');
+    },
+  );
+  test('invalid idempotency headers never reach Gateway', () async {
+    for (final key in ['', 'key\r\nInjected: true']) {
+      await expectLater(
+        client.post('/v1/example', {}, idempotencyKey: key),
+        throwsArgumentError,
+      );
+    }
+    expect(adapter.requests, isEmpty);
+  });
+  test('idempotent POST does not automatically replay rejection', () async {
+    adapter.status = 503;
+    adapter.body = {
+      'success': false,
+      'error': {'code': 'UNAVAILABLE', 'message': 'Unavailable'},
+    };
+    await expectLater(
+      client.post('/v1/example', {}, idempotencyKey: 'attempt-a'),
+      throwsA(isA<ApiFailure>()),
+    );
+    expect(adapter.requests, hasLength(1));
+  });
+  test(
     'authenticated mutations preserve methods, body and Gateway prefix',
     () async {
       await client.put('/v1/patients/patient-id', {'hoTen': 'Updated'});

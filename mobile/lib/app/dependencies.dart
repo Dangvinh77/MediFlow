@@ -17,9 +17,41 @@ import '../features/billing/data/gateway_billing_repository.dart';
 import '../features/billing/presentation/providers.dart';
 import '../features/notification/data/gateway_notification_repository.dart';
 import '../features/notification/presentation/providers.dart';
+import '../features/pharmacy/data/gateway_pharmacy_repository.dart';
+import '../features/pharmacy/presentation/providers.dart';
+
+final _pharmacyAdapterProvider = Provider(
+  (ref) => GatewayPharmacyRepository(ref.watch(apiClientProvider)),
+);
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  pharmacyRepositoryProvider.overrideWith(
+    (ref) => ref.watch(_pharmacyAdapterProvider),
+  ),
+  pharmacyAccessProvider.overrideWith((ref) {
+    final session = ref.watch(sessionProvider).asData?.value;
+    return session == null
+        ? null
+        : PharmacyAccess(role: session.role.wire, sessionIdentity: Object());
+  }),
+  pharmacyModeProvider.overrideWith(
+    (ref) => switch (ref.watch(appConfigProvider).pharmacyMode) {
+      'outpatient' => PharmacyMode.outpatient,
+      'legacy' => PharmacyMode.legacy,
+      _ => PharmacyMode.unavailable,
+    },
+  ),
+  outpatientPrescriptionWriterProvider.overrideWith(
+    (ref) => ref.watch(pharmacyModeProvider) == PharmacyMode.outpatient
+        ? ref.watch(_pharmacyAdapterProvider)
+        : null,
+  ),
+  prescriptionDispenserProvider.overrideWith(
+    (ref) => ref.watch(pharmacyModeProvider) == PharmacyMode.unavailable
+        ? null
+        : ref.watch(_pharmacyAdapterProvider),
+  ),
   workspaceAccessProvider.overrideWith((ref) {
     final session = ref.watch(sessionProvider).asData?.value;
     if (session == null) return null;

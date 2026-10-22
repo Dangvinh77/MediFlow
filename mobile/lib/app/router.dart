@@ -10,6 +10,10 @@ import '../features/organization/presentation/organization_page.dart';
 import '../features/patient/presentation/patient_page.dart';
 import '../features/medical_record/presentation/medical_record_page.dart';
 import '../features/pharmacy/presentation/pharmacy_page.dart';
+import '../features/pharmacy/presentation/drug_forms.dart';
+import '../features/pharmacy/presentation/create_prescription_page.dart';
+import '../features/pharmacy/presentation/prescription_page.dart';
+import '../features/auth/domain/session.dart';
 import '../features/billing/presentation/billing_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/report/presentation/report_page.dart';
@@ -32,8 +36,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       final session = auth.asData?.value;
       if (session == null) return path == '/login' ? null : '/login';
       if (path == '/login') return '/';
-      final module = modules.where((m) => m.path == path).firstOrNull;
+      final module = modules.where((m) => m.matches(path)).firstOrNull;
       if (module != null && !module.allows(session.role)) return '/forbidden';
+      if (path == '/pharmacy/drugs/new' ||
+          (path.startsWith('/pharmacy/drugs/') && path.endsWith('/stock'))) {
+        if (![UserRole.admin, UserRole.pharmacist].contains(session.role)) {
+          return '/forbidden';
+        }
+      }
+      if (path == '/pharmacy/prescriptions/new' &&
+          ![UserRole.admin, UserRole.doctor].contains(session.role)) {
+        return '/forbidden';
+      }
       return null;
     },
     routes: [
@@ -67,7 +81,65 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/records',
             builder: (_, _) => const MedicalRecordPage(),
           ),
-          GoRoute(path: '/pharmacy', builder: (_, _) => const PharmacyPage()),
+          GoRoute(
+            path: '/pharmacy',
+            builder: (context, _) => PharmacyPage(
+              onOpenDrug: (id) => context.go('/pharmacy/drugs/$id'),
+              onCreateDrug: () => context.go('/pharmacy/drugs/new'),
+              onLookupPrescription: () => context.go('/pharmacy/prescriptions'),
+              onCreatePrescription: () =>
+                  context.go('/pharmacy/prescriptions/new'),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/drugs/new',
+            builder: (context, _) => _PharmacyRoute(
+              title: 'Thêm thuốc',
+              child: CreateDrugPage(
+                onCreated: (drug) => context.go('/pharmacy/drugs/${drug.id}'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/drugs/:id/stock',
+            builder: (_, state) => _PharmacyRoute(
+              title: 'Điều chỉnh tồn kho',
+              child: AdjustDrugStockPage(drugId: state.pathParameters['id']!),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/drugs/:id',
+            builder: (_, state) => _PharmacyRoute(
+              title: 'Chi tiết thuốc',
+              child: DrugDetailPage(drugId: state.pathParameters['id']!),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/prescriptions/new',
+            builder: (context, _) => _PharmacyRoute(
+              title: 'Kê đơn ngoại trú',
+              child: CreatePrescriptionPage(
+                onCreated: (rx) =>
+                    context.go('/pharmacy/prescriptions/${rx.id}'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/prescriptions',
+            builder: (_, _) => const _PharmacyRoute(
+              title: 'Tra cứu đơn thuốc',
+              child: PrescriptionLookupPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/pharmacy/prescriptions/:id',
+            builder: (_, state) => _PharmacyRoute(
+              title: 'Chi tiết đơn thuốc',
+              child: PrescriptionDetailPage(
+                prescriptionId: state.pathParameters['id']!,
+              ),
+            ),
+          ),
           GoRoute(path: '/billing', builder: (_, _) => const BillingPage()),
           GoRoute(
             path: '/notifications',
@@ -92,3 +164,23 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   return router;
 });
+
+class _PharmacyRoute extends StatelessWidget {
+  const _PharmacyRoute({required this.title, required this.child});
+  final String title;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Row(
+        children: [
+          BackButton(onPressed: () => context.go('/pharmacy')),
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          ),
+        ],
+      ),
+      Expanded(child: child),
+    ],
+  );
+}

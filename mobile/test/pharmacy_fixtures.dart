@@ -6,6 +6,9 @@ import 'package:mediflow_mobile/core/domain/page_result.dart';
 import 'package:mediflow_mobile/features/pharmacy/domain/drug.dart';
 import 'package:mediflow_mobile/features/pharmacy/domain/pharmacy_repository.dart';
 import 'package:mediflow_mobile/features/pharmacy/domain/prescription.dart';
+import 'package:mediflow_mobile/features/pharmacy/domain/drug_commands.dart';
+import 'package:mediflow_mobile/features/pharmacy/domain/prescription_commands.dart';
+import 'package:mediflow_mobile/features/pharmacy/data/pharmacy_dto.dart';
 
 const drugId = '10000000-0000-4000-8000-000000000001';
 const otherDrugId = '10000000-0000-4000-8000-000000000002';
@@ -85,10 +88,47 @@ PageResult<Drug> drugsPage({int page = 0, List<Drug>? items}) => PageResult(
 );
 
 class PharmacyStub implements PharmacyRepository {
+  final cancellations = <(String, CancelPrescription)>[];
+  Future<CancelPrescriptionResult> Function(String, CancelPrescription)? cancel;
+  @override
+  Future<CancelPrescriptionResult> cancelPrescription(
+    String id,
+    CancelPrescription command,
+  ) {
+    cancellations.add((id, command));
+    return cancel?.call(id, command) ??
+        Future.value(
+          CancelPrescriptionResult(
+            prescriptionId: id,
+            status: PrescriptionStatus.cancelled,
+            releasedReservations: 1,
+            cancelledAt: DateTime.utc(2026, 10, 22),
+          ),
+        );
+  }
+
   final searches = <({String? keyword, int page, int size})>[];
   final details = <String>[];
   Future<PageResult<Drug>> Function(String?, int, int)? search;
   Future<Drug> Function(String)? detail;
+  Future<Prescription> Function(String)? prescription;
+  Future<Drug> Function(CreateDrug)? create;
+  Future<Drug> Function(String, AdjustDrugStock)? adjust;
+  final prescriptions = <String>[];
+  final creations = <CreateDrug>[];
+  final adjustments = <(String, AdjustDrugStock)>[];
+  @override
+  Future<Drug> createDrug(CreateDrug command) {
+    creations.add(command);
+    return create?.call(command) ?? Future.value(drug());
+  }
+
+  @override
+  Future<Drug> adjustStock(String id, AdjustDrugStock command) {
+    adjustments.add((id, command));
+    return adjust?.call(id, command) ?? Future.value(drug(id: id, stock: 11));
+  }
+
   @override
   Future<PageResult<Drug>> searchDrugs({
     String? keyword,
@@ -107,7 +147,16 @@ class PharmacyStub implements PharmacyRepository {
   }
 
   @override
-  Future<Prescription> getPrescription(String id) => throw UnimplementedError();
+  Future<Prescription> getPrescription(String id) {
+    prescriptions.add(id);
+    return prescription?.call(id) ??
+        Future.value(
+          PharmacyDto.prescription({
+            ...prescriptionJson(),
+            'prescriptionId': id,
+          }),
+        );
+  }
 }
 
 class PharmacyHttpAdapter implements HttpClientAdapter {
