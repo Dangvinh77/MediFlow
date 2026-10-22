@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
 import { api, ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { getSessionKey } from "@/lib/session";
@@ -28,6 +29,7 @@ async function readName(kind: Kind, id: string): Promise<string> {
 
 /** Mounted inside the keyed Pharmacy boundary: private cache dies with the login session. */
 export function PharmacyIdentityProvider({ children }: { children: ReactNode }) {
+  const directory = useReferenceDirectory();
   const [lookup] = useState<Lookup>(() => {
     const session = getSessionKey();
     const role = getRole();
@@ -38,7 +40,10 @@ export function PharmacyIdentityProvider({ children }: { children: ReactNode }) 
       const key = `${kind}:${id.toLowerCase()}:${attempt}`;
       let request = cache.get(key);
       if (!request) {
-        request = readName(kind, id).then(name => ({ name }), (cause: unknown) => {
+        request = (directory ? directory.resolve(kind, id).then(name => {
+          if (!name?.trim()) throw new Error("Identity label unavailable");
+          return name;
+        }) : readName(kind, id)).then(name => ({ name }), (cause: unknown) => {
           return { error: cause instanceof ApiRequestError && cause.status === 403 ? "Không có quyền tra cứu tên"
             : cause instanceof ApiRequestError && cause.status === 404 ? "Không tìm thấy thông tin tên" : "Chưa tải được tên" };
         });

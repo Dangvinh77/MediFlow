@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
@@ -68,7 +69,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
           <input id="medicine-to" type="date" value={toDate} onChange={(event) => { setToDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="medicine-department">
-          <input id="medicine-department" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          <ReferenceInput kind="department" id="medicine-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Field label="Số kết quả" htmlFor="medicine-limit">

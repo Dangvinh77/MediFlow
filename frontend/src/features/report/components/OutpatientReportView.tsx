@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
@@ -61,7 +62,7 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
           <Field label="Từ ngày" htmlFor={`${id}-fromDate`} error={errors.fromDate}><input {...inputProps("fromDate")} type="date" min="2000-01-01" max="2100-12-31" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setErrors({}); }} /></Field>
           <Field label="Đến ngày" htmlFor={`${id}-toDate`} error={errors.toDate}><input {...inputProps("toDate")} type="date" min="2000-01-01" max="2100-12-31" value={toDate} onChange={(event) => { setToDate(event.target.value); setErrors({}); }} /></Field>
         </> : <Field label="Năm báo cáo" htmlFor={`${id}-year`} error={errors.year}><input {...inputProps("year")} type="number" min={2000} max={2100} step={1} value={year} onChange={(event) => { setYear(event.target.value); setErrors({}); }} /></Field>}
-        <Field label="Mã khoa (tùy chọn)" htmlFor={`${id}-departmentId`} error={errors.departmentId}><input {...inputProps("departmentId")} value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setErrors({}); }} placeholder="Nhập UUID khoa" />{departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}</Field>
+        <Field label="Mã khoa (tùy chọn)" htmlFor={`${id}-departmentId`} error={errors.departmentId}><ReferenceInput kind="department" {...inputProps("departmentId")} value={departmentId} onValueChange={(id) => { setDepartmentId(id); setErrors({}); }} placeholder="Nhập UUID khoa" />{departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}</Field>
         <Button type="submit" variant="primary" loading={state.status === "loading"}>Xem báo cáo</Button>
       </form>
       <ReportRequestFeedback state={feedback} idle="Chọn phạm vi để xem báo cáo ngoại trú đã đối soát." loading="Đang tải báo cáo ngoại trú…" onRetry={retry} />

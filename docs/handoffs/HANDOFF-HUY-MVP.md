@@ -1,5 +1,16 @@
 # Handoff chung Huy — Pharmacy, Report và Support
 
+## Đồng bộ UI chung — 2026-10-22
+
+Đã nhận master `95542f6c` và nối ReferenceInput chung vào form Pharmacy cùng bốn view
+Report. Nhãn tên dùng dashboard directory/cache khi có; request vẫn giữ UUID server.
+Đổi bệnh nhân/khoa xóa các authority references phụ thuộc; không suy episode hoặc mã giá.
+Quyền PHARMACIST và acceptance trong mục Review3 vẫn còn mở. Lượt kiểm tra này không có
+Gateway8080/web3000/3180/3182 đang listen; ghi chú runtime đã chạy bên dưới là checkpoint
+lịch sử, không phải xác nhận môi trường đang hoạt động lúc này. Chi tiết và verification
+mới nhất nằm trong plan FE mục27: full frontend **880/880 PASS** (94 files, hai worker),
+typecheck/lint/build PASS; không tạo thêm handoff cho cùng dependency.
+
 ## Review3 — hiển thị tên, 2026-10-22
 
 Consumer Huy đã code web Pharmacy/Report và mobile Pharmacy theo
