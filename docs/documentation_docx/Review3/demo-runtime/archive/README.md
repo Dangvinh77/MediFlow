@@ -1,0 +1,12 @@
+# Review3 local runtime archive
+
+1. This is an archival copy of the disposable Review3 demonstration environment. Patient/staff identities and transactions are synthetic. Never restore it to a production or shared environment.
+2. `seeded.sql` is the latest full PostgreSQL dump captured after the screenshot interactions. `seed-manifest.json` and `verification.json` are earlier snapshots and do not override the dump or establish that every checklist item passed.
+3. `accounts.txt` contains deliberately shared local demonstration logins. The demo password is already present in the repository seed helper. Do not reuse it for any other environment.
+4. Generated Spring security passwords are replaced by `[REDACTED]` in service logs. The PostgreSQL role password verifier is removed from the SQL dump; provision the local `test` role password separately. Demo application password hashes remain so the synthetic account fixtures are preserved. No access/refresh JWTs are included.
+5. `launch.json` records the original Windows checkout paths, built JAR paths and private local ports. `processes.json` records historical process IDs, not currently running services. Docker was stopped after capture. This folder does not include Docker volumes, RabbitMQ queue state or packaged JARs.
+6. `billing-catalog.yml` is the catalogue fixture used for the captured environment. The eight service logs are diagnostic history; some can be empty and they are not proof of successful acceptance.
+7. `inventory.json` records every archived source file, its SHA-256 digest and the number of credential redactions. The ignored originals remain in the parent directory on the capture machine.
+8. For another workstation, copy the required archive files to the parent `demo-runtime` folder, adapt the machine paths in `launch.json`, build the application JARs, provision isolated PostgreSQL/RabbitMQ containers and ports, and restore the SQL dump only into that disposable environment. Review `runtime_review3.py` and the main Review3 README before starting; the archive alone is not a one-command deployment.
+9. `Review3_bak.docx` in the report folder is the author's backup, kept separately from the final `Review3.docx`. The historical `screenshots/web/08-admin-account-selected.jpg` is retained for completeness; the current 107-image inventory still points to `web-new` and `mobile-new`.
+10. No Word temporary lock/recovery file remained after Word closed. No temporary file is fabricated or recovered from unrelated locations.

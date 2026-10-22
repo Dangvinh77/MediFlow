@@ -1,0 +1,11 @@
+LOCAL REVIEW 3 DEMO ONLY
+Password for all accounts: Acceptance-pass-2026
+
+ADMIN: review3.admin
+MANAGER: review3.manager
+DOCTOR: review3.doctor
+NURSE: review3.nurse
+LAB_TECH: review3.lab_tech
+PHARMACIST: review3.pharmacist
+CASHIER: review3.cashier
+PATIENT: review3.patient

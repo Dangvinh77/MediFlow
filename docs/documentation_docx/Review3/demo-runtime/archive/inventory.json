@@ -1,0 +1,95 @@
+{
+  "purpose": "Synthetic local Review3 runtime snapshot; never restore to production",
+  "files": [
+    {
+      "file": "accounts.txt",
+      "bytes": 283,
+      "sha256": "40e4420f65ce4096055d8404bb9b0b2ec00b2e6b19df2ff9a733b305fc7ca1ee",
+      "redactions": 0
+    },
+    {
+      "file": "billing-catalog.yml",
+      "bytes": 244,
+      "sha256": "4b0e49d47fafc86ca6a31bd3e97b40092e305157eed0ccf2ba078af59043990f",
+      "redactions": 0
+    },
+    {
+      "file": "billing-service.log",
+      "bytes": 1295136,
+      "sha256": "a981c1572c843a9cbf6d7c1af3bcd96c9b67e19731d1fce7f7853a9f59c3f1cb",
+      "redactions": 1
+    },
+    {
+      "file": "clinical-service.log",
+      "bytes": 1540870,
+      "sha256": "9854b32dfec7889691e0084a1ff37bd24b7ebe34674855c9e3c95368d6371fe6",
+      "redactions": 1
+    },
+    {
+      "file": "core-service.log",
+      "bytes": 638942,
+      "sha256": "7f55b28628db090a4efb6cc6bc6567f49f5f888a11957228048f462fa6fbd47a",
+      "redactions": 1
+    },
+    {
+      "file": "eureka-server.log",
+      "bytes": 42191,
+      "sha256": "0902cd5b187a7a3302a7c1e9b4c7f86b66c52c6bf2728f6cdd79bb9c62eb8d48",
+      "redactions": 0
+    },
+    {
+      "file": "gateway.log",
+      "bytes": 403826,
+      "sha256": "5bc58b10b8a8a406db6b0dc32075bfde1373b0f64793cf4c96666fd70fcc4dbe",
+      "redactions": 0
+    },
+    {
+      "file": "lab-service.log",
+      "bytes": 1089288,
+      "sha256": "4f9b437de8f8ca58e87ca2077d205e6dd1fffc6ce3c3c07db016a0fea40b0022",
+      "redactions": 1
+    },
+    {
+      "file": "launch.json",
+      "bytes": 8711,
+      "sha256": "9949b97caeec919ea64d8eab75971538de66325adea66017e8df928d9a6bcf53",
+      "redactions": 0
+    },
+    {
+      "file": "pharmacy-service.log",
+      "bytes": 1296360,
+      "sha256": "daf0025f646cc6d3427535d5f54869a4b959b36038b8128b8c03cf170fe27a5d",
+      "redactions": 0
+    },
+    {
+      "file": "processes.json",
+      "bytes": 474,
+      "sha256": "255a572d61b9a97ba72f2adb46958160f466cae9e892b2ebfff48957e28a179d",
+      "redactions": 0
+    },
+    {
+      "file": "seed-manifest.json",
+      "bytes": 51408,
+      "sha256": "da48252572d8ae8f21ec95aa3896ab19898ba3c7222f79620310bd0829227152",
+      "redactions": 0
+    },
+    {
+      "file": "seeded.sql",
+      "bytes": 893530,
+      "sha256": "145bc2cb1ff6ec6b297e488989a8ad00a87af29b120be362633abb11985d58f2",
+      "redactions": 1
+    },
+    {
+      "file": "support-service.log",
+      "bytes": 1069997,
+      "sha256": "7dbaefba08167f86c3a8ff64e9f4c7118697a9d8d61a435f2cb406caa6ed3f9f",
+      "redactions": 1
+    },
+    {
+      "file": "verification.json",
+      "bytes": 5766,
+      "sha256": "4edf6807998ebcf8343f858b00639d95f27defa2cf621b0061837622938ee75c",
+      "redactions": 0
+    }
+  ]
+}

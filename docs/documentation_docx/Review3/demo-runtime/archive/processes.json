@@ -1,0 +1,34 @@
+[
+  {
+    "name": "eureka-server",
+    "pid": 2680
+  },
+  {
+    "name": "core-service",
+    "pid": 23304
+  },
+  {
+    "name": "clinical-service",
+    "pid": 16732
+  },
+  {
+    "name": "billing-service",
+    "pid": 20316
+  },
+  {
+    "name": "pharmacy-service",
+    "pid": 6024
+  },
+  {
+    "name": "lab-service",
+    "pid": 19872
+  },
+  {
+    "name": "support-service",
+    "pid": 23704
+  },
+  {
+    "name": "gateway",
+    "pid": 23728
+  }
+]

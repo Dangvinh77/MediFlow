@@ -1,0 +1,1492 @@
+{
+  "sourceCommit": "14f6a414",
+  "createdAt": "2026-10-22T07:40:35.332238",
+  "gateway": "http://127.0.0.1:58910",
+  "date": "2026-10-22",
+  "accounts": {
+    "ADMIN": "review3.admin",
+    "MANAGER": "review3.manager",
+    "DOCTOR": "review3.doctor",
+    "NURSE": "review3.nurse",
+    "LAB_TECH": "review3.lab_tech",
+    "PHARMACIST": "review3.pharmacist",
+    "CASHIER": "review3.cashier",
+    "PATIENT": "review3.patient"
+  },
+  "departments": [
+    {
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "departmentName": "Khoa Nội tổng quát",
+      "abbreviation": "NTQ",
+      "departmentType": "CLINICAL",
+      "departmentHeadId": null,
+      "location": "Tầng 1 · Khu khám A",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.344827100Z",
+      "updatedAt": "2026-10-22T00:40:35.344827100Z"
+    },
+    {
+      "departmentId": "2569f289-f271-4acc-8e0a-aa4ab1bbc6ff",
+      "departmentName": "Khoa Nhi",
+      "abbreviation": "NHI",
+      "departmentType": "CLINICAL",
+      "departmentHeadId": null,
+      "location": "Tầng 1 · Khu khám B",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.382016800Z",
+      "updatedAt": "2026-10-22T00:40:35.382016800Z"
+    },
+    {
+      "departmentId": "36a19c36-892c-4100-a7b5-f1f2690390f4",
+      "departmentName": "Khoa Xét nghiệm",
+      "abbreviation": "XN",
+      "departmentType": "PARACLINICAL",
+      "departmentHeadId": null,
+      "location": "Tầng 2 · Khu cận lâm sàng",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.406550200Z",
+      "updatedAt": "2026-10-22T00:40:35.406550200Z"
+    },
+    {
+      "departmentId": "395c4a4f-aec2-4736-a782-c55e2d874466",
+      "departmentName": "Phòng Hành chính",
+      "abbreviation": "HC",
+      "departmentType": "ADMINISTRATIVE",
+      "departmentHeadId": null,
+      "location": "Tầng 3",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.431249200Z",
+      "updatedAt": "2026-10-22T00:40:35.431249200Z"
+    }
+  ],
+  "staff": [
+    {
+      "staffId": "3d8f509e-fac1-4fcd-bdca-b98dca419491",
+      "fullName": "Nguyễn Minh Quân",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "ADMINISTRATIVE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000001",
+      "email": "review3.admin@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.478183200Z",
+      "updatedAt": "2026-10-22T00:40:35.478183200Z",
+      "identityNumber": "999260000001"
+    },
+    {
+      "staffId": "de2d5e81-e2d0-44a1-81d3-0b2c88c642d6",
+      "fullName": "Trần Thu Hà",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "MANAGER",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000002",
+      "email": "review3.manager@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.725718100Z",
+      "updatedAt": "2026-10-22T00:40:35.725718100Z",
+      "identityNumber": "999260000002"
+    },
+    {
+      "staffId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "fullName": "Lê Hoàng Phúc",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "DOCTOR",
+      "specialization": "Nội tổng quát",
+      "licenseNumber": "R3-BS-2026",
+      "phoneNumber": "0901000003",
+      "email": "review3.doctor@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:35.958888800Z",
+      "updatedAt": "2026-10-22T00:40:35.958888800Z",
+      "identityNumber": "999260000003"
+    },
+    {
+      "staffId": "2dbedff2-d7f5-466a-b79c-df68a7daeff1",
+      "fullName": "Phạm Ngọc Mai",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000004",
+      "email": "review3.nurse@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:36.206374400Z",
+      "updatedAt": "2026-10-22T00:40:36.206374400Z",
+      "identityNumber": "999260000004"
+    },
+    {
+      "staffId": "17fca9c9-39d6-49a7-bd89-5fc1c6138bad",
+      "fullName": "Võ Thanh Tâm",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "TECHNICIAN",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000005",
+      "email": "review3.lab_tech@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:36.434264100Z",
+      "updatedAt": "2026-10-22T00:40:36.434264100Z",
+      "identityNumber": "999260000005"
+    },
+    {
+      "staffId": "c91f2020-617e-4767-8dec-937f2c30cad8",
+      "fullName": "Đặng Thảo Nguyên",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "PHARMACIST",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000006",
+      "email": "review3.pharmacist@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:36.661335300Z",
+      "updatedAt": "2026-10-22T00:40:36.661335300Z",
+      "identityNumber": "999260000006"
+    },
+    {
+      "staffId": "f01f79f0-ade2-4f95-b093-94f8c22041ce",
+      "fullName": "Bùi Khánh Linh",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "jobTitle": "CASHIER",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0901000007",
+      "email": "review3.cashier@example.test",
+      "active": true,
+      "createdAt": "2026-10-22T00:40:36.885304100Z",
+      "updatedAt": "2026-10-22T00:40:36.885304100Z",
+      "identityNumber": "999260000007"
+    }
+  ],
+  "patients": [
+    {
+      "maBenhNhan": "30820325-711c-4d7b-b364-be73c78a43b0",
+      "hoTen": "Nguyễn Văn An",
+      "ngaySinh": "1982-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000000",
+      "diaChi": "12 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000000",
+      "email": "review3.patient0@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.106053500Z",
+      "updatedAt": "2026-10-22T00:40:37.106053500Z"
+    },
+    {
+      "maBenhNhan": "8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "hoTen": "Trần Thị Hương",
+      "ngaySinh": "1983-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000001",
+      "diaChi": "13 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000001",
+      "email": "review3.patient1@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.180132100Z",
+      "updatedAt": "2026-10-22T00:40:37.180132100Z"
+    },
+    {
+      "maBenhNhan": "8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "hoTen": "Lê Minh Khang",
+      "ngaySinh": "1984-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000002",
+      "diaChi": "14 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000002",
+      "email": "review3.patient2@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.259883Z",
+      "updatedAt": "2026-10-22T00:40:37.259883Z"
+    },
+    {
+      "maBenhNhan": "6f75b635-a491-4191-99b3-1df16c1a3832",
+      "hoTen": "Phạm Ngọc Anh",
+      "ngaySinh": "1985-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000003",
+      "diaChi": "15 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000003",
+      "email": "review3.patient3@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.371911800Z",
+      "updatedAt": "2026-10-22T00:40:37.371911800Z"
+    },
+    {
+      "maBenhNhan": "1270368c-7e70-40eb-852c-b58d7b052cf7",
+      "hoTen": "Võ Quốc Bảo",
+      "ngaySinh": "1986-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000004",
+      "diaChi": "16 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000004",
+      "email": "review3.patient4@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.439854600Z",
+      "updatedAt": "2026-10-22T00:40:37.439854600Z"
+    },
+    {
+      "maBenhNhan": "83ee7cd5-ccb4-4005-96f3-42abb0261400",
+      "hoTen": "Đặng Thanh Trúc",
+      "ngaySinh": "1987-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000005",
+      "diaChi": "17 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000005",
+      "email": "review3.patient5@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.551638800Z",
+      "updatedAt": "2026-10-22T00:40:37.551638800Z"
+    },
+    {
+      "maBenhNhan": "3ad6444d-54b2-467a-9e25-beb664d3975f",
+      "hoTen": "Bùi Gia Huy",
+      "ngaySinh": "1988-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000006",
+      "diaChi": "18 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000006",
+      "email": "review3.patient6@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.629401800Z",
+      "updatedAt": "2026-10-22T00:40:37.629401800Z"
+    },
+    {
+      "maBenhNhan": "fc4fe9c4-a34c-4252-bd0b-3e171604d3b5",
+      "hoTen": "Đỗ Thị Lan",
+      "ngaySinh": "1989-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000007",
+      "diaChi": "19 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000007",
+      "email": "review3.patient7@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.721296300Z",
+      "updatedAt": "2026-10-22T00:40:37.721296300Z"
+    },
+    {
+      "maBenhNhan": "a2c54b05-3010-4b8d-93ee-67fb06469d77",
+      "hoTen": "Hồ Minh Đức",
+      "ngaySinh": "1990-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000008",
+      "diaChi": "20 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000008",
+      "email": "review3.patient8@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.812246300Z",
+      "updatedAt": "2026-10-22T00:40:37.812246300Z"
+    },
+    {
+      "maBenhNhan": "b3c2b6c1-a8be-4b8c-83b6-ccecec80d8b8",
+      "hoTen": "Ngô Thảo Vy",
+      "ngaySinh": "1991-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000009",
+      "diaChi": "21 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000009",
+      "email": "review3.patient9@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.879079600Z",
+      "updatedAt": "2026-10-22T00:40:37.879079600Z"
+    },
+    {
+      "maBenhNhan": "87674766-119a-46ed-b4db-2059be4cd59c",
+      "hoTen": "Dương Tuấn Kiệt",
+      "ngaySinh": "1992-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999261000010",
+      "diaChi": "22 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000010",
+      "email": "review3.patient10@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:37.995813300Z",
+      "updatedAt": "2026-10-22T00:40:37.995813300Z"
+    },
+    {
+      "maBenhNhan": "579e6d5b-1f63-43ce-bd2a-609fdf508481",
+      "hoTen": "Vũ Ngọc Hà",
+      "ngaySinh": "1993-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999261000011",
+      "diaChi": "23 Đường Hoa Mai, TP. Hồ Chí Minh",
+      "soDienThoai": "0902000011",
+      "email": "review3.patient11@example.test",
+      "bhytSo": null,
+      "createdAt": "2026-10-22T00:40:38.068365800Z",
+      "updatedAt": "2026-10-22T00:40:38.068365800Z"
+    }
+  ],
+  "appointments": [
+    {
+      "appointmentId": "71626749-ef62-42f4-9d40-35097f05dfb9",
+      "patientId": "30820325-711c-4d7b-b364-be73c78a43b0",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "08:00",
+      "status": "IN_EXAM",
+      "reason": "Khám sức khỏe định kỳ",
+      "createdAt": "2026-10-22T00:40:37.153591Z",
+      "updatedAt": "2026-10-22T00:40:40.626899Z",
+      "careContractVersion": 1,
+      "examClearanceId": "49f69633-3e1f-4ef3-ab1e-c7b344ab174a",
+      "examClearanceAt": "2026-10-22T00:40:39.521339Z",
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:40:38.443302Z",
+      "examinationStartedAt": "2026-10-22T00:40:40.626899Z",
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "patientId": "8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "08:15",
+      "status": "IN_EXAM",
+      "reason": "Đau đầu và mệt mỏi ba ngày",
+      "createdAt": "2026-10-22T00:40:37.227748Z",
+      "updatedAt": "2026-10-22T00:44:58.104163Z",
+      "careContractVersion": 1,
+      "examClearanceId": "b9ec057b-c3a9-45b5-9e95-36109f530bc1",
+      "examClearanceAt": "2026-10-22T00:44:56.990696Z",
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:44:55.899375Z",
+      "examinationStartedAt": "2026-10-22T00:44:58.104163Z",
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "patientId": "8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "08:30",
+      "status": "IN_EXAM",
+      "reason": "Ho và đau họng",
+      "createdAt": "2026-10-22T00:40:37.337674Z",
+      "updatedAt": "2026-10-22T00:45:40.038426Z",
+      "careContractVersion": 1,
+      "examClearanceId": "db1a5449-6c73-4772-8791-54039cb8111e",
+      "examClearanceAt": "2026-10-22T00:45:38.928545Z",
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:45:37.872030Z",
+      "examinationStartedAt": "2026-10-22T00:45:40.038426Z",
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "patientId": "6f75b635-a491-4191-99b3-1df16c1a3832",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "08:45",
+      "status": "IN_EXAM",
+      "reason": "Tái khám huyết áp",
+      "createdAt": "2026-10-22T00:40:37.416886Z",
+      "updatedAt": "2026-10-22T00:45:48.936871Z",
+      "careContractVersion": 1,
+      "examClearanceId": "33e1d0e6-f85f-450b-9813-41a6e5b56cf9",
+      "examClearanceAt": "2026-10-22T00:45:47.836519Z",
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:45:46.741006Z",
+      "examinationStartedAt": "2026-10-22T00:45:48.936871Z",
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "patientId": "1270368c-7e70-40eb-852c-b58d7b052cf7",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "09:00",
+      "status": "READY_FOR_EXAM",
+      "reason": "Đau vùng thượng vị",
+      "createdAt": "2026-10-22T00:40:37.493487Z",
+      "updatedAt": "2026-10-22T00:45:52.492536Z",
+      "careContractVersion": 1,
+      "examClearanceId": "fa6622b0-d820-4c4e-9bf6-26671394453b",
+      "examClearanceAt": "2026-10-22T00:45:52.492536Z",
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:45:49.368883Z",
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "74fcae55-0ff2-4f0c-ae64-ea847dc3a66b",
+      "patientId": "83ee7cd5-ccb4-4005-96f3-42abb0261400",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "09:15",
+      "status": "AWAITING_PAYMENT",
+      "reason": "Kiểm tra đường huyết",
+      "createdAt": "2026-10-22T00:40:37.598505Z",
+      "updatedAt": "2026-10-22T00:45:54.593407Z",
+      "careContractVersion": 1,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": "OUTPATIENT_EXAM",
+      "checkedInAt": "2026-10-22T00:45:54.593407Z",
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "b264777a-2a76-4793-b4ac-91e6a8779f0d",
+      "patientId": "3ad6444d-54b2-467a-9e25-beb664d3975f",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "09:30",
+      "status": "PENDING",
+      "reason": "Khám sức khỏe định kỳ",
+      "createdAt": "2026-10-22T00:40:37.689660Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "b9de10f8-44e8-4e44-8637-09135b5691e8",
+      "patientId": "fc4fe9c4-a34c-4252-bd0b-3e171604d3b5",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "09:45",
+      "status": "PENDING",
+      "reason": "Đau đầu và mệt mỏi ba ngày",
+      "createdAt": "2026-10-22T00:40:37.788751Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "f91a4cad-6e7a-4b23-9f3f-08187f1687ec",
+      "patientId": "a2c54b05-3010-4b8d-93ee-67fb06469d77",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "10:00",
+      "status": "PENDING",
+      "reason": "Ho và đau họng",
+      "createdAt": "2026-10-22T00:40:37.855624Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "52c8e6d2-4a81-4677-838d-ea6d7c1c63d9",
+      "patientId": "b3c2b6c1-a8be-4b8c-83b6-ccecec80d8b8",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "10:15",
+      "status": "PENDING",
+      "reason": "Tái khám huyết áp",
+      "createdAt": "2026-10-22T00:40:37.946383Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "13be7899-c362-4232-acd9-ad6e751a5296",
+      "patientId": "87674766-119a-46ed-b4db-2059be4cd59c",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "10:30",
+      "status": "PENDING",
+      "reason": "Đau vùng thượng vị",
+      "createdAt": "2026-10-22T00:40:38.040381Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "appointmentId": "0bd51db1-eda6-432e-a306-790ff7e4ad20",
+      "patientId": "579e6d5b-1f63-43ce-bd2a-609fdf508481",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "appointmentDate": "2026-10-22",
+      "appointmentTime": "10:45",
+      "status": "PENDING",
+      "reason": "Kiểm tra đường huyết",
+      "createdAt": "2026-10-22T00:40:38.108353Z",
+      "updatedAt": null,
+      "careContractVersion": 0,
+      "examClearanceId": null,
+      "examClearanceAt": null,
+      "emergencyOverrideId": null,
+      "examPriceCode": null,
+      "checkedInAt": null,
+      "examinationStartedAt": null,
+      "completedAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    }
+  ],
+  "records": [
+    {
+      "recordId": "4447ad07-fe64-4d41-8c96-7a278d167be2",
+      "patientId": "30820325-711c-4d7b-b364-be73c78a43b0",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "examinationDate": "2026-10-22",
+      "symptoms": "Khám sức khỏe định kỳ. Tỉnh táo, tiếp xúc tốt; mạch 76 lần/phút.",
+      "appointmentId": "71626749-ef62-42f4-9d40-35097f05dfb9",
+      "diagnoses": [
+        {
+          "diagnosisId": "d5266a8d-0bef-47a5-9489-cfc1f77cf17c",
+          "diagnosisName": "Theo dõi nhiễm khuẩn hô hấp trên",
+          "description": "Theo dõi triệu chứng và tái khám theo hẹn",
+          "icdCode": "J06.9"
+        }
+      ],
+      "createdAt": "2026-10-22T00:40:40.626899Z",
+      "updatedAt": "2026-10-22T00:40:40.831304Z",
+      "status": "OPEN",
+      "disposition": null,
+      "dispositionNote": null,
+      "completedAt": null
+    },
+    {
+      "recordId": "1361a316-8aa3-4ad4-8774-f852d8c64fa1",
+      "patientId": "8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "examinationDate": "2026-10-22",
+      "symptoms": "Đau đầu và mệt mỏi ba ngày. Tỉnh táo, tiếp xúc tốt; mạch 76 lần/phút.",
+      "appointmentId": "eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "diagnoses": [
+        {
+          "diagnosisId": "a5f693b5-8eb7-45de-b0f0-c61efef057b0",
+          "diagnosisName": "Theo dõi nhiễm khuẩn hô hấp trên",
+          "description": "Theo dõi triệu chứng và tái khám theo hẹn",
+          "icdCode": "J06.9"
+        }
+      ],
+      "createdAt": "2026-10-22T00:44:58.104163Z",
+      "updatedAt": "2026-10-22T00:44:58.240151Z",
+      "status": "OPEN",
+      "disposition": null,
+      "dispositionNote": null,
+      "completedAt": null
+    },
+    {
+      "recordId": "acc4a82c-6856-469d-80be-8dc343a9e06e",
+      "patientId": "8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "examinationDate": "2026-10-22",
+      "symptoms": "Ho và đau họng. Tỉnh táo, tiếp xúc tốt; mạch 76 lần/phút.",
+      "appointmentId": "037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "diagnoses": [
+        {
+          "diagnosisId": "c4e44f79-dbf2-4ca9-8922-79748ee9a8c5",
+          "diagnosisName": "Theo dõi nhiễm khuẩn hô hấp trên",
+          "description": "Theo dõi triệu chứng và tái khám theo hẹn",
+          "icdCode": "J06.9"
+        }
+      ],
+      "createdAt": "2026-10-22T00:45:40.038426Z",
+      "updatedAt": "2026-10-22T00:45:40.191960Z",
+      "status": "OPEN",
+      "disposition": null,
+      "dispositionNote": null,
+      "completedAt": null
+    },
+    {
+      "recordId": "1d4e99c7-3572-42be-9520-a43c1eedc030",
+      "patientId": "6f75b635-a491-4191-99b3-1df16c1a3832",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "examinationDate": "2026-10-22",
+      "symptoms": "Tái khám huyết áp. Tỉnh táo, tiếp xúc tốt; mạch 76 lần/phút.",
+      "appointmentId": "250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "diagnoses": [
+        {
+          "diagnosisId": "7e0d3ca4-ae79-49f0-977c-6129d836a5fd",
+          "diagnosisName": "Theo dõi nhiễm khuẩn hô hấp trên",
+          "description": "Theo dõi triệu chứng và tái khám theo hẹn",
+          "icdCode": "J06.9"
+        }
+      ],
+      "createdAt": "2026-10-22T00:45:48.936871Z",
+      "updatedAt": "2026-10-22T00:45:49.063385Z",
+      "status": "OPEN",
+      "disposition": null,
+      "dispositionNote": null,
+      "completedAt": null
+    }
+  ],
+  "drugs": [
+    {
+      "drugId": "71a8add5-5882-44f0-85bb-8e13ea0d00fa",
+      "drugName": "Paracetamol 500 mg",
+      "activeIngredient": "Paracetamol",
+      "unit": "viên",
+      "price": 1500,
+      "stockQuantity": 250,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.307676Z",
+      "updatedAt": "2026-10-22T00:40:38.307676Z"
+    },
+    {
+      "drugId": "f1b7bfcc-b971-4b87-aa3e-378c816ea545",
+      "drugName": "Vitamin C 500 mg",
+      "activeIngredient": "Ascorbic acid",
+      "unit": "viên",
+      "price": 2000,
+      "stockQuantity": 180,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.335080Z",
+      "updatedAt": "2026-10-22T00:40:38.335080Z"
+    },
+    {
+      "drugId": "054e2567-33df-46fe-a0ea-4945999f0892",
+      "drugName": "Nước muối sinh lý 0,9%",
+      "activeIngredient": "Natri clorid",
+      "unit": "chai",
+      "price": 12000,
+      "stockQuantity": 65,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.350209Z",
+      "updatedAt": "2026-10-22T00:40:38.350209Z"
+    },
+    {
+      "drugId": "7cf8d849-c2d4-4ccc-9bb4-2247107df262",
+      "drugName": "Oresol",
+      "activeIngredient": "Electrolytes",
+      "unit": "viên",
+      "price": 5500,
+      "stockQuantity": 90,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.380168Z",
+      "updatedAt": "2026-10-22T00:40:38.380168Z"
+    },
+    {
+      "drugId": "4c7bbb61-6d47-4c23-8122-bc5e039c8958",
+      "drugName": "Loratadin 10 mg",
+      "activeIngredient": "Loratadin",
+      "unit": "viên",
+      "price": 2500,
+      "stockQuantity": 8,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.395167Z",
+      "updatedAt": "2026-10-22T00:40:38.395167Z"
+    },
+    {
+      "drugId": "2d9b1cb1-bf0d-4402-841d-ef5497dfa29b",
+      "drugName": "Omeprazol 20 mg",
+      "activeIngredient": "Omeprazol",
+      "unit": "viên",
+      "price": 3500,
+      "stockQuantity": 120,
+      "expiryDate": "2028-06-30",
+      "manufacturer": "MediFlow Demo",
+      "lowStockThreshold": 10,
+      "createdAt": "2026-10-22T00:40:38.410105Z",
+      "updatedAt": "2026-10-22T00:40:38.410105Z"
+    }
+  ],
+  "lab": [
+    {
+      "testId": "4cdffaa0-20ed-4ad9-8a3f-f091ca8ed088",
+      "recordId": "4447ad07-fe64-4d41-8c96-7a278d167be2",
+      "patientId": "30820325-711c-4d7b-b364-be73c78a43b0",
+      "requestingDepartmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "labType": "CBC",
+      "requestedDate": "2026-10-22",
+      "performedDate": null,
+      "status": "READY",
+      "conclusion": null,
+      "paid": false,
+      "results": [],
+      "createdAt": "2026-10-22T00:40:41.345353Z",
+      "updatedAt": "2026-10-22T00:40:46.491663Z",
+      "careContractVersion": 1,
+      "sourceOrderId": "bfb6c454-9d0f-4777-9460-eea5721d50f8",
+      "careEpisodeType": "OUTPATIENT_VISIT",
+      "careEpisodeId": "71626749-ef62-42f4-9d40-35097f05dfb9",
+      "priceCode": "LAB",
+      "clearanceId": "f774ec12-0ace-4926-b47a-1a97274cc814",
+      "emergencyOverrideId": null,
+      "resultVersion": 0,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "testId": "a92c9118-e58f-4afb-b666-75030fe10600",
+      "recordId": "1361a316-8aa3-4ad4-8774-f852d8c64fa1",
+      "patientId": "8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "requestingDepartmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "labType": "CBC",
+      "requestedDate": "2026-10-22",
+      "performedDate": null,
+      "status": "READY",
+      "conclusion": null,
+      "paid": false,
+      "results": [],
+      "createdAt": "2026-10-22T00:44:58.332833Z",
+      "updatedAt": "2026-10-22T00:45:03.019963Z",
+      "careContractVersion": 1,
+      "sourceOrderId": "08f32690-ca20-4c8c-b075-d9a019e281ad",
+      "careEpisodeType": "OUTPATIENT_VISIT",
+      "careEpisodeId": "eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "priceCode": "LAB",
+      "clearanceId": "b9dc3502-c045-47d3-973d-07f7c296e12d",
+      "emergencyOverrideId": null,
+      "resultVersion": 0,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "testId": "bbbe2b41-5061-4381-ab46-472b63180bad",
+      "recordId": "acc4a82c-6856-469d-80be-8dc343a9e06e",
+      "patientId": "8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "requestingDepartmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "labType": "CBC",
+      "requestedDate": "2026-10-22",
+      "performedDate": null,
+      "status": "READY",
+      "conclusion": null,
+      "paid": false,
+      "results": [],
+      "createdAt": "2026-10-22T00:45:40.284079Z",
+      "updatedAt": "2026-10-22T00:45:45.892814Z",
+      "careContractVersion": 1,
+      "sourceOrderId": "1c25abad-5ea6-4e62-b72a-a9f5176e29f6",
+      "careEpisodeType": "OUTPATIENT_VISIT",
+      "careEpisodeId": "037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "priceCode": "LAB",
+      "clearanceId": "432e20d2-1ca3-49ed-8aed-a17948dca7aa",
+      "emergencyOverrideId": null,
+      "resultVersion": 0,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    },
+    {
+      "testId": "ad116d89-b9f6-4cef-a3de-028d541b00ef",
+      "recordId": "1d4e99c7-3572-42be-9520-a43c1eedc030",
+      "patientId": "6f75b635-a491-4191-99b3-1df16c1a3832",
+      "requestingDepartmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "labType": "CBC",
+      "requestedDate": "2026-10-22",
+      "performedDate": null,
+      "status": "AWAITING_PAYMENT",
+      "conclusion": null,
+      "paid": false,
+      "results": [],
+      "createdAt": "2026-10-22T00:45:49.148081Z",
+      "updatedAt": "2026-10-22T00:45:49.148081Z",
+      "careContractVersion": 1,
+      "sourceOrderId": "7d0abb3e-4dc3-4f47-956a-07abf29bceeb",
+      "careEpisodeType": "OUTPATIENT_VISIT",
+      "careEpisodeId": "250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "priceCode": "LAB",
+      "clearanceId": null,
+      "emergencyOverrideId": null,
+      "resultVersion": 0,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "cancelledAt": null
+    }
+  ],
+  "prescriptions": [
+    {
+      "prescriptionId": "84116e5c-b8d2-4afa-a586-0c2af1c350ab",
+      "recordId": "4447ad07-fe64-4d41-8c96-7a278d167be2",
+      "patientId": "30820325-711c-4d7b-b364-be73c78a43b0",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "prescribedDate": "2026-10-22",
+      "totalAmount": 9000.0,
+      "lines": [
+        {
+          "lineId": "75939539-705b-4757-bd05-53ab002f29a5",
+          "drugId": "71a8add5-5882-44f0-85bb-8e13ea0d00fa",
+          "drugName": "Paracetamol 500 mg",
+          "quantity": 6,
+          "unitPrice": 1500.0,
+          "dosage": "Theo hướng dẫn của bác sĩ",
+          "lineTotal": 9000.0
+        }
+      ],
+      "status": "FULFILLED",
+      "dispenseStatus": "DISPENSED",
+      "paymentConfirmed": true,
+      "cancelledAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "createdAt": "2026-10-22T00:45:31.109138Z",
+      "updatedAt": "2026-10-22T00:45:34.369491Z"
+    },
+    {
+      "prescriptionId": "19967dc8-62bd-4bdd-b413-3f3b4ac1f69a",
+      "recordId": "1361a316-8aa3-4ad4-8774-f852d8c64fa1",
+      "patientId": "8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "prescribedDate": "2026-10-22",
+      "totalAmount": 9000.0,
+      "lines": [
+        {
+          "lineId": "a97c4440-8e78-402b-bab5-b2230147294a",
+          "drugId": "71a8add5-5882-44f0-85bb-8e13ea0d00fa",
+          "drugName": "Paracetamol 500 mg",
+          "quantity": 6,
+          "unitPrice": 1500.0,
+          "dosage": "Theo hướng dẫn của bác sĩ",
+          "lineTotal": 9000.0
+        }
+      ],
+      "status": "ACTIVE",
+      "dispenseStatus": "PENDING",
+      "paymentConfirmed": true,
+      "cancelledAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "createdAt": "2026-10-22T00:45:34.633066Z",
+      "updatedAt": "2026-10-22T00:45:34.633066Z"
+    },
+    {
+      "prescriptionId": "0a3f84b7-2905-405b-a0f8-c68afd9ca87a",
+      "recordId": "acc4a82c-6856-469d-80be-8dc343a9e06e",
+      "patientId": "8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "prescribedDate": "2026-10-22",
+      "totalAmount": 9000.0,
+      "lines": [
+        {
+          "lineId": "c0c631ee-62bb-4cdf-ad8c-f1dc3941c0cc",
+          "drugId": "71a8add5-5882-44f0-85bb-8e13ea0d00fa",
+          "drugName": "Paracetamol 500 mg",
+          "quantity": 6,
+          "unitPrice": 1500.0,
+          "dosage": "Theo hướng dẫn của bác sĩ",
+          "lineTotal": 9000.0
+        }
+      ],
+      "status": "ACTIVE",
+      "dispenseStatus": "PENDING",
+      "paymentConfirmed": false,
+      "cancelledAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "createdAt": "2026-10-22T00:45:46.632375Z",
+      "updatedAt": "2026-10-22T00:45:46.632375Z"
+    },
+    {
+      "prescriptionId": "7b8b6d90-897d-4439-8f89-4f6905e825ae",
+      "recordId": "1d4e99c7-3572-42be-9520-a43c1eedc030",
+      "patientId": "6f75b635-a491-4191-99b3-1df16c1a3832",
+      "doctorId": "e524185a-adb6-48d3-a867-b39b259940f2",
+      "departmentId": "6c568d0b-debd-44ae-999d-3942e1ecfe8b",
+      "prescribedDate": "2026-10-22",
+      "totalAmount": 9000.0,
+      "lines": [
+        {
+          "lineId": "d848cfe3-197b-4af2-a3e6-ba68ea946e74",
+          "drugId": "71a8add5-5882-44f0-85bb-8e13ea0d00fa",
+          "drugName": "Paracetamol 500 mg",
+          "quantity": 6,
+          "unitPrice": 1500.0,
+          "dosage": "Theo hướng dẫn của bác sĩ",
+          "lineTotal": 9000.0
+        }
+      ],
+      "status": "ACTIVE",
+      "dispenseStatus": "PENDING",
+      "paymentConfirmed": false,
+      "cancelledAt": null,
+      "cancelledBy": null,
+      "cancellationReason": null,
+      "createdAt": "2026-10-22T00:45:49.267844Z",
+      "updatedAt": "2026-10-22T00:45:49.267844Z"
+    }
+  ],
+  "payments": [
+    {
+      "transactionId": "55a1ae72-572d-4daa-a23a-0176b0834aa0",
+      "accountId": "e4463013-b866-45d6-aeeb-20d5e6c07197",
+      "paymentRequestId": "0cff9bd3-381b-4b73-970f-b66e657e4435",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 9000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:32.201665Z"
+    },
+    {
+      "transactionId": "7649919b-93b2-4aea-906c-6e69d5cc3afb",
+      "accountId": "d7c7e3ea-2a19-4def-8ce9-aaf7b4909db5",
+      "paymentRequestId": "1b03d80a-4b4b-4ee1-abea-a19b3b7cd9f6",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 9000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:35.739515Z"
+    },
+    {
+      "transactionId": "e55fe586-5ddb-48d7-9338-1836225c52c5",
+      "accountId": "8f3e4603-9e61-481a-8cb5-3b485b4c8560",
+      "paymentRequestId": "ad6bd3f9-53dd-49ef-9750-27bd01a6b24a",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 100000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:38.928545Z"
+    },
+    {
+      "transactionId": "b52f3117-223d-4432-ac82-4e7f06ccee62",
+      "accountId": "8f3e4603-9e61-481a-8cb5-3b485b4c8560",
+      "paymentRequestId": "4cfe09d7-41d4-4d3d-8df0-6a4eff0dd8cc",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 150000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:44.434798Z"
+    },
+    {
+      "transactionId": "add16c27-3994-4ef8-a7a6-80c3a01f5090",
+      "accountId": "da0ea8e1-ecc5-43cf-8f13-d2c325b6fbf7",
+      "paymentRequestId": "cc950a37-4205-444f-a620-352b617b09fe",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 100000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:47.836519Z"
+    },
+    {
+      "transactionId": "bced71a5-0b2f-45d2-87d2-9b41bf72d8b3",
+      "accountId": "86874f73-ccd3-492e-ad59-d064e2520f62",
+      "paymentRequestId": "e62ca364-6afa-4a41-a7cb-e1654821950d",
+      "classification": "SERVICE_PAYMENT",
+      "status": "COMPLETED",
+      "amount": 100000.0,
+      "currency": "VND",
+      "paymentMethod": "CASH",
+      "completedAt": "2026-10-22T00:45:52.492536Z"
+    }
+  ],
+  "journal": [
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/patient/30820325-711c-4d7b-b364-be73c78a43b0",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab?episodeId=71626749-ef62-42f4-9d40-35097f05dfb9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/4cdffaa0-20ed-4ad9-8a3f-f091ca8ed088",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/pharmacy/prescriptions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=84116e5c-b8d2-4afa-a586-0c2af1c350ab&patientId=30820325-711c-4d7b-b364-be73c78a43b0&careEpisodeId=71626749-ef62-42f4-9d40-35097f05dfb9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/0cff9bd3-381b-4b73-970f-b66e657e4435/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab/dispense",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/4447ad07-fe64-4d41-8c96-7a278d167be2",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/patient/8dd25d75-6d29-4967-ac6e-d54c6a8dd490",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab?episodeId=eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/a92c9118-e58f-4afb-b666-75030fe10600",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/pharmacy/prescriptions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=19967dc8-62bd-4bdd-b413-3f3b4ac1f69a&patientId=8dd25d75-6d29-4967-ac6e-d54c6a8dd490&careEpisodeId=eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/1b03d80a-4b4b-4ee1-abea-a19b3b7cd9f6/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/19967dc8-62bd-4bdd-b413-3f3b4ac1f69a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/19967dc8-62bd-4bdd-b413-3f3b4ac1f69a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/19967dc8-62bd-4bdd-b413-3f3b4ac1f69a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/19967dc8-62bd-4bdd-b413-3f3b4ac1f69a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/1361a316-8aa3-4ad4-8774-f852d8c64fa1",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/037fcbd9-127b-44d6-96ee-73c571763c5e/check-in",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=EXAM&sourceId=037fcbd9-127b-44d6-96ee-73c571763c5e&patientId=8fbf50e4-67ca-42f6-96ac-c15d6aab61c8&careEpisodeId=037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/ad6bd3f9-53dd-49ef-9750-27bd01a6b24a/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/037fcbd9-127b-44d6-96ee-73c571763c5e/start-exam",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/patient/8fbf50e4-67ca-42f6-96ac-c15d6aab61c8",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/records/acc4a82c-6856-469d-80be-8dc343a9e06e",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/records/acc4a82c-6856-469d-80be-8dc343a9e06e/diagnoses",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/records/acc4a82c-6856-469d-80be-8dc343a9e06e/lab-orders",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/lab",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=LAB_TEST&sourceId=bbbe2b41-5061-4381-ab46-472b63180bad&patientId=8fbf50e4-67ca-42f6-96ac-c15d6aab61c8&careEpisodeId=037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/4cfe09d7-41d4-4d3d-8df0-6a4eff0dd8cc/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/bbbe2b41-5061-4381-ab46-472b63180bad",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/bbbe2b41-5061-4381-ab46-472b63180bad",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/bbbe2b41-5061-4381-ab46-472b63180bad",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/lab/bbbe2b41-5061-4381-ab46-472b63180bad",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/pharmacy/prescriptions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/0a3f84b7-2905-405b-a0f8-c68afd9ca87a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/acc4a82c-6856-469d-80be-8dc343a9e06e",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/250352fd-6ae9-4108-a147-2d76e9b49eb9/check-in",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=EXAM&sourceId=250352fd-6ae9-4108-a147-2d76e9b49eb9&patientId=6f75b635-a491-4191-99b3-1df16c1a3832&careEpisodeId=250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/cc950a37-4205-444f-a620-352b617b09fe/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/250352fd-6ae9-4108-a147-2d76e9b49eb9/start-exam",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/patient/6f75b635-a491-4191-99b3-1df16c1a3832",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/records/1d4e99c7-3572-42be-9520-a43c1eedc030",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/records/1d4e99c7-3572-42be-9520-a43c1eedc030/diagnoses",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/records/1d4e99c7-3572-42be-9520-a43c1eedc030/lab-orders",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/lab",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/lab/ad116d89-b9f6-4cef-a3de-028d541b00ef",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/pharmacy/prescriptions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/pharmacy/prescriptions/7b8b6d90-897d-4439-8f89-4f6905e825ae",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/records/1d4e99c7-3572-42be-9520-a43c1eedc030",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/a4fde265-3562-4528-8ea6-0db0e835c1d6/check-in",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/billing/payment-requests/by-source?purpose=EXAM&sourceId=a4fde265-3562-4528-8ea6-0db0e835c1d6&patientId=1270368c-7e70-40eb-852c-b58d7b052cf7&careEpisodeId=a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/billing/payment-requests/e62ca364-6afa-4a41-a7cb-e1654821950d/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/appointments/74fcae55-0ff2-4f0c-ae64-ea847dc3a66b/check-in",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/notifications/send",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/71626749-ef62-42f4-9d40-35097f05dfb9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/eab4cb0a-de3f-495c-9304-73ff1f18b5d4",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/037fcbd9-127b-44d6-96ee-73c571763c5e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/250352fd-6ae9-4108-a147-2d76e9b49eb9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/a4fde265-3562-4528-8ea6-0db0e835c1d6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/74fcae55-0ff2-4f0c-ae64-ea847dc3a66b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/b264777a-2a76-4793-b4ac-91e6a8779f0d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/b9de10f8-44e8-4e44-8637-09135b5691e8",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/f91a4cad-6e7a-4b23-9f3f-08187f1687ec",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/52c8e6d2-4a81-4677-838d-ea6d7c1c63d9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/13be7899-c362-4232-acd9-ad6e751a5296",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/0bd51db1-eda6-432e-a306-790ff7e4ad20",
+      "status": 200
+    }
+  ]
+}

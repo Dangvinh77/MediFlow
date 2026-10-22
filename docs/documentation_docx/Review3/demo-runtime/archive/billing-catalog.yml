@@ -1,0 +1,9 @@
+billing:
+  care-finance:
+    prices:
+      OUTPATIENT_EXAM:
+        description: Outpatient exam acceptance
+        unit-amount: 100000.00
+      LAB:
+        description: Isolated frontend Lab acceptance
+        unit-amount: 150000.00
