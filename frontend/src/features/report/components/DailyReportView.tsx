@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
@@ -56,7 +57,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
           <input id="report-date" type="date" value={date} required onChange={(event) => { setDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="report-department-id">
-          <input id="report-department-id" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          <ReferenceInput kind="department" id="report-department-id" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>

@@ -17,7 +17,7 @@ function fill(label: string, value: string) { fireEvent.change(screen.getByLabel
 function submit() { fireEvent.submit(screen.getByLabelText("Mã hồ sơ", { exact: false }).closest("form")!); }
 async function validForm() {
   await screen.findByRole("option", { name: /Paracetamol/ });
-  for (const label of ["Mã hồ sơ", "Mã bệnh nhân", "Mã bác sĩ", "Mã khoa"]) fill(label, id);
+  for (const label of ["Mã bệnh nhân", "Mã khoa", "Mã bác sĩ", "Mã hồ sơ"]) fill(label, id);
   fill("Ngày kê đơn", "2024-02-29"); fill("Số lượng", "2"); fill("Cách dùng", " Sau ăn ");
   fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
 }
@@ -34,7 +34,7 @@ describe("CreatePrescriptionForm", () => {
   it("focuses the first missing identifier and later the invalid drug selector", async () => {
     render(<CreatePrescriptionForm mode="legacy" />); submit();
     await waitFor(() => expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toHaveFocus());
-    for (const label of ["Mã hồ sơ", "Mã bệnh nhân", "Mã bác sĩ", "Mã khoa"]) fill(label, id);
+    for (const label of ["Mã bệnh nhân", "Mã khoa", "Mã bác sĩ", "Mã hồ sơ"]) fill(label, id);
     submit();
     await waitFor(() => expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveFocus());
     expect(mocks.create).not.toHaveBeenCalled();

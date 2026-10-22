@@ -25,7 +25,7 @@ function fill(label: string, value: string) { fireEvent.change(screen.getByLabel
 function submit() { fireEvent.submit(screen.getByLabelText("Mã hồ sơ", { exact: false }).closest("form")!); }
 async function validForm() {
   await screen.findByRole("option", { name: /Paracetamol/ });
-  for (const label of ["Mã hồ sơ", "Mã bệnh nhân", "Mã bác sĩ", "Mã khoa"]) fill(label, id);
+  for (const label of ["Mã bệnh nhân", "Mã khoa", "Mã bác sĩ", "Mã hồ sơ"]) fill(label, id);
   fill("Ngày kê đơn", "2024-02-29"); fill("Mã lượt khám", episode); fill("Mã giá thuốc", "CATALOG-DRUG");
   fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { PharmacyIdentity } from "../PharmacyIdentity";
 import { PharmacySessionBoundary } from "../PharmacySessionBoundary";
 import { Field, controlClassName } from "@/components/ui/Field";
@@ -165,7 +166,10 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
 
   function updateField(field: keyof Omit<OutpatientPrescriptionFormValues, "lines">, value: string) {
     if (locked) return;
-    setValues((current) => ({ ...current, [field]: value }));
+    setValues((current) => ({ ...current, [field]: value,
+      ...(field === "patientId" && value !== current.patientId ? { recordId: "", careEpisodeId: "" } : {}),
+      ...(field === "departmentId" && value !== current.departmentId ? { doctorId: "" } : {}),
+    }));
     setValidationErrors((current) => ({
       ...current,
       fields: { ...current.fields, [field]: undefined },
@@ -328,22 +332,22 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
         <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "outpatient" ? "Nhập các mã đã được xác nhận từ lượt khám và danh mục giá. Không dùng mã tài khoản thay cho mã bác sĩ." : "Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách."}
+          {mode === "outpatient" ? "Chọn bệnh nhân, khoa và bác sĩ theo tên. Mã hồ sơ, lượt khám và giá thuốc phải được xác nhận từ nghiệp vụ nguồn." : "Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách."}
         </p>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
           <Field label="Mã hồ sơ bệnh án" htmlFor="recordId" error={validationErrors.fields.recordId} required>
             <input id="recordId" {...field("recordId")} value={values.recordId} onChange={(event) => updateField("recordId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} placeholder="UUID hồ sơ" />
           </Field>
           <Field label="Mã bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
-            <input id="patientId" {...field("patientId")} value={values.patientId} onChange={(event) => updateField("patientId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="UUID bệnh nhân" />
+            <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="UUID bệnh nhân" />
             <PharmacyIdentity kind="patient" id={values.patientId.trim()} showId={false} />
           </Field>
           <Field label="Mã bác sĩ" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
-            <input id="doctorId" {...field("doctorId")} value={values.doctorId} onChange={(event) => updateField("doctorId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="UUID bác sĩ" />
+            <ReferenceInput kind="doctor" scope={values.departmentId} id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="UUID bác sĩ" />
             <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} showId={false} />
           </Field>
           <Field label="Mã khoa" htmlFor="departmentId" error={validationErrors.fields.departmentId} required>
-            <input id="departmentId" {...field("departmentId")} value={values.departmentId} onChange={(event) => updateField("departmentId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="UUID khoa" />
+            <ReferenceInput kind="department" id="departmentId" {...field("departmentId")} value={values.departmentId} onValueChange={(id) => updateField("departmentId", id)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="UUID khoa" />
             <PharmacyIdentity kind="department" id={values.departmentId.trim()} showId={false} />
           </Field>
           <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>

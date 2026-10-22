@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
@@ -66,7 +67,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
           <input id="report-year" type="number" min={2000} max={2100} step={1} value={year} onChange={(event) => { setYear(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="monthly-department">
-          <input id="monthly-department" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          <ReferenceInput kind="department" id="monthly-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>

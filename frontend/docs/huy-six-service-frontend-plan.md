@@ -1042,3 +1042,44 @@ Verification của đợt này trên working tree nhánh Huy, baseline `acee395f
   PASS (95,3s). Hộp xác nhận kê đơn dùng cùng resolver với form; ID/intent/key giữ nguyên.
 - Typecheck/lint/build hoặc widget doubles không chứng minh quyền/seed/browser thật.
   Chưa có ảnh Review3 mới; giữ acceptance candidate mới PENDING.
+
+
+## 27. Đồng bộ bộ chọn tên với master — 2026-10-22
+
+Baseline đã fast-forward từ `3100d7b5` tới `95542f6c` (bao gồm PR #502).
+Thay đổi source giới hạn ở hai feature Pharmacy/Report của Huy; sử dụng shared
+ReferenceInput/ReferenceDirectory hiện có, không sửa shared source hoặc feature owner khác.
+
+- Pharmacy: tìm/chọn bệnh nhân, khoa, bác sĩ theo tên; danh sách bác sĩ nhận scope khoa.
+  Command tiếp tục gửi UUID server và giữ nguyên V1 intent/Idempotency-Key, V0 compatibility,
+  frozen retry, vai trò và các điều kiện xuất thuốc do backend quyết định.
+- Đổi bệnh nhân xóa recordId/careEpisodeId cũ; đổi khoa xóa doctorId. Tên gõ chưa chọn
+  không trở thành authority ID. recordId/careEpisodeId/priceCode vẫn cần nguồn đã xác nhận.
+- Report: cả Daily/Monthly/TopMedicines/Outpatient dùng bộ chọn khoa chung; URL và API
+  vẫn nhận UUID. Phạm vi kết quả lấy từ response/query đã gửi, không từ draft đang sửa;
+  giữ coverage/error/retry và gate ngoại trú hiện hành.
+- Nhãn tên Pharmacy/Report dùng directory/cache của dashboard khi có. Consumer độc lập
+  vẫn giữ public API fallback, kiểm tra ID và xử lý 403/404/unavailable. Không mở quyền
+  PHARMACIST hoặc đổi các producer contract.
+- Thêm regression tích hợp feature + shared picker cho exact V1 IDs, doctor scope,
+  xóa phụ thuộc, search deny, query UUID của cả bốn view Report và lỗi missing data.
+
+Nghiệm thu Gateway/browser/keyboard/theme/ảnh Review3 mới vẫn OPEN. Kiểm tra runtime
+trong lượt này không thấy listener Gateway8080 hoặc web3000/3180/3182; in-app browser
+không có phiên đăng nhập sẵn. Không dùng kết quả test/build để đóng acceptance thật.
+Không tạo nhánh, commit hoặc push; code để người dùng review và đẩy lên.
+
+Verification trên candidate local sau thay đổi:
+
+- Pharmacy/Report focused: **402/402 PASS**; sau đó bổ sung ba ca selector query
+  Monthly/TopMedicines/Outpatient và kiểm trong full suite bên dưới.
+- Full frontend: **880/880 PASS, 94 files**, `pnpm exec vitest run --maxWorkers=2`.
+  Lần chạy mặc định song song với build có ba ca Inpatient timeout5s; chạy riêng
+  Inpatient **5/5 PASS**, rồi full suite với hai worker đạt toàn bộ. Không sửa source,
+  test timeout/config hoặc validation của Inpatient để có kết quả này.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: PASS. Sau ba ca test bổ sung:
+  typecheck và lint Pharmacy/Report PASS; không có source production thay đổi sau build.
+- `git diff --check`: PASS. Không thay backend, shared source, mobile hoặc gate.
+
+Verdict: **CODE + AUTOMATED VERIFICATION COMPLETE cho đồng bộ web Pharmacy/Report**;
+Gateway/browser/ảnh Review3 mới vẫn OPEN và mobile giữ nguyên tiến độ riêng.

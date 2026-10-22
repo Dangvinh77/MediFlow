@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
 import { api, ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { getSessionKey } from "@/lib/session";
@@ -10,8 +11,9 @@ type Lookup = (id: string, attempt: number) => Promise<Result>;
 const DepartmentContext = createContext<Lookup | null>(null);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Report-local until the shared display resolver is assigned to its shared owner. */
+/** Reuses the dashboard directory; standalone views retain their public API fallback. */
 export function ReportDepartmentProvider({ children }: { children: ReactNode }) {
+  const directory = useReferenceDirectory();
   const [lookup] = useState<Lookup>(() => {
     const session = getSessionKey();
     const role = getRole();
@@ -21,10 +23,13 @@ export function ReportDepartmentProvider({ children }: { children: ReactNode }) 
       const key = `${id.toLowerCase()}:${attempt}`;
       let request = cache.get(key);
       if (!request) {
-        request = api.get<{ departmentId: string; departmentName: string }>(`/v1/org/departments/${encodeURIComponent(id)}`).then(department => {
+        request = (directory ? directory.resolve("department", id).then(name => {
+          if (!name?.trim()) throw new Error("Department label unavailable");
+          return { name };
+        }) : api.get<{ departmentId: string; departmentName: string }>(`/v1/org/departments/${encodeURIComponent(id)}`).then(department => {
           if (department.departmentId.toLowerCase() !== id.toLowerCase() || !department.departmentName.trim()) throw new Error("Department response mismatch");
           return { name: department.departmentName };
-        }).catch((cause: unknown) => {
+        })).catch((cause: unknown) => {
           return { error: cause instanceof ApiRequestError && cause.status === 403 ? "Không có quyền tra cứu tên khoa"
             : cause instanceof ApiRequestError && cause.status === 404 ? "Không tìm thấy tên khoa" : "Chưa tải được tên khoa" };
         });

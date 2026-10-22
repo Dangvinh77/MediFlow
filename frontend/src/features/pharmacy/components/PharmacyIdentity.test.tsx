@@ -38,8 +38,8 @@ describe("Pharmacy public identity display", () => {
         : { departmentId: first, departmentName: "Khoa Nội" }));
     render(<CreatePrescriptionForm />);
     fireEvent.change(screen.getByLabelText("Mã bệnh nhân", { exact: false }), { target: { value: first } });
-    fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: second } });
     fireEvent.change(screen.getByLabelText("Mã khoa", { exact: false }), { target: { value: first } });
+    fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: second } });
     expect(await screen.findByText("Nguyễn An")).toBeVisible();
     expect(await screen.findByText("Bác sĩ Bình")).toBeVisible();
     expect(await screen.findByText("Khoa Nội")).toBeVisible();
