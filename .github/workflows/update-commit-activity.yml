@@ -36,7 +36,7 @@ jobs:
           node-version: '20'
 
       - name: Test changelog and dashboard
-        run: node --test scripts/changelog-sync.test.js scripts/commit-activity.test.js
+        run: node --test scripts/changelog-sync.test.js scripts/commit-activity.test.js scripts/wait-dashboard-pr.test.js
 
       - name: Synchronize changelog
         run: node scripts/changelog.js --sync
@@ -85,14 +85,6 @@ jobs:
 
           # Bind merge to the exact commit generated and checked in this run.
           head_sha="$(git rev-parse HEAD)"
-          # GitHub recomputes mergeability asynchronously after updating a PR.
-          for attempt in {1..12}; do
-            mergeable="$(gh pr view "$pr_number" --json mergeable --jq .mergeable)"
-            if [ "$mergeable" = MERGEABLE ]; then break; fi
-            if [ "$mergeable" = CONFLICTING ]; then
-              echo '::error::Dashboard PR has conflicts'; exit 1
-            fi
-            sleep 5
-          done
-          test "$mergeable" = MERGEABLE
+          # Wait for this exact head; all non-ready states can be briefly stale.
+          node scripts/wait-dashboard-pr.js "$pr_number" "$head_sha"
           gh pr merge "$pr_number" --rebase --admin --match-head-commit "$head_sha" --delete-branch
