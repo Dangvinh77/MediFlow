@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { useCommand } from "@/lib/use-command";
@@ -110,7 +111,7 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
 
       {mode === "cancel" ? (
         <form onSubmit={submitCancel} className="mt-5 grid gap-4 border-t border-border pt-5 md:grid-cols-2">
-          <Field label="Mã nhân viên hủy" htmlFor="lab-cancelled-by" required hint="UUID nhân viên đang thực hiện thao tác."><input id="lab-cancelled-by" value={cancelledBy} onChange={(event) => setCancelledBy(event.target.value)} className={controlClassName} /></Field>
+          <Field label="Mã nhân viên hủy" htmlFor="lab-cancelled-by" required hint="Chọn nhân viên đang thực hiện thao tác."><ReferenceInput kind="staff" id="lab-cancelled-by" value={cancelledBy} onValueChange={setCancelledBy} className={controlClassName} /></Field>
           <Field label="Lý do hủy" htmlFor="lab-cancel-reason" required><textarea id="lab-cancel-reason" maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} className={controlClassName} /></Field>
           <div className="flex gap-2 md:col-span-2"><Button type="submit" variant="danger" loading={busy}>Xác nhận hủy</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
         </form>

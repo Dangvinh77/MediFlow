@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ReferenceText } from "@/components/references/ReferenceText";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
@@ -14,7 +15,7 @@ export function CreateSourceLabRequest({ request }: { request: CreateLabRequest 
   return <section className="space-y-4 rounded-xl border border-border bg-surface p-6">
     <h2 className="text-lg font-semibold">2. Gửi yêu cầu xét nghiệm</h2>
     <p className="text-sm text-muted-foreground">{request.labType} · {request.requestedDate}. Thông tin chỉ định đã được khóa theo hồ sơ khám.</p>
-    <p className="break-all font-mono text-xs">Mã chỉ định: {request.sourceOrderId}</p>
+    <p><ReferenceText value={request.sourceOrderId} fallback="Chỉ định xét nghiệm đã chọn" /></p>
     <CommandFeedback error={command.error} uncertain={command.uncertain} />
     {created ? <div role="status" className="space-y-3">
       <p className="text-sm text-success">Đã tạo yêu cầu xét nghiệm. Thanh toán và điều kiện thực hiện được hệ thống cập nhật riêng.</p>

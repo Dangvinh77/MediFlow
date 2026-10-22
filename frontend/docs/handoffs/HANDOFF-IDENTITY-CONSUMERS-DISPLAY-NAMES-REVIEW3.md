@@ -12,6 +12,22 @@
 - **Compatibility expectation:** UUID vẫn là định danh trong request/response, URL và command; thay đổi cách hiển thị không đổi wire contract hay quyền truy cập.
 - **Resume owner:** Vinh điều phối kiểm tra và tổng hợp; từng dev nhận phần feature thuộc quyền mình. Bộ ảnh/Word chỉ cập nhật sau nghiệm thu.
 
+## Cập nhật Vinh/Lộc — 22/10/2026
+
+Đã triển khai shared directory tại app composition và selector/nhãn cho Appointment,
+Medical Record, Lab, Billing, Notification. UUID giữ nguyên trong command/URL và
+thu gọn trong chi tiết. Đổi bệnh nhân/khoa xóa lựa chọn phụ thuộc; cache và phản hồi
+cũ không vượt qua session boundary. Có retry chỉ đọc khi tải tên thất bại.
+
+Đã xác nhận Patient read chỉ ADMIN/DOCTOR/NURSE, Organization read chỉ
+ADMIN/MANAGER/DOCTOR/NURSE; vai trò khác không gọi API bị cấm. Gap producer cụ thể
+được ghi trong [Core backend handoff](../../../docs/handoffs/HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md).
+Những trường không có public lookup giữ fallback kỹ thuật; không nâng quyền frontend.
+
+Đây là implementation và automated verification, chưa đóng signed-role Gateway/ảnh
+Review3. Tiến độ Huy bên dưới và dữ liệu ảnh cũ được giữ nguyên. Kết quả revision PR
+xem [plan verification](../../../docs/superpowers/plans/2026-10-22-frontend-human-readable-references.md).
+
 ## 1. Hiện tượng và bằng chứng
 
 1. `AppointmentDetail.tsx` hiện đưa `appointment.patientId`, `appointment.doctorId`, `appointment.departmentId` trực tiếp vào `Identifier`, dưới nhãn Bệnh nhân/Bác sĩ/Khoa. Trang chưa ghép tên cho ba trường này.

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -54,7 +55,7 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-all font-mono text-sm">{value ?? "—"}</dd>
+      <dd className="mt-1 break-all font-mono text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : label === "Hồ sơ khám" ? "record" : undefined} value={value} fallback={label} /></dd>
     </div>
   );
 }
@@ -142,7 +143,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">Mã hồ sơ</p>
-          <p className="mt-1 break-all font-mono text-sm">{record.recordId}</p>
+          <p className="mt-1 break-all font-mono text-sm"><ReferenceText kind="record" value={record.recordId} fallback="Hồ sơ khám" /></p>
         </div>
         <StatusBadge tone={record.status === "COMPLETED" ? "success" : "info"}>
           {record.status === "COMPLETED" ? "Đã hoàn tất" : "Đang khám"}

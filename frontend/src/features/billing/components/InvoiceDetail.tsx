@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -142,7 +143,7 @@ function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice
         </div>
       ) : null}
       <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-surface p-6">
-        <div><p className="break-all font-mono text-sm">{invoice.invoiceId}</p><p className="mt-2 text-2xl font-semibold">{formatDecimal(invoice.totalAmount)}</p></div>
+        <div><p className="break-all font-mono text-sm"><ReferenceText value={invoice.invoiceId} fallback="Hóa đơn" /></p><p className="mt-2 text-2xl font-semibold">{formatDecimal(invoice.totalAmount)}</p></div>
         <StatusBadge tone={invoice.isPaid ? "success" : "warning"}>{invoice.isPaid ? "Đã thanh toán" : "Chưa thanh toán"}</StatusBadge>
       </div>
       <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -158,7 +159,7 @@ function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice
           <thead className="bg-surface-muted"><tr><th className="px-4 py-3">Loại phí</th><th className="px-4 py-3">Khoa</th><th className="px-4 py-3">Ngày phát sinh</th><th className="px-4 py-3">Số tiền</th><th className="px-4 py-3">Trạng thái</th></tr></thead>
           <tbody>{invoice.fees.map((fee) => (
             <tr key={fee.feeId} className="border-t border-border">
-              <td className="px-4 py-3">{fee.feeType}</td><td className="break-all px-4 py-3 font-mono text-xs">{fee.departmentId}</td><td className="px-4 py-3">{formatLocalDate(fee.incurredDate)}</td><td className="px-4 py-3">{formatDecimal(fee.amount)}</td><td className="px-4 py-3"><StatusBadge tone={fee.isPaid ? "success" : "warning"}>{fee.isPaid ? "Đã trả" : "Chưa trả"}</StatusBadge></td>
+              <td className="px-4 py-3">{fee.feeType}</td><td className="break-all px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={fee.departmentId} fallback="Khoa" /></td><td className="px-4 py-3">{formatLocalDate(fee.incurredDate)}</td><td className="px-4 py-3">{formatDecimal(fee.amount)}</td><td className="px-4 py-3"><StatusBadge tone={fee.isPaid ? "success" : "warning"}>{fee.isPaid ? "Đã trả" : "Chưa trả"}</StatusBadge></td>
             </tr>
           ))}</tbody>
         </table>
@@ -176,5 +177,5 @@ function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice
 }
 
 function Info({ label, value, mono = false }: { label: string; value: string | null; mono?: boolean }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{value ?? "—"}</dd></div>;
+  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{mono ? <ReferenceText kind={label.includes("bệnh nhân") || label === "Bệnh nhân" ? "patient" : undefined} value={value} fallback={label} /> : value ?? "—"}</dd></div>;
 }

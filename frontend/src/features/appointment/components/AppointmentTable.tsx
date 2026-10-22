@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -137,10 +139,10 @@ export function AppointmentTable() {
       <form onSubmit={onFilter} className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="appointment-department" className="mb-1 block text-sm font-medium">Mã khoa</label>
-          <input
+          <ReferenceInput kind="department"
             id="appointment-department"
             value={departmentId}
-            onChange={(event) => setDepartmentId(event.target.value)}
+            onValueChange={(selectedId) => setDepartmentId(selectedId)}
             placeholder="UUID khoa"
             aria-describedby={validationError ? "appointment-department-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -179,9 +181,9 @@ export function AppointmentTable() {
                     <tr key={appointment.appointmentId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(appointment.appointmentDate)}</td>
                       <td className="px-4 py-3">{appointment.appointmentTime}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{appointment.patientId}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{appointment.doctorId}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{appointment.departmentId}</td>
+                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="patient" value={appointment.patientId} fallback="Bệnh nhân" /></td>
+                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="doctor" value={appointment.doctorId} fallback="Bác sĩ" /></td>
+                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={appointment.departmentId} fallback="Khoa" /></td>
                       <td className="px-4 py-3"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></td>
                       <td className="px-4 py-3">{appointment.reason ?? "—"}</td>
                       <td className="px-4 py-3">

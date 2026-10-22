@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { FinancialStatus } from "./FinancialStatus";
 import { useCallback, useEffect, useState } from "react";
@@ -52,7 +53,7 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-all font-mono text-sm">{value ?? "—"}</dd>
+      <dd className="mt-1 break-all font-mono text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : label === "Hồ sơ khám" ? "record" : undefined} value={value} fallback={label} /></dd>
     </div>
   );
 }
@@ -125,7 +126,7 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{test.labType}</p>
-          <p className="mt-1 break-all font-mono text-sm">{test.testId}</p>
+          <p className="mt-1 break-all font-mono text-sm"><ReferenceText value={test.testId} fallback="Xét nghiệm" /></p>
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
@@ -169,7 +170,7 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
       />
       <Button type="button" onClick={retry}>Cập nhật trạng thái xét nghiệm</Button>
 
-      {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs">{test.emergencyOverrideId}</p></section> : null}
+      {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs"><ReferenceText value={test.emergencyOverrideId} fallback="Phê duyệt ngoại lệ" /></p></section> : null}
       <Link href="/lab" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
     </section>
   );

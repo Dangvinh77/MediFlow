@@ -48,7 +48,7 @@ describe("Notification patient history", () => {
     fill("Mã bệnh nhân", otherId);
     await user.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
     expect(await screen.findByText("Gửi thất bại")).toBeVisible();
-    expect(screen.getByText(`Bệnh nhân: ${id}`)).toBeVisible();
+    expect(screen.getByText(id)).not.toBeVisible();
     expect(screen.getByRole("heading", { name: "Kết quả tra cứu thông báo" })).toHaveFocus();
     expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20);
     expect(mocks.list).toHaveBeenCalledTimes(3); expect(mocks.send).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe("Notification patient history", () => {
     const input = screen.getByLabelText("Mã bệnh nhân"); input.focus(); fill("Mã bệnh nhân", otherId);
     await act(async () => pending.resolve(page()));
     expect(input).toHaveFocus(); expect(input).toHaveValue(otherId);
-    expect(screen.getByText(`Bệnh nhân: ${id}`)).toBeVisible();
+    expect(screen.getByText(id)).not.toBeVisible();
   });
   it.each([403, 503])("focuses history refresh error %i with correlation and respects retry policy", async status => {
     const user = userEvent.setup();

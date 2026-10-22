@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -50,7 +51,7 @@ function Identifier({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-all font-mono text-sm text-foreground">{value}</dd>
+      <dd className="mt-1 break-all font-mono text-sm text-foreground"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : undefined} value={value} fallback={label} /></dd>
     </div>
   );
 }
@@ -185,7 +186,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">Mã lịch hẹn</p>
-          <p className="mt-1 break-all font-mono text-sm">{appointment.appointmentId}</p>
+          <p className="mt-1 break-all font-mono text-sm"><ReferenceText kind="appointment" value={appointment.appointmentId} fallback="Lịch hẹn" /></p>
         </div>
         <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
       </div>

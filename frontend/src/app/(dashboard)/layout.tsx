@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { DashboardReferences } from "./_components/DashboardReferences";
 import {
   getRole,
   getSessionKey,
@@ -53,7 +54,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
           onLogout={onLogout}
           onOpenNavigation={() => setNavigationOpen(true)}
         />
-        <Fragment key={`${token}:${role}`}>{children}</Fragment>
+        <Fragment key={`${token}:${role}`}><DashboardReferences role={role}>{children}</DashboardReferences></Fragment>
       </div>
     </div>
   );

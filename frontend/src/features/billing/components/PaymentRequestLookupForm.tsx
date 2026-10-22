@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -135,7 +137,7 @@ function PaymentRequestLookupSession() {
           <input id="payment-request-source-id" required value={sourceId} disabled={loading || paymentLocked} onChange={(event) => { setSourceId(event.target.value); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
         </Field>
         <Field label="Mã bệnh nhân" htmlFor="payment-request-patient-id" required>
-          <input id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onChange={(event) => { setPatientId(event.target.value); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
+          <ReferenceInput kind="patient" id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onValueChange={(selectedId) => { setPatientId(selectedId); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
         </Field>
         {showCareEpisode ? (
           <Field label="Mã đợt điều trị" htmlFor="payment-request-care-episode-id" required hint="Nhập mã do màn hình nguồn cung cấp; không suy ra từ mã xét nghiệm hoặc đơn thuốc.">
@@ -151,7 +153,7 @@ function PaymentRequestLookupSession() {
       {discovery ? (
         <section aria-label="Chi tiết khoản phí" className="space-y-5 rounded-xl border border-border bg-surface p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div><h2 className="text-lg font-semibold">Khoản phí được xác nhận</h2><p className="mt-1 break-all font-mono text-xs text-muted-foreground">{discovery.paymentRequestId}</p></div>
+            <div><h2 className="text-lg font-semibold">Khoản phí được xác nhận</h2><p className="mt-1 break-all font-mono text-xs text-muted-foreground"><ReferenceText value={discovery.paymentRequestId} fallback="Yêu cầu thanh toán" /></p></div>
             <StatusBadge tone={canPay ? "warning" : discovery.status === "PAID" ? "success" : "neutral"}>{requestStatusLabels[discovery.status]}</StatusBadge>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">

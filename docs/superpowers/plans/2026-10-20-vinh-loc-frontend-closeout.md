@@ -1,5 +1,18 @@
 # Vinh and Lộc frontend closeout
 
+## Current task correction — 2026-10-22
+
+This is the historical delegated closeout plan, not a permanent ownership transfer or the
+current execution queue. Lộc resumes Billing/Notification frontend ownership on 22/10;
+Vinh retains Clinical/Lab and shared frontend ownership. Follow the
+[current task table](../../../frontend/docs/frontend-workboard.md).
+
+The checked steps below record the work performed on 20/10. They do not establish complete
+Billing component coverage: `FE-BILLING-04` is IN PROGRESS under Lộc after the 21–22/10 source
+recheck found missing RevenueReport coverage and limited InvoiceForm/OutboxReplayForm coverage.
+Complete those tests before closing that task. Existing Clinical/Lab acceptance remains scoped
+to its evidence; Notification resend/read-state (`FE-NOTIFICATION-03`) remains contract-blocked.
+
 > **For agentic workers:** Execute the existing approved outpatient design in bounded tasks using subagent-driven-development and the verification-before-completion workflow.
 
 **Goal:** Complete the implemented Vinh/Lộc outpatient frontend flows, repair demonstrated defects, and record honest acceptance evidence.

@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -92,10 +94,10 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
       <form onSubmit={onSearch} className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="record-patient-id" className="mb-1 block text-sm font-medium">Mã bệnh nhân</label>
-          <input
+          <ReferenceInput kind="patient"
             id="record-patient-id"
             value={patientId}
-            onChange={(event) => setPatientId(event.target.value)}
+            onValueChange={(selectedId) => setPatientId(selectedId)}
             placeholder="Nhập UUID bệnh nhân"
             aria-describedby={validationError ? "record-patient-id-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -125,10 +127,10 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
                       href={`/records/${record.recordId}`}
                       className="break-all text-primary underline-offset-4 hover:underline"
                     >
-                      {record.recordId}
+                      <ReferenceText value={record.recordId} fallback={`Hồ sơ ${formatLocalDate(record.examinationDate)}`} technical={false} />
                     </Link>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs">{record.doctorId}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="doctor" value={record.doctorId} fallback="Bác sĩ" /></td>
                   <td className="max-w-xs whitespace-normal px-4 py-3">{record.symptoms}</td>
                   <td className="max-w-md whitespace-normal px-4 py-3">
                     {record.diagnoses.length > 0

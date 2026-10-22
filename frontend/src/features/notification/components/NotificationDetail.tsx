@@ -1,5 +1,6 @@
 "use client";
 
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -75,7 +76,7 @@ function DetailRequest({ notificationId, notice, onRetry, focusResult }: Props &
     <section className="mt-6 space-y-6">
       {notice === "sent" && <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã tiếp nhận yêu cầu gửi thông báo.</p>}
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-surface p-6">
-        <div className="min-w-0 flex-1"><p className="text-sm text-muted-foreground">{channelLabels[notification.channel] ?? "Không xác định"}</p><h2 ref={headingRef} tabIndex={-1} className="mt-1 break-words rounded-sm text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notification.title}</h2><p className="mt-2 break-all font-mono text-xs text-muted-foreground">{notification.notificationId}</p></div>
+        <div className="min-w-0 flex-1"><p className="text-sm text-muted-foreground">{channelLabels[notification.channel] ?? "Không xác định"}</p><h2 ref={headingRef} tabIndex={-1} className="mt-1 break-words rounded-sm text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notification.title}</h2><p className="mt-2 break-all font-mono text-xs text-muted-foreground"><ReferenceText value={notification.notificationId} fallback="Thông báo" /></p></div>
         <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
       </div>
       <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2">
@@ -90,5 +91,5 @@ function DetailRequest({ notificationId, notice, onRetry, focusResult }: Props &
   );
 }
 function Info({ label, value }: { label: string; value: string | null }) {
-  return <div className="min-w-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-all text-sm">{value ?? "—"}</dd></div>;
+  return <div className="min-w-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-all text-sm">{["Bệnh nhân", "Mã bệnh nhân", "Mã đợt điều trị"].includes(label) ? <ReferenceText kind={label.includes("bệnh nhân") || label === "Bệnh nhân" ? "patient" : undefined} value={value} fallback={label} /> : value ?? "—"}</dd></div>;
 }
