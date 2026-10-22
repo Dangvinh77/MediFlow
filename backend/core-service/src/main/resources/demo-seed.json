@@ -1,0 +1,492 @@
+{
+  "description": "Dữ liệu demo tổng hợp cho Organization, Patient và đăng nhập Gateway. Mật khẩu chỉ áp dụng khi tạo tài khoản mới; không reset mật khẩu đã đổi.",
+  "startup": "Core tự seed với profile mặc định hoặc local. MEDIFLOW_DEMO_SEED_ENABLED=false để tắt. Giữ PostgreSQL volume để lưu dữ liệu.",
+  "departments": [
+    {
+      "key": "department-01",
+      "departmentName": "Khoa Nội tổng quát Demo",
+      "abbreviation": "DEMO-NOI",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 1, khu Demo"
+    },
+    {
+      "key": "department-02",
+      "departmentName": "Khoa Nhi Demo",
+      "abbreviation": "DEMO-NHI",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 1, khu Demo"
+    },
+    {
+      "key": "department-03",
+      "departmentName": "Phòng Hành chính Demo",
+      "abbreviation": "DEMO-HC",
+      "departmentType": "ADMINISTRATIVE",
+      "location": "Tầng 2, khu Demo"
+    },
+    {
+      "key": "department-04",
+      "departmentName": "Khoa Tim mạch Demo",
+      "abbreviation": "DEMO-TIM",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 2, khu Demo"
+    },
+    {
+      "key": "department-05",
+      "departmentName": "Khoa Tai Mũi Họng Demo",
+      "abbreviation": "DEMO-TMH",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 3, khu Demo"
+    },
+    {
+      "key": "department-06",
+      "departmentName": "Khoa Da liễu Demo",
+      "abbreviation": "DEMO-DL",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 3, khu Demo"
+    },
+    {
+      "key": "department-07",
+      "departmentName": "Khoa Mắt Demo",
+      "abbreviation": "DEMO-MAT",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 4, khu Demo"
+    },
+    {
+      "key": "department-08",
+      "departmentName": "Khoa Xét nghiệm Demo",
+      "abbreviation": "DEMO-XN",
+      "departmentType": "PARACLINICAL",
+      "location": "Tầng 4, khu Demo"
+    },
+    {
+      "key": "department-09",
+      "departmentName": "Khoa Dược Demo",
+      "abbreviation": "DEMO-DUOC",
+      "departmentType": "PARACLINICAL",
+      "location": "Tầng 5, khu Demo"
+    },
+    {
+      "key": "department-10",
+      "departmentName": "Phòng Tài chính Kế toán Demo",
+      "abbreviation": "DEMO-TCKT",
+      "departmentType": "ADMINISTRATIVE",
+      "location": "Tầng 5, khu Demo"
+    }
+  ],
+  "staff": [
+    {
+      "key": "staff-01",
+      "fullName": "Nguyễn Quản Trị Demo",
+      "identityNumber": "999880000001",
+      "departmentKey": "department-03",
+      "jobTitle": "ADMINISTRATIVE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800001",
+      "email": "demo.staff01@example.test"
+    },
+    {
+      "key": "staff-02",
+      "fullName": "Trần Quản Lý Demo",
+      "identityNumber": "999880000002",
+      "departmentKey": "department-03",
+      "jobTitle": "MANAGER",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800002",
+      "email": "demo.staff02@example.test"
+    },
+    {
+      "key": "staff-03",
+      "fullName": "Lê Bác Sĩ Demo",
+      "identityNumber": "999880000003",
+      "departmentKey": "department-01",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Nội tổng quát",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-003",
+      "phoneNumber": "0908800003",
+      "email": "demo.staff03@example.test"
+    },
+    {
+      "key": "staff-04",
+      "fullName": "Phạm Điều Dưỡng Demo",
+      "identityNumber": "999880000004",
+      "departmentKey": "department-01",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800004",
+      "email": "demo.staff04@example.test"
+    },
+    {
+      "key": "staff-05",
+      "fullName": "Nguyễn Minh Phúc Demo",
+      "identityNumber": "999880000005",
+      "departmentKey": "department-02",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Nhi",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-005",
+      "phoneNumber": "0908800005",
+      "email": "demo.staff05@example.test"
+    },
+    {
+      "key": "staff-06",
+      "fullName": "Trần Ngọc Lan Demo",
+      "identityNumber": "999880000006",
+      "departmentKey": "department-02",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800006",
+      "email": "demo.staff06@example.test"
+    },
+    {
+      "key": "staff-07",
+      "fullName": "Lê Hoàng Nam Demo",
+      "identityNumber": "999880000007",
+      "departmentKey": "department-04",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Tim mạch",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-007",
+      "phoneNumber": "0908800007",
+      "email": "demo.staff07@example.test"
+    },
+    {
+      "key": "staff-08",
+      "fullName": "Phạm Thanh Hà Demo",
+      "identityNumber": "999880000008",
+      "departmentKey": "department-04",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800008",
+      "email": "demo.staff08@example.test"
+    },
+    {
+      "key": "staff-09",
+      "fullName": "Võ Quốc Bảo Demo",
+      "identityNumber": "999880000009",
+      "departmentKey": "department-05",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Tai Mũi Họng",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-009",
+      "phoneNumber": "0908800009",
+      "email": "demo.staff09@example.test"
+    },
+    {
+      "key": "staff-10",
+      "fullName": "Đặng Thảo Nguyên Demo",
+      "identityNumber": "999880000010",
+      "departmentKey": "department-05",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800010",
+      "email": "demo.staff10@example.test"
+    },
+    {
+      "key": "staff-11",
+      "fullName": "Bùi Minh Châu Demo",
+      "identityNumber": "999880000011",
+      "departmentKey": "department-06",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Da liễu",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-011",
+      "phoneNumber": "0908800011",
+      "email": "demo.staff11@example.test"
+    },
+    {
+      "key": "staff-12",
+      "fullName": "Đỗ Ngọc Anh Demo",
+      "identityNumber": "999880000012",
+      "departmentKey": "department-06",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800012",
+      "email": "demo.staff12@example.test"
+    },
+    {
+      "key": "staff-13",
+      "fullName": "Hồ Anh Tuấn Demo",
+      "identityNumber": "999880000013",
+      "departmentKey": "department-07",
+      "jobTitle": "DOCTOR",
+      "specialization": "Khoa Mắt",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-013",
+      "phoneNumber": "0908800013",
+      "email": "demo.staff13@example.test"
+    },
+    {
+      "key": "staff-14",
+      "fullName": "Ngô Thu Hương Demo",
+      "identityNumber": "999880000014",
+      "departmentKey": "department-07",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800014",
+      "email": "demo.staff14@example.test"
+    },
+    {
+      "key": "staff-15",
+      "fullName": "Dương Thanh Tâm Demo",
+      "identityNumber": "999880000015",
+      "departmentKey": "department-08",
+      "jobTitle": "TECHNICIAN",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800015",
+      "email": "demo.staff15@example.test"
+    },
+    {
+      "key": "staff-16",
+      "fullName": "Vũ Ngọc Hà Demo",
+      "identityNumber": "999880000016",
+      "departmentKey": "department-08",
+      "jobTitle": "TECHNICIAN",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800016",
+      "email": "demo.staff16@example.test"
+    },
+    {
+      "key": "staff-17",
+      "fullName": "Mai Thảo Vy Demo",
+      "identityNumber": "999880000017",
+      "departmentKey": "department-09",
+      "jobTitle": "PHARMACIST",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800017",
+      "email": "demo.staff17@example.test"
+    },
+    {
+      "key": "staff-18",
+      "fullName": "Đinh Gia Huy Demo",
+      "identityNumber": "999880000018",
+      "departmentKey": "department-09",
+      "jobTitle": "PHARMACIST",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800018",
+      "email": "demo.staff18@example.test"
+    },
+    {
+      "key": "staff-19",
+      "fullName": "Phan Khánh Linh Demo",
+      "identityNumber": "999880000019",
+      "departmentKey": "department-10",
+      "jobTitle": "CASHIER",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800019",
+      "email": "demo.staff19@example.test"
+    },
+    {
+      "key": "staff-20",
+      "fullName": "Lý Minh Quân Demo",
+      "identityNumber": "999880000020",
+      "departmentKey": "department-10",
+      "jobTitle": "ADMINISTRATIVE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800020",
+      "email": "demo.staff20@example.test"
+    }
+  ],
+  "patients": [
+    {
+      "key": "patient-01",
+      "hoTen": "Nguyễn Văn An Demo",
+      "ngaySinh": "1986-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999881000001",
+      "diaChi": "11 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810001",
+      "email": "demo.patient01@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-02",
+      "hoTen": "Trần Thị Bình Demo",
+      "ngaySinh": "1987-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999881000002",
+      "diaChi": "12 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810002",
+      "email": "demo.patient02@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-03",
+      "hoTen": "Lê Minh Châu Demo",
+      "ngaySinh": "1988-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999881000003",
+      "diaChi": "13 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810003",
+      "email": "demo.patient03@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-04",
+      "hoTen": "Phạm Ngọc Dung Demo",
+      "ngaySinh": "1989-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999881000004",
+      "diaChi": "14 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810004",
+      "email": "demo.patient04@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-05",
+      "hoTen": "Võ Quốc Huy Demo",
+      "ngaySinh": "1990-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999881000005",
+      "diaChi": "15 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810005",
+      "email": "demo.patient05@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-06",
+      "hoTen": "Đặng Thanh Mai Demo",
+      "ngaySinh": "1991-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999881000006",
+      "diaChi": "16 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810006",
+      "email": "demo.patient06@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-07",
+      "hoTen": "Bùi Gia Nam Demo",
+      "ngaySinh": "1992-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999881000007",
+      "diaChi": "17 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810007",
+      "email": "demo.patient07@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-08",
+      "hoTen": "Đỗ Thị Phương Demo",
+      "ngaySinh": "1993-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999881000008",
+      "diaChi": "18 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810008",
+      "email": "demo.patient08@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-09",
+      "hoTen": "Hồ Minh Quân Demo",
+      "ngaySinh": "1994-04-12",
+      "gioiTinh": "M",
+      "soCmnd": "999881000009",
+      "diaChi": "19 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810009",
+      "email": "demo.patient09@example.test",
+      "bhytSo": null
+    },
+    {
+      "key": "patient-10",
+      "hoTen": "Ngô Thảo Vy Demo",
+      "ngaySinh": "1995-04-12",
+      "gioiTinh": "F",
+      "soCmnd": "999881000010",
+      "diaChi": "20 Đường Demo, TP. Hồ Chí Minh",
+      "soDienThoai": "0908810010",
+      "email": "demo.patient10@example.test",
+      "bhytSo": null
+    }
+  ],
+  "accounts": [
+    {
+      "key": "account-demo.admin",
+      "username": "demo.admin",
+      "password": "MediFlowDemo@2026",
+      "role": "ADMIN",
+      "staffKey": "staff-01",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.manager",
+      "username": "demo.manager",
+      "password": "MediFlowDemo@2026",
+      "role": "MANAGER",
+      "staffKey": "staff-02",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor",
+      "username": "demo.doctor",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-03",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor2",
+      "username": "demo.doctor2",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-05",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse",
+      "username": "demo.nurse",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-04",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.lab",
+      "username": "demo.lab",
+      "password": "MediFlowDemo@2026",
+      "role": "LAB_TECH",
+      "staffKey": "staff-15",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.pharmacist",
+      "username": "demo.pharmacist",
+      "password": "MediFlowDemo@2026",
+      "role": "PHARMACIST",
+      "staffKey": "staff-17",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.cashier",
+      "username": "demo.cashier",
+      "password": "MediFlowDemo@2026",
+      "role": "CASHIER",
+      "staffKey": "staff-19",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.patient",
+      "username": "demo.patient",
+      "password": "MediFlowDemo@2026",
+      "role": "PATIENT",
+      "staffKey": null,
+      "patientKey": "patient-01"
+    },
+    {
+      "key": "account-demo.patient2",
+      "username": "demo.patient2",
+      "password": "MediFlowDemo@2026",
+      "role": "PATIENT",
+      "staffKey": null,
+      "patientKey": "patient-02"
+    }
+  ]
+}

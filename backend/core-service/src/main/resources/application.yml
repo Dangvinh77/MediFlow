@@ -17,6 +17,8 @@ spring:
     publisher-returns: true
 
 mediflow:
+  demo-seed:
+    enabled: ${MEDIFLOW_DEMO_SEED_ENABLED:true}
   datasource:
     organization:
       url: ${MEDIFLOW_ORGANIZATION_DB_URL:jdbc:postgresql://localhost:5432/mediflow_organization}
