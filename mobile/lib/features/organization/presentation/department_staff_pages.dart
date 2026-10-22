@@ -1,3 +1,5 @@
+import '../../../core/widgets/reference_widgets.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/domain/workspace_access.dart';
@@ -96,10 +98,14 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 12),
-          OrganizationField('Mã khoa', department.id),
           OrganizationField('Viết tắt', department.abbreviation),
           OrganizationField('Loại', department.type),
-          OrganizationField('Trưởng khoa', department.headId),
+          if (department.headId != null)
+            ReferenceLabel(
+              kind: ReferenceKind.staff,
+              id: department.headId!,
+              label: 'Trưởng khoa',
+            ),
           OrganizationField('Địa điểm', department.location),
           OrganizationField(
             'Trạng thái',
@@ -305,17 +311,12 @@ class _DepartmentFormState extends State<_DepartmentForm> {
             maxLength: 255,
           ),
           if (_editing) ...[
-            TextFormField(
-              controller: _headId,
-              decoration: const InputDecoration(
-                labelText: 'Mã trưởng khoa (UUID, để trống nếu chưa có)',
-              ),
-              validator: (value) =>
-                  value != null &&
-                      value.trim().isNotEmpty &&
-                      !isOrganizationId(value.trim())
-                  ? 'Nhập UUID hợp lệ.'
-                  : null,
+            ReferencePicker(
+              kind: ReferenceKind.staff,
+              label: 'Trưởng khoa',
+              value: _headId.text.isEmpty ? null : _headId.text,
+              scope: widget.id,
+              onChanged: (id) => setState(() => _headId.text = id ?? ''),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -473,8 +474,11 @@ class _StaffDetailState extends State<_StaffDetail> {
         children: [
           Text(staff.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
-          OrganizationField('Mã nhân viên', staff.id),
-          OrganizationField('Khoa phòng', staff.departmentId),
+          ReferenceLabel(
+            kind: ReferenceKind.department,
+            id: staff.departmentId,
+            label: 'Khoa phòng',
+          ),
           OrganizationField('Chức danh', staff.jobTitle),
           OrganizationField('Chuyên môn', staff.specialization),
           OrganizationField('Số chứng chỉ', staff.licenseNumber),

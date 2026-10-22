@@ -1,3 +1,5 @@
+import '../../../core/widgets/reference_widgets.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/domain/page_result.dart';
@@ -247,16 +249,21 @@ class _InvoicePageState extends State<InvoicePage>
       children: [
         Text('Tra cứu hóa đơn', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        TextField(
-          controller: _patient,
-          enabled: !_creating,
-          decoration: const InputDecoration(
-            labelText: 'Mã bệnh nhân (UUID)',
-            border: OutlineInputBorder(),
-          ),
-          textInputAction: TextInputAction.search,
-          onChanged: _patientChanged,
-          onSubmitted: (_) => _load(0),
+        ExpansionTile(
+          title: const Text('Mã tham chiếu do tiếp nhận cung cấp'),
+          children: [
+            TextField(
+              controller: _patient,
+              enabled: !_creating,
+              decoration: const InputDecoration(
+                labelText: 'Mã bệnh nhân (UUID)',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.search,
+              onChanged: _patientChanged,
+              onSubmitted: (_) => _load(0),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -394,9 +401,7 @@ class _InvoicePageState extends State<InvoicePage>
             dense: true,
             contentPadding: EdgeInsets.zero,
             title: Text('${fee.type} · ${fee.incurredDate}'),
-            subtitle: Text(
-              'Khoa: ${fee.departmentId} · ${fee.isPaid ? 'Đã thu' : 'Chưa thu'}',
-            ),
+            subtitle: Column(crossAxisAlignment:CrossAxisAlignment.start,children:[ReferenceLabel(kind:ReferenceKind.department,id:fee.departmentId,label:'Khoa'),Text(fee.isPaid ? 'Đã thu' : 'Chưa thu')]),
             trailing: Text(fee.amount.format()),
           ),
         if (!invoice.isPaid) ...[

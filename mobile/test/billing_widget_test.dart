@@ -54,6 +54,24 @@ Future<void> ensureFinderVisible(
 }
 
 Future<void> enterField(WidgetTester tester, String label, String value) async {
+  if (label == 'Mã bệnh nhân (UUID)' ||
+      label == 'Mã nguồn (sourceId)' ||
+      label == 'Mã bệnh nhân (patientId)' ||
+      label == 'Mã đợt khám (careEpisodeId)') {
+    final expansion = find.widgetWithText(
+      ExpansionTile,
+      label == 'Mã bệnh nhân (UUID)'
+          ? 'Mã tham chiếu do tiếp nhận cung cấp'
+          : 'Tham chiếu khoản thu từ tiếp nhận',
+    );
+    if (fieldWithLabel(label).evaluate().isEmpty &&
+        expansion.evaluate().isNotEmpty) {
+      await tester.ensureVisible(expansion);
+      await tester.tap(expansion);
+      await tester.pumpAndSettle();
+    }
+  }
+
   final finder = fieldWithLabel(label);
   if (label == 'Mã bệnh nhân (UUID)' && finder.evaluate().isEmpty) {
     final scrollable = find

@@ -156,7 +156,8 @@ void main() {
         await dispense(tester);
         expect(dispenser.calls, [rxId]);
         expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsOneWidget);
-        expect(find.textContaining(otherDrugId), findsWidgets);
+        expect(find.textContaining(otherDrugId), findsNothing);
+        expect(find.textContaining('Refresh unavailable'), findsWidgets);
         expect(find.text('Xuất thuốc'), findsNothing);
         expect(repository.cancellations, isEmpty);
       },

@@ -120,6 +120,39 @@ class GatewayOrganizationRepository implements OrganizationRepository {
   }
 
   @override
+  Future<PageResult<Account>> accounts({
+    String? keyword,
+    String? role,
+    bool? active,
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (page < 0 || size < 1 || size > 100) {
+      throw ArgumentError('Trang không hợp lệ.');
+    }
+    if (role != null && !accountSearchRoles.contains(role)) {
+      throw ArgumentError('Vai trò không hợp lệ.');
+    }
+    final normalizedKeyword = keyword?.trim();
+    if ((normalizedKeyword?.length ?? 0) > 100) {
+      throw ArgumentError('Tên đăng nhập tối đa 100 ký tự.');
+    }
+    return decodePage(
+      await client.get(
+        '/v1/org/accounts',
+        query: {
+          'page': page,
+          'size': size,
+          'keyword': ?normalizedKeyword,
+          'role': ?role,
+          'active': ?active,
+        },
+      ),
+      OrganizationDto.account,
+    );
+  }
+
+  @override
   Future<Account> createAccount(AccountDraft draft) async =>
       OrganizationDto.account(
         await client.post(

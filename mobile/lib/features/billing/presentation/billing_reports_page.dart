@@ -1,3 +1,5 @@
+import '../../../core/widgets/reference_widgets.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
@@ -166,11 +168,13 @@ class _BillingReportsPageState extends State<BillingReportsPage>
           controller: _to,
           decoration: const InputDecoration(labelText: 'Đến ngày (YYYY-MM-DD)'),
         ),
-        TextField(
-          controller: _department,
-          decoration: const InputDecoration(
-            labelText: 'Mã khoa (tùy chọn UUID)',
-          ),
+        ReferencePicker(
+          kind: ReferenceKind.department,
+          label: 'Khoa phòng',
+          value: _department.text.isEmpty ? null : _department.text,
+          onChanged: _loading
+              ? null
+              : (id) => setState(() => _department.text = id ?? ''),
         ),
         const SizedBox(height: 8),
         FilledButton.icon(
@@ -196,7 +200,11 @@ class _BillingReportsPageState extends State<BillingReportsPage>
           for (final row in _rows!)
             Card(
               child: ListTile(
-                title: SelectableText('Khoa: ${row.departmentId}'),
+                title: ReferenceLabel(
+                  kind: ReferenceKind.department,
+                  id: row.departmentId,
+                  label: 'Khoa',
+                ),
                 subtitle: Text('Số hóa đơn: ${row.invoiceCount}'),
                 trailing: Text(row.totalRevenue.format()),
               ),

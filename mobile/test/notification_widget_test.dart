@@ -12,6 +12,21 @@ import 'package:mediflow_mobile/features/notification/presentation/providers.dar
 
 import 'billing_notification_fixtures.dart';
 
+import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
+
+class NotificationReferences implements ReferenceReader {
+  @override
+  Future<ReferenceOption> read(ReferenceKind kind, String id) async =>
+      ReferenceOption(id:id, name:'Nguyễn An');
+  @override
+  Future<ReferencePage> search(
+    ReferenceKind kind, {
+    String query = '',
+    int page = 0,
+    String? scope,
+  }) async => ReferencePage([ReferenceOption(id:patientId, name:'Nguyễn An')], hasMore:false);
+}
+
 class _SwitchableSessionHost extends StatefulWidget {
   const _SwitchableSessionHost({
     required this.repository,
@@ -41,6 +56,7 @@ class _SwitchableSessionHostState extends State<_SwitchableSessionHost> {
     overrides: [
       workspaceAccessProvider.overrideWithValue(_access),
       notificationRepositoryProvider.overrideWithValue(widget.repository),
+      referenceReaderProvider.overrideWithValue(NotificationReferences()),
     ],
     child: widget.child,
   );
@@ -58,6 +74,13 @@ Finder sendTab() => find.descendant(
 Finder sendButton() => find.widgetWithText(FilledButton, 'Gửi thông báo');
 
 Future<void> enterField(WidgetTester tester, String label, String value) async {
+  if (label == 'Mã bệnh nhân (UUID)') {
+    await tester.tap(find.byTooltip('Chọn Bệnh nhân').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nguyễn An').last);
+    await tester.pumpAndSettle();
+    return;
+  }
   final finder = fieldWithLabel(label);
   await tester.ensureVisible(finder);
   await tester.enterText(finder, value);
@@ -67,9 +90,14 @@ Widget notificationHost(NotificationStub repository, {String role = 'ADMIN'}) =>
     ProviderScope(
       overrides: [
         workspaceAccessProvider.overrideWithValue(
-          WorkspaceAccess(sessionIdentity: Object(), role: role),
+          WorkspaceAccess(
+            sessionIdentity: Object(),
+            role: role,
+            patientId: role == 'PATIENT' ? patientId : null,
+          ),
         ),
         notificationRepositoryProvider.overrideWithValue(repository),
+        referenceReaderProvider.overrideWithValue(NotificationReferences()),
       ],
       child: const MaterialApp(home: Scaffold(body: NotificationPage())),
     );
@@ -91,23 +119,17 @@ Future<void> fillInAppSendForm(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('PATIENT history requires the explicit patient UUID', (
-    tester,
-  ) async {
-    final repository = NotificationStub();
-    await tester.pumpWidget(notificationHost(repository, role: 'PATIENT'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tra cứu'));
-    await tester.pumpAndSettle();
-    expect(repository.historyCalls, isEmpty);
-    expect(find.text('Mã bệnh nhân phải là UUID hợp lệ.'), findsOneWidget);
-
-    await enterField(tester, 'Mã bệnh nhân (UUID)', patientId);
-    await tester.tap(find.text('Tra cứu'));
-    await tester.pumpAndSettle();
-    expect(repository.historyCalls.single.patientId, patientId);
-    expect(find.text('Chưa có thông báo.'), findsOneWidget);
-  });
+  testWidgets(
+    'PATIENT history uses only the signed patient reference and hides UUID',
+    (tester) async {
+      final repository = NotificationStub();
+      await tester.pumpWidget(notificationHost(repository, role: 'PATIENT'));
+      await tester.pumpAndSettle();
+      expect(repository.historyCalls.single.patientId, patientId);
+      expect(find.text(patientId), findsNothing);
+      expect(find.text('Chưa có thông báo.'), findsOneWidget);
+    },
+  );
 
   testWidgets('ADMIN sends only after exact channel address validation', (
     tester,
@@ -224,6 +246,7 @@ void main() {
             WorkspaceAccess(sessionIdentity: Object(), role: 'NURSE'),
           ),
           notificationRepositoryProvider.overrideWithValue(repository),
+          referenceReaderProvider.overrideWithValue(NotificationReferences()),
         ],
         child: const MaterialApp(
           home: Scaffold(

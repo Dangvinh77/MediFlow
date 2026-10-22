@@ -39,6 +39,20 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ## Phần hiện có và chia việc
 
+Đợt Review3 ngày 22/10/2026 bổ sung thao tác lịch hẹn, tiếp nhận, hồ sơ khám,
+chẩn đoán, nguồn chỉ định Lab, chi tiết và lệnh xét nghiệm, truy vấn báo cáo,
+chọn tham chiếu bằng tên theo quyền, cùng liên kết phiên cho thông báo cá nhân.
+Clinical command UI dùng cờ build `MEDIFLOW_OUTPATIENT_UI_ENABLED=true`; cờ này
+không thay đổi quyền hoặc kích hoạt backend. Pharmacy vẫn cần mode xác nhận riêng.
+Các trường không được cấp quyền tra cứu hiển thị thông báo rõ ràng; không suy tên
+hoặc mã nhân viên/bệnh nhân từ JWT subject. Mã tham chiếu cần cho đối soát được
+giữ trong phần kỹ thuật mở rộng khi phù hợp.
+
+Ảnh Review3 được chụp từ Flutter web ở khung mobile qua Gateway thật, sử dụng
+dữ liệu demo trong backend. Đây không phải bằng chứng đã chạy Android/iOS native.
+Các giới hạn thực tế về Core reference permissions, Lab clearance và Report
+coverage nằm trong [runtime handoff](../docs/handoffs/HANDOFF-REVIEW3-RUNTIME-2026-10-22.md).
+
 Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lịch hẹn đọc `/v1/appointments`, lọc ngày/phân trang; Lab đọc `/v1/lab`, lọc trạng thái/phân trang. Có loading/empty/error/retry, correlation ID và bỏ qua phản hồi cũ. Lab hiển thị trạng thái nghiệp vụ riêng với thanh toán.
 
 Từ 2026-10-21, theo phân công bổ sung của người dùng, Vinh tiếp nhận hoàn thiện client

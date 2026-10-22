@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/paged_list.dart';
+import '../../../core/providers.dart';
+import '../../../core/widgets/reference_widgets.dart';
+import 'lab_detail_page.dart';
 import '../domain/lab_test.dart';
 
 final labRepositoryProvider = Provider<LabRepository>(
@@ -23,6 +26,7 @@ class _LabPageState extends ConsumerState<LabPage> {
   @override
   Widget build(BuildContext context) {
     final find = ref.watch(findLabTestsProvider);
+    final access = ref.watch(workspaceAccessProvider);
     return Column(
       children: [
         Padding(
@@ -41,7 +45,7 @@ class _LabPageState extends ConsumerState<LabPage> {
         ),
         Expanded(
           child: PagedList<LabTest>(
-            key: ValueKey(_status),
+            key: ValueKey((_status, access?.sessionIdentity)),
             load: (page) => find(page: page, status: _status),
             itemBuilder: (context, item) => Card(
               child: Padding(
@@ -55,8 +59,22 @@ class _LabPageState extends ConsumerState<LabPage> {
                     ),
                     Text('Ngày yêu cầu: ${item.requestedDate}'),
                     Text('Trạng thái: ${item.status}'),
-                    Text('Đã thanh toán: ${item.paid ? 'Có' : 'Chưa'}'),
-                    Text('Bệnh nhân: ${item.patientId}'),
+                    const Text('Xem chi tiết để kiểm tra đối soát viện phí'),
+                    ReferenceLabel(
+                      kind: ReferenceKind.patient,
+                      id: item.patientId,
+                      label: 'Bệnh nhân',
+                    ),
+                    if (access != null && access.role != 'MANAGER')
+                      TextButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => LabDetailPage(id: item.id),
+                          ),
+                        ),
+                        icon: const Icon(Icons.chevron_right),
+                        label: const Text('Xem chi tiết'),
+                      ),
                   ],
                 ),
               ),

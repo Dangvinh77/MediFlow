@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
+import 'package:mediflow_mobile/core/domain/workspace_access.dart';
+import 'package:mediflow_mobile/core/providers.dart';
+import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 import 'package:mediflow_mobile/features/pharmacy/data/pharmacy_dto.dart';
 import 'package:mediflow_mobile/features/pharmacy/data/prescription_request_dto.dart';
 import 'package:mediflow_mobile/features/pharmacy/domain/prescription.dart';
@@ -13,6 +16,7 @@ import 'package:mediflow_mobile/features/pharmacy/presentation/prescription_page
 import 'package:mediflow_mobile/features/pharmacy/presentation/providers.dart';
 
 import 'pharmacy_fixtures.dart';
+import 'reference_picker_test_support.dart';
 
 Future<void> visible(WidgetTester tester, Finder finder) async {
   if (finder.evaluate().isEmpty) {
@@ -77,6 +81,7 @@ Widget host(
   PharmacyMode mode = PharmacyMode.outpatient,
   Brightness brightness = Brightness.light,
   double scale = 1,
+  ReferencePickerFake? referenceReader,
 }) => ProviderScope(
   overrides: [
     pharmacyRepositoryProvider.overrideWithValue(repository),
@@ -87,6 +92,34 @@ Widget host(
     ),
     pharmacyModeProvider.overrideWithValue(mode),
     outpatientPrescriptionWriterProvider.overrideWithValue(writer),
+    workspaceAccessProvider.overrideWithValue(
+      role == null
+          ? null
+          : WorkspaceAccess(sessionIdentity: identity, role: role),
+    ),
+    referenceReaderProvider.overrideWithValue(
+      referenceReader ??
+          ReferencePickerFake({
+            ReferenceKind.patient: [
+              ReferenceOption(id: otherDrugId, name: 'Nguyen An'),
+            ],
+            ReferenceKind.doctor: [
+              ReferenceOption(id: drugId, name: 'Tran Binh'),
+            ],
+            ReferenceKind.staff: [
+              ReferenceOption(id: drugId, name: 'Tran Binh'),
+            ],
+            ReferenceKind.department: [
+              ReferenceOption(id: otherDrugId, name: 'Khoa Ngoai tru'),
+            ],
+            ReferenceKind.record: [
+              ReferenceOption(id: drugId, name: 'Ho so An'),
+            ],
+            ReferenceKind.appointment: [
+              ReferenceOption(id: rxId, name: 'Lich hen An'),
+            ],
+          }),
+    ),
   ],
   child: MaterialApp(
     theme: ThemeData(useMaterial3: true, brightness: brightness),
@@ -100,11 +133,15 @@ Widget host(
 
 Future<void> fillRx(WidgetTester tester) async {
   for (final field in {
-    'Mã hồ sơ': drugId,
-    'Mã bệnh nhân': otherDrugId,
-    'Mã bác sĩ nhân sự': drugId,
-    'Mã khoa': otherDrugId,
-    'Mã lượt khám OUTPATIENT_VISIT': rxId,
+    'Bệnh nhân': 'Nguyen An',
+    'Khoa kê đơn': 'Khoa Ngoai tru',
+    'Bác sĩ kê đơn': 'Tran Binh',
+    'Hồ sơ bệnh án': 'Ho so An',
+    'Lượt khám ngoại trú': 'Lich hen An',
+  }.entries) {
+    await pickReference(tester, label: field.key, name: field.value);
+  }
+  for (final field in {
     'Mã giá Billing': 'CATALOG-CONFIRMED',
     'Nguồn đã đối chiếu': 'Public visit receipt + Billing policy',
     'Ngày kê đơn (YYYY-MM-DD)': '2026-10-20',
@@ -177,7 +214,7 @@ void main() {
     });
   }
   testWidgets(
-    'missing authority context focuses first field and sends nothing',
+    'missing authority context focuses first name selector and sends nothing',
     (tester) async {
       final writer = Writer();
       await tester.pumpWidget(
@@ -185,9 +222,13 @@ void main() {
       );
       await tap(tester, 'Tạo đơn V1');
       expect(writer.intents, isEmpty);
+      expect(find.text('Hồ sơ bệnh án'), findsOneWidget);
+      expect(find.textContaining('UUID'), findsNothing);
       expect(
         tester
-            .widget<TextField>(find.widgetWithText(TextField, 'Mã hồ sơ'))
+            .widget<Focus>(
+              find.byKey(const ValueKey('prescription-reference-patientId')),
+            )
             .focusNode!
             .hasFocus,
         isTrue,
@@ -199,22 +240,59 @@ void main() {
     (tester) async {
       final writer = Writer()
         ..send = (_) async => throw const ApiFailure('Unknown', status: 503);
+      final references = ReferencePickerFake({
+        ReferenceKind.patient: [
+          const ReferenceOption(id: otherDrugId, name: 'Nguyen An'),
+        ],
+        ReferenceKind.department: [
+          const ReferenceOption(id: otherDrugId, name: 'Khoa Ngoai tru'),
+        ],
+        ReferenceKind.doctor: [
+          const ReferenceOption(id: drugId, name: 'Tran Binh'),
+        ],
+        ReferenceKind.record: [
+          const ReferenceOption(id: drugId, name: 'Ho so An'),
+        ],
+        ReferenceKind.appointment: [
+          const ReferenceOption(id: rxId, name: 'Lich hen An'),
+        ],
+      });
       await tester.pumpWidget(
-        host(PharmacyStub(), const CreatePrescriptionPage(), writer: writer),
+        host(
+          PharmacyStub(),
+          const CreatePrescriptionPage(),
+          writer: writer,
+          referenceReader: references,
+        ),
       );
       await fillRx(tester);
+      expect(references.searches.map((search) => (search.kind, search.scope)), [
+        (ReferenceKind.patient, null),
+        (ReferenceKind.department, null),
+        (ReferenceKind.doctor, otherDrugId),
+        (ReferenceKind.record, otherDrugId),
+        (ReferenceKind.appointment, otherDrugId),
+      ]);
       await tap(tester, 'Tạo đơn V1');
       expect(writer.intents, isEmpty);
+      expect(find.text('Hồ sơ: Ho so An'), findsOneWidget);
+      expect(find.text('Lượt khám: Lich hen An'), findsOneWidget);
+      expect(find.textContaining(drugId), findsNothing);
+      expect(find.textContaining(otherDrugId), findsNothing);
+      expect(find.textContaining(rxId), findsNothing);
       await tap(tester, 'Xác nhận kê đơn');
       expect(writer.intents, hasLength(1));
       final original = writer.intents.single;
       final body = PrescriptionRequestDto.outpatient(original);
-      expect(
-        tester
-            .widget<TextField>(find.widgetWithText(TextField, 'Mã hồ sơ'))
-            .enabled,
-        isFalse,
+      expect(body['recordId'], drugId);
+      expect(body['patientId'], otherDrugId);
+      expect(body['departmentId'], otherDrugId);
+      expect(body['careEpisodeId'], rxId);
+      final recordPicker = find.ancestor(
+        of: find.byTooltip('Chọn Hồ sơ bệnh án'),
+        matching: find.byType(IconButton),
       );
+      expect(tester.widget<IconButton>(recordPicker).onPressed, isNull);
       writer.send = null;
       await tap(tester, 'Thử lại cùng mã và nội dung');
       await tap(tester, 'Xác nhận kê đơn');
@@ -274,6 +352,50 @@ void main() {
       expect(find.textContaining('Đã tạo đơn:'), findsNothing);
     },
   );
+  testWidgets('prescription detail shows reference names and hides UUIDs', (
+    tester,
+  ) async {
+    final repository = PharmacyStub()
+      ..prescription = (_) async => PharmacyDto.prescription({
+        ...prescriptionJson(),
+        'recordId': otherDrugId,
+        'cancelledBy': rxId,
+        'status': 'CANCELLED',
+        'cancellationReason': 'Đổi chỉ định',
+        'cancelledAt': '2026-10-22T10:00:00Z',
+      });
+    final references = ReferencePickerFake({
+      ReferenceKind.record: [
+        const ReferenceOption(id: otherDrugId, name: 'Ho so An'),
+      ],
+      ReferenceKind.staff: [
+        const ReferenceOption(id: rxId, name: 'Tran Thi Binh'),
+      ],
+    });
+    await tester.pumpWidget(
+      host(
+        repository,
+        const PrescriptionDetailPage(prescriptionId: rxId),
+        role: 'ADMIN',
+        referenceReader: references,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Hồ sơ: Ho so An'), findsOneWidget);
+    expect(find.text('Người hủy: Tran Thi Binh'), findsOneWidget);
+    expect(find.textContaining(drugId), findsNothing);
+    expect(find.textContaining(otherDrugId), findsNothing);
+    expect(find.textContaining(rxId), findsNothing);
+
+    await visible(tester, find.text('Chi tiết kỹ thuật'));
+    await tester.tap(find.text('Chi tiết kỹ thuật'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đơn thuốc: $rxId'), findsOneWidget);
+    expect(find.text('Hồ sơ: $otherDrugId'), findsOneWidget);
+    expect(find.text('Mã thuốc: $drugId'), findsOneWidget);
+    expect(find.text('Người hủy ID: $rxId'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
     'changing session dismisses creation confirmation and clears source values',
     (tester) async {
@@ -294,13 +416,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsNothing);
-      expect(
-        tester
-            .widget<TextField>(find.widgetWithText(TextField, 'Mã hồ sơ'))
-            .controller!
-            .text,
-        isEmpty,
-      );
+      expect(find.text('Chọn theo tên'), findsNWidgets(5));
       expect(writer.intents, isEmpty);
     },
   );
@@ -436,6 +552,10 @@ void main() {
         cancelledAt: DateTime.utc(2026, 10, 22),
       ),
     );
+    await tester.pumpAndSettle();
+    expect(find.textContaining(otherDrugId), findsNothing);
+    await visible(tester, find.text('Chi tiết kỹ thuật'));
+    await tester.tap(find.text('Chi tiết kỹ thuật'));
     await tester.pumpAndSettle();
     expect(find.text('Đơn thuốc: $otherDrugId'), findsOneWidget);
     expect(find.textContaining('Máy chủ đã hủy đơn'), findsNothing);

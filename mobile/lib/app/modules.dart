@@ -56,6 +56,7 @@ const modules = [
     'Vinh',
     Icons.folder_shared_outlined,
     [UserRole.admin, UserRole.doctor, UserRole.nurse],
+    implemented: true,
   ),
   AppModule(
     '/lab',
@@ -106,5 +107,6 @@ const modules = [
     'Huy',
     Icons.bar_chart_outlined,
     [UserRole.admin, UserRole.manager],
+    implemented: true,
   ),
 ];

@@ -127,9 +127,7 @@ class _PatientListState extends State<_PatientList> {
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person_outline)),
               title: Text(patient.name),
-              subtitle: Text(
-                'Mã: ${patient.id}\nCCCD/CMND: ${patient.identityNumber}',
-              ),
+              subtitle: Text('CCCD/CMND: ${patient.identityNumber}'),
               isThreeLine: true,
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openDetail(context, patient.id),
@@ -276,7 +274,10 @@ class _PatientDetailState extends State<_PatientDetail> {
         children: [
           Text(patient.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 16),
-          _PatientField('Mã bệnh nhân', patient.id),
+          ExpansionTile(
+            title: const Text('Thông tin kỹ thuật'),
+            children: [_PatientField('Mã bệnh nhân', patient.id)],
+          ),
           _PatientField('Ngày sinh', patient.birthDate),
           _PatientField('Giới tính', patient.gender == 'M' ? 'Nam' : 'Nữ'),
           _PatientField('CCCD/CMND', patient.identityNumber),

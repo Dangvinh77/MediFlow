@@ -12,7 +12,7 @@ class PharmacyIdentityLabel extends ConsumerWidget {
     required this.kind,
     required this.id,
     required this.label,
-    this.showId = true,
+    this.showId = false,
   });
   final PharmacyIdentityKind kind;
   final String id, label;

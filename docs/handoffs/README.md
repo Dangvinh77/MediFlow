@@ -1,5 +1,11 @@
 # Registry bàn giao backend MVP
 
+## Review3 runtime — 22/10/2026
+
+- [Runtime screenshot follow-up](HANDOFF-REVIEW3-RUNTIME-2026-10-22.md): quyền tra cứu
+  tên Core, UUID trong web Pharmacy, Lab clearance cũ và Report projection coverage.
+  Ảnh ghi đúng phản hồi quan sát; chưa xác nhận các luồng bị chặn đã hoàn tất.
+
 ## Frontend tra cứu tên — 22/10/2026
 
 - [Core reference directory handoff](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md):

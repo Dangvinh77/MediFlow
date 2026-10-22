@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/domain/page_result.dart';
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/paged_list.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import 'access_boundary.dart';
 import '../domain/organization.dart';
@@ -419,7 +421,7 @@ class _StaffResults extends StatelessWidget {
       child: ListTile(
         title: Text(staff.name),
         subtitle: Text(
-          '${staff.jobTitle} · ${staff.active ? 'Đang làm việc' : 'Ngừng hoạt động'}\nMã: ${staff.id}',
+          '${staff.jobTitle} · ${staff.active ? 'Đang làm việc' : 'Ngừng hoạt động'}',
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
@@ -434,7 +436,8 @@ class AccountSection extends StatelessWidget {
   final OrganizationRepository repository;
   @override
   Widget build(BuildContext context) => _AdminOrganizationBoundary(
-    builder: (repo, _) => _AccountPanel(repository: repo),
+    builder: (repo, access) =>
+        _AccountPanel(key: ObjectKey(access.sessionIdentity), repository: repo),
   );
 }
 
@@ -452,7 +455,7 @@ class _AdminOrganizationBoundary extends StatelessWidget {
 }
 
 class _AccountPanel extends StatefulWidget {
-  const _AccountPanel({required this.repository});
+  const _AccountPanel({super.key, required this.repository});
   final OrganizationRepository repository;
   @override
   State<_AccountPanel> createState() => _AccountPanelState();
@@ -460,13 +463,13 @@ class _AccountPanel extends StatefulWidget {
 
 class _AccountPanelState extends State<_AccountPanel> {
   final _createForm = GlobalKey<FormState>();
-  final _statusForm = GlobalKey<FormState>();
   final _username = TextEditingController();
   final _password = TextEditingController();
   final _ownerId = TextEditingController();
-  final _accountId = TextEditingController();
   String _role = 'DOCTOR';
   bool _active = true, _saving = false, _uncertainCreate = false;
+  int _accountRevision = 0;
+  Account? _selectedAccount;
   Account? _result;
   Object? _error;
 
@@ -475,7 +478,6 @@ class _AccountPanelState extends State<_AccountPanel> {
     _username.dispose();
     _password.dispose();
     _ownerId.dispose();
-    _accountId.dispose();
     super.dispose();
   }
 
@@ -488,11 +490,19 @@ class _AccountPanelState extends State<_AccountPanel> {
         Card(
           child: ListTile(
             title: Text('Tài khoản ${_result!.username}'),
-            subtitle: SelectableText(
-              'Mã: ${_result!.id}\n${_result!.role} · ${_result!.active ? 'Đang hoạt động' : 'Đã khóa'}',
+            subtitle: Text(
+              '${_result!.role} · ${_result!.active ? 'Đang hoạt động' : 'Đã khóa'}',
             ),
           ),
         ),
+      _AccountDirectory(
+        key: const ValueKey('account-directory'),
+        repository: widget.repository,
+        revision: _accountRevision,
+        selectedId: _selectedAccount?.id,
+        disabled: _saving,
+        onSelect: _selectAccount,
+      ),
       Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -529,26 +539,27 @@ class _AccountPanelState extends State<_AccountPanel> {
                       : null,
                 ),
                 DropdownButtonFormField<String>(
+                  key: const ValueKey('account-create-role'),
                   initialValue: _role,
                   decoration: const InputDecoration(labelText: 'Vai trò'),
                   items: [
                     for (final role in accountRoles)
                       DropdownMenuItem(value: role, child: Text(role)),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _role = value ?? 'DOCTOR'),
+                  onChanged: (value) => setState(() {
+                    final nextRole = value ?? 'DOCTOR';
+                    if (nextRole != _role) _ownerId.clear();
+                    _role = nextRole;
+                  }),
                 ),
-                TextFormField(
-                  controller: _ownerId,
-                  decoration: InputDecoration(
-                    labelText: _role == 'PATIENT'
-                        ? 'Mã bệnh nhân'
-                        : 'Mã nhân viên',
-                  ),
-                  validator: (value) =>
-                      value == null || !isOrganizationId(value.trim())
-                      ? 'Nhập UUID hợp lệ.'
-                      : null,
+                ReferencePicker(
+                  kind: _role == 'PATIENT'
+                      ? ReferenceKind.patient
+                      : ReferenceKind.staff,
+                  label: _role == 'PATIENT' ? 'Bệnh nhân' : 'Nhân viên',
+                  value: _ownerId.text.isEmpty ? null : _ownerId.text,
+                  required: true,
+                  onChanged: (id) => setState(() => _ownerId.text = id ?? ''),
                 ),
                 if (_uncertainCreate)
                   const Padding(
@@ -570,49 +581,50 @@ class _AccountPanelState extends State<_AccountPanel> {
       Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _statusForm,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Khóa hoặc mở tài khoản',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Khóa hoặc mở tài khoản',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              if (_selectedAccount == null)
                 const Text(
-                  'API hiện không cung cấp danh sách tài khoản. Nhập mã tài khoản đã nhận khi tạo.',
+                  'Chọn tài khoản trong danh sách để quản lý trạng thái.',
+                )
+              else
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Tài khoản được chọn: ${_selectedAccount!.username}',
+                  ),
+                  subtitle: Text(
+                    '${_selectedAccount!.role} · ${_selectedAccount!.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                  ),
                 ),
-                TextFormField(
-                  controller: _accountId,
-                  decoration: const InputDecoration(labelText: 'Mã tài khoản'),
-                  validator: (value) =>
-                      value == null || !isOrganizationId(value.trim())
-                      ? 'Nhập UUID hợp lệ.'
-                      : null,
+              DropdownButtonFormField<bool>(
+                key: ValueKey(
+                  'account-status-${_selectedAccount?.id ?? 'none'}',
                 ),
-                DropdownButtonFormField<bool>(
-                  initialValue: _active,
-                  decoration: const InputDecoration(labelText: 'Trạng thái'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: true,
-                      child: Text('Đang hoạt động'),
-                    ),
-                    DropdownMenuItem(
-                      value: false,
-                      child: Text('Khóa tài khoản'),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _active = value ?? true),
-                ),
-                FilledButton.icon(
-                  onPressed: _saving ? null : _updateStatus,
-                  icon: const Icon(Icons.manage_accounts_outlined),
-                  label: const Text('Cập nhật trạng thái'),
-                ),
-              ],
-            ),
+                initialValue: _active,
+                decoration: const InputDecoration(labelText: 'Trạng thái'),
+                items: const [
+                  DropdownMenuItem(value: true, child: Text('Đang hoạt động')),
+                  DropdownMenuItem(value: false, child: Text('Khóa tài khoản')),
+                ],
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _active = value ?? true),
+              ),
+              FilledButton.icon(
+                onPressed: _saving || _selectedAccount == null
+                    ? null
+                    : _updateStatus,
+                icon: const Icon(Icons.manage_accounts_outlined),
+                label: const Text('Cập nhật trạng thái'),
+              ),
+            ],
           ),
         ),
       ),
@@ -635,7 +647,12 @@ class _AccountPanelState extends State<_AccountPanel> {
         ),
       );
       if (mounted) {
-        setState(() => _result = account);
+        setState(() {
+          _result = account;
+          _selectedAccount = account;
+          _active = account.active;
+          _accountRevision++;
+        });
         _password.clear();
       }
     } catch (error) {
@@ -651,21 +668,276 @@ class _AccountPanelState extends State<_AccountPanel> {
   }
 
   Future<void> _updateStatus() async {
-    if (!_statusForm.currentState!.validate()) return;
+    final selected = _selectedAccount;
+    if (selected == null) return;
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
       final account = await SaveAccount(widget.repository)
-          .updateStatus(_accountId.text.trim(), _active);
-      if (mounted) setState(() => _result = account);
+          .updateStatus(selected.id, _active);
+      if (mounted) {
+        setState(() {
+          _result = account;
+          _selectedAccount = account;
+          _active = account.active;
+          _accountRevision++;
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
+
+  void _selectAccount(Account account) {
+    setState(() {
+      _selectedAccount = account;
+      _active = account.active;
+      _result = null;
+      _error = null;
+    });
+  }
+}
+
+class _AccountDirectory extends StatefulWidget {
+  const _AccountDirectory({
+    super.key,
+    required this.repository,
+    required this.revision,
+    required this.selectedId,
+    required this.disabled,
+    required this.onSelect,
+  });
+  final OrganizationRepository repository;
+  final int revision;
+  final String? selectedId;
+  final bool disabled;
+  final ValueChanged<Account> onSelect;
+  @override
+  State<_AccountDirectory> createState() => _AccountDirectoryState();
+}
+
+class _AccountDirectoryState extends State<_AccountDirectory> {
+  final _keyword = TextEditingController();
+  String _roleFilter = '', _activeFilter = '';
+  String _requestKeyword = '', _requestRole = '';
+  bool? _requestActive;
+  int _page = 0, _generation = 0;
+  bool _loading = true;
+  Object? _error;
+  PageResult<Account>? _accounts;
+
+  @override
+  void initState() {
+    super.initState();
+    _load(keyword: '', role: '', active: null, page: 0);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AccountDirectory oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository ||
+        oldWidget.revision != widget.revision) {
+      _load(
+        keyword: _requestKeyword,
+        role: _requestRole,
+        active: _requestActive,
+        page: _page,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _generation++;
+    _keyword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({
+    required String keyword,
+    required String role,
+    required bool? active,
+    required int page,
+  }) async {
+    final generation = ++_generation;
+    final query = keyword.trim();
+    setState(() {
+      _requestKeyword = query;
+      _requestRole = role;
+      _requestActive = active;
+      _page = page;
+      _loading = true;
+      _error = null;
+      _accounts = null;
+    });
+    try {
+      final result = await FindAccounts(widget.repository).call(
+        keyword: query,
+        role: role.isEmpty ? null : role,
+        active: active,
+        page: page,
+      );
+      if (mounted && generation == _generation) {
+        setState(() => _accounts = result);
+      }
+    } catch (error) {
+      if (mounted && generation == _generation) {
+        setState(() => _error = error);
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _search() => _load(
+    keyword: _keyword.text,
+    role: _roleFilter,
+    active: switch (_activeFilter) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    },
+    page: 0,
+  );
+
+  void _retry() => _load(
+    keyword: _requestKeyword,
+    role: _requestRole,
+    active: _requestActive,
+    page: _page,
+  );
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Danh sách tài khoản',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const ValueKey('account-search'),
+            controller: _keyword,
+            maxLength: 100,
+            enabled: !_loading && !widget.disabled,
+            decoration: const InputDecoration(
+              labelText: 'Tên đăng nhập',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('account-search-role'),
+            initialValue: _roleFilter,
+            decoration: const InputDecoration(labelText: 'Lọc vai trò'),
+            items: [
+              const DropdownMenuItem(value: '', child: Text('Tất cả')),
+              for (final role in accountSearchRoles)
+                DropdownMenuItem(value: role, child: Text(role)),
+            ],
+            onChanged: _loading || widget.disabled
+                ? null
+                : (value) => setState(() => _roleFilter = value ?? ''),
+          ),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('account-search-active'),
+            initialValue: _activeFilter,
+            decoration: const InputDecoration(labelText: 'Lọc trạng thái'),
+            items: const [
+              DropdownMenuItem(value: '', child: Text('Tất cả')),
+              DropdownMenuItem(value: 'true', child: Text('Đang hoạt động')),
+              DropdownMenuItem(value: 'false', child: Text('Đã khóa')),
+            ],
+            onChanged: _loading || widget.disabled
+                ? null
+                : (value) => setState(() => _activeFilter = value ?? ''),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: _loading || widget.disabled ? null : _search,
+              icon: const Icon(Icons.search),
+              label: const Text('Tìm tài khoản'),
+            ),
+          ),
+          const Divider(height: 28),
+          if (_loading)
+            const LinearProgressIndicator()
+          else if (_error != null)
+            RequestError(_error!, onRetry: widget.disabled ? null : _retry)
+          else if (_accounts == null || _accounts!.items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text('Không tìm thấy tài khoản.'),
+            )
+          else ...[
+            Text('${_accounts!.totalElements} tài khoản'),
+            for (final account in _accounts!.items)
+              Card(
+                child: ListTile(
+                  title: Text(account.username),
+                  subtitle: Text(
+                    '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                  ),
+                  trailing: TextButton(
+                    onPressed: widget.disabled
+                        ? null
+                        : () => widget.onSelect(account),
+                    child: Text(
+                      widget.selectedId == account.id
+                          ? 'Đang chọn'
+                          : 'Chọn ${account.username}',
+                    ),
+                  ),
+                ),
+              ),
+            if (_accounts!.totalPages > 1)
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                children: [
+                  TextButton(
+                    onPressed: _accounts!.number == 0 || widget.disabled
+                        ? null
+                        : () => _load(
+                            keyword: _requestKeyword,
+                            role: _requestRole,
+                            active: _requestActive,
+                            page: _accounts!.number - 1,
+                          ),
+                    child: const Text('Trang trước'),
+                  ),
+                  Text(
+                    'Trang ${_accounts!.number + 1} / ${_accounts!.totalPages}',
+                  ),
+                  TextButton(
+                    onPressed: !_accounts!.hasNext || widget.disabled
+                        ? null
+                        : () => _load(
+                            keyword: _requestKeyword,
+                            role: _requestRole,
+                            active: _requestActive,
+                            page: _accounts!.number + 1,
+                          ),
+                    child: const Text('Trang sau'),
+                  ),
+                ],
+              ),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 bool _outcomeMayBeUnknown(Object error) =>

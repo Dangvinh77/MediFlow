@@ -32,11 +32,13 @@ Widget labels(String id) => Column(
       kind: PharmacyIdentityKind.patient,
       id: id,
       label: 'Bệnh nhân',
+      showId: true,
     ),
     PharmacyIdentityLabel(
       kind: PharmacyIdentityKind.patient,
       id: id,
       label: 'Bệnh nhân',
+      showId: true,
     ),
   ],
 );

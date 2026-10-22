@@ -1,555 +1,858 @@
 [
   {
-    "file": "screenshots/web/01-shared-home.jpg",
+    "file": "screenshots/web-new/01-shared-login.png",
     "group": "Shared web screens",
-    "caption": "Landing page and outpatient service groups",
+    "caption": "MediFlow sign-in screen.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/login"
   },
   {
-    "file": "screenshots/web/02-shared-login.jpg",
-    "group": "Shared web screens",
-    "caption": "Login form with account and password validation",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/51-common-access-denied.jpg",
-    "group": "Shared web screens",
-    "caption": "Access denied when a patient opens the organization page",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/03-admin-patients.jpg",
+    "file": "screenshots/web-new/03-admin-patients.png",
     "group": "Administrator — web",
-    "caption": "Patient directory with seeded Vietnamese patient records",
+    "caption": "Administrator searches and opens patient identity records.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/patients"
   },
   {
-    "file": "screenshots/web/04-admin-organization.jpg",
+    "file": "screenshots/web-new/04-admin-patient-detail.png",
     "group": "Administrator — web",
-    "caption": "Department and staff directory",
+    "caption": "Patient identity detail shows the patient name, demographics and contact data.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/patients/30820325-711c-4d7b-b364-be73c78a43b0"
   },
   {
-    "file": "screenshots/web/05-admin-accounts.jpg",
+    "file": "screenshots/web-new/05-admin-organization.png",
     "group": "Administrator — web",
-    "caption": "Eight seeded role accounts and account creation controls",
+    "caption": "Administrator organization workspace lists departments and staff with management controls.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/organization"
   },
   {
-    "file": "screenshots/web/06-admin-appointments.jpg",
+    "file": "screenshots/web-new/06-admin-accounts.png",
     "group": "Administrator — web",
-    "caption": "Appointment queue with pending, payment pending and in-progress visits",
+    "caption": "Administrator filters the eight role accounts used for Review 3.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/organization/accounts"
   },
   {
-    "file": "screenshots/web/07-admin-appointment-form.jpg",
+    "file": "screenshots/web-new/07-admin-account-selected.png",
     "group": "Administrator — web",
-    "caption": "Appointment creation form and required patient, doctor and department references",
+    "caption": "Selecting the doctor account populates account-management controls; credentials are not changed.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/organization/accounts"
   },
   {
-    "file": "screenshots/web/09-manager-monthly.jpg",
+    "file": "screenshots/web-new/08-admin-appointments.png",
+    "group": "Administrator — web",
+    "caption": "Administrator appointment list resolves patient, doctor and department names.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/appointments"
+  },
+  {
+    "file": "screenshots/web-new/09-admin-appointment-form.png",
+    "group": "Administrator — web",
+    "caption": "Appointment creation uses name lookup for patient, department and doctor.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/appointments/new"
+  },
+  {
+    "file": "screenshots/web-new/10-manager-monthly.png",
     "group": "Manager — web",
-    "caption": "Monthly report filter and returned legacy projection",
+    "caption": "Manager monthly report returns the current Report aggregate; zero values are not presented as reconciled outpatient coverage.",
     "platform": "web",
-    "note": "This legacy monthly projection shows zero values; outpatient V1 evidence is captured separately."
+    "note": "",
+    "url": "http://localhost:3000/reports?view=monthly&month=10&year=2026"
   },
   {
-    "file": "screenshots/web/10-manager-outpatient-report.jpg",
+    "file": "screenshots/web-new/11-manager-outpatient-report.png",
     "group": "Manager — web",
-    "caption": "Outpatient daily report and missing reconciliation coverage notice",
+    "caption": "Outpatient report reports missing reconciled coverage (REPORT_NOT_FOUND) for the demo date; no audited figures are fabricated.",
     "platform": "web",
-    "note": "REPORT_NOT_FOUND is the observed response for this date range; no reconciled report was fabricated."
+    "note": "",
+    "url": "http://localhost:3000/reports/outpatient?view=daily&fromDate=2026-10-22&toDate=2026-10-22"
   },
   {
-    "file": "screenshots/web/11-manager-organization.jpg",
+    "file": "screenshots/web-new/12-manager-organization.png",
     "group": "Manager — web",
-    "caption": "Manager view of departments and staff",
+    "caption": "Manager reads departments and staff without administrator-only account controls.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/organization"
   },
   {
-    "file": "screenshots/web/12-manager-appointments.jpg",
+    "file": "screenshots/web-new/13-manager-appointments.png",
     "group": "Manager — web",
-    "caption": "Manager appointment monitoring without clinical write actions",
+    "caption": "Manager appointment overview respects the role’s identity lookup permissions.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments"
   },
   {
-    "file": "screenshots/web/13-manager-lab.jpg",
+    "file": "screenshots/web-new/14-manager-lab.png",
     "group": "Manager — web",
-    "caption": "Manager laboratory queue and status filters",
+    "caption": "Manager views the laboratory queue and financial states without processing commands.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/lab"
   },
   {
-    "file": "screenshots/web/14-doctor-appointments.jpg",
+    "file": "screenshots/web-new/15-doctor-appointments.png",
     "group": "Doctor — web",
-    "caption": "Doctor appointment queue and role-specific navigation",
+    "caption": "Doctor appointment queue with resolved clinical reference names",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments"
   },
   {
-    "file": "screenshots/web/15-doctor-visit.jpg",
+    "file": "screenshots/web-new/16-doctor-visit.png",
     "group": "Doctor — web",
-    "caption": "Visit timeline after check-in, payment clearance and start of examination",
+    "caption": "Visit timeline with check-in clearance and examination milestones",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments/71626749-ef62-42f4-9d40-35097f05dfb9"
   },
   {
-    "file": "screenshots/web/16-doctor-record.jpg",
+    "file": "screenshots/web-new/17-doctor-record.png",
     "group": "Doctor — web",
-    "caption": "Clinical record with symptoms and ICD diagnosis",
+    "caption": "Clinical record with symptoms and resolved patient doctor and department",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/records/4447ad07-fe64-4d41-8c96-7a278d167be2"
   },
   {
-    "file": "screenshots/web/17-doctor-lab-order.jpg",
+    "file": "screenshots/web-new/18-doctor-diagnosis.png",
     "group": "Doctor — web",
-    "caption": "Two-step laboratory order workflow after creating a source order",
+    "caption": "ICD diagnosis and controlled visit completion form",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/records/4447ad07-fe64-4d41-8c96-7a278d167be2"
   },
   {
-    "file": "screenshots/web/18-doctor-lab-order-success.jpg",
+    "file": "screenshots/web-new/19-doctor-lab-order.png",
     "group": "Doctor — web",
-    "caption": "Successful laboratory request created through the web form",
+    "caption": "Draft source-linked laboratory order uses the configured LAB catalogue code; this draft is not submitted.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/records/4447ad07-fe64-4d41-8c96-7a278d167be2/lab-order"
   },
   {
-    "file": "screenshots/web/19-doctor-record-search.jpg",
+    "file": "screenshots/web-new/20-doctor-source-order.png",
     "group": "Doctor — web",
-    "caption": "Patient-based clinical record search",
+    "caption": "Clinical source order created with configured LAB price code; second-step Lab submission remains explicit.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/records/4447ad07-fe64-4d41-8c96-7a278d167be2/lab-order"
   },
   {
-    "file": "screenshots/web/20-doctor-patients.jpg",
+    "file": "screenshots/web-new/21-doctor-record-search.png",
     "group": "Doctor — web",
-    "caption": "Patient directory available to the doctor",
+    "caption": "Patient name based clinical record search",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/records"
   },
   {
-    "file": "screenshots/web/21-doctor-patient-detail.jpg",
+    "file": "screenshots/web-new/22-doctor-patients.png",
     "group": "Doctor — web",
-    "caption": "Patient identity and contact details using synthetic data",
+    "caption": "Doctor reads seeded patient identities",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/patients"
   },
   {
-    "file": "screenshots/web/22-doctor-organization.jpg",
+    "file": "screenshots/web-new/23-doctor-patient-detail.png",
     "group": "Doctor — web",
-    "caption": "Doctor read access to department and staff directory",
+    "caption": "Patient detail with synthetic identity and contact information",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/patients/30820325-711c-4d7b-b364-be73c78a43b0"
   },
   {
-    "file": "screenshots/web/23-doctor-lab.jpg",
+    "file": "screenshots/web-new/24-doctor-organization.png",
     "group": "Doctor — web",
-    "caption": "Laboratory queue including the request created through the doctor UI",
+    "caption": "Doctor reads departments and staff references",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/organization"
   },
   {
-    "file": "screenshots/web/24-doctor-drugs.jpg",
+    "file": "screenshots/web-new/25-doctor-lab.png",
     "group": "Doctor — web",
-    "caption": "Drug catalogue with prices and stock availability",
+    "caption": "Laboratory queue with clinical record labels and financial readiness",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/lab"
   },
   {
-    "file": "screenshots/web/25-doctor-prescription-form.jpg",
+    "file": "screenshots/web-new/26-doctor-drugs.png",
     "group": "Doctor — web",
-    "caption": "Prescription form linked to an outpatient record and visit",
+    "caption": "Doctor views the medicine catalogue with stock and prices.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/drugs"
   },
   {
-    "file": "screenshots/web/26-doctor-prescription-lines.jpg",
+    "file": "screenshots/web-new/27-doctor-prescription-form.png",
     "group": "Doctor — web",
-    "caption": "Drug selection, quantity and dosage interaction before submission",
+    "caption": "Doctor prepares the prescription context using the record, patient and department selectors.",
     "platform": "web",
-    "note": ""
+    "note": "Draft form before submission; the prescriber still needs selection.",
+    "url": "http://localhost:3000/pharmacy/prescriptions/new"
   },
   {
-    "file": "screenshots/web/27-nurse-appointments.jpg",
+    "file": "screenshots/web-new/28-doctor-prescription-lines.png",
+    "group": "Doctor — web",
+    "caption": "Doctor prepares a medicine line with quantity and instructions; draft has not been submitted.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/prescriptions/new"
+  },
+  {
+    "file": "screenshots/web-new/29-nurse-appointments.png",
     "group": "Nurse — web",
-    "caption": "Nurse appointment queue with reception actions",
+    "caption": "Nurse reception queue displays patient, doctor and department names.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments"
   },
   {
-    "file": "screenshots/web/28-nurse-checkin-before.jpg",
+    "file": "screenshots/web-new/30-nurse-before-checkin.png",
     "group": "Nurse — web",
-    "caption": "Visit awaiting reception with check-in action",
+    "caption": "Reception detail before check-in: appointment is pending.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments/b9de10f8-44e8-4e44-8637-09135b5691e8"
   },
   {
-    "file": "screenshots/web/29-nurse-checkin-after.jpg",
+    "file": "screenshots/web-new/31-nurse-after-checkin.png",
     "group": "Nurse — web",
-    "caption": "Successful check-in moves the visit to awaiting payment",
+    "caption": "Successful check-in records the reception time and moves the appointment to payment pending; examination remains locked until clearance.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/appointments/b9de10f8-44e8-4e44-8637-09135b5691e8"
   },
   {
-    "file": "screenshots/web/30-nurse-patients.jpg",
+    "file": "screenshots/web-new/32-nurse-notifications.png",
     "group": "Nurse — web",
-    "caption": "Nurse patient directory and registration entry point",
+    "caption": "Nurse searches notification history for the selected patient by name.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/notifications"
   },
   {
-    "file": "screenshots/web/31-nurse-patient-form.jpg",
-    "group": "Nurse — web",
-    "caption": "Patient registration form with identity, contact and insurance fields",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/32-nurse-organization.jpg",
-    "group": "Nurse — web",
-    "caption": "Nurse access to organization reference data",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/33-nurse-records.jpg",
-    "group": "Nurse — web",
-    "caption": "Nurse read access to clinical record lookup",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/34-nurse-lab.jpg",
-    "group": "Nurse — web",
-    "caption": "Nurse laboratory queue view",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/35-nurse-notifications.jpg",
-    "group": "Nurse — web",
-    "caption": "Patient notification lookup and reminder history",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/36-labtech-queue.jpg",
+    "file": "screenshots/web-new/33-lab-queue.png",
     "group": "Laboratory technician — web",
-    "caption": "Technician laboratory queue and financial readiness states",
+    "caption": "Lab technician queue shows financial status; names are explicitly unavailable under this role’s current lookup permissions.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/lab"
   },
   {
-    "file": "screenshots/web/37-labtech-detail.jpg",
+    "file": "screenshots/web-new/34-lab-detail.png",
     "group": "Laboratory technician — web",
-    "caption": "Laboratory test detail with exact financial clearance reference",
+    "caption": "Lab request detail before processing, with financial confirmation and no result yet.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/lab/4cdffaa0-20ed-4ad9-8a3f-f091ca8ed088"
   },
   {
-    "file": "screenshots/web/38-labtech-start-blocker.jpg",
+    "file": "screenshots/web-new/35-lab-clearance-block.png",
     "group": "Laboratory technician — web",
-    "caption": "Observed start rejection despite local financial readiness",
+    "caption": "Backend rejects processing because Billing does not authorise this exact Lab request (LAB_CLEARANCE_REQUIRED). Result entry is not claimed as completed.",
     "platform": "web",
-    "note": "LAB_CLEARANCE_REQUIRED is the observed rejection. Billing lookup reports eligible=true. Timestamp precision across Lab persistence is a suspected cause requiring a regression test; the test remains READY and no results were fabricated."
+    "note": "",
+    "url": "http://localhost:3000/lab/4cdffaa0-20ed-4ad9-8a3f-f091ca8ed088"
   },
   {
-    "file": "screenshots/web/39-pharmacist-drugs.jpg",
+    "file": "screenshots/web-new/36-pharmacist-catalog.png",
     "group": "Pharmacist — web",
-    "caption": "Drug inventory and low-stock warning",
+    "caption": "Pharmacist medicine catalogue with current stock and expiry dates.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/drugs"
   },
   {
-    "file": "screenshots/web/40-pharmacist-drug-detail.jpg",
+    "file": "screenshots/web-new/37-pharmacist-stock.png",
     "group": "Pharmacist — web",
-    "caption": "Low-stock drug detail and stock adjustment controls",
+    "caption": "Medicine detail and stock adjustment controls; no stock change is submitted.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/drugs/71a8add5-5882-44f0-85bb-8e13ea0d00fa"
   },
   {
-    "file": "screenshots/web/41-pharmacist-stock-confirm.jpg",
+    "file": "screenshots/web-new/38-pharmacist-dispensed.png",
     "group": "Pharmacist — web",
-    "caption": "Stock adjustment confirmation from 8 to 28 units",
+    "caption": "Existing seeded prescription is completed and dispensed. Web prescription detail still exposes technical references when role lookup is denied; tracked for developer handoff.",
     "platform": "web",
-    "note": ""
+    "note": "Known existing web identity display limitation; mobile hides these references by default.",
+    "url": "http://localhost:3000/pharmacy/prescriptions/84116e5c-b8d2-4afa-a586-0c2af1c350ab"
   },
   {
-    "file": "screenshots/web/42-pharmacist-stock-success.jpg",
-    "group": "Pharmacist — web",
-    "caption": "Updated drug stock after the confirmed adjustment",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/43-pharmacist-rx-search.jpg",
-    "group": "Pharmacist — web",
-    "caption": "Prescription lookup by its public identifier",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/44-pharmacist-rx-ready.jpg",
-    "group": "Pharmacist — web",
-    "caption": "Paid outpatient prescription awaiting dispense",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/45-pharmacist-dispense-confirm.jpg",
-    "group": "Pharmacist — web",
-    "caption": "Dispense confirmation with payment and stock revalidation",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/46-pharmacist-dispense-success.jpg",
-    "group": "Pharmacist — web",
-    "caption": "Successful dispense with the prescription completed",
-    "platform": "web",
-    "note": ""
-  },
-  {
-    "file": "screenshots/web/47-cashier-invoices.jpg",
+    "file": "screenshots/web-new/39-cashier-invoice-lookup.png",
     "group": "Cashier — web",
-    "caption": "Legacy patient invoice lookup and refund-obligation entry point",
+    "caption": "Invoice lookup returns no legacy invoice for the selected patient; outpatient charges use the payment-request flow.",
     "platform": "web",
-    "note": "The legacy invoice list is empty for this V1 outpatient patient. Actual EXAM, LAB_TEST and PRESCRIPTION payments use exact-source payment requests, illustrated next."
+    "note": "",
+    "url": "http://localhost:3000/billing"
   },
   {
-    "file": "screenshots/web/48-cashier-request.jpg",
+    "file": "screenshots/web-new/40-cashier-charge.png",
     "group": "Cashier — web",
-    "caption": "Exact EXAM payment request resolved from the checked-in visit",
+    "caption": "Billing returns a 100,000 VND examination charge for the just checked-in demo visit.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/billing/payment-requests"
   },
   {
-    "file": "screenshots/web/49-cashier-payment-success.jpg",
+    "file": "screenshots/web-new/41-cashier-payment-receipt.png",
     "group": "Cashier — web",
-    "caption": "Successful demo payment receipt in the web form",
+    "caption": "Demo cash payment of 100,000 VND succeeds and returns a transaction receipt. Charge summary shown above is the pre-payment lookup snapshot.",
     "platform": "web",
-    "note": "The success receipt is visible, while the charge summary above still shows its pre-payment values in this captured state. The recorded payment was verified separately through Billing."
+    "note": "",
+    "url": "http://localhost:3000/billing/payment-requests"
   },
   {
-    "file": "screenshots/web/50-patient-notifications.jpg",
+    "file": "screenshots/web-new/42-patient-notifications.png",
     "group": "Patient — web",
-    "caption": "Patient role notification history and follow-up reminder",
+    "caption": "Patient views their own seeded notification history.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/notifications"
   },
   {
-    "file": "screenshots/web/52-patient-reminder-detail.jpg",
+    "file": "screenshots/web-new/43-patient-notification-detail.png",
     "group": "Patient — web",
-    "caption": "Follow-up reminder content and delivery status",
+    "caption": "Patient reads a follow-up reminder and its sent status.",
     "platform": "web",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:3000/notifications/f93d9f5b-a575-411f-a3c1-4fd85b8b5b3f"
   },
   {
-    "file": "screenshots/mobile/01-login.jpg",
+    "file": "screenshots/web-new/44-patient-access-denied.png",
+    "group": "Patient — web",
+    "caption": "Patient cannot access the staff patient registry.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/patients"
+  },
+  {
+    "file": "screenshots/web-new/02-shared-home.png",
+    "group": "Shared web screens",
+    "caption": "Public MediFlow landing page links the outpatient workspaces.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/"
+  },
+  {
+    "file": "screenshots/web-new/45-doctor-lab-created.png",
+    "group": "Doctor — web",
+    "caption": "Successful second-step Lab request creation through the actual web form. Financial clearance remains a separate workflow.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/records/4447ad07-fe64-4d41-8c96-7a278d167be2/lab-order"
+  },
+  {
+    "file": "screenshots/web-new/46-nurse-patients.png",
+    "group": "Nurse — web",
+    "caption": "Nurse patient directory and registration entry point.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/patients"
+  },
+  {
+    "file": "screenshots/web-new/47-nurse-patient-form.png",
+    "group": "Nurse — web",
+    "caption": "Patient registration form with identity, contact and insurance fields.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/patients/new"
+  },
+  {
+    "file": "screenshots/web-new/48-nurse-organization.png",
+    "group": "Nurse — web",
+    "caption": "Nurse reads department and staff reference data.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/organization"
+  },
+  {
+    "file": "screenshots/web-new/49-nurse-records.png",
+    "group": "Nurse — web",
+    "caption": "Nurse can search clinical records using a patient name.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/records"
+  },
+  {
+    "file": "screenshots/web-new/50-nurse-lab.png",
+    "group": "Nurse — web",
+    "caption": "Nurse laboratory queue includes the newly created CRP request.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/lab"
+  },
+  {
+    "file": "screenshots/web-new/51-pharmacist-stock-confirm.png",
+    "group": "Pharmacist — web",
+    "caption": "Stock adjustment confirmation adds ten demo units of Loratadin (28 to 38).",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/drugs/4c7bbb61-6d47-4c23-8122-bc5e039c8958"
+  },
+  {
+    "file": "screenshots/web-new/52-pharmacist-stock-success.png",
+    "group": "Pharmacist — web",
+    "caption": "Loratadin stock is updated to 38 after confirmation.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/drugs/4c7bbb61-6d47-4c23-8122-bc5e039c8958"
+  },
+  {
+    "file": "screenshots/web-new/53-pharmacist-rx-search.png",
+    "group": "Pharmacist — web",
+    "caption": "Pharmacist opens an existing prescription using its supplied reference.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/prescriptions"
+  },
+  {
+    "file": "screenshots/web-new/54-pharmacist-rx-ready.png",
+    "group": "Pharmacist — web",
+    "caption": "Active prescription awaiting dispense; payment will be revalidated by the backend.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/prescriptions/0a3f84b7-2905-405b-a0f8-c68afd9ca87a"
+  },
+  {
+    "file": "screenshots/web-new/55-pharmacist-dispense-confirm.png",
+    "group": "Pharmacist — web",
+    "caption": "Pharmacist reviews the dispense confirmation before backend revalidation.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/prescriptions/0a3f84b7-2905-405b-a0f8-c68afd9ca87a"
+  },
+  {
+    "file": "screenshots/web-new/56-pharmacist-dispense-block.png",
+    "group": "Pharmacist — web",
+    "caption": "Unpaid demo prescription is correctly blocked from dispensing; an already completed prescription is documented separately.",
+    "platform": "web",
+    "note": "",
+    "url": "http://localhost:3000/pharmacy/prescriptions/0a3f84b7-2905-405b-a0f8-c68afd9ca87a"
+  },
+  {
+    "file": "screenshots/mobile-new/01-shared-login.png",
     "group": "Mobile GUI — shared",
-    "caption": "Flutter login screen in a 390 × 844 phone viewport",
+    "caption": "Mobile login screen at 430 × 932 CSS pixels, rendered at 3x density.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/login"
   },
   {
-    "file": "screenshots/mobile/02-admin-home.jpg",
+    "file": "screenshots/mobile-new/02-admin-workspace.png",
     "group": "Mobile GUI — administrator",
-    "caption": "Administrator mobile workspace and available modules",
+    "caption": "Administrator workspace exposes all active outpatient contexts.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/03-admin-menu.jpg",
+    "file": "screenshots/mobile-new/03-admin-departments.png",
     "group": "Mobile GUI — administrator",
-    "caption": "Administrator navigation drawer with role identity",
+    "caption": "Department directory displays department names without UUIDs.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/organization"
   },
   {
-    "file": "screenshots/mobile/04-admin-departments.jpg",
+    "file": "screenshots/mobile-new/04-admin-department-detail.png",
     "group": "Mobile GUI — administrator",
-    "caption": "Department list loaded through the real Gateway",
+    "caption": "Department detail and edit entry point.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/organization"
   },
   {
-    "file": "screenshots/mobile/05-admin-staff.jpg",
+    "file": "screenshots/mobile-new/05-admin-head-picker.png",
     "group": "Mobile GUI — administrator",
-    "caption": "Staff list and department/job filters",
+    "caption": "Department head picker lists staff names and job titles from the authorised Gateway endpoint.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/organization"
   },
   {
-    "file": "screenshots/mobile/06-admin-accounts.jpg",
+    "file": "screenshots/mobile-new/06-admin-staff.png",
     "group": "Mobile GUI — administrator",
-    "caption": "Mobile account creation and access controls",
+    "caption": "Staff directory filtered to Internal Medicine shows names and job titles without UUIDs.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/organization"
   },
   {
-    "file": "screenshots/mobile/07-manager-home.jpg",
+    "file": "screenshots/mobile-new/07-admin-accounts.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Administrator searches the live account directory with role and status filters.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/organization"
+  },
+  {
+    "file": "screenshots/mobile-new/08-admin-patients.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Patient list shows names and synthetic identity references without UUIDs.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/patients"
+  },
+  {
+    "file": "screenshots/mobile-new/09-admin-patient-detail.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Patient detail presents the name prominently and keeps technical ID collapsed.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/patients"
+  },
+  {
+    "file": "screenshots/mobile-new/10-admin-appointments.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Mobile appointment queue resolves patient, doctor and department names through the Gateway.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
+  },
+  {
+    "file": "screenshots/mobile-new/11-admin-appointment-form.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Appointment form uses name-based patient, department and doctor selection instead of manual UUID fields.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
+  },
+  {
+    "file": "screenshots/mobile-new/12-manager-workspace.png",
     "group": "Mobile GUI — manager",
-    "caption": "Manager workspace and role-filtered modules",
+    "caption": "Manager workspace includes organization, appointment, laboratory and reporting views.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/08-manager-reports.jpg",
+    "file": "screenshots/mobile-new/13-manager-report-types.png",
     "group": "Mobile GUI — manager",
-    "caption": "Report workspace marked as under development",
+    "caption": "Manager selects the report query and reporting period.",
     "platform": "mobile",
-    "note": "The mobile report feature is a placeholder in this build."
+    "note": "",
+    "url": "http://localhost:4300/#/reports"
   },
   {
-    "file": "screenshots/mobile/09-doctor-home.jpg",
+    "file": "screenshots/mobile-new/14-manager-monthly.png",
+    "group": "Mobile GUI — manager",
+    "caption": "Monthly Report aggregate loads through the real Gateway; zero projection values are shown as returned.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/reports"
+  },
+  {
+    "file": "screenshots/mobile-new/15-manager-outpatient-coverage.png",
+    "group": "Mobile GUI — manager",
+    "caption": "Outpatient report preserves the backend missing-coverage response instead of inventing reconciled figures.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/reports"
+  },
+  {
+    "file": "screenshots/mobile-new/16-manager-appointments.png",
+    "group": "Mobile GUI — manager",
+    "caption": "Manager appointment monitoring hides unavailable patient identity and displays authorised doctor/department names.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
+  },
+  {
+    "file": "screenshots/mobile-new/17-doctor-workspace.png",
     "group": "Mobile GUI — doctor",
-    "caption": "Doctor workspace and available mobile modules",
+    "caption": "Doctor workspace exposes clinical and pharmacy functions authorised to the role.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/10-doctor-appointments.jpg",
+    "file": "screenshots/mobile-new/18-doctor-appointments.png",
     "group": "Mobile GUI — doctor",
-    "caption": "Outpatient appointment list loaded from Clinical through Gateway",
+    "caption": "Doctor queue shows real patient, doctor and department names.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
   },
   {
-    "file": "screenshots/mobile/11-doctor-calendar.jpg",
+    "file": "screenshots/mobile-new/19-doctor-visit.png",
     "group": "Mobile GUI — doctor",
-    "caption": "Appointment date filter interaction",
+    "caption": "Mobile visit detail shows the in-progress state with resolved identity labels.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
   },
   {
-    "file": "screenshots/mobile/12-doctor-records.jpg",
+    "file": "screenshots/mobile-new/20-doctor-record-search.png",
     "group": "Mobile GUI — doctor",
-    "caption": "Clinical record workspace marked as under development",
+    "caption": "Name-based clinical record search returns the current outpatient record.",
     "platform": "mobile",
-    "note": "Clinical record editing is demonstrated on web; this mobile workspace remains unfinished."
+    "note": "",
+    "url": "http://localhost:4300/#/records"
   },
   {
-    "file": "screenshots/mobile/13-nurse-home.jpg",
+    "file": "screenshots/mobile-new/21-doctor-record-detail.png",
+    "group": "Mobile GUI — doctor",
+    "caption": "Clinical detail shows named patient, doctor, department, appointment, symptoms and ICD diagnosis.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/records"
+  },
+  {
+    "file": "screenshots/mobile-new/22-doctor-diagnosis.png",
+    "group": "Mobile GUI — doctor",
+    "caption": "Doctor diagnosis dialog accepts diagnosis, ICD code and description.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/records"
+  },
+  {
+    "file": "screenshots/mobile-new/23-doctor-drugs.png",
+    "group": "Mobile GUI — doctor",
+    "caption": "Doctor medicine catalogue shows prices, stock and expiry dates.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy"
+  },
+  {
+    "file": "screenshots/mobile-new/24-doctor-prescription-context.png",
+    "group": "Mobile GUI — doctor",
+    "caption": "Prescription draft links named patient, department, doctor, record and visit through scoped selectors; technical UUIDs remain hidden.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy/prescriptions/new"
+  },
+  {
+    "file": "screenshots/mobile-new/25-doctor-prescription-line.png",
+    "group": "Mobile GUI — doctor",
+    "caption": "Doctor prepares a Paracetamol line with quantity and instructions; the draft is not submitted without an authorised price context.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy/prescriptions/new"
+  },
+  {
+    "file": "screenshots/mobile-new/26-nurse-workspace.png",
     "group": "Mobile GUI — nurse",
-    "caption": "Nurse mobile workspace and reception modules",
+    "caption": "Nurse workspace includes reception, patient registration and notification history.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/14-nurse-patients.jpg",
+    "file": "screenshots/mobile-new/27-nurse-appointments.png",
     "group": "Mobile GUI — nurse",
-    "caption": "Patient list with real seeded records and search controls",
+    "caption": "Nurse appointment queue provides reception actions.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
   },
   {
-    "file": "screenshots/mobile/15-nurse-patient-detail.jpg",
+    "file": "screenshots/mobile-new/28-nurse-checkin-before.png",
     "group": "Mobile GUI — nurse",
-    "caption": "Patient detail loaded on Flutter",
+    "caption": "Nurse views the named patient appointment before reception.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
   },
   {
-    "file": "screenshots/mobile/16-nurse-patient-edit.jpg",
+    "file": "screenshots/mobile-new/29-nurse-checkin-after.png",
     "group": "Mobile GUI — nurse",
-    "caption": "Editable patient form populated from the existing record",
+    "caption": "Reception succeeds and the appointment moves to payment pending.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/appointments"
   },
   {
-    "file": "screenshots/mobile/17-labtech-home.jpg",
+    "file": "screenshots/mobile-new/30-nurse-notification-history.png",
+    "group": "Mobile GUI — nurse",
+    "caption": "Nurse searches notification history using the patient name.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/notifications"
+  },
+  {
+    "file": "screenshots/mobile-new/31-lab-workspace.png",
     "group": "Mobile GUI — laboratory technician",
-    "caption": "Technician mobile workspace restricted to laboratory",
+    "caption": "Laboratory technician workspace shows the permitted Lab workflow.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/18-labtech-queue.jpg",
+    "file": "screenshots/mobile-new/32-lab-queue.png",
     "group": "Mobile GUI — laboratory technician",
-    "caption": "Laboratory list showing READY and AWAITING_PAYMENT states",
+    "caption": "Lab queue contains real requests and their billing states.",
     "platform": "mobile",
-    "note": "The mobile payment label still reads the legacy paid field. READY status and web financial-clearance evidence must be interpreted separately."
+    "note": "Name lookup is not authorized for this role; the UI states the limitation without exposing UUIDs.",
+    "url": "http://localhost:4300/#/lab"
   },
   {
-    "file": "screenshots/mobile/19-labtech-filter-ready.jpg",
+    "file": "screenshots/mobile-new/33-lab-detail.png",
     "group": "Mobile GUI — laboratory technician",
-    "caption": "READY laboratory status filter returns three seeded tests",
+    "caption": "Lab detail shows reconciliation and available workflow actions with technical identifiers hidden.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/lab"
   },
   {
-    "file": "screenshots/mobile/20-pharmacist-home.jpg",
+    "file": "screenshots/mobile-new/34-lab-billing-guard.png",
+    "group": "Mobile GUI — laboratory technician",
+    "caption": "Starting the test is rejected when Billing no longer authorizes the exact request.",
+    "platform": "mobile",
+    "note": "Observed backend limitation; this is evidence of the guard, not a successful test start.",
+    "url": "http://localhost:4300/#/lab"
+  },
+  {
+    "file": "screenshots/mobile-new/35-pharmacist-workspace.png",
     "group": "Mobile GUI — pharmacist",
-    "caption": "Pharmacist mobile workspace",
+    "caption": "Pharmacist workspace provides drug and prescription access.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/21-pharmacist-unavailable.jpg",
+    "file": "screenshots/mobile-new/36-pharmacist-drug-search.png",
     "group": "Mobile GUI — pharmacist",
-    "caption": "Pharmacy workspace reports unavailable functionality",
+    "caption": "Pharmacist searches the live catalog by drug name and sees current stock.",
     "platform": "mobile",
-    "note": "Inventory management and dispensing are verified through the web client. Mobile pharmacy is unavailable in this build."
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy"
   },
   {
-    "file": "screenshots/mobile/22-cashier-home.jpg",
+    "file": "screenshots/mobile-new/37-pharmacist-drug-detail.png",
+    "group": "Mobile GUI — pharmacist",
+    "caption": "Drug detail shows price, stock, expiry and manufacturer; technical identifiers are collapsed.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy/drugs/71a8add5-5882-44f0-85bb-8e13ea0d00fa"
+  },
+  {
+    "file": "screenshots/mobile-new/38-cashier-workspace.png",
     "group": "Mobile GUI — cashier",
-    "caption": "Cashier mobile workspace restricted to billing",
+    "caption": "Cashier workspace provides invoice and payment workflows.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/23-cashier-billing.jpg",
+    "file": "screenshots/mobile-new/39-cashier-invoices.png",
     "group": "Mobile GUI — cashier",
-    "caption": "Billing workspace with invoice, payment-request and refund tabs",
+    "caption": "Invoice workspace keeps reception references collapsed in normal use.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/billing"
   },
   {
-    "file": "screenshots/mobile/24-cashier-payment-form.jpg",
+    "file": "screenshots/mobile-new/40-cashier-charge-pending.png",
     "group": "Mobile GUI — cashier",
-    "caption": "Billing-authorized cash receipt form for a 100,000 VND demo payment",
+    "caption": "Cashier selects the charge type and looks up the reception reference.",
     "platform": "mobile",
-    "note": ""
+    "note": "This screenshot shows the lookup workspace, not a pending payment result.",
+    "url": "http://localhost:4300/#/billing"
   },
   {
-    "file": "screenshots/mobile/25-cashier-payment-success.jpg",
+    "file": "screenshots/mobile-new/41-cashier-charge-paid.png",
     "group": "Mobile GUI — cashier",
-    "caption": "Successful Flutter payment changes the request to PAID with zero remaining balance",
+    "caption": "The completed demo payment is confirmed by Billing: PAID, collected 100,000 VND, balance zero.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/billing"
   },
   {
-    "file": "screenshots/mobile/26-patient-home.jpg",
+    "file": "screenshots/mobile-new/42-cashier-refund-workspace.png",
+    "group": "Mobile GUI — cashier",
+    "caption": "Refund workspace explains reconciliation and provides obligation lookup.",
+    "platform": "mobile",
+    "note": "No refund is executed in this screenshot.",
+    "url": "http://localhost:4300/#/billing"
+  },
+  {
+    "file": "screenshots/mobile-new/43-patient-workspace.png",
     "group": "Mobile GUI — patient",
-    "caption": "Patient mobile workspace restricted to notifications",
+    "caption": "Patient workspace contains the authorized personal notification workflow.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/"
   },
   {
-    "file": "screenshots/mobile/27-patient-notifications.jpg",
+    "file": "screenshots/mobile-new/44-patient-own-notifications.png",
     "group": "Mobile GUI — patient",
-    "caption": "Patient notification history from Support through Gateway",
+    "caption": "The patient sees personal notification history resolved from the signed-in identity.",
     "platform": "mobile",
-    "note": ""
+    "note": "",
+    "url": "http://localhost:4300/#/notifications"
   },
   {
-    "file": "screenshots/mobile/28-patient-reminder.jpg",
+    "file": "screenshots/mobile-new/45-patient-notification-detail.png",
     "group": "Mobile GUI — patient",
-    "caption": "Reminder detail and delivery state in Flutter",
+    "caption": "Patient opens an authorized notification detail with delivery state and collapsed technical identifiers.",
     "platform": "mobile",
-    "note": ""
+    "note": "Recipient lookup is restricted for this role; address and retry data are not exposed by this API.",
+    "url": "http://localhost:4300/#/notifications"
+  },
+  {
+    "file": "screenshots/mobile-new/46-patient-navigation.png",
+    "group": "Mobile GUI — patient",
+    "caption": "Patient navigation only exposes authorized destinations.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/notifications"
+  },
+  {
+    "file": "screenshots/mobile-new/47-pharmacist-stock-form.png",
+    "group": "Mobile GUI — pharmacist",
+    "caption": "Stock adjustment uses the drug name and current server stock, with technical identifiers collapsed.",
+    "platform": "mobile",
+    "note": "Form shown before submission.",
+    "url": "http://localhost:4300/#/pharmacy/drugs/71a8add5-5882-44f0-85bb-8e13ea0d00fa"
+  },
+  {
+    "file": "screenshots/mobile-new/48-pharmacist-prescription-detail.png",
+    "group": "Mobile GUI — pharmacist",
+    "caption": "Prescription detail presents the drug, dose, quantity, price and workflow state.",
+    "platform": "mobile",
+    "note": "Reference-name lookups are restricted for this role; UUIDs remain in collapsed technical controls.",
+    "url": "http://localhost:4300/#/pharmacy/prescriptions"
+  },
+  {
+    "file": "screenshots/mobile-new/49-pharmacist-dispense-confirm.png",
+    "group": "Mobile GUI — pharmacist",
+    "caption": "Dispense confirmation explains server-side stock and Billing clearance checks.",
+    "platform": "mobile",
+    "note": "",
+    "url": "http://localhost:4300/#/pharmacy/prescriptions"
+  },
+  {
+    "file": "screenshots/mobile-new/50-pharmacist-dispense-guard.png",
+    "group": "Mobile GUI — pharmacist",
+    "caption": "Dispense is rejected for the unpaid prescription without current Billing clearance.",
+    "platform": "mobile",
+    "note": "This demonstrates the payment guard; no dispense success is claimed.",
+    "url": "http://localhost:4300/#/pharmacy/prescriptions"
+  },
+  {
+    "file": "screenshots/mobile-new/51-admin-account-selection.png",
+    "group": "Mobile GUI — administrator",
+    "caption": "Selecting the doctor account populates status management by account identity.",
+    "platform": "mobile",
+    "note": "No account status change is submitted.",
+    "url": "http://localhost:4300/#/organization"
   }
 ]

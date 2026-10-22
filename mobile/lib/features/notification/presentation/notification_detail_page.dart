@@ -1,3 +1,5 @@
+import '../../../core/widgets/reference_widgets.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -114,8 +116,11 @@ class _NotificationDetailState extends State<_NotificationDetail> {
         children: [
           Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
-          SelectableText('Mã thông báo: ${item.id}'),
-          SelectableText('Mã bệnh nhân: ${item.patientId}'),
+          ReferenceLabel(
+            kind: ReferenceKind.patient,
+            id: item.patientId,
+            label: 'Người nhận',
+          ),
           Text('Kênh: ${item.channel}'),
           Text('Trạng thái: ${item.status}'),
           Text('Tạo lúc: ${item.createdAt}'),
@@ -128,6 +133,10 @@ class _NotificationDetailState extends State<_NotificationDetail> {
           const SizedBox(height: 16),
           const Text(
             'Địa chỉ nhận và dữ liệu thử lại không được cung cấp bởi API này.',
+          ),
+          ExpansionTile(
+            title: const Text('Chi tiết kỹ thuật'),
+            children: [SelectableText('Mã thông báo: ${item.id}')],
           ),
           OutlinedButton.icon(
             onPressed: _load,
