@@ -139,6 +139,7 @@ void main() {
         expect(opened!.id, otherDrugId);
         expect(repository.creations, hasLength(1));
         expect(find.textContaining('Đã tạo thuốc.'), findsOneWidget);
+        expect(find.textContaining(otherDrugId), findsNothing);
       },
     );
   }
@@ -273,6 +274,12 @@ void main() {
       pending.complete(drug(id: drugId, stock: 100));
       await tester.pumpAndSettle();
       expect(find.text('Tồn kho máy chủ: 100'), findsNothing);
+      expect(find.textContaining(otherDrugId), findsNothing);
+      expect(find.text('Paracetamol 500 mg'), findsOneWidget);
+      expect(find.text('Chi tiết kỹ thuật'), findsOneWidget);
+      await tester.ensureVisible(find.text('Chi tiết kỹ thuật'));
+      await tester.tap(find.text('Chi tiết kỹ thuật'));
+      await tester.pumpAndSettle();
       expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
       expect(repository.adjustments, hasLength(1));
     },
@@ -511,6 +518,30 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
       pending.completeError(const ApiFailure('Stale failure'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tra cứu bằng mã'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('prescription-lookup-id')),
+        findsNothing,
+      );
+      expect(find.text('Đơn thuốc: $otherDrugId'), findsNothing);
+      await tester.tap(find.text('Tra cứu bằng mã'));
+      await tester.pumpAndSettle();
+      final lookup = tester.widget<TextField>(
+        find.byKey(const ValueKey('prescription-lookup-id')),
+      );
+      expect(lookup.controller!.text, otherDrugId);
+      final prescriptionScrollable = find.descendant(
+        of: find.byType(ListView).last,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Chi tiết kỹ thuật'),
+        200,
+        scrollable: prescriptionScrollable.first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chi tiết kỹ thuật'));
       await tester.pumpAndSettle();
       expect(find.text('Đơn thuốc: $otherDrugId'), findsOneWidget);
       expect(find.text('Stale failure'), findsNothing);

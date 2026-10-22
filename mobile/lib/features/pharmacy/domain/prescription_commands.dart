@@ -28,7 +28,7 @@ class OutpatientPrescriptionContext {
       'careEpisodeId': careEpisodeId,
     }.entries)
       if (!isPharmacyId(field.value))
-        field.key: 'Nhập UUID từ nguồn đã xác minh.',
+        field.key: 'Chọn mục từ danh sách tra cứu.',
     if (priceCode.trim().isEmpty || priceCode.length > 64)
       'priceCode': 'Nhập mã giá được Billing xác nhận, tối đa 64 ký tự.',
     if (sourceReference.trim().isEmpty)

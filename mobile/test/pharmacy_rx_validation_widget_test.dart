@@ -46,12 +46,21 @@ void main() {
             : field.contains('dosage')
             ? 'Liều dùng dòng 1'
             : 'Mã bệnh nhân';
-        final input = tester.widget<TextField>(
-          find.widgetWithText(TextField, label),
-        );
-        expect(input.focusNode!.hasFocus, isTrue);
-        expect(input.decoration!.errorText, 'Giá trị cần kiểm tra');
-        expect(input.enabled, isTrue);
+        if (field == 'patientId') {
+          final input = tester.widget<Focus>(
+            find.byKey(const ValueKey('prescription-reference-patientId')),
+          );
+          expect(input.focusNode!.hasFocus, isTrue);
+          expect(find.text('Giá trị cần kiểm tra'), findsOneWidget);
+          expect(find.text('Bệnh nhân'), findsWidgets);
+        } else {
+          final input = tester.widget<TextField>(
+            find.widgetWithText(TextField, label),
+          );
+          expect(input.focusNode!.hasFocus, isTrue);
+          expect(input.decoration!.errorText, 'Giá trị cần kiểm tra');
+          expect(input.enabled, isTrue);
+        }
         expect(writer.intents.length, 1);
         expect(tester.takeException(), isNull);
       },

@@ -253,7 +253,6 @@ class _DrugFormState extends State<_DrugForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (stock) ...[
-            Text('Mã thuốc: ${widget.drugId}'),
             if (loading)
               const LinearProgressIndicator(
                 semanticsLabel: 'Đang kiểm tra tồn kho',
@@ -262,6 +261,10 @@ class _DrugFormState extends State<_DrugForm> {
               Text(snapshot!.name),
               Text('Tồn kho máy chủ: ${snapshot!.stockQuantity}'),
             ],
+            ExpansionTile(
+              title: const Text('Chi tiết kỹ thuật'),
+              children: [SelectableText('Mã thuốc: ${widget.drugId}')],
+            ),
           ],
           if (success != null)
             Semantics(
@@ -269,7 +272,7 @@ class _DrugFormState extends State<_DrugForm> {
               child: Text(
                 stock
                     ? 'Điều chỉnh thành công. Tồn kho máy chủ: ${success!.stockQuantity}'
-                    : 'Đã tạo thuốc. Mã thuốc: ${success!.id}',
+                    : 'Đã tạo thuốc. ${success!.name}',
               ),
             ),
           if (error != null)

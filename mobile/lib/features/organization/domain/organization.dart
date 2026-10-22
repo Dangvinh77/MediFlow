@@ -20,6 +20,7 @@ const accountRoles = [
   'MANAGER',
   'PATIENT',
 ];
+const accountSearchRoles = [...accountRoles, 'SYSTEM'];
 
 class Department {
   const Department({
@@ -128,6 +129,13 @@ abstract interface class OrganizationRepository {
   Future<Staff> updateStaff(String id, StaffDraft draft);
   Future<Staff> transferStaff(String id, String newDepartmentId);
   Future<Account> createAccount(AccountDraft draft);
+  Future<PageResult<Account>> accounts({
+    String? keyword,
+    String? role,
+    bool? active,
+    int page = 0,
+    int size = 20,
+  });
   Future<Account> updateAccountStatus(String id, bool active);
 }
 
@@ -289,6 +297,39 @@ class SaveAccount {
   Future<Account> updateStatus(String id, bool active) {
     _requireId(id, 'tài khoản');
     return repository.updateAccountStatus(id, active);
+  }
+}
+
+class FindAccounts {
+  const FindAccounts(this.repository);
+  final OrganizationRepository repository;
+
+  Future<PageResult<Account>> call({
+    String? keyword,
+    String? role,
+    bool? active,
+    int page = 0,
+    int size = 20,
+  }) {
+    if (page < 0 || size < 1 || size > 100) {
+      throw ArgumentError('Trang hoặc kích thước trang không hợp lệ.');
+    }
+    if (role != null && !accountSearchRoles.contains(role)) {
+      throw ArgumentError('Vai trò không hợp lệ.');
+    }
+    final normalizedKeyword = keyword?.trim();
+    if ((normalizedKeyword?.length ?? 0) > 100) {
+      throw ArgumentError('Tên đăng nhập tối đa 100 ký tự.');
+    }
+    return repository.accounts(
+      keyword: normalizedKeyword == null || normalizedKeyword.isEmpty
+          ? null
+          : normalizedKeyword,
+      role: role,
+      active: active,
+      page: page,
+      size: size,
+    );
   }
 }
 

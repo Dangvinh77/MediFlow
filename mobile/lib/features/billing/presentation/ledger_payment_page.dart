@@ -280,9 +280,14 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
           onChanged: _locked || _loading || _busy ? null : _changePurpose,
         ),
         const SizedBox(height: 8),
-        _uuidField(_sourceId, 'Mã nguồn (sourceId)'),
-        _uuidField(_patientId, 'Mã bệnh nhân (patientId)'),
-        _uuidField(_episodeId, 'Mã đợt khám (careEpisodeId)'),
+        ExpansionTile(
+          title: const Text('Tham chiếu khoản thu từ tiếp nhận'),
+          children: [
+            _uuidField(_sourceId, 'Mã nguồn (sourceId)'),
+            _uuidField(_patientId, 'Mã bệnh nhân (patientId)'),
+            _uuidField(_episodeId, 'Mã đợt khám (careEpisodeId)'),
+          ],
+        ),
         const SizedBox(height: 8),
         FilledButton.icon(
           onPressed: _loading || _busy || _locked || _reconciling
@@ -313,7 +318,10 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
             'Khoản thu do Billing cung cấp',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          SelectableText('Mã yêu cầu: ${item.paymentRequestId}'),
+          ExpansionTile(
+            title: const Text('Chi tiết tham chiếu'),
+            children: [SelectableText('Mã yêu cầu: ${item.paymentRequestId}')],
+          ),
           Text('Trạng thái: ${item.status} · Tài khoản: ${item.accountStatus}'),
           Text('Đề nghị: ${item.requestedAmount.format()} ${item.currency}'),
           Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),

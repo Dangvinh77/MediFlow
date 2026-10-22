@@ -447,7 +447,6 @@ class _DrugDetailState extends State<_DrugDetail> {
         children: [
           Text(drug.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
-          SelectableText('Mã thuốc: ${drug.id}'),
           Text('Hoạt chất: ${drug.activeIngredient ?? 'Chưa cung cấp'}'),
           Text('Đơn vị: ${drug.unit}'),
           Text('Giá: ${drug.price} VND'),
@@ -458,6 +457,10 @@ class _DrugDetailState extends State<_DrugDetail> {
           Text('Hạn dùng: ${drug.expiryDate}'),
           Text('Nhà sản xuất: ${drug.manufacturer ?? 'Chưa cung cấp'}'),
           Text('Cập nhật: ${drug.updatedAt.toIso8601String()}'),
+          ExpansionTile(
+            title: const Text('Chi tiết kỹ thuật'),
+            children: [SelectableText('Mã thuốc: ${drug.id}')],
+          ),
           const SizedBox(height: 16),
           if (widget.canManage)
             FilledButton(

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
-import '../domain/pharmacy_identity.dart';
-import 'pharmacy_identity_label.dart';
 import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
 import 'pharmacy_boundary.dart';
@@ -68,10 +67,10 @@ class _CreatePrescription extends StatefulWidget {
 
 class _CreatePrescriptionState extends State<_CreatePrescription> {
   static const labels = {
-    'recordId': 'Mã hồ sơ',
     'patientId': 'Mã bệnh nhân',
-    'doctorId': 'Mã bác sĩ nhân sự',
     'departmentId': 'Mã khoa',
+    'doctorId': 'Mã bác sĩ nhân sự',
+    'recordId': 'Mã hồ sơ',
     'careEpisodeId': 'Mã lượt khám OUTPATIENT_VISIT',
     'priceCode': 'Mã giá Billing',
     'sourceReference': 'Nguồn đã đối chiếu',
@@ -97,6 +96,98 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
   String? submittedKeyword;
   DialogRoute<bool>? confirmation;
   NavigatorState? dialogNavigator;
+
+  void _changeReference(String key, String? id) {
+    setState(() {
+      final previous = fields[key]!.text;
+      fields[key]!.text = id ?? '';
+      errors.remove(key);
+      if (previous == id) return;
+      if (key == 'patientId') {
+        for (final dependent in ['recordId', 'careEpisodeId']) {
+          fields[dependent]!.clear();
+          errors.remove(dependent);
+        }
+      } else if (key == 'departmentId') {
+        fields['doctorId']!.clear();
+        errors.remove('doctorId');
+      }
+    });
+  }
+
+  ReferenceKind _referenceKind(String key) => switch (key) {
+    'patientId' => ReferenceKind.patient,
+    'departmentId' => ReferenceKind.department,
+    'doctorId' => ReferenceKind.doctor,
+    'recordId' => ReferenceKind.record,
+    'careEpisodeId' => ReferenceKind.appointment,
+    _ => throw ArgumentError.value(key, 'key', 'Not a reference field'),
+  };
+
+  String? _referenceScope(String key) => switch (key) {
+    'doctorId' =>
+      fields['departmentId']!.text.isEmpty
+          ? null
+          : fields['departmentId']!.text,
+    'recordId' || 'careEpisodeId' =>
+      fields['patientId']!.text.isEmpty ? null : fields['patientId']!.text,
+    _ => null,
+  };
+
+  bool _requiresPatientScope(String key) =>
+      (key == 'recordId' || key == 'careEpisodeId') &&
+      fields['patientId']!.text.isEmpty;
+
+  Widget _referenceField(MapEntry<String, String> field, bool locked) {
+    final key = field.key;
+    final patientScoped = key == 'recordId' || key == 'careEpisodeId';
+    final departmentScoped = key == 'doctorId';
+    final needsScope = patientScoped
+        ? _requiresPatientScope(key)
+        : departmentScoped && fields['departmentId']!.text.isEmpty;
+    return Focus(
+      key: ValueKey('prescription-reference-$key'),
+      focusNode: focuses[key],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ReferencePicker(
+            kind: _referenceKind(key),
+            label: switch (key) {
+              'patientId' => 'Bệnh nhân',
+              'departmentId' => 'Khoa kê đơn',
+              'doctorId' => 'Bác sĩ kê đơn',
+              'recordId' => 'Hồ sơ bệnh án',
+              _ => 'Lượt khám ngoại trú',
+            },
+            value: fields[key]!.text.isEmpty ? null : fields[key]!.text,
+            scope: _referenceScope(key),
+            required: true,
+            onChanged: locked || needsScope
+                ? null
+                : (id) => _changeReference(key, id),
+          ),
+          if (needsScope)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                patientScoped
+                    ? 'Chọn bệnh nhân trước để tìm hồ sơ hoặc lượt khám.'
+                    : 'Chọn khoa trước để tìm bác sĩ.',
+              ),
+            ),
+          if (errors[key] != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                errors[key]!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -217,24 +308,32 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Hồ sơ: ${current.command.context.recordId}'),
-              PharmacyIdentityLabel(
-                kind: PharmacyIdentityKind.patient,
+              ReferenceLabel(
+                kind: ReferenceKind.record,
+                id: current.command.context.recordId,
+                label: 'Hồ sơ',
+              ),
+              ReferenceLabel(
+                kind: ReferenceKind.patient,
                 id: current.command.context.patientId,
                 label: 'Bệnh nhân',
               ),
-              PharmacyIdentityLabel(
-                kind: PharmacyIdentityKind.doctor,
+              ReferenceLabel(
+                kind: ReferenceKind.doctor,
                 id: current.command.context.doctorId,
                 label: 'Bác sĩ kê đơn',
               ),
-              PharmacyIdentityLabel(
-                kind: PharmacyIdentityKind.department,
+              ReferenceLabel(
+                kind: ReferenceKind.department,
                 id: current.command.context.departmentId,
                 label: 'Khoa',
               ),
+              ReferenceLabel(
+                kind: ReferenceKind.appointment,
+                id: current.command.context.careEpisodeId,
+                label: 'Lượt khám',
+              ),
               Text(
-                'Lượt khám: ${current.command.context.careEpisodeId}\n'
                 '${current.command.lines.length} dòng thuốc. Backend kiểm tra nguồn, quyền và giá.',
               ),
             ],
@@ -327,38 +426,24 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           for (final field in labels.entries)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: fields[field.key],
-                    focusNode: focuses[field.key],
-                    enabled: !locked,
-                    decoration: InputDecoration(
-                      labelText: field.value,
-                      errorText: errors[field.key],
-                    ),
-                  ),
-                  if (const [
+              child:
+                  const {
                     'patientId',
-                    'doctorId',
                     'departmentId',
-                  ].contains(field.key))
-                    ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: fields[field.key]!,
-                      builder: (_, value, _) => PharmacyIdentityLabel(
-                        kind: switch (field.key) {
-                          'patientId' => PharmacyIdentityKind.patient,
-                          'doctorId' => PharmacyIdentityKind.doctor,
-                          _ => PharmacyIdentityKind.department,
-                        },
-                        id: value.text.trim(),
-                        label: field.value,
-                        showId: false,
+                    'doctorId',
+                    'recordId',
+                    'careEpisodeId',
+                  }.contains(field.key)
+                  ? _referenceField(field, locked)
+                  : TextField(
+                      controller: fields[field.key],
+                      focusNode: focuses[field.key],
+                      enabled: !locked,
+                      decoration: InputDecoration(
+                        labelText: field.value,
+                        errorText: errors[field.key],
                       ),
                     ),
-                ],
-              ),
             ),
           TextField(
             controller: keyword,

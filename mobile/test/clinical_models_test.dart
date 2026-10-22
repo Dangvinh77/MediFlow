@@ -16,10 +16,15 @@ void main() {
         'appointmentDate': '2026-10-17',
         'appointmentTime': '09:00',
         'status': 'AWAITING_PAYMENT',
+        'careContractVersion': 1,
+        'examPriceCode': 'OUTPATIENT-EXAM',
+        'createdAt': '2026-10-17T08:00:00Z',
         'reason': null,
       });
       expect(item.id, 'a');
       expect(item.status, 'AWAITING_PAYMENT');
+      expect(item.careContractVersion, 1);
+      expect(item.examPriceCode, 'OUTPATIENT-EXAM');
       expect(item.reason, isNull);
     },
   );

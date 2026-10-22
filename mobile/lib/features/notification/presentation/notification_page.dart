@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/notification.dart' as domain;
 import 'notification_detail_page.dart';
@@ -42,6 +43,7 @@ class NotificationPage extends ConsumerWidget {
                   NotificationHistoryPage(
                     repository: repository,
                     role: access.role,
+                    selfPatientId: access.patientId,
                   ),
                   if (access.role == 'ADMIN')
                     NotificationSendPage(repository: repository),
@@ -60,9 +62,11 @@ class NotificationHistoryPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.role,
+    this.selfPatientId,
   });
   final domain.NotificationRepository repository;
   final String role;
+  final String? selfPatientId;
   @override
   State<NotificationHistoryPage> createState() =>
       _NotificationHistoryPageState();
@@ -76,6 +80,15 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
   Object? _error;
   bool _loading = false;
   int _generation = 0, _requestedPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.role == 'PATIENT' && widget.selfPatientId != null) {
+      _patient.text = widget.selfPatientId!;
+      _search();
+    }
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -154,30 +167,35 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _patient,
-                onChanged: _changed,
-                enabled: !_loading,
-                decoration: const InputDecoration(
-                  labelText: 'Mã bệnh nhân (UUID)',
-                  border: OutlineInputBorder(),
+              if (widget.role != 'PATIENT')
+                ReferencePicker(
+                  kind: ReferenceKind.patient,
+                  label: 'Bệnh nhân',
+                  value: _patient.text.isEmpty ? null : _patient.text,
+                  onChanged: _loading
+                      ? null
+                      : (id) {
+                          _patient.text = id ?? '';
+                          _changed(_patient.text);
+                        },
                 ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _search(),
-              ),
               if (widget.role == 'PATIENT')
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Gateway kiểm tra mã bệnh nhân với danh tính PATIENT đã ký trong phiên.',
-                  ),
+                Text(
+                  widget.selfPatientId == null
+                      ? 'Tài khoản chưa liên kết hồ sơ bệnh nhân. Vui lòng liên hệ tiếp nhận.'
+                      : 'Thông báo dành cho bạn',
                 ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: [
                   FilledButton.icon(
-                    onPressed: _loading ? null : () => _search(),
+                    onPressed:
+                        _loading ||
+                            (widget.role == 'PATIENT' &&
+                                widget.selfPatientId == null)
+                        ? null
+                        : () => _search(),
                     icon: const Icon(Icons.search),
                     label: const Text('Tra cứu'),
                   ),
@@ -204,8 +222,12 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                       : null,
                 )
               : _page == null
-              ? const Center(
-                  child: Text('Nhập mã bệnh nhân để tra cứu lịch sử.'),
+              ? Center(
+                  child: Text(
+                    widget.role == 'PATIENT'
+                        ? 'Chưa có lịch sử thông báo để hiển thị.'
+                        : 'Chọn bệnh nhân để xem lịch sử.',
+                  ),
                 )
               : _history(_page!),
         ),
@@ -390,14 +412,15 @@ class _NotificationSendPageState extends State<NotificationSendPage>
       children: [
         Text('Gửi thông báo', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
-        const Text(
-          'Gửi thông báo cho mã bệnh nhân được chọn. Không dùng mã tài khoản để suy ra mã bệnh nhân.',
-        ),
+        const Text('Chọn bệnh nhân nhận thông báo.'),
         const SizedBox(height: 12),
-        TextField(
-          controller: _patient,
-          enabled: !_locked,
-          decoration: const InputDecoration(labelText: 'Mã bệnh nhân (UUID)'),
+        ReferencePicker(
+          kind: ReferenceKind.patient,
+          label: 'Bệnh nhân',
+          value: _patient.text.isEmpty ? null : _patient.text,
+          onChanged: _locked
+              ? null
+              : (id) => setState(() => _patient.text = id ?? ''),
         ),
         TextField(
           controller: _title,

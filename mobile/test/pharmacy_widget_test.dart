@@ -268,6 +268,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Other drug'), findsOneWidget);
     expect(find.text('Stale drug'), findsNothing);
+    expect(find.textContaining(otherDrugId), findsNothing);
+    await tester.ensureVisible(find.text('Chi tiết kỹ thuật'));
+    await tester.tap(find.text('Chi tiết kỹ thuật'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('invalid detail id never reaches repository or presents retry', (

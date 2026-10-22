@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/pharmacy_identity.dart';
@@ -31,6 +32,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
   final id = TextEditingController();
   final focus = FocusNode();
   String? submitted, validation;
+  bool hasLoaded = false;
   int submission = 0;
   @override
   void dispose() {
@@ -45,6 +47,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
       setState(() {
         validation = 'Mã đơn thuốc phải là UUID hợp lệ.';
         submitted = null;
+        hasLoaded = false;
       });
       focus.requestFocus();
       return;
@@ -53,37 +56,53 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
     setState(() {
       submitted = input;
       validation = null;
+      hasLoaded = false;
       submission++;
     });
   }
 
+  void _markLoaded() {
+    if (!mounted || hasLoaded) return;
+    setState(() => hasLoaded = true);
+  }
+
+  Widget _lookupControls() => Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const ValueKey('prescription-lookup-id'),
+          controller: id,
+          focusNode: focus,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            labelText: 'Mã đơn thuốc (UUID)',
+            errorText: validation,
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (_) => _lookup(),
+        ),
+        const SizedBox(height: 8),
+        FilledButton(
+          onPressed: _lookup,
+          child: const Text('Tra cứu đơn thuốc'),
+        ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: id,
-              focusNode: focus,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                labelText: 'Mã đơn thuốc (UUID)',
-                errorText: validation,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _lookup(),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: _lookup,
-              child: const Text('Tra cứu đơn thuốc'),
-            ),
-          ],
-        ),
-      ),
+      if (hasLoaded)
+        ExpansionTile(
+          key: ValueKey(('prescription-lookup-loaded', submission)),
+          title: const Text('Tra cứu bằng mã'),
+          children: [_lookupControls()],
+        )
+      else
+        _lookupControls(),
       Expanded(
         child: submitted == null
             ? const Center(child: Text('Nhập mã để mở đơn thuốc.'))
@@ -91,6 +110,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
                 key: ValueKey((submitted, submission)),
                 id: submitted!,
                 repository: widget.repository,
+                onLoaded: _markLoaded,
               ),
       ),
     ],
@@ -115,9 +135,11 @@ class _PrescriptionDetail extends ConsumerStatefulWidget {
     super.key,
     required this.id,
     required this.repository,
+    this.onLoaded,
   });
   final String id;
   final PharmacyRepository repository;
+  final VoidCallback? onLoaded;
   @override
   ConsumerState<_PrescriptionDetail> createState() =>
       _PrescriptionDetailState();
@@ -196,7 +218,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         title: const Text('Xác nhận hủy đơn thuốc'),
         content: SingleChildScrollView(
           child: Text(
-            'Đơn: ${widget.id}\nLý do: ${command.reason}\nBackend kiểm tra quyền bác sĩ và giải phóng reservation.',
+            'Bạn đang hủy đơn thuốc này.\nLý do: ${command.reason}\nBackend kiểm tra quyền bác sĩ và giải phóng reservation.',
           ),
         ),
         actions: [
@@ -286,7 +308,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         title: const Text('Xác nhận xuất thuốc'),
         content: SingleChildScrollView(
           child: Text(
-            'Đơn: ${snapshot.id}\n'
+            'Bạn đang xuất thuốc cho đơn này.\n'
             '${snapshot.lines.length} dòng thuốc. Backend kiểm tra trạng thái, tồn kho và '
             '${mode == PharmacyMode.outpatient ? 'clearance Billing hiện tại' : 'thanh toán V0'}. '
             'Chỉ phiếu máy chủ xác nhận mới là kết quả xuất.',
@@ -359,6 +381,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
           rx = result;
           if (!dispenseLocked) dispenseRecheck = false;
         });
+        widget.onLoaded?.call();
       }
     } catch (failure) {
       if (mounted && ticket == generation) {
@@ -397,15 +420,26 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                                   ? 'Máy chủ xác nhận đã xuất thuốc.'
                                   : 'Máy chủ ghi nhận xuất thất bại: ${dispenseReceipt!.failureReason}',
                             ),
-                            SelectableText('Phiếu: ${dispenseReceipt!.id}'),
                             if (dispenseReceipt!.dispensedAt != null)
                               Text(
                                 'Xuất lúc: ${dispenseReceipt!.dispensedAt!.toIso8601String()}',
                               ),
                             if (dispenseReceipt!.dispensedBy != null)
-                              SelectableText(
-                                'Người xuất: ${dispenseReceipt!.dispensedBy}',
-                              ),
+                              if (dispenseReceipt!.dispensedActorType ==
+                                  DispenseActorType.staff)
+                                ReferenceLabel(
+                                  kind: ReferenceKind.staff,
+                                  id: dispenseReceipt!.dispensedBy!,
+                                  label: 'Người xuất',
+                                )
+                              else
+                                Text(
+                                  'Người xuất: ${switch (dispenseReceipt!.dispensedActorType) {
+                                    DispenseActorType.account => 'Tài khoản',
+                                    DispenseActorType.system => 'Hệ thống',
+                                    _ => 'Chưa xác định',
+                                  }}',
+                                ),
                             if (dispenseReceipt!.dispensedActorType != null)
                               Text(
                                 'Loại người xuất: ${switch (dispenseReceipt!.dispensedActorType!) {
@@ -444,7 +478,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                       child: Semantics(
                         liveRegion: true,
                         child: Text(
-                          'Máy chủ đã hủy đơn ${receipt!.prescriptionId}. Reservation giải phóng: ${receipt!.releasedReservations}.',
+                          'Máy chủ đã hủy đơn thuốc. Reservation giải phóng: ${receipt!.releasedReservations}.',
                         ),
                       ),
                     ),
@@ -508,7 +542,6 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          SelectableText('Đơn thuốc: ${result.id}'),
           Text(
             'Chế độ ứng dụng: ${switch (mode) {
               PharmacyMode.outpatient => 'Ngoại trú V1',
@@ -516,7 +549,14 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               PharmacyMode.unavailable => 'Chưa được cấu hình — thao tác đơn chưa sẵn sàng',
             }}',
           ),
-          SelectableText('Hồ sơ: ${result.recordId ?? 'Chưa cung cấp'}'),
+          if (result.recordId != null)
+            ReferenceLabel(
+              kind: ReferenceKind.record,
+              id: result.recordId!,
+              label: 'Hồ sơ',
+            )
+          else
+            const Text('Hồ sơ: Chưa cung cấp'),
           PharmacyIdentityLabel(
             kind: PharmacyIdentityKind.patient,
             id: result.patientId,
@@ -567,7 +607,6 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(line.drugName ?? 'Thuốc chưa có tên hiển thị'),
-                    SelectableText('Mã thuốc: ${line.drugId}'),
                     Text('Số lượng: ${line.quantity}'),
                     Text('Đơn giá: ${line.unitPrice} VND'),
                     Text('Liều dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
@@ -579,10 +618,45 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
           if (result.cancelledAt != null)
             Text('Hủy lúc: ${result.cancelledAt!.toIso8601String()}'),
           if (result.cancelledBy != null)
-            SelectableText('Người hủy: ${result.cancelledBy}'),
+            ReferenceLabel(
+              kind: ReferenceKind.staff,
+              id: result.cancelledBy!,
+              label: 'Người hủy',
+            ),
           if (result.cancellationReason != null)
             Text('Lý do hủy: ${result.cancellationReason}'),
           Text('Cập nhật: ${result.updatedAt.toIso8601String()}'),
+          ExpansionTile(
+            title: const Text('Chi tiết kỹ thuật'),
+            children: [
+              SelectableText('Đơn thuốc: ${result.id}'),
+              if (result.recordId != null)
+                SelectableText('Hồ sơ: ${result.recordId}'),
+              SelectableText('Bệnh nhân ID: ${result.patientId}'),
+              SelectableText('Bác sĩ ID: ${result.doctorId}'),
+              SelectableText('Khoa ID: ${result.departmentId}'),
+              for (var i = 0; i < result.lines.length; i++) ...[
+                SelectableText('Dòng ${i + 1} ID: ${result.lines[i].id}'),
+                SelectableText('Mã thuốc: ${result.lines[i].drugId}'),
+              ],
+              if (result.cancelledBy != null)
+                SelectableText('Người hủy ID: ${result.cancelledBy}'),
+              if (dispenseReceipt != null) ...[
+                SelectableText('Phiếu: ${dispenseReceipt!.id}'),
+                SelectableText(
+                  'Đơn thuốc của phiếu: ${dispenseReceipt!.prescriptionId}',
+                ),
+                if (dispenseReceipt!.dispensedBy != null)
+                  SelectableText(
+                    'Người xuất ID: ${dispenseReceipt!.dispensedBy}',
+                  ),
+              ],
+              if (receipt != null)
+                SelectableText(
+                  'Đơn thuốc của phiếu hủy: ${receipt!.prescriptionId}',
+                ),
+            ],
+          ),
           if (ref.watch(pharmacyAccessProvider)?.canPrescribe == true &&
               mode != PharmacyMode.unavailable &&
               canCancelPrescription(result) &&

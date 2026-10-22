@@ -267,6 +267,7 @@ void main() {
       await tester.pumpWidget(host(repo, role: 'DOCTOR'));
       await tester.pumpAndSettle();
       expect(find.text('Nguyen Van An'), findsOneWidget);
+      expect(find.textContaining(patientId), findsNothing);
       expect(find.text('Thêm bệnh nhân'), findsNothing);
       expect(repo.searches, hasLength(1));
       await tester.pumpWidget(host(repo, role: 'NURSE'));
@@ -475,6 +476,35 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Old private patient'), findsNothing);
     expect(find.text('New session patient'), findsOneWidget);
+  });
+
+  testWidgets('patient ID stays in collapsed technical details', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          patientRepositoryProvider.overrideWithValue(PatientStub()),
+          workspaceAccessProvider.overrideWithValue(
+            const WorkspaceAccess(
+              sessionIdentity: 'patient-detail',
+              role: 'ADMIN',
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: PatientDetailPage(patientId: patientId)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nguyen Van An'), findsOneWidget);
+    expect(find.textContaining(patientId), findsNothing);
+
+    await tester.tap(find.text('Thông tin kỹ thuật'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(patientId), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
