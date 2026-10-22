@@ -10,5 +10,7 @@ public interface GetPatientUseCase {
 
     PatientDTO getById(UUID patientId);
 
+    PatientDTO getOwnProfile(UUID patientId, UUID authenticatedPatientId);
+
     PageResult<PatientDTO> search(String keyword, PageQuery page);
 }

@@ -23,6 +23,9 @@
 ### Credential verification is implemented and called by the Gateway.
 ### Start order: Eureka (8761) -> gateway (8080) -> core-service (8089).
 ### Set a valid JWT before calling protected endpoints.
+### Personal profile: GET /staff/{id} returns full fields for ADMIN or the signed staffId owner.
+### MANAGER/DOCTOR/NURSE retain redacted foreign details and directory reads.
+### PHARMACIST/CASHIER/LAB_TECH may read only their own detail; list and writes stay forbidden.
 
 @host = http://localhost:8080
 # @token = paste-access-token-here

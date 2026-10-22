@@ -380,6 +380,54 @@ class StaffControllerContractTest {
         }
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"})
+    void signedStaffIdentityCanReadOwnPrivateProfile(String role) throws Exception {
+        var staff = com.mediflow.organization.domain.model.Staff.create("My Profile", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.DOCTOR,
+                "Cardiology", "MY-LICENSE", "0901234567", "mine@example.test", "012345678901");
+        when(getStaffUseCase.getStaffById(staff.getStaffId())).thenReturn(staff);
+        String access = staffAccessToken(role, staff.getStaffId());
+        mockMvc.perform(get(BASE_PATH + "/{id}", staff.getStaffId())
+                        .header("Authorization", "Bearer " + access))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.identityNumber").value("012345678901"))
+                .andExpect(jsonPath("$.data.email").value("mine@example.test"));
+        if (List.of("MANAGER", "DOCTOR", "NURSE").contains(role)) {
+            when(getStaffUseCase.search(org.mockito.ArgumentMatchers.isNull(),
+                    org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any()))
+                    .thenReturn(PageResult.of(List.of(staff), 1, 0, 20));
+            mockMvc.perform(get(BASE_PATH).header("Authorization", "Bearer " + access))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content[0].identityNumber").doesNotExist())
+                    .andExpect(jsonPath("$.data.content[0].email").doesNotExist());
+        }
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"PHARMACIST", "CASHIER", "LAB_TECH"})
+    void personalAccessDoesNotGrantDirectoryOrAnotherStaffProfile(String role) throws Exception {
+        UUID ownId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        for (String access : List.of(staffAccessToken(role, ownId), token(ACTOR_ID, role, JwtClaims.ACCESS_TOKEN_TYPE))) {
+            mockMvc.perform(get(BASE_PATH + "/{id}", otherId)
+                            .header("Authorization", "Bearer " + access)
+                            .header("X-Staff-Id", otherId.toString()))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get(BASE_PATH).header("Authorization", "Bearer " + access))
+                    .andExpect(status().isForbidden());
+        }
+        org.mockito.Mockito.verifyNoInteractions(getStaffUseCase);
+    }
+
+    private String staffAccessToken(String role, UUID staffId) {
+        return Jwts.builder().subject(ACTOR_ID).claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE).claim(JwtClaims.STAFF_ID, staffId.toString())
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .expiration(Date.from(Instant.now().plusSeconds(300))).signWith(SIGNING_KEY).compact();
+    }
+
     private String systemToken() {
         return token("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE);
     }

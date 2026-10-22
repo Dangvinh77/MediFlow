@@ -55,6 +55,17 @@ class PatientReadApplicationServiceTest {
         assertThat(service.exists(id).patientId()).isEqualTo(id);
     }
 
+    @Test
+    void ownProfileChecksIdentityBeforeAnyRepositoryRead() {
+        assertThatThrownBy(() -> service.getOwnProfile(id, UUID.randomUUID()))
+                .isInstanceOf(com.mediflow.patient.domain.exception.PatientProfileAccessDeniedException.class);
+        assertThatThrownBy(() -> service.getOwnProfile(id, null))
+                .isInstanceOf(com.mediflow.patient.domain.exception.PatientProfileAccessDeniedException.class);
+        verifyNoInteractions(repository);
+        when(repository.findById(id)).thenReturn(Optional.of(patient()));
+        assertThat(service.getOwnProfile(id, id).maBenhNhan()).isEqualTo(id);
+    }
+
     private Patient patient() {
         return Patient.restore(id, "Nguyen Van A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", "Hanoi", "0900000000", "a@example.com", "HI-1",

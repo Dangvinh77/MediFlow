@@ -127,7 +127,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+                    new StaffIdentityDetails(request, claims.get(JwtClaims.STAFF_ID, String.class)));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();

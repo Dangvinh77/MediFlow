@@ -32,7 +32,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/departments/{id}", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v1/org/staff", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/org/staff/{id}", HttpMethod.GET,
-                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE,
+                    Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH),
             rule("/api/v1/org/staff", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/staff/{id}", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v1/org/staff/{id}/department", HttpMethod.PUT, Roles.ADMIN),
@@ -44,7 +45,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/accounts/{id}/status", HttpMethod.PUT, Roles.ADMIN),
 
             rule("/api/v1/patients", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
-            rule("/api/v1/patients/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/patients/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PATIENT),
             rule("/api/v1/patients", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/patients/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/patients/{id}", HttpMethod.DELETE, Roles.ADMIN),

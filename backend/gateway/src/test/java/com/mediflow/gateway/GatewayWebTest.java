@@ -165,6 +165,21 @@ class GatewayWebTest {
         expectForbidden(HttpMethod.PUT, "/api/v1/patients/" + id + "/unknown", Roles.ADMIN);
     }
 
+    @Test
+    void personalProfileReadsReuseDetailRoutesWithoutGrantingListsOrWrites() {
+        String id = UUID.randomUUID().toString();
+        for (String role : java.util.List.of(Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH)) {
+            expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/org/staff/" + id, role);
+            expectForbidden(HttpMethod.GET, "/api/v1/org/staff", role);
+            expectForbidden(HttpMethod.PUT, "/api/v1/org/staff/" + id, role);
+            expectForbidden(HttpMethod.GET, "/api/v1/org/staff/" + id + "/lookup", role);
+        }
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/patients/" + id, Roles.PATIENT);
+        expectForbidden(HttpMethod.GET, "/api/v1/patients", Roles.PATIENT);
+        expectForbidden(HttpMethod.PUT, "/api/v1/patients/" + id, Roles.PATIENT);
+        expectForbidden(HttpMethod.GET, "/api/v1/org/staff/" + id, Roles.PATIENT);
+    }
+
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
 
     @Autowired

@@ -74,8 +74,13 @@ Earlier handoff/checkpoint references describe the dependency before the shared 
   Acceptance: secured lookup/search responses and stable `patientId` semantics.
 - `PatientDTO`, request fields and paging constraints were reconciled with the live controller.
   Verify populated, empty, unavailable and retry states through signed Gateway acceptance.
-- The live Patient controller exposes staff-only reads/writes; PATIENT has no public Patient CRUD
-  authority. Do not infer self-service routes from JWT claims or call another feature from Patient.
+- Existing GET `/api/v1/patients/{id}` also supports PATIENT self-read from 2026-10-22.
+  Core compares the locally verified `patientId` claim with the resource UUID and the use case
+  checks ownership before repository access. PATIENT cannot search, edit, delete or read another
+  patient's profile. No new endpoint or wire field; responses use `Cache-Control: no-store`.
+  The app composes `PersonalPatientProfile` at `/organization/profile`, with only the existing
+  detail read and a read-only view. Session replacement clears the profile and late callbacks
+  are ignored. Do not infer further self-service routes or cross-import features.
 
 ## Contract and verification gate
 

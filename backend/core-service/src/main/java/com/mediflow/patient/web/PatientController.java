@@ -60,9 +60,19 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE')")
-    public ResponseEntity<ApiResponse<PatientDTO>> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.ok(patients.getById(id), correlationId()));
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE') or (hasRole('PATIENT') and "
+            + "authentication.details instanceof T(com.mediflow.patient.infrastructure.security.PatientIdentityDetails) "
+            + "and authentication.details.patientId == #id)")
+    public ResponseEntity<ApiResponse<PatientDTO>> getById(@PathVariable UUID id,
+            org.springframework.security.core.Authentication authentication) {
+        boolean selfService = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_PATIENT".equals(authority.getAuthority()));
+        PatientDTO patient = selfService
+                ? patients.getOwnProfile(id, ((com.mediflow.patient.infrastructure.security.PatientIdentityDetails)
+                        authentication.getDetails()).getPatientId())
+                : patients.getById(id);
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(patient, correlationId()));
     }
 
     @GetMapping
