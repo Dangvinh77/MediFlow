@@ -1,5 +1,7 @@
 "use client";
 
+import { ReportDepartmentName } from "./ReportDepartmentName";
+
 import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -67,6 +69,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
         </Field>
         <Field label="Mã khoa (tùy chọn)" htmlFor="medicine-department">
           <input id="medicine-department" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Field label="Số kết quả" htmlFor="medicine-limit">
           <input id="medicine-limit" type="number" min={1} max={50} step={1} value={limit} onChange={(event) => { setLimit(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
@@ -79,7 +82,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
         <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5">
           <h2 className="text-lg font-semibold">Thuốc xuất nhiều nhất</h2>
           <p className="mt-1 text-sm text-muted-foreground">Từ {formatLocalDate(state.data.query.fromDate)} đến {formatLocalDate(state.data.query.toDate)} · Tối đa {state.data.query.limit} kết quả</p>
-          <p className="mt-1 break-all text-xs text-muted-foreground">Phạm vi: {state.data.query.departmentId ?? "Toàn bệnh viện"}</p>
+          <p className="mt-1 break-all text-xs text-muted-foreground">Phạm vi: <ReportDepartmentName id={state.data.query.departmentId} /></p>
           {state.data.items.length === 0 ? <AsyncState kind="empty" message="Không có dữ liệu xuất thuốc trong khoảng đã chọn." /> : (
             <ol className="mt-5 divide-y divide-border rounded-lg border border-border">
               {state.data.items.map((item, index) => (

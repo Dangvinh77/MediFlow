@@ -1007,3 +1007,38 @@ Tiến trình kiểm thử đã dừng. Nhánh Huy giữ nguyên, không commit/
 Verdict: **FE READY FOR REVIEW / isolated acceptance complete**. Production rollout vẫn
 **HOLD**, gates mặc định OFF. Handoff chung giữ riêng việc source-owner exports/completeness
 của dữ liệu production và cutover; không dùng test journal này để bật production.
+
+## 26. Review3 — tên bệnh nhân, bác sĩ, khoa trong scope Huy — 2026-10-22
+
+Đợt thay đổi mới sau mốc 14/14, theo
+[handoff identity](handoffs/HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md).
+Không lấy acceptance của candidate trước để đóng acceptance mới.
+
+| Phần việc | Trạng thái |
+|---|---|
+| Audit Pharmacy/Report web và Pharmacy/Report mobile; đối chiếu Core/Gateway live DTO + role | DONE |
+| Web Pharmacy: tên trên chi tiết đơn và preview tên trong form; ID/command giữ nguyên | CODE DONE |
+| Web Report: tên khoa ở filter + phạm vi kết quả của bốn view | CODE DONE |
+| Mobile Pharmacy: domain reader + Gateway adapter + provider theo phiên + UI tên | CODE DONE |
+| Mobile Report | Chưa có identity consumer; workspace placeholder, không mở rộng nghiệp vụ |
+| Gateway thật, keyboard/theme và ảnh Review3 trên candidate mới | PENDING, chưa dùng mock/build để đóng |
+
+Các lookup dedupe theo context/phiên; lỗi/403/404 có fallback và giữ ID, không đoán tên.
+PHARMACIST không được gọi public Patient/Staff/Department detail theo role matrix hiện tại;
+UI báo giới hạn. Quyết định contract nếu cần tên cho dược sĩ nằm trong
+[handoff chung Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo handoff mới.
+Production gates vẫn OFF; không sửa backend/shared hoặc mở Surgery/Inpatient.
+
+Verification của đợt này trên working tree nhánh Huy, baseline `acee395f`:
+
+- Web: Pharmacy/Report **396/396 tests PASS** (30 files, gồm 18 tests identity mới);
+  `pnpm typecheck`, `pnpm lint`, `pnpm build` PASS. Test cũ vẫn kiểm API/query/body và
+  chỉ cập nhật hai assertion scope để kiểm UUID ở dòng phụ thay vì chuỗi render cũ.
+- Mobile: full suite **306/306 PASS**; sau bổ sung tên trong hộp xác nhận kê đơn, chạy lại
+  **87/87 tests liên quan PASS** (identity, workflow, validation, prescription, Gateway commands).
+  Format 18 files, 0 changed. Test kiểm exact `hoTen/fullName/departmentName`, hai resource IDs,
+  response mismatch, dedupe, 403/404/503, logout/new-session và late response.
+- Candidate mobile cuối: `flutter analyze --no-pub` PASS, `flutter build web --no-pub`
+  PASS (95,3s). Hộp xác nhận kê đơn dùng cùng resolver với form; ID/intent/key giữ nguyên.
+- Typecheck/lint/build hoặc widget doubles không chứng minh quyền/seed/browser thật.
+  Chưa có ảnh Review3 mới; giữ acceptance candidate mới PENDING.

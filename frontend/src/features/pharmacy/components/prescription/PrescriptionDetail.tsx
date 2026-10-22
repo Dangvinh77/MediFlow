@@ -1,6 +1,7 @@
 "use client";
 
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
+import { PharmacyIdentity } from "../PharmacyIdentity";
 
 import Link from "next/link";
 import {
@@ -91,7 +92,7 @@ function DetailError({ message, onRetry }: { message: string; onRetry?: () => vo
   );
 }
 
-function CopyValue({ label, value }: { label: string; value: string | null }) {
+function CopyValue({ label, value, identity }: { label: string; value: string | null; identity?: "patient" | "doctor" | "department" }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -109,8 +110,8 @@ function CopyValue({ label, value }: { label: string; value: string | null }) {
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-1 flex items-center gap-2">
-        <code className="break-all text-xs">{value ?? "Không có"}</code>
-        {value && <button type="button" onClick={copy} className="shrink-0 rounded border border-border px-2 py-1 text-xs hover:bg-surface-muted">
+        {identity && value ? <PharmacyIdentity kind={identity} id={value} /> : <code className="break-all text-xs">{value ?? "Không có"}</code>}
+        {value && <button type="button" aria-label={`Chép ${label.toLowerCase()}`} onClick={copy} className="shrink-0 rounded border border-border px-2 py-1 text-xs hover:bg-surface-muted">
           {copied ? "Đã chép" : "Chép"}
         </button>}
       </dd>
@@ -398,9 +399,9 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
         <h3 className="text-base font-semibold">Thông tin kê đơn</h3>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <CopyValue label="Mã hồ sơ bệnh án" value={prescription.recordId} />
-          <CopyValue label="Mã bệnh nhân" value={prescription.patientId} />
-          <CopyValue label="Mã bác sĩ" value={prescription.doctorId} />
-          <CopyValue label="Mã khoa" value={prescription.departmentId} />
+          <CopyValue label="Bệnh nhân" value={prescription.patientId} identity="patient" />
+          <CopyValue label="Bác sĩ kê đơn" value={prescription.doctorId} identity="doctor" />
+          <CopyValue label="Khoa" value={prescription.departmentId} identity="department" />
           <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Ngày kê đơn</dt><dd className="mt-1">{formatDate(prescription.prescribedDate)}</dd></div>
         </dl>

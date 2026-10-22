@@ -5,6 +5,8 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
+import '../domain/pharmacy_identity.dart';
+import 'pharmacy_identity_label.dart';
 import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
 import 'pharmacy_boundary.dart';
@@ -211,10 +213,31 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
       builder: (context) => AlertDialog(
         title: Text(retry ? 'Gửi lại đúng ý định V1' : 'Xác nhận kê đơn V1'),
         content: SingleChildScrollView(
-          child: Text(
-            'Hồ sơ: ${current.command.context.recordId}\n'
-            'Bệnh nhân: ${current.command.context.patientId}\nLượt khám: ${current.command.context.careEpisodeId}\n'
-            '${current.command.lines.length} dòng thuốc. Backend kiểm tra nguồn, quyền và giá.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Hồ sơ: ${current.command.context.recordId}'),
+              PharmacyIdentityLabel(
+                kind: PharmacyIdentityKind.patient,
+                id: current.command.context.patientId,
+                label: 'Bệnh nhân',
+              ),
+              PharmacyIdentityLabel(
+                kind: PharmacyIdentityKind.doctor,
+                id: current.command.context.doctorId,
+                label: 'Bác sĩ kê đơn',
+              ),
+              PharmacyIdentityLabel(
+                kind: PharmacyIdentityKind.department,
+                id: current.command.context.departmentId,
+                label: 'Khoa',
+              ),
+              Text(
+                'Lượt khám: ${current.command.context.careEpisodeId}\n'
+                '${current.command.lines.length} dòng thuốc. Backend kiểm tra nguồn, quyền và giá.',
+              ),
+            ],
           ),
         ),
         actions: [
@@ -304,14 +327,37 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           for (final field in labels.entries)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: TextField(
-                controller: fields[field.key],
-                focusNode: focuses[field.key],
-                enabled: !locked,
-                decoration: InputDecoration(
-                  labelText: field.value,
-                  errorText: errors[field.key],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: fields[field.key],
+                    focusNode: focuses[field.key],
+                    enabled: !locked,
+                    decoration: InputDecoration(
+                      labelText: field.value,
+                      errorText: errors[field.key],
+                    ),
+                  ),
+                  if (const [
+                    'patientId',
+                    'doctorId',
+                    'departmentId',
+                  ].contains(field.key))
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: fields[field.key]!,
+                      builder: (_, value, _) => PharmacyIdentityLabel(
+                        kind: switch (field.key) {
+                          'patientId' => PharmacyIdentityKind.patient,
+                          'doctorId' => PharmacyIdentityKind.doctor,
+                          _ => PharmacyIdentityKind.department,
+                        },
+                        id: value.text.trim(),
+                        label: field.value,
+                        showId: false,
+                      ),
+                    ),
+                ],
               ),
             ),
           TextField(

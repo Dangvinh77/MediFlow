@@ -38,7 +38,8 @@ describe("DailyReportView", () => {
     mocks.daily.mockResolvedValue({ ...zero, departmentId: department });
     render(<DailyReportView initialQuery={{ date: zero.reportDate, departmentId: department }} autoLoad />);
     expect(await screen.findByRole("heading", { name: "Báo cáo ngày 29/02/2024" })).toBeVisible();
-    expect(screen.getByText("Phạm vi: " + department)).toBeVisible();
+    expect(screen.getByText(department)).toBeVisible();
+    expect(screen.getByText(department).closest("p")).toHaveTextContent("Phạm vi:");
     expect(screen.getAllByRole("definition")).toHaveLength(4);
     for (const value of screen.getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
     date("2024-03-01");

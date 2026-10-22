@@ -39,6 +39,26 @@
 
 ## 4. Giới hạn bàn giao
 
+### Tiến độ consumer Huy — 2026-10-22
+
+- Đã triển khai web Pharmacy: tên bệnh nhân/bác sĩ/khoa trên chi tiết đơn; tra tên bên cạnh
+  các UUID trong form kê đơn. UUID và nút chép mã vẫn giữ để đối chiếu; không đổi command/mode.
+- Đã triển khai web Report: tên khoa cho filter và phạm vi kết quả daily/monthly/top-medicines/
+  outpatient. Phạm vi bệnh viện vẫn tường minh, lookup lỗi không đổi số liệu hoặc coverage.
+- Mobile Pharmacy có domain reader, adapter public Gateway, provider theo phiên và nhãn tên
+  trong chi tiết/form kê đơn. Mobile Report hiện chỉ có `FeatureWorkspace`, chưa có identity
+  consumer để thay; không mở thêm workspace nghiệp vụ trong task sửa tên này.
+- Dedupe theo resource trong context/phiên, xử lý phản hồi cũ, 403/404/unavailable và đổi tài
+  khoản; không import chéo feature hoặc sửa shared paths. Cache tên không dùng chung giữa các phiên.
+- Contract đã đối chiếu Core DTO/controller và Gateway role matrix: Patient `maBenhNhan/hoTen`,
+  staff `staffId/fullName`, department `departmentId/departmentName`. PHARMACIST chưa được phép
+  đọc cả ba public detail API; UI giữ UUID và báo giới hạn, không gọi lookup service-only.
+  Gap/decision được gom trong [handoff chung Huy](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+- Đây là **implementation + automated verification**, chưa phải nghiệm thu Gateway/ảnh Review3
+  của candidate mới. Không thay inventory/screenshot cũ hoặc đóng handoff của các owner khác.
+
+Các giới hạn bên dưới mô tả phiên tạo tài liệu ban đầu; tiến độ Huy ở trên là cập nhật sau đó.
+
 1. Phiên này chỉ tạo tài liệu giao việc; chưa sửa UI, API, database hay ảnh Review 3.
 2. Không kết luận đây là lỗi thiếu tên trong toàn bộ backend. Hai consumer đã xác minh đang render ID trực tiếp; khả năng lookup và quyền từng role cần dev xác nhận.
 3. Không tự mở quyền sửa feature của owner khác. Nếu cần thay contract backend, tạo/link handoff backend đúng registry và chỉ rõ endpoint/DTO/role còn thiếu, không nhân bản cùng một gap.

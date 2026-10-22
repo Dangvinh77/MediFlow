@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { PharmacyIdentity } from "../PharmacyIdentity";
+import { PharmacySessionBoundary } from "../PharmacySessionBoundary";
 import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
@@ -83,7 +85,7 @@ function mapPrescriptionValidationDetails(
 export function CreatePrescriptionForm({ mode = "outpatient" }: { mode?: "outpatient" | "legacy" }) {
   const actorToken = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   // A different session or deployment mode starts a fresh draft and command.
-  return <PrescriptionForm key={`${mode}:${actorToken}`} mode={mode} actorToken={actorToken} />;
+  return <PharmacySessionBoundary><PrescriptionForm key={`${mode}:${actorToken}`} mode={mode} actorToken={actorToken} /></PharmacySessionBoundary>;
 }
 
 function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy"; actorToken: string | null }) {
@@ -334,12 +336,15 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
           </Field>
           <Field label="Mã bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
             <input id="patientId" {...field("patientId")} value={values.patientId} onChange={(event) => updateField("patientId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="UUID bệnh nhân" />
+            <PharmacyIdentity kind="patient" id={values.patientId.trim()} showId={false} />
           </Field>
           <Field label="Mã bác sĩ" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
             <input id="doctorId" {...field("doctorId")} value={values.doctorId} onChange={(event) => updateField("doctorId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="UUID bác sĩ" />
+            <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} showId={false} />
           </Field>
           <Field label="Mã khoa" htmlFor="departmentId" error={validationErrors.fields.departmentId} required>
             <input id="departmentId" {...field("departmentId")} value={values.departmentId} onChange={(event) => updateField("departmentId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="UUID khoa" />
+            <PharmacyIdentity kind="department" id={values.departmentId.trim()} showId={false} />
           </Field>
           <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
             <input id="prescribedDate" type="date" max={today} {...field("prescribedDate")} value={values.prescribedDate} onChange={(event) => updateField("prescribedDate", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.prescribedDate))} />

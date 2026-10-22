@@ -1,5 +1,26 @@
 # Handoff chung Huy — Pharmacy, Report và Support
 
+## Review3 — hiển thị tên, 2026-10-22
+
+Consumer Huy đã code web Pharmacy/Report và mobile Pharmacy theo
+[handoff identity Review3](../../frontend/docs/handoffs/HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md).
+Tên chỉ lấy từ public Gateway có quyền đọc; UUID trong URL/command và authority IDs không đổi.
+Không sửa Core/Gateway/shared. Mobile Report vẫn là workspace placeholder, chưa có field
+identity nghiệp vụ để thay trong task này. Không mở Inpatient/Surgery.
+
+**Dependency/decision duy nhất về quyền đọc tên:** Hoàng Anh (Core/Gateway producer), Vinh phối
+hợp nghiệm thu. Hiện cả Core controllers và Gateway `RouteAuthorizationFilter` đều không cho
+PHARMACIST đọc `GET /api/v1/patients/{id}`, `/api/v1/org/staff/{id}` hoặc
+`/api/v1/org/departments/{id}`. ADMIN/DOCTOR đọc được cả ba; ADMIN/MANAGER đọc được khoa cho Report.
+UI dược sĩ giữ UUID và báo chưa được cấp quyền tra tên, không thử nguồn khác hay service token.
+Nếu nghiệp vụ yêu cầu dược sĩ xem tên trên đơn, owner quyết định public contract tối thiểu phù
+hợp hoặc xác nhận fallback hiện tại; task này không mặc nhiên yêu cầu mở toàn bộ hồ sơ Patient.
+
+Acceptance còn lại của thay đổi mới: Gateway với role thật và ít nhất hai patient/staff/department,
+đổi bản ghi và phiên, fallback deny/outage, keyboard/theme; cập nhật đúng ảnh Review3 sau khi
+quan sát thực tế. Automated tests/build không thay cho acceptance này. Giữ một handoff chung,
+không tạo tài liệu handoff riêng cho cùng gap.
+
 ## Mobile Pharmacy — shared dependencies đã triển khai, 2026-10-22
 
 **Trạng thái hiện hành:11/12 task code, task12 nghiệm thu thật còn lại.** Người dùng đổi quyết

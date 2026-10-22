@@ -1,3 +1,4 @@
+import { ReportDepartmentName } from "./ReportDepartmentName";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDecimal, formatLocalDate } from "@/lib/format";
 import type { OutpatientReportDTO } from "../types";
@@ -19,7 +20,7 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">Ngoại trú từ {formatLocalDate(report.fromDate)} đến {formatLocalDate(report.toDate)}</h2>
-          <p className="mt-1 break-all text-sm text-muted-foreground">Phạm vi: {report.departmentId ?? "Toàn bệnh viện"}</p>
+          <p className="mt-1 break-all text-sm text-muted-foreground">Phạm vi: <ReportDepartmentName id={report.departmentId} /></p>
           <p className="mt-1 break-words text-sm text-muted-foreground">Tiền tệ: {report.currency} · Múi giờ: {report.zoneId}</p>
         </div>
         <StatusBadge tone="success">Đã đối soát</StatusBadge>

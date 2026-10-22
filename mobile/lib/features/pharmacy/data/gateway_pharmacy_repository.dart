@@ -3,6 +3,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/page_decoder.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
+import '../domain/pharmacy_identity.dart';
 import '../domain/prescription.dart';
 import '../domain/drug_commands.dart';
 import '../domain/prescription_commands.dart';
@@ -12,10 +13,36 @@ import 'prescription_request_dto.dart';
 class GatewayPharmacyRepository
     implements
         PharmacyRepository,
+        PharmacyIdentityReader,
         OutpatientPrescriptionWriter,
         PrescriptionDispenser {
   const GatewayPharmacyRepository(this.client);
   final ApiClient client;
+  @override
+  Future<String> identityName(PharmacyIdentityKind kind, String id) async {
+    if (!isPharmacyId(id)) throw ArgumentError('Mã tra cứu phải là UUID.');
+    final (path, idField, nameField) = switch (kind) {
+      PharmacyIdentityKind.patient => ('/v1/patients', 'maBenhNhan', 'hoTen'),
+      PharmacyIdentityKind.doctor => ('/v1/org/staff', 'staffId', 'fullName'),
+      PharmacyIdentityKind.department => (
+        '/v1/org/departments',
+        'departmentId',
+        'departmentName',
+      ),
+    };
+    final data = await client.get('$path/${Uri.encodeComponent(id)}');
+    if (data is! Map ||
+        data[idField] is! String ||
+        (data[idField] as String).toLowerCase() != id.toLowerCase() ||
+        data[nameField] is! String ||
+        (data[nameField] as String).trim().isEmpty) {
+      throw const FormatException(
+        'Thông tin tên không khớp định danh yêu cầu.',
+      );
+    }
+    return data[nameField] as String;
+  }
+
   @override
   Future<Prescription> createPrescription(PrescriptionIntent intent) async {
     final result = PharmacyDto.prescription(
