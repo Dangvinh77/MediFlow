@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /** Explicit opt-in for the cross-context read; the default profile remains closed. */
 @Configuration(proxyBeanMethods = false)
@@ -36,7 +37,8 @@ public class LabClinicalOrderContextConfiguration {
 
     @Bean
     LabClinicalOrderContextPort labClinicalOrderContext(LabClinicalOrderFeignClient client,
-            Clock labClock, JwtProperties jwt, ObjectMapper mapper, CircuitBreaker circuitBreaker) {
+            Clock labClock, JwtProperties jwt, ObjectMapper mapper,
+            @Qualifier("labClinicalOrderContextCircuitBreaker") CircuitBreaker circuitBreaker) {
         return new LabClinicalOrderContextAdapter(client, labClock, jwt, mapper, circuitBreaker);
     }
 }

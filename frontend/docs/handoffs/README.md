@@ -6,6 +6,8 @@ belong in [`docs/handoffs/README.md`](../../../docs/handoffs/README.md).
 
 ## Active handoffs
 
+- [Review 3 — hiển thị tên bệnh nhân, bác sĩ và khoa thay UUID](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md): Hoàng Anh đối chiếu identity contract/quyền đọc; Vinh điều phối shared và các consumer nhận theo ownership. ACTIVE, chưa triển khai; có bằng chứng web, phạm vi rà soát mobile và tiêu chí cập nhật ảnh sau nghiệm thu.
+
 | Handoff | Producer owner | Consumer owner | Unblocks |
 |---|---|---|---|
 | [Surgery idempotency headers](HANDOFF-SHARED-HUY-IDEMPOTENCY-HEADERS.md) | Vinh — shared API wrapper | Huy — Surgery | S-04 command dispatch through the existing HTTP boundary |
