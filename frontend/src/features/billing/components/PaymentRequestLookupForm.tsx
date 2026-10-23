@@ -162,7 +162,7 @@ function PaymentRequestLookupSession() {
             <Amount label="Còn phải thu" amount={discovery.remainingAmount} currency={discovery.currency} />
             <Info label="Trạng thái tài khoản" value={accountStatusLabels[discovery.accountStatus]} />
             <Info label="Nguồn phí" value={purposes[discovery.purpose].label} />
-            <Info label="Mã bệnh nhân" value={discovery.patientId} mono />
+            <Info label="Bệnh nhân" value={<ReferenceText kind="patient" value={discovery.patientId} fallback="Bệnh nhân" />} />
             <Info label="Mã đợt điều trị" value={discovery.careEpisodeId} mono />
             <Info label="Hạn thanh toán" value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
             <Info label="Dữ liệu Billing ghi nhận lúc" value={formatInstant(discovery.observedAt)} />
@@ -184,6 +184,6 @@ function Amount({ label, amount, currency }: { label: string; amount: number; cu
   return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-lg font-semibold">{formatDecimal(amount)} {currency}</dd></div>;
 }
 
-function Info({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function Info({ label, value, mono = false }: { label: string; value: import("react").ReactNode; mono?: boolean }) {
   return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{value}</dd></div>;
 }
