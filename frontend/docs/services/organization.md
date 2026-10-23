@@ -94,6 +94,21 @@ Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Organization tests 
 Smoke test department/staff partial failure, pagination, empty state, and denied roles.
 
 
+### Directory usability and personal unit — 2026-10-23
+
+StaffTable and StaffPicker send keyword to Core; results are filtered and paginated on the
+server. Picker requests activeOnly=true and size=20, without downloading the whole directory.
+Name/title/unit search ignores Vietnamese accents. ADMIN can search CCCD; other roles cannot
+probe identities through search. DepartmentList filters its complete list by name/abbreviation.
+Doctor forms require a nonblank practice license before sending a command.
+
+PersonalStaffProfile reads the minimal signed-owner `/staff/{id}/department` endpoint to show
+the unit name with independent retry. Account detail resolves linked staff/patient names;
+Patient lookup is composed by the app route. Failed name lookup preserves the detail link.
+All secondary reads discard late responses after unmount or session replacement.
+Dirty forms guard browser Back as well as links and page unload. Browser acceptance remains
+separate from hook/unit coverage. Restart Core and Gateway for the new API contract.
+
 ### Department and staff enrichment — 2026-10-22
 
 User-approved expansion uses the existing Organization endpoints. Responses add nullable

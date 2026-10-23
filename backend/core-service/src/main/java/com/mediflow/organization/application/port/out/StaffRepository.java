@@ -10,6 +10,7 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 
 public interface StaffRepository {
+    PageResult<Staff> searchDirectory(UUID departmentId, JobTitle jobTitle, String keyword, boolean activeOnly, boolean includeIdentity, PageQuery pageQuery);
     Optional<Staff> findByIdForUpdate(UUID staffId);
 
         boolean existsByDepartmentIdAndActiveTrue(UUID departmentId);

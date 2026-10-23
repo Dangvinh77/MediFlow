@@ -1,5 +1,33 @@
 # Frontend Workboard
 
+## Hoàng Anh — Organization/Patient/Gateway usability review, 2026-10-23
+
+User-approved follow-up adds server-paginated staff search (accent-insensitive name/title/unit,
+ADMIN-only CCCD predicate), active staff picker queries and local unit name/abbreviation search.
+Doctor forms require a license. Account detail resolves linked names with independent retries;
+the app composes Patient lookup. Staff personal profile uses the new signed-owner minimal unit
+endpoint, enforced by Core and admitted by the Gateway route-role fixture.
+
+Shared HTTP calls time out after 15 seconds including body reads, retaining unknown-write
+semantics without timeout retries. Login starts with empty credentials. Patient unknown saves
+offer read-only exact-identity reconciliation with full normalized field comparison; absence,
+different fields or read errors preserve the locked draft. Dirty Org/Patient forms guard browser
+Back, links and unload.
+
+Source fixtures: Core StaffControllerContractTest/OwnStaffDepartmentControllerTest,
+OrganizationServiceIntegrationTest; Gateway route-role-contracts.csv; FE API, picker, form,
+profile, directory, linked-name and history-hook tests. Core/Gateway must restart together;
+no schema migration is added. Signed-in browser E2E and running-service rollout are not claimed.
+Verification: focused Org/Patient/auth **217/217**, TypeScript, ESLint and production build pass.
+The full FE run with two workers reports **948 passed / 1 failed** across 101 files. The failure
+is the existing Pharmacy PrescriptionActions assertion at line 150 (expects the async detail
+reload to have already called get twice; observed once). Its isolated rerun passes **24/24**.
+No Pharmacy source/test is changed and the broad run is not reported as fully green. An earlier
+unrestricted parallel run was stopped after widespread test timeouts under build/Maven load.
+Core full-suite plus the corrected-fixture integration rerun reports **325 tests** across
+52 current suites, zero failures/errors/skips; Gateway reports **1,525 tests** across 14 current
+suites, zero failures/errors/skips. Old leftover XML reports are excluded from these totals.
+
 ## Hoàng Anh — mở rộng chi tiết khoa/phòng/nhân sự, 2026-10-22
 
 User-approved Organization scope adds optional business/contact fields for departments and

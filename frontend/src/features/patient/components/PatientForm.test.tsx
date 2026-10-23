@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => {
   let token = "session-a";
   const listeners = new Set<() => void>();
   return {
-    getById: vi.fn(), create: vi.fn(), update: vi.fn(), getRole: vi.fn(() => "ADMIN"),
+    getById: vi.fn(), search: vi.fn(), create: vi.fn(), update: vi.fn(), getRole: vi.fn(() => "ADMIN"),
     getSessionKey: vi.fn(() => token),
     subscribeToAuthChanges: vi.fn((listener: () => void) => {
       listeners.add(listener);
@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => {
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: mocks.getRole }));
 vi.mock("@/lib/session", () => ({ getSessionKey: mocks.getSessionKey, subscribeToAuthChanges: mocks.subscribeToAuthChanges }));
-vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, create: mocks.create, update: mocks.update } }));
+vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, search: mocks.search, create: mocks.create, update: mocks.update } }));
 
 import { PatientForm } from "./PatientForm";
 
@@ -154,6 +154,48 @@ describe("PatientForm", () => {
     expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("Chưa xác định");
     submit();
     expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconciles an uncertain create using exact identity without replaying and opens a matching profile", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("timeout", 408));
+    mocks.search.mockResolvedValue({ content: [{ ...patientContractFixture, hoTen: "Nguyen Van A", soCmnd: "001234567890", ngaySinh: "1990-01-15", gioiTinh: "M", diaChi: null, soDienThoai: null, email: null, bhytSo: null }], totalPages: 1 });
+    render(<PatientForm />); fill(); submit();
+    fireEvent.click(await screen.findByRole("button", { name: "Kiểm tra hồ sơ đã lưu" }));
+    expect(await screen.findByText("Hồ sơ hiện tại khớp toàn bộ thông tin bạn gửi.")).toBeVisible();
+    expect(mocks.search).toHaveBeenCalledWith({ keyword: "001234567890", page: 0, size: 100 });
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Mở hồ sơ đã đối chiếu" }));
+    expect(mocks.router.push).toHaveBeenCalledWith(`/patients/${patientContractFixture.maBenhNhan}`);
+  });
+
+  it("keeps an uncertain draft locked when reconciliation cannot find an exact identity", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("timeout", 408));
+    mocks.search.mockResolvedValue({ content: [{ ...patientContractFixture, soCmnd: "other-identity" }], totalPages: 1 });
+    render(<PatientForm />); fill(); submit();
+    fireEvent.click(await screen.findByRole("button", { name: "Kiểm tra hồ sơ đã lưu" }));
+    await screen.findByText(/Chưa tìm thấy hồ sơ có đúng/);
+    expect(screen.getByLabelText(/Họ tên/)).toHaveValue("  Nguyen Van A  ");
+    expect(screen.getByRole("button", { name: "Tạo bệnh nhân" })).toBeDisabled();
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a failed reconciliation read without repeating the uncertain edit", async () => {
+    mocks.getById.mockResolvedValueOnce(patientContractFixture)
+      .mockRejectedValueOnce(new Error("Read unavailable"))
+      .mockResolvedValueOnce({ ...patientContractFixture, hoTen: "Changed Name" });
+    mocks.update.mockRejectedValue(new ApiRequestError("timeout", 408));
+    render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByDisplayValue(patientContractFixture.hoTen);
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Changed Name" } });
+    submit();
+    fireEvent.click(await screen.findByRole("button", { name: "Kiểm tra hồ sơ đã lưu" }));
+    expect(await screen.findByText("Read unavailable")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra hồ sơ đã lưu" }));
+    expect(await screen.findByText("Hồ sơ hiện tại khớp toàn bộ thông tin bạn gửi.")).toBeVisible();
+    expect(mocks.getById).toHaveBeenLastCalledWith(patientContractFixture.maBenhNhan);
+    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.search).not.toHaveBeenCalled();
   });
 
   it("clears a previous patient's draft and ignores its late lookup response", async () => {

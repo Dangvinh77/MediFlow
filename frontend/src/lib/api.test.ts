@@ -32,6 +32,20 @@ describe("shared API transport", () => {
     expect(sent().method).toBe("POST");
     expect(sent().body).toBe(JSON.stringify({ careContractVersion: 1 }));
   });
+  it.each(["headers", "body"])("bounds a stalled %s response and never retries a write", async stage => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation((_url, init) => {
+      const interrupted = new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError"))));
+      return stage === "headers" ? interrupted : Promise.resolve({ status: 200, json: () => interrupted });
+    });
+    try {
+      const pending = expect(api.post("/v1/patients", { hoTen: "A" })).rejects.toMatchObject({ status: 408, code: "CLIENT_REQUEST_TIMEOUT" });
+      await vi.advanceTimersByTimeAsync(15_000);
+      await pending;
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(session.clearSession).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
   it("leaves legacy bodyless POST without a key or content type", async () => {
     session.getToken.mockReturnValue(null); respond();
     await api.post("/v1/pharmacy/admin/outbox/event/replay");

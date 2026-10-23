@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -14,9 +14,10 @@ import { isRequestSessionCurrent } from "../request-session";
 import type { AccountDTO } from "../types";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
 import { PasswordForm } from "./PasswordForm";
+import { AccountStaffLink } from "./AccountStaffLink";
 
 /** Route composition keys this component by account and signed-in session. */
-export function AccountDetail({ accountId }: { accountId: string }) {
+export function AccountDetail({ accountId, renderPatientLink }: { accountId: string; renderPatientLink?: (patientId: string) => ReactNode }) {
   const router = useRouter();
   const mounted = useRef(true);
   const submitting = useRef(false);
@@ -65,14 +66,12 @@ export function AccountDetail({ accountId }: { accountId: string }) {
   }
 
   if (!account) return <div className="mt-6">{error ? <AsyncState kind="error" message={error} onRetry={reload} /> : <AsyncState kind="loading" message="Đang tải chi tiết tài khoản…" />}</div>;
-  const linkedId = account.staffId ?? account.patientId;
-  const linkedHref = account.staffId ? `/organization/staff/${account.staffId}` : `/patients/${account.patientId}`;
   return <section className="mt-6 space-y-5">
     <RecordIdentity name={account.username} subtitle={accountRoleLabels[account.role]} />
     <DetailSection title="Chi tiết tài khoản">
       <Info label="Tên đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
       <Info label="Trạng thái" value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />
-      <div><dt className="text-xs font-semibold uppercase text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1 break-all text-sm">{linkedId ? <Link className="text-primary underline" href={linkedHref}>{account.staffId ? "Nhân viên" : "Bệnh nhân"}: {linkedId}</Link> : "Chưa liên kết"}</dd></div>
+      <div><dt className="text-xs font-semibold uppercase text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1 break-words text-sm">{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}>Bệnh nhân: Xem hồ sơ</Link> : "Chưa liên kết"}</dd></div>
       <Info label="Mã tài khoản" value={account.accountId} /><Info label="Lần đăng nhập gần nhất" value={formatInstant(account.lastLoginAt)} />
       <Info label="Ngày tạo" value={formatInstant(account.createdAt)} /><Info label="Cập nhật lần cuối" value={formatInstant(account.updatedAt)} />
     </DetailSection>

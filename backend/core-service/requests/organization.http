@@ -6,6 +6,7 @@
 ###   PUT      /api/v1/org/departments/{id}
 ###   GET/POST /api/v1/org/staff
 ###   GET      /api/v1/org/staff/{id}
+###   GET      /api/v1/org/staff/{id}/department (signed staff owner only)
 ###   PUT      /api/v1/org/staff/{id}
 ###   GET      /api/v1/org/staff/{id}/exists
 ###   GET      /api/v1/org/staff/{id}/lookup       (service token only)
@@ -29,6 +30,16 @@
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
+
+### Server-side literal search; ADMIN can additionally search exact/partial CCCD.
+### Other directory roles search names, titles and units without an identity predicate.
+GET {{host}}/api/v1/org/staff?keyword=dang%20anh&activeOnly=true&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Replace with the staffId claim from this access token. All seven human staff roles.
+### Own UUID -> 200 {departmentId,departmentName}, no-store; foreign UUID -> 403.
+GET {{host}}/api/v1/org/staff/{{ownStaffId}}/department
+Authorization: Bearer {{token}}
 
 ### List departments; activeOnly=true returns active departments only
 GET {{host}}/api/v1/org/departments?activeOnly=true

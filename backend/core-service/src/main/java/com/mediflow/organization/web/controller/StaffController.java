@@ -149,11 +149,15 @@ public class StaffController {
         public ResponseEntity<ApiResponse<PageResult<StaffResponse>>> getAllStaff(
                         @RequestParam(name = "departmentId", required = false) UUID departmentId,
                         @RequestParam(name = "jobTitle", required = false) JobTitle jobTitle,
+                        @RequestParam(name = "keyword", required = false) String keyword,
+                        @RequestParam(name = "activeOnly", defaultValue = "false") boolean activeOnly,
                         @RequestParam(name = "page", defaultValue = "0") int page,
                         @RequestParam(name = "size", defaultValue = "20") int size,
                         Authentication authentication) {
-                PageResult<StaffResponse> response = getStaffUseCase
-                                .search(departmentId, jobTitle, PageQuery.of(page, size))
+                PageResult<StaffResponse> response = ((keyword == null || keyword.isBlank()) && !activeOnly
+                                ? getStaffUseCase.search(departmentId, jobTitle, PageQuery.of(page, size))
+                                : getStaffUseCase.searchDirectory(departmentId, jobTitle, keyword, activeOnly,
+                                        authentication.getAuthorities().stream().anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority())), PageQuery.of(page, size)))
                                 .map(staff -> readableStaff(staff, authentication));
 
                 return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(

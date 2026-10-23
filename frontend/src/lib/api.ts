@@ -46,6 +46,25 @@ function isApiResponse(
 
 let refreshFlight: { session: string; promise: Promise<void> } | null = null;
 
+// Covers both response headers and body. A timeout never proves a write rolled back.
+async function fetchJson(path: string, init: RequestInit): Promise<{ response: Response; body: unknown }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(path, { ...init, signal: controller.signal });
+    const body: unknown = response.status === 204 ? null : await response.json().catch(cause => {
+      if (controller.signal.aborted) throw cause;
+      return null;
+    });
+    return { response, body };
+  } catch (cause) {
+    if (controller.signal.aborted) throw new ApiRequestError(
+      "Yêu cầu quá thời gian chờ. Nếu đang lưu, hãy kiểm tra kết quả trước khi gửi lại.", 408, "CLIENT_REQUEST_TIMEOUT",
+    );
+    throw cause;
+  } finally { clearTimeout(timer); }
+}
+
 function jwtIdentity(token: string): Record<string, unknown> | null {
   try {
     const part = token.split(".")[1];
@@ -60,12 +79,11 @@ async function refreshAccess(session: string, rejectedToken: string): Promise<vo
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new ApiRequestError("Phiên đăng nhập đã hết hạn.", 401);
   const promise = (async () => {
-    const response = await fetch("/api/v1/auth/refresh", {
+    const { response, body: payload } = await fetchJson("/api/v1/auth/refresh", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }), cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
     });
-    const body = await response.json().catch(() => null);
+    const body = payload as { accessToken?: string; error?: ApiError; correlationId?: string } | null;
     if (getSessionKey() !== session) throw new ApiRequestError("Phiên đăng nhập đã thay đổi.", 401);
     if (!response.ok) {
       if (response.status === 401) clearSession();
@@ -74,15 +92,16 @@ async function refreshAccess(session: string, rejectedToken: string): Promise<vo
         response.status, body?.error?.code, body?.error?.details ?? [], body?.correlationId ?? null,
       );
     }
-    const identity = typeof body?.accessToken === "string" ? jwtIdentity(body.accessToken) : null;
+    const accessToken = body?.accessToken;
+    const identity = typeof accessToken === "string" ? jwtIdentity(accessToken) : null;
     const previous = jwtIdentity(rejectedToken);
     // These claims protect UI continuity only; signature verification belongs to Gateway.
-    if (!identity || !previous?.sub || identity.type !== "access" || identity.role !== getRole()
+    if (typeof accessToken !== "string" || !identity || !previous?.sub || identity.type !== "access" || identity.role !== getRole()
         || ["sub", "staffId", "departmentId", "patientId"].some(key => (identity[key] ?? null) !== (previous[key] ?? null))) {
       clearSession();
       throw new ApiRequestError("Thông tin truy cập đã thay đổi. Vui lòng đăng nhập lại.", 401);
     }
-    renewAccessToken(session, body.accessToken);
+    renewAccessToken(session, accessToken);
   })();
   refreshFlight = { session, promise };
   try { await promise; } finally { if (refreshFlight?.promise === promise) refreshFlight = null; }
@@ -108,7 +127,7 @@ async function requestJson<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`/api${path}`, {
+  const { response, body } = await fetchJson(`/api${path}`, {
     ...init,
     headers,
   });
@@ -116,10 +135,6 @@ async function requestJson<T>(
   if (response.status === 204) {
     return undefined as T;
   }
-
-  const body: unknown = await response
-    .json()
-    .catch(() => null);
 
   if (!response.ok) {
     if (response.status === 401 && !retried && token && session && getSessionKey() === session

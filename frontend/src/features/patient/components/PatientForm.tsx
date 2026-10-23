@@ -10,6 +10,7 @@ import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 import { FormSection } from "./RecordLayout";
 import { patientToday } from "../logic";
 import { usePatientForm } from "../usePatientForm";
+import { PatientSaveRecovery } from "./PatientSaveRecovery";
 
 interface PatientFormProps { patientId?: string }
 const getServerSession = () => null;
@@ -23,7 +24,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   const router = useRouter();
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const editing = Boolean(patientId);
-  const { form, set, loading, loaded, saving, blocked, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
+  const { form, set, loading, loaded, saving, blocked, outcomeUnknown, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
   const errorSummary = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save(); }
@@ -35,6 +36,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
     <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5">
       {error ? <div role="alert" aria-label="Không thể lưu bệnh nhân" ref={errorSummary} tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><p>{error.message}</p>{error.correlationId ? <p className="mt-1 font-mono text-xs">Mã theo dõi: {error.correlationId}</p> : null}</div> : null}
       <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
+      {outcomeUnknown ? <PatientSaveRecovery patientId={patientId} draft={form} onVerified={patient => { markSaved(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}`); }} /> : null}
       <fieldset disabled={blocked} className="min-w-0 space-y-5">
         <FormSection title="Thông tin cá nhân" description="Thông tin định danh của bệnh nhân. Kiểm tra kỹ CMND/CCCD trước khi lưu.">
           <Field label="Họ tên" error={fieldErrors.hoTen} htmlFor="patient-name" required><input id="patient-name" aria-invalid={Boolean(fieldErrors.hoTen)} aria-describedby={fieldErrors.hoTen ? "patient-name-error" : undefined} autoComplete="name" required maxLength={100} value={form.hoTen} onChange={(event) => set("hoTen", event.target.value)} className={controlClassName} /></Field>

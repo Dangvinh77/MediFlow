@@ -79,6 +79,10 @@ function StaffFormWorkspace({ staffId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+    if (jobTitle === "DOCTOR" && !licenseNumber.trim()) {
+      setError("Bác sĩ phải có số giấy phép hành nghề.");
+      return;
+    }
     if (!editing && !/^[0-9]{12}$/.test(identityNumber.trim())) {
       setError("CCCD phải gồm đúng 12 chữ số.");
       return;
@@ -209,7 +213,7 @@ function StaffFormWorkspace({ staffId }: Props) {
         <Field label="Ngày vào làm" htmlFor="staff-hired"><input id="staff-hired" type="date" value={profile.hireDate ?? ""} onChange={event => setProfile(previous => ({ ...previous, hireDate: event.target.value || null }))} className={controlClassName} /></Field>
         <Field label="Trình độ chuyên môn" htmlFor="staff-qualification"><input id="staff-qualification" maxLength={100} value={profile.qualification ?? ""} onChange={event => setProfile(previous => ({ ...previous, qualification: event.target.value || null }))} className={controlClassName} /></Field>
         <Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Số giấy phép" htmlFor="staff-license"><input id="staff-license" maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Số giấy phép" htmlFor="staff-license" required={jobTitle === "DOCTOR"} hint={jobTitle === "DOCTOR" ? "Bắt buộc đối với bác sĩ." : undefined}><input id="staff-license" required={jobTitle === "DOCTOR"} maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
       <FormSection title="Thông tin liên hệ" description="Thông tin liên lạc của nhân sự.">
         <Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>

@@ -70,5 +70,6 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
   }
 
   return { form, set, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,
+    outcomeUnknown: mutation.outcomeUnknown,
     error, fieldErrors: { ...mutation.error?.fieldErrors, ...fieldErrors }, save, retry };
 }

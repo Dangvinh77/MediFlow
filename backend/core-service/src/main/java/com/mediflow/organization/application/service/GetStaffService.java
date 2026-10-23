@@ -37,6 +37,13 @@ public class GetStaffService implements GetStaffUseCase {
     }
 
     @Override
+    public PageResult<Staff> searchDirectory(UUID departmentId, JobTitle jobTitle, String keyword, boolean activeOnly, boolean includeIdentity, PageQuery pageQuery) {
+        String normalized = keyword == null ? null : keyword.trim();
+        if (normalized != null && normalized.length() > 100) throw new IllegalArgumentException("Search keyword must not exceed 100 characters");
+        return staffRepository.searchDirectory(departmentId, jobTitle, normalized, activeOnly, includeIdentity, pageQuery);
+    }
+
+    @Override
     public PageResult<Staff> search(
             UUID departmentId,
             JobTitle jobTitle,

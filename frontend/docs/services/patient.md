@@ -84,6 +84,13 @@ Earlier handoff/checkpoint references describe the dependency before the shared 
 
 ## Contract and verification gate
 
+2026-10-23: unknown create/update outcomes keep the draft locked and offer a read-only
+reconciliation. Edit reads its existing UUID; create searches all result pages for the exact
+submitted soCmnd. Matching all normalized update fields offers explicit navigation to the
+returned UUID. Different/absent results and read errors preserve the draft and never resend
+or unlock the uncertain command. Account-linked profiles show name/date of birth with an
+independent retry. Dirty forms also guard browser Back; hook tests do not certify browser E2E.
+
 The live controller and DTO override the design document once implemented. Recheck their wire
 fixtures before adding workflows.
 
