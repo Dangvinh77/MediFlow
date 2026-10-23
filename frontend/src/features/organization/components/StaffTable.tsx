@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { organizationApi } from "../api";
-import { getSessionKey } from "@/lib/auth";
+import { getRole, getSessionKey } from "@/lib/auth";
 import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, JobTitle, StaffDTO } from "../types";
 
@@ -54,8 +54,9 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [lastRequest, setLastRequest] = useState(0);
+  const [keyword, setKeyword] = useState("");
 
-  const [request, setRequest] = useState<{ page: number; attempt: number; departmentId?: string; jobTitle?: JobTitle }>({ page: 0, attempt: 0 });
+  const [request, setRequest] = useState<{ page: number; attempt: number; departmentId?: string; jobTitle?: JobTitle; keyword?: string }>({ page: 0, attempt: 0 });
 
   function loadStaff(page: number) {
     setLastRequest(page);
@@ -67,7 +68,7 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
   useEffect(() => {
     let disposed = false;
     const sessionToken = getSessionKey();
-    organizationApi.staff({ page: request.page, size: STAFF_PAGE_SIZE, ...(request.departmentId ? { departmentId: request.departmentId } : {}), ...(request.jobTitle ? { jobTitle: request.jobTitle } : {}) })
+    organizationApi.staff({ page: request.page, size: STAFF_PAGE_SIZE, ...(request.keyword ? { keyword: request.keyword } : {}), ...(request.departmentId ? { departmentId: request.departmentId } : {}), ...(request.jobTitle ? { jobTitle: request.jobTitle } : {}) })
       .then((result) => {
         if (disposed || !isRequestSessionCurrent(sessionToken)) return;
         setStaff(result.content);
@@ -91,6 +92,10 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
 
   return (
     <DataTableShell title="Nhân sự" description="Hồ sơ nhân sự, chức danh và khoa công tác.">
+      <form className="flex flex-wrap items-end gap-3 border-t border-border p-4" onSubmit={event => { event.preventDefault(); setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, keyword: keyword.trim() || undefined, attempt: previous.attempt + 1 })); }}>
+        <Field label="Tìm nhân sự" htmlFor="staff-keyword"><input id="staff-keyword" type="search" maxLength={100} value={keyword} onChange={event => setKeyword(event.target.value)} placeholder={getRole() === "ADMIN" ? "Họ tên, CCCD, chức danh hoặc khoa/phòng" : "Họ tên, chức danh hoặc khoa/phòng"} className={controlClassName} /></Field>
+        <button type="submit" className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold hover:bg-surface-muted">Tìm kiếm</button>
+      </form>
       <div className="grid gap-3 border-t border-border p-4 sm:grid-cols-2">
         <Field label="Lọc theo khoa" htmlFor="staff-department-filter"><select id="staff-department-filter" className={controlClassName} value={request.departmentId ?? ""} onChange={event => { setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, departmentId: event.target.value || undefined })); }}><option value="">Tất cả khoa</option>{departments.map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}{department.active ? "" : " (ngừng hoạt động)"}</option>)}</select></Field>
         <Field label="Lọc theo chức danh" htmlFor="staff-job-filter"><select id="staff-job-filter" className={controlClassName} value={request.jobTitle ?? ""} onChange={event => { setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, jobTitle: (event.target.value || undefined) as JobTitle | undefined })); }}><option value="">Tất cả chức danh</option>{Object.entries(jobTitleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>

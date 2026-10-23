@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
-import { departmentContractFixture, staffContractFixture } from "../contract.fixture";
+import { departmentContractFixture, staffContractFixture as baseStaffFixture } from "../contract.fixture";
 import type { DepartmentDTO, StaffDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +30,8 @@ import { ApiRequestError } from "@/lib/api";
 
 import { StaffForm } from "./StaffForm";
 
+const staffContractFixture: StaffDTO = { ...baseStaffFixture, licenseNumber: "LIC-001" };
+
 const targetDepartment: DepartmentDTO = {
   ...departmentContractFixture,
   departmentId: "00000000-0000-4000-8000-000000000005",
@@ -39,6 +41,17 @@ const targetDepartment: DepartmentDTO = {
 };
 
 describe("StaffForm", () => {
+  it("requires a doctor's license before sending any staff command", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    render(<StaffForm />);
+    const license = await screen.findByLabelText(/Số giấy phép/);
+    expect(license).toBeRequired();
+    fireEvent.submit(license.closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Bác sĩ phải có số giấy phép");
+    expect(mocks.createStaff).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText(/Chức danh/), { target: { value: "NURSE" } });
+    expect(license).not.toBeRequired();
+  });
   afterEach(() => vi.unstubAllGlobals());
   it("uses the reconciled department as the baseline when changing the transfer target", async () => {
     const otherDepartment = { ...targetDepartment, departmentId: "00000000-0000-4000-8000-000000000099" };
@@ -170,6 +183,7 @@ describe("StaffForm", () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     render(<StaffForm />);
     await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     expect(await screen.findByRole("alert")).toHaveTextContent("CCCD phải gồm đúng 12 chữ số");
@@ -182,6 +196,7 @@ describe("StaffForm", () => {
     const view = render(<StaffForm />);
     async function submit(identity: string, name: string) {
       await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
       fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: name } });
       fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
@@ -205,6 +220,7 @@ describe("StaffForm", () => {
     mocks.createStaff.mockRejectedValue(new ApiRequestError("Duplicate", 409, "STAFF_IDENTITY_DUPLICATE"));
     render(<StaffForm />);
     await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     expect(await screen.findByRole("alert")).toHaveTextContent("CCCD này đã có hồ sơ nhân sự");
@@ -218,6 +234,7 @@ describe("StaffForm", () => {
     mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, identityNumber: null });
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     const identity = await screen.findByLabelText(/CCCD/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     expect(identity).toHaveAttribute("readonly");
     expect(identity).not.toBeRequired();
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
@@ -230,6 +247,7 @@ describe("StaffForm", () => {
     mocks.createStaff.mockRejectedValue(new Error("Network interrupted"));
     render(<StaffForm />);
     await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
@@ -254,6 +272,7 @@ describe("StaffForm", () => {
     const workspace = render(<StaffForm />);
     async function submit() {
       await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
       fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
@@ -327,6 +346,7 @@ describe("StaffForm", () => {
     mocks.createStaff.mockResolvedValue(staffContractFixture);
     render(<StaffForm />);
     await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: " Nguyen Van A " } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
@@ -338,7 +358,7 @@ describe("StaffForm", () => {
       departmentId: departmentContractFixture.departmentId,
       jobTitle: "DOCTOR",
       specialization: null,
-      licenseNumber: null,
+      licenseNumber: "LIC-001",
       phoneNumber: null,
       email: null,
     }, expect.any(String)));

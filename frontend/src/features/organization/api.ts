@@ -9,12 +9,15 @@ import type {
   DepartmentDTO,
   JobTitle,
   StaffDTO,
+  StaffDepartmentDTO,
   UpdateAccountStatusRequest,
   UpdateDepartmentRequest,
   UpdateStaffRequest,
 } from "./types";
 
 export interface StaffSearchParams {
+  keyword?: string;
+  activeOnly?: boolean;
   departmentId?: string;
   jobTitle?: JobTitle;
   page?: number;
@@ -47,10 +50,14 @@ export const organizationApi = {
     const query = new URLSearchParams({ page: String(params.page ?? 0), size: String(params.size ?? 20) });
     if (params.departmentId) query.set("departmentId", params.departmentId);
     if (params.jobTitle) query.set("jobTitle", params.jobTitle);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    if (params.activeOnly !== undefined) query.set("activeOnly", String(params.activeOnly));
     return api.get<PageResult<StaffDTO>>(`/v1/org/staff?${query}`);
   },
   staffMember: (staffId: string) =>
     api.get<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`),
+  ownDepartment: (staffId: string) =>
+    api.get<StaffDepartmentDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/department`),
   createStaff: (body: CreateStaffRequest, idempotencyKey: string) =>
     api.post<StaffDTO>("/v1/org/staff", body, { idempotencyKey }),
   updateStaff: (staffId: string, body: UpdateStaffRequest) =>

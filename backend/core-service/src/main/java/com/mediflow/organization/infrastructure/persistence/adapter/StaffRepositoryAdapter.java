@@ -129,11 +129,19 @@ public class StaffRepositoryAdapter
     }
 
     @Override
+    public PageResult<Staff> searchDirectory(UUID departmentId, JobTitle jobTitle, String keyword, boolean activeOnly, boolean includeIdentity, PageQuery pageQuery) {
+        var pageable = PageRequest.of(pageQuery.page(), pageQuery.size(),
+                org.springframework.data.domain.Sort.by("fullName", "staffId"));
+        var page = jpaRepository.findAll(StaffDirectorySpecification.matching(departmentId, jobTitle, keyword, activeOnly, includeIdentity), pageable);
+        return PageResult.of(page.getContent().stream().map(this::toDomain).toList(), page.getTotalElements(), page.getNumber(), page.getSize());
+    }
+
+    @Override
     public PageResult<Staff> search(
             UUID departmentId,
             JobTitle jobTitle,
             PageQuery pageQuery) {
-        PageRequest pageable = PageRequest.of(pageQuery.page(), pageQuery.size());
+        PageRequest pageable = PageRequest.of(pageQuery.page(), pageQuery.size(), org.springframework.data.domain.Sort.by("fullName", "staffId"));
         Page<StaffEntity> page;
         if (departmentId != null && jobTitle != null) {
             page = jpaRepository.findByDepartmentIdAndJobTitle(

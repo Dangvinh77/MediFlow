@@ -47,6 +47,17 @@ import io.jsonwebtoken.security.Keys;
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class StaffControllerContractTest {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "MANAGER"})
+    void directorySearchPreservesRolesAndPrivacy(String role) throws Exception {
+        when(getStaffUseCase.searchDirectory(null, null, "Đặng", true, "ADMIN".equals(role), com.mediflow.common.api.PageQuery.of(1, 20)))
+                .thenReturn(PageResult.empty(com.mediflow.common.api.PageQuery.of(1, 20)));
+        mockMvc.perform(get(BASE_PATH).param("keyword", "Đặng").param("activeOnly", "true").param("page", "1")
+                        .header("Authorization", "Bearer " + staffAccessToken(role, UUID.randomUUID())))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.number").value(1));
+        verify(getStaffUseCase).searchDirectory(null, null, "Đặng", true, "ADMIN".equals(role), com.mediflow.common.api.PageQuery.of(1, 20));
+    }
 
     private static final String BASE_PATH = "/api/v1/org/staff";
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";

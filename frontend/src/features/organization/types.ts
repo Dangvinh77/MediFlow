@@ -11,6 +11,11 @@ export interface StaffProfile {
   qualification: string | null;
 }
 
+export interface StaffDepartmentDTO {
+  departmentId: string;
+  departmentName: string;
+}
+
 export type DepartmentType = "CLINICAL" | "PARACLINICAL" | "ADMINISTRATIVE";
 
 export type JobTitle =

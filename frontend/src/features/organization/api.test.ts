@@ -33,6 +33,12 @@ const staffPage: PageResult<StaffDTO> = {
 };
 
 describe("organizationApi facade contract", () => {
+  it("sends server-side search/active filters and reads only the signed staff unit endpoint", async () => {
+    await organizationApi.staff({ keyword: "  Đặng An  ", activeOnly: true, page: 2 });
+    expect(get).toHaveBeenCalledWith("/v1/org/staff?page=2&size=20&keyword=%C4%90%E1%BA%B7ng+An&activeOnly=true");
+    await organizationApi.ownDepartment(staffContractFixture.staffId);
+    expect(get).toHaveBeenLastCalledWith(`/v1/org/staff/${staffContractFixture.staffId}/department`);
+  });
   it("loads account detail and forwards explicit replacement confirmation", async () => {
     get.mockResolvedValueOnce(accountContractFixture);
     await organizationApi.account(accountContractFixture.accountId);

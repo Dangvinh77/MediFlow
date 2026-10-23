@@ -13,4 +13,6 @@ public interface GetStaffUseCase {
     StaffLookupDTO lookup(UUID id);
 
     PageResult<Staff> search(UUID departmentId, JobTitle jobTitle, PageQuery pageQuery);
+
+    PageResult<Staff> searchDirectory(UUID departmentId, JobTitle jobTitle, String keyword, boolean activeOnly, boolean includeIdentity, PageQuery pageQuery);
 }

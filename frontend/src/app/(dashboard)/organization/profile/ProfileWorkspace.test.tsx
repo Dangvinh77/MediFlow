@@ -7,7 +7,7 @@ import { patientContractFixture } from "@/features/patient/contract.fixture";
 
 const mocks = vi.hoisted(() => ({
   role: "DOCTOR" as Role | null, token: null as string | null, session: "session-a" as string | null,
-  listeners: new Set<() => void>(), staff: vi.fn(), patient: vi.fn(), replace: vi.fn(), directory: vi.fn(),
+  listeners: new Set<() => void>(), staff: vi.fn(), ownDepartment: vi.fn(), patient: vi.fn(), replace: vi.fn(), directory: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({
   getRole: () => mocks.role, getToken: () => mocks.token, getSessionKey: () => mocks.session,
@@ -15,7 +15,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 const router = { replace: mocks.replace };
-vi.mock("@/features/organization/api", () => ({ organizationApi: { staffMember: mocks.staff } }));
+vi.mock("@/features/organization/api", () => ({ organizationApi: { staffMember: mocks.staff, ownDepartment: mocks.ownDepartment } }));
 vi.mock("@/features/patient/api", () => ({ patientApi: { getById: mocks.patient } }));
 vi.mock("@/features/organization/components/OrganizationDirectory", () => ({ OrganizationDirectory: () => { mocks.directory(); return <div>Danh bạ quản trị</div>; } }));
 
@@ -31,6 +31,7 @@ function signIn(role: Role, profileId: string | null = staffContractFixture.staf
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.staff.mockReset().mockResolvedValue(staffContractFixture);
+  mocks.ownDepartment.mockReset().mockResolvedValue({ departmentId: staffContractFixture.departmentId, departmentName: "Khoa Nội" });
   mocks.patient.mockReset().mockResolvedValue(patientContractFixture);
   mocks.session = "session-a";
   signIn("DOCTOR");
@@ -56,6 +57,8 @@ describe("Role-specific organization workspace", () => {
     expect(screen.queryByText("Định danh tài khoản")).not.toBeInTheDocument();
     expect(screen.queryByText("Thông tin kỹ thuật")).not.toBeInTheDocument();
     expect(mocks.staff).toHaveBeenCalledExactlyOnceWith(staffContractFixture.staffId);
+    await waitFor(() => expect(screen.getByText("Khoa Nội")).toBeVisible());
+    expect(mocks.ownDepartment).toHaveBeenCalledExactlyOnceWith(staffContractFixture.staffId);
     expect(mocks.directory).not.toHaveBeenCalled();
     expect(mocks.patient).not.toHaveBeenCalled();
     expect(screen.queryByRole("link", { name: "Quản lý tài khoản" })).not.toBeInTheDocument();

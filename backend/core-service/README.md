@@ -1,5 +1,24 @@
 # Core Service
 
+## Organization directory and own unit — 2026-10-23
+
+`GET /api/v1/org/staff` accepts optional `keyword` (trimmed, at most 100 characters)
+and `activeOnly` (default false), combined with existing departmentId/jobTitle/page/size.
+PostgreSQL filters before pagination with stable fullName/staffId ordering. Literal
+Vietnamese accent-insensitive search covers names, title labels and unit name/abbreviation;
+only ADMIN gets an identityNumber predicate. Existing directory roles and field redaction remain.
+
+`GET /api/v1/org/staff/{id}/department` returns the normal ApiResponse envelope containing
+only `{departmentId, departmentName}` with `Cache-Control: no-store`. The seven human staff
+roles must use their signed staffId, including ADMIN; a foreign UUID, missing staff claim,
+PATIENT or service token is forbidden. This permits the personal profile to show its unit
+without granting department-directory access to PHARMACIST/CASHIER/LAB_TECH.
+No database migration is required. Restart Core and Gateway together before using the new FE.
+
+Source contract fixtures: `StaffControllerContractTest`, `OwnStaffDepartmentControllerTest`,
+`OrganizationServiceIntegrationTest`, Gateway `route-role-contracts.csv`, and
+`requests/organization.http`. These lock this scoped addition; they do not close global M6-02.
+
 Quy định chức danh/trưởng khoa, xử lý đồng thời và vận hành Patient outbox:
 [docs.md](docs.md).
 

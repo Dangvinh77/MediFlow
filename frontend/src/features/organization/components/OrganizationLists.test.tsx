@@ -39,6 +39,32 @@ function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<St
 }
 
 describe("Organization browse and actions", () => {
+  it("searches the server directory and resets pagination while keeping filters", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.staff.mockResolvedValue(staffPage());
+    render(<StaffTable departments={[departmentContractFixture]} />);
+    await screen.findByRole("link", { name: "Detail Nguyen Van A" });
+    fireEvent.change(screen.getByLabelText("Lọc theo khoa"), { target: { value: departmentContractFixture.departmentId } });
+    await waitFor(() => expect(mocks.staff).toHaveBeenLastCalledWith(expect.objectContaining({ departmentId: departmentContractFixture.departmentId })));
+    fireEvent.change(screen.getByLabelText("Tìm nhân sự"), { target: { value: "  dang anh  " } });
+    fireEvent.submit(screen.getByLabelText("Tìm nhân sự").closest("form")!);
+    await waitFor(() => expect(mocks.staff).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0, keyword: "dang anh", departmentId: departmentContractFixture.departmentId })));
+  });
+
+  it("filters department names without accents and by abbreviation", async () => {
+    mocks.departments.mockResolvedValue([
+      { ...departmentContractFixture, departmentName: "Khoa Nội", abbreviation: "NOI" },
+      { ...departmentContractFixture, departmentId: "lab", departmentName: "Khoa Xét nghiệm", abbreviation: "XN" },
+    ]);
+    render(<DepartmentList />);
+    await screen.findByRole("link", { name: "Detail Khoa Nội" });
+    fireEvent.change(screen.getByLabelText("Tìm khoa/phòng"), { target: { value: "noi" } });
+    expect(screen.getByRole("link", { name: "Detail Khoa Nội" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Detail Khoa Xét nghiệm" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Tìm khoa/phòng"), { target: { value: "xn" } });
+    expect(screen.getByRole("link", { name: "Detail Khoa Xét nghiệm" })).toBeVisible();
+    expect(mocks.departments).toHaveBeenCalledTimes(1);
+  });
   it("switches between khoa, phòng and staff without mixing department categories", async () => {
     mocks.departments.mockResolvedValue([
       { ...departmentContractFixture, departmentName: "Khoa Nội", departmentType: "CLINICAL" },

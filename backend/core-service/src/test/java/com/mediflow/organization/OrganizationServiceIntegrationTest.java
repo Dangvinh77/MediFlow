@@ -36,6 +36,8 @@ import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
+import com.mediflow.organization.domain.model.Department;
+import com.mediflow.organization.domain.model.Staff;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Role;
@@ -61,6 +63,32 @@ import java.nio.charset.StandardCharsets;
 @Testcontainers
 @org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class OrganizationServiceIntegrationTest {
+    @Test
+    void staffDirectorySearchUsesRealPostgresLiteralAccentSearchPrivacyAndStablePaging() {
+        var unit = departmentStore.save(Department.create(UUID.randomUUID(), "Khoa Nội Directory", "DIR" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT), DepartmentType.CLINICAL, null));
+        var created = new java.util.ArrayList<Staff>();
+        for (int index = 0; index < 23; index++) {
+            created.add(staffStore.save(Staff.create("Đặng Ánh " + index, unit.getDepartmentId(), JobTitle.DOCTOR, null, "LIC", null, null, nextIdentityNumber())));
+        }
+        var retired = Staff.create("Đặng Ánh nghỉ", unit.getDepartmentId(), JobTitle.DOCTOR, null, "LIC", null, null, nextIdentityNumber());
+        retired.deactivate(); staffStore.save(retired);
+        var literal = staffStore.save(Staff.create("Literal %_\\ Member", unit.getDepartmentId(), JobTitle.NURSE, null, null, null, null, nextIdentityNumber()));
+        var ids = new java.util.ArrayList<UUID>();
+        for (int page = 0; page < 4; page++) {
+            var batch = staffStore.searchDirectory(unit.getDepartmentId(), JobTitle.DOCTOR, "dang anh", true, false, com.mediflow.common.api.PageQuery.of(page, 7));
+            assertThat(batch.totalElements()).isEqualTo(23);
+            ids.addAll(batch.content().stream().map(Staff::getStaffId).toList());
+        }
+        assertThat(ids).doesNotHaveDuplicates().containsExactlyInAnyOrderElementsOf(created.stream().map(Staff::getStaffId).toList());
+        var first = created.getFirst();
+        var paging = com.mediflow.common.api.PageQuery.of(0, 100);
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), null, first.getIdentityNumber(), true, true, paging).content()).extracting(Staff::getStaffId).containsExactly(first.getStaffId());
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), null, first.getIdentityNumber(), true, false, paging).content()).isEmpty();
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), null, "%_\\", true, false, paging).content()).extracting(Staff::getStaffId).containsExactly(literal.getStaffId());
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), null, "khoa noi", true, false, paging).totalElements()).isEqualTo(24);
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), null, "bac si", true, false, paging).totalElements()).isEqualTo(23);
+        assertThat(staffStore.searchDirectory(unit.getDepartmentId(), JobTitle.NURSE, "dang anh", true, false, paging).content()).isEmpty();
+    }
     @Test
     void differentConcurrentCreatesForOneOwnerLeaveExactlyOneActiveAccount() throws Exception {
         UUID patient = UUID.randomUUID();

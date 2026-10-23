@@ -7,6 +7,7 @@ import { DataTableShell } from "@/components/ui/DataTableShell";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { controlClassName, Field } from "@/components/ui/Field";
 import { organizationApi } from "../api";
 import { getSessionKey } from "@/lib/auth";
 import { isRequestSessionCurrent } from "../request-session";
@@ -45,6 +46,7 @@ export function DepartmentList({ onLoaded, category = "all" }: {
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
+  const [keyword, setKeyword] = useState("");
 
   const [attempt, setAttempt] = useState(0);
 
@@ -76,12 +78,15 @@ export function DepartmentList({ onLoaded, category = "all" }: {
   }, [router, attempt, onLoaded]);
 
   const title = category === "departments" ? "Khoa" : category === "offices" ? "Phòng" : "Khoa phòng";
-  const visibleDepartments = departments.filter(department => category === "all"
+  const normalize = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase();
+  const visibleDepartments = departments.filter(department => (category === "all"
     || (category === "offices" ? department.departmentType === "ADMINISTRATIVE"
-      : department.departmentType === "CLINICAL" || department.departmentType === "PARACLINICAL"));
+      : department.departmentType === "CLINICAL" || department.departmentType === "PARACLINICAL"))
+    && normalize(`${department.departmentName} ${department.abbreviation}`).includes(normalize(keyword.trim())));
 
   return (
     <DataTableShell title={title} description={category === "departments" ? "Danh sách khoa lâm sàng, cận lâm sàng và trạng thái hoạt động." : category === "offices" ? "Danh sách phòng hành chính và trạng thái hoạt động." : "Danh sách khoa phòng và trạng thái hoạt động."}>
+      <div className="border-t border-border p-4"><Field label="Tìm khoa/phòng" htmlFor="department-keyword"><input id="department-keyword" type="search" value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="Tên hoặc mã viết tắt" className={controlClassName} /></Field></div>
       {loading ? <AsyncState kind="loading" message="Đang tải danh sách khoa…" /> : null}
 
       {!loading && error ? (

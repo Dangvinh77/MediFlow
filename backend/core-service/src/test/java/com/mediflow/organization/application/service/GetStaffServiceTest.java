@@ -18,6 +18,15 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 
 class GetStaffServiceTest {
+    @Test
+    void directorySearchNormalizesKeywordAndRejectsUnboundedInputBeforeStorage() {
+        var paging = com.mediflow.common.api.PageQuery.of(0, 20);
+        service.searchDirectory(null, null, "  Đặng An  ", true, false, paging);
+        verify(staffRepository).searchDirectory(null, null, "Đặng An", true, false, paging);
+        org.assertj.core.api.Assertions.assertThatIllegalArgumentException().isThrownBy(() ->
+                service.searchDirectory(null, null, "x".repeat(101), false, true, paging));
+        verifyNoMoreInteractions(staffRepository);
+    }
 
     private final StaffRepository staffRepository = mock(StaffRepository.class);
     private final GetStaffService service = new GetStaffService(staffRepository);

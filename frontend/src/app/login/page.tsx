@@ -32,8 +32,8 @@ export default function LoginPage() {
     getAuthSnapshot,
     getServerAuthSnapshot,
   );
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -79,6 +79,8 @@ export default function LoginPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
+            required
+            maxLength={50}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -89,6 +91,8 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
+            required
+            maxLength={72}
           />
         </label>
 

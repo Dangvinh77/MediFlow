@@ -44,6 +44,11 @@ import com.mediflow.organization.application.service.UpdateStaffService;
 @Configuration
 public class ApplicationConfig {
         @Bean
+        public com.mediflow.organization.application.port.in.GetOwnStaffDepartmentUseCase getOwnStaffDepartmentUseCase(
+                        StaffRepository staff, DepartmentRepository departments) {
+                return new com.mediflow.organization.application.service.GetOwnStaffDepartmentService(staff, departments);
+        }
+        @Bean
         public com.mediflow.organization.application.port.in.BootstrapAdminUseCase bootstrapAdminUseCase(
                         AccountRepository accounts, CreateDepartmentUseCase departments,
                         CreateStaffUseCase staff, CreateAccountUseCase createAccount) {

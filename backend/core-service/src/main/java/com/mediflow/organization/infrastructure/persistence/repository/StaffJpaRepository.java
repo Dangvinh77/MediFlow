@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface StaffJpaRepository
-        extends JpaRepository<StaffEntity, UUID> {
+        extends JpaRepository<StaffEntity, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<StaffEntity> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from StaffEntity s where s.staffId = :id")
     Optional<StaffEntity> findByIdForUpdate(@Param("id") UUID id);
