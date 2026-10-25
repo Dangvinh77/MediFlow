@@ -1,0 +1,1 @@
+25/10/2026: Next production web and Flutter Web logged in with the real synthetic demo.admin account via Gateway. Both Lab pages loaded the restored snapshot list (8 results). Historical EMERGENCY_DEMO entries were only read, never used as proof of the fresh normal flow.

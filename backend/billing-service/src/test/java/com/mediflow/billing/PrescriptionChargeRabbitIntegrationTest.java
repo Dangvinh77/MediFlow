@@ -222,7 +222,10 @@ class PrescriptionChargeRabbitIntegrationTest {
         var other = charges.issue(decoder.decode("prescription.created", mapper.writeValueAsBytes(nextPrescription(outpatient()))));
         var bytes = outpatientTerminal(key);
         listener().start(); rabbit.send("mediflow.events", key, new Message(bytes, new MessageProperties()));
-        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(terminalStatus()).isEqualTo("APPLIED")); listener().stop();
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            assertThat(count("prescription_terminal_source")).isOne();
+            assertThat(terminalStatus()).isEqualTo("APPLIED");
+        }); listener().stop();
         assertThat(jdbc.queryForObject("SELECT status FROM CHARGE WHERE charge_id=?", String.class, issued.chargeId())).isEqualTo("VOIDED");
         assertThat(jdbc.queryForObject("SELECT status FROM PAYMENT_REQUEST WHERE payment_request_id=?", String.class, issued.paymentRequestId())).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("SELECT status FROM CHARGE WHERE charge_id=?", String.class, other.chargeId())).isEqualTo("POSTED");

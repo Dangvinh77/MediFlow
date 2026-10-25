@@ -1,0 +1,26 @@
+{
+  "eureka-server": {
+    "status": "UP"
+  },
+  "core-service": {
+    "status": "UP"
+  },
+  "clinical-service": {
+    "status": "UP"
+  },
+  "lab-service": {
+    "status": "UP"
+  },
+  "pharmacy-service": {
+    "status": "UP"
+  },
+  "billing-service": {
+    "status": "UP"
+  },
+  "support-service": {
+    "status": "UP"
+  },
+  "gateway": {
+    "status": "UP"
+  }
+}

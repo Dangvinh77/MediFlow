@@ -1,0 +1,1020 @@
+{
+  "command": "mvn -q -pl backend/billing-service -am -Dspring.test.context.cache.maxSize=1 test",
+  "exitCode": 0,
+  "totals": {
+    "tests": 1129,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "name": "com.mediflow.billing.AdmissionChargeCloseConfigurationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.599"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionChargeCloseDecoderTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.141"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionChargeClosePostgresTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "9.108"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionChargeCloseRabbitIntegrationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "34.529"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionDepositAllocationConfigurationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.437"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionDepositAllocationPostgresTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "11.737"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionDepositRequestConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.267"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionReconciliationConfigurationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.643"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionReconciliationPostgresTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.679"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionSettlementConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.303"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionSettlementPreviewConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.074"
+    },
+    {
+      "name": "com.mediflow.billing.AdmissionSettlementPreviewPostgresTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "6.658"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.AdmissionSettlementProducerFixtureTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.086"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.DischargeMedicallyApprovedEventFixtureTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.025"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.FinalRecognitionCashProducerFixtureTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.258"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.LedgerProducerFixtureTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.094"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.PrescriptionFinanceProducerFixtureTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.251"
+    },
+    {
+      "name": "com.mediflow.billing.application.event.SurgeryEventFixtureTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.056"
+    },
+    {
+      "name": "com.mediflow.billing.application.mapper.FeeDtoMapperTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.015"
+    },
+    {
+      "name": "com.mediflow.billing.application.mapper.InvoiceDtoMapperTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.008"
+    },
+    {
+      "name": "com.mediflow.billing.application.mapper.RevenueMapperTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.005"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionChargeCloseServiceTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.01"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionDepositAllocationServiceTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.049"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionDepositRequestServiceTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.009"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionReconciliationServiceTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.216"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionSettlementPreviewServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.015"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.AdmissionSettlementServiceTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.051"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.BillingApplicationServiceTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.721"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.ExamChargePlannedRequestServiceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.205"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.FeeAccrualServiceTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.349"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.FinalAdmissionSettlementServiceTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.231"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.FinancialClearanceLookupServiceTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.181"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.LabTestPlannedRequestServiceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.124"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.LedgerPaymentServiceTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.032"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.LedgerRefundServiceTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.06"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.PaymentRequestDiscoveryServiceTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.15"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.PrescriptionChargeServiceTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.035"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.PrescriptionTerminalServiceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.157"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.SagaCompensationServiceTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.024"
+    },
+    {
+      "name": "com.mediflow.billing.application.service.SurgeryChargeServiceTest",
+      "tests": "22",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.187"
+    },
+    {
+      "name": "com.mediflow.billing.ArchitectureTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.061"
+    },
+    {
+      "name": "com.mediflow.billing.BillingMergedMigrationPostgresTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.945"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.AdmissionDepositAllocationTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.013"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.AdmissionFinalizationPlanTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.025"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.AdmissionLedgerSnapshotTest",
+      "tests": "36",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.036"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.BillingAccountTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.004"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.ChargeTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.009"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.DepositRefundBudgetTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.007"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.FeeTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.004"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.FinancialClearanceTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.005"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.InsuranceAdjustmentTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.002"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.InvoiceTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.011"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.PaymentAllocationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.004"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.PaymentRequestTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.003"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.PaymentTransactionTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.006"
+    },
+    {
+      "name": "com.mediflow.billing.domain.model.SettlementTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.003"
+    },
+    {
+      "name": "com.mediflow.billing.ExamChargeConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.198"
+    },
+    {
+      "name": "com.mediflow.billing.ExamChargeRabbitIntegrationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "24.589"
+    },
+    {
+      "name": "com.mediflow.billing.FinalAdmissionSettlementConfigurationTest",
+      "tests": "22",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.14"
+    },
+    {
+      "name": "com.mediflow.billing.FinalAdmissionSettlementPostgresTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "6.253"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.config.JwtSecretConfigurationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.164"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.config.RabbitConfigTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.085"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.config.SecurityConfigTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.572"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.AdmissionDepositRequestDecoderTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.016"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingEventPublisherAdapterTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.118"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDeliveryPostgresTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.224"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDispatcherTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.088"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxMaintenanceTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.023"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.ExamChargeDecoderTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.007"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.LabTestChargeDecoderTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.006"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.messaging.OutpatientCancellationDecoderTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.002"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.FeePersistenceAdapterTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "3.271"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.InvoicePersistenceAdapterTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.583"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.LabTestTypeProjectionAdapterTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "3.189"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.578"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.pricing.CareFinancePriceCatalogAdapterTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.002"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.pricing.PriceListAdapterTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.001"
+    },
+    {
+      "name": "com.mediflow.billing.infrastructure.security.JwtAuthFilterTest",
+      "tests": "28",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.093"
+    },
+    {
+      "name": "com.mediflow.billing.LabTestCancellationRabbitIntegrationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "33.151"
+    },
+    {
+      "name": "com.mediflow.billing.LabTestChargeConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.097"
+    },
+    {
+      "name": "com.mediflow.billing.LabTestChargeRabbitIntegrationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "18.082"
+    },
+    {
+      "name": "com.mediflow.billing.LedgerPaymentIntegrationTest",
+      "tests": "93",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "20.586"
+    },
+    {
+      "name": "com.mediflow.billing.LedgerRefundConfigurationTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.093"
+    },
+    {
+      "name": "com.mediflow.billing.LedgerRefundMigrationPostgresTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.413"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.BillingEventConsumerTest",
+      "tests": "18",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.393"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.BillingEventContractFixtureTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.021"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.BillingMergedDispatcherTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.348"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.ExamChargeConsumerTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.071"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.SurgeryCancellationDispatchTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.208"
+    },
+    {
+      "name": "com.mediflow.billing.messaging.consumer.SurgerySingleWriterDispatchTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.088"
+    },
+    {
+      "name": "com.mediflow.billing.OutpatientPublicationDispatcherResilienceRabbitIntegrationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "21.235"
+    },
+    {
+      "name": "com.mediflow.billing.OutpatientPublicationMigrationPostgresTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "9.818"
+    },
+    {
+      "name": "com.mediflow.billing.OutpatientPublicationPostgresTest",
+      "tests": "28",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "7.442"
+    },
+    {
+      "name": "com.mediflow.billing.OutpatientPublicationRabbitIntegrationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "62.649"
+    },
+    {
+      "name": "com.mediflow.billing.OutpatientRefundPublicationPropertiesTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.01"
+    },
+    {
+      "name": "com.mediflow.billing.PaymentRequestDiscoveryPostgresTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.3"
+    },
+    {
+      "name": "com.mediflow.billing.PrescriptionChargeConfigurationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.103"
+    },
+    {
+      "name": "com.mediflow.billing.PrescriptionChargeContractTest",
+      "tests": "19",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.037"
+    },
+    {
+      "name": "com.mediflow.billing.PrescriptionChargeDispatcherTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.164"
+    },
+    {
+      "name": "com.mediflow.billing.PrescriptionChargeRabbitIntegrationTest",
+      "tests": "31",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "43.47"
+    },
+    {
+      "name": "com.mediflow.billing.PrescriptionTerminalContractTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.042"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCancellationConfigurationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.1"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCancellationContractTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.029"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCancellationMigrationPostgresTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.314"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCancellationRabbitIntegrationTest",
+      "tests": "27",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "32.058"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryChargeConfigurationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.185"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryChargeContractTest",
+      "tests": "26",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.025"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryChargeRabbitIntegrationTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "44.877"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCompletionConfigurationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.114"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCompletionDecoderTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.023"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCompletionPostgresTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.408"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCompletionProofServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.021"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryCompletionRabbitIntegrationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "32.239"
+    },
+    {
+      "name": "com.mediflow.billing.SurgeryRequestedTimeMigrationPostgresTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.601"
+    },
+    {
+      "name": "com.mediflow.billing.web.AdmissionDepositAllocationControllerTest",
+      "tests": "25",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "26.941"
+    },
+    {
+      "name": "com.mediflow.billing.web.AdmissionReconciliationControllerTest",
+      "tests": "21",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.314"
+    },
+    {
+      "name": "com.mediflow.billing.web.AdmissionSettlementPreviewControllerTest",
+      "tests": "22",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.377"
+    },
+    {
+      "name": "com.mediflow.billing.web.BillingHumanTokenBoundaryTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.291"
+    },
+    {
+      "name": "com.mediflow.billing.web.BillingOutboxAdminControllerTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.274"
+    },
+    {
+      "name": "com.mediflow.billing.web.FinalAdmissionSettlementControllerTest",
+      "tests": "21",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.281"
+    },
+    {
+      "name": "com.mediflow.billing.web.FinancialClearanceLookupControllerTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.28"
+    },
+    {
+      "name": "com.mediflow.billing.web.GlobalExceptionHandlerTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.191"
+    },
+    {
+      "name": "com.mediflow.billing.web.InvoiceControllerTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.318"
+    },
+    {
+      "name": "com.mediflow.billing.web.PaymentRequestDiscoveryControllerTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.358"
+    },
+    {
+      "name": "com.mediflow.billing.web.PrescriptionAdjustmentControllerTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.228"
+    },
+    {
+      "name": "com.mediflow.billing.web.RevenueControllerTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.321"
+    }
+  ]
+}

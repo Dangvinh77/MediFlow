@@ -1,0 +1,2 @@
+PASS: eight database restores, populated-target refusal, six business health checks plus Gateway/Eureka.
+This is topology smoke, not all business workflows.

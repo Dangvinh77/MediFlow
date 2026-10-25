@@ -401,7 +401,17 @@ class _InvoicePageState extends State<InvoicePage>
             dense: true,
             contentPadding: EdgeInsets.zero,
             title: Text('${fee.type} · ${fee.incurredDate}'),
-            subtitle: Column(crossAxisAlignment:CrossAxisAlignment.start,children:[ReferenceLabel(kind:ReferenceKind.department,id:fee.departmentId,label:'Khoa'),Text(fee.isPaid ? 'Đã thu' : 'Chưa thu')]),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ReferenceLabel(
+                  kind: ReferenceKind.department,
+                  id: fee.departmentId,
+                  label: 'Khoa',
+                ),
+                Text(fee.isPaid ? 'Đã thu' : 'Chưa thu'),
+              ],
+            ),
             trailing: Text(fee.amount.format()),
           ),
         if (!invoice.isPaid) ...[

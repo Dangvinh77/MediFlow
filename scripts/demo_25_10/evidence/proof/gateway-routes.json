@@ -1,0 +1,37 @@
+[
+  {
+    "route": "/api/v1/patients",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/appointments",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/lab",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/pharmacy/drugs",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/billing/patient/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/notifications/patient/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+    "status": 200,
+    "success": true
+  },
+  {
+    "route": "/api/v1/reports/outpatient/daily?fromDate=2025-06-15&toDate=2025-06-15&departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+    "status": 200,
+    "success": true
+  }
+]

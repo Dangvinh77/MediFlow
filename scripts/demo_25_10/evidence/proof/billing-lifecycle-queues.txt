@@ -1,0 +1,13 @@
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	messages_ready	messages_unacknowledged	messages
+clinical.clearance.q	0	0	0
+patient.q	0	0	0
+lab.dlq	2	0	2
+clinical.clearance.dlq	0	0	0
+clinical.q	0	0	0
+lab.q	0	0	0
+clinical.dlq	0	0	0
+billing.q	0	0	0
+billing.dlq	0	0	0
+patient.dlq	0	0	0

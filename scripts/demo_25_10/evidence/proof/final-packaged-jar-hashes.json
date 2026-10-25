@@ -1,0 +1,32 @@
+[
+  {
+    "application": "core-service",
+    "sha256": "F9240CF9A4AC4C7251E00AC2F0A6B7E87E8D09A31940D5D377DBFCC02B64BE53",
+    "bytes": 88146144
+  },
+  {
+    "application": "clinical-service",
+    "sha256": "69434DD9F0BB2EE3074EC1CCFF303277933595D2775258A572F2763394C22BA5",
+    "bytes": 89716461
+  },
+  {
+    "application": "lab-service",
+    "sha256": "FD801C897A239EB21C7FABDD56CADF62F30CB41500FE7C25FA775A76780FEADA",
+    "bytes": 89593756
+  },
+  {
+    "application": "billing-service",
+    "sha256": "51E1CC5B8F7B0C627DFEEC4BF3FC4E10F12F47E155C7C564A9D2BD9B3D6A1E66",
+    "bytes": 88475549
+  },
+  {
+    "application": "gateway",
+    "sha256": "1ABD8EB3D6D303B8E371258B63BE1560E25AA8EF938417E54B81602C28734AE7",
+    "bytes": 53600306
+  },
+  {
+    "application": "eureka-server",
+    "sha256": "9556EEC9FE4F9B6789F256DB405CD7AFFA929EBA260CBA6C275357A9EDDB1DC1",
+    "bytes": 56768565
+  }
+]
