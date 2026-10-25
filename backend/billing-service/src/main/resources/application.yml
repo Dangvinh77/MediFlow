@@ -112,6 +112,14 @@ billing:
     default-lab-fee: ${MEDIFLOW_BILLING_DEFAULT_LAB_FEE:80000}
     exam-fee-by-department: {}
     lab-fee-by-type: {}
+  care-finance:
+    prices:
+      OUTPATIENT_EXAM:
+        description: "Phi kham tong quat"
+        unit-amount: 150000
+      LAB-CBC:
+        description: "Xet nghiem cong thuc mau"
+        unit-amount: 80000
 
 management:
   endpoints:
