@@ -252,6 +252,38 @@ Cẩm nang này dùng Compose và cấu hình công khai của source để nhó
 
 # 4. Khởi động bằng Docker Compose và web
 
+**Quy trình Docker có dữ liệu demo (cập nhật 25/10):** phần này dùng trực tiếp
+[MediFlow_Demo_Database_2026-10-25.sql](MediFlow_Demo_Database_2026-10-25.sql).
+Thứ tự bắt buộc: dừng stack cũ → chọn volume demo riêng → chỉ chạy PostgreSQL/RabbitMQ
+→ nạp và kiểm tra SQL → chạy Eureka/backend → mở web. Không cần chạy
+`rehearse_snapshot.py` cho phương án Docker này; Gateway vẫn là `http://localhost:8080`.
+Các lệnh Docker/psql ở mục 4.3–4.4 chạy được trong CMD, PowerShell và Bash.
+SQL có schema, dữ liệu và Flyway history của **tám context active**; broker và cấu hình
+ứng dụng không nằm trong snapshot. Chưa chạy backend trước khi restore xong.
+
+**Kiểm tra stack local ngày 25/10, trước khi chuyển sang snapshot:** các container
+đều healthy nhưng PostgreSQL/RabbitMQ dùng `source_mediflow-pgdata` và
+`source_mediflow-rabbitdata`; Core/Pharmacy bật seed; Pharmacy dùng database
+`mediflow_pharmacy_docker` và allowlist `DRUG`, còn Billing nhận `RX-DEMO`.
+Patient chỉ có 10 dòng và không có UUID lịch sử dùng để xác nhận snapshot ở mục 4.4.3.
+Đó là stack dùng seed, chưa đúng cấu hình demo SQL trong phần này. Trước khi chuyển
+sang snapshot trên máy của mình, lưu cấu hình cũ, dừng stack và cập nhật toàn bộ YAML
+ở mục 4.2. File cấu hình và backup local không đi kèm tài liệu trong Git.
+
+**Chạy lại từ trạng thái đã dừng:** kiểm tra cấu hình ở 4.3 → chạy DB/broker ở 4.4.2
+→ nạp SQL và xác minh ở 4.4.3 → chạy backend ở 4.4.4 → mở web ở 4.6.
+Không dùng `docker start` hoặc `docker compose start` cho lần chuyển cấu hình này:
+chúng chỉ chạy lại container cũ, không áp dụng cấu hình volume/environment vừa sửa.
+Dùng các lệnh `docker compose ... up` bên dưới. Sau khi backend lên, kiểm tra Pharmacy
+thực sự dùng `mediflow_pharmacy` và mã giá `RX-DEMO` bằng lệnh:
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T pharmacy-service printenv SPRING_DATASOURCE_URL MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED
+```
+
+Kết quả phải lần lượt là `jdbc:postgresql://postgres:5432/mediflow_pharmacy`,
+`RX-DEMO`, `false`.
+
 ## 4.1. Vì sao không chỉ chạy một câu lệnh?
 
 `docker compose up -d` có thể khởi động topology, nhưng chưa bảo đảm các command ngoại trú sẵn sàng:
@@ -269,14 +301,26 @@ Cẩm nang này dùng Compose và cấu hình công khai của source để nhó
 ## 4.2. Tạo cấu hình cho lần tập dượt local
 
 Tại root repo, tạo file `compose.demo.local.yml` và copy **toàn bộ** nội dung dưới đây.
+Nếu đã có file này, lưu một bản riêng trước khi thay. Cấu hình dưới đây chuyển PostgreSQL
+và RabbitMQ sang hai named volume demo riêng, giữ nguyên volume cũ trên máy.
+Khi đổi volume, phải dừng toàn bộ stack như mục 4.4; các port host vẫn được dùng chung,
+không chạy đồng thời hai môi trường trên các port đó.
 
 Đây là **cấu hình đề xuất cho môi trường tập dượt riêng** dựa trên các property đã có; không phải một file vốn đã được commit trong repo. Mã `LOCAL-DEMO-REHEARSAL-2026-10-24` là nhãn liên kết log/evidence của lần tập dượt. Điền nhãn không chứng minh acceptance thành công và không cấp quyền mở release trên môi trường dùng thật.
 
 ```yaml
 services:
+  postgres:
+    volumes:
+      - mediflow-pgdata:/var/lib/postgresql/data
+
+  rabbitmq:
+    volumes:
+      - mediflow-rabbitdata:/var/lib/rabbitmq
+
   core-service:
     environment:
-      MEDIFLOW_DEMO_SEED_ENABLED: "true"
+      MEDIFLOW_DEMO_SEED_ENABLED: "false"
 
   clinical-service:
     environment:
@@ -290,6 +334,9 @@ services:
 
   pharmacy-service:
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
+      MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED: "false"
+      MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES: "RX-DEMO"
       MEDIFLOW_CARE_FINANCE_V2: "true"
       MEDIFLOW_PHARMACY_IDENTITY_ENABLED: "true"
       MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED: "true"
@@ -346,10 +393,24 @@ services:
       MEDIFLOW_OUTPATIENT_UI_ENABLED: "true"
       MEDIFLOW_PHARMACY_PRESCRIPTION_MODE: "outpatient"
       MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED: "true"
+
+volumes:
+  mediflow-pgdata:
+    name: mediflow-demo-20261025-pg-v1
+  mediflow-rabbitdata:
+    name: mediflow-demo-20261025-rabbit-v1
 ```
 
 **Giải thích các lựa chọn:**
 
+- Hai `volumes.*.name` chỉ định nơi lưu dữ liệu demo. Đây không phải lệnh xóa hoặc đổi
+  tên volume cũ. Bind mount `scripts/init-databases.sql` từ base Compose vẫn được kế thừa.
+  Script init chỉ tạo database rỗng; SQL snapshot mới nạp schema và dữ liệu nghiệp vụ.
+- Core và Pharmacy đều tắt seeder vì snapshot đã có dữ liệu; không trộn thêm seed vào
+  kết quả restore. Nếu demo trên database rỗng không dùng snapshot, cần một hướng dẫn seed riêng.
+- Base Compose hiện trỏ Pharmacy vào `mediflow_pharmacy_docker`; override ở đây chủ động
+  trỏ vào `mediflow_pharmacy` có trong snapshot. Dependency `pharmacy-db-init` có thể
+  tạo thêm database `mediflow_pharmacy_docker` rỗng; đó không phải database demo đang dùng.
 - Bảng giá ví dụ: khám `150000`; một request xét nghiệm dùng mã `LAB` là `80000`. Đây là số liệu minh họa của buổi demo, không phải giá khám ngoài đời hoặc số tiền được hard-code trong UI.
 - Khi tạo chỉ định Lab, phải điền `priceCode=LAB` để khớp bảng giá.
 - Khi tạo đơn thuốc, điền `priceCode=RX-DEMO`; Billing cho phép mã đó, còn tổng tiền thuốc lấy từ snapshot giá server của Pharmacy.
@@ -371,20 +432,105 @@ Nếu dùng Linux/macOS, các lệnh `docker compose ...` giữ nguyên; đổi 
 
 ## 4.4. Khởi động theo tầng
 
-**Terminal 1 — DB và broker:**
+### 4.4.1. Dừng ứng dụng cũ và xác nhận volume demo
 
-```powershell
-docker compose -f docker-compose.yml -f compose.demo.local.yml up -d postgres rabbitmq
-docker compose -f docker-compose.yml -f compose.demo.local.yml ps
-docker compose exec postgres pg_isready -U postgres
-docker compose exec rabbitmq rabbitmq-diagnostics -q ping
+Chạy từ root repo, với đúng Compose project đang dùng ở các bước sau. Không đổi `-p`
+hay `COMPOSE_PROJECT_NAME` giữa chừng. Nếu trước đây chạy với một tên project riêng,
+thêm cùng `-p <tên-project-thật>` vào mọi lệnh; không gõ nguyên placeholder.
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml stop
+docker compose -f docker-compose.yml -f compose.demo.local.yml config --volumes
+docker volume inspect mediflow-demo-20261025-pg-v1 mediflow-demo-20261025-rabbit-v1
 ```
 
-PostgreSQL/RabbitMQ cần healthy. Fresh volume chạy `scripts/init-databases.sql`; volume cũ không tự chạy lại init SQL chỉ vì restart container. [S04]
+Lần đầu, `docker volume inspect` báo không tồn tại là bình thường; bước tiếp theo sẽ
+tạo chúng. Nếu đã tồn tại, chúng có thể chứa dữ liệu của lần demo trước: muốn tiếp tục
+lần đã restore thành công thì thực hiện 4.4.2, **bỏ qua bước nạp SQL 4.4.3**, rồi đến 4.4.4. Muốn một bộ demo
+mới hoặc lần restore trước bị lỗi giữa chừng, đổi **cả hai** hậu tố `v1` trong YAML thành
+`v2` (hoặc hậu tố mới chưa dùng), rồi chạy lại kiểm tra cấu hình. Giữ nguyên volume cũ;
+không dùng `down -v`, `DROP DATABASE` hay sửa SQL để vượt guard.
+
+### 4.4.2. Chỉ chạy PostgreSQL và RabbitMQ
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --force-recreate postgres rabbitmq
+docker compose -f docker-compose.yml -f compose.demo.local.yml ps
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres pg_isready -U postgres
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T rabbitmq rabbitmq-diagnostics -q ping
+docker inspect mediflow-postgres --format "{{json .Mounts}}"
+docker inspect mediflow-rabbitmq --format "{{json .Mounts}}"
+```
+
+Đợi cả hai healthy. Trong `.Mounts`, PostgreSQL phải dùng volume demo đã chọn tại
+`/var/lib/postgresql/data`; RabbitMQ phải dùng volume demo tương ứng tại `/var/lib/rabbitmq`.
+Nếu vẫn thấy volume cũ, dừng tại đây và kiểm tra YAML trước khi nạp SQL.
+Fresh volume chạy `scripts/init-databases.sql`; database xuất hiện sau init vẫn chưa có
+dataset demo. Volume cũ không tự chạy init lại chỉ vì restart container. [S04]
+`--force-recreate` thay container để chắc chắn nhận volume đã chọn; dữ liệu vẫn nằm
+trong named volume, không bị xóa khi thay container.
+
+### 4.4.3. Nạp snapshot tám context trước khi chạy backend
+
+File SQL dùng lệnh `\connect`/`\gexec` của **psql**. Dùng psql có sẵn trong container,
+không cần cài PostgreSQL client trên Windows. Không Execute toàn bộ file bằng HeidiSQL,
+không thêm `--single-transaction`, không chạy tất cả service trước rồi mới import.
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml cp scripts/demo_25_10/MediFlow_Demo_Database_2026-10-25.sql postgres:/tmp/mediflow-demo.sql
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres -f /tmp/mediflow-demo.sql
+```
+
+Chạy từng lệnh và chỉ tiếp tục khi lệnh trước thành công. Restore từ chối nếu bất kỳ
+database đích nào đã có bảng `public`; file kiểm tra cả tám đích trước khi nạp schema/data.
+Nếu lỗi trong quá trình nạp, không coi phần dữ liệu đã nạp là hoàn chỉnh: tạo cặp volume
+demo mới như 4.4.1 và restore lại từ đầu. Restore không atomic xuyên tám database.
+
+**Kiểm tra sau restore, khi backend còn dừng:**
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres -c "SELECT datname FROM pg_database WHERE datname LIKE 'mediflow_%' ORDER BY datname;"
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d mediflow_patient -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d mediflow_pharmacy -c "SELECT current_database(); SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+```
+
+Phải có `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`,
+`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`.
+Các database deferred hoặc `mediflow_pharmacy_docker` có thể xuất hiện thêm do init;
+không dùng chúng thay cho tám đích snapshot. Hai count ở trên phải lớn hơn 0, nhưng
+count bảng riêng lẻ chưa chứng minh restore đầy đủ. Đối chiếu dữ liệu lịch sử đặc trưng:
+
+```shell
+docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d mediflow_patient -c "SELECT patient_id, full_name FROM patient WHERE patient_id = '67bf5f80-1437-4ae8-907c-43fbfe839395';"
+```
+
+Dòng bệnh nhân phải có tên `Demo HIST_2025_COMPLETED_AND_REFUNDS`. Kết hợp restore
+exit code 0, tám database, kiểm tra bảng và dòng lịch sử này để xác nhận đã nạp đúng file;
+vẫn cần kiểm tra API/UI sau khi ứng dụng lên.
+
+**Kết nối HeidiSQL:** chọn PostgreSQL (TCP/IP), host `127.0.0.1`, port `5432`, user/password
+`postgres`/`postgres`, trường **Database** điền database context muốn xem, ví dụ
+`mediflow_patient`, rồi mở schema `public`. PostgreSQL trong HeidiSQL dùng một database
+cho mỗi session; tạo session khác cho `mediflow_pharmacy` hoặc các context còn lại.
+Database mặc định `postgres` không chứa bảng nghiệp vụ. Có thể chạy
+`SELECT current_database();` để xác nhận đang xem đúng nơi.
+
+**Phạm vi kiểm tra cho cập nhật hướng dẫn này (25/10):** YAML trích từ mục 4.2 đã qua
+`docker compose config`; đã chạy init database rồi restore SQL trên PostgreSQL 16 tạm
+riêng, exit code 0, kiểm tra đủ tám context có bảng và dòng bệnh nhân lịch sử ở trên.
+Thử import lần hai bị guard từ chối với exit code 3, không ghi đè dữ liệu. Các bước đó
+không thay cho chạy Flyway với image backend hiện tại hay nghiệm thu API/UI; sau khi
+khởi động vẫn phải kiểm tra log migration, login và các luồng nghiệp vụ ở phần sau.
+
+### 4.4.4. Eureka, Gateway và sáu ứng dụng nghiệp vụ
+
+`core-service` chứa cả Organization (khoa/phòng, nhân viên, tài khoản) và Patient,
+với hai database riêng. Không khởi động một container `organization-service` riêng;
+trên Eureka kiểm tra `CORE-SERVICE`. Tương tự, Support chứa Report/Notification.
 
 **Terminal 1 — Eureka:**
 
-```powershell
+```shell
 docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build eureka-server
 ```
 
@@ -510,6 +656,14 @@ docker compose -f docker-compose.yml -f compose.demo.local.yml up -d
 
 Hoặc `down` khi muốn gỡ container/network của stack mà giữ named volumes. Không dùng `down -v` như bước kết thúc bình thường: `-v` xóa dữ liệu volume. Muốn làm lại demo, ưu tiên bệnh nhân/lượt khám/đơn mới; giữ lại chứng từ của lượt trước để đối chiếu.
 
+Lần mở lại vẫn dùng đúng `compose.demo.local.yml` và hai tên volume đã chọn, **không
+nạp SQL lần nữa**. Dữ liệu mới tạo trong buổi demo được giữ trong volume này.
+Muốn quay lại dữ liệu trước khi chuyển sang snapshot: dừng stack bằng cấu hình demo,
+khôi phục bản `compose.demo.local.yml` đã lưu trước mục 4.2 (hoặc bỏ riêng hai override
+`volumes.*.name` để dùng volume mặc định của cùng project), kiểm tra cấu hình rồi khởi
+động lại theo tầng. Đồng thời khôi phục datasource/seeder của môi trường cũ, đặc biệt
+Pharmacy có thể dùng `mediflow_pharmacy_docker`. Không import snapshot lên volume cũ.
+
 <a id="chuong-05"></a>
 
 # 5. Chạy backend bằng JAR hoặc IDE để tiện trình bày code
@@ -562,7 +716,9 @@ $env:MEDIFLOW_NOTIFICATION_DB_PASSWORD = "postgres"
 $env:MEDIFLOW_REPORT_DESTINATION = "support-service"
 $env:MEDIFLOW_NOTIFICATION_DESTINATION = "support-service"
 
-$env:MEDIFLOW_DEMO_SEED_ENABLED = "true"
+$env:MEDIFLOW_DEMO_SEED_ENABLED = "false"
+$env:MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED = "false"
+$env:MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES = "RX-DEMO"
 $env:MEDIFLOW_CARE_FINANCE_V2_ENABLED = "true"
 $env:MEDIFLOW_CARE_FINANCE_V2 = "true"
 $env:MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED = "true"
@@ -892,6 +1048,12 @@ Các file mở để chứng minh: [modules.dart](https://github.com/Dangvinh77/
 # 7. Chuẩn bị kịch bản, tài khoản và sổ định danh
 
 ## 7.1. Bộ tài khoản demo có sẵn
+
+**Với quy trình Docker ở phần 4:** tài khoản và mật khẩu hash được khôi phục từ SQL,
+Core/Pharmacy seeder được tắt. Bảng dưới mô tả bộ tài khoản demo ban đầu; kiểm tra đăng
+nhập trên dữ liệu vừa restore, không bật seed để đặt lại mật khẩu. Các account từng
+đổi mật khẩu/role hoặc bị khóa trong snapshot vẫn giữ trạng thái đó. Các ca lịch sử có
+patient UUID riêng trong manifest ở đầu SQL; không tráo chúng với `demo.patient`.
 
 Khi Core chạy với profile mặc định hoặc `local`, `mediflow.demo-seed.enabled` được cấu hình bật, seeder tạo **10 khoa/phòng, 20 nhân viên, 10 bệnh nhân và 10 tài khoản**. Không cần Gateway đang chạy để seed. Dữ liệu nằm trong `backend/core-service/src/main/resources/demo-seed.json`, được tạo bằng các use case bình thường nên vẫn đi qua validation, hash mật khẩu và cơ chế event/outbox.
 
