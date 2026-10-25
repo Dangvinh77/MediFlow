@@ -72,6 +72,10 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:
+    prescribing:
+      price-codes: ${MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES:}
+    demo-seed:
+      enabled: ${MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED:false}
     identity:
       enabled: ${MEDIFLOW_PHARMACY_IDENTITY_ENABLED:false}
     clinical-context:

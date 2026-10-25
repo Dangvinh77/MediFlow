@@ -49,6 +49,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/accounts/{id}/status", HttpMethod.PUT, Roles.ADMIN),
 
             rule("/api/v1/patients", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/patients/directory/search", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
+            rule("/api/v1/patients/directory/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
             rule("/api/v1/patients/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PATIENT),
             rule("/api/v1/patients", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/patients/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
@@ -140,6 +142,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/pharmacy/drugs", HttpMethod.POST, Roles.ADMIN, Roles.PHARMACIST),
             rule("/api/v1/pharmacy/drugs/{id}/stock", HttpMethod.PUT, Roles.ADMIN, Roles.PHARMACIST),
             rule("/api/v1/pharmacy/prescriptions", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/pharmacy/prescriptions", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
+            rule("/api/v1/pharmacy/prescriptions/prescribing/context", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/pharmacy/prescriptions/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
             rule("/api/v1/pharmacy/prescriptions/{id}/cancel", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/pharmacy/prescriptions/{id}/dispense", HttpMethod.PUT, Roles.ADMIN, Roles.PHARMACIST),

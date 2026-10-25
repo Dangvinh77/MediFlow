@@ -30,7 +30,7 @@ export default async function PrescriptionDetailPage({
       {!isUuid(id) ? (
         <section className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">
           <h2 className="text-lg font-semibold">Mã đơn không hợp lệ</h2>
-          <p className="mt-2 break-all">Giá trị <code>{id}</code> không phải UUID nên chưa gọi API.</p>
+          <p className="mt-2">Vui lòng kiểm tra mã trên đơn thuốc hoặc quay lại trang tra cứu.</p>
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>

@@ -12,7 +12,7 @@ describe("PharmacyNav", () => {
   it("keeps prescription creation reachable for DOCTOR and hides recovery", () => {
     mocks.role = "DOCTOR"; render(<PharmacyNav />);
     expect(screen.getByRole("link", { name: "Kê đơn" })).toHaveAttribute("href", "/pharmacy/prescriptions/new");
-    expect(screen.queryByRole("link", { name: "Khôi phục outbox" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Quản trị hệ thống")).not.toBeInTheDocument();
   });
   it("marks only the longest matching prescription route active", () => {
     mocks.pathname = "/pharmacy/prescriptions/new"; render(<PharmacyNav />);
@@ -23,6 +23,12 @@ describe("PharmacyNav", () => {
     mocks.role = "PHARMACIST"; render(<PharmacyNav />);
     expect(screen.queryByRole("link", { name: "Kê đơn" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Danh mục" })).toBeVisible();
+    expect(screen.queryByText("Quản trị hệ thống")).not.toBeInTheDocument();
+  });
+  it("keeps maintenance collapsed for administrators during normal work", () => {
+    render(<PharmacyNav />);
+    expect(screen.getByText("Quản trị hệ thống").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("Khôi phục đồng bộ dữ liệu")).not.toBeVisible();
   });
   it("does not render role-specific navigation before session hydration", () => {
     mocks.role = null; render(<PharmacyNav />);

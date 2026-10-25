@@ -168,10 +168,10 @@ describe("Prescription terminal actions", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Xuất thuốc" })); submit("dispense");
     const next = "00000000-0000-4000-8000-000000000002";
     mocks.get.mockResolvedValue({ ...cancelled, prescriptionId: next }); view.rerender(<PrescriptionDetail prescriptionId={next} mode="legacy" />);
-    await screen.findByText(next, { selector: "p" }); await act(async () => resolve(dispensed));
+    await screen.findByText(next, { selector: "dd" }); await act(async () => resolve(dispensed));
     expect(screen.queryByText(/Đã xuất thuốc thành công/)).not.toBeInTheDocument(); expect(mocks.get).toHaveBeenCalledTimes(2);
   });
   it("does not request a malformed prescription UUID", () => {
-    render(<PrescriptionDetail prescriptionId="bad-id" mode="legacy" />); expect(screen.getByRole("alert")).toHaveTextContent("UUID hợp lệ"); expect(mocks.get).not.toHaveBeenCalled();
+    render(<PrescriptionDetail prescriptionId="bad-id" mode="legacy" />); expect(screen.getByRole("alert")).toHaveTextContent("Mã đơn thuốc không hợp lệ"); expect(mocks.get).not.toHaveBeenCalled();
   });
 });

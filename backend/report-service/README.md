@@ -282,3 +282,10 @@ mvn -q -pl backend/report-service -am verify
 mvn -q -pl backend/report-service -am -DskipTests javadoc:javadoc
 mvn -q -pl backend/report-service -am dependency:analyze
 ```
+
+## Read freshness follow-up — 2026-10-25
+
+Legacy daily, monthly and top-medicines responses use `Cache-Control: no-store`.
+Readers request the current server projection again on refresh; projection ingestion can still
+lag source events. This changes neither aggregation nor authorization, currency semantics,
+zero-fill behavior, or the default-closed outpatient report acceptance gate.

@@ -65,6 +65,7 @@ class OutpatientPrescriptionControllerTest {
     @MockBean private CancelPrescriptionUseCase canceller;
     @MockBean private DispensePrescriptionUseCase dispenser;
     @MockBean private OutpatientPrescriptionLifecycleUseCase lifecycle;
+    @MockBean private GetPrescribingContextUseCase prescribingContext;
 
     @Test
     void createUsesCheckedWriterSignedActorAndStableCommandIdentity() throws Exception {

@@ -11,11 +11,11 @@ describe("Report query boundaries", () => {
     { month: 1, year: 1999 }, { month: 1, year: 2101 }, { month: 1, year: NaN },
     { month: 1, year: 2026, departmentId: "invalid" },
   ])("rejects invalid monthly input %j", (query) => { expect(validateMonthlyReportQuery(query)).not.toBeNull(); });
-  it("only auto-loads a valid explicit monthly URL and preserves invalid department for correction", () => {
+  it("auto-loads the current month and valid explicit URLs, preserving invalid scope for correction", () => {
     const invalid = readMonthlyReportQuery(new URLSearchParams("month=10&year=2026&departmentId=wrong"));
     expect(invalid.autoLoad).toBe(false); expect(invalid.query.departmentId).toBe("wrong");
     expect(readMonthlyReportQuery(new URLSearchParams("month=2&year=2024")).autoLoad).toBe(true);
-    expect(readMonthlyReportQuery(new URLSearchParams()).autoLoad).toBe(false);
+    expect(readMonthlyReportQuery(new URLSearchParams()).autoLoad).toBe(true);
   });
   it("clears optional scope rather than reusing a stale department", () => {
     const next = new URLSearchParams(buildMonthlyReportQuery(new URLSearchParams("view=daily&departmentId=old&date=2026-10-12"), { month: 10, year: 2026 }));
@@ -35,7 +35,10 @@ describe("Report query boundaries", () => {
     expect(localReportDate(now)).toBe("2026-10-16");
     const parsed = readTopMedicinesQuery(new URLSearchParams(), now);
     expect(parsed.query).toEqual({ fromDate: "2026-10-16", toDate: "2026-10-16", limit: 10, departmentId: undefined });
-    expect(parsed.autoLoad).toBe(false);
+    expect(parsed.autoLoad).toBe(true);
+    expect(readDailyReportQuery(new URLSearchParams(), now)).toEqual({ query: {
+      date: "2026-10-16", departmentId: undefined,
+    }, autoLoad: true });
   });
   it("preserves each view's submitted dates and clears an optional department", () => {
     const daily = buildDailyReportQuery(new URLSearchParams("view=monthly&month=2&year=2024&departmentId=old"), { date: "2024-02-29" });

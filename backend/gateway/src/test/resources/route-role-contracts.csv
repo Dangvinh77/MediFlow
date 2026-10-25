@@ -53,6 +53,8 @@ core-service,POST,/api/v1/patients,ADMIN|NURSE,true
 # PATIENT may read only the signed patientId; Core checks it before data access.
 core-service,GET,/api/v1/patients/{id},ADMIN|DOCTOR|NURSE|PATIENT,true
 core-service,GET,/api/v1/patients,ADMIN|DOCTOR|NURSE,true
+core-service,GET,/api/v1/patients/directory/search,ADMIN|DOCTOR|PHARMACIST,true
+core-service,GET,/api/v1/patients/directory/{id},ADMIN|DOCTOR|PHARMACIST,true
 core-service,PUT,/api/v1/patients/{id},ADMIN|NURSE,true
 core-service,DELETE,/api/v1/patients/{id},ADMIN,true
 inpatient-service,POST,/api/v1/inpatient/admissions,ADMIN|DOCTOR,true
@@ -88,6 +90,8 @@ pharmacy-service,POST,/api/v1/pharmacy/drugs,ADMIN|PHARMACIST,true
 pharmacy-service,PUT,/api/v1/pharmacy/drugs/{id}/stock,ADMIN|PHARMACIST,true
 pharmacy-service,POST,/api/v1/pharmacy/admin/outbox/{eventId}/replay,ADMIN,true
 pharmacy-service,POST,/api/v1/pharmacy/prescriptions,ADMIN|DOCTOR,true
+pharmacy-service,GET,/api/v1/pharmacy/prescriptions,ADMIN|DOCTOR|PHARMACIST,true
+pharmacy-service,GET,/api/v1/pharmacy/prescriptions/prescribing/context,ADMIN|DOCTOR,true
 pharmacy-service,PUT,/api/v1/pharmacy/prescriptions/{prescriptionId}/cancel,ADMIN|DOCTOR,true
 pharmacy-service,GET,/api/v1/pharmacy/prescriptions/{prescriptionId},ADMIN|DOCTOR|PHARMACIST,true
 pharmacy-service,PUT,/api/v1/pharmacy/prescriptions/{prescriptionId}/dispense,ADMIN|PHARMACIST,true

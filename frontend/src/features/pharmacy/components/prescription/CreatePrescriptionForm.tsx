@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
 import { PharmacyIdentity } from "../PharmacyIdentity";
 import { PharmacySessionBoundary } from "../PharmacySessionBoundary";
 import { Field, controlClassName } from "@/components/ui/Field";
@@ -14,7 +15,7 @@ import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
 import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import { getPharmacyCapabilities } from "../../permissions";
-import type { DrugDTO } from "../../types";
+import type { DrugDTO, PrescribingContextDTO } from "../../types";
 import { getLocalTodayIso } from "../../utils";
 import {
   createPrescriptionLine,
@@ -91,6 +92,7 @@ export function CreatePrescriptionForm({ mode = "outpatient" }: { mode?: "outpat
 
 function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy"; actorToken: string | null }) {
   const router = useRouter();
+  const directory = useReferenceDirectory();
   const role = useSyncExternalStore(
     subscribeToAuthChanges,
     getRole,
@@ -112,14 +114,40 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   const [drugKeyword, setDrugKeyword] = useState("");
   const [activeDrugKeyword, setActiveDrugKeyword] = useState("");
   const [drugOptions, setDrugOptions] = useState<DrugDTO[]>([]);
+  const [drugPage, setDrugPage] = useState(0);
+  const [drugPageInfo, setDrugPageInfo] = useState({ totalPages: 0, totalElements: 0 });
   const [drugSearchError, setDrugSearchError] = useState<string | null>(null);
   const [settledDrugSearchKey, setSettledDrugSearchKey] = useState<string | null>(null);
   const [drugRetryToken, setDrugRetryToken] = useState(0);
   const requestSequence = useRef(0);
-  const drugSearchKey = `${activeDrugKeyword}\u0000${drugRetryToken}`;
+  const drugSearchKey = `${activeDrugKeyword}\u0000${drugPage}\u0000${drugRetryToken}`;
   const drugLoading = capabilities.canCreatePrescription && settledDrugSearchKey !== drugSearchKey;
   const today = getLocalTodayIso();
   const locked = submitting || uncertain || created;
+  const [contextResult, setContextResult] = useState<{ recordId: string; data?: PrescribingContextDTO; error?: string } | null>(null);
+  const [contextRetry, setContextRetry] = useState(0);
+  const context = contextResult?.recordId === values.recordId ? contextResult : null;
+
+  useEffect(() => {
+    if (mode !== "outpatient" || !values.recordId || !capabilities.canCreatePrescription) return;
+    let current = true;
+    const recordId = values.recordId;
+    const patientId = values.patientId;
+    pharmacyApi.getPrescribingContext(recordId).then(data => {
+      if (!current || getSessionKey() !== actorToken) return;
+      if (data.recordId !== recordId || data.patientId !== patientId || data.careEpisodeType !== "OUTPATIENT_VISIT" || !data.priceCodes.length) {
+        throw new Error("Hồ sơ chưa có đủ thông tin kê đơn hoặc không thuộc bệnh nhân đã chọn.");
+      }
+      setContextResult({ recordId, data });
+      setValues(previous => previous.recordId === recordId && previous.patientId === patientId ? {
+        ...previous, doctorId: data.doctorId, departmentId: data.departmentId, careEpisodeId: data.careEpisodeId,
+        priceCode: data.priceCodes.length === 1 ? data.priceCodes[0] : "",
+      } : previous);
+    }).catch((cause: unknown) => {
+      if (current && getSessionKey() === actorToken) setContextResult({ recordId, error: apiErrorMessage(cause, "Chưa lấy được thông tin từ hồ sơ khám. Hãy thử lại.") });
+    });
+    return () => { current = false; };
+  }, [mode, values.recordId, values.patientId, contextRetry, actorToken, capabilities.canCreatePrescription]);
 
   useEffect(() => {
     active.current = true;
@@ -140,10 +168,11 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
     const requestId = ++requestSequence.current;
 
     pharmacyApi
-      .searchDrugs({ keyword: activeDrugKeyword, page: 0, size: 20 })
+      .searchDrugs({ keyword: activeDrugKeyword, page: drugPage, size: 20 })
       .then((result) => {
         if (!active || requestId !== requestSequence.current) return;
         setDrugOptions(result.content);
+        setDrugPageInfo({ totalPages: result.totalPages, totalElements: result.totalElements });
       })
       .catch((cause: unknown) => {
         if (!active || requestId !== requestSequence.current) return;
@@ -162,13 +191,15 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
     return () => {
       active = false;
     };
-  }, [activeDrugKeyword, capabilities.canCreatePrescription, drugSearchKey, router]);
+  }, [activeDrugKeyword, capabilities.canCreatePrescription, drugSearchKey, router, drugPage]);
 
   function updateField(field: keyof Omit<OutpatientPrescriptionFormValues, "lines">, value: string) {
-    if (locked) return;
+    if (locked || values[field] === value) return;
+    if (mode === "outpatient" && (field === "patientId" || field === "recordId")) setContextResult(null);
     setValues((current) => ({ ...current, [field]: value,
       ...(field === "patientId" && value !== current.patientId ? { recordId: "", careEpisodeId: "" } : {}),
       ...(field === "departmentId" && value !== current.departmentId ? { doctorId: "" } : {}),
+      ...(mode === "outpatient" && (field === "patientId" || field === "recordId") ? { departmentId: "", doctorId: "", careEpisodeId: "", priceCode: "" } : {}),
     }));
     setValidationErrors((current) => ({
       ...current,
@@ -193,7 +224,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
 
   function focusFirstError(errors: OutpatientPrescriptionValidationErrors) {
     // Backend detail order is not the visual or keyboard order of the form.
-    const field = (["recordId", "patientId", "doctorId", "departmentId", "prescribedDate", "careEpisodeId", "priceCode"] as const)
+    const field = (["patientId", "recordId", "departmentId", "doctorId", "prescribedDate", "careEpisodeId", "priceCode"] as const)
       .find(name => errors.fields[name] && (mode === "outpatient" || (name !== "careEpisodeId" && name !== "priceCode")));
     const lineKey = values.lines.find(line => Object.values(errors.lines[line.rowKey] ?? {}).some(Boolean))?.rowKey;
     const lineField = lineKey
@@ -229,6 +260,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
   }
 
   function submitDrugSearch() {
+    setDrugPage(0);
     setDrugSearchError(null);
     setActiveDrugKeyword(drugKeyword.trim());
     setDrugRetryToken((value) => value + 1);
@@ -243,6 +275,12 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
     setValidationErrors(errors);
     if (hasCreatePrescriptionErrors(errors)) {
       focusFirstError(errors);
+      return;
+    }
+
+    if (mode === "outpatient" && (!context?.data || context.error)) {
+      setFormError("Hãy chọn hồ sơ khám và chờ hệ thống xác nhận thông tin kê đơn.");
+      focusTarget.current = "recordId";
       return;
     }
 
@@ -286,7 +324,9 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
           fields: { ...current.fields, ...mapped.fields },
           lines: { ...current.lines, ...mapped.lines },
         }));
-        focusFirstError(mapped);
+        if (mode === "outpatient" && !mapped.fields.patientId && !mapped.fields.recordId && (mapped.fields.careEpisodeId || mapped.fields.priceCode || mapped.fields.doctorId || mapped.fields.departmentId)) {
+          focusTarget.current = "recordId";
+        } else focusFirstError(mapped);
       }
 
       if (cause instanceof ApiRequestError && cause.code === "PRESCRIPTION_DUPLICATE_DRUG") {
@@ -332,35 +372,48 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
         <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "outpatient" ? "Chọn bệnh nhân, khoa và bác sĩ theo tên. Mã hồ sơ, lượt khám và giá thuốc phải được xác nhận từ nghiệp vụ nguồn." : "Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách."}
+          Chọn bệnh nhân, hồ sơ khám và bác sĩ phụ trách. Kiểm tra thông tin trước khi kê thuốc.
         </p>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <Field label="Mã hồ sơ bệnh án" htmlFor="recordId" error={validationErrors.fields.recordId} required>
-            <input id="recordId" {...field("recordId")} value={values.recordId} onChange={(event) => updateField("recordId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} placeholder="UUID hồ sơ" />
+          <Field label="Bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
+            <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="Tìm bệnh nhân theo tên" />
+            {!directory && <PharmacyIdentity kind="patient" id={values.patientId.trim()} />}
           </Field>
-          <Field label="Mã bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
-            <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="UUID bệnh nhân" />
-            <PharmacyIdentity kind="patient" id={values.patientId.trim()} showId={false} />
+          <Field label="Hồ sơ khám" htmlFor="recordId" error={validationErrors.fields.recordId} required hint="Chọn bệnh nhân trước để tìm hồ sơ khám.">
+            <ReferenceInput kind="record" scope={values.patientId} id="recordId" {...field("recordId")} value={values.recordId} onValueChange={(id) => updateField("recordId", id)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} placeholder="Tìm hồ sơ theo ngày khám, triệu chứng" />
           </Field>
-          <Field label="Mã bác sĩ" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
-            <ReferenceInput kind="doctor" scope={values.departmentId} id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="UUID bác sĩ" />
-            <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} showId={false} />
+          {mode === "legacy" && <>
+          <Field label="Khoa khám" htmlFor="departmentId" error={validationErrors.fields.departmentId} required>
+            <ReferenceInput kind="department" id="departmentId" {...field("departmentId")} value={values.departmentId} onValueChange={(id) => updateField("departmentId", id)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="Tìm khoa theo tên" />
+            {!directory && <PharmacyIdentity kind="department" id={values.departmentId.trim()} />}
           </Field>
-          <Field label="Mã khoa" htmlFor="departmentId" error={validationErrors.fields.departmentId} required>
-            <ReferenceInput kind="department" id="departmentId" {...field("departmentId")} value={values.departmentId} onValueChange={(id) => updateField("departmentId", id)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="UUID khoa" />
-            <PharmacyIdentity kind="department" id={values.departmentId.trim()} showId={false} />
+          <Field label="Bác sĩ kê đơn" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
+            <ReferenceInput kind="doctor" scope={values.departmentId} id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="Tìm bác sĩ theo tên" />
+            {!directory && <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} />}
           </Field>
+          </>}
           <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
             <input id="prescribedDate" type="date" max={today} {...field("prescribedDate")} value={values.prescribedDate} onChange={(event) => updateField("prescribedDate", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.prescribedDate))} />
           </Field>
-          {mode === "outpatient" && <>
-            <Field label="Mã lượt khám ngoại trú" htmlFor="careEpisodeId" error={validationErrors.fields.careEpisodeId} required>
-              <input id="careEpisodeId" {...field("careEpisodeId")} value={values.careEpisodeId} onChange={event => updateField("careEpisodeId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.careEpisodeId))} placeholder="UUID lượt khám đã xác nhận" />
-            </Field>
-            <Field label="Mã giá thuốc" htmlFor="priceCode" error={validationErrors.fields.priceCode} required hint="Dùng đúng mã trong danh mục giá được cấp cho lượt khám.">
-              <input id="priceCode" {...field("priceCode")} maxLength={64} value={values.priceCode} onChange={event => updateField("priceCode", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.priceCode))} />
-            </Field>
-          </>}
+          {mode === "outpatient" && <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm md:col-span-2" aria-live="polite">
+            {!values.recordId ? <p>Chọn hồ sơ khám. Hệ thống sẽ tự lấy bác sĩ, khoa và lượt khám liên quan.</p>
+              : !context ? <p role="status">Đang xác nhận thông tin hồ sơ khám…</p>
+              : context.error ? <div role="alert">{context.error} <Button type="button" variant="secondary" disabled={locked} onClick={() => { setContextResult(null); setContextRetry(value => value + 1); }}>Thử tải lại hồ sơ</Button></div>
+              : <div className="space-y-3">
+                <p className="font-medium text-success">Đã lấy thông tin kê đơn từ hồ sơ khám.</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div><p className="text-muted-foreground">Bác sĩ phụ trách</p><PharmacyIdentity kind="doctor" id={values.doctorId} /></div>
+                  <div><p className="text-muted-foreground">Khoa khám</p><PharmacyIdentity kind="department" id={values.departmentId} /></div>
+                </div>
+                {context.data && context.data.priceCodes.length > 1 && <Field label="Nhóm thu tiền thuốc" htmlFor="priceCode" error={validationErrors.fields.priceCode} required>
+                  <select id="priceCode" {...field("priceCode")} className={controlClassName} value={values.priceCode} onChange={event => updateField("priceCode", event.target.value)}>
+                    <option value="">Chọn nhóm thu đã cấu hình</option>
+                    {context.data.priceCodes.map(code => <option key={code} value={code}>{code}</option>)}
+                  </select>
+                </Field>}
+                <p className="text-muted-foreground">Lượt khám và thông tin thu tiền đã được hệ thống cung cấp. Giá từng thuốc lấy từ danh mục thuốc.</p>
+              </div>}
+          </div>}
         </div>
       </section>
 
@@ -372,6 +425,9 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
         drugOptions={drugLoading || drugSearchError ? [] : drugOptions}
         drugKeyword={drugKeyword}
         drugLoading={drugLoading}
+        drugPage={drugPage}
+        drugPageInfo={drugPageInfo}
+        onDrugPageChange={page => { if (!locked && !drugLoading) { setDrugSearchError(null); setDrugPage(page); } }}
         drugError={drugSearchError}
         onDrugKeywordChange={setDrugKeyword}
         onSearchDrugs={submitDrugSearch}
@@ -384,7 +440,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
         <Button
           type="submit"
           loading={submitting}
-          disabled={created}
+          disabled={created || (mode === "outpatient" && !context?.data)}
           variant="primary"
         >
           {created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}

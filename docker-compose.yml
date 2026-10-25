@@ -4,7 +4,7 @@
 # Chạy toàn bộ hệ thống chỉ với 1 lệnh:
 #
 #   docker compose up -d              # khởi động mọi thứ
-#   docker compose logs -f backend    # xem log backend
+#   docker compose logs -f pharmacy-service billing-service
 #   docker compose down               # tắt hết
 #
 # Hệ thống gồm:
@@ -213,6 +213,22 @@ services:
     networks:
       - mediflow-net
 
+  # Dedicated Docker store: preserve legacy mediflow_pharmacy without Flyway history.
+  # This idempotent provisioner also runs with existing PostgreSQL volumes, unlike
+  # /docker-entrypoint-initdb.d (which only runs on the very first PostgreSQL start).
+  pharmacy-db-init:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: postgres
+    entrypoint: ["psql", "--host=postgres", "--username=postgres", "--dbname=postgres", "--set=ON_ERROR_STOP=1", "--file=/ensure-pharmacy-database.sql"]
+    volumes:
+      - ./scripts/ensure-pharmacy-database.sql:/ensure-pharmacy-database.sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
   pharmacy-service:
     build:
       context: .
@@ -220,12 +236,15 @@ services:
       args:
         SERVICE_NAME: pharmacy-service
     container_name: mediflow-pharmacy
+    restart: unless-stopped
     ports:
       - "8085:8085"
     environment:
       SERVER_PORT: 8085
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy_docker
+      MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED: ${MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED:-true}
+      MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:-DRUG}
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
       SPRING_PROFILES_ACTIVE: outpatient-mvp
@@ -238,6 +257,8 @@ services:
       MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED:-false}
       MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE:-}
     depends_on:
+      pharmacy-db-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       rabbitmq:
@@ -254,6 +275,7 @@ services:
       args:
         SERVICE_NAME: billing-service
     container_name: mediflow-billing
+    restart: unless-stopped
     ports:
       - "8086:8086"
     environment:
@@ -264,7 +286,10 @@ services:
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
       SPRING_PROFILES_ACTIVE: outpatient-mvp
       MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED: ${MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED:-false}
-      MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:-}
+      # Optional local catalogue for the outpatient EXAM flow.
+      SPRING_APPLICATION_JSON: ${MEDIFLOW_BILLING_LOCAL_PRICING_JSON:-}
+      # Explicit local demo policy; the enabled prescription consumer requires it.
+      MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:-DRUG}
       MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED:-false}
       MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES:-}
       MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE:-}

@@ -26,8 +26,12 @@ export function ReportWorkspace({ outpatientEnabled = false }: { outpatientEnabl
   }
 
   return (
-    <PageShell title={reportViews[view].title} description="Số liệu tổng hợp từ Report.">
+    <PageShell title={reportViews[view].title} description="Theo dõi hoạt động khám bệnh, doanh thu và sử dụng thuốc.">
       {outpatientEnabled && <Link href="/reports/outpatient" className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline">Báo cáo ngoại trú</Link>}
+      <p className="mt-3 text-sm text-muted-foreground">Số liệu được tổng hợp từ các nghiệp vụ đã ghi nhận và có thể cập nhật chậm sau thao tác. Kỳ và khoa đang hiển thị được ghi ở từng kết quả.</p>
+      <aside aria-label="Giới hạn nguồn báo cáo" className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm">
+        Nguồn báo cáo hiện tại chưa được xác nhận bao phủ đầy đủ luồng khám ngoại trú. Số 0 hoặc danh sách trống chưa đủ để kết luận không có lượt khám, đơn thuốc hay doanh thu; hãy đối chiếu tại phân hệ nghiệp vụ.
+      </aside>
       <nav aria-label="Loại báo cáo" className="mt-4 flex flex-wrap gap-x-6 border-b border-border">
         {(Object.keys(reportViews) as ReportView[]).map((key) => {
           const next = new URLSearchParams(rawQuery); next.set("view", key);

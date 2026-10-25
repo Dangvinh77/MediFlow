@@ -26,8 +26,8 @@ describe("DailyReportView", () => {
     render(<DailyReportView />); submit();
     expect(screen.getByRole("alert")).toHaveTextContent("Ngày báo cáo là bắt buộc");
     date("2024-02-29");
-    fireEvent.change(screen.getByLabelText("Mã khoa (tùy chọn)"), { target: { value: "wrong" } }); submit();
-    expect(screen.getByRole("alert")).toHaveTextContent("UUID");
+    fireEvent.change(screen.getByLabelText("Khoa (tùy chọn)"), { target: { value: "wrong" } }); submit();
+    expect(screen.getByRole("alert")).toHaveTextContent("hợp lệ");
     expect(mocks.daily).not.toHaveBeenCalled();
   });
   it("does not auto-load an invalid deep link", () => {
@@ -38,8 +38,8 @@ describe("DailyReportView", () => {
     mocks.daily.mockResolvedValue({ ...zero, departmentId: department });
     render(<DailyReportView initialQuery={{ date: zero.reportDate, departmentId: department }} autoLoad />);
     expect(await screen.findByRole("heading", { name: "Báo cáo ngày 29/02/2024" })).toBeVisible();
-    expect(screen.getByText(department)).toBeVisible();
-    expect(screen.getByText(department).closest("p")).toHaveTextContent("Phạm vi:");
+    expect(screen.queryByText(department)).not.toBeInTheDocument();
+    expect(screen.getByText(/Phạm vi:/)).toBeVisible();
     expect(screen.getAllByRole("definition")).toHaveLength(4);
     for (const value of screen.getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
     date("2024-03-01");

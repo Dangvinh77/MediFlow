@@ -16,8 +16,15 @@ const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
 export const DRUG_CATALOG_PAGE_SIZES = [10, 20, 50] as const;
 export const DEFAULT_DRUG_CATALOG_PAGE_SIZE = 20;
 
+export const DRUG_CATALOG_FILTERS = {
+  ALL: "Tất cả thuốc", IN_STOCK: "Còn hàng", LOW_STOCK: "Tồn thấp",
+  OUT_OF_STOCK: "Hết hàng", EXPIRING_SOON: "Hết hạn trong 30 ngày", EXPIRED: "Đã hết hạn",
+} as const;
+export type DrugCatalogFilter = keyof typeof DRUG_CATALOG_FILTERS;
+
 export interface DrugCatalogQuery {
   keyword: string;
+  filter?: DrugCatalogFilter;
   page: number;
   size: number;
 }
@@ -48,6 +55,8 @@ export function parseDrugCatalogQuery(
 
   return {
     keyword: params.get("keyword")?.trim() ?? "",
+    ...(params.get("filter") && Object.hasOwn(DRUG_CATALOG_FILTERS, params.get("filter")!)
+      && params.get("filter") !== "ALL" ? { filter: params.get("filter") as DrugCatalogFilter } : {}),
     page: Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0,
     size,
   };
@@ -59,6 +68,8 @@ export function buildDrugCatalogQuery(query: DrugCatalogQuery): string {
     page: String(Math.max(0, query.page)),
     size: String(query.size),
   });
+
+  if (query.filter && query.filter !== "ALL") params.set("filter", query.filter);
 
   if (query.keyword) {
     params.set("keyword", query.keyword);

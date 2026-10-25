@@ -22,13 +22,13 @@ describe("DrugDetail", () => {
   beforeEach(() => { mocks.role = "PHARMACIST"; mocks.get.mockReset().mockResolvedValue(drug); mocks.adjust.mockReset(); mocks.router.replace.mockReset(); });
   it("rejects invalid IDs without HTTP", () => {
     render(<DrugDetail drugId="invalid" />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Mã thuốc không hợp lệ");
+    expect(screen.getByRole("alert")).toHaveTextContent("Đường dẫn thuốc không hợp lệ");
     expect(mocks.get).not.toHaveBeenCalled();
   });
   it("shows all server fields with a read-only doctor view", async () => {
     mocks.role = "DOCTOR"; render(<DrugDetail drugId={drug.drugId} />);
     expect(await screen.findByRole("heading", { name: "Thuốc A" })).toBeVisible();
-    expect(screen.getByText(drug.drugId)).toBeVisible();
+    expect(screen.getByText(drug.drugId)).not.toBeVisible();
     expect(screen.getByText("Nhà sản xuất A")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Lịch sử bản ghi" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Điều chỉnh tồn kho" })).not.toBeInTheDocument();

@@ -12,6 +12,8 @@ import type {
   DrugDTO,
   OutboxReplayResult,
   PrescriptionDTO,
+  PrescribingContextDTO,
+  PharmacyPatientIdentityDTO,
 } from "./types";
 
 // lib/api.ts prepends `/api`; feature APIs only declare the gateway resource path.
@@ -19,17 +21,36 @@ const BASE = "/v1/pharmacy";
 
 export interface DrugSearchParams {
   keyword?: string;
+  filter?: import("./utils").DrugCatalogFilter;
   page?: number;
   size?: number;
 }
 
 export const pharmacyApi = {
+  searchPatients(keyword: string, page = 0) {
+    const query = new URLSearchParams({ keyword, page: String(page), size: "20" });
+    return api.get<PageResult<PharmacyPatientIdentityDTO>>(`/v1/patients/directory/search?${query}`);
+  },
+  getPatientIdentity(id: string) {
+    return api.get<PharmacyPatientIdentityDTO>(`/v1/patients/directory/${encodeURIComponent(id)}`);
+  },
+  searchPrescriptions(params: { keyword?: string; patientId?: string; status?: string; page?: number; size?: number } = {}) {
+    const query = new URLSearchParams({ page: String(params.page ?? 0), size: String(params.size ?? 20) });
+    for (const key of ["keyword", "patientId", "status"] as const) {
+      if (params[key]?.trim()) query.set(key, params[key]!.trim());
+    }
+    return api.get<PageResult<PrescriptionDTO>>(`${BASE}/prescriptions?${query}`);
+  },
+  getPrescribingContext(recordId: string) {
+    return api.get<PrescribingContextDTO>(`${BASE}/prescriptions/prescribing/context?${new URLSearchParams({ recordId })}`);
+  },
   searchDrugs(params: DrugSearchParams = {}) {
     const query = new URLSearchParams({
       page: String(params.page ?? 0),
       size: String(params.size ?? 20),
     });
 
+    if (params.filter && params.filter !== "ALL") query.set("filter", params.filter);
     const keyword = params.keyword?.trim();
 
     if (keyword) {

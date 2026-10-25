@@ -17,7 +17,7 @@ function directory(): ReferenceDirectory {
   return { canSearch: () => true, search: vi.fn().mockResolvedValue({ items: [{ id: department, label: "Khoa Nội" }], hasMore: false }), resolve: vi.fn().mockResolvedValue("Khoa Nội") };
 }
 async function select() {
-  const input = screen.getByLabelText("Mã khoa (tùy chọn)");
+  const input = screen.getByLabelText("Khoa (tùy chọn)");
   fireEvent.change(input, { target: { value: "Nội" } });
   fireEvent.click(within(input.parentElement!).getByRole("button", { name: "Tìm lựa chọn" }));
   fireEvent.click(await screen.findByRole("button", { name: "Khoa Nội" }));
@@ -40,7 +40,7 @@ describe("Report shared department selection", () => {
   it("clears the selected scope when editing its label instead of sending a name as an ID", async () => {
     render(<ReferenceProvider directory={directory()}><DailyReportView initialQuery={{ date: "2024-02-29" }} /></ReferenceProvider>);
     await select();
-    fireEvent.change(screen.getByLabelText("Mã khoa (tùy chọn)"), { target: { value: "Ngoại" } });
+    fireEvent.change(screen.getByLabelText("Khoa (tùy chọn)"), { target: { value: "Ngoại" } });
     submit(); await waitFor(() => expect(mocks.daily).toHaveBeenCalledWith("2024-02-29", undefined));
   });
   it("preserves missing-data errors instead of manufacturing a zero report", async () => {
@@ -59,7 +59,7 @@ describe("Report shared department selection", () => {
         : <OutpatientReportView initialQuery={{ mode: "daily", fromDate: "2024-02-29", toDate: "2024-02-29", year: 2024 }} autoLoad={false} onQuerySubmit={onQuerySubmit} />;
     render(<ReferenceProvider directory={directory()}>{content}</ReferenceProvider>);
     await select();
-    fireEvent.submit(screen.getByLabelText("Mã khoa (tùy chọn)").closest("form")!);
+    fireEvent.submit(screen.getByLabelText("Khoa (tùy chọn)").closest("form")!);
     expect(onQuerySubmit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ departmentId: department }));
   });
 });

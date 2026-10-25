@@ -110,6 +110,25 @@ See [checkpoint 14](../huy-frontend-implementation-plan.md#14-checkpoint-kê-đ�
 
 ## Current UI baseline
 
+2026-10-25 patient-name follow-up: the primary prescription filter selects a patient by
+name and birth date, then sends `patientId` to the paged prescription API. The default view
+and “Xem tất cả” retain all prescriptions. Core's task-authorized minimal patient-directory
+endpoints supply exactly `maBenhNhan`, `hoTen`, `ngaySinh` for ADMIN/DOCTOR/PHARMACIST.
+Pharmacist patient labels also use that limited contract; staff/department permissions are
+unchanged. No client-side filtering of only the current prescription page is used.
+
+Verification: 278 Pharmacy frontend tests, typecheck, lint and Docker production build pass;
+Core 334 tests and Gateway 1561 tests pass. Public-Gateway role checks and a PHARMACIST browser
+search for Nguyễn Văn An Demo (12/04/1986) return the three existing prescriptions. Full patient
+profile access remains forbidden to PHARMACIST. The deployed containers are healthy.
+
+2026-10-25: the prescription landing page loads a paged list automatically, with patient-name
+selection, status filtering and detail links. Manual UUID lookup remains an optional shortcut.
+Outpatient creation selects patient and record; Pharmacy's prescribing-context read endpoint
+supplies the authoritative doctor, department, care episode and configured price choices.
+Changing patient clears the selected record and its context. Loading failures block submission
+and offer retry. PHARMACIST patient names now use the minimal Core directory described above.
+
 Pharmacy currently has the deepest frontend implementation: drug catalog/detail/create/stock
 adjustment; prescription create/lookup/detail; cancel and dispense actions; and an ADMIN outbox
 replay screen. Route gates distinguish catalog/detail access, pharmacist inventory actions, doctor
@@ -140,3 +159,12 @@ guards, and keep replay restricted to a known event ID and ADMIN UX gate.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, focused Pharmacy tests when available, and smoke
 test role-specific create/adjust/cancel/dispense/replay actions affected by the change.
+
+## Pharmacy usability follow-up — 2026-10-25
+
+The catalogue searches names and ingredients and filters on-hand stock/expiry across the full
+server result before pagination. Filters live in the URL and can be cleared together. Prescription
+list patient/status/page state survives detail navigation and browser Back. Patient selection is
+cleared with “Xem tất cả”. Drug selection during prescribing has pagination, preserves selected
+lines across pages, marks expired/empty stock, and shows expiry and an explicitly provisional total.
+The backend remains authoritative for stock, reservations and the final price.

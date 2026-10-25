@@ -14,10 +14,10 @@ const id = "00000000-0000-4000-8000-000000000001";
 const drug: DrugDTO = { drugId: id, drugName: "Paracetamol", unit: "Viên", price: 2500, stockQuantity: 20,
   activeIngredient: null, manufacturer: null, expiryDate: "2099-01-01", lowStockThreshold: 10, createdAt: "", updatedAt: "" };
 function fill(label: string, value: string) { fireEvent.change(screen.getByLabelText(label, { exact: false }), { target: { value } }); }
-function submit() { fireEvent.submit(screen.getByLabelText("Mã hồ sơ", { exact: false }).closest("form")!); }
+function submit() { fireEvent.submit(screen.getByLabelText("Hồ sơ khám", { exact: false }).closest("form")!); }
 async function validForm() {
   await screen.findByRole("option", { name: /Paracetamol/ });
-  for (const label of ["Mã bệnh nhân", "Mã khoa", "Mã bác sĩ", "Mã hồ sơ"]) fill(label, id);
+  for (const label of ["Bệnh nhân", "Khoa khám", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
   fill("Ngày kê đơn", "2024-02-29"); fill("Số lượng", "2"); fill("Cách dùng", " Sau ăn ");
   fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
 }
@@ -33,8 +33,8 @@ describe("CreatePrescriptionForm", () => {
   });
   it("focuses the first missing identifier and later the invalid drug selector", async () => {
     render(<CreatePrescriptionForm mode="legacy" />); submit();
-    await waitFor(() => expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toHaveFocus());
-    for (const label of ["Mã bệnh nhân", "Mã khoa", "Mã bác sĩ", "Mã hồ sơ"]) fill(label, id);
+    await waitFor(() => expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveFocus());
+    for (const label of ["Bệnh nhân", "Khoa khám", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
     submit();
     await waitFor(() => expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveFocus());
     expect(mocks.create).not.toHaveBeenCalled();
@@ -52,6 +52,21 @@ describe("CreatePrescriptionForm", () => {
     expect(await screen.findByText(/Giá tham khảo:.*2.500/)).toBeVisible();
     expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveValue(id);
   });
+  it("browses more than twenty drugs without losing selected lines and blocks unavailable choices", async () => {
+    mocks.search.mockResolvedValueOnce({ content: [drug], number: 0, totalPages: 2, totalElements: 21 })
+      .mockResolvedValueOnce({ content: [
+        { ...drug, drugId: "00000000-0000-4000-8000-000000000002", drugName: "Hết hàng", stockQuantity: 0 },
+        { ...drug, drugId: "00000000-0000-4000-8000-000000000003", drugName: "Hết hạn", expiryDate: "2000-01-01" },
+      ], number: 1, totalPages: 2, totalElements: 21 });
+    render(<CreatePrescriptionForm mode="legacy" />); await validForm();
+    expect(screen.getByText(/Tổng tiền tham khảo/)).toHaveTextContent("5.000");
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    await waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith({ keyword: "", page: 1, size: 20 }));
+    expect(await screen.findByRole("option", { name: /^Hết hàng/ })).toBeDisabled();
+    expect(screen.getByRole("option", { name: /^Hết hạn/ })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveValue(id);
+    expect(screen.getByLabelText("Số lượng", { exact: false })).toHaveValue(2);
+  });
   it("sends one V0 command, disables editing while pending and navigates by the returned ID", async () => {
     let resolve!: (value: { prescriptionId: string }) => void;
     mocks.create.mockReturnValue(new Promise(done => { resolve = done; }));
@@ -60,7 +75,7 @@ describe("CreatePrescriptionForm", () => {
     expect(mocks.create).toHaveBeenCalledTimes(1);
     expect(mocks.create).toHaveBeenCalledWith({ recordId: id, patientId: id, doctorId: id, departmentId: id,
       prescribedDate: "2024-02-29", lines: [{ drugId: id, quantity: 2, dosage: "Sau ăn" }] });
-    expect(screen.getByLabelText("Mã bác sĩ", { exact: false })).toBeDisabled();
+    expect(screen.getByLabelText("Bác sĩ kê đơn", { exact: false })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Thêm dòng thuốc" })).toBeDisabled();
     await act(async () => resolve({ prescriptionId: "server-prescription" }));
     expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/prescriptions/server-prescription");
@@ -70,13 +85,13 @@ describe("CreatePrescriptionForm", () => {
     render(<CreatePrescriptionForm mode="legacy" />); await validForm(); submit();
     const target = field.endsWith("drugId") ? screen.getByRole("combobox", { name: /^Thuốc/ }) : screen.getByLabelText("Số lượng", { exact: false });
     await waitFor(() => expect(target).toHaveFocus()); expect(target).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByText(/rx-validation/)).toBeVisible(); expect(screen.getByLabelText("Mã bác sĩ", { exact: false })).toHaveValue(id);
+    expect(screen.getByText(/rx-validation/)).toBeVisible(); expect(screen.getByLabelText("Bác sĩ kê đơn", { exact: false })).toHaveValue(id);
   });
   it("explains signed prescriber denial without guessing account/staff mapping", async () => {
     mocks.create.mockRejectedValue(new ApiRequestError("Denied", 403, "PRESCRIPTION_CREATION_FORBIDDEN", [], "identity-rx"));
     render(<CreatePrescriptionForm mode="legacy" />); await validForm(); submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("bác sĩ kê đơn");
-    expect(screen.getByRole("alert")).toHaveTextContent("identity-rx"); expect(screen.getByLabelText("Mã bác sĩ", { exact: false })).toHaveValue(id);
+    expect(screen.getByRole("alert")).toHaveTextContent("identity-rx"); expect(screen.getByLabelText("Bác sĩ kê đơn", { exact: false })).toHaveValue(id);
   });
   it.each([new TypeError("Failed to fetch"), new ApiRequestError("Unavailable", 502), new ApiRequestError("Empty payload", 200)])("keeps intent and warns of an unknown create outcome without replay", async cause => {
     mocks.create.mockRejectedValue(cause); render(<CreatePrescriptionForm mode="legacy" />); await validForm(); submit();
@@ -101,7 +116,7 @@ describe("CreatePrescriptionForm", () => {
     mocks.search.mockReturnValueOnce(new Promise(done => { resolve = done; })).mockResolvedValueOnce({ content: [] });
     render(<CreatePrescriptionForm mode="legacy" />); fill("Tìm thuốc trong danh mục", "Khác");
     fireEvent.keyDown(screen.getByLabelText("Tìm thuốc trong danh mục"), { key: "Enter" });
-    await screen.findByText(/Chưa có thuốc trong lựa chọn/);
+    await screen.findByText(/Không có thuốc phù hợp/);
     await act(async () => resolve({ content: [drug] }));
     expect(screen.queryByRole("option", { name: /Paracetamol/ })).not.toBeInTheDocument();
   });

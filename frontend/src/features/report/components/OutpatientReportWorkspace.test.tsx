@@ -46,8 +46,8 @@ describe("Outpatient report workspace", () => {
     const result = await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
     expect(mocks.daily).toHaveBeenCalledWith("2024-02-29", "2024-02-29", undefined);
     expect(mocks.monthly).not.toHaveBeenCalled();
-    expect(within(result).getByText(department)).toBeVisible();
-    expect(within(result).getByText(department).closest("p")).toHaveTextContent("Phạm vi:");
+    expect(within(result).queryByText(department)).not.toBeInTheDocument();
+    expect(within(result).getByText(/Phạm vi:/)).toBeVisible();
     expect(within(result).getByText("Tiền tệ: VND · Múi giờ: Asia/Bangkok")).toBeVisible();
     expect(within(result).getByText("Đã đối soát")).toBeVisible();
     expect(within(result).getByText("Dữ liệu nguồn cập nhật").nextElementSibling).toHaveTextContent("07:00");

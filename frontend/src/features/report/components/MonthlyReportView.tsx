@@ -34,6 +34,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
   const [month, setMonth] = useState(Number.isFinite(initial.month) ? String(initial.month) : "");
   const [year, setYear] = useState(Number.isFinite(initial.year) ? String(initial.year) : "");
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
+  const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
   const form = useRef<HTMLFormElement>(null);
@@ -59,20 +60,37 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
 
   return (
     <section className="mt-6" aria-label="Báo cáo tháng" aria-busy={loading}>
-      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_auto] xl:items-end">
+      <div className="mb-3 flex flex-wrap gap-2" aria-label="Chọn nhanh tháng báo cáo">
+        {[0, 1].map(offset => <Button type="button" key={offset} onClick={() => {
+          const day = new Date(); day.setDate(1); day.setMonth(day.getMonth() - offset);
+          setMonth(String(day.getMonth() + 1)); setYear(String(day.getFullYear())); setValidationError(null);
+        }}>{offset === 0 ? "Tháng này" : "Tháng trước"}</Button>)}
+      </div>
+      <form ref={form} onSubmit={submit} noValidate className="grid items-end gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_auto]">
         <Field label="Tháng" htmlFor="report-month">
-          <input id="report-month" type="number" min={1} max={12} step={1} value={month} onChange={(event) => { setMonth(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+          <select id="report-month" value={month} onChange={(event) => { setMonth(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName}>
+            {!month && <option value="">Chọn tháng</option>}
+            {Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={String(i + 1)}>Tháng {i + 1}</option>)}
+          </select>
         </Field>
         <Field label="Năm" htmlFor="report-year">
           <input id="report-year" type="number" min={2000} max={2100} step={1} value={year} onChange={(event) => { setYear(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
-        <Field label="Mã khoa (tùy chọn)" htmlFor="monthly-department">
-          <ReferenceInput kind="department" id="monthly-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        <Field label="Khoa (tùy chọn)" htmlFor="monthly-department">
+          <ReferenceInput key={scopeReset} kind="department" id="monthly-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Tìm khoa theo tên" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger sm:col-span-2 xl:col-span-4">{validationError}</p>}
       </form>
+      {state.status === "success" && (Number(month) !== state.data.month || Number(year) !== state.data.year || (departmentId.trim() || null) !== (state.data.departmentId || null)) &&
+        <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+          Bạn đã đổi bộ lọc. Bấm xem báo cáo để cập nhật; kết quả bên dưới vẫn thuộc kỳ và khoa đã tải trước đó.
+        </p>}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span>Để trống khoa để xem toàn bệnh viện.</span>
+        <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
+      </div>
       <ReportRequestFeedback state={state} idle="Chọn tháng, năm và khoa để xem báo cáo." loading="Đang tải báo cáo tháng…" onRetry={retry} />
       {state.status === "success" && (
         <div className="mt-6">

@@ -33,8 +33,8 @@ describe("TopMedicinesView", () => {
   it("rejects reversed dates and invalid department UUID", () => {
     render(<TopMedicinesView initialQuery={query} />); change("Từ ngày", "2024-03-01"); submit();
     expect(screen.getByRole("alert")).toHaveTextContent("Ngày bắt đầu");
-    change("Từ ngày", query.fromDate); change("Mã khoa (tùy chọn)", "invalid"); submit();
-    expect(screen.getByRole("alert")).toHaveTextContent("UUID");
+    change("Từ ngày", query.fromDate); change("Khoa (tùy chọn)", "invalid"); submit();
+    expect(screen.getByRole("alert")).toHaveTextContent("hợp lệ");
     expect(mocks.topMedicines).not.toHaveBeenCalled();
   });
   it("preserves server ranking, names, exact IDs and quantities without inventing a unit or currency", async () => {
@@ -43,7 +43,7 @@ describe("TopMedicinesView", () => {
     expect(await screen.findByText("1.234")).toBeVisible();
     const rows = screen.getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent(items[0].drugName); expect(rows[1]).toHaveTextContent(items[1].drugName);
-    expect(rows[0]).toHaveTextContent(items[0].drugId);
+    expect(rows[0]).not.toHaveTextContent(items[0].drugId);
     expect(screen.queryByText(/VND|Viên/)).not.toBeInTheDocument();
     change("Đến ngày", "2024-03-31");
     expect(screen.getByText("Từ 01/02/2024 đến 29/02/2024 · Tối đa 10 kết quả")).toBeVisible();

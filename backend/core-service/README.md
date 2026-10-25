@@ -1,5 +1,16 @@
 # Core Service
 
+## Minimal patient directory for prescriptions — 2026-10-25
+
+Task-authorized Core/Gateway addition: ADMIN, DOCTOR and PHARMACIST can read
+`GET /api/v1/patients/directory/search?keyword=...&page=0&size=20` and
+`GET /api/v1/patients/directory/{id}`. These return only `maBenhNhan`, `hoTen` and
+`ngaySinh`, inside the existing paged/single ApiResponse envelope, with correlation
+and `Cache-Control: no-store`. Search reuses Patient's owned read use case and pagination.
+The prescription UI selects the exact patient before filtering Pharmacy's prescriptions;
+equal names are disambiguated by date of birth. Existing full-profile search/detail and
+mutation roles remain in force; PHARMACIST does not gain access to those endpoints.
+
 ## Organization directory and own unit — 2026-10-23
 
 `GET /api/v1/org/staff` accepts optional `keyword` (trimmed, at most 100 characters)

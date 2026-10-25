@@ -32,6 +32,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
   const [toDate, setToDate] = useState(initialTo);
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
   const [limit, setLimit] = useState(Number.isFinite(initialLimit) ? String(initialLimit) : "");
+  const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
   const form = useRef<HTMLFormElement>(null);
@@ -61,15 +62,21 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
 
   return (
     <section className="mt-6" aria-label="Thuốc xuất nhiều" aria-busy={loading}>
-      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.6fr)_auto] xl:items-end">
+      <div className="mb-3 flex flex-wrap gap-2" aria-label="Chọn nhanh khoảng ngày">
+        {[1, 7, 30].map(days => <Button type="button" key={days} onClick={() => {
+          const end = new Date(), start = new Date(); start.setDate(start.getDate() - days + 1);
+          setFromDate(localReportDate(start)); setToDate(localReportDate(end)); setValidationError(null);
+        }}>{days === 1 ? "Hôm nay" : `${days} ngày gần đây`}</Button>)}
+      </div>
+      <form ref={form} onSubmit={submit} noValidate className="grid items-end gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.6fr)_auto]">
         <Field label="Từ ngày" htmlFor="medicine-from">
           <input id="medicine-from" type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
         <Field label="Đến ngày" htmlFor="medicine-to">
           <input id="medicine-to" type="date" value={toDate} onChange={(event) => { setToDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
-        <Field label="Mã khoa (tùy chọn)" htmlFor="medicine-department">
-          <ReferenceInput kind="department" id="medicine-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        <Field label="Khoa (tùy chọn)" htmlFor="medicine-department">
+          <ReferenceInput key={scopeReset} kind="department" id="medicine-department" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Tìm khoa theo tên" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Field label="Số kết quả" htmlFor="medicine-limit">
@@ -78,6 +85,14 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
         <Button type="submit" variant="primary" loading={loading}>Xem xếp hạng</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger sm:col-span-2 xl:col-span-5">{validationError}</p>}
       </form>
+      {state.status === "success" && (fromDate !== state.data.query.fromDate || toDate !== state.data.query.toDate || Number(limit) !== state.data.query.limit || (departmentId.trim() || null) !== (state.data.query.departmentId || null)) &&
+        <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+          Bạn đã đổi bộ lọc. Bấm xem báo cáo để cập nhật; kết quả bên dưới vẫn thuộc kỳ và khoa đã tải trước đó.
+        </p>}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span>Để trống khoa để xem toàn bệnh viện.</span>
+        <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
+      </div>
       <ReportRequestFeedback state={state} idle="Chọn khoảng ngày để xem xếp hạng thuốc." loading="Đang tải xếp hạng thuốc…" onRetry={retry} />
       {state.status === "success" && (
         <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5">
@@ -91,7 +106,6 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
                   <span aria-label={`Hạng ${index + 1}`} className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-medium">{item.drugName}</p>
-                    <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{item.drugId}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <strong className="tabular-nums">{item.totalQuantity.toLocaleString("vi-VN")}</strong>

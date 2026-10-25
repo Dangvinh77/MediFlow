@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDecimal, formatLocalDate } from "@/lib/format";
 import { reportApi } from "../api";
 import { useReportRequest } from "../useReportRequest";
-import { validateDailyReportQuery, type DailyReportQuery } from "../validation";
+import { localReportDate, validateDailyReportQuery, type DailyReportQuery } from "../validation";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
 import { ReportSessionBoundary } from "./ReportSessionBoundary";
 
@@ -29,6 +29,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
   const initialDepartment = initialQuery?.departmentId;
   const [date, setDate] = useState(initialDate);
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
+  const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
   const form = useRef<HTMLFormElement>(null);
@@ -52,17 +53,30 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
 
   return (
     <section className="mt-6" aria-label="Báo cáo ngày" aria-busy={loading}>
-      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-end">
+      <div className="mb-3 flex flex-wrap gap-2" aria-label="Chọn nhanh ngày báo cáo">
+        {[0, 1].map(offset => <Button type="button" key={offset} onClick={() => {
+          const day = new Date(); day.setDate(day.getDate() - offset); setDate(localReportDate(day)); setValidationError(null);
+        }}>{offset === 0 ? "Hôm nay" : "Hôm qua"}</Button>)}
+      </div>
+      <form ref={form} onSubmit={submit} noValidate className="grid items-end gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto]">
         <Field label="Ngày báo cáo" htmlFor="report-date">
           <input id="report-date" type="date" value={date} required onChange={(event) => { setDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>
-        <Field label="Mã khoa (tùy chọn)" htmlFor="report-department-id">
-          <ReferenceInput kind="department" id="report-department-id" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        <Field label="Khoa (tùy chọn)" htmlFor="report-department-id">
+          <ReferenceInput key={scopeReset} kind="department" id="report-department-id" value={departmentId} onValueChange={(id) => { setDepartmentId(id); setValidationError(null); }} placeholder="Tìm khoa theo tên" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
           {departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}
         </Field>
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger md:col-span-3">{validationError}</p>}
       </form>
+      {state.status === "success" && (date !== state.data.reportDate || (departmentId.trim() || null) !== (state.data.departmentId || null)) &&
+        <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+          Bạn đã đổi bộ lọc. Bấm xem báo cáo để cập nhật; kết quả bên dưới vẫn thuộc kỳ và khoa đã tải trước đó.
+        </p>}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span>Để trống khoa để xem toàn bệnh viện.</span>
+        <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
+      </div>
       <ReportRequestFeedback state={state} idle="Chọn ngày để xem báo cáo hàng ngày." loading="Đang tải báo cáo…" onRetry={retry} />
       {state.status === "success" && (
         <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5">

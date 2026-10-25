@@ -17,11 +17,11 @@ function view(id = first) {
 }
 describe("Pharmacy public identity display", () => {
   beforeEach(() => { mocks.get.mockReset(); localStorage.clear(); storeSession({ accessToken: "test", refreshToken: "test-refresh", role: "DOCTOR" }); });
-  it("deduplicates lookups and uses Patient hoTen with the exact ID still visible", async () => {
+  it("deduplicates lookups and uses Patient hoTen without exposing internal IDs by default", async () => {
     mocks.get.mockResolvedValue({ maBenhNhan: first, hoTen: "Nguyễn An" });
     render(view());
     expect(await screen.findAllByText("Nguyễn An")).toHaveLength(2);
-    expect(screen.getAllByText(first)).toHaveLength(2);
+    expect(screen.queryByText(first)).not.toBeInTheDocument();
     expect(mocks.get).toHaveBeenCalledExactlyOnceWith(`/v1/patients/${first}`);
   });
   it("resolves staff and department names without account/service lookups", async () => {
@@ -36,30 +36,37 @@ describe("Pharmacy public identity display", () => {
       ? { maBenhNhan: first, hoTen: "Nguyễn An" }
       : path.includes("staff") ? { staffId: second, fullName: "Bác sĩ Bình" }
         : { departmentId: first, departmentName: "Khoa Nội" }));
-    render(<CreatePrescriptionForm />);
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân", { exact: false }), { target: { value: first } });
-    fireEvent.change(screen.getByLabelText("Mã khoa", { exact: false }), { target: { value: first } });
-    fireEvent.change(screen.getByLabelText("Mã bác sĩ", { exact: false }), { target: { value: second } });
+    render(<CreatePrescriptionForm mode="legacy" />);
+    fireEvent.change(screen.getByLabelText("Bệnh nhân", { exact: false }), { target: { value: first } });
+    fireEvent.change(screen.getByLabelText("Khoa khám", { exact: false }), { target: { value: first } });
+    fireEvent.change(screen.getByLabelText("Bác sĩ kê đơn", { exact: false }), { target: { value: second } });
     expect(await screen.findByText("Nguyễn An")).toBeVisible();
     expect(await screen.findByText("Bác sĩ Bình")).toBeVisible();
     expect(await screen.findByText("Khoa Nội")).toBeVisible();
-    expect(screen.getByLabelText("Mã bệnh nhân", { exact: false })).toHaveValue(first);
-    expect(screen.getByLabelText("Mã bác sĩ", { exact: false })).toHaveValue(second);
-    expect(screen.getByLabelText("Mã khoa", { exact: false })).toHaveValue(first);
+    expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveValue(first);
+    expect(screen.getByLabelText("Bác sĩ kê đơn", { exact: false })).toHaveValue(second);
+    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue(first);
     expect(mocks.get).toHaveBeenCalledTimes(3);
   });
-  it("does not issue unauthorized PHARMACIST requests", async () => {
+  it("uses only the minimal patient directory for PHARMACIST", async () => {
     storeSession({ accessToken: "pharmacist", refreshToken: "refresh", role: "PHARMACIST" });
+    mocks.get.mockResolvedValue({ maBenhNhan: first, hoTen: "Nguyễn An", ngaySinh: "1990-01-01" });
     render(view());
+    expect(await screen.findAllByText("Nguyễn An · 01/01/1990")).toHaveLength(2);
+    expect(mocks.get).toHaveBeenCalledExactlyOnceWith(`/v1/patients/directory/${first}`);
+    expect(screen.queryByText(first)).not.toBeInTheDocument();
+  });
+  it("keeps staff and department lookups closed for PHARMACIST", async () => {
+    storeSession({ accessToken: "pharmacist", refreshToken: "refresh", role: "PHARMACIST" });
+    render(<PharmacySessionBoundary><PharmacyIdentity kind="doctor" id={first} /><PharmacyIdentity kind="department" id={second} /></PharmacySessionBoundary>);
     expect(await screen.findAllByText("Tài khoản chưa được cấp quyền tra cứu tên")).toHaveLength(2);
     expect(mocks.get).not.toHaveBeenCalled();
-    expect(screen.getAllByText(first)).toHaveLength(2);
   });
-  it.each([403, 404, 503])("keeps IDs and honest fallback for HTTP %s", async status => {
+  it.each([403, 404, 503])("keeps an honest fallback without exposing IDs for HTTP %s", async status => {
     mocks.get.mockRejectedValue(new ApiRequestError("failure", status));
     render(view());
     await waitFor(() => expect(screen.queryAllByText("Đang tra cứu tên…")).toHaveLength(0));
-    expect(screen.getAllByText(first)).toHaveLength(2);
+    expect(screen.queryByText(first)).not.toBeInTheDocument();
     expect(screen.queryByText("Nguyễn An")).not.toBeInTheDocument();
   });
   it("rejects a mismatched authority response and retries an unavailable lookup", async () => {

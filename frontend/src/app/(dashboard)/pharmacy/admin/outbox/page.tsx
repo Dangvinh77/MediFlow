@@ -4,15 +4,15 @@ import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageSh
 import { OutboxReplayForm } from "@/features/pharmacy/components/outbox/OutboxReplayForm";
 
 export const metadata: Metadata = {
-  title: "Outbox Pharmacy | MediFlow",
+  title: "Khôi phục đồng bộ dữ liệu | MediFlow",
 };
 
 /** Route công cụ replay một outbox event theo eventId đã biết. */
 export default function OutboxReplayPage() {
   return (
     <PharmacyPageShell
-      title="Outbox Pharmacy"
-      description="Công cụ dành cho ADMIN để replay event theo mã đã biết."
+      title="Khôi phục đồng bộ dữ liệu"
+      description="Công cụ bảo trì dành cho quản trị hệ thống. Chỉ sử dụng khi đã xác định được bản tin cần gửi lại."
     >
       <RoleGate allowed={["ADMIN"]}>
         <OutboxReplayForm />

@@ -6,6 +6,8 @@ import { api, ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { getSessionKey } from "@/lib/session";
 import { isUuid } from "../utils";
+import type { PharmacyPatientIdentityDTO } from "../types";
+import { formatLocalDate } from "@/lib/format";
 
 type Kind = "patient" | "doctor" | "department";
 type Result = { name: string } | { error: string };
@@ -36,11 +38,14 @@ export function PharmacyIdentityProvider({ children }: { children: ReactNode }) 
     const cache = new Map<string, Promise<Result>>();
     return (kind: Kind, id: string, attempt: number) => {
       if (!session || getSessionKey() !== session || getRole() !== role) return Promise.resolve({ error: "Phiên tra cứu đã thay đổi" });
-      if (role !== "ADMIN" && role !== "DOCTOR") return Promise.resolve({ error: "Tài khoản chưa được cấp quyền tra cứu tên" });
+      if (role !== "ADMIN" && role !== "DOCTOR" && !(role === "PHARMACIST" && kind === "patient")) return Promise.resolve({ error: "Tài khoản chưa được cấp quyền tra cứu tên" });
       const key = `${kind}:${id.toLowerCase()}:${attempt}`;
       let request = cache.get(key);
       if (!request) {
-        request = (directory ? directory.resolve(kind, id).then(name => {
+        request = (role === "PHARMACIST" && kind === "patient" ? api.get<PharmacyPatientIdentityDTO>(`/v1/patients/directory/${encodeURIComponent(id)}`).then(patient => {
+          if (patient.maBenhNhan.toLowerCase() !== id.toLowerCase() || !patient.hoTen.trim()) throw new Error("Identity label unavailable");
+          return `${patient.hoTen} · ${formatLocalDate(patient.ngaySinh)}`;
+        }) : directory ? directory.resolve(kind, id).then(name => {
           if (!name?.trim()) throw new Error("Identity label unavailable");
           return name;
         }) : readName(kind, id)).then(name => ({ name }), (cause: unknown) => {
@@ -55,7 +60,7 @@ export function PharmacyIdentityProvider({ children }: { children: ReactNode }) 
   return <IdentityContext.Provider value={lookup}>{children}</IdentityContext.Provider>;
 }
 
-export function PharmacyIdentity({ kind, id, showId = true }: { kind: Kind; id: string | null; showId?: boolean }) {
+export function PharmacyIdentity({ kind, id, showId = false }: { kind: Kind; id: string | null; showId?: boolean }) {
   const lookup = useContext(IdentityContext);
   const [attempt, setAttempt] = useState(0);
   const key = `${kind}:${id}:${attempt}`;
@@ -71,7 +76,7 @@ export function PharmacyIdentity({ kind, id, showId = true }: { kind: Kind; id: 
   const result = resolved?.key === key ? resolved.result : null;
   return <span className="block min-w-0 text-sm" aria-live="polite">
     <span className="block break-words">{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên…"}</span>
-    {showId && <code className="block break-all text-xs text-muted-foreground">{id}</code>}
+    {showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu</summary><code className="block break-all">{id}</code></details>}
     {result && "error" in result && result.error === "Chưa tải được tên" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu tên lại</button>}
   </span>;
 }

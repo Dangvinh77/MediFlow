@@ -41,7 +41,7 @@ export function ReportDepartmentProvider({ children }: { children: ReactNode }) 
   return <DepartmentContext.Provider value={lookup}>{children}</DepartmentContext.Provider>;
 }
 
-export function ReportDepartmentName({ id, showId = true }: { id?: string | null; showId?: boolean }) {
+export function ReportDepartmentName({ id, showId = false }: { id?: string | null; showId?: boolean }) {
   const lookup = useContext(DepartmentContext);
   const [attempt, setAttempt] = useState(0);
   const [resolved, setResolved] = useState<{ key: string; result: Result } | null>(null);
@@ -53,11 +53,11 @@ export function ReportDepartmentName({ id, showId = true }: { id?: string | null
     return () => { active = false; clearTimeout(timer); };
   }, [id, lookup, attempt, key]);
   if (!id) return <span>Toàn bệnh viện</span>;
-  if (!uuid.test(id)) return <span className="break-all">{id}</span>;
+  if (!uuid.test(id)) return <span>Thông tin khoa không hợp lệ</span>;
   const result = resolved?.key === key ? resolved.result : null;
   return <span className="inline-block align-top" aria-live="polite">
     <span className="block break-words">{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên khoa…"}</span>
-    {showId && <code className="block break-all text-xs text-muted-foreground">{id}</code>}
+    {showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu</summary><code className="block break-all">{id}</code></details>}
     {result && "error" in result && result.error === "Chưa tải được tên khoa" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu tên khoa lại</button>}
   </span>;
 }

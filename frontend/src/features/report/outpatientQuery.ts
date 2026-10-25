@@ -30,7 +30,7 @@ export function validateOutpatientQuery(query: OutpatientReportQuery): Outpatien
   } else if (!Number.isInteger(query.year) || query.year < 2000 || query.year > 2100) {
     errors.year = "Năm phải là số nguyên từ 2000 đến 2100.";
   }
-  if (query.departmentId && !isUuid(query.departmentId)) errors.departmentId = "Mã khoa phải là UUID hợp lệ.";
+  if (query.departmentId && !isUuid(query.departmentId)) errors.departmentId = "Vui lòng chọn khoa hợp lệ.";
   return errors;
 }
 
