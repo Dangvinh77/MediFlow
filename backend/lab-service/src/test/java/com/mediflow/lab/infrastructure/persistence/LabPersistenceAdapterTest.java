@@ -81,6 +81,7 @@ class LabPersistenceAdapterTest {
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired ObjectMapper objectMapper;
+    @Autowired jakarta.persistence.EntityManager entityManager;
 
     @Test
     void cancellationRoundTripRetainsAuditAndCancellationOutbox() {
@@ -232,6 +233,35 @@ class LabPersistenceAdapterTest {
         } finally {
             jdbcTemplate.update("DELETE FROM lab_test WHERE test_id = ?", test.getTestId());
         }
+    }
+
+    @Test
+    void clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence() throws Exception {
+        LabTest test = tests.save(v2Test(UUID.randomUUID()));
+        Instant granted = Instant.parse("2026-10-24T16:23:49.467347200Z");
+        Instant expiry = granted.plusSeconds(3600);
+        LabFinancialClearance g = clearanceFor(test, UUID.randomUUID(), UUID.randomUUID());
+        LabFinancialClearance source = LabFinancialClearance.grant(g.clearanceTargetId(), g.clearanceId(),
+                g.eventId(), g.invoiceId(), g.accountId(), g.testId(), g.patientId(), g.careEpisodeType(),
+                g.careEpisodeId(), g.purpose(), g.amount(), g.currency(), expiry, false, granted);
+        byte[] raw = objectMapper.writeValueAsBytes(java.util.Map.of("eventId", g.eventId(),
+                "eventType", "financial.clearance.granted", "occurredAt", granted.toString(),
+                "payload", java.util.Map.of("clearanceId", g.clearanceId(), "expiresAt", expiry.toString())));
+        var claim = new com.mediflow.lab.messaging.consumer.inbox.InboxEvidenceFactory(objectMapper)
+                .create("lab-test-clearance", "financial.clearance.granted", g.eventId(),
+                        "lab:financial-clearance:v1:" + g.clearanceId(), raw);
+        new com.mediflow.lab.infrastructure.persistence.adapter.ConsumerInboxPersistenceAdapter(jdbcTemplate)
+                .claim(claim);
+        clearances.claimAndSave(g.eventId(), List.of(source));
+        // Force the database round trip, including PostgreSQL's microsecond precision loss.
+        entityManager.clear();
+        jdbcTemplate.execute("SET LOCAL TIME ZONE 'UTC'");
+        assertThat(jdbcTemplate.queryForObject("SELECT granted_at FROM lab_financial_clearance WHERE test_id=?",
+                java.sql.Timestamp.class, test.getTestId()).toInstant()).isNotEqualTo(granted);
+        assertThat(clearances.findLatestByTestId(test.getTestId())).get().satisfies(restored -> {
+            assertThat(restored.grantedAt()).isEqualTo(granted);
+            assertThat(restored.expiresAt()).isEqualTo(expiry);
+        });
     }
 
     @Test

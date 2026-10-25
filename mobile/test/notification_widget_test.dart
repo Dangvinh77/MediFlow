@@ -17,14 +17,16 @@ import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 class NotificationReferences implements ReferenceReader {
   @override
   Future<ReferenceOption> read(ReferenceKind kind, String id) async =>
-      ReferenceOption(id:id, name:'Nguyễn An');
+      ReferenceOption(id: id, name: 'Nguyễn An');
   @override
   Future<ReferencePage> search(
     ReferenceKind kind, {
     String query = '',
     int page = 0,
     String? scope,
-  }) async => ReferencePage([ReferenceOption(id:patientId, name:'Nguyễn An')], hasMore:false);
+  }) async => ReferencePage([
+    ReferenceOption(id: patientId, name: 'Nguyễn An'),
+  ], hasMore: false);
 }
 
 class _SwitchableSessionHost extends StatefulWidget {

@@ -29,10 +29,21 @@ class Session {
   String? get staffId => _referenceClaim('staffId');
   String? _referenceClaim(String key) {
     try {
-      final claims=jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(accessToken.split('.')[1]))));
-      final value=claims is Map ? claims[key] : null;
-      return value is String && RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(value) ? value : null;
-    } catch (_) {return null;}
+      final claims = jsonDecode(
+        utf8.decode(
+          base64Url.decode(base64Url.normalize(accessToken.split('.')[1])),
+        ),
+      );
+      final value = claims is Map ? claims[key] : null;
+      return value is String &&
+              RegExp(
+                r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+              ).hasMatch(value)
+          ? value
+          : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   // UX expiry check only. Gateway remains the signature/authority verifier.

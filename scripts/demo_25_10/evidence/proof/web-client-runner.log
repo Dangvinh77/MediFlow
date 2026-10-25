@@ -1,0 +1,98 @@
+v24.19.0
+Already up to date
+Done in 173ms using pnpm v11.8.0
+$ tsc --noEmit
+Already up to date
+Done in 69ms using pnpm v11.8.0
+$ eslint
+Already up to date
+Done in 78ms using pnpm v11.8.0
+
+ RUN  v4.1.11 E:/DEV/Coding_Resource/Project/e_PROJECT/Semester4/Source/frontend
+
+Not implemented: navigation to another Document
+
+ Test Files  101 passed (101)
+      Tests  949 passed (949)
+   Start at  23:57:31
+   Duration  354.95s (transform 17.65s, setup 112.35s, import 47.17s, tests 217.49s, environment 256.83s)
+
+Already up to date
+Done in 200ms using pnpm v11.8.0
+$ next build
+▲ Next.js 16.2.11 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 22.1s
+  Running TypeScript ...
+  Finished TypeScript in 44s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/33) ...
+  Generating static pages using 11 workers (8/33)
+  Generating static pages using 11 workers (16/33)
+  Generating static pages using 11 workers (24/33)
+✓ Generating static pages using 11 workers (33/33) in 3.4s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /appointments
+├ ƒ /appointments/[appointmentId]
+├ ƒ /appointments/[appointmentId]/edit
+├ ○ /appointments/new
+├ ○ /billing
+├ ƒ /billing/[invoiceId]
+├ ○ /billing/admin/outbox
+├ ○ /billing/new
+├ ○ /billing/payment-requests
+├ ƒ /billing/payment-requests/[requestId]
+├ ○ /billing/revenue
+├ ○ /inpatient
+├ ƒ /inpatient/[admissionId]
+├ ○ /inpatient/beds
+├ ○ /inpatient/new
+├ ƒ /lab
+├ ƒ /lab/[testId]
+├ ƒ /lab/new
+├ ○ /loading-test
+├ ○ /login
+├ ○ /notifications
+├ ƒ /notifications/[notificationId]
+├ ○ /notifications/send
+├ ○ /organization
+├ ○ /organization/accounts
+├ ƒ /organization/accounts/[accountId]
+├ ○ /organization/accounts/new
+├ ƒ /organization/departments/[departmentId]
+├ ƒ /organization/departments/[departmentId]/edit
+├ ○ /organization/departments/new
+├ ○ /organization/directory
+├ ○ /organization/profile
+├ ○ /organization/security
+├ ƒ /organization/staff/[staffId]
+├ ƒ /organization/staff/[staffId]/edit
+├ ○ /organization/staff/new
+├ ƒ /patients
+├ ƒ /patients/[patientId]
+├ ƒ /patients/[patientId]/edit
+├ ○ /patients/new
+├ ○ /pharmacy
+├ ○ /pharmacy/admin/outbox
+├ ○ /pharmacy/drugs
+├ ƒ /pharmacy/drugs/[drugId]
+├ ○ /pharmacy/drugs/new
+├ ○ /pharmacy/prescriptions
+├ ƒ /pharmacy/prescriptions/[prescriptionId]
+├ ƒ /pharmacy/prescriptions/new
+├ ƒ /records
+├ ƒ /records/[recordId]
+├ ƒ /records/[recordId]/edit
+├ ƒ /records/[recordId]/lab-order
+├ ƒ /records/new
+├ ƒ /reports
+└ ƒ /reports/outpatient
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

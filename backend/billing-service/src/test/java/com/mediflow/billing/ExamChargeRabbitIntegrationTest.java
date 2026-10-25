@@ -139,9 +139,12 @@ class ExamChargeRabbitIntegrationTest {
         byte[] cancellation = examCancellationFixture();
         listener().start();
         send(cancellation);
-        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
-                assertThat(jdbc.queryForObject("SELECT status FROM outpatient_cancellation_source WHERE source_type='EXAM' AND source_id=?",
-                        String.class, appointmentId)).isEqualTo("APPLIED"));
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM outpatient_cancellation_source WHERE source_type='EXAM' AND source_id=?",
+                    Integer.class, appointmentId)).isOne();
+            assertThat(jdbc.queryForObject("SELECT status FROM outpatient_cancellation_source WHERE source_type='EXAM' AND source_id=?",
+                    String.class, appointmentId)).isEqualTo("APPLIED");
+        });
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(admin.getQueueInfo(QUEUE).getMessageCount()).isZero());
         listener().stop();
 

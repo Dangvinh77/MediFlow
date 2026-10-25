@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
@@ -27,6 +28,7 @@ public class LabClearancePersistenceAdapter implements LabClearanceRepositoryPor
     private final ProcessedEventJpaRepository processedEvents;
     private final LabTestJpaRepository tests;
     private final LabFinancialClearanceJpaRepository clearances;
+    private final JdbcTemplate jdbc;
 
     @Override
     @Transactional
@@ -77,9 +79,23 @@ public class LabClearancePersistenceAdapter implements LabClearanceRepositoryPor
     }
 
     private LabFinancialClearance toDomain(LabFinancialClearanceJpaEntity row) {
+        // TIMESTAMPTZ rounds to microseconds. The committed inbox retains the original grant
+        // instants, which must still compare exactly with Billing's current authority response.
+        GrantTimes times = jdbc.query("""
+                SELECT convert_from(raw_body, 'UTF8')::jsonb->>'occurredAt' AS granted_at,
+                    convert_from(raw_body, 'UTF8')::jsonb->'payload'->>'expiresAt' AS expires_at
+                FROM consumer_inbox_delivery
+                WHERE consumer_name='lab-test-clearance' AND event_id=? AND routing_key=?
+                    AND operation_key=?
+                """, (rs, index) -> new GrantTimes(Instant.parse(rs.getString("granted_at")),
+                        rs.getString("expires_at") == null ? null : Instant.parse(rs.getString("expires_at"))),
+                row.getEventId(), ROUTING_KEY, "lab:financial-clearance:v1:" + row.getClearanceId())
+                .stream().findFirst().orElseGet(() -> new GrantTimes(row.getGrantedAt(), row.getExpiresAt()));
         return new LabFinancialClearance(row.getClearanceTargetId(), row.getClearanceId(), row.getEventId(),
                 row.getInvoiceId(), row.getAccountId(), row.getTest().getTestId(), row.getPatientId(),
                 row.getCareEpisodeType(), row.getCareEpisodeId(), com.mediflow.lab.domain.model.ClearancePurpose.LAB_TEST,
-                row.getAmount(), row.getCurrency(), row.getExpiresAt(), row.isEmergencyOverride(), row.getGrantedAt());
+                row.getAmount(), row.getCurrency(), times.expiresAt(), row.isEmergencyOverride(), times.grantedAt());
     }
+
+    private record GrantTimes(Instant grantedAt, Instant expiresAt) { }
 }

@@ -1,0 +1,18 @@
+-------------------------------------------------------------------------------
+Test set: com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 604.9 s <<< FAILURE! -- in com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT
+com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT.persistedClinicalOrderCanBeStartedAndAttachedAfterActualPayment -- Time elapsed: 550.1 s <<< FAILURE!
+java.lang.AssertionError:
+[{"success":false,"data":null,"error":{"code":"UPSTREAM_UNAVAILABLE","message":"organization-service is unavailable","details":[]},"timestamp":"2026-10-24T17:22:56.091741100Z","correlationId":"39f20e0c-8cb9-4079-bf85-f59c54d5cdb9"}]
+Expecting actual:
+  503
+to be between:
+  [200, 299]
+
+	at com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT.successful(PackagedOutpatientLabAcceptanceIT.java:674)
+	at com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT.post(PackagedOutpatientLabAcceptanceIT.java:666)
+	at com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT.persistedClinicalOrderCanBeStartedAndAttachedAfterActualPayment(PackagedOutpatientLabAcceptanceIT.java:414)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)

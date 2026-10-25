@@ -1,0 +1,495 @@
+WARNING: A Java agent has been loaded dynamically (C:\Users\VIP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 16, Failures: 11, Errors: 4, Skipped: 0, Time elapsed: 3.229 s <<< FAILURE! -- in com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsStaleObservation -- Time elapsed: 0.315 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireCurrent(LabBillingExecutionAuthorityAdapter.java:80)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsStaleObservation(LabBillingExecutionAuthorityAdapterTest.java:230)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_acceptsOriginalReceiptTimestampOnAnIdempotentRetry -- Time elapsed: 0.009 s <<< ERROR!
+com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.start(LabBillingExecutionAuthorityAdapter.java:57)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_acceptsOriginalReceiptTimestampOnAnIdempotentRetry(LabBillingExecutionAuthorityAdapterTest.java:97)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.consumerProjectionCanStartAndCompleteThroughRealExecutionAdapter -- Time elapsed: 0.469 s <<< ERROR!
+com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.start(LabBillingExecutionAuthorityAdapter.java:57)
+	at com.mediflow.lab.application.service.LabApplicationService.start(LabApplicationService.java:264)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.consumerProjectionCanStartAndCompleteThroughRealExecutionAdapter(LabBillingExecutionAuthorityAdapterTest.java:277)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsEligibleClearanceForDifferentExactSource -- Time elapsed: 0.040 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsEligibleClearanceForDifferentExactSource(LabBillingExecutionAuthorityAdapterTest.java:130)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(String)[1] -- Time elapsed: 0.049 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(LabBillingExecutionAuthorityAdapterTest.java:207)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(String)[2] -- Time elapsed: 0.007 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(LabBillingExecutionAuthorityAdapterTest.java:207)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(String)[3] -- Time elapsed: 0.007 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(LabBillingExecutionAuthorityAdapterTest.java:207)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(String)[4] -- Time elapsed: 0.006 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext(LabBillingExecutionAuthorityAdapterTest.java:207)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.stream.ReferencePipeline$7$1.accept(ReferencePipeline.java:276)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_refusesAReceiptForADifferentTest -- Time elapsed: 0.006 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.start(LabBillingExecutionAuthorityAdapter.java:57)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_refusesAReceiptForADifferentTest(LabBillingExecutionAuthorityAdapterTest.java:181)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_mapsBillingConflictToExactTargetDenial -- Time elapsed: 0.028 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_mapsBillingConflictToExactTargetDenial(LabBillingExecutionAuthorityAdapterTest.java:148)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_acceptsOnlyExactCurrentOutpatientGrant -- Time elapsed: 0.004 s <<< ERROR!
+com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireCurrent(LabBillingExecutionAuthorityAdapter.java:80)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_acceptsOnlyExactCurrentOutpatientGrant(LabBillingExecutionAuthorityAdapterTest.java:166)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_sendsStableExactTestIdentityAndAcceptsOnlyMatchingDurableReceipt -- Time elapsed: 0.005 s <<< ERROR!
+com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.start(LabBillingExecutionAuthorityAdapter.java:57)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.start_sendsStableExactTestIdentityAndAcceptsOnlyMatchingDurableReceipt(LabBillingExecutionAuthorityAdapterTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsClearanceAfterBillingRevokesIt -- Time elapsed: 0.006 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsClearanceAfterBillingRevokesIt(LabBillingExecutionAuthorityAdapterTest.java:115)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsExpiredGrantAfterLookup -- Time elapsed: 0.004 s <<< FAILURE!
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsExpiredGrantAfterLookup(LabBillingExecutionAuthorityAdapterTest.java:220)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_failsClosedWhenBillingResponseIsMalformed -- Time elapsed: 0.004 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireCurrent(LabBillingExecutionAuthorityAdapter.java:80)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.requireCurrent_failsClosedWhenBillingResponseIsMalformed(LabBillingExecutionAuthorityAdapterTest.java:157)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Failures:
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_failsClosedWhenBillingResponseIsMalformed:157
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireCurrent(LabBillingExecutionAuthorityAdapter.java:80)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_mapsBillingConflictToExactTargetDenial:148->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsClearanceAfterBillingRevokesIt:115->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsEligibleClearanceForDifferentExactSource:130->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsExpiredGrantAfterLookup:220->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext:207->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext:207->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext:207->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsMismatchedBillingContext:207->verifyLookup:235
+Wanted but not invoked:
+labBillingClearanceFeignClient.lookup(
+    00000000-0000-0000-0000-000000000042,
+    startsWith("Bearer "),
+    "d8a936b4-4d75-4c62-9d58-fd540da89be0"
+);
+-> at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest.verifyLookup(LabBillingExecutionAuthorityAdapterTest.java:235)
+Actually, there were zero interactions with this mock.
+
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_rejectsStaleObservation:230
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireCurrent(LabBillingExecutionAuthorityAdapter.java:80)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.start_refusesAReceiptForADifferentTest:181
+Expecting actual throwable to be an instance of:
+  com.mediflow.lab.application.exception.LabUpstreamUnavailableException
+but was:
+  com.mediflow.lab.domain.exception.LabRuleException: Billing no longer authorizes this exact Lab test
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.clearanceRequired(LabBillingExecutionAuthorityAdapter.java:242)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.requireExactLocalTarget(LabBillingExecutionAuthorityAdapter.java:190)
+	at com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapter.start(LabBillingExecutionAuthorityAdapter.java:57)
+	...(75 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)
+[ERROR] Errors:
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.consumerProjectionCanStartAndCompleteThroughRealExecutionAdapter:277 � LabRule Billing no longer authorizes this exact Lab test
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.requireCurrent_acceptsOnlyExactCurrentOutpatientGrant:166 � LabRule Billing no longer authorizes this exact Lab test
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.start_acceptsOriginalReceiptTimestampOnAnIdempotentRetry:97 � LabRule Billing no longer authorizes this exact Lab test
+[ERROR]   LabBillingExecutionAuthorityAdapterTest.start_sendsStableExactTestIdentityAndAcceptsOnlyMatchingDurableReceipt:71 � LabRule Billing no longer authorizes this exact Lab test
+[ERROR] Tests run: 16, Failures: 11, Errors: 4, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project lab-service: There are test failures.
+[ERROR]
+[ERROR] Please refer to E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source\backend\lab-service\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :lab-service

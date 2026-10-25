@@ -1,0 +1,109 @@
+23:27:39.996 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+23:27:40.306 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+23:27:40.308 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+23:27:40.330 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker:
+  Server Version: 29.8.0
+  API Version: 1.56
+  Operating System: Docker Desktop
+  Total Memory: 7538 MB
+23:27:40.344 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+23:27:40.346 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+23:27:40.446 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Creating container for image: testcontainers/ryuk:0.7.0
+23:27:40.799 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Container testcontainers/ryuk:0.7.0 is starting: 03f2528f4ab5ce56ec44b35bc153198017b04c4587933e1f7c5fc3022bfc935d
+23:27:41.168 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Container testcontainers/ryuk:0.7.0 started in PT0.7220475S
+23:27:41.175 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+23:27:41.175 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+23:27:41.177 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+23:27:41.445 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.mediflow.lab.LabServiceApplication for test class com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest
+23:27:41.469 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+23:27:41.704 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 10a444a65f6bfc085cd49a7dfa95bd68098dd13c07b33137e13d300d1de339f9
+23:27:44.103 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT2.6339937S
+23:27:44.103 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:64984/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-24T23:27:44.431+07:00  INFO 16908 --- [lab-service] [           main] c.m.l.i.p.LabPersistenceAdapterTest      : Starting LabPersistenceAdapterTest using Java 21.0.11 with PID 16908 (started by Admin in E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source\backend\lab-service)
+2026-10-24T23:27:44.433+07:00  INFO 16908 --- [lab-service] [           main] c.m.l.i.p.LabPersistenceAdapterTest      : No active profile set, falling back to 1 default profile: "default"
+2026-10-24T23:27:44.928+07:00  INFO 16908 --- [lab-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-24T23:27:45.113+07:00  INFO 16908 --- [lab-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 177 ms. Found 5 JPA repository interfaces.
+2026-10-24T23:27:45.915+07:00  INFO 16908 --- [lab-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:64984/test (PostgreSQL 16.15)
+2026-10-24T23:27:45.957+07:00  INFO 16908 --- [lab-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-10-24T23:27:45.960+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 5 migrations (execution time 00:00.018s)
+2026-10-24T23:27:45.975+07:00  INFO 16908 --- [lab-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-10-24T23:27:46.022+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-10-24T23:27:46.034+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-10-24T23:27:46.082+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - care finance v2"
+2026-10-24T23:27:46.128+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - consumer inbox"
+2026-10-24T23:27:46.151+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "4 - outbox retry quarantine"
+2026-10-24T23:27:46.166+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "5 - lab cancellation audit"
+2026-10-24T23:27:46.185+07:00  INFO 16908 --- [lab-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 5 migrations to schema "public", now at version v5 (execution time 00:00.081s)
+2026-10-24T23:27:46.277+07:00  INFO 16908 --- [lab-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-24T23:27:46.334+07:00  INFO 16908 --- [lab-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-24T23:27:46.364+07:00  INFO 16908 --- [lab-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-24T23:27:46.606+07:00  INFO 16908 --- [lab-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-24T23:27:46.634+07:00  INFO 16908 --- [lab-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-24T23:27:46.659+07:00  INFO 16908 --- [lab-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@2842ef02
+2026-10-24T23:27:46.661+07:00  INFO 16908 --- [lab-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-24T23:27:47.813+07:00  INFO 16908 --- [lab-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-24T23:27:47.875+07:00  INFO 16908 --- [lab-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-24T23:27:48.131+07:00  INFO 16908 --- [lab-service] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-24T23:27:48.721+07:00  INFO 16908 --- [lab-service] [           main] c.m.l.i.p.LabPersistenceAdapterTest      : Started LabPersistenceAdapterTest in 4.586 seconds (process running for 9.663)
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\VIP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Hibernate: select ltje1_0.test_id,ltje1_0.cancellation_reason,ltje1_0.cancelled_at,ltje1_0.cancelled_by,ltje1_0.care_contract_version,ltje1_0.care_episode_id,ltje1_0.care_episode_type,ltje1_0.clearance_granted_at,ltje1_0.clearance_id,ltje1_0.conclusion,ltje1_0.created_at,ltje1_0.emergency_override_id,ltje1_0.is_paid,ltje1_0.patient_id,ltje1_0.performed_date,ltje1_0.price_code,ltje1_0.record_id,ltje1_0.requested_date,ltje1_0.requesting_department_id,ltje1_0.result_version,ltje1_0.source_order_id,ltje1_0.status,ltje1_0.test_type,ltje1_0.updated_at,r1_0.test_id,r1_0.result_id,r1_0.created_at,r1_0.indicator,r1_0.reference_range,r1_0.unit,r1_0.value from lab_test ltje1_0 left join lab_result r1_0 on ltje1_0.test_id=r1_0.test_id where ltje1_0.test_id=?
+Hibernate: insert into lab_test (cancellation_reason,cancelled_at,cancelled_by,care_contract_version,care_episode_id,care_episode_type,clearance_granted_at,clearance_id,conclusion,created_at,emergency_override_id,is_paid,patient_id,performed_date,price_code,record_id,requested_date,requesting_department_id,result_version,source_order_id,status,test_type,updated_at,test_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: INSERT INTO processed_event(event_id, routing_key)
+VALUES (?, ?)
+ON CONFLICT (event_id) DO NOTHING
+
+Hibernate: select lfcje1_0.clearance_target_id,lfcje1_0.account_id,lfcje1_0.amount,lfcje1_0.care_episode_id,lfcje1_0.care_episode_type,lfcje1_0.clearance_id,lfcje1_0.created_at,lfcje1_0.currency,lfcje1_0.emergency_override,lfcje1_0.event_id,lfcje1_0.expires_at,lfcje1_0.granted_at,lfcje1_0.invoice_id,lfcje1_0.patient_id,lfcje1_0.test_id from lab_financial_clearance lfcje1_0 where lfcje1_0.clearance_target_id=?
+Hibernate: insert into lab_financial_clearance (account_id,amount,care_episode_id,care_episode_type,clearance_id,created_at,currency,emergency_override,event_id,expires_at,granted_at,invoice_id,patient_id,test_id,clearance_target_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: select lfcje1_0.clearance_target_id,lfcje1_0.account_id,lfcje1_0.amount,lfcje1_0.care_episode_id,lfcje1_0.care_episode_type,lfcje1_0.clearance_id,lfcje1_0.created_at,lfcje1_0.currency,lfcje1_0.emergency_override,lfcje1_0.event_id,lfcje1_0.expires_at,lfcje1_0.granted_at,lfcje1_0.invoice_id,lfcje1_0.patient_id,lfcje1_0.test_id from lab_financial_clearance lfcje1_0 where lfcje1_0.test_id=? order by lfcje1_0.granted_at desc
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 8.896 s <<< FAILURE! -- in com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest
+[ERROR] com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest.clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence -- Time elapsed: 0.863 s <<< FAILURE!
+org.assertj.core.error.AssertJMultipleFailuresError:
+
+Multiple Failures (1 failure)
+-- failure 1 --
+expected: 2026-10-24T16:23:49.467347200Z
+ but was: 2026-10-24T16:23:49.467347Z
+at LabPersistenceAdapterTest.lambda$clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence$7(LabPersistenceAdapterTest.java:262)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502)
+	at com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest.clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence(LabPersistenceAdapterTest.java:261)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Failures:
+[ERROR]   LabPersistenceAdapterTest.clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence:261
+Multiple Failures (1 failure)
+-- failure 1 --
+expected: 2026-10-24T16:23:49.467347200Z
+ but was: 2026-10-24T16:23:49.467347Z
+at LabPersistenceAdapterTest.lambda$clearanceReloadRetainsOriginalNanosecondTimesFromItsInboxEvidence$7(LabPersistenceAdapterTest.java:262)
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project lab-service: There are test failures.
+[ERROR]
+[ERROR] Please refer to E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source\backend\lab-service\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :lab-service

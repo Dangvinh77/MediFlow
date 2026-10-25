@@ -154,6 +154,8 @@ class PackagedOutpatientLabAcceptanceIT {
                     "--mediflow.features.care-finance-v2=true",
                     "--mediflow.lab.clinical-context.enabled=true",
                     "--mediflow.lab.clinical.base-url=" + clinicalUrl,
+                    "--logging.level.com.mediflow.lab.infrastructure.client.LabBillingClearanceFeignClient=DEBUG",
+                    "--spring.cloud.openfeign.client.config.labBillingExecutionClient.loggerLevel=BASIC",
                     "--mediflow.events.outbox-poll-interval=250"));
             awaitHealthy(labPort, "lab");
             awaitRegistered(eurekaPort, "LAB-SERVICE");
@@ -183,6 +185,7 @@ class PackagedOutpatientLabAcceptanceIT {
                     "--spring.config.additional-location=" + catalog.toUri(),
                     "--mediflow.features.outpatient-mvp.enabled=true",
                     "--mediflow.billing.ledger.enabled=true",
+                    "--mediflow.billing.clearance-lookup.enabled=true",
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
                     "--mediflow.billing.lab-test-charge-consumer.enabled=true",
@@ -333,6 +336,18 @@ class PackagedOutpatientLabAcceptanceIT {
             assertThat(count(database("mediflow_lab"), "SELECT count(*) FROM lab_financial_clearance WHERE test_id=?",
                     labTestId)).isOne();
 
+            Instant lookupTime = Instant.now();
+            String lookupToken = Jwts.builder().subject("lab-service")
+                    .claim(JwtClaims.ROLE, "SYSTEM").claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                    .issuedAt(Date.from(lookupTime)).expiration(Date.from(lookupTime.plusSeconds(60)))
+                    .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8))).compact();
+            HttpResponse<String> authority = request("http://localhost:" + billingPort, "GET",
+                    "/api/v1/billing/financial-clearances/" + clearance.path("payload").path("clearanceId").asText()
+                            + "/lookup", lookupToken, null);
+            Files.writeString(Path.of("target", "paid-lab-authority.json"), authority.body());
+            assertThat(authority.statusCode()).as(authority.body()).isEqualTo(200);
+            assertThat(data(authority).path("eligible").asBoolean()).as(authority.body()).isTrue();
+
             HttpResponse<String> started = request(labBase, "PUT", "/api/v1/lab/" + labTestId + "/start",
                     labTechToken, "{}");
             assertThat(started.statusCode()).as(started.body()).isEqualTo(200);
@@ -401,6 +416,11 @@ class PackagedOutpatientLabAcceptanceIT {
             JsonNode completedRecord = data(gatewayRequest(gatewayUrl, "PUT", recordPath + "/complete", doctorToken, completion));
             assertThat(completedRecord.path("status").asText()).isEqualTo("COMPLETED");
             assertThat(completedRecord.path("disposition").asText()).isEqualTo("OUTPATIENT_FOLLOW_UP");
+            awaitBillingLifecycleSettled(clinicalDb, labDb, recordId, labTestId);
+            assertThat(count(database("mediflow_billing"),
+                    "SELECT count(*) FROM fee WHERE record_id=? AND fee_type IN ('EXAM','LAB')", recordId))
+                    .as("V1 lifecycle facts must not create duplicate legacy fees after paid source charges")
+                    .isZero();
             assertThat(data(get(gatewayUrl, "/api/v1/appointments/" + appointmentId, nurseToken))
                     .path("status").asText()).isEqualTo("COMPLETED");
             assertThat(gatewayRequest(gatewayUrl, "PUT", recordPath, doctorToken,
@@ -510,6 +530,22 @@ class PackagedOutpatientLabAcceptanceIT {
         }
     }
 
+    private void awaitBillingLifecycleSettled(JdbcTemplate clinicalDb, JdbcTemplate labDb,
+                                              UUID recordId, UUID testId) {
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+            assertThat(count(clinicalDb, "SELECT count(*) FROM clinical_outbox_event WHERE aggregate_id=? "
+                    + "AND event_type='medicalrecord.created' AND published_at IS NOT NULL", recordId)).isOne();
+            assertThat(count(labDb, "SELECT count(*) FROM lab_outbox_event WHERE aggregate_id=? "
+                    + "AND event_type='lab.result.created' AND published_at IS NOT NULL", testId)).isOne();
+            var queues = RABBIT.execInContainer("rabbitmqctl", "list_queues", "-p", "/", "name",
+                    "messages_ready", "messages_unacknowledged", "messages");
+            assertThat(queues.getExitCode()).as(queues.getStderr()).isZero();
+            assertQueueCounts(queues.getStdout(), "billing.q", 0);
+            assertQueueCounts(queues.getStdout(), "billing.dlq", 0);
+            Files.writeString(Path.of("target", "billing-lifecycle-queues.txt"), queues.getStdout());
+        });
+    }
+
     private void awaitLabQueuesSettled() throws IOException, InterruptedException {
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             var queues = RABBIT.execInContainer("rabbitmqctl", "list_queues", "-p", "/", "name",
@@ -592,7 +628,8 @@ class PackagedOutpatientLabAcceptanceIT {
                 "departmentId", departmentId.toString(), "jobTitle", jobTitle,
                 "specialization", "DOCTOR".equals(jobTitle) ? "General medicine" : null,
                 "licenseNumber", "DOCTOR".equals(jobTitle) ? "LIC-" + label + "-" + unique : null,
-                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test"));
+                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test",
+                "identityNumber", digits(12)));
         return UUID.fromString(staff.path("staffId").asText());
     }
 
@@ -651,7 +688,8 @@ class PackagedOutpatientLabAcceptanceIT {
     private HttpResponse<String> request(String base, String method, String path, String token, String body)
             throws IOException, InterruptedException {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(base + path))
-                .timeout(Duration.ofSeconds(30)).header("Accept", "application/json");
+                .timeout(Duration.ofSeconds(30)).header("Accept", "application/json")
+                .header(JwtClaims.HEADER_CORRELATION_ID, UUID.randomUUID().toString());
         if (token != null) {
             builder.header("Authorization", "Bearer " + token);
         }

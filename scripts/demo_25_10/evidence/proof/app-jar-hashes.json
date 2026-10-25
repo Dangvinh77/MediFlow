@@ -1,0 +1,42 @@
+[
+  {
+    "application": "core-service",
+    "sha256": "F9240CF9A4AC4C7251E00AC2F0A6B7E87E8D09A31940D5D377DBFCC02B64BE53",
+    "bytes": 88146144
+  },
+  {
+    "application": "clinical-service",
+    "sha256": "69434DD9F0BB2EE3074EC1CCFF303277933595D2775258A572F2763394C22BA5",
+    "bytes": 89716461
+  },
+  {
+    "application": "lab-service",
+    "sha256": "FD801C897A239EB21C7FABDD56CADF62F30CB41500FE7C25FA775A76780FEADA",
+    "bytes": 89593756
+  },
+  {
+    "application": "pharmacy-service",
+    "sha256": "D2D69FCF2A34C40F7AAFFE4ABA3843EE229E4BE880D6DB755F991A04DCDB5C97",
+    "bytes": 89824246
+  },
+  {
+    "application": "billing-service",
+    "sha256": "7A85BB052FA2A02C6B150025A0E6541A2E508A99634D8721B608C97976115483",
+    "bytes": 88478398
+  },
+  {
+    "application": "support-service",
+    "sha256": "8554291BAA6E903588A098CF55DAB6A8E4AF98BF526194321B3ED35C2D7FBA7E",
+    "bytes": 89312081
+  },
+  {
+    "application": "gateway",
+    "sha256": "1ABD8EB3D6D303B8E371258B63BE1560E25AA8EF938417E54B81602C28734AE7",
+    "bytes": 53600306
+  },
+  {
+    "application": "eureka-server",
+    "sha256": "9556EEC9FE4F9B6789F256DB405CD7AFFA929EBA260CBA6C275357A9EDDB1DC1",
+    "bytes": 56768565
+  }
+]

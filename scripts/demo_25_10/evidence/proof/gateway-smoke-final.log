@@ -1,0 +1,12 @@
+
+route
+-----
+/api/v1/patients
+/api/v1/appointments
+/api/v1/lab
+/api/v1/pharmacy/drugs
+/api/v1/billing/patient/54fb1ca5-65a7-4ba2-9a0a-48c65832b246
+/api/v1/notifications/patient/54fb1ca5-65a7-4ba2-9a0a-48c65832b246
+/api/v1/reports/outpatient/daily?fromDate=2025-06-15&toDate=2025-06-15&departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45
+
+PASS: real ADMIN login and seven read routes through Gateway. Evidence: E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source\scripts\demo_25_10\evidence\gateway-20261025-002342

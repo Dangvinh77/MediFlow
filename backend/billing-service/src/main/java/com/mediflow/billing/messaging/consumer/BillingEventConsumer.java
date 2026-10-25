@@ -51,6 +51,7 @@ public class BillingEventConsumer {
     private final SagaCompensationUseCase sagaCompensationUseCase;
     private final SurgeryChargeUseCase surgeryChargeUseCase;
     private final ObjectMapper objectMapper;
+    private final OutpatientLifecycleFactReader lifecycleFacts;
     private final SurgeryChargeConsumer plannedRequestConsumer;
     private final SurgeryCancellationConsumer cancellationConsumer;
     private final ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer;
@@ -190,6 +191,7 @@ public class BillingEventConsumer {
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
         this.objectMapper = objectMapper;
+        this.lifecycleFacts = new OutpatientLifecycleFactReader(objectMapper);
         this.plannedRequestConsumer = plannedRequestConsumer;
         this.cancellationConsumer = cancellationConsumer;
         this.prescriptionChargeConsumer = prescriptionChargeConsumer;
@@ -211,10 +213,14 @@ public class BillingEventConsumer {
         if (prescriptionChargeConsumer != null && routingKey != null && routingKey.startsWith("prescription.")
                 && prescriptionChargeConsumer.receiveIfVersioned(routingKey, body)) return;
         switch (routingKey) {
-            case RabbitConfig.RK_MEDICAL_RECORD_CREATED ->
+            case RabbitConfig.RK_MEDICAL_RECORD_CREATED -> {
+                if (!lifecycleFacts.isInformational(routingKey, body, examChargeConsumer != null))
                     accrueFeeUseCase.onMedicalRecordCreated(read(body, MedicalRecordCreatedEvent.class));
-            case RabbitConfig.RK_LAB_RESULT_CREATED ->
+            }
+            case RabbitConfig.RK_LAB_RESULT_CREATED -> {
+                if (!lifecycleFacts.isInformational(routingKey, body, labTestChargeConsumer != null))
                     accrueFeeUseCase.onLabResultCreated(read(body, LabResultCreatedEvent.class));
+            }
             case RabbitConfig.RK_APPOINTMENT_STATUS_CHANGED -> {
                 // Exactly one writer: once the opt-in V1 EXAM issuer is configured, it alone reads
                 // this routing key. A valid transition other than the check-in charge trigger is a
