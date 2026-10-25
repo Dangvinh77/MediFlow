@@ -1,5 +1,12 @@
 # Frontend Service: Organization
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 **Owner:** Hoàng Anh (`TranHoangAnh94`)  
 **Backend:** `backend/organization-service/**`  
 **Contract context:** [`docs/ai/services/organization.md`](../../../docs/ai/services/organization.md)

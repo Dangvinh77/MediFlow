@@ -9,6 +9,59 @@ Không xóa volumes, xóa inbox/outbox hay HELD để dựng lại demo.
 
 ## Test matrix
 
+Slice lịch khám/giữ suất có [wire TARGET trong 03](03-contracts.md#opd-scheduling-v2) và
+[ma trận SC-01–20](10-scheduling-contract-acceptance.md). Slice đầu chỉ thu đủ số còn phải trả
+dương; partial payment, FOLLOW_UP và hỗ trợ/zero payable chưa được mở bởi slice này.
+WF-T05/07 và các ca BHYT bên dưới là tiêu chí toàn bộ nghiệp vụ sau WF-05/06, không phải
+bằng chứng endpoint mới đã hỗ trợ tất cả. API/UI acceptance chỉ chạy sau khi producer,
+consumer và Gateway của candidate đã triển khai đúng wire.
+
+### Nghiệm thu luồng điều chỉnh 25/10 — tất cả chưa chạy
+
+Đây là test cần triển khai theo [07](07-outpatient-workflow-implementation.md), không phải
+request có thể copy vào Postman hiện tại. Từng case phải khóa endpoint/body/event fixture từ
+source mới, chạy API qua Gateway và UI với đúng role. Không sửa SQL để đặt trạng thái mong muốn.
+Giữ evidence commit/flags/IDs, request/response redacted, ảnh UI và số effect trước/sau.
+
+| ID | Role và bước kiểm thử | Kết quả bắt buộc |
+|---|---|---|
+| WF-T01 | NURSE tìm patient cũ rồi đăng ký khám mới | Cùng patientId, lượt mới, không duplicate patient |
+| WF-T02 | NURSE chọn khoa/ngày/bác sĩ ngoài lịch hoặc khác khoa | Backend từ chối; UI không cung cấp lựa chọn không hợp lệ |
+| WF-T03 | Hai NURSE đồng thời giữ suất cuối | Một người thành công; người kia nhận conflict và chọn suất khác |
+| WF-T04 | NURSE đăng ký tại quầy | Một intent gồm có mặt/đăng ký; chờ thu, chưa vào danh sách được phép khám |
+| WF-T05 | CASHIER xem khám mới 100.000 hỗ trợ 50% rồi thu | Quote 50.000; trả đủ mới xác nhận phiếu và EXAM eligibility |
+| WF-T06 | CASHIER nhập giá/tỷ lệ tự sửa hoặc sai lượt | Server không nhận giá client, không allocate sang lượt khác |
+| WF-T07 | CASHIER thu một phần hoặc retry sau timeout | Chưa đủ thì không unlock; same intent không thu hai lần; tra outcome trước retry |
+| WF-T08 | Không thu tới khi hold hết 15 phút | Suất được giải phóng; charge không được thu theo quote/reservation đã hết hiệu lực |
+| WF-T09 | Hết hạn/đổi ca đồng thời payment đang xử lý, restart | Không mất receipt/overbook; pending có recovery, late paid vào đối soát |
+| WF-T10 | Chính sách hỗ trợ 0%, 100%, số tiền cần làm tròn | Từng dòng đúng HALF_UP/VND; zero payable không tạo cash payment giả |
+| WF-T11 | ADMIN thay policy sau phát quote/sau thanh toán | Quote còn hạn giữ snapshot; quote hết hạn cần xác nhận lại; receipt cũ không đổi |
+| WF-T12 | DOCTOR lập lời hẹn rồi NURSE đăng ký tái khám | Lượt mới đúng patient, linked source, lời hẹn chưa tự giữ suất/thu tiền |
+| WF-T13 | Bác sĩ cũ nghỉ hoặc hẹn quá ngày | Có phương án thay/đổi hợp lệ, ghi lý do; không tự miễn phí hoặc gán ngoài ca |
+| WF-T14 | DOCTOR chỉ định công thức máu và đường huyết | Tổng gross 160.000, hỗ trợ 104.000, người bệnh 56.000; quyền theo từng test |
+| WF-T15 | LAB_TECH thực hiện trước/sau đủ phí, thiếu kết quả | Trước bị chặn; sau có actor/time; Clinical hiển thị chờ tới khi nhận đúng result |
+| WF-T16 | Bệnh nhân quay lại đọc kết quả trong lượt mở, kể cả hôm sau | Cùng lượt/record, không thêm EXAM charge, không tăng tái khám |
+| WF-T17 | DOCTOR hoàn tất khi có chỉ định bắt buộc pending, race tạo mới | Bị chặn hoặc có quyết định hủy/hoãn hợp lệ; không bỏ qua bằng timeout |
+| WF-T18 | PHARMACIST cấp thuốc không hỗ trợ | Đúng server price/reservation; thu đủ rồi cấp; một stock effect |
+| WF-T19 | Hủy khám đã thu 50.000 với gross 100.000/support 50.000 | Nếu duyệt hoàn toàn bộ thì actual refund 50.000; không hoàn phần hỗ trợ |
+| WF-T20 | MANAGER xem Report sau khám/Lab/tái khám/refund/replay | Đúng số lượt; hỗ trợ riêng, cash/net cash đúng, không double count |
+| WF-T21 | PATIENT đọc phiếu/thông báo; đổi bác sĩ và replay | Chỉ dữ liệu của mình, pending không gọi confirmed; không thông báo trùng |
+| WF-T22 | Sai role, refresh/service token vào human API, Core/Billing unavailable | Deny/fail closed; không fallback bằng client claims hoặc state cũ |
+| WF-T23 | ADMIN/MANAGER tạo buổi khám, phòng/bác sĩ chồng giờ, khoa ngoài phạm vi | Lịch hợp lệ được tạo; chồng giờ/ngoài phạm vi bị chặn; thiếu nguồn phạm vi không cho quyền mặc định |
+| WF-T24 | DOCTOR mở lịch ngày và chọn một lượt | Chỉ lịch của mình, đúng khoa/phòng/giờ, khám mới/tái khám và trạng thái; chờ thu không bắt đầu khám |
+| WF-T25 | DOCTOR xem tuần qua biên tháng/năm, chọn buổi mở ngày | Thứ Hai–Chủ nhật theo Asia/Ho_Chi_Minh; không mất/lặp buổi ở biên; số giữ tạm/xác nhận/trống đúng |
+| WF-T26 | DOCTOR thay doctorId để xem lịch khác hoặc gửi command sửa/xóa ca | Backend từ chối; không chỉ ẩn nút; bàn giao lượt khám không tự cho xem mọi lịch cá nhân của bác sĩ cũ |
+| WF-T27 | MANAGER ngừng nhận buổi đã có người thanh toán | Chặn đăng ký mới, giữ phiếu cũ và audit; thay bác sĩ/giờ phải xử lý xác nhận và thông báo |
+| WF-T28 | Lịch trống/lỗi tải, lượt đã khám, suất hết hạn khi tải lại | Empty khác error; completed không giải phóng suất để vượt định mức; refresh không tính hai lần |
+
+Từng happy path tối thiểu thực hiện: NURSE đăng ký → CASHIER thu phí khám → DOCTOR khám →
+DOCTOR chỉ định → CASHIER thu Lab → LAB_TECH thực hiện/kết quả → DOCTOR đọc/kết luận/lời hẹn →
+CASHIER thu thuốc nếu có → PHARMACIST cấp → MANAGER đối soát → PATIENT xem thông báo.
+Sau đó đăng ký tái khám với nguồn vừa hoàn tất. Nếu thiếu UI/API ở bước nào, đánh BLOCKED với
+gap cụ thể; không đánh PASS từ việc chỉ kiểm tra health hoặc tồn tại controller.
+
+### Baseline kỹ thuật V0/V1 đã có trước điều chỉnh
+
 | ID | Tình huống | Kết quả bắt buộc |
 |---|---|---|
 | T01 | Core login/locked account/SYSTEM human/duplicate identity | RBAC/BCrypt/unique và stable errors |

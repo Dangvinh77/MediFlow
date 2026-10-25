@@ -1,0 +1,1563 @@
+{
+  "contractId": "OPD-SCHED-2026-10-26",
+  "revision": 1,
+  "status": "TARGET_DESIGN_ONLY_NOT_PRODUCER_ACCEPTANCE",
+  "identityPolicy": "All UUIDs are synthetic design examples; do not use them as existing demo IDs.",
+  "moneyPolicy": "100000.00 is an uncovered positive-payment example, not an activated BHYT quote or current catalogue assertion.",
+  "validationPolicy": "schemaCases are executed against named JSON Schema $defs; semanticCases are required acceptance scenarios, not executed business tests.",
+  "schemaCases": [
+    {
+      "id": "valid-Break",
+      "definition": "Break",
+      "schemaValid": true,
+      "payload": {
+        "startTime": "09:00",
+        "endTime": "09:15"
+      }
+    },
+    {
+      "id": "valid-SessionCreate",
+      "definition": "SessionCreate",
+      "schemaValid": true,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12
+      }
+    },
+    {
+      "id": "valid-SessionUpdate",
+      "definition": "SessionUpdate",
+      "schemaValid": true,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12,
+        "expectedRevision": 1,
+        "reason": "Tăng sức chứa theo nhân sự đã xác nhận"
+      }
+    },
+    {
+      "id": "valid-SessionStatusCommand",
+      "definition": "SessionStatusCommand",
+      "schemaValid": true,
+      "payload": {
+        "expectedRevision": 1,
+        "status": "STOPPED",
+        "reason": "Tạm ngừng nhận lượt mới"
+      }
+    },
+    {
+      "id": "valid-SessionDTO",
+      "definition": "SessionDTO",
+      "schemaValid": true,
+      "payload": {
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "revision": 1,
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12,
+        "status": "OPEN",
+        "heldCount": 0,
+        "paymentLockedCount": 0,
+        "confirmedCount": 0,
+        "consumedCount": 0,
+        "availableCount": 12,
+        "observedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-DoctorCalendar",
+      "definition": "DoctorCalendar",
+      "schemaValid": true,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "fromDate": "2026-10-26",
+        "toDate": "2026-11-01",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "sessions": [
+          {
+            "sessionId": "00000000-0000-4000-8000-000000000005",
+            "revision": 1,
+            "doctorId": "00000000-0000-4000-8000-000000000002",
+            "departmentId": "00000000-0000-4000-8000-000000000003",
+            "roomId": "00000000-0000-4000-8000-000000000004",
+            "sessionDate": "2026-10-27",
+            "startTime": "07:00",
+            "endTime": "11:00",
+            "breaks": [
+              {
+                "startTime": "09:00",
+                "endTime": "09:15"
+              }
+            ],
+            "capacity": 12,
+            "status": "OPEN",
+            "heldCount": 0,
+            "paymentLockedCount": 0,
+            "confirmedCount": 0,
+            "consumedCount": 0,
+            "availableCount": 12,
+            "observedAt": "2026-10-27T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-ScopeCommand",
+      "definition": "ScopeCommand",
+      "schemaValid": true,
+      "payload": {
+        "expectedRevision": 0,
+        "departmentIds": [
+          "00000000-0000-4000-8000-000000000003"
+        ],
+        "reason": "Phân công quản lý khoa khám bệnh"
+      }
+    },
+    {
+      "id": "valid-ScopeSnapshot",
+      "definition": "ScopeSnapshot",
+      "schemaValid": true,
+      "payload": {
+        "accountId": "00000000-0000-4000-8000-000000000014",
+        "revision": 1,
+        "departmentIds": [
+          "00000000-0000-4000-8000-000000000003"
+        ],
+        "updatedAt": "2026-10-27T00:00:00Z",
+        "updatedByAccountId": "00000000-0000-4000-8000-000000000015"
+      }
+    },
+    {
+      "id": "valid-SchedulingAuthority",
+      "definition": "SchedulingAuthority",
+      "schemaValid": true,
+      "payload": {
+        "actorAccountId": "00000000-0000-4000-8000-000000000014",
+        "accountExists": true,
+        "accountActive": true,
+        "currentRole": "MANAGER",
+        "staffId": "00000000-0000-4000-8000-000000000016",
+        "staffActive": true,
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "departmentActive": true,
+        "canManageSchedules": true,
+        "scopeRevision": 1,
+        "observedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-ConsultationEligibility",
+      "definition": "ConsultationEligibility",
+      "schemaValid": true,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "doctorExists": true,
+        "doctorActive": true,
+        "eligibleDoctor": true,
+        "doctorDepartmentId": "00000000-0000-4000-8000-000000000003",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "departmentExists": true,
+        "departmentActive": true,
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "roomExists": true,
+        "roomActive": true,
+        "roomDepartmentId": "00000000-0000-4000-8000-000000000003",
+        "roomType": "CONSULTATION",
+        "eligible": true,
+        "observedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-RoomSummary",
+      "definition": "RoomSummary",
+      "schemaValid": true,
+      "payload": {
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomName": "Phòng khám 101",
+        "roomType": "CONSULTATION"
+      }
+    },
+    {
+      "id": "valid-RegistrationCreate",
+      "definition": "RegistrationCreate",
+      "schemaValid": true,
+      "payload": {
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "expectedSessionRevision": 1,
+        "receptionMode": "AT_COUNTER",
+        "visitType": "NEW_VISIT",
+        "previousRegistrationId": null,
+        "reason": "Khám triệu chứng mới"
+      }
+    },
+    {
+      "id": "valid-RevisionCommand",
+      "definition": "RevisionCommand",
+      "schemaValid": true,
+      "payload": {
+        "expectedRevision": 1
+      }
+    },
+    {
+      "id": "valid-CancellationCommand",
+      "definition": "CancellationCommand",
+      "schemaValid": true,
+      "payload": {
+        "expectedRevision": 1,
+        "reason": "Người bệnh hủy đăng ký trước khám"
+      }
+    },
+    {
+      "id": "valid-RegistrationDTO",
+      "definition": "RegistrationDTO",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "revision": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "receptionMode": "AT_COUNTER",
+        "visitType": "NEW_VISIT",
+        "previousRegistrationId": null,
+        "status": "AWAITING_PAYMENT",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "reservationRevision": 1,
+        "reservationStatus": "HELD",
+        "reservationExpiresAt": "2026-10-27T00:15:00Z",
+        "checkedInAt": "2026-10-27T00:00:00Z",
+        "queueNumber": null,
+        "readyForExam": false,
+        "createdAt": "2026-10-27T00:00:00Z",
+        "updatedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-RegistrationSummary",
+      "definition": "RegistrationSummary",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "visitType": "NEW_VISIT",
+        "status": "AWAITING_PAYMENT",
+        "checkedInAt": "2026-10-27T00:00:00Z",
+        "queueNumber": null,
+        "readyForExam": false
+      }
+    },
+    {
+      "id": "valid-RegistrationPaymentRequestDTO",
+      "definition": "RegistrationPaymentRequestDTO",
+      "schemaValid": true,
+      "payload": {
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "invoiceId": "00000000-0000-4000-8000-000000000011",
+        "accountId": "00000000-0000-4000-8000-000000000008",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "requestedAmount": "100000.00",
+        "paidAmount": "0.00",
+        "remainingAmount": "100000.00",
+        "currency": "VND",
+        "status": "PENDING",
+        "expiresAt": "2026-10-27T00:15:00Z",
+        "observedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-ScheduledPaymentCommand",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": true,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": "100000.00",
+        "currency": "VND",
+        "paymentMethod": "CASH",
+        "providerReference": null
+      }
+    },
+    {
+      "id": "valid-PaymentOperation",
+      "definition": "PaymentOperation",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "status": "PREPARING",
+        "transactionId": null,
+        "amount": "100000.00",
+        "currency": "VND",
+        "createdAt": "2026-10-27T00:05:00Z",
+        "updatedAt": "2026-10-27T00:05:00Z"
+      }
+    },
+    {
+      "id": "valid-LedgerPaymentV2DTO",
+      "definition": "LedgerPaymentV2DTO",
+      "schemaValid": true,
+      "payload": {
+        "transactionId": "00000000-0000-4000-8000-000000000012",
+        "accountId": "00000000-0000-4000-8000-000000000008",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "classification": "SERVICE_PAYMENT",
+        "status": "COMPLETED",
+        "amount": "100000.00",
+        "currency": "VND",
+        "paymentMethod": "CASH",
+        "completedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "valid-ScheduledPaymentResult",
+      "definition": "ScheduledPaymentResult",
+      "schemaValid": true,
+      "payload": {
+        "operation": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "status": "COMPLETED",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "amount": "100000.00",
+          "currency": "VND",
+          "createdAt": "2026-10-27T00:05:00Z",
+          "updatedAt": "2026-10-27T00:06:00Z"
+        },
+        "payment": {
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "accountId": "00000000-0000-4000-8000-000000000008",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": "100000.00",
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-27T00:06:00Z"
+        },
+        "clearanceId": "00000000-0000-4000-8000-000000000013"
+      }
+    },
+    {
+      "id": "valid-PaymentLockCommand",
+      "definition": "PaymentLockCommand",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "expectedReservationRevision": 1
+      }
+    },
+    {
+      "id": "valid-PaymentLease",
+      "definition": "PaymentLease",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "reservationRevision": 2,
+        "fenceToken": 1,
+        "lockedAt": "2026-10-27T00:05:00Z",
+        "reconcileAfter": "2026-10-27T00:07:00Z"
+      }
+    },
+    {
+      "id": "valid-ClosePaymentCommand",
+      "definition": "ClosePaymentCommand",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "reason": "RESERVATION_RECONCILIATION"
+      }
+    },
+    {
+      "id": "valid-PaymentResolution",
+      "definition": "PaymentResolution",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "outcome": "COMPLETED",
+        "transactionId": "00000000-0000-4000-8000-000000000012",
+        "clearanceId": "00000000-0000-4000-8000-000000000013",
+        "completedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "valid-RegistrationFact",
+      "definition": "RegistrationFact",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "registrationRevision": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "visitType": "NEW_VISIT",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "reservationStatus": "HELD",
+        "status": "AWAITING_PAYMENT",
+        "checkedInAt": "2026-10-27T00:00:00Z",
+        "queueNumber": null,
+        "priceCode": "OUTPATIENT_EXAM",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "changedAt": "2026-10-27T00:00:00Z",
+        "reservationExpiresAt": "2026-10-27T00:15:00Z",
+        "cancellation": null
+      }
+    },
+    {
+      "id": "valid-EligibilityFact",
+      "definition": "EligibilityFact",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "transactionId": "00000000-0000-4000-8000-000000000012",
+        "clearanceId": "00000000-0000-4000-8000-000000000013",
+        "amount": "100000.00",
+        "currency": "VND",
+        "completedAt": "2026-10-27T00:06:00Z",
+        "basis": "PATIENT_PAYMENT"
+      }
+    },
+    {
+      "id": "valid-RegistrationChangedEvent",
+      "definition": "RegistrationChangedEvent",
+      "schemaValid": true,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000021",
+        "eventType": "outpatient.registration.changed",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-registration",
+        "producer": "clinical-service",
+        "payload": {
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "registrationRevision": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "doctorId": "00000000-0000-4000-8000-000000000002",
+          "departmentId": "00000000-0000-4000-8000-000000000003",
+          "sessionId": "00000000-0000-4000-8000-000000000005",
+          "roomId": "00000000-0000-4000-8000-000000000004",
+          "sessionDate": "2026-10-27",
+          "startTime": "07:00",
+          "endTime": "11:00",
+          "visitType": "NEW_VISIT",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "reservationStatus": "HELD",
+          "status": "AWAITING_PAYMENT",
+          "checkedInAt": "2026-10-27T00:00:00Z",
+          "queueNumber": null,
+          "priceCode": "OUTPATIENT_EXAM",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "changedAt": "2026-10-27T00:00:00Z",
+          "reservationExpiresAt": "2026-10-27T00:15:00Z",
+          "cancellation": null
+        }
+      }
+    },
+    {
+      "id": "valid-EligibilityGrantedEvent",
+      "definition": "EligibilityGrantedEvent",
+      "schemaValid": true,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000022",
+        "eventType": "outpatient.financial.eligibility.granted",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:06:00Z",
+        "correlationId": "wf01-target-payment",
+        "producer": "billing-service",
+        "payload": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "fenceToken": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "clearanceId": "00000000-0000-4000-8000-000000000013",
+          "amount": "100000.00",
+          "currency": "VND",
+          "completedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "valid-ApiError",
+      "definition": "ApiError",
+      "schemaValid": true,
+      "payload": {
+        "code": "RESERVATION_NOT_PAYABLE",
+        "message": "Suất giữ đã hết hạn trước khi bắt đầu thu.",
+        "details": []
+      }
+    },
+    {
+      "id": "valid-ErrorResponse",
+      "definition": "ErrorResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "RESERVATION_NOT_PAYABLE",
+          "message": "Suất giữ đã hết hạn trước khi bắt đầu thu.",
+          "details": []
+        },
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-error"
+      }
+    },
+    {
+      "id": "valid-SessionDTOResponse",
+      "definition": "SessionDTOResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": true,
+        "data": {
+          "sessionId": "00000000-0000-4000-8000-000000000005",
+          "revision": 1,
+          "doctorId": "00000000-0000-4000-8000-000000000002",
+          "departmentId": "00000000-0000-4000-8000-000000000003",
+          "roomId": "00000000-0000-4000-8000-000000000004",
+          "sessionDate": "2026-10-27",
+          "startTime": "07:00",
+          "endTime": "11:00",
+          "breaks": [
+            {
+              "startTime": "09:00",
+              "endTime": "09:15"
+            }
+          ],
+          "capacity": 12,
+          "status": "OPEN",
+          "heldCount": 0,
+          "paymentLockedCount": 0,
+          "confirmedCount": 0,
+          "consumedCount": 0,
+          "availableCount": 12,
+          "observedAt": "2026-10-27T00:00:00Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-response"
+      }
+    },
+    {
+      "id": "valid-RegistrationDTOResponse",
+      "definition": "RegistrationDTOResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": true,
+        "data": {
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "revision": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "doctorId": "00000000-0000-4000-8000-000000000002",
+          "departmentId": "00000000-0000-4000-8000-000000000003",
+          "roomId": "00000000-0000-4000-8000-000000000004",
+          "sessionId": "00000000-0000-4000-8000-000000000005",
+          "sessionDate": "2026-10-27",
+          "startTime": "07:00",
+          "endTime": "11:00",
+          "receptionMode": "AT_COUNTER",
+          "visitType": "NEW_VISIT",
+          "previousRegistrationId": null,
+          "status": "AWAITING_PAYMENT",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "reservationRevision": 1,
+          "reservationStatus": "HELD",
+          "reservationExpiresAt": "2026-10-27T00:15:00Z",
+          "checkedInAt": "2026-10-27T00:00:00Z",
+          "queueNumber": null,
+          "readyForExam": false,
+          "createdAt": "2026-10-27T00:00:00Z",
+          "updatedAt": "2026-10-27T00:00:00Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-response"
+      }
+    },
+    {
+      "id": "valid-ScheduledPaymentResultResponse",
+      "definition": "ScheduledPaymentResultResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": true,
+        "data": {
+          "operation": {
+            "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+            "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+            "registrationId": "00000000-0000-4000-8000-000000000006",
+            "reservationId": "00000000-0000-4000-8000-000000000007",
+            "status": "COMPLETED",
+            "transactionId": "00000000-0000-4000-8000-000000000012",
+            "amount": "100000.00",
+            "currency": "VND",
+            "createdAt": "2026-10-27T00:05:00Z",
+            "updatedAt": "2026-10-27T00:06:00Z"
+          },
+          "payment": {
+            "transactionId": "00000000-0000-4000-8000-000000000012",
+            "accountId": "00000000-0000-4000-8000-000000000008",
+            "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+            "classification": "SERVICE_PAYMENT",
+            "status": "COMPLETED",
+            "amount": "100000.00",
+            "currency": "VND",
+            "paymentMethod": "CASH",
+            "completedAt": "2026-10-27T00:06:00Z"
+          },
+          "clearanceId": "00000000-0000-4000-8000-000000000013"
+        },
+        "error": null,
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-response"
+      }
+    },
+    {
+      "id": "valid-PaymentLeaseResponse",
+      "definition": "PaymentLeaseResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": true,
+        "data": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "reservationRevision": 2,
+          "fenceToken": 1,
+          "lockedAt": "2026-10-27T00:05:00Z",
+          "reconcileAfter": "2026-10-27T00:07:00Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-response"
+      }
+    },
+    {
+      "id": "valid-ScopeSnapshotResponse",
+      "definition": "ScopeSnapshotResponse",
+      "schemaValid": true,
+      "payload": {
+        "success": true,
+        "data": {
+          "accountId": "00000000-0000-4000-8000-000000000014",
+          "revision": 1,
+          "departmentIds": [
+            "00000000-0000-4000-8000-000000000003"
+          ],
+          "updatedAt": "2026-10-27T00:00:00Z",
+          "updatedByAccountId": "00000000-0000-4000-8000-000000000015"
+        },
+        "error": null,
+        "timestamp": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-response"
+      }
+    },
+    {
+      "id": "valid-SessionDTOPage",
+      "definition": "SessionDTOPage",
+      "schemaValid": true,
+      "payload": {
+        "content": [
+          {
+            "sessionId": "00000000-0000-4000-8000-000000000005",
+            "revision": 1,
+            "doctorId": "00000000-0000-4000-8000-000000000002",
+            "departmentId": "00000000-0000-4000-8000-000000000003",
+            "roomId": "00000000-0000-4000-8000-000000000004",
+            "sessionDate": "2026-10-27",
+            "startTime": "07:00",
+            "endTime": "11:00",
+            "breaks": [
+              {
+                "startTime": "09:00",
+                "endTime": "09:15"
+              }
+            ],
+            "capacity": 12,
+            "status": "OPEN",
+            "heldCount": 0,
+            "paymentLockedCount": 0,
+            "confirmedCount": 0,
+            "consumedCount": 0,
+            "availableCount": 12,
+            "observedAt": "2026-10-27T00:00:00Z"
+          }
+        ],
+        "totalElements": 1,
+        "totalPages": 1,
+        "number": 0,
+        "size": 20
+      }
+    },
+    {
+      "id": "valid-RoomSummaryPage",
+      "definition": "RoomSummaryPage",
+      "schemaValid": true,
+      "payload": {
+        "content": [
+          {
+            "roomId": "00000000-0000-4000-8000-000000000004",
+            "departmentId": "00000000-0000-4000-8000-000000000003",
+            "roomName": "Phòng khám 101",
+            "roomType": "CONSULTATION"
+          }
+        ],
+        "totalElements": 1,
+        "totalPages": 1,
+        "number": 0,
+        "size": 20
+      }
+    },
+    {
+      "id": "valid-RegistrationSummaryPage",
+      "definition": "RegistrationSummaryPage",
+      "schemaValid": true,
+      "payload": {
+        "content": [
+          {
+            "registrationId": "00000000-0000-4000-8000-000000000006",
+            "patientId": "00000000-0000-4000-8000-000000000001",
+            "visitType": "NEW_VISIT",
+            "status": "AWAITING_PAYMENT",
+            "checkedInAt": "2026-10-27T00:00:00Z",
+            "queueNumber": null,
+            "readyForExam": false
+          }
+        ],
+        "totalElements": 1,
+        "totalPages": 1,
+        "number": 0,
+        "size": 20
+      }
+    },
+    {
+      "id": "prebooked-not-arrived",
+      "definition": "RegistrationDTO",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "revision": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "receptionMode": "PREBOOKED",
+        "visitType": "NEW_VISIT",
+        "previousRegistrationId": null,
+        "status": "AWAITING_PAYMENT",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "reservationRevision": 1,
+        "reservationStatus": "HELD",
+        "reservationExpiresAt": "2026-10-27T00:15:00Z",
+        "checkedInAt": null,
+        "queueNumber": null,
+        "readyForExam": false,
+        "createdAt": "2026-10-27T00:00:00Z",
+        "updatedAt": "2026-10-27T00:00:00Z"
+      }
+    },
+    {
+      "id": "confirmed-arrived",
+      "definition": "RegistrationDTO",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "revision": 2,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "receptionMode": "AT_COUNTER",
+        "visitType": "NEW_VISIT",
+        "previousRegistrationId": null,
+        "status": "CONFIRMED",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "reservationRevision": 3,
+        "reservationStatus": "CONFIRMED",
+        "reservationExpiresAt": "2026-10-27T00:15:00Z",
+        "checkedInAt": "2026-10-27T00:00:00Z",
+        "queueNumber": 1,
+        "readyForExam": true,
+        "createdAt": "2026-10-27T00:00:00Z",
+        "updatedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "preparing-202",
+      "definition": "ScheduledPaymentResult",
+      "schemaValid": true,
+      "payload": {
+        "operation": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "status": "PREPARING",
+          "transactionId": null,
+          "amount": "100000.00",
+          "currency": "VND",
+          "createdAt": "2026-10-27T00:05:00Z",
+          "updatedAt": "2026-10-27T00:05:00Z"
+        },
+        "payment": null,
+        "clearanceId": null
+      }
+    },
+    {
+      "id": "closed-operation",
+      "definition": "PaymentOperation",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "status": "CLOSED_NOT_PAID",
+        "transactionId": null,
+        "amount": "100000.00",
+        "currency": "VND",
+        "createdAt": "2026-10-27T00:05:00Z",
+        "updatedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "closed-resolution",
+      "definition": "PaymentResolution",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "outcome": "CLOSED_NOT_PAID",
+        "transactionId": null,
+        "clearanceId": null,
+        "completedAt": null
+      }
+    },
+    {
+      "id": "scope-not-assigned",
+      "definition": "ScopeSnapshot",
+      "schemaValid": true,
+      "payload": {
+        "accountId": "00000000-0000-4000-8000-000000000014",
+        "revision": 0,
+        "departmentIds": [],
+        "updatedAt": null,
+        "updatedByAccountId": null
+      }
+    },
+    {
+      "id": "scope-revoked",
+      "definition": "ScopeSnapshot",
+      "schemaValid": true,
+      "payload": {
+        "accountId": "00000000-0000-4000-8000-000000000014",
+        "revision": 2,
+        "departmentIds": [],
+        "updatedAt": "2026-10-27T00:06:00Z",
+        "updatedByAccountId": "00000000-0000-4000-8000-000000000015"
+      }
+    },
+    {
+      "id": "bank-transfer",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": true,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": "100000.00",
+        "currency": "VND",
+        "paymentMethod": "BANK_TRANSFER",
+        "providerReference": "DEMO-BANK-0001"
+      }
+    },
+    {
+      "id": "invalid-uuid",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "doctor-1",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12
+      }
+    },
+    {
+      "id": "invalid-date",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-02-30",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12
+      }
+    },
+    {
+      "id": "invalid-time-format",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "7:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12
+      }
+    },
+    {
+      "id": "capacity-zero",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 0
+      }
+    },
+    {
+      "id": "capacity-float",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 1.5
+      }
+    },
+    {
+      "id": "unknown-field",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "roomId": "00000000-0000-4000-8000-000000000004",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12,
+        "clientApproved": true
+      }
+    },
+    {
+      "id": "missing-room",
+      "definition": "SessionCreate",
+      "schemaValid": false,
+      "payload": {
+        "doctorId": "00000000-0000-4000-8000-000000000002",
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "sessionDate": "2026-10-27",
+        "startTime": "07:00",
+        "endTime": "11:00",
+        "breaks": [
+          {
+            "startTime": "09:00",
+            "endTime": "09:15"
+          }
+        ],
+        "capacity": 12
+      }
+    },
+    {
+      "id": "negative-revision",
+      "definition": "ScopeCommand",
+      "schemaValid": false,
+      "payload": {
+        "expectedRevision": -1,
+        "departmentIds": [
+          "00000000-0000-4000-8000-000000000003"
+        ],
+        "reason": "Phân công quản lý khoa khám bệnh"
+      }
+    },
+    {
+      "id": "duplicate-scope",
+      "definition": "ScopeCommand",
+      "schemaValid": false,
+      "payload": {
+        "expectedRevision": 0,
+        "departmentIds": [
+          "00000000-0000-4000-8000-000000000003",
+          "00000000-0000-4000-8000-000000000003"
+        ],
+        "reason": "Phân công quản lý khoa khám bệnh"
+      }
+    },
+    {
+      "id": "new-visit-with-previous",
+      "definition": "RegistrationCreate",
+      "schemaValid": false,
+      "payload": {
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sessionId": "00000000-0000-4000-8000-000000000005",
+        "expectedSessionRevision": 1,
+        "receptionMode": "AT_COUNTER",
+        "visitType": "NEW_VISIT",
+        "previousRegistrationId": "00000000-0000-4000-8000-000000000030",
+        "reason": "Khám triệu chứng mới"
+      }
+    },
+    {
+      "id": "payment-zero",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": false,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": "0.00",
+        "currency": "VND",
+        "paymentMethod": "CASH",
+        "providerReference": null
+      }
+    },
+    {
+      "id": "payment-number-not-string",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": false,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": 100000,
+        "currency": "VND",
+        "paymentMethod": "CASH",
+        "providerReference": null
+      }
+    },
+    {
+      "id": "payment-insurance",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": false,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": "100000.00",
+        "currency": "VND",
+        "paymentMethod": "INSURANCE",
+        "providerReference": null
+      }
+    },
+    {
+      "id": "bank-no-reference",
+      "definition": "ScheduledPaymentCommand",
+      "schemaValid": false,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "expectedReservationRevision": 1,
+        "amount": "100000.00",
+        "currency": "VND",
+        "paymentMethod": "BANK_TRANSFER",
+        "providerReference": null
+      }
+    },
+    {
+      "id": "completed-no-transaction",
+      "definition": "PaymentOperation",
+      "schemaValid": false,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "status": "COMPLETED",
+        "transactionId": null,
+        "amount": "100000.00",
+        "currency": "VND",
+        "createdAt": "2026-10-27T00:05:00Z",
+        "updatedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "closed-has-payment",
+      "definition": "PaymentResolution",
+      "schemaValid": false,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "outcome": "CLOSED_NOT_PAID",
+        "transactionId": "00000000-0000-4000-8000-000000000012",
+        "clearanceId": "00000000-0000-4000-8000-000000000013",
+        "completedAt": "2026-10-27T00:06:00Z"
+      }
+    },
+    {
+      "id": "wrong-producer",
+      "definition": "EligibilityGrantedEvent",
+      "schemaValid": false,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000022",
+        "eventType": "outpatient.financial.eligibility.granted",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:06:00Z",
+        "correlationId": "wf01-target-payment",
+        "producer": "clinical-service",
+        "payload": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "fenceToken": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "clearanceId": "00000000-0000-4000-8000-000000000013",
+          "amount": "100000.00",
+          "currency": "VND",
+          "completedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "event-version-string",
+      "definition": "EligibilityGrantedEvent",
+      "schemaValid": false,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000022",
+        "eventType": "outpatient.financial.eligibility.granted",
+        "version": "1",
+        "occurredAt": "2026-10-27T00:06:00Z",
+        "correlationId": "wf01-target-payment",
+        "producer": "billing-service",
+        "payload": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "fenceToken": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "clearanceId": "00000000-0000-4000-8000-000000000013",
+          "amount": "100000.00",
+          "currency": "VND",
+          "completedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "empty-correlation",
+      "definition": "EligibilityGrantedEvent",
+      "schemaValid": false,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000022",
+        "eventType": "outpatient.financial.eligibility.granted",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:06:00Z",
+        "correlationId": "",
+        "producer": "billing-service",
+        "payload": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "fenceToken": 1,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "clearanceId": "00000000-0000-4000-8000-000000000013",
+          "amount": "100000.00",
+          "currency": "VND",
+          "completedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "completed-no-clearance",
+      "definition": "ScheduledPaymentResult",
+      "schemaValid": false,
+      "payload": {
+        "operation": {
+          "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "status": "COMPLETED",
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "amount": "100000.00",
+          "currency": "VND",
+          "createdAt": "2026-10-27T00:05:00Z",
+          "updatedAt": "2026-10-27T00:06:00Z"
+        },
+        "payment": {
+          "transactionId": "00000000-0000-4000-8000-000000000012",
+          "accountId": "00000000-0000-4000-8000-000000000008",
+          "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": "100000.00",
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-27T00:06:00Z"
+        },
+        "clearanceId": null
+      }
+    },
+    {
+      "id": "cancelled-with-audit",
+      "definition": "RegistrationChangedEvent",
+      "schemaValid": true,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000021",
+        "eventType": "outpatient.registration.changed",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-registration",
+        "producer": "clinical-service",
+        "payload": {
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "registrationRevision": 2,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "doctorId": "00000000-0000-4000-8000-000000000002",
+          "departmentId": "00000000-0000-4000-8000-000000000003",
+          "sessionId": "00000000-0000-4000-8000-000000000005",
+          "roomId": "00000000-0000-4000-8000-000000000004",
+          "sessionDate": "2026-10-27",
+          "startTime": "07:00",
+          "endTime": "11:00",
+          "visitType": "NEW_VISIT",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "reservationStatus": "CANCELLED",
+          "status": "CANCELLED",
+          "checkedInAt": "2026-10-27T00:00:00Z",
+          "queueNumber": null,
+          "priceCode": "OUTPATIENT_EXAM",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "changedAt": "2026-10-27T00:00:00Z",
+          "reservationExpiresAt": "2026-10-27T00:15:00Z",
+          "cancellation": {
+            "actorAccountId": "00000000-0000-4000-8000-000000000014",
+            "actorStaffId": "00000000-0000-4000-8000-000000000016",
+            "reason": "Người bệnh yêu cầu hủy trước khám",
+            "cancelledAt": "2026-10-27T00:06:00Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "cancelled-without-audit",
+      "definition": "RegistrationChangedEvent",
+      "schemaValid": false,
+      "payload": {
+        "eventId": "00000000-0000-4000-8000-000000000021",
+        "eventType": "outpatient.registration.changed",
+        "version": 1,
+        "occurredAt": "2026-10-27T00:00:00Z",
+        "correlationId": "wf01-target-registration",
+        "producer": "clinical-service",
+        "payload": {
+          "registrationId": "00000000-0000-4000-8000-000000000006",
+          "registrationRevision": 2,
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "doctorId": "00000000-0000-4000-8000-000000000002",
+          "departmentId": "00000000-0000-4000-8000-000000000003",
+          "sessionId": "00000000-0000-4000-8000-000000000005",
+          "roomId": "00000000-0000-4000-8000-000000000004",
+          "sessionDate": "2026-10-27",
+          "startTime": "07:00",
+          "endTime": "11:00",
+          "visitType": "NEW_VISIT",
+          "reservationId": "00000000-0000-4000-8000-000000000007",
+          "reservationStatus": "CANCELLED",
+          "status": "CANCELLED",
+          "checkedInAt": "2026-10-27T00:00:00Z",
+          "queueNumber": null,
+          "priceCode": "OUTPATIENT_EXAM",
+          "sourceType": "EXAM",
+          "sourceId": "00000000-0000-4000-8000-000000000006",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+          "changedAt": "2026-10-27T00:00:00Z",
+          "reservationExpiresAt": "2026-10-27T00:15:00Z",
+          "cancellation": null
+        }
+      }
+    }
+  ],
+  "semanticCases": [
+    {
+      "id": "same-doctor-overlap",
+      "inputDefinition": "SessionCreate",
+      "expectedHttp": 409,
+      "expectedCode": "SESSION_OVERLAP",
+      "condition": "Doctor hoặc room đã có ca OPEN/STOPPED chồng khoảng [start,end)."
+    },
+    {
+      "id": "capacity-last-seat",
+      "inputDefinition": "RegistrationCreate",
+      "expectedHttp": 409,
+      "expectedCode": "SESSION_CAPACITY_EXHAUSTED",
+      "condition": "Hai intent khác nhau tranh một suất; chỉ một registration commit."
+    },
+    {
+      "id": "manager-other-department",
+      "inputDefinition": "SessionCreate",
+      "expectedHttp": 403,
+      "expectedCode": "SCHEDULING_SCOPE_DENIED",
+      "condition": "Core authoritative assignment không chứa khoa yêu cầu."
+    },
+    {
+      "id": "scope-provider-unavailable",
+      "inputDefinition": "SessionCreate",
+      "expectedHttp": 503,
+      "expectedCode": "SCHEDULING_AUTHORITY_UNAVAILABLE",
+      "condition": "Core timeout; không reuse positive cache cho mutation."
+    },
+    {
+      "id": "hold-expired-at-boundary",
+      "inputDefinition": "PaymentLockCommand",
+      "expectedHttp": 409,
+      "expectedCode": "RESERVATION_NOT_PAYABLE",
+      "condition": "Acquire lần đầu tại now == reservationExpiresAt."
+    },
+    {
+      "id": "close-wins-commit",
+      "inputDefinition": "ClosePaymentCommand",
+      "expectedHttp": 200,
+      "expectedOutcome": "CLOSED_NOT_PAID",
+      "condition": "Close CAS thắng; late payment không commit, không phát completed."
+    },
+    {
+      "id": "commit-wins-close",
+      "inputDefinition": "ClosePaymentCommand",
+      "expectedHttp": 200,
+      "expectedOutcome": "COMPLETED",
+      "condition": "Payment local commit thắng; close trả cùng transaction để Clinical confirm."
+    },
+    {
+      "id": "lease-timeout",
+      "inputDefinition": "PaymentLockCommand",
+      "expectedOutcome": "PREPARING_SAME_OPERATION",
+      "condition": "Không có response acquire; không kết luận thất bại, retry cùng operationId."
+    },
+    {
+      "id": "late-acquire-after-release",
+      "inputDefinition": "PaymentLockCommand",
+      "expectedHttp": 409,
+      "expectedCode": "PAYMENT_OPERATION_CLOSED",
+      "condition": "Clinical operation/fence tombstone cấm khôi phục giữ chỗ đã release."
+    },
+    {
+      "id": "payment-amount-mismatch",
+      "inputDefinition": "ScheduledPaymentCommand",
+      "expectedHttp": 422,
+      "expectedCode": "PAYMENT_AMOUNT_MISMATCH",
+      "condition": "Amount khác exact remainingAmount dưới Billing lock."
+    },
+    {
+      "id": "v1-payment-bypass",
+      "expectedHttp": 409,
+      "expectedCode": "BILLING_PAYMENT_FLOW_REQUIRED",
+      "condition": "Dùng write V1 vào request bound registration version 2."
+    },
+    {
+      "id": "followup-feature-closed",
+      "inputDefinition": "RegistrationCreate",
+      "expectedHttp": 422,
+      "expectedCode": "FOLLOW_UP_NOT_ENABLED",
+      "condition": "visitType FOLLOW_UP, previousRegistrationId hợp lệ nhưng WF-04 chưa mở."
+    },
+    {
+      "id": "confirmed-before-arrival",
+      "expectedOutcome": "CONFIRMED_NOT_READY",
+      "condition": "PREBOOKED đã trả đủ và reservation confirmed; checkedInAt null nên readyForExam false."
+    },
+    {
+      "id": "out-of-order-cancellation",
+      "expectedOutcome": "NO_REQUEST_CREATED",
+      "condition": "Billing nhận cancellation revision mới trước source-create; terminal tombstone chặn create cũ."
+    },
+    {
+      "id": "config-capacity-below-occupied",
+      "inputDefinition": "SessionUpdate",
+      "expectedHttp": 409,
+      "expectedCode": "SESSION_HAS_REGISTRATIONS",
+      "condition": "capacity mới thấp hơn tổng occupied hoặc đổi doctor/room/time khi có registrations."
+    },
+    {
+      "id": "operation-not-found-keep-hold",
+      "inputDefinition": "ClosePaymentCommand",
+      "expectedHttp": 404,
+      "expectedCode": "PAYMENT_OPERATION_NOT_FOUND",
+      "condition": "Clinical giữ PAYMENT_LOCKED, đối soát/phục hồi; không giải phóng từ absence."
+    },
+    {
+      "id": "commit-after-hold-ttl-with-lease",
+      "inputDefinition": "ScheduledPaymentCommand",
+      "expectedOutcome": "COMPLETED_SAME_OPERATION",
+      "condition": "Lease được acquire trước TTL; local commit sau TTL vẫn có quyền dùng suất của operation."
+    },
+    {
+      "id": "payment-confirmation-after-session-end",
+      "inputDefinition": "PaymentResolution",
+      "expectedOutcome": "RECONCILIATION_REQUIRED",
+      "condition": "Paid receipt đúng nhưng buổi đã kết thúc; không tự cấp số khám, cần đổi lịch/hoàn có audit."
+    }
+  ]
+}

@@ -1,5 +1,13 @@
 # Frontend Workboard
 
+## Điều phối tài liệu — 2026-10-26
+
+Nghiệp vụ mới và thứ tự triển khai theo [kế hoạch ngoại trú](../../docs/plans/07-outpatient-workflow-implementation.md).
+Phụ thuộc theo [registry backend](../../docs/handoffs/README.md) và [registry frontend](handoffs/README.md).
+Các mục theo ngày bên dưới là checkpoint của baseline tương ứng; số test cũ không nghiệm thu
+lịch khám, đặt chỗ, tái khám hoặc chính sách BHYT mới. Chưa cập nhật trạng thái hoàn thành của
+các tính năng này chỉ bằng đợt chuẩn hóa tài liệu.
+
 ## Pharmacy / Report usability recheck — 2026-10-25
 
 Catalogue name/ingredient search now combines with server-side stock and expiry filters;
@@ -622,7 +630,7 @@ outside this change.
   no Lab/Inpatient source changes or full-suite PASS claim. Logs: ignored `.patient-*.log` files.
 
 Signed Gateway/browser/packaged acceptance remains open. Shared old-request 401 session clearing
-remains tracked in `docs/handoffs/HANDOFF-HUY-MVP.md`; Patient guards cannot fix shared transport.
+was tracked in the [Huy checkpoint](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md); current follow-up uses the [handoff registry](../../docs/handoffs/README.md). Patient guards cannot fix shared transport.
 Headless entry points, mounting requirements and limits: [Patient guide](services/patient.md).
 Changes are local; no commit or push at this checkpoint.
 
@@ -803,7 +811,7 @@ không dùng 48/48 backend làm tiến độ FE hoặc reset lịch sử.
 - Audit 2026-10-18, baseline `025ef39e`: Pharmacy/Report **235/235 tests, 22 files**,
   typecheck/lint PASS. Không chạy build/browser trong lượt audit; chưa có FE production diff mới.
 - Surgery/Inpatient/full V2 deferred; logical feature folders giữ riêng. Dependency dùng
-  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo file bàn giao mới.
+  [một handoff Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md), không tạo file bàn giao mới.
 - Foundation checkpoint trước mở rộng scope: 268/268 Pharmacy/Report, 24 files; full 396/396,
   47 files và typecheck/lint/build PASS. **Final candidate: 474/474 tests, 53 files**, zero failures/skips;
   typecheck/lint/build PASS, exit 0. Chỉ có jsdom navigation warning hiện có. Chi tiết ở plan mục 8.
@@ -864,7 +872,7 @@ Tiếp tục **FE-VINH-MVP-01/04**, chưa đóng toàn task hoặc mở V1 contr
   Đây là local evidence; signed-role/real-source/Support acceptance còn mở.
 - Chi tiết [plan mục 15](huy-frontend-implementation-plan.md#15-checkpoint-report-ngoại-trú-theo-backend-mvp--2026-10-16).
   Đây là task MVP bổ sung; giữ mẫu số lịch sử 11/30 và 50/123, không mở Surgery/full V2.
-  Phụ thuộc dùng [handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  Phụ thuộc dùng [handoff chung](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
   Thay đổi batch mới chưa commit/push.
 - P-08 còn cần shared API hỗ trợ header `Idempotency-Key`, cùng source/paid/activation acceptance.
   DTO đọc đơn hiện chưa xuất metadata V1; không suy diễn fields hoặc tự mở public mutation.
@@ -883,7 +891,7 @@ Task: một phần **FE-VINH-MVP-01/04 / FE-LAB-04**, theo component lifecycle/p
   stale mutation, đổi hồ sơ xóa cancel draft, quyền NURSE/DOCTOR/LAB_TECH/ADMIN, terminal states,
   payment/lifecycle riêng biệt và giữ nguyên textual results. Mock API/session; không paid E2E.
 - Backend dependencies đã refresh: Lộc L1/L2 đã có; Lộc L3/L4 và Hoàng Anh G1 còn mở tại
-  [handoff backend](../../docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+  [handoff backend](../../docs/handoffs/history/2026-10-18-billing-notification-checkpoints.md).
   Không mở lại Lab-order/Rx producer implementation; FE-02/03 V1 controls vẫn chờ runtime acceptance.
 - Verification final: `pnpm typecheck`, `pnpm lint`, `pnpm build` đều exit 0;
   `pnpm test -- --maxWorkers=2`: **277/277 tests, 35 files**, không failures/skips;
@@ -925,7 +933,7 @@ shared frame chỉ trong những paths được giao ở mục kế tiếp. Khô
   xác nhận bằng bàn phím và bố cục desktop/mobile dùng cùng theme Sáng/Tối/Hệ thống.
   Fixture/session cô lập, không dùng DB/token thật, đã đăng xuất và dừng server kiểm tra.
 - Phụ thuộc runtime/Gateway/source/paid/Support/coverage gom vào
-  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  [một handoff Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
   Local UI/test không thay signed-role hoặc sáu-app backend acceptance. Chưa commit/push.
 
 ## Khung dùng chung 6 service — 2026-10-16
@@ -955,7 +963,7 @@ MVP mới. Scope canonical đã chuyển về ngoại trú; Inpatient/Surgery de
 FE-INPATIENT-03 để đóng MVP. Không xóa code/UI lịch sử trong lượt cập nhật workboard này.
 
 Backend source lock, việc Vinh còn phải làm và handoffs cho các owner nằm tại
-[Vinh backend closeout](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
+[Vinh backend closeout](../../docs/handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
 Giữ một registry cho backend gaps; frontend không tự suy contract thay producer.
 
 | Thứ tự | Việc tiếp theo của Vinh | Điều kiện |

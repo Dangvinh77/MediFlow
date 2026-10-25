@@ -1,5 +1,16 @@
 # Vinh — receipt thanh toán Notification V1 chưa giữ byte identity
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-07`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Vinh/Notification → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Phát hiện 2026-10-19 trên base `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
 Owner: **Vinh**, tiếp quản Notification từ Lộc theo phân công người dùng.
 Trạng thái: **đã có implementation, chờ final runtime acceptance**; không tính thành backend

@@ -1,5 +1,9 @@
 # HANDOFF — Clinical/Lab financial clearance
 
+**Phân loại ngày 26/10/2026: HISTORICAL CHECKPOINT — không là backlog hiện hành.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 **Status:** ACTIVE — authoritative request issuance exists; L1/L2 implementation and partial L3 broker/recovery proof (default OFF) have evidence
 (see the discovery handoff §5/§7); L3 failure/ordering coverage and L4 artifact delivery remain open; G1 Gateway route and V-CLOSE-03 consumer acceptance remain open.
 **Owner:** Lộc (`locgit-89`), Billing.
@@ -7,7 +11,7 @@
 
 ## Current implementation handoff — 2026-10-16
 
-Source `71e2684d`: thực hiện [Lộc discovery/publication L1–L4](../../docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+Source `71e2684d`: thực hiện [Lộc discovery/publication L1–L4](2026-10-18-billing-notification-checkpoints.md)
 theo contract/checklist đã chốt; không cần viết kế hoạch khác. Hoàng Anh owns G1 Gateway.
 Các mục lịch sử bên dưới nói "published clearance" phải được đọc với giới hạn này:
 `ExamChargeRabbitIntegrationTest`/`LabTestChargeRabbitIntegrationTest` tắt dispatcher, lấy
@@ -23,7 +27,7 @@ nghiệm thu actual delivery (không dùng evidence Billing này để tự coi 
 
 ## Producer
 
-Billing produces `financial.clearance.granted` version 1 after an authoritative charge request is paid or an approved emergency path is recorded. The durable payload and target rules are defined in [`CONTRACT-CARE-BILLING-01`](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
+Billing produces `financial.clearance.granted` version 1 after an authoritative charge request is paid or an approved emergency path is recorded. The durable payload and target rules are defined in [`CONTRACT-CARE-BILLING-01`](../care-finance/CONTRACT-CARE-BILLING-01.md).
 
 ## Consumer
 

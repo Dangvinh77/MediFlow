@@ -1,6 +1,11 @@
 # MediFlow demo 25/10/2026
 
-Use branch `codex/fix-lab-clearance-identity` and rebuild the JARs. The SQL snapshot
+**Đọc trước khi bảo vệ:** [nghiệp vụ hiện hành 25/10](../../docs/plans/02-business-flows.md)
+đã chốt lịch khám, tái khám và BHYT mô phỏng. Các runbook ở đây vẫn là baseline runtime;
+chưa chứng minh các yêu cầu mới đã có. Xem [gap và tiêu chí chuyển demo](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Use the source commit recorded in the selected guide and rebuild matching binaries; the old
+`codex/fix-lab-clearance-identity` branch name is historical, not a required checkout. The SQL snapshot
 was generated at baseline `64a1f043`; it contains explicitly audited historical
 `EMERGENCY_DEMO` cases. Keep their audit intact. A fresh normal paid flow is verified
 separately by the packaged acceptance runner.

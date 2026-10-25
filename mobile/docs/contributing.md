@@ -14,7 +14,7 @@ Mỗi dev sửa feature sở hữu và test có tên context riêng. app/, core/
 
 ## Từng bước cho Lộc
 
-1. Đọc docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md từ repo root; hoàn thành tiêu chí backend liên quan trước khi bật luồng phụ thuộc.
+1. Đọc [registry bàn giao hiện hành](../../docs/handoffs/README.md) và [hợp đồng hệ thống](../../docs/plans/03-contracts.md); hoàn thành tiêu chí backend liên quan trước khi bật luồng phụ thuộc. Checkpoint Billing/Notification cũ nằm trong history, không giao lại ownership backend.
 2. Làm danh sách hóa đơn chỉ đọc trong billing/: khóa DTO/role thật, repository, use case, page và test phân trang/lỗi; bàn giao Vinh nối route.
 3. Làm chi tiết: phân biệt thiếu quyền, không tồn tại, chưa sẵn sàng và đã thanh toán. Không biến lỗi API thành “chưa thanh toán”.
 4. Chỉ thêm thanh toán sau khi khóa hợp đồng idempotency/trạng thái backend. Chặn nhấn đôi, không suy luận thành công từ việc đã gửi request.
@@ -28,6 +28,6 @@ Mỗi dev sửa feature sở hữu và test có tên context riêng. app/, core/
 | Bệnh nhân/nhân sự/khoa, auth, Gateway | Hoàng Anh |
 | Lịch hẹn/hồ sơ khám/Lab | Vinh |
 | Thuốc/đơn thuốc/báo cáo | Huy |
-| Invoice discovery/publication/thanh toán/notification | Lộc |
+| Invoice discovery/publication/thanh toán/notification (backend) | Vinh |
 
 Lịch hẹn/Lab đọc được từ endpoint hiện có. Luồng thiếu hợp đồng giữ gate hiện tại và theo handoff, không thêm dữ liệu giả.

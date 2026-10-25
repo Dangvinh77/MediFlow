@@ -1,98 +1,64 @@
-# Registry bàn giao backend MVP
+# Registry bàn giao hiện hành — 26/10/2026
 
-## Review3 runtime — 22/10/2026
+Đọc [nghiệp vụ](../plans/02-business-flows.md), [contracts](../plans/03-contracts.md) và
+[kế hoạch WF-01–11](../plans/07-outpatient-workflow-implementation.md) trước khi giao việc.
+Registry này thay các bảng phân công theo checkpoint cũ; không là bằng chứng vừa chạy test.
+Baseline tài liệu: `dc2b8f2e5c9eb3c373a6feb0b2047ca22adf8317` cùng working-tree docs chưa commit.
 
-- [Runtime screenshot follow-up](HANDOFF-REVIEW3-RUNTIME-2026-10-22.md): quyền tra cứu
-  tên Core, UUID trong web Pharmacy, Lab clearance cũ và Report projection coverage.
-  Ảnh ghi đúng phản hồi quan sát; chưa xác nhận các luồng bị chặn đã hoàn tất.
+## Quy ước trạng thái
 
-## Frontend tra cứu tên — 22/10/2026
+- `ACTIVE CONTRACT GAP`: đã xác định yêu cầu liên owner còn cần source lock/bàn giao.
+- `NEEDS REVALIDATION`: có implementation hoặc evidence lịch sử; phải đối chiếu revision và
+  acceptance còn thiếu. Không giao viết lại code chỉ từ nhãn OPEN cũ, cũng không tự đóng.
+- `DEFERRED`: ngoài MVP ngoại trú; không là dependency phải làm trước WF-01–11.
+- `HISTORICAL`: checkpoint/evidence giữ để tra cứu, không là danh sách việc hiện tại.
 
-- [Core reference directory handoff](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md):
-  cần contract tối thiểu đúng quyền cho CASHIER/LAB_TECH/PATIENT và tìm tên nhân viên.
-  Frontend Vinh/Lộc đã dùng API hiện có cho các vai trò được phép; chưa đóng chọn tên
-  cho mọi vai trò. Không mở rộng quyền PatientDTO chỉ để phục vụ dropdown.
+Không dùng tổng số handoff hoặc test counts cũ làm tỷ lệ hoàn thành. Lượt chuẩn hóa không chạy
+regression backend, không xác nhận bug còn tồn tại trên binary đang chạy và không tự bật gate.
 
-## Docker recheck — 20/10/2026
+## Bàn giao còn cần xử lý hoặc xác minh
 
-Audit xác nhận **5 nhóm lỗi**: JWT fallback Billing/Notification và Lab outbox starvation thuộc
-Vinh; Patient event durability, department-head title và department/staff concurrency thuộc
-Hoàng Anh. Race HA-AUDIT-03 đã có PostgreSQL proof, không còn chỉ là nghi vấn static.
+| ID | Trạng thái | Producer/code owner → người nhận | Việc cụ thể còn phải xác minh | Hồ sơ/acceptance |
+|---|---|---|---|---|
+| H-01 | ACTIVE CONTRACT GAP | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Chốt reference DTO tối thiểu theo role; directory PHARMACIST đã có checkpoint 25/10, không yêu cầu tạo lại; phần CASHIER/LAB_TECH/PATIENT và staff name phải khóa từ source | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
+| H-02 | NEEDS REVALIDATION | Hoàng Anh/Core → Vinh verification | Patient outbox, department-head/race: implementation có checkpoint 21/10; kiểm consumer/replay và packaged trên artifact cuối | [Core audit](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) |
+| H-03 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → Vinh verification | JWT expiration và caller credential verifier đã có bản sửa; đối chiếu merged revision, test và runtime; race chuyển H-02, không mở task thứ hai | [JWT/Core](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
+| H-04 | NEEDS REVALIDATION | Hoàng Anh/Gateway + Vinh/Billing → Vinh verification | Hai refund routes đã có code và policy proof; còn xác nhận đúng phạm vi HTTP/Billing/refund race, không giao viết lại routes | [Refund routes](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) |
+| H-05 | NEEDS REVALIDATION | Huy/Pharmacy/Report → Vinh verification | Mandatory exp có source fix và PG/Rabbit suite checkpoint; đối chiếu final artifact/Gateway/Support, không yêu cầu sửa parser lại từ báo cáo lỗi cũ | [JWT Pharmacy/Report](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
+| H-06 | NEEDS REVALIDATION | Huy/FE Pharmacy → Vinh review + Huy consumer | V1 dispense có implementation/browser proof; xác định còn thiếu expired/revoked/unavailable/V0 cases nào trên final candidate | [Dispense UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
+| H-07 | NEEDS REVALIDATION | Vinh/Notification → Vinh verification | Raw-byte identity có implementation/upgrade runbook; final packaged acceptance và historical raw-NULL policy cần đối chiếu evidence | [Byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md) |
+| H-08 | NEEDS REVALIDATION | Vinh/Lab/Billing, Huy/Report, Hoàng Anh/Core → từng consumer | Review3 ghi lỗi theo môi trường 22/10; Lab paid fresh flow đã có proof 25/10, Report snapshot closed-day smoke không thay current coverage, reference permissions theo H-01 | [Runtime observations](HANDOFF-REVIEW3-RUNTIME-2026-10-22.md); [Lab proof](../../scripts/demo_25_10/FOLLOWUP-VERIFICATION.md) |
+| H-09 | NEEDS REVALIDATION | Tất cả owner → Vinh verification | Khóa final revision/flags, gom evidence, chạy acceptance còn thiếu; queue 18/10 không phải kết quả mới | [Verification queue](HANDOFF-VINH-BACKEND-VERIFICATION.md); [runbook](../plans/06-acceptance-runbook.md) |
+| H-10 | ACTIVE CONTRACT GAP | Hoàng Anh/Core/Gateway, Vinh/Clinical/Billing/Lab/Notification, Huy/Pharmacy/Report → từng consumer | G-01–04 và phần G-09/G-11 đã có TARGET wire lịch/giữ suất trong 03; producer chưa triển khai/nghiệm thu; policy hỗ trợ/zero eligibility, tái khám/report vẫn còn gap | [WF-01 cross-owner contracts](HANDOFF-WF01-OUTPATIENT-CONTRACT-GAPS-2026-10-26.md); [source audit](../plans/09-outpatient-source-lock-2026-10-26.md); [SC acceptance](../plans/10-scheduling-contract-acceptance.md) |
 
-- [Core owner handoff, 3 lỗi và tiêu chí nghiệm thu](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
-- [Evidence và trạng thái kiểm thử lượt này](../acceptance/backend-audit-2026-10-20/README.md).
+## Tách việc mới khỏi việc kiểm chứng baseline
 
-Cập nhật owner 21/10: ba lỗi Core đã có implementation trên `codex/core-audit-reliability`;
-full Core local **205 tests xanh, không skip**, gồm regression PostgreSQL/RabbitMQ.
-[Quy định chức danh/trưởng khoa và outbox](../../backend/core-service/docs.md).
-Handoff còn mở để Vinh nghiệm thu Gateway/Notification/packaged trên commit cuối,
-đặc biệt consumer dedupe khi replay welcome event.
+WF-01–11 là backlog nghiệp vụ mới: schedule, reception, revisit, hỗ trợ BHYT và UI/Report.
+Chúng không được coi đã hoàn thành bởi acceptance baseline 17–25/10. Source lock trước khi
+sửa; nếu cần producer khác đổi field/permission thì mở handoff với exact fixture và consumer.
+Không tạo một bản sao toàn bộ WF trong mỗi service.
 
-Các số test lịch sử bên dưới không thay kết quả trên revision mới. Không kết luận hết lỗi chỉ
-từ suite mặc định hoặc đóng các packaged profile chưa chạy.
+Backend owners hiện hành: Vinh/Clinical/Lab/Billing/Notification; Huy/Pharmacy/Report;
+Hoàng Anh/Core/Gateway. Support là composition, không gộp ownership. Frontend giữ riêng
+[ma trận ownership](../ai/15-frontend-ownership.md); backend takeover không đổi FE ownership.
+User delegation trong từng task vẫn có hiệu lực đúng phạm vi đã giao.
 
-## Audit API/nghiệp vụ bổ sung — 19/10/2026
+## Lịch sử, deferred và đường dẫn tương thích
 
-PR #439 đã merge; audit tiếp theo khóa base `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
-Các ghi nhận recheck bên dưới là lịch sử tại source lock của chúng. Không dùng tên tag hoặc
-suite mặc định xanh để kết luận những regression mới sau đây đã đóng.
+- [Các checkpoint lịch sử](history/README.md): code/test evidence, không giao lại việc theo owner cũ.
+- [Phần hoãn](deferred/README.md): Inpatient deposit/settlement và Surgery consumer, giữ gates OFF.
+- [Frontend handoffs](../../frontend/docs/handoffs/README.md): chỉ composition/shared/consumer FE;
+  endpoint/DTO/roles/events bị thiếu đăng ký ở registry backend này.
+- [Care-finance compatibility pointers](care-finance/README.md): các file CONTRACT cũ chỉ dẫn
+  về 02/03/01; không chứa schema độc lập. Giữ cho external agent/skill links, không tạo contract mới ở đây.
+- [Biên bản chuẩn hóa](../plans/08-documentation-cleanup-2026-10-26.md): inventory và điều kiện bước tiếp theo.
 
-| Owner | Việc hiện hành | Evidence / handoff |
-|---|---|---|
-| Vinh | Đã sửa Billing credential boundary, Lab exact clearance khi ghi kết quả, Notification mandatory JWT exp | [Audit evidence](../acceptance/backend-api-audit-2026-10-19/README.md): 5.734 default tests xanh và 1 packaged runtime acceptance xanh; global closeout vẫn NO-GO |
-| Hoàng Anh | Đã tái hiện thiếu expiration và Pharmacy service gọi được credential verifier; department/staff race còn cần PG proof | [JWT/Core audit](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
-| Vinh | Notification V1 đã có fix raw-byte identity và archive backfill; chờ final runtime acceptance trước đóng handoff | [Notification byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md), [evidence mới](../acceptance/notification-v1-byte-identity-2026-10-19/README.md) |
-| Huy | FE Pharmacy dùng boolean receipt legacy để chặn command xuất thuốc V1 | [Pharmacy V1 UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
-| Huy | Pharmacy và route Report outpatient đều đã tái hiện thiếu mandatory exp; cần đồng bộ boundary | [Pharmacy/Report JWT](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
+## Lifecycle bắt buộc
 
-Backend chưa đạt trạng thái đóng sạch khi các mục xác nhận còn mở. Production fixes ngoài
-scope Vinh vẫn giao đúng owner; Vinh kiểm thử chung và review evidence trước đóng handoff.
+Mỗi handoff mới ghi: status, ngày, source commit/flags, producer/consumer owner, exact paths,
+thiếu field/behavior/permission nào, request/response hoặc event fixture, tiêu chí test,
+compatibility và resume owner. Không suy quyền sửa module từ handoff.
 
-## Lịch sử recheck trước audit bổ sung
-
-Refresh **2026-10-19**, source remote master `4c19dd4a`, gồm Gateway fix PR #431
-(`2805b07c`). Bản sửa test và tài liệu trong lượt recheck vẫn là local diff cho đến khi
-được commit/merge; không nhầm với nguồn remote đã đóng mọi acceptance.
-Theo phân công người dùng: phần cần code giao đúng dev; **Vinh kiểm thử toàn bộ backend**,
-gồm module regression, phân quyền, integration và recovery. Phân công test không tự mở
-quyền sửa production của dev khác.
-
-## Sau kiểm thử thực tế
-
-[Recheck 19/10](../acceptance/backend-recheck-2026-10-19/README.md) xác nhận Gateway
-explicit refund acceptance **11/11 pass**, full Gateway **1.449/1.449 pass**, không skips.
-Số liệu 4/11 đỏ ở [bundle 18/10](../acceptance/backend-2026-10-18/README.md) là lịch sử
-trước fix, không phải kết quả trên master mới. Hai lỗi test Report/Pharmacy vẫn có trong
-remote master và tag đóng backend; sửa local chưa commit không làm nguồn chung tự thay đổi.
-[V-TEST-BUG-01/02](HANDOFF-VINH-BACKEND-TEST-FAILURES.md) do Vinh sửa test và retest;
-không giao production fix cho Huy chỉ từ lỗi harness. Rerun/skip ghi riêng trong bundle mới.
-
-## Code Gateway và phần xác minh còn lại
-
-| Dev | Task đã xác nhận còn mở | Handoff |
-|---|---|---|
-| Hoàng Anh | HA-CODE-01/02 đã sửa production tại `2805b07c`; không còn yêu cầu viết lại hai route. Policy retest và Gateway suite đã pass; phần acceptance runtime rộng hơn ghi riêng, không suy từ 11 filter cases | [Gateway Billing refunds](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) |
-
-Billing controllers đã có, flags đang bật trong default Compose; không giao lại Billing code cho Lộc.
-Trong source/handoffs đã rà soát, chưa xác nhận gap code MVP cụ thể khác ở Core/Clinical/Lab/
-Pharmacy/Billing/Notification/Report/Support. Đây không là kết luận toàn backend đã pass;
-Vinh bổ sung bug/code task cho đúng owner nếu kiểm thử phát hiện lỗi.
-
-## Toàn bộ kiểm thử — Vinh
-
-- [Queue Vinh V-TEST-01–06](HANDOFF-VINH-BACKEND-VERIFICATION.md): full module suites,
-  packaged/distributed profiles, refund routes, tích hợp và recovery trên final revision chung.
-- [Vinh Clinical/Lab closeout](HANDOFF-VINH-OUTPATIENT-MVP.md) và
-  [Billing/Notification closeout](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md):
-  PR #427 đã hoàn tất owned implementation, publication/replay/timestamp, paid EXAM/Lab
-  và crash recovery. Không giao lại LOC-01–06 từ checklist lịch sử.
-- [Huy Pharmacy/Report/Support](HANDOFF-HUY-MVP.md): 48/48 cho môi trường local đã quan sát,
-  actual sáu-app EXAM/Rx và persisted-volume rehearsal đã có ngày 17/10. Không giao lại code;
-  fresh regression/integration trên final revision chuyển Vinh.
-
-[Plan MVP](../plans/05-implementation-plan.md), [contracts](../plans/03-contracts.md),
-[reliability](../plans/04-data-reliability.md) và [runbook](../plans/06-acceptance-runbook.md)
-là canonical. Historical checklists không thay current source/evidence. Deployment activation
-và global release cần evidence của chính môi trường đích; không tự bật flags từ phân công này.
-Inpatient/Surgery/full V2 deferred. Đóng/xóa handoff code khi cả implementation và nghiệm thu
-đạt, chuyển lasting rules vào canonical docs.
+Sau khi cả hai phía đạt acceptance: chuyển lasting rules vào 02/03/04 hoặc service runbook;
+ghi evidence tương ứng, xóa handoff và registry entry cùng thay đổi. Evidence gốc được giữ.
+Nếu chỉ có implementation và thiếu acceptance thì giữ NEEDS REVALIDATION; không xóa để làm sạch.

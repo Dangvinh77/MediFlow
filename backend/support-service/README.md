@@ -1,5 +1,18 @@
 # Support host — Report + Notification
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+Standalone launcher của Report/Notification là compatibility/rollback; mặc định chạy Support.
+
 Support is one Spring Boot executable and Eureka registration (`support-service`, port 8087).
 It imports the existing Report and Notification `lib` artifacts through explicit module entry
 points. Business packages and public wire contracts remain in their original modules. Clients
@@ -116,7 +129,7 @@ Notification's full 279 tests, Support's 18 tests (including five real store/bro
 cases) and the actual packaged restart test passed with zero failures/errors/skips.
 The packaged health check was corrected to retry connection refusal during startup while
 still failing on process exit or assertion failures. Historical Docker-unavailable notes in
-the [single Huy handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) describe earlier runs only.
+the [single Huy handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md) describe earlier runs only.
 
 The actual six-app acceptance also passed, including paid EXAM/Rx, Pharmacy restart and
 Support → legacy launchers → Support rollback on the current disposable stores, retaining a

@@ -1,5 +1,16 @@
 # Hoàng Anh — bổ sung Gateway routes hoàn tiền ngoại trú
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-04`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Hoàng Anh/Gateway và Vinh/Billing → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 **Refresh:** 2026-10-19, remote master `4c19dd4a`.
 **Trạng thái:** CODE IMPLEMENTED tại `2805b07c` / PR #431; không giao lại code.
 Vinh retest ngày 19/10: explicit routes 11/11 và full Gateway 1.449/1.449, không skips.

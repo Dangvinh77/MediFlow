@@ -60,7 +60,7 @@ Sau khi H6-08.4 đạt, mốc local là 38/48. Bảy mục tiếp theo cần own
 
 H6-02.3, H6-12.2 và H6-12.3 vẫn cần approved inventory, evidence tổng và cutover/rollback.
 Không chuyển checkbox sang done chỉ vì đã đặt handoff. Chi tiết owner queue và acceptance nằm ở
-[handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md).
+[handoff chung Huy](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 ## 4. Chốt phần độc lập và gộp handoff — 2026-10-16
 

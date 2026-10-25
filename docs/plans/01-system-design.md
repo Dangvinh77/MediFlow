@@ -1,5 +1,17 @@
 # Thiết kế MediFlow — hệ thống thông tin bệnh viện cho ngoại trú
 
+## Điều chỉnh nghiệp vụ ngày 25/10/2026
+
+Nghiệp vụ đích theo [02](02-business-flows.md): lịch khám ngoại trú và giữ suất trước thu,
+đăng ký tại quầy gộp tiếp nhận, xác nhận phiếu sau đủ tài chính, tái khám liên kết lần trước,
+đọc kết quả trong cùng lượt, hỗ trợ BHYT mô phỏng theo từng dịch vụ. Mọi người bệnh mặc định
+đủ điều kiện/thẻ còn hạn; tỷ lệ do dự án chọn, không là mức hưởng hoặc quyết toán BHXH thực tế.
+
+Clinical owns lịch khám/giữ suất và lời hẹn tái khám; Core owns staff/khoa/patient. Billing owns
+policy hỗ trợ, snapshot giá và patient liability; Report tách hỗ trợ khỏi cash. Giữ sáu deployments,
+tám context stores và scope deferred. [Kế hoạch WF-01–11](07-outpatient-workflow-implementation.md)
+ghi gap chưa triển khai; topology đã chạy không chứng minh tính năng mới đã có.
+
 ## Định vị sản phẩm
 
 **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management.**
@@ -23,8 +35,8 @@ Giảm việc bằng giảm phạm vi nghiệm thu, không chỉ đóng gói 10 
 | clinical-service | Appointment, khám, diagnosis, chỉ định và completion ngoại trú | Clinical | Vinh |
 | lab-service | Request, trạng thái, kết quả xét nghiệm | Lab | Vinh |
 | pharmacy-service | Drug, stock reservation, prescription, dispense | Pharmacy | Huy |
-| billing-service | Charge, invoice/request, payment, clearance và compensation/refund | Billing | Lộc |
-| support-service | Report read model + in-app notification | Report + Notification | Huy/Report, Lộc/Notification |
+| billing-service | Charge, invoice/request, payment, clearance và compensation/refund | Billing | Vinh |
+| support-service | Report read model + in-app notification | Report + Notification | Huy/Report, Vinh/Notification |
 
 Support do Huy điều phối đóng gói; việc đó không chuyển ownership Notification cho Huy.
 Hoàng Anh giữ Gateway; Vinh điều phối shared build/CI và frontend shared scope khi được giao.

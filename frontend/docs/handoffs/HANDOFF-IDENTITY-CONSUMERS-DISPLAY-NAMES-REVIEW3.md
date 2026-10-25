@@ -1,5 +1,11 @@
 # HANDOFF: Identity → nghiệp vụ web/mobile — hiển thị tên thay UUID
 
+**Điều phối 26/10/2026: NEEDS REVALIDATION.** Đã có các checkpoint implementation 24–25/10;
+không áp mô tả chưa triển khai ngày 22/10 thành trạng thái hiện tại. Xem [registry FE](README.md)
+và [backend H-01](../../../docs/handoffs/README.md).
+
+## Hồ sơ theo ngày
+
 - **Status:** ACTIVE — người dùng giao dev xử lý sau; chưa triển khai trong phiên này.
 - **Ngày:** 2026-10-22.
 - **Producer owner:** Hoàng Anh (`TranHoangAnh94`) — đối chiếu contract và quyền đọc Patient/Organization qua Gateway; Vinh (`Dangvinh77` / `Harori`) — điều phối phần hiển thị dùng chung nếu cần.
@@ -86,7 +92,7 @@ xem [plan verification](../../../docs/superpowers/plans/2026-10-22-frontend-huma
 - Contract đã đối chiếu Core DTO/controller và Gateway role matrix: Patient `maBenhNhan/hoTen`,
   staff `staffId/fullName`, department `departmentId/departmentName`. PHARMACIST chưa được phép
   đọc cả ba public detail API; UI giữ UUID và báo giới hạn, không gọi lookup service-only.
-  Gap/decision được gom trong [handoff chung Huy](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+  Gap/decision được gom trong [handoff chung Huy](../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 - Đây là **implementation + automated verification**, chưa phải nghiệm thu Gateway/ảnh Review3
   của candidate mới. Không thay inventory/screenshot cũ hoặc đóng handoff của các owner khác.
 

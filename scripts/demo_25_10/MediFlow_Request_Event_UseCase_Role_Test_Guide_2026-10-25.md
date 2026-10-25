@@ -1,5 +1,14 @@
 # MediFlow — Request/response, event, ports và kiểm thử use case theo role
 
+> **Phạm vi baseline — cập nhật 25/10/2026:** các lệnh/API và kịch bản bên dưới mô tả mã nguồn
+> được khóa trong hướng dẫn, không là nghiệm thu luồng nghiệp vụ mới. Quy tắc hiện hành về
+> lịch khám theo ca, giữ suất, đăng ký tại quầy, tái khám và BHYT mô phỏng nằm tại
+> [02-business-flows](../../docs/plans/02-business-flows.md); phần chưa triển khai và thứ tự sửa ở
+> [WF-01–11](../../docs/plans/07-outpatient-workflow-implementation.md), test đích ở
+> [ma trận WF](../../docs/plans/06-acceptance-runbook.md).
+> Tiếp tục dùng phần khởi động/restore phù hợp binary hiện tại; không nhập thêm field hỗ trợ BHYT
+> vào API cũ, không thay snapshot tiền hoặc kết luận đã có kiểm lịch ca từ màn hình chọn bác sĩ.
+
 > Biên soạn ngày **25/10/2026, Asia/Saigon**, đối chiếu revision **`eac2cd7b`** trên `master` sau khi đồng bộ `origin/master`.
 > Đây là cẩm nang đọc source và tổng duyệt, **không phải xác nhận tất cả use case đã PASS**. JSON có `<...>` phải thay bằng dữ liệu thật. Tên hàm, class, field, role và event giữ tiếng Anh đúng code; phần diễn giải dùng tiếng Việt.
 

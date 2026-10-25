@@ -1,5 +1,9 @@
 # HANDOFF — Inpatient deposit and settlement
 
+**Phân loại ngày 26/10/2026: DEFERRED — ngoài MVP ngoại trú.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 **Status:** ACTIVE — opt-in initial deposit issuance, discharge freeze/settlement, local deposit
 allocation and separate initial final-recognition writer exist (default off). Top-up policy,
 insurance attribution/corrections and live end-to-end close acceptance remain open. The settlement
@@ -9,7 +13,7 @@ path below does not itself emit the separate recognition companion required by R
 
 ## Producer
 
-Billing produces purpose-scoped `financial.clearance.granted`, `deposit.topup.required` and `settlement.completed` version-1 facts. Contract fields and episode rules are canonical in [`CONTRACT-CARE-BILLING-01`](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
+Billing produces purpose-scoped `financial.clearance.granted`, `deposit.topup.required` and `settlement.completed` version-1 facts. Contract fields and episode rules are canonical in [`CONTRACT-CARE-BILLING-01`](../care-finance/CONTRACT-CARE-BILLING-01.md).
 
 ## Consumer
 
@@ -23,7 +27,7 @@ insurance attribution, reversal, debt/waiver, historical final settlement and re
 publication or Inpatient close permission is enabled by implementation alone. Report's isolated
 recognition intake and matching original cash evidence do not supply deposit request/top-up or
 the full referral -> admission -> medical discharge -> close broker workflow.
-[Canonical initial-final writer](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10).
+[Canonical initial-final writer](../care-finance/CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10).
 
 Continuation 2026-10-10: exact Inpatient medical proof now closes charges through the gated single
 Billing dispatcher, with durable PENDING_ACCOUNT when financial context is absent. Financial issuers
@@ -31,19 +35,19 @@ cannot replace Inpatient patient authority. The independently gated allocation c
 charges from one original deposit; the actual refund command can return its unused remainder without
 undoing funded charges. Both remain non-final/HELD. That earlier tranche added no final settlement, initial deposit issuer,
 automatic pending account creation or permission to close Inpatient has been added.
-[Canonical rules](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#local-admission-deposit-allocation-and-unused-cash-refund--2026-10-10).
+[Canonical rules](../care-finance/CONTRACT-CARE-BILLING-01.md#local-admission-deposit-allocation-and-unused-cash-refund--2026-10-10).
 
 Continuation 2026-10-10: the user-scoped implementation override now adds a non-final snapshot
 writer and Report receivable stock consumer. `settlement.reconciled` MUST NOT be interpreted as
 the final `settlement.completed` required below: finalSettlement is always false and all outbound
-rows remain HELD. Canonical [namespace/API/stock rules](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#non-final-versioned-reconciliation--2026-10-10).
+rows remain HELD. Canonical [namespace/API/stock rules](../care-finance/CONTRACT-CARE-BILLING-01.md#non-final-versioned-reconciliation--2026-10-10).
 
 Continuation 2026-10-09: the Billing reconciliation domain/read-only preview prerequisite is now
 implemented under Huy's user-scoped override, not deferred to Lộc. It verifies persisted totals in
 one bounded database snapshot, but creates no approval, allocation, settlement or event. The
 remaining owner actions and acceptance criteria below stay open; the GET must never be used by
 Report for REST enrichment or by Inpatient as financial clearance.
-[Canonical boundary](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#read-only-admission-ledger-reconciliation--2026-10-09).
+[Canonical boundary](../care-finance/CONTRACT-CARE-BILLING-01.md#read-only-admission-ledger-reconciliation--2026-10-09).
 
 1. Create the initial deposit request from `admission.deposit.requested` with exact admission and patient references.
 2. Publish live ADMISSION_DEPOSIT clearance after an authoritative payment allocation.

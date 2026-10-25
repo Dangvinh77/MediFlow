@@ -1,0 +1,21 @@
+flowchart TD
+    A[Người bệnh đến quầy] --> B[Tìm hoặc tạo hồ sơ bệnh nhân]
+    B --> C[Chọn khám mới hoặc tái khám]
+    C --> D[Chọn khoa và lịch bác sĩ còn suất]
+    D --> E[Đăng ký và giữ suất 15 phút]
+    E --> F[Billing tính giá và hỗ trợ mô phỏng]
+    F --> G{Người bệnh còn phải trả?}
+    G -->|Có| H[Thu ngân ghi nhận thanh toán]
+    G -->|Không| I[Billing xác nhận nghĩa vụ bằng 0]
+    H --> J[Xác nhận phiếu và số thứ tự]
+    I --> J
+    J --> K[Bác sĩ bắt đầu khám]
+    K --> L{Cần xét nghiệm?}
+    L -->|Có| M[Chỉ định rồi thu phí Lab và thực hiện]
+    M --> N[Bác sĩ đọc kết quả trong cùng lượt]
+    L -->|Không| O[Kết luận và kê đơn nếu cần]
+    N --> O
+    O --> P[Thu tiền thuốc rồi cấp thuốc nếu có]
+    O --> Q[Hoàn tất khám và hẹn tái khám nếu cần]
+    P --> R[Đối soát khi các nghĩa vụ đã xử lý xong]
+    Q --> R

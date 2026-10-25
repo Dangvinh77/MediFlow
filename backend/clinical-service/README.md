@@ -1,5 +1,17 @@
 # clinical-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Clinical owns appointments, reception/check-in, examinations and outpatient medical records.
@@ -9,7 +21,7 @@ Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../
 
 **Khoa Khám bệnh** — the outpatient examination workflow end to end: booking an appointment, the examination, the medical record and its diagnoses.
 
-Reference: [service rules](../../docs/ai/services/clinical.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
+Reference: [service rules](../../docs/ai/services/clinical.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
 
 - **Port:** 8082 · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB:** `mediflow_clinical`
 - **Owns tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`, `ATTACHED_RESULT`
@@ -21,7 +33,8 @@ They are **one department's single workflow**: book, examine, record. Separating
 nothing but distributed-systems overhead:
 
 - `MEDICAL_RECORD.appointment_id` points straight at `APPOINTMENT`. In one service that is a real foreign key; split apart it becomes a bare UUID across a network boundary.
-- Setting an appointment to `ARRIVED` when its record is created belongs in **one local transaction**: the patient showed up and was examined.
+- Legacy record creation and `ARRIVED` belong in one local transaction. `ARRIVED` means arrival, not proof that examination occurred.
+  The outpatient V1 path separately checks in, obtains exact EXAM authority and starts examination before recording clinical progress.
 
 Kept together, that is a local transaction. The two URL prefixes remain distinct, so the public API
 is exactly what `05-api-conventions.md` specifies.
@@ -45,7 +58,7 @@ with stable error codes.
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports
 independent of infrastructure. Cross-service wire rules live in the
 [event catalog](../../docs/ai/06-events-rabbitmq.md), the
-[care-finance contracts](../../docs/handoffs/care-finance/README.md), and the
+[care-finance contracts](../../docs/plans/03-contracts.md), and the
 [active handoff registry](../../docs/handoffs/README.md).
 
 The RabbitMQ publisher sends all four domain events as JSON to the durable shared exchange only

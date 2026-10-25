@@ -1,5 +1,17 @@
 # pharmacy-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Prescription browsing and assisted prescribing — 2026-10-25
 
 `GET /api/v1/pharmacy/prescriptions` lists prescriptions newest first, with zero-based
@@ -105,7 +117,7 @@ Expiry and proof timestamps are re-evaluated after reservation reads, including 
 exact record/patient/prescriber/department/episode and recheck freshness after receipt/stock lock
 waits. Calls are service-authenticated and outside mutation transactions, with absence distinct
 from outage. This is necessary relationship evidence only; public V1 remains fail-closed and
-HELD rows remain blocked. [Canonical contract](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
+HELD rows remain blocked. [Canonical contract](../../docs/plans/03-contracts.md).
 
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. The

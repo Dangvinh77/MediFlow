@@ -1,0 +1,4090 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-26",
+  "timezone": "Asia/Saigon",
+  "head": "dc2b8f2e5c9eb3c373a6feb0b2047ca22adf8317",
+  "branch": "master",
+  "scope": "Selected source-only evidence for WF-01; not whole-repository coverage, target wire approval, runtime or test acceptance.",
+  "hash_policy": "SHA-256 exact raw bytes, including newline style. git blob comparisons also use raw bytes; checkout line-ending conversion may differ from HEAD without a semantic source change.",
+  "fixture_policy": "Observed JSON shapes only. null/empty arrays do not establish schema nullability/item types. Existing fixtures may include DEFERRED examples; selection does not activate them.",
+  "graph_tool_result": "list_projects: Transport closed; direct source fallback",
+  "files": [
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/command/StartOutpatientExecutionCommand.java",
+      "sha256": "3ac5958f4dd3568032af7584273b7b61341493952cb3bcafbebd038d154d84d7",
+      "bytes": 591,
+      "git_blob_head": "f4028ddecfa781d2879ee6d500510bf837b4cafa",
+      "raw_git_blob_worktree": "f4028ddecfa781d2879ee6d500510bf837b4cafa",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StartOutpatientExecutionCommand",
+          "components_source": "@NotNull UUID operationId,\n        @NotNull @Pattern(regexp = \"EXAM|LAB_TEST\") String sourceType, @NotNull UUID sourceId,\n        @NotNull UUID patientId, @NotNull @Pattern(regexp = \"OUTPATIENT_VISIT|ADMISSION\") String careEpisodeType,\n        @NotNull UUID careEpisodeId"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/request/CompleteLedgerPaymentRequest.java",
+      "sha256": "b71d3aca59cb4dc4bda394a216c674883c236975f14e3c7c651a4e9c4c3e90e1",
+      "bytes": 808,
+      "git_blob_head": "feacb83482af583994869554b826576b2c4ba24f",
+      "raw_git_blob_worktree": "feacb83482af583994869554b826576b2c4ba24f",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CompleteLedgerPaymentRequest",
+          "components_source": "@NotBlank @Size(max = 120) String idempotencyKey,\n        @NotNull @DecimalMin(value = \"0\", inclusive = false) @Digits(integer = 17, fraction = 2) BigDecimal amount,\n        @NotBlank @Pattern(regexp = \"[A-Z]{3}\") String currency,\n        @NotNull PaymentMethod paymentMethod,\n        @Size(max = 120) String providerReference"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/request/RefundLedgerPaymentRequest.java",
+      "sha256": "d45231ee90abf9067d68852385a3cbb73f73c1831a22455625b37fe327c553c0",
+      "bytes": 581,
+      "git_blob_head": "b272e5b3a989a65a746ef38f517026d2c88c669a",
+      "raw_git_blob_worktree": "b272e5b3a989a65a746ef38f517026d2c88c669a",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "RefundLedgerPaymentRequest",
+          "components_source": "@NotBlank @Size(max = 120) String idempotencyKey,\n        @NotNull @DecimalMin(value = \"0\", inclusive = false) @Digits(integer = 17, fraction = 2) BigDecimal amount,\n        @NotBlank @Size(max = 500) String reason,\n        @NotNull PaymentMethod paymentMethod"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/response/FinancialClearanceLookupDTO.java",
+      "sha256": "5dec1aea11ddb94ffab903d33fba201fe65d57bc36702fbab415ef32b0fc6dcf",
+      "bytes": 465,
+      "git_blob_head": "b5232daf46b0b7209fcd0a335f00c4f2b6178511",
+      "raw_git_blob_worktree": "b5232daf46b0b7209fcd0a335f00c4f2b6178511",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "FinancialClearanceLookupDTO",
+          "components_source": "boolean exists, UUID clearanceId, boolean eligible, UUID invoiceId,\n        UUID accountId, UUID patientId, String purpose, String careEpisodeType, UUID careEpisodeId,\n        UUID admissionId, UUID surgeryCaseId, Instant grantedAt, Instant expiresAt, Instant observedAt,\n        String sourceType, UUID sourceId"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/response/LedgerPaymentDTO.java",
+      "sha256": "76d69f6339124ffa8827ec14fc9c20d779bc221eee73514db5931d1bab9aac7c",
+      "bytes": 573,
+      "git_blob_head": "a4bf856292370c8a1da443160cf63b0393183805",
+      "raw_git_blob_worktree": "a4bf856292370c8a1da443160cf63b0393183805",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LedgerPaymentDTO",
+          "components_source": "UUID transactionId, UUID accountId, UUID paymentRequestId,\n                               PaymentClassification classification, PaymentTransactionStatus status,\n                               BigDecimal amount, String currency, String paymentMethod, Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/response/LedgerRefundDTO.java",
+      "sha256": "715dae9969eb88791b9e1eada0f9df37a6ed2569445a7ea14a83ce93f870152f",
+      "bytes": 559,
+      "git_blob_head": "9c12b6eb06b49249caba5b40bb59246c5603d6ec",
+      "raw_git_blob_worktree": "9c12b6eb06b49249caba5b40bb59246c5603d6ec",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LedgerRefundDTO",
+          "components_source": "UUID refundTransactionId, UUID originalTransactionId, UUID accountId,\n        UUID paymentRequestId, PaymentClassification classification, PaymentTransactionStatus status,\n        BigDecimal amount, String currency, String paymentMethod, Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/response/OutpatientExecutionStartDTO.java",
+      "sha256": "93e8bedf3f7e5ad3e54ba8c6fe89fdbcf0f593c4499cded6e0c443b0a70b05e8",
+      "bytes": 263,
+      "git_blob_head": "53db3a45aa474700ff09050d342db9358be87e94",
+      "raw_git_blob_worktree": "53db3a45aa474700ff09050d342db9358be87e94",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "OutpatientExecutionStartDTO",
+          "components_source": "UUID operationId, UUID clearanceId, String sourceType,\n        UUID sourceId, String state, Instant startedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/dto/response/PaymentRequestDiscoveryDTO.java",
+      "sha256": "27d6bf52250ef540680ec04854ff179748ca2a60c099a2823d70fa7408d88e68",
+      "bytes": 1125,
+      "git_blob_head": "319ad9ceb4a4e001ce75b93fadac416d16ace362",
+      "raw_git_blob_worktree": "319ad9ceb4a4e001ce75b93fadac416d16ace362",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "PaymentRequestDiscoveryDTO",
+          "components_source": "UUID paymentRequestId, UUID invoiceId, UUID accountId, UUID patientId, UUID departmentId,\n        String purpose, String sourceType, UUID sourceId, UUID careEpisodeId, String careEpisodeType,\n        UUID appointmentId, UUID recordId, UUID prescriptionId, List<UUID> labTestIds,\n        BigDecimal requestedAmount, BigDecimal paidAmount, BigDecimal remainingAmount,\n        String currency, String status, String accountStatus, Instant expiresAt, Instant observedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/event/LedgerIntegrationEvent.java",
+      "sha256": "ca27aa34213492d072e951db216788307345384a0b028b64e2df734f5a783364",
+      "bytes": 5340,
+      "git_blob_head": "e69e6630538f636f96a97ff55f5334fecf70aa67",
+      "raw_git_blob_worktree": "e69e6630538f636f96a97ff55f5334fecf70aa67",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LedgerIntegrationEvent",
+          "components_source": "UUID eventId, String eventType, int version, Instant occurredAt,\n                                     String correlationId, String producer, Object payload"
+        },
+        {
+          "record": "FinalSettlementRecognitionPayload",
+          "components_source": "UUID recognitionOperationId,int recognitionRevision,UUID supersedesOperationId,\n            UUID settlementId,int settlementVersion,UUID supersedesSettlementId,UUID accountId,UUID admissionId,\n            UUID patientId,UUID accountDepartmentId,String currency,BigDecimal grossAmount,BigDecimal insuranceAmount,\n            BigDecimal patientLiability,BigDecimal completedPayments,BigDecimal completedRefunds,BigDecimal completedReversals,\n            BigDecimal netAllocatedPayments,BigDecimal balance,String outcome,Instant completedAt,boolean finalSettlement,\n            List<ChargeRecognition> charges,List<AllocationEvidence> allocations,List<DepositRelease> depositReleases"
+        },
+        {
+          "record": "ChargeRecognition",
+          "components_source": "UUID chargeId,UUID departmentId,String sourceType,UUID sourceId,\n                UUID performedOperationId,String performedFingerprint,Instant performedAt,BigDecimal earnedAmount"
+        },
+        {
+          "record": "AllocationEvidence",
+          "components_source": "UUID allocationId,UUID transactionId,UUID originalTransactionId,UUID chargeId,\n                String transactionType,String classification,BigDecimal amount"
+        },
+        {
+          "record": "DepositRelease",
+          "components_source": "UUID originalTransactionId,UUID receiptDepartmentId,BigDecimal amount"
+        },
+        {
+          "record": "DepositAllocatedPayload",
+          "components_source": "UUID allocationOperationId, UUID accountId, UUID admissionId,\n            UUID patientId, UUID originalTransactionId, String currency, BigDecimal allocatedAmount,\n            List<DepositAllocationLine> allocations, Instant allocatedAt, boolean finalSettlement"
+        },
+        {
+          "record": "DepositAllocationLine",
+          "components_source": "UUID allocationId, UUID chargeId, BigDecimal amount"
+        },
+        {
+          "record": "SettlementReconciledPayload",
+          "components_source": "UUID settlementId, int settlementVersion,\n            UUID supersedesSettlementId, UUID accountId, UUID admissionId, UUID patientId,\n            UUID departmentId, String currency, BigDecimal grossAmount, BigDecimal insuranceAmount,\n            BigDecimal patientLiability, BigDecimal completedPayments, BigDecimal completedRefunds,\n            BigDecimal completedReversals, BigDecimal netAllocatedPayments, BigDecimal balance,\n            String estimatedOutcome, Instant reconciledAt, boolean finalSettlement"
+        },
+        {
+          "record": "PrescriptionPaymentRequestPayload",
+          "components_source": "UUID invoiceId, UUID paymentRequestId, UUID accountId,\n            UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId, String purpose,\n            UUID prescriptionId, BigDecimal totalAmount, String currency, Instant createdAt, Instant expiresAt"
+        },
+        {
+          "record": "SurgeryPaymentRequestPayload",
+          "components_source": "UUID invoiceId, UUID paymentRequestId, UUID accountId,\n            UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId, String purpose,\n            UUID surgeryCaseId, UUID admissionId, BigDecimal totalAmount, String currency,\n            Instant createdAt, Instant expiresAt"
+        },
+        {
+          "record": "PaymentCompletedPayload",
+          "components_source": "UUID transactionId, UUID invoiceId, UUID paymentRequestId,\n            UUID accountId, UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,\n            String classification, BigDecimal totalAmount, String currency, String paymentMethod,\n            Instant completedAt, UUID prescriptionId, List<UUID> labTestIds"
+        },
+        {
+          "record": "ClearanceGrantedPayload",
+          "components_source": "UUID clearanceId, UUID invoiceId, UUID accountId,\n            UUID patientId, String careEpisodeType, UUID careEpisodeId, String purpose,\n            UUID appointmentId, UUID recordId, List<UUID> labTestIds, UUID prescriptionId,\n            UUID admissionId, UUID surgeryCaseId, BigDecimal amount, String currency,\n            String paymentMethod, Instant expiresAt, boolean emergencyOverride"
+        },
+        {
+          "record": "PaymentRefundedPayload",
+          "components_source": "UUID refundTransactionId, UUID originalTransactionId, UUID accountId,\n            UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,\n            BigDecimal amount, String currency, String reason, Instant completedAt"
+        },
+        {
+          "record": "SettlementCompletedPayload",
+          "components_source": "UUID settlementId, UUID admissionId, UUID accountId,\n            UUID patientId, UUID departmentId, BigDecimal grossAmount, BigDecimal insuranceAmount,\n            BigDecimal patientLiability, BigDecimal completedPayments, BigDecimal completedRefunds,\n            BigDecimal balance, String outcome, Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/port/in/ProcessLedgerPaymentUseCase.java",
+      "sha256": "a379c29a0b9092f5751e8106e5f5506e8bbe75fe43909e2047954962d7f6f9de",
+      "bytes": 435,
+      "git_blob_head": "ba61d78524ceaea8f8990c695baa129ee4a45d7d",
+      "raw_git_blob_worktree": "ba61d78524ceaea8f8990c695baa129ee4a45d7d",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/port/in/RefundLedgerPaymentUseCase.java",
+      "sha256": "098e176e8947fa8bca0e97e55049e096ee4bbbaef57561a1efaf8da3174dae91",
+      "bytes": 436,
+      "git_blob_head": "989dbcc42a0c98f98fa2756b0a56d35b1f5a70e9",
+      "raw_git_blob_worktree": "989dbcc42a0c98f98fa2756b0a56d35b1f5a70e9",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/port/out/LedgerEventPort.java",
+      "sha256": "2d3aefcd766eb6cf206df3dfbdb45399963852c61af6a64e62e41782ce7435a0",
+      "bytes": 1011,
+      "git_blob_head": "694df9b2dfd272ff538ce70f6dc936b576130747",
+      "raw_git_blob_worktree": "694df9b2dfd272ff538ce70f6dc936b576130747",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/port/out/LedgerPaymentRepositoryPort.java",
+      "sha256": "7d2f7ccd367b8b57a3d1b49695568887187a5f36a94eb9ee5719f553ecaa6789",
+      "bytes": 1220,
+      "git_blob_head": "b0666f6326c2b06f8ea262c37139da267f79743a",
+      "raw_git_blob_worktree": "b0666f6326c2b06f8ea262c37139da267f79743a",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "PaymentContext",
+          "components_source": "BillingAccount account, PaymentRequest request, ClearanceTarget target,\n                          BigDecimal completedAmount"
+        },
+        {
+          "record": "RecordedPayment",
+          "components_source": "PaymentTransaction transaction, UUID actorAccountId"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/port/out/LedgerRefundRepositoryPort.java",
+      "sha256": "5a2a004a7a8f4469eaa4a9ec933e74317b41d104c7e84ae95c634a5274c90c58",
+      "bytes": 1254,
+      "git_blob_head": "6dc8996d75ed822b8ee6f8e7374b1ea4b3397a8d",
+      "raw_git_blob_worktree": "6dc8996d75ed822b8ee6f8e7374b1ea4b3397a8d",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "RefundContext",
+          "components_source": "BillingAccount account, PaymentTransaction original, BigDecimal completedRefunds"
+        },
+        {
+          "record": "OutpatientRefundEligibility",
+          "components_source": "boolean outpatientServicePayment, boolean executionStarted,\n            boolean cancellationApplied, BigDecimal refundDue"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerPaymentService.java",
+      "sha256": "bcb600151659e12e405fa4adebaa7e0c5ea3ae26232566f15b75c8eecd1bac4b",
+      "bytes": 9449,
+      "git_blob_head": "317083d8b0045c2ea676003badedf463c3ef2cc8",
+      "raw_git_blob_worktree": "317083d8b0045c2ea676003badedf463c3ef2cc8",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java",
+      "sha256": "49c1ad5ff1d59ec77ca31cfb201b0f9c2ebf5439d6412ed6d2581daa7eb0cb15",
+      "bytes": 7836,
+      "git_blob_head": "c71a0a6def4cfbdfd0d894c286a21b1b9983299a",
+      "raw_git_blob_worktree": "c71a0a6def4cfbdfd0d894c286a21b1b9983299a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/service/PrescriptionChargeService.java",
+      "sha256": "11e6e3f714d0795216d3d28766d5d43c99c267445080350fa490d42006125a34",
+      "bytes": 2960,
+      "git_blob_head": "c86027eaa205ba2a8f9490ffcc2a2922458bf9cf",
+      "raw_git_blob_worktree": "c86027eaa205ba2a8f9490ffcc2a2922458bf9cf",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/application/service/SurgeryChargeService.java",
+      "sha256": "a7779bdeb8900cd9d291cc3a13d98311e8da5a58ebf2c1616b9a4b768303d20a",
+      "bytes": 11464,
+      "git_blob_head": "a459cd6a158eb2cea40d36d330b1f149468a4f1b",
+      "raw_git_blob_worktree": "a459cd6a158eb2cea40d36d330b1f149468a4f1b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/config/LedgerPaymentConfiguration.java",
+      "sha256": "0c52772d03d61f828fba8adb5626d6090cbd242e5895f69f30bf6a2d99ddb789",
+      "bytes": 1472,
+      "git_blob_head": "ca950e52e754b9b1319f764e034196bad100f39f",
+      "raw_git_blob_worktree": "ca950e52e754b9b1319f764e034196bad100f39f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/config/PaymentRequestDiscoveryConfiguration.java",
+      "sha256": "c946081635f96a985756e95e5dde0f21656fcdc26c5c1acc6a8ec402909e1a78",
+      "bytes": 1013,
+      "git_blob_head": "7cfc65aecb7b3a57530afbcc5923bf2d5b403f3b",
+      "raw_git_blob_worktree": "7cfc65aecb7b3a57530afbcc5923bf2d5b403f3b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/messaging/LedgerEventOutboxAdapter.java",
+      "sha256": "23d02427f03e174f43a32e2d7b147022b39aca90a3a0ae2e72e344aa54b1f805",
+      "bytes": 4631,
+      "git_blob_head": "61adca654eb8a7d2058b5969b9714fff2eb5538f",
+      "raw_git_blob_worktree": "61adca654eb8a7d2058b5969b9714fff2eb5538f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/persistence/adapter/LedgerPaymentRepositoryAdapter.java",
+      "sha256": "c396516b1decf470ca47a7dc7c73ad01b87669698ba7ed94aab2b2e4ad01285b",
+      "bytes": 14891,
+      "git_blob_head": "ddc63bf8cb892311dab195b9df91482a1ba6586a",
+      "raw_git_blob_worktree": "ddc63bf8cb892311dab195b9df91482a1ba6586a",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "ChargeSource",
+          "components_source": "String type, UUID sourceId, UUID accountId, UUID patientId, String status, BigDecimal amount"
+        },
+        {
+          "record": "AllocationBudget",
+          "components_source": "UUID chargeId, UUID accountId, String status, BigDecimal available"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/pricing/CareFinancePriceCatalogAdapter.java",
+      "sha256": "aca296850e869dd03c915101764339ad21869949ea4307d88fcd74bf9e8e7b8f",
+      "bytes": 1117,
+      "git_blob_head": "67ea76e59027213e3fea260c9fe476ed9e5a805e",
+      "raw_git_blob_worktree": "67ea76e59027213e3fea260c9fe476ed9e5a805e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/pricing/CareFinancePriceProperties.java",
+      "sha256": "72a2e3283c0c215687e92b02695c2311d2f3a6311043efd669ae40695c6c1478",
+      "bytes": 909,
+      "git_blob_head": "de4e39da7de86ece4cee118e2be6780604982cec",
+      "raw_git_blob_worktree": "de4e39da7de86ece4cee118e2be6780604982cec",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "Price",
+          "components_source": "String description, BigDecimal unitAmount"
+        }
+      ]
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/FinancialClearanceLookupController.java",
+      "sha256": "7d087b3451304fee09314eec37d4b915b8c412539d2780a9bd2839113a7f55b4",
+      "bytes": 1687,
+      "git_blob_head": "4e3db4041532ce68330be064781a80bf5c568b18",
+      "raw_git_blob_worktree": "4e3db4041532ce68330be064781a80bf5c568b18",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java",
+      "sha256": "358a78fc5eee537b58d1dd38b999d2fe15512a9a38ea608a48d7a403fbae6f52",
+      "bytes": 1885,
+      "git_blob_head": "83c5e91154b3d5404675362ef6f698f38afff924",
+      "raw_git_blob_worktree": "83c5e91154b3d5404675362ef6f698f38afff924",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java",
+      "sha256": "1fbd6e390bb64d50aa589e9caaec32ab7cf59c7fb68eebe805e7d368e3ad46f9",
+      "bytes": 1994,
+      "git_blob_head": "0c092d8a27ef7f76269a06ff30cff46b29b247e7",
+      "raw_git_blob_worktree": "0c092d8a27ef7f76269a06ff30cff46b29b247e7",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/OutpatientAdjustmentController.java",
+      "sha256": "8a1e68397019ac78216a83bd58e78db1b2116bb1cfe7ac95fb57ddc746860734",
+      "bytes": 1523,
+      "git_blob_head": "cac28f1bf9964c53c18e9416709647d4e7049a3e",
+      "raw_git_blob_worktree": "cac28f1bf9964c53c18e9416709647d4e7049a3e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/OutpatientExecutionStartController.java",
+      "sha256": "6bb9e41496c190f99f264e33e154befcb38d2eca5f28211b0a3ea671c0249144",
+      "bytes": 2791,
+      "git_blob_head": "fe1b4c1056a4203c14d0ddccee77a8c4a52c6576",
+      "raw_git_blob_worktree": "fe1b4c1056a4203c14d0ddccee77a8c4a52c6576",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java",
+      "sha256": "455ee511caf7e8c2ecd2d630e81ea9420e924a960555a81e97376cbfbf103d95",
+      "bytes": 3985,
+      "git_blob_head": "bcd43c1e1867019a3f48f3624f66c28df45d2bba",
+      "raw_git_blob_worktree": "bcd43c1e1867019a3f48f3624f66c28df45d2bba",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/main/resources/application.yml",
+      "sha256": "9b8c1319bfd4137a51804e8062cda0a4aa839993e874c222f5b4221aa5596557",
+      "bytes": 4866,
+      "git_blob_head": "9ecad16125813e0811140bc7bd71e1d8a5760497",
+      "raw_git_blob_worktree": "9ecad16125813e0811140bc7bd71e1d8a5760497",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/application/service/LedgerPaymentServiceTest.java",
+      "sha256": "75d9e3b7df0a3cfeb0f773cf0c098305839d36501b6d5305791545666d8c0b41",
+      "bytes": 10618,
+      "git_blob_head": "f102ba9122920f27ad2aaad0c7c76fbc94e65dc7",
+      "raw_git_blob_worktree": "f102ba9122920f27ad2aaad0c7c76fbc94e65dc7",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/LedgerPaymentIntegrationTest.java",
+      "sha256": "6446b33157a046160163264444d18b5c489cb980ed7d36d4073080653d2f0efd",
+      "bytes": 57087,
+      "git_blob_head": "01deb8eda001c3c4e67688e475943b715ff1e73c",
+      "raw_git_blob_worktree": "01deb8eda001c3c4e67688e475943b715ff1e73c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/appointment-status-changed-v1/appointment.status.changed.v1.json",
+      "sha256": "34be41cd12bd6fe38e18c89f0828097350405d077f05fa853e828f50578715e7",
+      "bytes": 830,
+      "git_blob_head": "d8609509c77b7d1072e944a337f28590043a4544",
+      "raw_git_blob_worktree": "d8609509c77b7d1072e944a337f28590043a4544",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "appointmentId": "string",
+          "recordId": "null-observed",
+          "patientId": "string",
+          "departmentId": "string",
+          "oldStatus": "string",
+          "newStatus": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "changedAt": "string",
+          "emergencyOverrideId": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/lab-request-v1/lab.request.created.v1.json",
+      "sha256": "9fa2a3b83968b802e564e3bd9f8a87f797af62e36bdfa31b8d7afe7a5586a226",
+      "bytes": 860,
+      "git_blob_head": "afffa37688ad7e1985cf55efe90ec78863d21455",
+      "raw_git_blob_worktree": "afffa37688ad7e1985cf55efe90ec78863d21455",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "labId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceOrderId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "labType": "string",
+          "requestedAt": "string",
+          "emergencyOverrideId": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-admission.json",
+      "sha256": "959b15699e55b617b4aa26ff2766427bd4a26872027266a916532d5335dbe805",
+      "bytes": 806,
+      "git_blob_head": "2fc57e197cc2ebacaf100762221831a95b4c92a7",
+      "raw_git_blob_worktree": "2fc57e197cc2ebacaf100762221831a95b4c92a7",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "string",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-exam.json",
+      "sha256": "fa42dea39da198b27fe6e8a9a90381be3feb8953d07b4101666a5356f864ab75",
+      "bytes": 800,
+      "git_blob_head": "b195047d4809cc9c6f52f9b566e7c487d654c269",
+      "raw_git_blob_worktree": "b195047d4809cc9c6f52f9b566e7c487d654c269",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "string",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-lab.json",
+      "sha256": "e7cef7a8e089950a4cb34e4ca5b244b4c332c147bea35cf8e82135af4730fd51",
+      "bytes": 842,
+      "git_blob_head": "8b41144977340c84255cedb4d2dcdec30346aa4e",
+      "raw_git_blob_worktree": "8b41144977340c84255cedb4d2dcdec30346aa4e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "string",
+          "labTestIds": {
+            "array_examples": [
+              "string"
+            ]
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-prescription-issued.json",
+      "sha256": "a7292ef5800c7b260bf8b99053a43083dacbb836889f95a59465def18391f168",
+      "bytes": 795,
+      "git_blob_head": "be48189c6d0681d1b698e11844375e1620af8799",
+      "raw_git_blob_worktree": "be48189c6d0681d1b698e11844375e1620af8799",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "string",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-prescription.json",
+      "sha256": "79f0906d27db0bdc3b6e552214f54957562f198910212bf835d5196750080fda",
+      "bytes": 808,
+      "git_blob_head": "19935e09652ea263cd1a027ec93e2e9a3c1f613c",
+      "raw_git_blob_worktree": "19935e09652ea263cd1a027ec93e2e9a3c1f613c",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "string",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-surgery.json",
+      "sha256": "3879a3fb43daab01cda383c9838b4035315e77e20a4d83146390342c1c28cf18",
+      "bytes": 830,
+      "git_blob_head": "6f39e4e0139bd04f9ed0a0c107954d1d5e3cdb42",
+      "raw_git_blob_worktree": "6f39e4e0139bd04f9ed0a0c107954d1d5e3cdb42",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "string",
+          "surgeryCaseId": "string",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/deposit-allocated.json",
+      "sha256": "04dda8628bfa45c963e59cfbe2e37a88f4c625633b25679630d3e1d66045c3c0",
+      "bytes": 993,
+      "git_blob_head": "4fdc102fb51ac575714b42eeb6aadcc55261003c",
+      "raw_git_blob_worktree": "4fdc102fb51ac575714b42eeb6aadcc55261003c",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "allocationOperationId": "string",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "originalTransactionId": "string",
+          "currency": "string",
+          "allocatedAmount": "number",
+          "allocations": {
+            "array_examples": [
+              {
+                "allocationId": "string",
+                "chargeId": "string",
+                "amount": "number"
+              },
+              {
+                "allocationId": "string",
+                "chargeId": "string",
+                "amount": "number"
+              }
+            ]
+          },
+          "allocatedAt": "string",
+          "finalSettlement": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-prescription.json",
+      "sha256": "e75ddb48019b05c6241415fbcdf9928ff870401339a085a5294a9e4d76b6ddec",
+      "bytes": 740,
+      "git_blob_head": "100b4a17d50aa9cd52a669e0a0baad5a1310302a",
+      "raw_git_blob_worktree": "100b4a17d50aa9cd52a669e0a0baad5a1310302a",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "prescriptionId": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "createdAt": "string",
+          "expiresAt": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-admission.json",
+      "sha256": "0742083dda73360eea8034c69d0056bd4423f1d1e79eac3f0c9715dfc31dd414",
+      "bytes": 899,
+      "git_blob_head": "1e6d58d1492edbc68acd84f2526f143e7da92b2f",
+      "raw_git_blob_worktree": "1e6d58d1492edbc68acd84f2526f143e7da92b2f",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "surgeryCaseId": "string",
+          "admissionId": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "createdAt": "string",
+          "expiresAt": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-outpatient.json",
+      "sha256": "42000e8a01aa4d4961749a7e89b7683fa14336f384a720df6a61f96316b0f4f0",
+      "bytes": 873,
+      "git_blob_head": "804c7f82928d475cbd771442b8b07fcd2aff62fa",
+      "raw_git_blob_worktree": "804c7f82928d475cbd771442b8b07fcd2aff62fa",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "surgeryCaseId": "string",
+          "admissionId": "null-observed",
+          "totalAmount": "number",
+          "currency": "string",
+          "createdAt": "string",
+          "expiresAt": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-deposit.json",
+      "sha256": "afb2b0e640db9c95fb82cf856bcc72802bd2a0cdf128c3735c9c6279c4e1e550",
+      "bytes": 805,
+      "git_blob_head": "a86719982ca4daf86528b982c7b6053125a7f924",
+      "raw_git_blob_worktree": "a86719982ca4daf86528b982c7b6053125a7f924",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "transactionId": "string",
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "classification": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "completedAt": "string",
+          "prescriptionId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-final-recognition-deposit.json",
+      "sha256": "25fa7d9a0f82cec58b7115d504d5d16bebe250ce445932827d8eb1ca0364bf2d",
+      "bytes": 765,
+      "git_blob_head": "30ff3fbb774263dff735d86c34a2848760e6ebff",
+      "raw_git_blob_worktree": "30ff3fbb774263dff735d86c34a2848760e6ebff",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "transactionId": "string",
+          "invoiceId": "null-observed",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "classification": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "completedAt": "string",
+          "prescriptionId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-prescription-first.json",
+      "sha256": "765d60ae197f41cd5c87c5fb7e3c698e708e58826b7847e36f3287def41e0d69",
+      "bytes": 830,
+      "git_blob_head": "3069e03ffe052cc22d781e1de706a0ba56dbb348",
+      "raw_git_blob_worktree": "3069e03ffe052cc22d781e1de706a0ba56dbb348",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "transactionId": "string",
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "classification": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "completedAt": "string",
+          "prescriptionId": "string",
+          "labTestIds": {
+            "array_examples": []
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-prescription-last.json",
+      "sha256": "84e4fe7f77a620831e3f955c0c86208e6effa0d96f3d8a2450fc17ba5b45ba5b",
+      "bytes": 831,
+      "git_blob_head": "fc63ca1051db62e14ac3efdb8e5b4adb506b42f1",
+      "raw_git_blob_worktree": "fc63ca1051db62e14ac3efdb8e5b4adb506b42f1",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "transactionId": "string",
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "classification": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "completedAt": "string",
+          "prescriptionId": "string",
+          "labTestIds": {
+            "array_examples": []
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-service.json",
+      "sha256": "000ed3cf78df31a63793e1fb2be542ff11995a97051febfcffaaa3db0bb65a7e",
+      "bytes": 844,
+      "git_blob_head": "eb50c635c086e415383eb6767abf0ffe9ff30551",
+      "raw_git_blob_worktree": "eb50c635c086e415383eb6767abf0ffe9ff30551",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "transactionId": "string",
+          "invoiceId": "string",
+          "paymentRequestId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "classification": "string",
+          "totalAmount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "completedAt": "string",
+          "prescriptionId": "string",
+          "labTestIds": {
+            "array_examples": []
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-deposit.json",
+      "sha256": "eac2fdadbf31165530813523f899e8698f42d8ace698a878e4481f1ac7a54664",
+      "bytes": 695,
+      "git_blob_head": "3fbbad0da48c107e28cf2560fe2e431e218122fa",
+      "raw_git_blob_worktree": "3fbbad0da48c107e28cf2560fe2e431e218122fa",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-final-recognition-deposit.json",
+      "sha256": "2c15ab7f30dd5e6524b51267a5d286e20d463199cb409c61971377fef808f9f2",
+      "bytes": 689,
+      "git_blob_head": "4b010ba94d1f02b50f887167aa97f9348c4b1a3e",
+      "raw_git_blob_worktree": "4b010ba94d1f02b50f887167aa97f9348c4b1a3e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-first.json",
+      "sha256": "4e193bcef7302f2855b914cb7a9f4cc4aaf974027a1f9082df9e2769cb4ca5c9",
+      "bytes": 689,
+      "git_blob_head": "af0d1cf59eab0699fdf9e201339ef3e6503f5db7",
+      "raw_git_blob_worktree": "af0d1cf59eab0699fdf9e201339ef3e6503f5db7",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-last.json",
+      "sha256": "53d838a49d4fbcfbd42888d98282e05526d6028bf1c95159f86adf73b5636184",
+      "bytes": 690,
+      "git_blob_head": "5b63f3d5deff4fc703dc50b465843c4196164181",
+      "raw_git_blob_worktree": "5b63f3d5deff4fc703dc50b465843c4196164181",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-remainder.json",
+      "sha256": "6ca36ee25f36d2e89510cec2b9386c11452d7f7262bcf911f2cba6d72133d4c4",
+      "bytes": 689,
+      "git_blob_head": "f1c43f1019952bd8afad4a2b860efac08481123a",
+      "raw_git_blob_worktree": "f1c43f1019952bd8afad4a2b860efac08481123a",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-service.json",
+      "sha256": "3e7cb5c777b819b92d8ba2811be2f7cf3ade95b8935d17c6aa174a90aed4a683",
+      "bytes": 702,
+      "git_blob_head": "cdd846bb606383087c170114f7033f003ef81645",
+      "raw_git_blob_worktree": "cdd846bb606383087c170114f7033f003ef81645",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "refundTransactionId": "string",
+          "originalTransactionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "amount": "number",
+          "currency": "string",
+          "reason": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-completed.json",
+      "sha256": "1f9663b6c3eafc936268df6249e8452a46f0e01653f45fd1a661dfbf9a8f53f4",
+      "bytes": 700,
+      "git_blob_head": "f7de239c2425252024bd7ea4a67a962c251e21cd",
+      "raw_git_blob_worktree": "f7de239c2425252024bd7ea4a67a962c251e21cd",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "settlementId": "string",
+          "admissionId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "balance": "number",
+          "outcome": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-recognition-completed.json",
+      "sha256": "6a9cff3012df9a7a06ae855f268540d76721a2df618f51dbed68ec7dcc21972b",
+      "bytes": 3081,
+      "git_blob_head": "67fda5ae1d66b5f016632dbe452b680b0620c8d9",
+      "raw_git_blob_worktree": "67fda5ae1d66b5f016632dbe452b680b0620c8d9",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "recognitionOperationId": "string",
+          "recognitionRevision": "number",
+          "supersedesOperationId": "null-observed",
+          "settlementId": "string",
+          "settlementVersion": "number",
+          "supersedesSettlementId": "null-observed",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "accountDepartmentId": "string",
+          "currency": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "completedReversals": "number",
+          "netAllocatedPayments": "number",
+          "balance": "number",
+          "outcome": "string",
+          "completedAt": "string",
+          "finalSettlement": "boolean",
+          "charges": {
+            "array_examples": [
+              {
+                "chargeId": "string",
+                "departmentId": "string",
+                "sourceType": "string",
+                "sourceId": "string",
+                "performedOperationId": "string",
+                "performedFingerprint": "string",
+                "performedAt": "string",
+                "earnedAmount": "number"
+              },
+              {
+                "chargeId": "string",
+                "departmentId": "string",
+                "sourceType": "string",
+                "sourceId": "string",
+                "performedOperationId": "string",
+                "performedFingerprint": "string",
+                "performedAt": "string",
+                "earnedAmount": "number"
+              }
+            ]
+          },
+          "allocations": {
+            "array_examples": [
+              {
+                "allocationId": "string",
+                "transactionId": "string",
+                "originalTransactionId": "null-observed",
+                "chargeId": "string",
+                "transactionType": "string",
+                "classification": "string",
+                "amount": "number"
+              },
+              {
+                "allocationId": "string",
+                "transactionId": "string",
+                "originalTransactionId": "null-observed",
+                "chargeId": "string",
+                "transactionType": "string",
+                "classification": "string",
+                "amount": "number"
+              }
+            ]
+          },
+          "depositReleases": {
+            "array_examples": [
+              {
+                "originalTransactionId": "string",
+                "receiptDepartmentId": "string",
+                "amount": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-1.json",
+      "sha256": "9789975460ec41253b5db1117e1f0025351df13ab44bc2c89018b940669cd366",
+      "bytes": 940,
+      "git_blob_head": "1baca0c3943c9a31c3309336cd23eda6e2a084da",
+      "raw_git_blob_worktree": "1baca0c3943c9a31c3309336cd23eda6e2a084da",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "settlementId": "string",
+          "settlementVersion": "number",
+          "supersedesSettlementId": "null-observed",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "currency": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "completedReversals": "number",
+          "netAllocatedPayments": "number",
+          "balance": "number",
+          "estimatedOutcome": "string",
+          "reconciledAt": "string",
+          "finalSettlement": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-2.json",
+      "sha256": "7d3730eb765bad3ac5e4bc5c55adaf3e6a1410eba8178ef20bf17dbfd263a1ad",
+      "bytes": 965,
+      "git_blob_head": "f7049daae61371663bc222bc08aec6012c047fdd",
+      "raw_git_blob_worktree": "f7049daae61371663bc222bc08aec6012c047fdd",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "settlementId": "string",
+          "settlementVersion": "number",
+          "supersedesSettlementId": "string",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "currency": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "completedReversals": "number",
+          "netAllocatedPayments": "number",
+          "balance": "number",
+          "estimatedOutcome": "string",
+          "reconciledAt": "string",
+          "finalSettlement": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-3.json",
+      "sha256": "abfafdf2d31403282fd5fecd02aef1ed8771e8e26286fe180dc3b84665be46db",
+      "bytes": 981,
+      "git_blob_head": "413f971010be83892cf5d59e0a189fe1c44c7f25",
+      "raw_git_blob_worktree": "413f971010be83892cf5d59e0a189fe1c44c7f25",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "settlementId": "string",
+          "settlementVersion": "number",
+          "supersedesSettlementId": "string",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "currency": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "completedReversals": "number",
+          "netAllocatedPayments": "number",
+          "balance": "number",
+          "estimatedOutcome": "string",
+          "reconciledAt": "string",
+          "finalSettlement": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-4.json",
+      "sha256": "64becd4f16849f318168ac427b60a1a37550e921607711f4de76682f68bc517b",
+      "bytes": 964,
+      "git_blob_head": "880d961e6f7291c9b585eec57fc522aa996a2136",
+      "raw_git_blob_worktree": "880d961e6f7291c9b585eec57fc522aa996a2136",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "settlementId": "string",
+          "settlementVersion": "number",
+          "supersedesSettlementId": "string",
+          "accountId": "string",
+          "admissionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "currency": "string",
+          "grossAmount": "number",
+          "insuranceAmount": "number",
+          "patientLiability": "number",
+          "completedPayments": "number",
+          "completedRefunds": "number",
+          "completedReversals": "number",
+          "netAllocatedPayments": "number",
+          "balance": "number",
+          "estimatedOutcome": "string",
+          "reconciledAt": "string",
+          "finalSettlement": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/exam.json",
+      "sha256": "33dd3877beec24c0f7d61a2c88aad1b69c7b36140a3ee24202fdfb36ea1014ed",
+      "bytes": 1038,
+      "git_blob_head": "c5509bb7579c30492f3b8b1b9c50be8854be5c71",
+      "raw_git_blob_worktree": "c5509bb7579c30492f3b8b1b9c50be8854be5c71",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "paymentRequestId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "purpose": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "careEpisodeId": "string",
+          "careEpisodeType": "string",
+          "appointmentId": "string",
+          "recordId": "null-observed",
+          "prescriptionId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "requestedAmount": "number",
+          "paidAmount": "number",
+          "remainingAmount": "number",
+          "currency": "string",
+          "status": "string",
+          "accountStatus": "string",
+          "expiresAt": "null-observed",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/lab.json",
+      "sha256": "f27377409de724270f14ca631e274e67286b439c3b5fc2154580d7a1f95c9e4a",
+      "bytes": 1081,
+      "git_blob_head": "1677e99c322a9318cafaabfa32091e82055ee4f1",
+      "raw_git_blob_worktree": "1677e99c322a9318cafaabfa32091e82055ee4f1",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "paymentRequestId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "purpose": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "careEpisodeId": "string",
+          "careEpisodeType": "string",
+          "appointmentId": "null-observed",
+          "recordId": "string",
+          "prescriptionId": "null-observed",
+          "labTestIds": {
+            "array_examples": [
+              "string"
+            ]
+          },
+          "requestedAmount": "number",
+          "paidAmount": "number",
+          "remainingAmount": "number",
+          "currency": "string",
+          "status": "string",
+          "accountStatus": "string",
+          "expiresAt": "null-observed",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/not-found.json",
+      "sha256": "60dba095e89362fb1b7763e6f63d0cdd94821872f3ed0a89b71c487d9df8d306",
+      "bytes": 295,
+      "git_blob_head": "bcdbea409f11ea83ee1fc38e141f0c92d8e3bf9e",
+      "raw_git_blob_worktree": "bcdbea409f11ea83ee1fc38e141f0c92d8e3bf9e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": "null-observed",
+        "error": {
+          "code": "string",
+          "message": "string",
+          "details": {
+            "array_examples": []
+          }
+        },
+        "timestamp": "string",
+        "correlationId": "null-observed"
+      }
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/prescription.json",
+      "sha256": "4837e7e8d6dd93e13b80bf0c7a7c2eac6c67c8f48733636fbecf1087abb7733e",
+      "bytes": 1050,
+      "git_blob_head": "d354ae8895d6195b540f0faa88c5a9bd70fc073e",
+      "raw_git_blob_worktree": "d354ae8895d6195b540f0faa88c5a9bd70fc073e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "paymentRequestId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "purpose": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "careEpisodeId": "string",
+          "careEpisodeType": "string",
+          "appointmentId": "null-observed",
+          "recordId": "null-observed",
+          "prescriptionId": "string",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "requestedAmount": "number",
+          "paidAmount": "number",
+          "remainingAmount": "number",
+          "currency": "string",
+          "status": "string",
+          "accountStatus": "string",
+          "expiresAt": "null-observed",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/ChangeStatusRequest.java",
+      "sha256": "27743fcb269910d68ab6d0b4d1c1d49b0daf7a2ba305b5f8f73f12104a003da2",
+      "bytes": 425,
+      "git_blob_head": "0d03677f166f36bc0af14ec3817e583134e24cb5",
+      "raw_git_blob_worktree": "0d03677f166f36bc0af14ec3817e583134e24cb5",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "ChangeStatusRequest",
+          "components_source": "@NotNull AppointmentStatus status,\n        @Size(max = 500) String reason"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/CompleteRecordRequest.java",
+      "sha256": "2f70668dea7a07251bc234e6aae58a2769c88c39ef0426af201f570bf7985da3",
+      "bytes": 350,
+      "git_blob_head": "a8004ae272e1299c8611e015411a1029d2590d0b",
+      "raw_git_blob_worktree": "a8004ae272e1299c8611e015411a1029d2590d0b",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CompleteRecordRequest",
+          "components_source": "@NotNull RecordDisposition disposition,\n        @Size(max = 2000) String dispositionNote"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/CreateAppointmentRequest.java",
+      "sha256": "300b7320a1db790d5e99c27ae9cf6e720fe814c08bbf4da38a7f689eb003f77d",
+      "bytes": 535,
+      "git_blob_head": "2451eff3001dda984467a8cccd3a27c6557fb693",
+      "raw_git_blob_worktree": "2451eff3001dda984467a8cccd3a27c6557fb693",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CreateAppointmentRequest",
+          "components_source": "@NotNull UUID patientId, @NotNull UUID doctorId, @NotNull UUID departmentId,\n        @NotNull @FutureOrPresent LocalDate appointmentDate,\n        @NotNull @JsonFormat(pattern = \"HH:mm\") LocalTime appointmentTime,\n        @Size(max = 1000) String reason"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/CreateClinicalLabOrderRequest.java",
+      "sha256": "37e7f7275721386283a920ab8e008c1b65092ebcca121b58eab5ac951cb5a0b3",
+      "bytes": 508,
+      "git_blob_head": "b805194f8f439a888f2cca725187ef94fbe40401",
+      "raw_git_blob_worktree": "b805194f8f439a888f2cca725187ef94fbe40401",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CreateClinicalLabOrderRequest",
+          "components_source": "@NotBlank @Size(max = 50) String labType,\n        @NotNull LocalDate requestedDate,\n        @NotBlank @Size(max = 64) String priceCode"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/EmergencyOverrideRequest.java",
+      "sha256": "9e595a56b53298f7ee6aa733066af79db4a88aaebf75b985d4d2b00d4a28e4fa",
+      "bytes": 570,
+      "git_blob_head": "77d28ac224d887d93495e57c51d2a02045f526c1",
+      "raw_git_blob_worktree": "77d28ac224d887d93495e57c51d2a02045f526c1",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "EmergencyOverrideRequest",
+          "components_source": "@NotNull UUID overrideId,\n        @NotNull UUID approvedBy,\n        @NotBlank @Size(max = 32) String approverRole,\n        @NotBlank @Size(max = 1000) String reason,\n        @NotNull @PastOrPresent Instant approvedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/StartExamRequest.java",
+      "sha256": "2115c52891564ffbd56b0e991cca7363608adc8b98d28482cd30909ab3dc8922",
+      "bytes": 176,
+      "git_blob_head": "f15865c3a384787eb45b747dfd3a72ac3a2c7ce6",
+      "raw_git_blob_worktree": "f15865c3a384787eb45b747dfd3a72ac3a2c7ce6",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StartExamRequest",
+          "components_source": "@Valid EmergencyOverrideRequest emergencyOverride"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/request/UpdateAppointmentRequest.java",
+      "sha256": "9cd500c9d8f508c1b35ff754bb1e36653e5d6eb83cdd3eba275b881938c3a77e",
+      "bytes": 427,
+      "git_blob_head": "b58646800dfdad6fa900c233614f375f4d70251b",
+      "raw_git_blob_worktree": "b58646800dfdad6fa900c233614f375f4d70251b",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "UpdateAppointmentRequest",
+          "components_source": "@NotNull @FutureOrPresent LocalDate appointmentDate,\n        @NotNull @JsonFormat(pattern = \"HH:mm\") LocalTime appointmentTime,\n        @Size(max = 1000) String reason"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/response/AppointmentDTO.java",
+      "sha256": "fe22d1374529b42afd176a905a64e2dee927dea33a2ce2eb41bd8ab73f96c8d2",
+      "bytes": 1778,
+      "git_blob_head": "3306653a40c701ddb99af96557a4bb72d4a32364",
+      "raw_git_blob_worktree": "3306653a40c701ddb99af96557a4bb72d4a32364",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AppointmentDTO",
+          "components_source": "UUID appointmentId,\n        UUID patientId,\n        UUID doctorId,\n        UUID departmentId,\n        LocalDate appointmentDate,\n        @JsonFormat(pattern = \"HH:mm\") LocalTime appointmentTime,\n        AppointmentStatus status,\n        String reason,\n        Instant createdAt,\n        Instant updatedAt,\n        short careContractVersion,\n        UUID examClearanceId,\n        Instant examClearanceAt,\n        UUID emergencyOverrideId,\n        String examPriceCode,\n        Instant checkedInAt,\n        Instant examinationStartedAt,\n        Instant completedAt,\n        UUID cancelledBy,\n        String cancellationReason,\n        Instant cancelledAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/response/ClinicalLabOrderContextDTO.java",
+      "sha256": "de393ae5d956408289a9619c512dd6ec6c41b13c87fabbb0a00cfcfb95a9b57c",
+      "bytes": 938,
+      "git_blob_head": "a47ea6a3e8f3e09f31ff954c166cc568802d4261",
+      "raw_git_blob_worktree": "a47ea6a3e8f3e09f31ff954c166cc568802d4261",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "ClinicalLabOrderContextDTO",
+          "components_source": "boolean exists,\n        UUID sourceOrderId,\n        UUID recordId,\n        UUID patientId,\n        UUID requestingDoctorId,\n        UUID requestingDepartmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String labType,\n        LocalDate requestedDate,\n        String priceCode,\n        Instant orderedAt,\n        Instant observedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/response/ClinicalLabOrderDTO.java",
+      "sha256": "c572f578eebd0844b4c8f3fb9064b6a17ad33cab5e76ebdf378b765548eb6659",
+      "bytes": 630,
+      "git_blob_head": "86bcd54a1bc2ff479f1d7872a8a2985096eb6d0b",
+      "raw_git_blob_worktree": "86bcd54a1bc2ff479f1d7872a8a2985096eb6d0b",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "ClinicalLabOrderDTO",
+          "components_source": "UUID sourceOrderId,\n        UUID recordId,\n        UUID patientId,\n        UUID requestingDoctorId,\n        UUID requestingDepartmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String labType,\n        LocalDate requestedDate,\n        String priceCode,\n        Instant orderedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/dto/response/MedicalRecordDTO.java",
+      "sha256": "ab9b93c0312b5f9083d809e15713e9ce317976e7f1ea4159eb98430a84d84eaa",
+      "bytes": 813,
+      "git_blob_head": "27abca2d841aba8e7896932b3e672a99e7eed671",
+      "raw_git_blob_worktree": "27abca2d841aba8e7896932b3e672a99e7eed671",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "MedicalRecordDTO",
+          "components_source": "UUID recordId,\n        UUID patientId,\n        UUID doctorId,\n        UUID departmentId,\n        LocalDate examinationDate,\n        String symptoms,\n        UUID appointmentId,\n        List<DiagnosisDTO> diagnoses,\n        Instant createdAt,\n        Instant updatedAt,\n        MedicalRecordStatus status,\n        RecordDisposition disposition,\n        String dispositionNote,\n        Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/AdmissionRequestedPayload.java",
+      "sha256": "2189cf78005fc2016c6123fd9feb131d0a7cf3136f3b920f76d2f643b1bd4d80",
+      "bytes": 466,
+      "git_blob_head": "590d1747f196f8638fb353836f2535af2311f9c1",
+      "raw_git_blob_worktree": "590d1747f196f8638fb353836f2535af2311f9c1",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AdmissionRequestedPayload",
+          "components_source": "UUID admissionRequestId,\n        UUID recordId,\n        UUID patientId,\n        UUID departmentId,\n        UUID requestedBy,\n        String diagnosisSummary,\n        AdmissionPriority priority,\n        boolean emergency,\n        Instant requestedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/AppointmentCreatedEvent.java",
+      "sha256": "384af877db2bc5d8fbf89dc22adbebf9216673408b56fe7bf833686fc376cb92",
+      "bytes": 1097,
+      "git_blob_head": "3e883cf349d7fe26ac3f42cd0f00163048d6ca23",
+      "raw_git_blob_worktree": "3e883cf349d7fe26ac3f42cd0f00163048d6ca23",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AppointmentCreatedEvent",
+          "components_source": "UUID eventId, Instant occurredAt, String correlationId,\n        UUID appointmentId, UUID patientId, UUID doctorId, UUID departmentId,\n        LocalDate appointmentDate, @JsonFormat(pattern = \"HH:mm\") LocalTime appointmentTime"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/AppointmentExamCancelledPayload.java",
+      "sha256": "556f93b2171032ab5ebfc386b83f45d0d175e26c67bd11120897651e4472887e",
+      "bytes": 572,
+      "git_blob_head": "2d3dd1715e23846cff0c90ac543eb3bfdc1f40a6",
+      "raw_git_blob_worktree": "2d3dd1715e23846cff0c90ac543eb3bfdc1f40a6",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AppointmentExamCancelledPayload",
+          "components_source": "UUID appointmentId,\n        UUID patientId,\n        UUID departmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String sourceType,\n        UUID sourceId,\n        UUID cancelledBy,\n        String reason,\n        Instant cancelledAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/AppointmentStatusChangedEvent.java",
+      "sha256": "75d4695d935a2e9f9ce8f81986be419c5dea3526104c958207325dba46e00cdc",
+      "bytes": 1165,
+      "git_blob_head": "e0acaea2f004efee597a5b868d7c6d29d8455285",
+      "raw_git_blob_worktree": "e0acaea2f004efee597a5b868d7c6d29d8455285",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AppointmentStatusChangedEvent",
+          "components_source": "UUID eventId, Instant occurredAt, String correlationId,\n        UUID appointmentId, UUID recordId, UUID patientId, UUID departmentId, AppointmentStatus status"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/AppointmentStatusChangedV2Payload.java",
+      "sha256": "a6b9b7ae63913f3cda309a66bd3c4f93a42cda1a5fad18d90ddd195b7bb104e0",
+      "bytes": 657,
+      "git_blob_head": "eb4788927df2af3931005e815b6ea17ae71b0d61",
+      "raw_git_blob_worktree": "eb4788927df2af3931005e815b6ea17ae71b0d61",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AppointmentStatusChangedV2Payload",
+          "components_source": "UUID appointmentId,\n        UUID recordId,\n        UUID patientId,\n        UUID departmentId,\n        AppointmentStatus oldStatus,\n        AppointmentStatus newStatus,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String sourceType,\n        UUID sourceId,\n        String priceCode,\n        Instant changedAt,\n        UUID emergencyOverrideId"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/DiagnosisAddedEvent.java",
+      "sha256": "2f693fdfff309598f23702354a1b8d3a8d7de6b7c1dbd8ec9dcbbe808cf1d59e",
+      "bytes": 753,
+      "git_blob_head": "93832200dbdbae3050b7e3df5e231ad1fbd0b983",
+      "raw_git_blob_worktree": "93832200dbdbae3050b7e3df5e231ad1fbd0b983",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "DiagnosisAddedEvent",
+          "components_source": "UUID eventId, Instant occurredAt, String correlationId,\n        UUID recordId, String diagnosisCode, String diagnosisName"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/DomainEventEnvelope.java",
+      "sha256": "576e9ec80a9312d951d66d7cbb44c3144c1b86856702529bdeb0f20d32277396",
+      "bytes": 652,
+      "git_blob_head": "cd715423377987bcfe7be7723815fa6b8266c4e6",
+      "raw_git_blob_worktree": "cd715423377987bcfe7be7723815fa6b8266c4e6",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/MedicalRecordCompletedPayload.java",
+      "sha256": "8ea11b5ce458fbdf462f34bf440679665d433210e4bba657957de881f89c45eb",
+      "bytes": 417,
+      "git_blob_head": "218c6a2aac332075aece4cfa98581e2430416e72",
+      "raw_git_blob_worktree": "218c6a2aac332075aece4cfa98581e2430416e72",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "MedicalRecordCompletedPayload",
+          "components_source": "UUID recordId,\n        UUID appointmentId,\n        UUID patientId,\n        UUID departmentId,\n        RecordDisposition disposition,\n        boolean admissionRequired,\n        Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/MedicalRecordCreatedEvent.java",
+      "sha256": "dfda8ce17eb2f1495ea271c17e1d328d37f64cc1f8e34cc8d078778f6d6c081d",
+      "bytes": 1152,
+      "git_blob_head": "5e7a0fe22d1e91927d419a58e1895daedd7a242c",
+      "raw_git_blob_worktree": "5e7a0fe22d1e91927d419a58e1895daedd7a242c",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "MedicalRecordCreatedEvent",
+          "components_source": "UUID eventId, Instant occurredAt, String correlationId,\n        UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,\n        String diagnosis, LocalDate examinationDate"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/event/MedicalRecordCreatedV2Payload.java",
+      "sha256": "13a8086c0cfc1bf2d854fb2c2f293acd35fa2d64daa4e6d0e14e65f6e81d3287",
+      "bytes": 517,
+      "git_blob_head": "f18237d24c8995095e8a7b78ae228164927608ae",
+      "raw_git_blob_worktree": "f18237d24c8995095e8a7b78ae228164927608ae",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "MedicalRecordCreatedV2Payload",
+          "components_source": "UUID recordId,\n        UUID appointmentId,\n        UUID patientId,\n        UUID doctorId,\n        UUID departmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String sourceType,\n        UUID sourceId,\n        String priceCode,\n        LocalDate examinationDate"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/AttachExternalResultUseCase.java",
+      "sha256": "c8664614378fdb9b9d4ad070f9e9b466a1205c37408d4425b549f3b3e46e93c7",
+      "bytes": 386,
+      "git_blob_head": "5520a6511577aacbfacdc5fde889048b94ffb2b8",
+      "raw_git_blob_worktree": "5520a6511577aacbfacdc5fde889048b94ffb2b8",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/CancelCareFinanceExamUseCase.java",
+      "sha256": "aba14c928ef15fb450a0addf2dc2982564524a69ac486735b6f5399b4b438480",
+      "bytes": 371,
+      "git_blob_head": "b4e42825bd955d7f6457fbaf9277f07e5172ec3c",
+      "raw_git_blob_worktree": "b4e42825bd955d7f6457fbaf9277f07e5172ec3c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/CompleteMedicalRecordUseCase.java",
+      "sha256": "2288c794a27fdf0dccebf3d0eaa3592bf3930c12c5a391592693ff2643bb1698",
+      "bytes": 611,
+      "git_blob_head": "4a00cf9813eb309a6ed00ccde2d9e6da7201eac2",
+      "raw_git_blob_worktree": "4a00cf9813eb309a6ed00ccde2d9e6da7201eac2",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/CreateClinicalLabOrderUseCase.java",
+      "sha256": "bc2349f2ac63f2c43bbebdb285f2f3237bbe003cc0ec2382c4d87353fb3a8139",
+      "bytes": 372,
+      "git_blob_head": "fc319d77104970eb87a756afdd705b870843b817",
+      "raw_git_blob_worktree": "fc319d77104970eb87a756afdd705b870843b817",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/GetClinicalLabOrderContextUseCase.java",
+      "sha256": "6d00880b0360ddbffeef9b4fd7e24421f72d1b21c18da25ad5bca57a8b829586",
+      "bytes": 269,
+      "git_blob_head": "0f16ee00e658b90d3928fc1f23568e52d27eed39",
+      "raw_git_blob_worktree": "0f16ee00e658b90d3928fc1f23568e52d27eed39",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/GetPrescriptionContextUseCase.java",
+      "sha256": "618d0291f349e14f714d48003a63cc03b808786e6b73f180d4c8b3bc96a6b8df",
+      "bytes": 252,
+      "git_blob_head": "ea49ffbe837bd24dbc4acd902ee3586bfb76ce1f",
+      "raw_git_blob_worktree": "ea49ffbe837bd24dbc4acd902ee3586bfb76ce1f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ManageAppointmentUseCase.java",
+      "sha256": "8d56d93b83b9bf0a1db01a89221cd8ff763d9b0dc5da8d03242e5452499940fc",
+      "bytes": 1075,
+      "git_blob_head": "45262deaef5e180eb17ad55f869b76e966935188",
+      "raw_git_blob_worktree": "45262deaef5e180eb17ad55f869b76e966935188",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ManageExamGateUseCase.java",
+      "sha256": "708f4284e0036a48fc07d892cad4f7da473e1e255a67048fa8c9da07202c15aa",
+      "bytes": 385,
+      "git_blob_head": "d16787f2a163db8426efd72d9ccaeb01d3055179",
+      "raw_git_blob_worktree": "d16787f2a163db8426efd72d9ccaeb01d3055179",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ManageRecordUseCase.java",
+      "sha256": "53c9e0ec3cbab091a4c0daad3474272646638773f3d7df48a304dbb28b8c630f",
+      "bytes": 882,
+      "git_blob_head": "714d7bc516645aa3c57669ea78b2b8fde5a22356",
+      "raw_git_blob_worktree": "714d7bc516645aa3c57669ea78b2b8fde5a22356",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ReactToFinancialClearanceUseCase.java",
+      "sha256": "691e4b15ed2c31d5802ee5b3549426f6d0f8ef99ffad1dccc38ff043c07cf3ba",
+      "bytes": 253,
+      "git_blob_head": "043dbe921b4f689f406a72a07530153700b98236",
+      "raw_git_blob_worktree": "043dbe921b4f689f406a72a07530153700b98236",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ReactToLabResultUseCase.java",
+      "sha256": "f97d0fa5472290a0827069b34daa91e5a3243845bd20b7d683e5981c6a9856f6",
+      "bytes": 239,
+      "git_blob_head": "48287fb3e70c27cc188cd87a4f21255bb206bad4",
+      "raw_git_blob_worktree": "48287fb3e70c27cc188cd87a4f21255bb206bad4",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/in/ReactToPrescriptionFilledUseCase.java",
+      "sha256": "6cd7fc79c70dcf72bf02f0f359fe0cbb9f512f7fffb6db584077844ea8cee51c",
+      "bytes": 326,
+      "git_blob_head": "f1394fb2120783da7651765f47853674e1335c97",
+      "raw_git_blob_worktree": "f1394fb2120783da7651765f47853674e1335c97",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/AdmissionReferralRepositoryPort.java",
+      "sha256": "8291f60280ea0ae837067d4361ce2099f5e624cac8957fe5a6adfa847022bf1c",
+      "bytes": 293,
+      "git_blob_head": "5118eb4fd7687c4d8bf5f2599b29e94277f9e644",
+      "raw_git_blob_worktree": "5118eb4fd7687c4d8bf5f2599b29e94277f9e644",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/AppointmentRepositoryPort.java",
+      "sha256": "20a9bc1a662fd13df5af2de85968265321a506d73aaaf0122075a6ec6c6ecad0",
+      "bytes": 1019,
+      "git_blob_head": "600f2c0982b69da1861067c5d5e8c1fd6242fbe2",
+      "raw_git_blob_worktree": "600f2c0982b69da1861067c5d5e8c1fd6242fbe2",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ClinicalEventPublisherPort.java",
+      "sha256": "0da92315c9eb539f4a76b889a054f3fdd88689ee55940b6a475db8db5199f881",
+      "bytes": 756,
+      "git_blob_head": "6b55d566d4a7e0776402dafe23e7307a8360d07b",
+      "raw_git_blob_worktree": "6b55d566d4a7e0776402dafe23e7307a8360d07b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ClinicalLabOrderRepositoryPort.java",
+      "sha256": "6c9ec661d0dedd7d118fab160453ec4febcf2bdc7abcc652c19f98d7bf645bcf",
+      "bytes": 328,
+      "git_blob_head": "b706dcb051b7e54a0967b9f5e7c79d01e5e7b2aa",
+      "raw_git_blob_worktree": "b706dcb051b7e54a0967b9f5e7c79d01e5e7b2aa",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ClinicalOutboxPort.java",
+      "sha256": "6c3d42bcc0330057c4116595cb16cefa62b86ff8861de8913a57355e5274a128",
+      "bytes": 388,
+      "git_blob_head": "7015d54d96295f364a5bad88d231aac7400e3624",
+      "raw_git_blob_worktree": "7015d54d96295f364a5bad88d231aac7400e3624",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ConsumerInboxPort.java",
+      "sha256": "77554ccae96fcc30912db7630f61605171472013a215c43c68a8becb6818118a",
+      "bytes": 386,
+      "git_blob_head": "3e8428f683e098cdd90e20f30284d1256d3435fc",
+      "raw_git_blob_worktree": "3e8428f683e098cdd90e20f30284d1256d3435fc",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/CorrelationIdProvider.java",
+      "sha256": "82c2e948a21b36854a4e0d2dd53112cd8b08e647342f9f29cfcb637467eecba2",
+      "bytes": 338,
+      "git_blob_head": "5c2c89629912c5b18f64691f74330962ac2ee55c",
+      "raw_git_blob_worktree": "5c2c89629912c5b18f64691f74330962ac2ee55c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/CurrentClinicalActorPort.java",
+      "sha256": "58a27aa4e250551ce4b7bb19e9974b2ae5ba1dd3b538185265877c64f5a48477",
+      "bytes": 197,
+      "git_blob_head": "ff72fffd5eba6c4eaaca131e97d7813c78f9c1c3",
+      "raw_git_blob_worktree": "ff72fffd5eba6c4eaaca131e97d7813c78f9c1c3",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/EmergencyOverrideRepositoryPort.java",
+      "sha256": "da422896fe827584adbd503d15c82ee2acb55006818910b1a0bdcd97bbcbd07c",
+      "bytes": 224,
+      "git_blob_head": "20ba0e79223d65919179882486abb88dee7c8099",
+      "raw_git_blob_worktree": "20ba0e79223d65919179882486abb88dee7c8099",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ExamClearanceRepositoryPort.java",
+      "sha256": "d5845d39de896729c3c14cbd6abd904f9cc53e5f5d3d3b10fd200f3b1375e49b",
+      "bytes": 572,
+      "git_blob_head": "d20f772efbb35a6037acad73821dd4622832b99f",
+      "raw_git_blob_worktree": "d20f772efbb35a6037acad73821dd4622832b99f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ExamPricePolicyPort.java",
+      "sha256": "b432c40cdaa7cbdd33bda58e0ce3bc6222f103ac2fe6088f5c08920f5f9b4563",
+      "bytes": 166,
+      "git_blob_head": "9c493ab5e1dc49947a5236dec072f552289fc7aa",
+      "raw_git_blob_worktree": "9c493ab5e1dc49947a5236dec072f552289fc7aa",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ExternalResultRepositoryPort.java",
+      "sha256": "da83a46596c743ab379e8473db28ae86c95c10ae6e82b08deaae59fc0776f357",
+      "bytes": 460,
+      "git_blob_head": "6cc6e0acf4d1ba89f9ea8162b27c716c75fad99e",
+      "raw_git_blob_worktree": "6cc6e0acf4d1ba89f9ea8162b27c716c75fad99e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/FinancialExecutionAuthorityPort.java",
+      "sha256": "2dc63d32a539696e57de057d633e01278e3a71756afb7208bea0c8eb521b67b4",
+      "bytes": 501,
+      "git_blob_head": "4d9dfdd7b313a1c40a4b6e826a3065e9a9f515ca",
+      "raw_git_blob_worktree": "4d9dfdd7b313a1c40a4b6e826a3065e9a9f515ca",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/LegacyClinicalEventMetadata.java",
+      "sha256": "e3fa226fc514d3a25c26c31cc64253310ed4d313c77ed7f20bd9cbc3cf53d47d",
+      "bytes": 361,
+      "git_blob_head": "49455ee024a0f366f6f4fa211e4296335df05b31",
+      "raw_git_blob_worktree": "49455ee024a0f366f6f4fa211e4296335df05b31",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LegacyClinicalEventMetadata",
+          "components_source": "UUID eventId,\n        String eventType,\n        String correlationId,\n        UUID aggregateId,\n        Instant occurredAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/MedicalRecordRepositoryPort.java",
+      "sha256": "aabf7fdfacd6a4dcab01d224ab43572cf6253091b98ed9d39544e9b23fd4799d",
+      "bytes": 605,
+      "git_blob_head": "2b9dfcd0bbc99650ad512a5cd0b92c05a577384a",
+      "raw_git_blob_worktree": "2b9dfcd0bbc99650ad512a5cd0b92c05a577384a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/OutpatientMvpMode.java",
+      "sha256": "3110b6d10db093596fd75a0465b45929b530017946889fd03b4587fbd4416890",
+      "bytes": 201,
+      "git_blob_head": "ba0bb910cb35ca10d8045213c5e0c04b75fb0b24",
+      "raw_git_blob_worktree": "ba0bb910cb35ca10d8045213c5e0c04b75fb0b24",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "OutpatientMvpMode",
+          "components_source": "boolean enabled"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/PatientLookupPort.java",
+      "sha256": "ddb80e7a90723306bb7c49bffb04401228e34660d6beefaf30c761a6d241a69b",
+      "bytes": 512,
+      "git_blob_head": "23d29f0984774e19a42620c58914b75cdadd863f",
+      "raw_git_blob_worktree": "23d29f0984774e19a42620c58914b75cdadd863f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/PrescriptionContextReadPort.java",
+      "sha256": "bec6778dda2d145db96474db8a75c99b1d145248d81f6553391a006ce4c6aebf",
+      "bytes": 252,
+      "git_blob_head": "8ebac6d6947d489ca287f703973ee962f388531a",
+      "raw_git_blob_worktree": "8ebac6d6947d489ca287f703973ee962f388531a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/ProcessedEventPort.java",
+      "sha256": "6f9b3ba0201db0295637bab82451592ac0d8db82397e95bbe4304b6db1b8d3d1",
+      "bytes": 432,
+      "git_blob_head": "e12948f21f72744bd433bb9e85b4aa249ef023a0",
+      "raw_git_blob_worktree": "e12948f21f72744bd433bb9e85b4aa249ef023a0",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/StaffLookupPort.java",
+      "sha256": "83635074aed4616f6008211073e741ef6dc16a0b47ef50e57dc232413df4d86b",
+      "bytes": 569,
+      "git_blob_head": "54bf0a477da1cc20899cfcab022fbc3ed1cac85c",
+      "raw_git_blob_worktree": "54bf0a477da1cc20899cfcab022fbc3ed1cac85c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/AppointmentApplicationService.java",
+      "sha256": "04ee3e20a5dc72fc5a2cc8b86c65c43ff4d2a84117bf564fbcb452f3bd12c387",
+      "bytes": 8816,
+      "git_blob_head": "e2ea7bb17d8ba4e089f4ebeb671159728fd42ae1",
+      "raw_git_blob_worktree": "e2ea7bb17d8ba4e089f4ebeb671159728fd42ae1",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalCareFinanceApplicationService.java",
+      "sha256": "b414b8255140b52c392479413746beced8e76763100ca1f7647e7c15514750d1",
+      "bytes": 24825,
+      "git_blob_head": "d5c1fdf13927f2a58081bca50f9def33486aaa79",
+      "raw_git_blob_worktree": "d5c1fdf13927f2a58081bca50f9def33486aaa79",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalLabOrderApplicationService.java",
+      "sha256": "3f36e1e9433aa69f4f2ac95cb61a7e159944319f978dcc2f47c49de2920e5a27",
+      "bytes": 7509,
+      "git_blob_head": "610e4727fbba506bf43b85121d920daba43d8521",
+      "raw_git_blob_worktree": "610e4727fbba506bf43b85121d920daba43d8521",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalStaffAuthority.java",
+      "sha256": "2bbbb28c01c782fbb8b7366f440e2fe7c3d88a4e667608d162d413b8ddac4b38",
+      "bytes": 2036,
+      "git_blob_head": "3eccdb6ca62a36d2ada1d7091a22a6d2a5db6085",
+      "raw_git_blob_worktree": "3eccdb6ca62a36d2ada1d7091a22a6d2a5db6085",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/MedicalRecordApplicationService.java",
+      "sha256": "f1a5922dd08e732830ef45573223690fa53d9ca66d527897213542f038b482e4",
+      "bytes": 10214,
+      "git_blob_head": "fadecc7ade13a269d7b63a2b04c010f046e39f09",
+      "raw_git_blob_worktree": "fadecc7ade13a269d7b63a2b04c010f046e39f09",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/Appointment.java",
+      "sha256": "94323f58c6d9f12e03aa8c8936db46b59b16d4630e955162850b9d7abe276c56",
+      "bytes": 15112,
+      "git_blob_head": "a58a778399ad826257dce58edc784a86273b9e14",
+      "raw_git_blob_worktree": "a58a778399ad826257dce58edc784a86273b9e14",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/AppointmentStatus.java",
+      "sha256": "abee95af610584bb530b7bcd7958ae3f5d170621f1edb8bcf528e01a7724860f",
+      "bytes": 189,
+      "git_blob_head": "493c69ea60130a0de866b2f827bad8fae885918e",
+      "raw_git_blob_worktree": "493c69ea60130a0de866b2f827bad8fae885918e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/MedicalRecord.java",
+      "sha256": "ea33f7398fc7134e24f1b528db16ce335a8eb8686e2babcbef21ffdac594f70c",
+      "bytes": 7131,
+      "git_blob_head": "0abcdb85507a4024606a8bbdf489e6d56da13cb0",
+      "raw_git_blob_worktree": "0abcdb85507a4024606a8bbdf489e6d56da13cb0",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/ClinicalBillingExecutionAdapter.java",
+      "sha256": "a530c887dab134b8e50959bc281e28240b97754a9ea792033419a49dfaf5618f",
+      "bytes": 7197,
+      "git_blob_head": "dd5aa346bacd5749c1634c5ca4103282ccb3ec22",
+      "raw_git_blob_worktree": "dd5aa346bacd5749c1634c5ca4103282ccb3ec22",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/ClinicalBillingExecutionFeignClient.java",
+      "sha256": "8478a0f7946620c1ac24fe213d1359bbac45df856faa0b5e9e3d7fd780a16e18",
+      "bytes": 1136,
+      "git_blob_head": "0b420544b8034414762190fc61e832e7fe7493e4",
+      "raw_git_blob_worktree": "0b420544b8034414762190fc61e832e7fe7493e4",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/ConfiguredExamPricePolicyAdapter.java",
+      "sha256": "0f92944b9a507733b63312d2ff26df9666ffda3ab5451862ee03f30b5d246e7a",
+      "bytes": 1060,
+      "git_blob_head": "ca9e0133bf4301480a1dacd952e8dd52cda2f2b4",
+      "raw_git_blob_worktree": "ca9e0133bf4301480a1dacd952e8dd52cda2f2b4",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/OrganizationFeignClient.java",
+      "sha256": "6e705793a3d6048a5e90c2d518a471bc7562b4e752a0604e7752ec0145e26bf1",
+      "bytes": 617,
+      "git_blob_head": "cba17174f490b6809c3d7f34f65040dd65d53098",
+      "raw_git_blob_worktree": "cba17174f490b6809c3d7f34f65040dd65d53098",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/StaffExistsResponse.java",
+      "sha256": "75e6d38da6e004c8f0ea4029f83e2ecc46fb4c158c49c53caef8d22570e360bf",
+      "bytes": 435,
+      "git_blob_head": "682f9e0d7e5fd0e6d958316f7955309dcd7daee8",
+      "raw_git_blob_worktree": "682f9e0d7e5fd0e6d958316f7955309dcd7daee8",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StaffExistsResponse",
+          "components_source": "boolean exists,\n        boolean eligibleDoctor,\n        @JsonAlias(\"maKhoa\") UUID departmentId"
+        }
+      ]
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/client/StaffLookupAdapter.java",
+      "sha256": "e0326fc7d71cc9f4d044b711cbbe9e6663902ef3ca3f6132c6b745bfd645fd57",
+      "bytes": 1797,
+      "git_blob_head": "f6b0e0701bb3571671235d276eb098c765485dad",
+      "raw_git_blob_worktree": "f6b0e0701bb3571671235d276eb098c765485dad",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/config/ClinicalCareFinanceFeatureConfiguration.java",
+      "sha256": "c1d11ecb55f4cd2a901c588fc37b5731c2d213fb3d43d6c1dc58ed3adead751e",
+      "bytes": 2969,
+      "git_blob_head": "e1ecd8572b9589b360df58f0c525b5e7f5694c99",
+      "raw_git_blob_worktree": "e1ecd8572b9589b360df58f0c525b5e7f5694c99",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java",
+      "sha256": "08863245d21d5252edeaa93062b6df36d7058d22495f1ce293accd9b45dc66a8",
+      "bytes": 4682,
+      "git_blob_head": "2b73dc515a066e780e6b6a7f4983306a0a52ab5a",
+      "raw_git_blob_worktree": "2b73dc515a066e780e6b6a7f4983306a0a52ab5a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java",
+      "sha256": "edcfbfcd97dbc038a61869e9741a184f74737f86c18fe4f036ea2a543009f7c8",
+      "bytes": 2901,
+      "git_blob_head": "36307c6d4a9626d5c0588e61fddaf2152fd2163f",
+      "raw_git_blob_worktree": "36307c6d4a9626d5c0588e61fddaf2152fd2163f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderContextController.java",
+      "sha256": "274597cf8cefd184d3b68f7eff0ac4eade2f97c1c1edfb2a823841b5e7c69587",
+      "bytes": 3195,
+      "git_blob_head": "2074ea2569bd09609897a3ad3340fe839bbe6d90",
+      "raw_git_blob_worktree": "2074ea2569bd09609897a3ad3340fe839bbe6d90",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java",
+      "sha256": "9de3d286ccf03471986985eb494645945348512b27264ff61a003b4190d3d732",
+      "bytes": 1669,
+      "git_blob_head": "e0127f56f421bf65ca26b650da0f1574edd4f4fe",
+      "raw_git_blob_worktree": "e0127f56f421bf65ca26b650da0f1574edd4f4fe",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java",
+      "sha256": "4cdecc396c1c00df31e41cb4b3e0843800e73b4689949f0a46d747be72c8066f",
+      "bytes": 3796,
+      "git_blob_head": "97a7b3c616d591fcd0fff2202783149646de39ed",
+      "raw_git_blob_worktree": "97a7b3c616d591fcd0fff2202783149646de39ed",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/java/com/mediflow/clinical/web/PrescriptionContextController.java",
+      "sha256": "a12aa92b60f2745b6d38cca128a1583b022706340b544b601509b35957b775a7",
+      "bytes": 2048,
+      "git_blob_head": "f1f91fd36022068b07332637a775228bb93d44db",
+      "raw_git_blob_worktree": "f1f91fd36022068b07332637a775228bb93d44db",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/resources/application-outpatient-mvp.yml",
+      "sha256": "7c62bdc8089f894863f241dc2eb424d2025eafcb91ddf7eb33b33b1eb012c640",
+      "bytes": 598,
+      "git_blob_head": "58099a214f793f337fa895c6405ed4373ccb775b",
+      "raw_git_blob_worktree": "58099a214f793f337fa895c6405ed4373ccb775b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/main/resources/application.yml",
+      "sha256": "4faeb722fb0956ee2c4852b06963d6ba9b21ee755ffa5da9bdc38884d9ed02a8",
+      "bytes": 3183,
+      "git_blob_head": "b700c1aaff552db6fb3091b11601ef1522607d54",
+      "raw_git_blob_worktree": "b700c1aaff552db6fb3091b11601ef1522607d54",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/java/com/mediflow/clinical/application/service/ClinicalCareFinanceApplicationServiceTest.java",
+      "sha256": "5ad1c9291c2c08f0a424e3b3492b87c768f12f2ac07dfc29b66702cdaa9a5c25",
+      "bytes": 29675,
+      "git_blob_head": "6f996e4d24e3b099ec302eb9e8a6bc86bd584b05",
+      "raw_git_blob_worktree": "6f996e4d24e3b099ec302eb9e8a6bc86bd584b05",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/java/com/mediflow/clinical/application/service/ClinicalLabOrderApplicationServiceTest.java",
+      "sha256": "00d8b48509adf4d1c543c6a23ade675407b26d0d039a4bb963544a9fcd64e3fe",
+      "bytes": 8178,
+      "git_blob_head": "587e7489767f1da0c140738f0e179daa164f3842",
+      "raw_git_blob_worktree": "587e7489767f1da0c140738f0e179daa164f3842",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/java/com/mediflow/clinical/infrastructure/config/ClinicalCareFinanceFeatureGateTest.java",
+      "sha256": "14bb9222c5dd8c45315840a095db897d9f5dbf247ec6cd8747f9d6025ce52a8e",
+      "bytes": 4094,
+      "git_blob_head": "8fad887d693d238131acaec57553b43460036fc6",
+      "raw_git_blob_worktree": "8fad887d693d238131acaec57553b43460036fc6",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/java/com/mediflow/clinical/web/ClinicalCareFinanceControllerTest.java",
+      "sha256": "be227cf334808346f357c59318ad6613f6b2162653d9b5005356ab32a7a37b05",
+      "bytes": 6724,
+      "git_blob_head": "32c6f8df63969d3779c05bd005b7624eb405d4aa",
+      "raw_git_blob_worktree": "32c6f8df63969d3779c05bd005b7624eb405d4aa",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/java/com/mediflow/clinical/web/ClinicalLabOrderContextContractFixtureTest.java",
+      "sha256": "ab7166cc5686031a346d373635bf9ef2e7a850cca1af0390159a1a66014874f8",
+      "bytes": 2002,
+      "git_blob_head": "e0c351b752d1d4fccd2abf415814daf47ce71b58",
+      "raw_git_blob_worktree": "e0c351b752d1d4fccd2abf415814daf47ce71b58",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/admission.requested.v1.json",
+      "sha256": "8feb8bcc2bf74b55dab1c4c1eebaf50686d6a07f226e0ddc4905e6299a194b07",
+      "bytes": 709,
+      "git_blob_head": "e1960304dd6ef768f2e4d11bff8f79ca501fcf7d",
+      "raw_git_blob_worktree": "e1960304dd6ef768f2e4d11bff8f79ca501fcf7d",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "admissionRequestId": "string",
+          "recordId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "requestedBy": "string",
+          "diagnosisSummary": "string",
+          "priority": "string",
+          "emergency": "boolean",
+          "requestedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/appointment-exam-cancelled-v1/appointment.exam.cancelled.v1.json",
+      "sha256": "130595176ecf31a27bf74a75de276fd8ffbb98918f8af6abf51efdf3bf40e788",
+      "bytes": 788,
+      "git_blob_head": "4ac199e8bb10e0284a96ec7eeab3cbff1084cfca",
+      "raw_git_blob_worktree": "4ac199e8bb10e0284a96ec7eeab3cbff1084cfca",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "appointmentId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "cancelledBy": "string",
+          "reason": "string",
+          "cancelledAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/appointment.status.changed.v1.json",
+      "sha256": "34be41cd12bd6fe38e18c89f0828097350405d077f05fa853e828f50578715e7",
+      "bytes": 830,
+      "git_blob_head": "d8609509c77b7d1072e944a337f28590043a4544",
+      "raw_git_blob_worktree": "d8609509c77b7d1072e944a337f28590043a4544",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "appointmentId": "string",
+          "recordId": "null-observed",
+          "patientId": "string",
+          "departmentId": "string",
+          "oldStatus": "string",
+          "newStatus": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "changedAt": "string",
+          "emergencyOverrideId": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/clinical-lab-order-context-v1/valid.json",
+      "sha256": "b1ecb5a8dc167ba934716728119bb324649dd7efd1b0eb80a630e9ae2c659b50",
+      "bytes": 653,
+      "git_blob_head": "764691e8be6b9ccd71a637db7e80f331bffb063d",
+      "raw_git_blob_worktree": "764691e8be6b9ccd71a637db7e80f331bffb063d",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "sourceOrderId": "string",
+          "recordId": "string",
+          "patientId": "string",
+          "requestingDoctorId": "string",
+          "requestingDepartmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "labType": "string",
+          "requestedDate": "string",
+          "priceCode": "string",
+          "orderedAt": "string",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/financial.clearance.granted.v1.json",
+      "sha256": "3876a219beb33b00a0bac57ae41688e80b969ba08e5e2b880c26f723ae754713",
+      "bytes": 943,
+      "git_blob_head": "bdba4b4f748d5870819d0bb4e8a771fdeac3b3d2",
+      "raw_git_blob_worktree": "bdba4b4f748d5870819d0bb4e8a771fdeac3b3d2",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "string",
+          "recordId": "null-observed",
+          "labTestIds": {
+            "array_examples": []
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/lab.result.created.v1.json",
+      "sha256": "fdf18735f9f3757fac49c75cad0643c16a663690a42a753554f1b95f6bfb1b89",
+      "bytes": 1014,
+      "git_blob_head": "603d335c60604da9beb9997883c4635e413f36c1",
+      "raw_git_blob_worktree": "603d335c60604da9beb9997883c4635e413f36c1",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "labId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "labType": "string",
+          "resultVersion": "number",
+          "results": {
+            "array_examples": [
+              {
+                "resultId": "string",
+                "indicator": "string",
+                "value": "string",
+                "unit": "string",
+                "referenceRange": "string"
+              }
+            ]
+          },
+          "conclusion": "string",
+          "verifiedBy": "string",
+          "performedDate": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json",
+      "sha256": "197b676f78808cd173935753e361dde6e7fea44fc549aebd5dd95712ed49300e",
+      "bytes": 606,
+      "git_blob_head": "2ca84df2eaf2587d18e93ec62eec06630c026293",
+      "raw_git_blob_worktree": "2ca84df2eaf2587d18e93ec62eec06630c026293",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "recordId": "string",
+          "appointmentId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "disposition": "string",
+          "admissionRequired": "boolean",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/medicalrecord.created.v1.json",
+      "sha256": "7a31b4f12a9c855c3b269a0582c5ec700f1906988c4874025b596ce63edb8abf",
+      "bytes": 813,
+      "git_blob_head": "af97512cde2eb84cb012342472bf259cc3c9b60e",
+      "raw_git_blob_worktree": "af97512cde2eb84cb012342472bf259cc3c9b60e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "recordId": "string",
+          "appointmentId": "string",
+          "patientId": "string",
+          "doctorId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "examinationDate": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/patient.lookup.exists.json",
+      "sha256": "ddb0113f36e25495bbfc9e64f0d0226ebe7d6a5cc1aa22de362129a0a9a85a77",
+      "bytes": 230,
+      "git_blob_head": "f896efaec3ab92f04bd38990ec39ec281e77944b",
+      "raw_git_blob_worktree": "f896efaec3ab92f04bd38990ec39ec281e77944b",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "patientId": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/prescription-context-v1/appointment.json",
+      "sha256": "cb9385bc7f582a87c7576944a64cf99cfe379e5f384358c42ef215070b7d28c7",
+      "bytes": 532,
+      "git_blob_head": "5b5ded490007f08a6c652d9b89c0e8fb20b8e485",
+      "raw_git_blob_worktree": "5b5ded490007f08a6c652d9b89c0e8fb20b8e485",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "recordId": "string",
+          "patientId": "string",
+          "doctorId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "recordStatus": "string",
+          "disposition": "string",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/prescription-context-v1/missing.json",
+      "sha256": "463fe6dd7ce64781579f998fad817953b3566d83faf644a057ff59b9f0b0155e",
+      "bytes": 366,
+      "git_blob_head": "0f37d095f26bac5ffe3a903577d98dae70a5264d",
+      "raw_git_blob_worktree": "0f37d095f26bac5ffe3a903577d98dae70a5264d",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "recordId": "string",
+          "patientId": "null-observed",
+          "doctorId": "null-observed",
+          "departmentId": "null-observed",
+          "careEpisodeType": "null-observed",
+          "careEpisodeId": "null-observed",
+          "recordStatus": "null-observed",
+          "disposition": "null-observed",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/clinical-service/src/test/resources/contracts/prescription-context-v1/walk-in.json",
+      "sha256": "ab97db118bc8ecf7bc6360b541a6469fb77f1099479b9c8e32da76e693438d5c",
+      "bytes": 517,
+      "git_blob_head": "ff2c61c3580ac7e4eed80a188a5f0524f7235148",
+      "raw_git_blob_worktree": "ff2c61c3580ac7e4eed80a188a5f0524f7235148",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "recordId": "string",
+          "patientId": "string",
+          "doctorId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "recordStatus": "string",
+          "disposition": "null-observed",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/dto/response/RoomLookupDTO.java",
+      "sha256": "6be443151497d6cf57f3666f914e1406fa75cf433fce759aeb97ac77beed5552",
+      "bytes": 476,
+      "git_blob_head": "a585a82eed8ba06c061e2c324064e26840493aac",
+      "raw_git_blob_worktree": "a585a82eed8ba06c061e2c324064e26840493aac",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "RoomLookupDTO",
+          "components_source": "boolean exists,\n        boolean active,\n        UUID roomId,\n        UUID departmentId,\n        String roomName,\n        String roomType"
+        }
+      ]
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/dto/response/StaffIdentityLookupDTO.java",
+      "sha256": "3fa048dbbed8f8d86c69ce46f0a53dc1a96aa0e7479ea531ead2ea2acd1d05c4",
+      "bytes": 1391,
+      "git_blob_head": "d2af3dda853ef160a43f7f3d18142a898e13e565",
+      "raw_git_blob_worktree": "d2af3dda853ef160a43f7f3d18142a898e13e565",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StaffIdentityLookupDTO",
+          "components_source": "boolean exists,\n        boolean active,\n        String jobTitle,\n        UUID departmentId,\n        List<String> eligibleTeamRoles"
+        }
+      ]
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/dto/response/StaffLookupDTO.java",
+      "sha256": "62d2e62205738dda5c7db387b0f78ba4c3a0aada0cd524cfca222f6a8ef99ce3",
+      "bytes": 1350,
+      "git_blob_head": "6882741a1737240497c830360909d577b0b17d7f",
+      "raw_git_blob_worktree": "6882741a1737240497c830360909d577b0b17d7f",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StaffLookupDTO",
+          "components_source": "boolean exists,\n        boolean eligibleDoctor,\n        UUID departmentId"
+        }
+      ]
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/infrastructure/security/JwtAuthFilter.java",
+      "sha256": "c425e390db315cc9fad2142e0a27c34ed886e66186c0db8b9174df213692f6e3",
+      "bytes": 7203,
+      "git_blob_head": "4ee5b14eb150e55d9b16647f35be6ffb098d49da",
+      "raw_git_blob_worktree": "4ee5b14eb150e55d9b16647f35be6ffb098d49da",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java",
+      "sha256": "7b72dce33089ecb015943c74bc625c5126ac6b2fa1d5d8eed9ff8461be5e634b",
+      "bytes": 6671,
+      "git_blob_head": "c7aaf5e3a80051395780c5b47a23fcd2b069e33d",
+      "raw_git_blob_worktree": "c7aaf5e3a80051395780c5b47a23fcd2b069e33d",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/OwnStaffDepartmentController.java",
+      "sha256": "aa735a40ce2c8e80a006c8f3a50b16fc3529888a6e2a497ae894383c1676c2cd",
+      "bytes": 2055,
+      "git_blob_head": "30adde1457761bb290dc73198c1d478a41408e41",
+      "raw_git_blob_worktree": "30adde1457761bb290dc73198c1d478a41408e41",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/RoomController.java",
+      "sha256": "e8d7f4730f1810be930ea969bbc2b0f5681f1e326916bc8f3e9a314dc9b09828",
+      "bytes": 1460,
+      "git_blob_head": "b4996118739b5ee0594a1e47b5be10388f3156c7",
+      "raw_git_blob_worktree": "b4996118739b5ee0594a1e47b5be10388f3156c7",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java",
+      "sha256": "5231ac5b178f4d548749309d996d12e7f9c05830e50871b7d222da89875dcde5",
+      "bytes": 13767,
+      "git_blob_head": "b99e015af6c20eca534d4efd2f6f191b027ab1af",
+      "raw_git_blob_worktree": "b99e015af6c20eca534d4efd2f6f191b027ab1af",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/dto/response/StaffExistsResponse.java",
+      "sha256": "d37ab49121d2e228aeb971fcb1a5dc3091ae8d1aca58f26d4be9fa303994ef7d",
+      "bytes": 167,
+      "git_blob_head": "c15789316dc26f53190b2a7beebd96bd3dbcf873",
+      "raw_git_blob_worktree": "c15789316dc26f53190b2a7beebd96bd3dbcf873",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StaffExistsResponse",
+          "components_source": "boolean exists,\n        UUID departmentId"
+        }
+      ]
+    },
+    {
+      "path": "backend/core-service/src/main/resources/application.yml",
+      "sha256": "599f3289e5a8dd15a4ae687c8005a4d7270608dce9c2cab1500fcb8628e51e26",
+      "bytes": 1773,
+      "git_blob_head": "516b25b6628a000c86d206a7ce14b7d5a47d9c7e",
+      "raw_git_blob_worktree": "516b25b6628a000c86d206a7ce14b7d5a47d9c7e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java",
+      "sha256": "69240f3e1c8c0940b305bf0bebc845323e3453165103252387d75cd016fef892",
+      "bytes": 16308,
+      "git_blob_head": "24d0aa8ec15ad21ee1fd36bbc5637be7b57b05e3",
+      "raw_git_blob_worktree": "24d0aa8ec15ad21ee1fd36bbc5637be7b57b05e3",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "RouteRule",
+          "components_source": "String pattern, HttpMethod method, Set<String> roles"
+        }
+      ]
+    },
+    {
+      "path": "backend/gateway/src/main/resources/application.yml",
+      "sha256": "6036925320b7581b49225f7ac7adf8ef08fe062654816a97be3b7c3458f3562d",
+      "bytes": 2778,
+      "git_blob_head": "f7672901d1643fefa26b42225da0d5f2f917f0d5",
+      "raw_git_blob_worktree": "f7672901d1643fefa26b42225da0d5f2f917f0d5",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/inpatient-service/src/main/java/com/mediflow/inpatient/application/dto/request/EmergencyOverrideRequest.java",
+      "sha256": "390c63346bce5faf0c23a419ebc29f58c312e61fb6d7f868c35aa56655fad2ca",
+      "bytes": 575,
+      "git_blob_head": "67500e6270423d37b5cdffcf6ec8b0ac9e1b6dae",
+      "raw_git_blob_worktree": "67500e6270423d37b5cdffcf6ec8b0ac9e1b6dae",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "EmergencyOverrideRequest",
+          "components_source": "@NotNull UUID maPheDuyet,\n        @NotNull UUID nguoiDuyet,\n        @NotBlank @Size(max = 32) String vaiTroNguoiDuyet,\n        @NotBlank @Size(max = 1000) String lyDo,\n        @NotNull @PastOrPresent Instant thoiGianDuyet"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/AddResultRequest.java",
+      "sha256": "0c9b79c4a5e5a3fc8ec35f56600893e353d01fd8a81cebb64243f0c9f06a74a2",
+      "bytes": 816,
+      "git_blob_head": "5fc0d1df40cb92d90a6413856a80712cca2e5ffe",
+      "raw_git_blob_worktree": "5fc0d1df40cb92d90a6413856a80712cca2e5ffe",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AddResultRequest",
+          "components_source": "@NotEmpty @Valid List<@NotNull LabResultItem> results,\n        @Size(max = 4000) String conclusion,\n        @NotNull LocalDate performedDate"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/CancelLabTestRequest.java",
+      "sha256": "b7ac6691b57809763a58f9e174aa3aa566c6ee592f4241ade40fa3e416d5bcec",
+      "bytes": 390,
+      "git_blob_head": "12d7e0d6bdb3baba74d2e0087fd329327898ca8c",
+      "raw_git_blob_worktree": "12d7e0d6bdb3baba74d2e0087fd329327898ca8c",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CancelLabTestRequest",
+          "components_source": "@NotBlank @Size(max = 1000) String reason,\n        @NotNull UUID cancelledBy"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/ChangeStatusRequest.java",
+      "sha256": "badcde80f210d305a56144917f3634bf2b555b520bce10435161ac81b8bc902b",
+      "bytes": 334,
+      "git_blob_head": "1a0b8b3d44f1de5378ab47a3db4851bf13e9902f",
+      "raw_git_blob_worktree": "1a0b8b3d44f1de5378ab47a3db4851bf13e9902f",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "ChangeStatusRequest",
+          "components_source": "@NotNull LabTestStatus status"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/CreateLabRequest.java",
+      "sha256": "db08e1060eacec5fbdda1ea3f2e90b54a08ec2ebc89c99c823e1935f6613fcd7",
+      "bytes": 1171,
+      "git_blob_head": "2fff970c70ba0f835b93c46ad007c2a05b4fc750",
+      "raw_git_blob_worktree": "2fff970c70ba0f835b93c46ad007c2a05b4fc750",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "CreateLabRequest",
+          "components_source": "@NotNull UUID recordId,\n        @NotNull UUID patientId,\n        @NotNull UUID requestingDepartmentId,\n        @NotBlank @Size(max = 50) String labType,\n        @NotNull @PastOrPresent LocalDate requestedDate,\n        UUID sourceOrderId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        @Size(max = 64) String priceCode"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/EmergencyOverrideRequest.java",
+      "sha256": "7583cf34bb1e1dc186fca9d092e8df57afb48ce43d7e4f214de88d9021e57d6f",
+      "bytes": 645,
+      "git_blob_head": "f82592fb210e36c1d3050a5434c568b5e726fd24",
+      "raw_git_blob_worktree": "f82592fb210e36c1d3050a5434c568b5e726fd24",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "EmergencyOverrideRequest",
+          "components_source": "@NotNull UUID overrideId,\n        @NotNull UUID approvedBy,\n        @NotBlank @Size(max = 32) String approverRole,\n        @NotBlank @Size(max = 1000) String reason,\n        @NotNull @PastOrPresent Instant approvedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/LabResultItem.java",
+      "sha256": "a772afba407be6d4823622c6438a4a56e3f48626dcb9c6af09fd46c440e1cc94",
+      "bytes": 419,
+      "git_blob_head": "f71e8691044b1c14a756546d7aad7c671fc7ee35",
+      "raw_git_blob_worktree": "f71e8691044b1c14a756546d7aad7c671fc7ee35",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabResultItem",
+          "components_source": "@NotBlank @Size(max = 100) String indicator,\n        @NotBlank @Size(max = 50) String value,\n        @Size(max = 20) String unit,\n        @Size(max = 50) String referenceRange"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/request/StartLabTestRequest.java",
+      "sha256": "f8b5567efc131b5369a527dedc449394f833a5c16cb79e6e4a3d017dbbd25cbc",
+      "bytes": 268,
+      "git_blob_head": "678798d972df2133fa1a2eba7ee6d743e3f52401",
+      "raw_git_blob_worktree": "678798d972df2133fa1a2eba7ee6d743e3f52401",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "StartLabTestRequest",
+          "components_source": "@Valid EmergencyOverrideRequest emergencyOverride"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/dto/response/LabTestDTO.java",
+      "sha256": "41801988eef817caa19b02e60d20e9a0685bf5e33e7e82b12e63ad3e34e97dcf",
+      "bytes": 2761,
+      "git_blob_head": "e5c6a5b732da9e4ea33969073eed27d029043ea0",
+      "raw_git_blob_worktree": "e5c6a5b732da9e4ea33969073eed27d029043ea0",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabTestDTO",
+          "components_source": "UUID testId,\n        UUID recordId,\n        UUID patientId,\n        UUID requestingDepartmentId,\n        String labType,\n        LocalDate requestedDate,\n        LocalDate performedDate,\n        LabTestStatus status,\n        String conclusion,\n        boolean paid,\n        List<LabResultDTO> results,\n        Instant createdAt,\n        Instant updatedAt,\n        int careContractVersion,\n        UUID sourceOrderId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String priceCode,\n        UUID clearanceId,\n        UUID emergencyOverrideId,\n        int resultVersion,\n        UUID cancelledBy,\n        String cancellationReason,\n        Instant cancelledAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/DomainEventEnvelope.java",
+      "sha256": "35823bb088c78cad83f9063c62b4df98df6749b4c82570d3e809aeedccf28960",
+      "bytes": 383,
+      "git_blob_head": "7571fe0963e21f7588f87020ac18fce8a734bf97",
+      "raw_git_blob_worktree": "7571fe0963e21f7588f87020ac18fce8a734bf97",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/LabRequestCancelledPayload.java",
+      "sha256": "2a9db8e2b813c3204247060451c1057a5629f2fed30087e0aa441f8a604f8d52",
+      "bytes": 563,
+      "git_blob_head": "920978135562efd8b2b7fe95d62bb6f5a51279f5",
+      "raw_git_blob_worktree": "920978135562efd8b2b7fe95d62bb6f5a51279f5",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabRequestCancelledPayload",
+          "components_source": "UUID testId, UUID patientId, UUID recordId,\n        UUID requestingDepartmentId, CareEpisodeType careEpisodeType, UUID careEpisodeId,\n        UUID sourceOrderId, String sourceType, UUID sourceId, String priceCode, String labType,\n        UUID cancelledBy, String reason, Instant cancelledAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/LabRequestCreatedEvent.java",
+      "sha256": "bc4776627f7fe22dc963f53ab3cb8f53e5619099fd0d25231205ee6eaa541cd4",
+      "bytes": 1399,
+      "git_blob_head": "52dce343673346b633ca402392f66b4e4d27707e",
+      "raw_git_blob_worktree": "52dce343673346b633ca402392f66b4e4d27707e",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabRequestCreatedEvent",
+          "components_source": "UUID eventId,\n        Instant occurredAt,\n        String correlationId,\n        UUID labId,\n        UUID patientId,\n        UUID recordId,\n        UUID departmentId,\n        String labType,\n        LocalDate requestedDate"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/LabRequestV2Payload.java",
+      "sha256": "91c5153e329886d68962ca3c6b3191888a379e276ec23913aaf224238844a011",
+      "bytes": 594,
+      "git_blob_head": "c45dac9054b0867f909b5447da897bc345c16c84",
+      "raw_git_blob_worktree": "c45dac9054b0867f909b5447da897bc345c16c84",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabRequestV2Payload",
+          "components_source": "UUID labId,\n        UUID patientId,\n        UUID recordId,\n        UUID departmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        UUID sourceOrderId,\n        String sourceType,\n        UUID sourceId,\n        String priceCode,\n        String labType,\n        Instant requestedAt,\n        UUID emergencyOverrideId"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/LabResultCreatedEvent.java",
+      "sha256": "4bbda136395561092b6ad5fe6fe6b515b3a127351abfc48760d043fd25161744",
+      "bytes": 3706,
+      "git_blob_head": "fe4f01fb97204a13874f1ba1879eb423c4f6cb30",
+      "raw_git_blob_worktree": "fe4f01fb97204a13874f1ba1879eb423c4f6cb30",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabResultCreatedEvent",
+          "components_source": "UUID eventId,\n        Instant occurredAt,\n        String correlationId,\n        UUID labId,\n        UUID patientId,\n        UUID recordId,\n        UUID departmentId,\n        String labType,\n        LocalDate performedDate,\n        List<Result> results,\n        String conclusion"
+        },
+        {
+          "record": "Result",
+          "components_source": "UUID resultId,\n            String indicator,\n            String value,\n            String unit,\n            String referenceRange"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/event/LabResultV2Payload.java",
+      "sha256": "6cd313ab2b89ac129007884d200b742142712bb7388d6de0c0c1a5a849b53089",
+      "bytes": 774,
+      "git_blob_head": "2da5914002e17004fc3fa7e830f5371996a4a321",
+      "raw_git_blob_worktree": "2da5914002e17004fc3fa7e830f5371996a4a321",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabResultV2Payload",
+          "components_source": "UUID labId,\n        UUID patientId,\n        UUID recordId,\n        UUID departmentId,\n        CareEpisodeType careEpisodeType,\n        UUID careEpisodeId,\n        String labType,\n        int resultVersion,\n        List<LabResultCreatedEvent.Result> results,\n        String conclusion,\n        UUID verifiedBy,\n        LocalDate performedDate,\n        Instant completedAt"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/CreateLabRequestUseCase.java",
+      "sha256": "796803ad8826d71ec70ee010edcc9711cc5d8ae0989100f905032f1d93d4b6c0",
+      "bytes": 427,
+      "git_blob_head": "bb5ca67b9c426c44af596e3ace41b2393cb4105a",
+      "raw_git_blob_worktree": "bb5ca67b9c426c44af596e3ace41b2393cb4105a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/ManageLabTestUseCase.java",
+      "sha256": "4c87b4f63764a6690844901def42c8f0ae1942748534fd28397e37767e196c6e",
+      "bytes": 1445,
+      "git_blob_head": "ff6c72c9fac88094e90e3c515d75a601e682684c",
+      "raw_git_blob_worktree": "ff6c72c9fac88094e90e3c515d75a601e682684c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/ReactToClinicalUseCase.java",
+      "sha256": "a2dbfaad7a42fd67bc13ac7ebd6810108f5e251f5942ae30b9dcafcc1d61c12f",
+      "bytes": 282,
+      "git_blob_head": "c9f389eba9e083a6ee542331fe429809035bb1ba",
+      "raw_git_blob_worktree": "c9f389eba9e083a6ee542331fe429809035bb1ba",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/ReactToFinancialClearanceUseCase.java",
+      "sha256": "796a06da0c86ed3a868b94ee832ac5bfe9f36ec1df3229fba4e5da0878314c16",
+      "bytes": 329,
+      "git_blob_head": "24677045f84c38bae40c5504134a47831cf0dbe0",
+      "raw_git_blob_worktree": "24677045f84c38bae40c5504134a47831cf0dbe0",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/ReactToMedicalRecordUseCase.java",
+      "sha256": "e4bfb8d3e86581669a966a9d2894c5ea4f401f3ca2d4ad601799de3ae0759d01",
+      "bytes": 245,
+      "git_blob_head": "c3296995c74ff657ad158ba923f578d767c93395",
+      "raw_git_blob_worktree": "c3296995c74ff657ad158ba923f578d767c93395",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/ReactToPaymentUseCase.java",
+      "sha256": "f695d49b76fbc7aacb5ee5ac6be078bdbd11e8011d175bf3a2888963da7c9128",
+      "bytes": 300,
+      "git_blob_head": "0b3b88f456033e7138656521fe5fc0e36f0ae37a",
+      "raw_git_blob_worktree": "0b3b88f456033e7138656521fe5fc0e36f0ae37a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/in/UpdateLabPaymentUseCase.java",
+      "sha256": "42294ce7b83b0442b39972f498af1fb086fe3bd5fba81edb4e050debeb8e2fd1",
+      "bytes": 225,
+      "git_blob_head": "e1f83d9bfdbac4cd6b985bae8d9cd798d39dfb32",
+      "raw_git_blob_worktree": "e1f83d9bfdbac4cd6b985bae8d9cd798d39dfb32",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/AuthenticatedStaffContext.java",
+      "sha256": "1e9178d1a1b91e4ba10fcf987d44568a7cc4d40337b7e64c3d6a51f38febf211",
+      "bytes": 226,
+      "git_blob_head": "c48af6f79c4296cf83f218c6dea1d0917a1cbfbc",
+      "raw_git_blob_worktree": "c48af6f79c4296cf83f218c6dea1d0917a1cbfbc",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "AuthenticatedStaffContext",
+          "components_source": "UUID staffId, String role"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/AuthenticatedStaffContextPort.java",
+      "sha256": "c4e7d27d4defea33d5653e9b8f4867ff8e555444c8327669ce224a627b986464",
+      "bytes": 265,
+      "git_blob_head": "9616406a3138cfd83f2d37547c71fa34489cc2f8",
+      "raw_git_blob_worktree": "9616406a3138cfd83f2d37547c71fa34489cc2f8",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/ConsumerInboxPort.java",
+      "sha256": "e1cc4f6c24050d8f1703c84559102cabeb362bbf46bf85bab7232d4167248151",
+      "bytes": 376,
+      "git_blob_head": "1457038fa1fc3879b403f3b7aa334a6e69248a26",
+      "raw_git_blob_worktree": "1457038fa1fc3879b403f3b7aa334a6e69248a26",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/CorrelationIdProvider.java",
+      "sha256": "bc09fc36d09dcd58af4ac9986affd4f72218626e8c446e771353c1aa39187d0a",
+      "bytes": 333,
+      "git_blob_head": "3944df41ed166147af2b878bf0ad3cad29c0cd5e",
+      "raw_git_blob_worktree": "3944df41ed166147af2b878bf0ad3cad29c0cd5e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabClearanceRepositoryPort.java",
+      "sha256": "7ba766e68fc2309817e592d4074fe6a5be3da42e4599fcec54c70c87c1055f43",
+      "bytes": 753,
+      "git_blob_head": "4d74e71fac50b9eadac592b4ec24fde75aea9de9",
+      "raw_git_blob_worktree": "4d74e71fac50b9eadac592b4ec24fde75aea9de9",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabClinicalOrderContextPort.java",
+      "sha256": "a4623c3cca147c818fbae5cbb9c5a6a4911539d1fd8e7620ee0a7a14298c4b0c",
+      "bytes": 529,
+      "git_blob_head": "13e2f99140c1b343e7fe5a0ae7f61dcc88e7ceff",
+      "raw_git_blob_worktree": "13e2f99140c1b343e7fe5a0ae7f61dcc88e7ceff",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabEmergencyOverrideRepositoryPort.java",
+      "sha256": "ef5cf4c935aabe12ffade6b92f372c8c66080399765d2f197a17ea182d3f8278",
+      "bytes": 280,
+      "git_blob_head": "107a544e11a58b53ace20388327c1878cefa7235",
+      "raw_git_blob_worktree": "107a544e11a58b53ace20388327c1878cefa7235",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabEventPublisherPort.java",
+      "sha256": "1fcfba98131e3bf65b552112abb3cacc14abcf7cf0717d627ead8df07c1f2040",
+      "bytes": 425,
+      "git_blob_head": "dd51f5e9ecf461f2c27dbb5ecb87541276e8c4dd",
+      "raw_git_blob_worktree": "dd51f5e9ecf461f2c27dbb5ecb87541276e8c4dd",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabExecutionAuthorityPort.java",
+      "sha256": "2a0c1d4375bed4bf2b4ba9bb3d0f906c003f26314ab4fe8beb1de459ed16cc5d",
+      "bytes": 1414,
+      "git_blob_head": "f6928739e69a5e2871e51da652cf18aa0e76a10f",
+      "raw_git_blob_worktree": "f6928739e69a5e2871e51da652cf18aa0e76a10f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabOutboxPort.java",
+      "sha256": "87b3fb42635612fde29919ce2fe8c3fc2d49571460b1616b03696b512179bb83",
+      "bytes": 258,
+      "git_blob_head": "3b0e23f2d612302f413bdc720ca99c44f4b5f08b",
+      "raw_git_blob_worktree": "3b0e23f2d612302f413bdc720ca99c44f4b5f08b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabOutpatientMvpMode.java",
+      "sha256": "cbf0826accf0951b6a315ccc3c49e208305f235d6e17f1d509ac986184f7e706",
+      "bytes": 199,
+      "git_blob_head": "7320d47595674978fcef781943a5011fa8b2e9bb",
+      "raw_git_blob_worktree": "7320d47595674978fcef781943a5011fa8b2e9bb",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabOutpatientMvpMode",
+          "components_source": "boolean enabled"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabTestRepositoryPort.java",
+      "sha256": "1652f182a1aa5bfc80ff2fb138d48ed8daf01b09f952bf3baf1a5f4343826d41",
+      "bytes": 993,
+      "git_blob_head": "e8915c685d22667e424af3ede28e6ccfa72227cc",
+      "raw_git_blob_worktree": "e8915c685d22667e424af3ede28e6ccfa72227cc",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/ProcessedEventPort.java",
+      "sha256": "087dbebb0740d55286fe9f6aa29ab983efeffcd7af5dd3a776b91b348988aff9",
+      "bytes": 416,
+      "git_blob_head": "76e92431cf19fcef12ab1e8753d5e1ac54905f83",
+      "raw_git_blob_worktree": "76e92431cf19fcef12ab1e8753d5e1ac54905f83",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/service/LabApplicationService.java",
+      "sha256": "469b8c8730bb49abb0b0516d1c03b88ac9b8bfcf60ebf52c911f6cbd42c36806",
+      "bytes": 28676,
+      "git_blob_head": "ebac288b4818b99c1771baf531aa3ec128ad1a55",
+      "raw_git_blob_worktree": "ebac288b4818b99c1771baf531aa3ec128ad1a55",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/service/LabIntegrationService.java",
+      "sha256": "463c7f5ab89dea75c8cf590fde5ebad27400c4d4273399e2e0d41a7b45d01919",
+      "bytes": 1373,
+      "git_blob_head": "300f5c850e935ee8dcffb6a47b076823873af9aa",
+      "raw_git_blob_worktree": "300f5c850e935ee8dcffb6a47b076823873af9aa",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/service/LabRequestCreationApplicationService.java",
+      "sha256": "8662ddad7ce639ba52050d1a969c40f606cde90be0c9e6de56d3113435294889",
+      "bytes": 3846,
+      "git_blob_head": "8e48b9d951388159e8496cd28af6d43a6999eb8b",
+      "raw_git_blob_worktree": "8e48b9d951388159e8496cd28af6d43a6999eb8b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/client/LabBillingClearanceFeignClient.java",
+      "sha256": "e0bee5317abbe04cecade96cf63897abce19f6b2fa778a93669bd94e38c53ad5",
+      "bytes": 1384,
+      "git_blob_head": "ba56812ff8631be70753f58e1f256c7899e9f663",
+      "raw_git_blob_worktree": "ba56812ff8631be70753f58e1f256c7899e9f663",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/client/LabBillingExecutionAuthorityAdapter.java",
+      "sha256": "e84e7f3826dc45e786bfa889fb657bd63a41ffca0728a6196685236a77da2631",
+      "bytes": 11994,
+      "git_blob_head": "74edf359e244e3bfc48b7eb84887bf2c323a2e39",
+      "raw_git_blob_worktree": "74edf359e244e3bfc48b7eb84887bf2c323a2e39",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/client/LabBillingExecutionStartRequest.java",
+      "sha256": "3c6ee3bf2eee144d6c14bfd4724607ac7d21c8384a645c728e85097ced18f4ff",
+      "bytes": 371,
+      "git_blob_head": "c75c7bb9d0e0cc9c2774b393b88f9e97c575568b",
+      "raw_git_blob_worktree": "c75c7bb9d0e0cc9c2774b393b88f9e97c575568b",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "LabBillingExecutionStartRequest",
+          "components_source": "UUID operationId,\n        String sourceType,\n        UUID sourceId,\n        UUID patientId,\n        String careEpisodeType,\n        UUID careEpisodeId"
+        }
+      ]
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/client/LabClinicalOrderContextAdapter.java",
+      "sha256": "8f42da06e2778061f96c0221c4f6501ef1ad5e8ad868c501c0bde7c876293707",
+      "bytes": 9469,
+      "git_blob_head": "7f0ba720cbc7815f8aed12bbc8a6d57fc7b7cf75",
+      "raw_git_blob_worktree": "7f0ba720cbc7815f8aed12bbc8a6d57fc7b7cf75",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/client/LabClinicalOrderFeignClient.java",
+      "sha256": "ff831c5eea94bf55ef0e47d6a4e4e69b7e70418b979962f5e8592734bacef7d2",
+      "bytes": 902,
+      "git_blob_head": "d6139e6c0779da3f0507f6eda1477109575b49bd",
+      "raw_git_blob_worktree": "d6139e6c0779da3f0507f6eda1477109575b49bd",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java",
+      "sha256": "ccdcb0de03f7f2c5c4ec944d872b25f44ab8096c98b2e4d0485779e0c83feab4",
+      "bytes": 5596,
+      "git_blob_head": "ed276f61bacdc8027e49c40ed587c05dde8fcd12",
+      "raw_git_blob_worktree": "ed276f61bacdc8027e49c40ed587c05dde8fcd12",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/resources/application-outpatient-mvp.yml",
+      "sha256": "5f7696371550cfec809c6ff3f67fc3acbd27f963a2d6853dbe09dbf6fa26b488",
+      "bytes": 390,
+      "git_blob_head": "f258ca3711238d503fec77872121d3eaad3a1c8b",
+      "raw_git_blob_worktree": "f258ca3711238d503fec77872121d3eaad3a1c8b",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/main/resources/application.yml",
+      "sha256": "537f72514c0839839ff325e2c01b1a7dfbe1923f6b81469d436c4fb595d752fc",
+      "bytes": 2221,
+      "git_blob_head": "ce39e9ed391673c2948fb3c7fd27419a2f72e95c",
+      "raw_git_blob_worktree": "ce39e9ed391673c2948fb3c7fd27419a2f72e95c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/application/event/LabCareFinanceV2ContractFixtureTest.java",
+      "sha256": "4f0b215067279cee5ec43959ccd4cc683d0566d825562da371c006a38344c9cf",
+      "bytes": 4870,
+      "git_blob_head": "230e075cfac0c0629cc1ef0d0da2636598729add",
+      "raw_git_blob_worktree": "230e075cfac0c0629cc1ef0d0da2636598729add",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/clinical-lab-order-context-v1/valid.json",
+      "sha256": "b1ecb5a8dc167ba934716728119bb324649dd7efd1b0eb80a630e9ae2c659b50",
+      "bytes": 653,
+      "git_blob_head": "764691e8be6b9ccd71a637db7e80f331bffb063d",
+      "raw_git_blob_worktree": "764691e8be6b9ccd71a637db7e80f331bffb063d",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "success": "boolean",
+        "data": {
+          "exists": "boolean",
+          "sourceOrderId": "string",
+          "recordId": "string",
+          "patientId": "string",
+          "requestingDoctorId": "string",
+          "requestingDepartmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "labType": "string",
+          "requestedDate": "string",
+          "priceCode": "string",
+          "orderedAt": "string",
+          "observedAt": "string"
+        },
+        "error": "null-observed",
+        "timestamp": "string",
+        "correlationId": "string"
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/financial.clearance.granted.v1.json",
+      "sha256": "e068b5501bbf23c937aab5d54951ea5a1e8c371e8392d95fbadaa2c7f94ed81a",
+      "bytes": 977,
+      "git_blob_head": "2728638b872d573614142dad7abdd981a613ff17",
+      "raw_git_blob_worktree": "2728638b872d573614142dad7abdd981a613ff17",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "clearanceId": "string",
+          "invoiceId": "string",
+          "accountId": "string",
+          "patientId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "purpose": "string",
+          "appointmentId": "null-observed",
+          "recordId": "string",
+          "labTestIds": {
+            "array_examples": [
+              "string"
+            ]
+          },
+          "prescriptionId": "null-observed",
+          "admissionId": "null-observed",
+          "surgeryCaseId": "null-observed",
+          "amount": "number",
+          "currency": "string",
+          "paymentMethod": "string",
+          "expiresAt": "null-observed",
+          "emergencyOverride": "boolean"
+        }
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/lab-request-cancelled-v1/lab.request.cancelled.v1.json",
+      "sha256": "0aff7ea9e2c7343d83fb7ca914490c36758dfa9e80bdc445595acb141a89e88f",
+      "bytes": 933,
+      "git_blob_head": "4b4552d0f8f081f2b28f6ef7b0bebe5701d454db",
+      "raw_git_blob_worktree": "4b4552d0f8f081f2b28f6ef7b0bebe5701d454db",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "testId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "requestingDepartmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceOrderId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "labType": "string",
+          "cancelledBy": "string",
+          "reason": "string",
+          "cancelledAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/lab.request.created.v1.json",
+      "sha256": "9fa2a3b83968b802e564e3bd9f8a87f797af62e36bdfa31b8d7afe7a5586a226",
+      "bytes": 860,
+      "git_blob_head": "afffa37688ad7e1985cf55efe90ec78863d21455",
+      "raw_git_blob_worktree": "afffa37688ad7e1985cf55efe90ec78863d21455",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "labId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceOrderId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "labType": "string",
+          "requestedAt": "string",
+          "emergencyOverrideId": "null-observed"
+        }
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/lab.result.created.admission.v1.json",
+      "sha256": "4b2892cea4512a70706113eaeef1277f639a44f4c70c07851b394099504f18db",
+      "bytes": 996,
+      "git_blob_head": "ffbb6f5d57a391b5c0f91010784218c66ad7fee9",
+      "raw_git_blob_worktree": "ffbb6f5d57a391b5c0f91010784218c66ad7fee9",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "labId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "labType": "string",
+          "resultVersion": "number",
+          "results": {
+            "array_examples": [
+              {
+                "resultId": "string",
+                "indicator": "string",
+                "value": "string",
+                "unit": "string",
+                "referenceRange": "string"
+              }
+            ]
+          },
+          "conclusion": "string",
+          "verifiedBy": "string",
+          "performedDate": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/lab.result.created.v1.json",
+      "sha256": "fdf18735f9f3757fac49c75cad0643c16a663690a42a753554f1b95f6bfb1b89",
+      "bytes": 1014,
+      "git_blob_head": "603d335c60604da9beb9997883c4635e413f36c1",
+      "raw_git_blob_worktree": "603d335c60604da9beb9997883c4635e413f36c1",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "labId": "string",
+          "patientId": "string",
+          "recordId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "labType": "string",
+          "resultVersion": "number",
+          "results": {
+            "array_examples": [
+              {
+                "resultId": "string",
+                "indicator": "string",
+                "value": "string",
+                "unit": "string",
+                "referenceRange": "string"
+              }
+            ]
+          },
+          "conclusion": "string",
+          "verifiedBy": "string",
+          "performedDate": "string",
+          "completedAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/lab-service/src/test/resources/contracts/medicalrecord.created.v1.json",
+      "sha256": "7a31b4f12a9c855c3b269a0582c5ec700f1906988c4874025b596ce63edb8abf",
+      "bytes": 813,
+      "git_blob_head": "af97512cde2eb84cb012342472bf259cc3c9b60e",
+      "raw_git_blob_worktree": "af97512cde2eb84cb012342472bf259cc3c9b60e",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "recordId": "string",
+          "appointmentId": "string",
+          "patientId": "string",
+          "doctorId": "string",
+          "departmentId": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "examinationDate": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/application/service/CareProjectionService.java",
+      "sha256": "8837fa936ecc9099d9aef2bda73523d81c089e1bd843d690650fa5e81a7df405",
+      "bytes": 5669,
+      "git_blob_head": "cb9ad7a6056eebbb3d9d34d7de439494ddfe6f1c",
+      "raw_git_blob_worktree": "cb9ad7a6056eebbb3d9d34d7de439494ddfe6f1c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/infrastructure/config/CareNotificationConfiguration.java",
+      "sha256": "0baaeb8e92e31612781c4723c260302dac756c4c02bd308ff78ed4464efb2869",
+      "bytes": 3666,
+      "git_blob_head": "a6fe8b042d89b8cbdb030c28ceedd43b8903fbd5",
+      "raw_git_blob_worktree": "a6fe8b042d89b8cbdb030c28ceedd43b8903fbd5",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "TransactionalCareProjections",
+          "components_source": "CareProjectionService service, TransactionTemplate transactions"
+        }
+      ]
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/messaging/consumer/CarePaymentReceiptWireHandler.java",
+      "sha256": "0741f6a296fde98018316d90784b64ef7195dfd6786894f25916748d43389446",
+      "bytes": 6186,
+      "git_blob_head": "29fdb912cdd010a913042a7d0b4ae11bb572fc49",
+      "raw_git_blob_worktree": "29fdb912cdd010a913042a7d0b4ae11bb572fc49",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/messaging/consumer/CareProjectionWireHandler.java",
+      "sha256": "a5f06e66b76a22f066ae2d5d6a7d172dde95fb9901b1255f6d4f96d69ada8536",
+      "bytes": 8838,
+      "git_blob_head": "4edec4432d2c24b637dc11ed8e3de67df92ef0b6",
+      "raw_git_blob_worktree": "4edec4432d2c24b637dc11ed8e3de67df92ef0b6",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/messaging/consumer/NotificationEventConsumer.java",
+      "sha256": "202e7dbf85320a223f849fc5870a4dabe6a6560e7dfb28eec3364bc500867e68",
+      "bytes": 12197,
+      "git_blob_head": "1fc72c69c982c950441d5901c2d76d65a3a6d4ce",
+      "raw_git_blob_worktree": "1fc72c69c982c950441d5901c2d76d65a3a6d4ce",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java",
+      "sha256": "c914b693c0ed53074b8922baf0fc6ccc305f904715862b7092e3dafb70e6464a",
+      "bytes": 5537,
+      "git_blob_head": "348ed8b5a53e82286ec05cb541af61b2313ce988",
+      "raw_git_blob_worktree": "348ed8b5a53e82286ec05cb541af61b2313ce988",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/notification-service/src/main/resources/application.yml",
+      "sha256": "05f514dc8881d650d70acccaf7fc5f43dccee9dad3d553ee650fc0711b7819dc",
+      "bytes": 1604,
+      "git_blob_head": "6c7f947a801ac9db388f441dab96629b51854b4a",
+      "raw_git_blob_worktree": "6c7f947a801ac9db388f441dab96629b51854b4a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/pharmacy-service/src/main/resources/application-mvp-outpatient.yml",
+      "sha256": "c282375e8635d0e1605beb8cddd616800f97206035b9a9aa2591cc5c2b5b3530",
+      "bytes": 635,
+      "git_blob_head": "081162fd9e6126b5703fbdb7332e25d947869dfc",
+      "raw_git_blob_worktree": "081162fd9e6126b5703fbdb7332e25d947869dfc",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/pharmacy-service/src/main/resources/application-outpatient-mvp.yml",
+      "sha256": "67254a8e917ab2496dd661099a93f6cfd4152c42d2180604f8e8da1dc9af05ce",
+      "bytes": 155,
+      "git_blob_head": "84bd06f174dfeaad9e5bb064bcf948d7cb463f4a",
+      "raw_git_blob_worktree": "84bd06f174dfeaad9e5bb064bcf948d7cb463f4a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/pharmacy-service/src/main/resources/application.yml",
+      "sha256": "bc6de78def464a964f7cdbab71994b6d05e5bdd863b3f19b9d1e2d880db17bf8",
+      "bytes": 5109,
+      "git_blob_head": "1cac009d70be043a1b659bab6abcd1ded12e5d13",
+      "raw_git_blob_worktree": "1cac009d70be043a1b659bab6abcd1ded12e5d13",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.cancelled.outpatient.v1.json",
+      "sha256": "9bef905dd51be4c107ce256fd3022b3caac791c6e01afa8b8bc5bbecf3f80537",
+      "bytes": 1038,
+      "git_blob_head": "dbb44109b19c24fd3c5eac0aae72424eafa01798",
+      "raw_git_blob_worktree": "dbb44109b19c24fd3c5eac0aae72424eafa01798",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "prescriptionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careContext": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "items": {
+            "array_examples": [
+              {
+                "drugId": "string",
+                "drugName": "string",
+                "quantity": "number",
+                "unitPrice": "number"
+              }
+            ]
+          },
+          "totalAmount": "number",
+          "cancelledAt": "string",
+          "reason": "string",
+          "recordId": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.created.outpatient.v1.json",
+      "sha256": "3083b5d244d147dd50025fa608243ed11de52fa76f6b007170aa4cb0363898ed",
+      "bytes": 926,
+      "git_blob_head": "306306225d71212eb4c98f76637a6ba319b710b3",
+      "raw_git_blob_worktree": "306306225d71212eb4c98f76637a6ba319b710b3",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "prescriptionId": "string",
+          "recordId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careContext": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "items": {
+            "array_examples": [
+              {
+                "drugId": "string",
+                "drugName": "string",
+                "quantity": "number",
+                "unitPrice": "number"
+              }
+            ]
+          },
+          "totalAmount": "number",
+          "createdAt": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.dispense.failed.outpatient.v1.json",
+      "sha256": "deefc1be799c64437a81eef482b422daca2fa54baff4fad3b23d38efc0f2a888",
+      "bytes": 1031,
+      "git_blob_head": "2b014b80e83f960cc7f1c51f881133638f4383e6",
+      "raw_git_blob_worktree": "2b014b80e83f960cc7f1c51f881133638f4383e6",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "prescriptionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careContext": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "items": {
+            "array_examples": [
+              {
+                "drugId": "string",
+                "drugName": "string",
+                "quantity": "number",
+                "unitPrice": "number"
+              }
+            ]
+          },
+          "totalAmount": "number",
+          "failedAt": "string",
+          "reason": "string",
+          "recordId": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.expired.outpatient.v1.json",
+      "sha256": "5bd77085ef0db79686adc20ff5bb213e6a8da4b185bfc75fe34411a4ba5d770b",
+      "bytes": 1035,
+      "git_blob_head": "a25687b4d9def6e63a440fe5c83a0e39900fb062",
+      "raw_git_blob_worktree": "a25687b4d9def6e63a440fe5c83a0e39900fb062",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "prescriptionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careContext": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "items": {
+            "array_examples": [
+              {
+                "drugId": "string",
+                "drugName": "string",
+                "quantity": "number",
+                "unitPrice": "number"
+              }
+            ]
+          },
+          "totalAmount": "number",
+          "expiredAt": "string",
+          "reason": "string",
+          "recordId": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json",
+      "sha256": "b0db35a17d80b1cbdb30d0de7b7549592bc960c67365363634e1f2c1366981a6",
+      "bytes": 1050,
+      "git_blob_head": "25544dd4a54ef3b90b86d917ee4062d9df41fdb6",
+      "raw_git_blob_worktree": "25544dd4a54ef3b90b86d917ee4062d9df41fdb6",
+      "raw_matches_head": true,
+      "fixture_shape_observed": {
+        "eventId": "string",
+        "eventType": "string",
+        "version": "number",
+        "occurredAt": "string",
+        "correlationId": "string",
+        "producer": "string",
+        "payload": {
+          "prescriptionId": "string",
+          "patientId": "string",
+          "departmentId": "string",
+          "careContext": "string",
+          "careEpisodeType": "string",
+          "careEpisodeId": "string",
+          "sourceType": "string",
+          "sourceId": "string",
+          "priceCode": "string",
+          "items": {
+            "array_examples": [
+              {
+                "drugId": "string",
+                "drugName": "string",
+                "quantity": "number",
+                "unitPrice": "number"
+              }
+            ]
+          },
+          "totalAmount": "number",
+          "dispenseId": "string",
+          "filledAt": "string",
+          "recordId": "string"
+        }
+      }
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/infrastructure/config/ReportOutpatientConsumerConfiguration.java",
+      "sha256": "d6af04bdf3653490669e2d73ff9a8f9e9930249de005a45f5852fac801804790",
+      "bytes": 5061,
+      "git_blob_head": "990b4b898371c8df82c1046ae776460e90875481",
+      "raw_git_blob_worktree": "990b4b898371c8df82c1046ae776460e90875481",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/infrastructure/config/ReportOutpatientCoverageAcceptanceConfiguration.java",
+      "sha256": "400e25a6cb0b30cf74f3894f75bf4bd57aad5542e795d2060fb55b9c92ce8a69",
+      "bytes": 1417,
+      "git_blob_head": "20e6456ad6e08ffcd12302e49253643846bb5cf4",
+      "raw_git_blob_worktree": "20e6456ad6e08ffcd12302e49253643846bb5cf4",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/infrastructure/config/ReportOutpatientReadConfiguration.java",
+      "sha256": "bc71c88dbd472aa01e02e1c9a092923d492c5cd8ec9b96e3f241b24516378c9c",
+      "bytes": 1175,
+      "git_blob_head": "5d41d7c47af055282d8989fe9becd142c5c39dd1",
+      "raw_git_blob_worktree": "5d41d7c47af055282d8989fe9becd142c5c39dd1",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/infrastructure/messaging/carefinance/CareFinanceEnvelopeDecoder.java",
+      "sha256": "fdc1b114c89811ce885a709b6918cc378eb169eb268672b90a6f21edbcda7ebb",
+      "bytes": 8468,
+      "git_blob_head": "8e5485239620f4b8f63204729ead2eac4a1edc93",
+      "raw_git_blob_worktree": "8e5485239620f4b8f63204729ead2eac4a1edc93",
+      "raw_matches_head": true,
+      "record_declarations": [
+        {
+          "record": "SourceContract",
+          "components_source": "String producer, String sourceField"
+        }
+      ]
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/messaging/consumer/CashReceiptConsumer.java",
+      "sha256": "e7cf25c0a5e7cd591c2526a20c40183642ded7c350dc1a22d9bcb4018ab4711b",
+      "bytes": 1837,
+      "git_blob_head": "e58c24dfb773533ce93414b33e71a12d4eef52bb",
+      "raw_git_blob_worktree": "e58c24dfb773533ce93414b33e71a12d4eef52bb",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/messaging/consumer/CashRefundConsumer.java",
+      "sha256": "80d8fa5a226fc3b5c3adbd537571906fcbf22954beba08c6da41a3b770c1be1c",
+      "bytes": 1221,
+      "git_blob_head": "065b0d83843b33be30321528ae838f07b131892f",
+      "raw_git_blob_worktree": "065b0d83843b33be30321528ae838f07b131892f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/messaging/consumer/OutpatientReportFactConsumer.java",
+      "sha256": "c40165e6f4c3c7edaed23d2a5ebaecad2353b8735088edea5283ef351c492fac",
+      "bytes": 1573,
+      "git_blob_head": "3951671e01888eb677277bca2ca8f911cb70f52c",
+      "raw_git_blob_worktree": "3951671e01888eb677277bca2ca8f911cb70f52c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java",
+      "sha256": "cdd05f50c0e1ce9795656f58d5699060b911164bd4c5e50553b02facc8b64e86",
+      "bytes": 2256,
+      "git_blob_head": "d17d692fda8bef6fb1da4ac3c65c68d877140647",
+      "raw_git_blob_worktree": "d17d692fda8bef6fb1da4ac3c65c68d877140647",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/resources/application-mvp-outpatient.yml",
+      "sha256": "f3fbf32ef91ec5ef09c101dc798a95951bc00ec1cff420f6151be06b010ad500",
+      "bytes": 842,
+      "git_blob_head": "80248b5ad0ddbf77a49d1634296aefb6fb5c185f",
+      "raw_git_blob_worktree": "80248b5ad0ddbf77a49d1634296aefb6fb5c185f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/resources/application-outpatient-mvp.yml",
+      "sha256": "a099227df93cde955fd175e16658a83f95d788009bd04bd28ffb0bbc46115cc8",
+      "bytes": 148,
+      "git_blob_head": "27bcd9c972ec3525d52c9315074b04b50a921a22",
+      "raw_git_blob_worktree": "27bcd9c972ec3525d52c9315074b04b50a921a22",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/report-service/src/main/resources/application.yml",
+      "sha256": "96cbc7414bf3839218130c6fd7eb1094e043f7c4714d59fd2f3114dd36446b2d",
+      "bytes": 3083,
+      "git_blob_head": "7a19c0879f835e79436b423c74f68838bf286264",
+      "raw_git_blob_worktree": "7a19c0879f835e79436b423c74f68838bf286264",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/support-service/src/main/resources/application.yml",
+      "sha256": "8a64328eba516df48ee65c5d83ba13e8cb34d034933b5ae92ee801875bc79f9e",
+      "bytes": 1881,
+      "git_blob_head": "71d5189a87b8927457be672ee42da62a84e0787f",
+      "raw_git_blob_worktree": "71d5189a87b8927457be672ee42da62a84e0787f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "backend/surgery-service/src/main/java/com/mediflow/surgery/infrastructure/client/OrganizationFeignClient.java",
+      "sha256": "41342c8e0179a06e7d02afff6820e86f251ff2cc3d86bfb2ef6c4b3940264c84",
+      "bytes": 2234,
+      "git_blob_head": "0ba7dc16f1d7d837dc8ce98a4ad02797fa0fc709",
+      "raw_git_blob_worktree": "0ba7dc16f1d7d837dc8ce98a4ad02797fa0fc709",
+      "raw_matches_head": true
+    },
+    {
+      "path": "compose.demo.local.yml",
+      "sha256": "431ceb0ff65b0e102fca13cb07a7032e214f5f5ed563cfdbfc0d2706977f4a9b",
+      "bytes": 3127,
+      "git_blob_head": null,
+      "raw_git_blob_worktree": "7529b6b450c452b8b9fa1c441c690462068d9b27",
+      "raw_matches_head": false
+    },
+    {
+      "path": "docker-compose.yml",
+      "sha256": "0f668fbe185b2ef6866b76645ea0923d0fee5e5590f90057994e8d9105cbdbad",
+      "bytes": 19255,
+      "git_blob_head": "8883550b2320d667bce41a3cc67a6192913ca5e6",
+      "raw_git_blob_worktree": "8883550b2320d667bce41a3cc67a6192913ca5e6",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/next.config.ts",
+      "sha256": "7aec7ac3ddc1eec744a9603e8a34f5f9522a0cfb343d0fae5950223ad1962e25",
+      "bytes": 636,
+      "git_blob_head": "e9b5db13ae43c7c5346802760512aefb976bd10f",
+      "raw_git_blob_worktree": "e9b5db13ae43c7c5346802760512aefb976bd10f",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/appointment/api.ts",
+      "sha256": "bfa567186040d92edb1b31577105101f4ed3255cbdd8f84fdac7bde6379eab16",
+      "bytes": 1902,
+      "git_blob_head": "7be35bfb344b89739d1eb9fdfe6105a04cf69fc9",
+      "raw_git_blob_worktree": "7be35bfb344b89739d1eb9fdfe6105a04cf69fc9",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/appointment/components/CreateAppointmentForm.tsx",
+      "sha256": "4fcd92afdad28b7503c5b0d9e3aeb873387da8f353b14a630c17cd8118e45ebc",
+      "bytes": 4496,
+      "git_blob_head": "4f8dc696d477e30f9c1f46821498576fb9ebd49a",
+      "raw_git_blob_worktree": "4f8dc696d477e30f9c1f46821498576fb9ebd49a",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/appointment/components/OutpatientExamActions.tsx",
+      "sha256": "9f58a68645918e9da3cece19e8f59dd43c2f06be5c9cdd6a2bb719fc10b0cd64",
+      "bytes": 4615,
+      "git_blob_head": "9a3b738bc1fc04598e3796afbed061e3c2d44f98",
+      "raw_git_blob_worktree": "9a3b738bc1fc04598e3796afbed061e3c2d44f98",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/appointment/types.ts",
+      "sha256": "80cb0578b2401947ada9d3e0aec60570de397320128b81367f50061314431cf2",
+      "bytes": 1420,
+      "git_blob_head": "53426a1f8f2765012b3545b4a27349c0a9ae3322",
+      "raw_git_blob_worktree": "53426a1f8f2765012b3545b4a27349c0a9ae3322",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/billing/api.ts",
+      "sha256": "b774d62032c7538529d8deea61e73230888401ba29c7599263ab1d9d5b0a15e3",
+      "bytes": 2361,
+      "git_blob_head": "f695e8783c3c513d298aba4f75a831dbed72b21c",
+      "raw_git_blob_worktree": "f695e8783c3c513d298aba4f75a831dbed72b21c",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/billing/components/LedgerPaymentForm.tsx",
+      "sha256": "6559fe8682463bda69c276433b2c7ce43b8eed7096ea4d74e9bcbf19df6bf3e2",
+      "bytes": 8578,
+      "git_blob_head": "1c0327f642e96024cc47b8bd24b567d938e3b383",
+      "raw_git_blob_worktree": "1c0327f642e96024cc47b8bd24b567d938e3b383",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/features/billing/types.ts",
+      "sha256": "c0b56f392289b49930b980b5846653c8776256c15640a0616e1b70157a38ee34",
+      "bytes": 3846,
+      "git_blob_head": "ea25c20583ab5447dc3ae73a6bea06ef77768ca4",
+      "raw_git_blob_worktree": "ea25c20583ab5447dc3ae73a6bea06ef77768ca4",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "sha256": "59f7a8bc0fb59531f001619f1d251c28f9e6edd4d696cf9832d92d8c1615554e",
+      "bytes": 8788,
+      "git_blob_head": "1b4366219a72410d6cb1032f1447a9ac82dbb56e",
+      "raw_git_blob_worktree": "1b4366219a72410d6cb1032f1447a9ac82dbb56e",
+      "raw_matches_head": true
+    },
+    {
+      "path": "frontend/src/lib/types.ts",
+      "sha256": "c28ce55ca45f34a927b6446c63e44c1b0e453111e8290d3d34e96bcba8ee8502",
+      "bytes": 617,
+      "git_blob_head": "e1c9aca49dcab191757c8a0af8ec3266fb0a8baf",
+      "raw_git_blob_worktree": "e1c9aca49dcab191757c8a0af8ec3266fb0a8baf",
+      "raw_matches_head": true
+    }
+  ]
+}

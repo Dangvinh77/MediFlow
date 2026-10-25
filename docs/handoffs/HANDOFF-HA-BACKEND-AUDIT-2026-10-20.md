@@ -1,5 +1,16 @@
 # Core backend audit — Hoàng Anh — 2026-10-20
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-02`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Hoàng Anh/Core → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Owner: Hoàng Anh (`TranHoangAnh94`). Status: **OPEN**, owner implementation on
 `codex/core-audit-reliability`; final shared-revision verification remains required.
 Audit source: `26bf2ef7` (backend unchanged from `553ec59e`); Vinh verifies across modules but does not change Core production code.

@@ -1,5 +1,12 @@
 # Frontend Service: Report
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 2026-10-25 usability follow-up: legacy views automatically load their valid current default
 period. Quick date/month presets edit the draft, with an explicit warning when displayed results
 belong to the previously submitted period. Month selection uses a dropdown; department selection
@@ -94,7 +101,7 @@ disabled by default.
   UUID if no supported lookup exists.
 - Export formats and aggregation definitions require an explicit Report contract; do not calculate
   authoritative totals from other frontend features.
-- Track runtime/owner dependencies in the [single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md),
+- Track runtime/owner dependencies in the [single Huy handoff](../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md),
   not a second frontend handoff. Legacy success does not activate gated V2 surfaces.
 
 ## Contract and verification gate

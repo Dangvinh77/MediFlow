@@ -1,10 +1,14 @@
 # Vinh — lỗi kiểm thử mới sau regression 18/10/2026
 
+**Phân loại ngày 26/10/2026: HISTORICAL CHECKPOINT — không là backlog hiện hành.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 ## Recheck 19/10 — phân biệt nguồn chung và sửa local
 
 Remote master `4c19dd4a` và tag `v0.9.0-backend-feature-complete` chưa chứa hai sửa
 test bên dưới. Vinh đã áp dụng bản sửa test ở branch `codex/backend-loc-verification`;
-commands, source lock và kết quả sau sửa ở [bundle 19/10](../acceptance/backend-recheck-2026-10-19/README.md).
+commands, source lock và kết quả sau sửa ở [bundle 19/10](../../acceptance/backend-recheck-2026-10-19/README.md).
 Full Report sau sửa 1.331/1.331 và hai targeted reruns 8/8 mỗi lượt; Pharmacy opt-in
 1/1 pass, default 2 pass/1 explicit skip. Tất cả các lượt sau sửa exit 0.
 Hai fix đã được kiểm chứng local, chưa có trên remote. Full reactor và actual refund E2E
@@ -79,8 +83,8 @@ owned-context evidence đã lọc cho đúng owner. Hiện chưa ký actual issu
 - Pharmacy mặc định bỏ qua `actualV1IssuerGrantSurvivesPharmacyJvmRestartAndDuplicatesNeverAutoDispense`
   vì thiếu `mediflow.acceptance.billing-v1-published=true`. Chỉ opt-in disposable acceptance
   sau producer acceptance; không release HELD rows hoặc đổi cờ môi trường thật.
-- Gateway có phiếu riêng [HA-CODE-01/02](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md).
+- Gateway có phiếu riêng [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md).
   Bốn positive cases hiện đỏ, bảy negative controls pass. Vinh không sửa production Gateway.
 
-[Evidence đầy đủ](../acceptance/backend-2026-10-18/README.md) ·
-[Bảng giao việc cuối](BACKEND-FINAL-ASSIGNMENTS-2026-10-18.md)
+[Evidence đầy đủ](../../acceptance/backend-2026-10-18/README.md) ·
+[Bảng giao việc cuối](2026-10-18-backend-assignments.md)

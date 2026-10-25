@@ -1,8 +1,12 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
+**Phân loại ngày 26/10/2026: HISTORICAL CHECKPOINT — không là backlog hiện hành.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 ## Phân công hiện hành — 2026-10-18 sau merge
 
-PR #427 đã merge vào master (source audit 025ef39e); mô tả working patch chưa commit bên dưới là snapshot lúc chạy evidence. LOC-01–06 không còn giao lại Lộc để code. Vinh nhận **toàn bộ kiểm thử backend** và full G1/global integration theo [queue V-TEST-01–06](HANDOFF-VINH-BACKEND-VERIFICATION.md). Hai Gateway route gaps giao Hoàng Anh tại [HA-CODE-01/02](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md); Billing controllers đã có. Lỗi production mới nếu kiểm thử phát hiện sẽ có task tái hiện riêng cho đúng owner.
+PR #427 đã merge vào master (source audit 025ef39e); mô tả working patch chưa commit bên dưới là snapshot lúc chạy evidence. LOC-01–06 không còn giao lại Lộc để code. Vinh nhận **toàn bộ kiểm thử backend** và full G1/global integration theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Hai Gateway route gaps giao Hoàng Anh tại [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md); Billing controllers đã có. Lỗi production mới nếu kiểm thử phát hiện sẽ có task tái hiện riêng cho đúng owner.
 
 ## Nghiệm thu Vinh/Lộc — 2026-10-18
 
@@ -36,8 +40,8 @@ Không thay historical bytes hoặc migration. Precision tolerance trong package
 | Lab standalone consumer recovery, Failsafe | 1 | 0 / 0 / 0 |
 | Actual packaged Gateway/Core/Clinical/Lab/Billing paid flow + 3 crash checkpoints, Failsafe | 1 | 0 / 0 / 0 |
 
-**Bundle:** [README và lệnh tái lập](../../backend/billing-service/acceptance-evidence/2026-10-18/README.md),
-[manifest/source hash/file hashes/IDs](../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
+**Bundle:** [README và lệnh tái lập](../../../backend/billing-service/acceptance-evidence/2026-10-18/README.md),
+[manifest/source hash/file hashes/IDs](../../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
 14 broker bodies khớp original stored bytes. Có raw discovery/payment responses, Flyway
 versions/checksums, outbox progress và original/redelivered bytes tại ba điểm crash:
 Clinical EXAM clearance, Lab clearance, Clinical result attachment. Mỗi điểm có PID khác nhau,
@@ -55,7 +59,7 @@ Những checkbox/counts cũ bên dưới là lịch sử; bảng nghiệm thu v�
 
 **Owner:** Lộc (`locgit-89`). **Người nhận nghiệm thu:** Vinh; Huy nhận phần PRESCRIPTION.
 Source đối chiếu: `d80d23b2` + working changes Vinh được ghi trong
-[Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#fresh-vinh-source-verification--2026-10-17).
+[Vinh closeout](2026-10-18-clinical-lab-checkpoints.md#fresh-vinh-source-verification--2026-10-17).
 Đây là task tiếp tục Billing, không giao lại L1/L2 và không cấp quyền sửa service khác.
 Các mục 1–7 bên dưới giữ contract và lịch sử; khi trạng thái cũ mâu thuẫn, dùng mục 0 này.
 
@@ -64,8 +68,8 @@ duplicate-new-event-ID và historical-outpatient-held đã chạy đạt trong s
 chờ Docker/compile-only cho hai case này. Actual sáu-app paid Rx/current authority/dispense/
 Clinical attachment/Report/private notice và Pharmacy restart cũng đã đạt. Huy sửa các lỗi
 exact Pharmacy service caller, current Rx ledger/allocations và original grant Instant ở Billing.
-Evidence mới nằm trong đúng [handoff chung Huy mục 10](HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17)
-và [runbook mục 8](../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Evidence mới nằm trong đúng [handoff chung Huy mục 10](2026-10-22-huy-mvp-checkpoints.md#10-integrated-backend-closeout--2026-10-17)
+và [runbook mục 8](../../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
 Các dòng “chưa chạy/paidRx còn mở” bên dưới là trạng thái trước lượt tích hợp này. Không suy
 full LOC-03/04/05, full Billing regression/recovery bundle hoặc global release đã được nghiệm
 thu từ selected Billing 133 tests và sáu-app test; không giao lại code Rx/Support đã đạt.
@@ -284,7 +288,7 @@ Ngày giao: **2026-10-16**. Refresh: PR **#401**, source `bea617db` tích hợp 
 Refresh **2026-10-17**, baseline `16a5e06e`: người dùng đã giao Huy làm trực tiếp phần Lộc
 liên quan Pharmacy/Report. Đã bổ sung hai Rabbit cases new-event-ID và historical-outpatient-held
 trong working tree; test sources compile nhưng chưa chạy do Docker chưa sẵn sàng. Đây không phải
-full L3 acceptance. Evidence hiện hành ghi trong [file chung Huy, mục 8](HANDOFF-HUY-MVP.md#8-trực-tiếp-xử-lý-billingnotification-liên-quan-huy-2026-10-17);
+full L3 acceptance. Evidence hiện hành ghi trong [file chung Huy, mục 8](2026-10-22-huy-mvp-checkpoints.md#8-trực-tiếp-xử-lý-billingnotification-liên-quan-huy-2026-10-17);
 không tạo handoff mới hoặc yêu cầu Lộc nhận lại phần code đã làm.
 **Trạng thái: L1/L2 đã merge; L3 có Rabbit/recovery proof nhưng CHƯA ĐÓNG; L4 có evidence owner.**
 Hai nhóm L3 còn thiếu: unroutable/NACK/timeout/retry exhaustion/quarantine/stale owner và
@@ -301,7 +305,7 @@ equal-timestamp/multi-request ordering. G1 và V-CLOSE-03 vẫn mở.
 Fresh targeted rerun 2026-10-16: **61 Billing tests, 0 failures/errors/skips**, Java 21,
 real PostgreSQL; discovery 27, publication/migration 34. Gateway care matrix/Lab-order
 **183 tests, 0 failures/errors/skips**. Hai commands exit 0, không thay full Billing/Gateway
-regression hoặc actual publication. Logs và reproduce ở [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#verification-refresh--2026-10-16).
+regression hoặc actual publication. Logs và reproduce ở [Vinh closeout](2026-10-18-clinical-lab-checkpoints.md#verification-refresh--2026-10-16).
 
 PR #401 đã thêm `OutpatientPublicationRabbitIntegrationTest` (6 cases),
 `OutpatientPublicationProcessRecoveryIT` và profile `outpatient-publication-acceptance`.
@@ -318,9 +322,9 @@ ports và infrastructure adapters hiện có. Tái sử dụng `BILLING_EVENT_OU
 confirm/retry/lease; cohort được ghi lúc issue request mới, không release historical HELD.
 
 **Tech stack:** Java 21, Spring Boot/Maven, PostgreSQL/Flyway, RabbitMQ/Testcontainers hiện có.
-**Spec:** [contracts](../plans/03-contracts.md), [reliability](../plans/04-data-reliability.md),
-[M6 plan](../plans/05-implementation-plan.md), [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md),
-[Huy handoff](HANDOFF-HUY-MVP.md). Đây là kế hoạch triển khai cho gap đã xác nhận, không backlog mới.
+**Spec:** [contracts](../../plans/03-contracts.md), [reliability](../../plans/04-data-reliability.md),
+[M6 plan](../../plans/05-implementation-plan.md), [Vinh closeout](2026-10-18-clinical-lab-checkpoints.md),
+[Huy handoff](2026-10-22-huy-mvp-checkpoints.md). Đây là kế hoạch triển khai cho gap đã xác nhận, không backlog mới.
 
 Lộc tiếp tục checklist còn lại L3/L4, **không cần viết thêm proposal/design/implementation plan**.
 Các lựa chọn API/cohort/flags đã chốt trong handoff này cho phần việc được giao. Đọc nearest

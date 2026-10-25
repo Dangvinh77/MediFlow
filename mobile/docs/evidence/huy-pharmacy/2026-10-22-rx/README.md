@@ -42,6 +42,6 @@ Khung giữ Flutter/Riverpod/Material3 hiện có, theme app (light/dark seed hi
 navigation nội bộ tương tự task04–06. Route app chưa bind Pharmacy nên build pass không chứng minh
 đã mở được workflow trong app chính. Không bật backend gates, mở deferred scope hoặc sửa FE.
 
-Dependency chỉ ở [handoff chung Huy](../../../../../docs/handoffs/HANDOFF-HUY-MVP.md): header POST
+Dependency chỉ ở [handoff chung Huy](../../../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md): header POST
 và bodyless PUT của shared owner; Huy nối writer adapter sau header; shared composition và actual
 acceptance theo plan. Không tạo thêm handoff.

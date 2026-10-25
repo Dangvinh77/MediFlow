@@ -1,5 +1,8 @@
 # Inpatient Placement Authority Design
 
+**Tài liệu theo giai đoạn/bằng chứng lịch sử.** Không dùng nội dung này thay
+[nghiệp vụ ngoại trú hiện hành](../../plans/02-business-flows.md) hoặc chứng nhận tính năng mới đã chạy.
+
 > **DEFERRED reference after the 2026-10-14 MVP redesign.** Retained for source
 > contracts and future reactivation, not a new MVP requirement. The canonical scope is
 > [system design](../../plans/01-system-design.md) and

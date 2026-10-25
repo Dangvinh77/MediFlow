@@ -1,5 +1,18 @@
 # notification-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+Standalone launcher của Report/Notification là compatibility/rollback; mặc định chạy Support.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Notification covers source-authorized in-app outpatient notifications. The default six-deployment topology co-hosts Notification and Report in Support with separate stores; the standalone launcher remains available for compatibility/rollback. See [Support acceptance](../support-service/README.md). Advanced email/SMS and deferred care projections are not mandatory MVP scope.
@@ -9,7 +22,7 @@ Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../
 
 Private notification history (`NOTIFICATION`). Mostly event-driven.
 
-Reference: [`service rules`](../../docs/ai/services/notification.md) and the canonical [projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
+Reference: [`service rules`](../../docs/ai/services/notification.md) and the canonical [projection contract](../../docs/plans/03-contracts.md).
 
 - **Port:** 8087 · **Base path:** `/api/v1/notifications` · **DB:** `mediflow_notification` (PostgreSQL)
 - **Owns tables:** `NOTIFICATION`, `PROCESSED_EVENT`, held notification outbox and Surgery reminder evidence.
@@ -41,7 +54,7 @@ history and held sent event per immutable refund source, with atomic rollback/de
 retained-byte recovery. It does not imply final settlement or surgery authorization and does not send
 email/SMS. Historical complete-suite evidence before the outpatient Rx additions: **171/171**,
 zero fail/error/skip, actual PG/RabbitMQ. Current verification is recorded below.
-The retired 2026-10-08 refund closure plan is historical; use the [current projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md) and rerun acceptance rather than treating the count above as fresh evidence.
+The retired 2026-10-08 refund closure plan is historical; use the [current projection contract](../../docs/plans/03-contracts.md) and rerun acceptance rather than treating the count above as fresh evidence.
 
 ### Outpatient prescription notices
 

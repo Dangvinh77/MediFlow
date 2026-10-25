@@ -1,5 +1,17 @@
 # billing-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Payment replay and acceptance - 2026-10-18
 
 New ledger payments normalize `completedAt` once to microseconds before persistence, response
@@ -29,7 +41,7 @@ database repair/reset is performed.
 
 Compatibility fees/invoices and episode-isolated Care-Finance ledger. Billing owns all money.
 
-Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Billing contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
+Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Billing contract](../../docs/plans/03-contracts.md).
 
 - **Port:** 8086 · **Base path:** `/api/v1/billing` · **DB:** `mediflow_billing` (PostgreSQL)
 - **Owns tables:** compatibility `FEE`/`INVOICE`; account/charge/request/transaction/allocation/clearance/settlement ledger, source receipts and reliable outbox.
@@ -98,7 +110,7 @@ charge or outbox fact. A conflicting source fingerprint is rejected; missing Lab
 inferred from another service. If the original event cannot be replayed, the incomplete source stays
 pending for operator reconciliation.
 Gateway/default false/held fences remain unchanged. See the canonical Surgery/Billing contract and
-[current Surgery/Billing contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md). The retired 2026-10-08 verification plan is not current acceptance evidence.
+[current Surgery/Billing contract](../../docs/plans/03-contracts.md). The retired 2026-10-08 verification plan is not current acceptance evidence.
 
 Compatibility saga, ledger installment payment and current Surgery clearance lookup are implemented.
 The opt-in `surgery.case.created` consumer atomically opens/reuses the exact episode account, prices

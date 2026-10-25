@@ -1,5 +1,9 @@
 # HANDOFF: Shared FE → Surgery — Idempotency-Key qua API wrapper
 
+**Phân loại ngày 26/10/2026: DEFERRED — ngoài MVP ngoại trú.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 - **Status:** ACTIVE — producer code implemented 2026-10-18; behavioral/consumer acceptance OPEN.
 - **Producer owner:** Vinh (`Dangvinh77` / `Harori`), shared frontend.
 - **Consumer owner:** Huy (`LQHuy0210`), Surgery frontend.
@@ -7,7 +11,7 @@
 - **Affected paths:** producer `frontend/src/lib/api.ts` và test của HTTP boundary trong scope shared;
   consumer `frontend/src/features/surgery/api.ts`, command state và tests thuộc Surgery.
 - **Verified baseline:** `c110671b`, 2026-10-12.
-- **Resume owner:** Huy, task S-04 trong [plan FE](../huy-frontend-implementation-plan.md).
+- **Resume owner:** Huy, task S-04 trong [plan FE](../../../frontend/docs/huy-frontend-implementation-plan.md).
 
 ## Producer checkpoint — 2026-10-18
 

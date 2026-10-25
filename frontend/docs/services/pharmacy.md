@@ -1,5 +1,12 @@
 # Frontend Service: Pharmacy
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 2026-10-19 signed acceptance PASS: actual issuer DOCTOR creates V1 in the browser, CASHIER public
 API pays, PHARMACIST refreshes and dispenses in the browser. Payment alone leaves PENDING;
 one dispense reduces stock 40→37 and terminal retry preserves one effect. Actual ADMIN creates
@@ -90,7 +97,7 @@ explicit request/error states. Drug flows add UUID/DTO guards, field focus, sync
 locks and server-returned stock. Conflict/unknown stock outcomes refresh before a new command;
 outbox confirmation supports Escape/cancel and distinguishes replayed=false. Drug tests: 40/40;
 outbox tests: 11/11. Browser fixture smoke covers create/detail/adjust and mobile layouts. Signed
-actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 2026-10-16 prescription continuation: P-05 is FE-local complete; P-06 has all four local subtasks
 complete but remains open for real-role Gateway smoke. V0 create uses the shared themed controls,
