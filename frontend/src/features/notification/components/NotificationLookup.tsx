@@ -9,10 +9,11 @@ import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
+import { decodeOwnPatientId } from "../own-patient-id";
 import type { NotificationDTO } from "../types";
 import { channelLabels, statusPresentation } from "../presentation";
 import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
@@ -46,11 +47,13 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function NotificationLookup() {
-  return <NotificationAccess permission="lookup"><LookupWorkspace /></NotificationAccess>;
+interface LookupWorkspaceProps { initialPatientId?: string; initialPage?: number }
+
+export function NotificationLookup({ initialPatientId, initialPage }: LookupWorkspaceProps = {}) {
+  return <NotificationAccess permission="lookup"><LookupWorkspace initialPatientId={initialPatientId} initialPage={initialPage} /></NotificationAccess>;
 }
 
-function LookupWorkspace() {
+function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps) {
   const router = useRouter();
   const isCurrent = useNotificationRequestScope("lookup");
   const sequence = useRef(0);
@@ -60,11 +63,16 @@ function LookupWorkspace() {
   const feedbackId = useId();
   const deniedPatient = useRef<{ id: string; error: RequestError } | null>(null);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
-  const [patientId, setPatientId] = useState("");
-  const [activePatientId, setActivePatientId] = useState("");
+  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  // A patient is their own single record: skip asking them to paste their own id at all.
+  const ownPatientId = role === "PATIENT" ? decodeOwnPatientId(token) : null;
+  const selfServiceBlocked = role === "PATIENT" && !ownPatientId;
+  const validInitialPatientId = ownPatientId ?? (initialPatientId && isUuid(initialPatientId) ? initialPatientId : "");
+  const [patientId, setPatientId] = useState(validInitialPatientId);
+  const [activePatientId, setActivePatientId] = useState(validInitialPatientId);
   const [notifications, setNotifications] = useState<NotificationDTO[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(Boolean(validInitialPatientId));
   const [error, setError] = useState<RequestError | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [pageNumber, setPageNumber] = useState(0);
@@ -126,6 +134,13 @@ function LookupWorkspace() {
     [router, isCurrent],
   );
 
+  const appliedInitial = useRef(false);
+  useEffect(() => {
+    if (appliedInitial.current) return;
+    appliedInitial.current = true;
+    if (validInitialPatientId) void loadNotifications(validInitialPatientId, initialPage ?? 0);
+  }, [validInitialPatientId, initialPage, loadNotifications]);
+
   function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedPatientId = patientId.trim();
@@ -150,43 +165,45 @@ function LookupWorkspace() {
   return (
     <section className="mt-6 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-label="Lịch sử thông báo">
       {role === "ADMIN" ? <div className="mb-4 flex justify-end"><Link href="/notifications/send" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Gửi thông báo</Link></div> : null}
-      <form
-        onSubmit={onSearch}
-        noValidate
-        className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end"
-      >
-        <div className="min-w-0 flex-1">
-          <label
-            htmlFor="notification-patient-id"
-            className="mb-1 block text-sm font-medium"
-          >
-            Mã bệnh nhân
-          </label>
-          <ReferenceInput kind="patient"
-            ref={inputRef}
-            id="notification-patient-id"
-            value={patientId}
-            onValueChange={(selectedId) => {
-              setPatientId(selectedId);
-              setValidationError(null);
-            }}
-            placeholder="Nhập UUID bệnh nhân"
-            aria-required="true"
-            aria-invalid={validationError ? true : undefined}
-            aria-describedby={
-              validationError ? "notification-patient-id-error" : undefined
-            }
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={!patientId.trim()}
-          className="min-h-12 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+      {role !== "PATIENT" ? (
+        <form
+          onSubmit={onSearch}
+          noValidate
+          className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end"
         >
-          Tra cứu thông báo
-        </button>
-      </form>
+          <div className="min-w-0 flex-1">
+            <label
+              htmlFor="notification-patient-id"
+              className="mb-1 block text-sm font-medium"
+            >
+              Mã bệnh nhân
+            </label>
+            <ReferenceInput kind="patient"
+              ref={inputRef}
+              id="notification-patient-id"
+              value={patientId}
+              onValueChange={(selectedId) => {
+                setPatientId(selectedId);
+                setValidationError(null);
+              }}
+              placeholder="Nhập UUID bệnh nhân"
+              aria-required="true"
+              aria-invalid={validationError ? true : undefined}
+              aria-describedby={
+                validationError ? "notification-patient-id-error" : undefined
+              }
+              className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!patientId.trim()}
+            className="min-h-12 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+          >
+            Tra cứu thông báo
+          </button>
+        </form>
+      ) : null}
 
       {validationError ? (
         <p
@@ -198,7 +215,11 @@ function LookupWorkspace() {
         </p>
       ) : null}
 
-      {!searched && !validationError ? (
+      {selfServiceBlocked ? (
+        <AsyncState kind="error" message="Không xác định được bệnh nhân từ tài khoản đăng nhập. Hãy đăng nhập lại." onRetry={() => router.replace("/login")} />
+      ) : null}
+
+      {!searched && !validationError && role !== "PATIENT" ? (
         <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem thông báo." />
       ) : null}
 
@@ -223,8 +244,8 @@ function LookupWorkspace() {
       {searched && !loading && !error ? (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Kết quả tra cứu thông báo</h2>
-            <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: <ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p>
+            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{role === "PATIENT" ? "Thông báo của bạn" : "Kết quả tra cứu thông báo"}</h2>
+            {role !== "PATIENT" ? <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: <ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p> : null}
           </div>
           <button type="button" onClick={() => void loadNotifications(lastRequest.patientId, lastRequest.page)}
             className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">
@@ -264,6 +285,9 @@ function LookupWorkspace() {
                   <th scope="col" className="px-4 py-3">
                     Lý do thất bại
                   </th>
+                  <th scope="col" className="sticky right-0 border-l border-border bg-surface-muted px-4 py-3">
+                    Chi tiết
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -279,7 +303,7 @@ function LookupWorkspace() {
                       className="border-b border-border align-top last:border-0"
                     >
                       <td className="max-w-xs whitespace-normal break-words px-4 py-3 font-medium">
-                        {(role === "ADMIN" || role === "PATIENT") ? <Link href={`/notifications/${notification.notificationId}`} className="text-primary hover:underline">{notification.title}</Link> : notification.title}
+                        {notification.title}
                       </td>
                       <td className="px-4 py-3">
                         {channelLabels[notification.channel] ?? "Không xác định"}
@@ -298,6 +322,16 @@ function LookupWorkspace() {
                       </td>
                       <td className="max-w-sm whitespace-normal break-words px-4 py-3">
                         {notification.failureReason ?? "—"}
+                      </td>
+                      <td className="sticky right-0 border-l border-border bg-surface px-4 py-3">
+                        {(role === "ADMIN" || role === "PATIENT") ? (
+                          <Link
+                            href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}
+                            className="inline-flex min-h-9 items-center whitespace-nowrap rounded-lg border border-control-border px-3 py-1.5 text-xs font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          >
+                            Chi tiết
+                          </Link>
+                        ) : "—"}
                       </td>
                     </tr>
                   );

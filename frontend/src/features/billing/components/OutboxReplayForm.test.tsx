@@ -78,6 +78,13 @@ describe("OutboxReplayForm", () => {
     expect(screen.getByLabelText("Mã event", { exact: false })).toBeDisabled();
   });
 
+  it("navigates back when the back button is clicked", () => {
+    render(<OutboxReplayForm />);
+    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
+
+    expect(mocks.back).toHaveBeenCalledTimes(1);
+  });
+
   it("clears a prior result before issuing a new replay", async () => {
     mocks.replay.mockResolvedValueOnce({ eventId, replayed: true });
     render(<OutboxReplayForm />);

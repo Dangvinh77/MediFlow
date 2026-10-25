@@ -2,6 +2,7 @@
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useRouter } from "next/navigation";
 import { useCallback, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +34,7 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function RevenueReport() {
+  const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
@@ -87,10 +89,13 @@ export function RevenueReport() {
         <Field label="Đến ngày" htmlFor="revenue-to-date" required>
           <input id="revenue-to-date" required type="date" min={fromDate || undefined} value={toDate} onChange={(event) => setToDate(event.target.value)} className={controlClassName} />
         </Field>
-        <Field label="Khoa (tuỳ chọn)" htmlFor="revenue-department-id" hint="Để trống xem mọi khoa.">
+        <Field label="Khoa (tuỳ chọn)" htmlFor="revenue-department-id" hint="Để trống xem mọi khoa, hoặc gõ vài chữ rồi bấm 'Tìm' và chọn 1 khoa trong danh sách hiện ra.">
           <ReferenceInput kind="department" id="revenue-department-id" value={departmentId} onValueChange={(selectedId) => setDepartmentId(selectedId)} placeholder="UUID khoa" className={controlClassName} />
         </Field>
-        <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
+        <div className="flex gap-2">
+          <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
+          <Button type="button" disabled={loading} onClick={() => router.back()}>Quay lại</Button>
+        </div>
       </form>
 
       {validationError ? <p role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}

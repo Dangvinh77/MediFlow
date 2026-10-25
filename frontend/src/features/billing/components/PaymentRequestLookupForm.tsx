@@ -2,6 +2,7 @@
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -46,6 +47,7 @@ export function PaymentRequestLookupForm() {
 }
 
 function PaymentRequestLookupSession() {
+  const router = useRouter();
   const [purpose, setPurpose] = useState<PaymentRequestSourcePurpose>("EXAM");
   const [sourceId, setSourceId] = useState("");
   const [patientId, setPatientId] = useState("");
@@ -146,7 +148,10 @@ function PaymentRequestLookupSession() {
         ) : (
           <p className="text-xs text-muted-foreground">Đối với khoản phí khám, Billing dùng mã lịch khám làm mã đợt điều trị.</p>
         )}
-        <Button type="submit" variant="primary" loading={loading} disabled={paymentLocked}>Tra cứu khoản phí</Button>
+        <div className="flex gap-2">
+          <Button type="submit" variant="primary" loading={loading} disabled={paymentLocked}>Tra cứu khoản phí</Button>
+          <Button type="button" disabled={paymentLocked} onClick={() => router.back()}>Quay lại</Button>
+        </div>
       </form>
 
       {loading ? <AsyncState kind="loading" message="Đang tra cứu khoản phí…" /> : null}

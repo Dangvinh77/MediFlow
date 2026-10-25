@@ -6,12 +6,12 @@ import type { Role } from "@/lib/roles";
 import type { NotificationDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
-  role: "ADMIN" as Role | null, token: "session-a", listeners: new Set<() => void>(),
+  role: "ADMIN" as Role | null, token: "session-a", accessToken: null as string | null, listeners: new Set<() => void>(),
   list: vi.fn(), detail: vi.fn(), send: vi.fn(), router: { push: vi.fn(), replace: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
-  getRole: () => mocks.role, getSessionKey: () => mocks.token,
+  getRole: () => mocks.role, getSessionKey: () => mocks.token, getToken: () => mocks.accessToken,
   subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => mocks.listeners.delete(listener); },
 }));
 vi.mock("../api", () => ({ notificationApi: { byPatient: mocks.list, getById: mocks.detail, send: mocks.send } }));
@@ -30,9 +30,13 @@ function search(patient = id) { fill("Mã bệnh nhân", patient); fireEvent.sub
 function submit() { fireEvent.submit(screen.getByLabelText("Tiêu đề", { exact: false }).closest("form")!); }
 function fillSend() { fill("Mã bệnh nhân", id); fill("Tiêu đề", " Nhắc lịch khám "); fill("Nội dung", " Đến đúng giờ "); }
 function changeSession(role: Role = "ADMIN") { act(() => { mocks.token = "session-b"; mocks.role = role; mocks.listeners.forEach(listener => listener()); }); }
+function accessTokenWithPatientId(patientId: string) {
+  const base64url = btoa(JSON.stringify({ patientId })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `header.${base64url}.signature`;
+}
 
 beforeEach(() => {
-  mocks.role = "ADMIN"; mocks.token = "session-a"; mocks.listeners.clear();
+  mocks.role = "ADMIN"; mocks.token = "session-a"; mocks.accessToken = null; mocks.listeners.clear();
   mocks.list.mockReset().mockResolvedValue(page()); mocks.detail.mockReset().mockResolvedValue(notice);
   mocks.send.mockReset().mockResolvedValue(notice); mocks.router.push.mockReset(); mocks.router.replace.mockReset();
 });
@@ -109,10 +113,22 @@ describe("Notification patient history", () => {
   it("validates UUID then paginates using the submitted patient, with privacy-safe translated values", async () => {
     render(<NotificationLookup />); search("bad");
     expect(screen.getByRole("alert")).toHaveTextContent("UUID"); expect(mocks.list).not.toHaveBeenCalled();
-    search(` ${id} `); expect(await screen.findByRole("link", { name: notice.title })).toHaveAttribute("href", `/notifications/${id}`);
+    search(` ${id} `); await screen.findByText(notice.title);
+    expect(screen.getByRole("link", { name: "Chi tiết" })).toHaveAttribute("href", `/notifications/${id}?patientId=${id}&page=0`);
     expect(screen.getByText("Trong ứng dụng")).toBeVisible(); expect(screen.getByText("Đã gửi")).toBeVisible();
     fill("Mã bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20));
+  });
+  it("auto-runs the search when arriving with a patient and page already in the URL", async () => {
+    render(<NotificationLookup initialPatientId={id} initialPage={1} />);
+    await screen.findByText(notice.title);
+    expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 1, 20);
+    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue(id);
+  });
+  it("ignores an invalid patient id coming from the URL instead of auto-searching", () => {
+    render(<NotificationLookup initialPatientId="not-a-uuid" />);
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
   });
   it("focuses an invalid search and suppresses an older pending response", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);
@@ -135,16 +151,30 @@ describe("Notification patient history", () => {
     await act(async () => old.reject(new ApiRequestError("Old session", 401)));
     expect(screen.getByText(notice.title)).toBeVisible(); expect(mocks.router.replace).not.toHaveBeenCalled();
   });
-  it("does not offer retry for cross-patient denial, but permits a new patient search", async () => {
-    mocks.role = "PATIENT";
+  it("auto-loads a patient's own notifications from their token, with no field to fill in", async () => {
+    mocks.role = "PATIENT"; mocks.accessToken = accessTokenWithPatientId(id);
+    render(<NotificationLookup />);
+    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument();
+    await screen.findByText(notice.title);
+    expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 0, 20);
+    expect(screen.getByRole("heading", { name: "Thông báo của bạn" })).toBeVisible();
+  });
+  it("does not offer retry for a patient denied their own just-decoded id", async () => {
+    mocks.role = "PATIENT"; mocks.accessToken = accessTokenWithPatientId(id);
     mocks.list.mockRejectedValueOnce(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "history-trace"));
-    render(<NotificationLookup />); search();
+    render(<NotificationLookup />);
     expect(await screen.findByRole("alert")).toHaveTextContent("history-trace");
     expect(screen.getByRole("alert")).toHaveTextContent("không có quyền");
     expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
-    search(); expect(mocks.list).toHaveBeenCalledTimes(1);
-    search(otherId); await screen.findByText(notice.title);
-    expect(mocks.list).toHaveBeenLastCalledWith(otherId, 0, 20);
+  });
+  it("shows a clear fallback instead of a lookup field when the account has no patientId claim", () => {
+    mocks.role = "PATIENT"; mocks.accessToken = null;
+    render(<NotificationLookup />);
+    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument();
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("đăng nhập lại");
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(mocks.router.replace).toHaveBeenCalledWith("/login");
   });
   it("retries an unavailable history using its submitted patient rather than the edited draft", async () => {
     mocks.list.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503));

@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { formatDecimal } from "@/lib/format";
 
-const mocks = vi.hoisted(() => ({ revenueByDepartment: vi.fn() }));
+const mocks = vi.hoisted(() => ({ revenueByDepartment: vi.fn(), back: vi.fn() }));
 vi.mock("../api", () => ({ billingApi: { revenueByDepartment: mocks.revenueByDepartment } }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ back: mocks.back }) }));
 
 import { RevenueReport } from "./RevenueReport";
 
@@ -20,6 +21,12 @@ beforeEach(() => {
 });
 
 describe("RevenueReport", () => {
+  it("lets a manager leave the report without running a query", () => {
+    render(<RevenueReport />);
+    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
+    expect(mocks.back).toHaveBeenCalledOnce();
+    expect(mocks.revenueByDepartment).not.toHaveBeenCalled();
+  });
   it("renders server-reported department totals and a summed footer row", async () => {
     mocks.revenueByDepartment.mockResolvedValue([
       { departmentId: deptA, totalRevenue: 1250.5, invoiceCount: 3 },
