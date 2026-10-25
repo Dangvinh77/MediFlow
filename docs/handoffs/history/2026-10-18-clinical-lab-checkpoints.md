@@ -1,16 +1,20 @@
 # Vinh Clinical/Lab outpatient MVP closeout
 
+**Phân loại ngày 26/10/2026: HISTORICAL CHECKPOINT — không là backlog hiện hành.** Các trạng thái ACTIVE/OPEN, owner và test counts
+bên dưới thuộc checkpoint ghi trong tài liệu, không là kết luận trên revision hiện tại.
+Xem [registry hiện hành](../README.md) để biết phần cần xác minh; di chuyển không có nghĩa đã nghiệm thu.
+
 ## Phân công hiện hành — 2026-10-18
 
-PR #427 đã merge vào master (source audit 025ef39e). Vinh nhận **toàn bộ kiểm thử backend**, gồm Core/Gateway/Pharmacy/Report/Support và các module Vinh/Lộc, theo [queue V-TEST-01–06](HANDOFF-VINH-BACKEND-VERIFICATION.md). Full G1/global regression/integration còn cần chạy chuyển Vinh, không giao lại dev khác. Code Gateway còn thiếu giao Hoàng Anh qua [HA-CODE-01/02](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md). Các bảng owner queue phía dưới là lịch sử trước nghiệm thu, không là task implementation mới.
+PR #427 đã merge vào master (source audit 025ef39e). Vinh nhận **toàn bộ kiểm thử backend**, gồm Core/Gateway/Pharmacy/Report/Support và các module Vinh/Lộc, theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Full G1/global regression/integration còn cần chạy chuyển Vinh, không giao lại dev khác. Code Gateway còn thiếu giao Hoàng Anh qua [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md). Các bảng owner queue phía dưới là lịch sử trước nghiệm thu, không là task implementation mới.
 
 ## Nghiệm thu owned backend — 2026-10-18
 
 Vinh đã hoàn thiện phần Billing/Notification theo ủy quyền người dùng để đóng phụ thuộc của
 Clinical/Lab. Baseline `e44ddf487523f8e781e53196d28f17db32beed1e`, working branch
 `codex/vinh-loc-billing-closeout`; source diff/hash và dữ liệu test có trong
-[bundle nghiệm thu](../../backend/billing-service/acceptance-evidence/2026-10-18/README.md)
-và [manifest](../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
+[bundle nghiệm thu](../../../backend/billing-service/acceptance-evidence/2026-10-18/README.md)
+và [manifest](../../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
 Mục này thay các trạng thái LOC-04/05 và integrated Clinical/Lab recovery còn mở bên dưới.
 
 V-CLOSE-03 đã có actual paid EXAM/LAB_TEST qua Gateway, đúng source công khai, Billing thật,
@@ -50,12 +54,12 @@ Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 | L3/L4 publication delivery | LOC-03 continuation 2026-10-18: controlled NACK/timeout + PG fencing/replay đạt; full Billing 1056 + packaged recovery 1, 0 failure/error/skip | LOC-04 timestamp decision và L4 full artifacts còn mở; xem handoff Lộc |
 | V-CLOSE-03 | Actual paid EXAM/LAB_TEST + outpatient completion PASS 2026-10-17; paid Rx/Clinical attachment có evidence Huy cùng ngày | Không inject grant hoặc SQL discovery; full integrated recovery vẫn mở |
 
-Refresh ngày 2026-10-18: đối chiếu [Huy integrated closeout](HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17)
-và [runbook mục 8](../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Refresh ngày 2026-10-18: đối chiếu [Huy integrated closeout](2026-10-22-huy-mvp-checkpoints.md#10-integrated-backend-closeout--2026-10-17)
+và [runbook mục 8](../../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
 Các dòng paid Rx chưa chạy trong lịch sử verification bên dưới chỉ áp dụng lượt Vinh trước đó.
 Không suy bài sáu-app đã nghiệm thu paid Lab/integrated Clinical-Lab JVM recovery hoặc global release.
 Người dùng giao Vinh tiếp tục Billing/Notification của Lộc trong tác vụ này; tiến độ producer LOC-03
-được ghi tại [handoff Lộc](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+được ghi tại [handoff Lộc](2026-10-18-billing-notification-checkpoints.md).
 
 ## Fresh Vinh source verification — 2026-10-17
 
@@ -175,7 +179,7 @@ Billing sở hữu validation/DTO; PR #417 đã sửa correlation cho lỗi thi�
 Acceptance: authorized forward, unauthenticated/denied role/service/refresh, wrong method và
 nested path không forward. Full Gateway tests; sau đó dùng actual Billing discovery/payment
 qua Gateway. Downstream double chỉ là routing/security evidence.
-Chi tiết duy nhất tại [G1](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md#g1--hoàng-anh--gateway-dependency-riêng-không-phải-việc-code-của-lộc).
+Chi tiết duy nhất tại [G1](2026-10-18-billing-notification-checkpoints.md#g1--hoàng-anh--gateway-dependency-riêng-không-phải-việc-code-của-lộc).
 Lab-order và migration-path fixes đã giao; không mở lại chúng thành task mới.
 
 ### H-VINH-02 — Huy / Pharmacy + Report; Vinh nhận consumer Clinical
@@ -183,11 +187,11 @@ Lab-order và migration-path fixes đã giao; không mở lại chúng thành ta
 **Implementation dependency resolved:** outpatient filled relationship + Clinical Rx V1 attach
 đã có. Không yêu cầu Huy giao lại recordId/dispense fixture hoặc Vinh code lại attachment.
 Actual paid Rx và Report/Support activation/coverage theo
-[handoff chung Huy](HANDOFF-HUY-MVP.md); không dùng Clinical/Lab local tests để đóng Report.
+[handoff chung Huy](2026-10-22-huy-mvp-checkpoints.md); không dùng Clinical/Lab local tests để đóng Report.
 
 ### H-VINH-03 — Lộc / Billing; phối hợp slice với Vinh
 
-**Phiếu thực thi hiện hành cho Lộc:** [mục 0, LOC-01 → LOC-06](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md#0-phiếu-thực-thi-hiện-hành--2026-10-17-lộc-đọc-mục-này-trước).
+**Phiếu thực thi hiện hành cho Lộc:** [mục 0, LOC-01 → LOC-06](2026-10-18-billing-notification-checkpoints.md#0-phiếu-thực-thi-hiện-hành--2026-10-17-lộc-đọc-mục-này-trước).
 Đối chiếu source thấy unroutable/retry/quarantine/admin replay/expired lease/equal-timestamp
 đã có tests; không giao làm lại. Còn duplicate new-event/historical HELD broker proof,
 NACK/timeout riêng và audit stale-owner fencing/replay eligibility, fresh artifact bundle,
@@ -203,7 +207,7 @@ Không chỉnh production Billing trong scope Vinh.
 
 **PARTIAL — L3/L4**. PR #401 đã giao actual Rabbit tests, process recovery và discovery fixtures;
 không làm lại L1/L2 hoặc happy-path/recovery đã có. Hoàn thiện
-[checklist producer còn lại](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md#l3--actual-rabbit-publication-và-recovery):
+[checklist producer còn lại](2026-10-18-billing-notification-checkpoints.md#l3--actual-rabbit-publication-và-recovery):
 unroutable/NACK/confirm timeout, bounded retry/quarantine, expired lease/stale owner,
 admin replay eligibility và equal-timestamp/multi-request ordering.
 L3 duplicate-new-event/historical HELD coverage phải đối chiếu đúng tầng test; không suy từ

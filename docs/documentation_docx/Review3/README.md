@@ -1,5 +1,8 @@
 # Review3 refreshed mobile and screenshots
 
+**Tài liệu theo giai đoạn/bằng chứng lịch sử.** Không dùng nội dung này thay
+[nghiệp vụ ngoại trú hiện hành](../../plans/02-business-flows.md) hoặc chứng nhận tính năng mới đã chạy.
+
 1. Báo cáo chính: [Review3.docx](Review3.docx). Phần **Screen shots** đã thay bằng 107 ảnh mới trong 18 nhóm: 56 web và 51 mobile. Chú thích theo chỉ mục; không tạo bảng ảnh. Toàn bộ 49 bảng và XML nội dung ngoài phần ảnh được giữ nguyên khi thay ảnh. Đã render và rà soát bản 239 trang; 107 ảnh nằm tại trang 99–205, mỗi trang một ảnh, không tràn khung trang.
 2. Ảnh được chụp từ giao diện chạy thật qua Gateway với PostgreSQL, RabbitMQ và sáu ứng dụng nghiệp vụ. Bệnh nhân và nhân viên là dữ liệu tổng hợp phục vụ demo. Ảnh web PNG 1904/1920 × 1080; mobile PNG 1290 × 2796 từ viewport 430 × 932 ở tỷ lệ 3. Mobile là Flutter web; không xác nhận Android/iOS native.
 3. Phạm vi gồm trang chung và tám vai trò: Administrator, Manager, Doctor, Nurse, Laboratory technician, Pharmacist, Cashier, Patient. Có danh sách, tìm kiếm, bộ lọc, chọn tên, chi tiết, biểu mẫu và tương tác theo quyền. Các biểu mẫu chưa gửi được ghi rõ; không suy thành công từ ảnh mở form.

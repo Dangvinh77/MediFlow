@@ -1,12 +1,20 @@
 # Plan triển khai MVP sáu service
 
+**Điều chỉnh nghiệp vụ 25/10/2026:** baseline 18 task/72 subtask bên dưới giữ để tra cứu
+implementation/evidence, không còn là danh sách đủ để nghiệm thu luồng mới. Phần bổ sung
+lịch khám, tiếp nhận, tái khám, hỗ trợ BHYT mô phỏng và cập nhật UI/Report nằm tại
+[WF-01–11](07-outpatient-workflow-implementation.md), theo [quy tắc 02](02-business-flows.md).
+Chưa triển khai các yêu cầu này trong lượt cập nhật tài liệu; không chuyển checkbox lịch sử
+thành bằng chứng tính năng mới. Backend Billing/Notification hiện thuộc Vinh từ 18/10;
+các phân công Lộc ở baseline dưới là lịch sử, không ghi đè ownership hiện hành.
+
 Ngày 2026-10-14. Plan này thay plan bảo toàn cả 10 nghiệp vụ gồm 36 task/144 subtask.
 Mục tiêu mới là giảm phạm vi nghiệm thu ngoại trú; không lấy ít checkbox làm bằng chứng code
 đơn giản hơn. Có 18 task chính, 72 subtask; ưu tiên reuse code và đóng gap, không viết lại service.
 
 Baseline viết plan ngày 2026-10-14: mọi task là TODO; lượt viết docs không chạy nghiệm thu
 backend và không chuyển topology. Rà soát Vinh ngày 2026-10-15 đã có implementation/test evidence
-trong [source lock và closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#current-owner-queue).
+trong [source lock và closeout](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md#current-owner-queue).
 Các task toàn nhóm dưới đây vẫn mở; checkbox không thay thế phần evidence theo owner.
 Lượt reliability tiếp theo thêm Lab PG/Rabbit publisher/listener acceptance, broker application
 restart và publish-confirm/DB-rollback windows cho Clinical/Lab; xem phạm vi và full-run evidence
@@ -28,7 +36,7 @@ thu lại paid Lab. H6-02.3/H6-12.3 đã inventory và rehearsal trên cold copi
 persisted local volumes: nguồn trong phạm vi không có historical business rows, cả hai Rabbit
 nodes không có queues; giữ bốn writes mới/probe bytes qua chuyển đổi và original-volume hashes
 không đổi. [Evidence/giới hạn local](huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17)
-và [một handoff Huy](../handoffs/HANDOFF-HUY-MVP.md) ghi kết quả, không cấp production activation.
+và [một handoff Huy](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md) ghi kết quả, không cấp production activation.
 
 ## P0 Scope và baseline
 
@@ -57,7 +65,7 @@ Owner: từng owner, Vinh tổng hợp. Dependency: M6-01.
 Evidence Vinh 2026-10-15: Clinical/Lab source lock đã gồm PR #366/#370, persisted Lab order,
 signed Lab-only context và event/operation/fingerprint inbox. Không giao lại hai implementation
 này từ checklist cũ. Open gap register theo owner nằm ở H-VINH-01/02/03 bên dưới; xem
-[closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md) để lấy flags, fixtures và verification.
+[closeout](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md) để lấy flags, fixtures và verification.
 
 ### M6-03 Chuẩn bị hai host gọn
 
@@ -96,7 +104,7 @@ Owner: Hoàng Anh/Gateway, Vinh/Clinical, Huy/Pharmacy. Dependency: M6-04.
 
 Refresh 2026-10-16: Clinical profile retarget `core-service` và packaged actual Core lookup đã có.
 Full Core/Gateway parity và global M6-05 vẫn cần owner evidence; G1 discovery là dependency riêng
-ở [closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
+ở [closeout](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
 Pharmacy caller vẫn theo handoff của Huy đã đăng ký, không chuyển thành việc Vinh.
 
 ### M6-06 Support composition và quyền
@@ -150,8 +158,8 @@ Lượt packaged API slice đã phát hiện/sửa lỗi numeric timestamp mất
 flat event trong durable outbox; regression dùng actual Rabbit converter cho bốn event
 types. Core/Gateway/Clinical check-in race, exact unpaid/actor denial và một exam record
 đã có packaged proof với synthetic contract clearance, chưa phải real Billing payment.
-Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
-Refresh `c8024921`, 2026-10-16: [owner handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+Billing producer/fixture và real slice: [H-VINH-03](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+Refresh `c8024921`, 2026-10-16: [owner handoff](../handoffs/history/2026-10-18-billing-notification-checkpoints.md)
 L1 discovery và L2 selective cohort/writer V22/V23 đã merge. Fresh targeted Billing 61 tests
 đạt (0 failure/error/skip), gồm discovery + migration/cohort; chưa là actual Rabbit delivery.
 Không giao lại L1/L2. PR #401 giao partial Rabbit/JVM recovery; còn Lộc L3 failure/ordering + L4 full artifacts,
@@ -163,7 +171,7 @@ relationship và API/PG proof; Clinical đã implement V1 Rx consumer, per-dispe
 precise decimal fingerprint, delayed fill vào completed outpatient record và PG/Rabbit tests.
 Public Gateway Lab-order acceptance dùng route Hoàng Anh đã thêm ở `0a8636cd`;
 current evidence ở Vinh closeout. Actual paid slice vẫn chờ handoff Lộc/G1:
-[H-VINH-02](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-02--huy--pharmacy--report-vinh-nhận-consumer-clinical).
+[H-VINH-02](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md#h-vinh-02--huy--pharmacy--report-vinh-nhận-consumer-clinical).
 
 ### M6-10 Pharmacy ngoại trú và stock
 
@@ -190,8 +198,8 @@ Owner: Vinh; Lộc verify Billing. Dependency: M6-02, M6-05, M6-12.
 Vinh 2026-10-15: Lab order authority/lookup/request và immutable V1 result đã code; không
 coi M6-11.4 E2E đã đạt từ unit/persistence tests. Refresh 2026-10-16: public Lab-order route
 và packaged Gateway acceptance đã có; chỉ còn Gateway discovery G1 tại
-[H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-discovery).
-Billing exact LAB_TEST slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+[H-VINH-01](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md#h-vinh-01--hoàng-anh--gateway-discovery).
+Billing exact LAB_TEST slice: [H-VINH-03](../handoffs/history/2026-10-18-clinical-lab-checkpoints.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
 Report consume cùng result fixture: H-VINH-02. Producer/consumer/owner/fixtures/điều kiện đóng
 ghi tại từng handoff; không copy payload hoặc đoán fields ở plan.
 Packaged Core/Clinical/Lab slice đã đạt persisted order → request → fixture clearance →
@@ -214,7 +222,7 @@ Owner: Lộc; Vinh/Huy consulted. Dependency: M6-02, M6-05.
 L1 source-bound discovery GET và L2 selective eligible writer đã có, targeted DB/API tests đạt.
 Còn exact Gateway discovery allowlist (Hoàng Anh G1), L3 failure/ordering và full producer artifacts
 (Lộc L3/L4; partial Rabbit/JVM recovery đã có PR #401), rồi paid consumer slices (Vinh). Không giao lại endpoint hoặc suy DB flag
-là broker delivery. Acceptance tại [handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+là broker delivery. Acceptance tại [handoff](../handoffs/history/2026-10-18-billing-notification-checkpoints.md).
 
 ### M6-13 Saga và lỗi phân tán
 

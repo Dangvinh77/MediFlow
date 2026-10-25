@@ -1,5 +1,16 @@
 # Hoàng Anh — JWT thiếu expiration và các kiểm tra Core cần bổ sung
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-03`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Hoàng Anh/Core/Gateway → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Ngày: 2026-10-19. Base: `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
 Owner production: **Hoàng Anh**, Gateway và Core. Vinh giữ việc kiểm thử/review.
 Không sửa production hai module trong PR audit của Vinh.

@@ -1,5 +1,38 @@
 # Dữ liệu và độ tin cậy
 
+## Lịch khám, tái khám và hỗ trợ mô phỏng — đích 25/10/2026
+
+Các yêu cầu sau chưa là xác nhận migration/guard đã tồn tại; triển khai theo
+[WF-01–11](07-outpatient-workflow-implementation.md) và giữ các bất biến baseline bên dưới.
+
+- Clinical lưu lịch, capacity/reservation, registration và idempotency receipt trong cùng store;
+  update có lock/revision và unique constraint. Giữ suất, xác nhận, hết hạn và hủy phải tranh
+  cùng guard; kiểm trước ở UI hoặc read-then-write không đủ chống vượt sức chứa.
+- Nhân sự/khoa từ Core có authoritative UUID và trạng thái; provider lỗi fail closed cho tạo mới.
+  Không tự hủy phiếu đã thu chỉ vì một lần Core timeout; đưa vào xử lý thay đổi có audit.
+- TTL 15 phút dùng server clock; payment-in-progress có operation ổn định và recovery. Không
+  giải phóng reservation trong khi trạng thái thu chưa xác định; có reconciliation worker/cursor
+  bền vững để tránh giữ suất vô hạn. Hết deadline cần đối soát outcome trước release; late paid
+  sau release là exception được ghi nhận, không ghi đè người đã chiếm suất.
+- Chuyển bác sĩ/giờ lưu before/after/reason/actor/version; không mutate receipt tiền cũ. Lịch đã
+  có phiếu không xóa cascade. Người bệnh đồng ý lịch mới hoặc theo luồng hoàn được duyệt.
+- Tái khám giữ previous visit/record và recommendation source; cùng patient, không vòng tham chiếu,
+  không copy clinical state. Lượt mới dùng episode riêng; đọc kết quả lượt cũ không tạo episode mới.
+- Billing dùng BigDecimal và immutable line snapshot: catalogue version, policy version, gross,
+  support rate/amount, patient payable, currency và rounding HALF_UP tới VND từng dòng. Không
+  recompute payment/refund lịch sử theo catalogue hiện tại; không chỉnh migration đã phát hành.
+- Hỗ trợ mô phỏng không là tiền, không phải insurer receivable. Payment/allocation so với patient
+  liability; zero liability có receipt quyết định chính sách riêng. Partial payment không unlock
+  dịch vụ cần thu đủ; refund bị chặn theo actual patient paid trừ previous actual refunds.
+- Completion phải có quyết định nguồn về pending Lab; HTTP timeout không là “không còn chỉ định”.
+  Thiết kế barrier phải khóa revision/nguồn và chống race thêm chỉ định với completion; không chỉ
+  đọc danh sách Lab một lần rồi hoàn tất. Không distributed SQL/transaction giữa Clinical và Lab.
+- Report nhận breakdown/visit kind từ facts đã version, giữ unknown/unavailable cho lịch sử chưa
+  có trường; không backfill tỷ lệ BHYT hoặc loại tái khám phỏng đoán. Rebuild không gửi Notification.
+
+Kiểm thử concurrency và restart phải bao gồm suất cuối, đổi ca khi đang thu, late payment,
+quote expiry, hỗ trợ 100%, policy update sau thu và refund race; ma trận ở [06](06-acceptance-runbook.md).
+
 ## Giữ database và migration hiện tại
 
 MVP giảm deployments và phạm vi nghiệp vụ, không chuyển 10 DB thành 6 DB. Core owns hai stores
@@ -61,6 +94,14 @@ publication all-five/history conversion. Coverage thiếu phải unavailable, kh
 Rebuild isolated chỉ áp dụng Report data, không chạy lại business commands hay gửi notifications.
 
 ## Quan sát và phục hồi
+
+TARGET schedule dùng protocol [03 phụ lục A](03-contracts.md#opd-scheduling-v2): giữ suất
+`HELD` 15 phút, còn `PAYMENT_LOCKED` phải được Billing trả kết quả thu hoặc đóng operation
+trước khi giải phóng. `reconcileAfter` chỉ đánh thức đối soát. Timeout hoặc missing operation
+không chứng minh chưa thu; giữ khóa, retry và cảnh báo. `close-if-unpaid` và cash commit
+khóa cùng operation trong Billing để chỉ một kết quả thắng. Không kéo dài transaction DB
+qua lời gọi mạng; outbox và worker cursor phải sống qua restart. Xem
+[SC-08–14 và sơ đồ](10-scheduling-contract-acceptance.md) để nghiệm thu; chưa có runtime evidence.
 
 Giữ correlation qua Gateway/REST/event; log eventId/sourceId/operationId và status không PII/token.
 Có health và metrics được bảo vệ. Sau restart, pending outbox/inbox/job/receipt được xử lý tiếp,

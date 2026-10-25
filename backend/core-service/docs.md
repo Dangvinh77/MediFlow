@@ -1,5 +1,9 @@
 # Quy định chức danh, chức vụ và độ tin cậy Core
 
+Nguồn nghiệp vụ hiện hành: [02](../../docs/plans/02-business-flows.md); hợp đồng [03](../../docs/plans/03-contracts.md).
+Tài liệu này giữ quy tắc/runbook Core; không tự mở lịch khám tại Core hoặc thay snapshot BHYT.
+
+
 Ngày cập nhật: 21/10/2026. Owner: Hoàng Anh. Phạm vi: Organization/Patient.
 
 ## Chức danh chuyên môn và chức vụ quản lý

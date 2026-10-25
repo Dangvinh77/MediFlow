@@ -1,5 +1,17 @@
 # Inpatient Service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**DEFERRED:** ngoài MVP ngoại trú; giữ source/data/migrations, không dùng checklist dưới để mở gate.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Inpatient is deferred from the outpatient MVP. Preserve admissions, beds, treatment code, migrations and data; the capabilities described below are retained implementation, not permission to activate them in the MVP.
@@ -49,4 +61,4 @@ the root `docker-compose.yml`; the test profile disables external infrastructure
   [`docs/ai/16-care-finance-integration-contracts.md`](../../docs/ai/16-care-finance-integration-contracts.md)
 - Active external blockers: [handoff registry](../../docs/handoffs/README.md)
 - Billing producer work:
-  [Inpatient deposit/settlement handoff](../billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md)
+  [Inpatient deposit/settlement handoff](../../docs/handoffs/deferred/billing-inpatient-deposit-settlement.md)

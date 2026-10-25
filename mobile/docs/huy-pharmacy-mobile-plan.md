@@ -40,7 +40,7 @@ form thêm thuốc/điều chỉnh tồn và tra cứu đơn cùng domain/data/t
 Override ngày2026-10-22: người dùng giao Huy các shared paths trong bảng để nối Pharmacy.
 Không import feature khác;
 composition root truyền context/adapter, presentation không tự dựng concrete repository.
-Dependency phối hợp ghi trong [handoff chung Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md),
+Dependency phối hợp ghi trong [handoff chung Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md),
 không tạo thêm file handoff. Đọc AGENTS gần nhất trước mỗi đợt sửa.
 
 ## 3. Contract đã đối chiếu ở baseline

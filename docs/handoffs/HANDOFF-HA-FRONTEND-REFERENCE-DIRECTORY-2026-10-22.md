@@ -1,5 +1,16 @@
 # HANDOFF — tên tham chiếu cho frontend Vinh/Lộc
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-01`; status: `ACTIVE CONTRACT GAP`.
+- Bàn giao hiện tại: Hoàng Anh/Core/Gateway → consumer frontend theo ownership.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Ngày: 2026-10-22. Trạng thái: OPEN — cần contract từ owner Core (Hoàng Anh).
 Frontend consumer: Vinh (Clinical/Lab/shared), Lộc (Billing/Notification).
 

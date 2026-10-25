@@ -1,5 +1,16 @@
 # Review3 runtime follow-up 22 October 2026
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-08`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Owner từng context → Vinh tổng hợp acceptance.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Status: OPEN. These observations come from the local Review3 Gateway environment on
 22 October 2026. They are not a release acceptance result.
 

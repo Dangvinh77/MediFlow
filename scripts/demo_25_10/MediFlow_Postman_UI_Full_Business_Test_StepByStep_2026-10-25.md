@@ -1,5 +1,14 @@
 # MediFlow — Thực hành kiểm thử Postman và UI từng bước
 
+> **Phạm vi baseline — cập nhật 25/10/2026:** các lệnh/API và kịch bản bên dưới mô tả mã nguồn
+> được khóa trong hướng dẫn, không là nghiệm thu luồng nghiệp vụ mới. Quy tắc hiện hành về
+> lịch khám theo ca, giữ suất, đăng ký tại quầy, tái khám và BHYT mô phỏng nằm tại
+> [02-business-flows](../../docs/plans/02-business-flows.md); phần chưa triển khai và thứ tự sửa ở
+> [WF-01–11](../../docs/plans/07-outpatient-workflow-implementation.md), test đích ở
+> [ma trận WF](../../docs/plans/06-acceptance-runbook.md).
+> Tiếp tục dùng phần khởi động/restore phù hợp binary hiện tại; không nhập thêm field hỗ trợ BHYT
+> vào API cũ, không thay snapshot tiền hoặc kết luận đã có kiểm lịch ca từ màn hình chọn bác sĩ.
+
 Ngày đối chiếu: **25/10/2026**, revision **`eac2cd7b`**, môi trường Windows/PowerShell. Phần diễn giải dùng tiếng Việt; tên field, hàm, role và trạng thái giữ đúng tiếng Anh trong source.
 
 Đây là **quy trình để thực hiện test**, không phải biên bản đã chạy PASS. Chỉ ghi PASS sau khi chạy trên máy của bạn và lưu bằng chứng. Phạm vi full flow là **MVP ngoại trú**: Organization, Patient, Clinical, Lab, Pharmacy, Billing, Report, Notification. Inpatient/Surgery không nằm trong nghiệm thu này.

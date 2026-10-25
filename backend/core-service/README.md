@@ -1,5 +1,17 @@
 # Core Service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Minimal patient directory for prescriptions — 2026-10-25
 
 Task-authorized Core/Gateway addition: ADMIN, DOCTOR and PHARMACIST can read

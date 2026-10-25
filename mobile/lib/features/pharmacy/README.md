@@ -8,7 +8,7 @@ repository đang được app bind đã implement reader nên không sửa app/c
 Riverpod dedupe theo resource, tự bỏ cache khi không còn consumer và reload khi đổi phiên;
 không tự retry lookup lỗi. Lookup lỗi không chặn nghiệp vụ hoặc giả lập tên.
 PHARMACIST giữ fallback vì Core/Gateway chưa cấp quyền public lookup; ADMIN/DOCTOR tra theo
-quyền hiện hành. Gap và acceptance mới ở [handoff chung](../../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+quyền hiện hành. Gap và acceptance mới ở [handoff chung](../../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 Chưa có nghiệm thu thật/ảnh Review3 mới; mốc 11/12 bên dưới không tự đổi thành 12/12.
 
 ## Hiện hành — shared integration đã code, 2026-10-22

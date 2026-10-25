@@ -1,14 +1,25 @@
 # MediFlow — tài liệu hệ thống thông tin bệnh viện cho ngoại trú
 
+Quy tắc nghiệp vụ cập nhật 25/10/2026: đọc [luồng khám, tái khám và BHYT mô phỏng](plans/02-business-flows.md)
+trước khi triển khai hoặc viết kịch bản bảo vệ. [Kế hoạch điều chỉnh](plans/07-outpatient-workflow-implementation.md)
+phân biệt rõ yêu cầu mới với binary/demo hiện tại; BHYT giả định còn hạn, hỗ trợ theo tỷ lệ do dự án chọn.
+
 **Tên mô tả thống nhất:** MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management.
 
 MediFlow giữ định hướng HIS, triển khai MVP ngoại trú cho phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện. Phạm vi gồm định danh/tổ chức, lịch hẹn/tiếp nhận, khám và hồ sơ, Lab, kê đơn/cấp thuốc, viện phí, báo cáo và thông báo in-app. Nội trú, giường bệnh và phẫu thuật hoãn; giữ nguyên source/data để phát triển sau. Không dùng phạm vi yêu cầu làm bằng chứng mọi tính năng đã nghiệm thu.
 
 Bộ tài liệu chính hiện nằm trong [docs/plans](plans/README.md).
 
+Sau chuẩn hóa 26/10, xem [registry bàn giao hiện hành](handoffs/README.md) và
+[biên bản xử lý tài liệu](plans/08-documentation-cleanup-2026-10-26.md).
+Checkpoint nằm trong `handoffs/history`, nội trú/Surgery trong `handoffs/deferred`;
+di chuyển tài liệu không tự đóng các acceptance còn thiếu.
+
 - [Thiết kế hệ thống](plans/01-system-design.md)
 - [Luồng nghiệp vụ](plans/02-business-flows.md)
 - [Hợp đồng tích hợp](plans/03-contracts.md)
+- [WF-01: đối chiếu source và khoảng trống hợp đồng](plans/09-outpatient-source-lock-2026-10-26.md)
+- [Hợp đồng lịch khám/giữ suất và ma trận nghiệm thu](plans/10-scheduling-contract-acceptance.md)
 - [Dữ liệu và độ tin cậy](plans/04-data-reliability.md)
 - [Plan 18 task và 72 subtask](plans/05-implementation-plan.md)
 - [Nghiệm thu và vận hành](plans/06-acceptance-runbook.md)

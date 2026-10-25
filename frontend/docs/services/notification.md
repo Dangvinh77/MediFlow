@@ -1,5 +1,12 @@
 # Frontend Service: Notification
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 ## Current owner queue update — 2026-10-22
 
 Lộc resumes active frontend ownership of Notification and Billing. Vinh's 20–21/10 client
@@ -63,7 +70,7 @@ for local tests; signed Notification acceptance remains open.
 **Task override, 2026-10-18:** user assigned Huy Pharmacy and all Support FE, including Notification
 feature/matching routes. Canonical owner remains Lộc. Execution/evidence live in the
 [same Huy six-service plan](../huy-six-service-frontend-plan.md), HF6-13/14; dependencies use the
-[single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+[single Huy handoff](../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 ## Writable frontend scope
 

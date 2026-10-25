@@ -1,5 +1,14 @@
 # MediFlow — Cẩm nang demo và bảo vệ đồ án dành cho 4 thành viên
 
+> **Phạm vi baseline — cập nhật 25/10/2026:** các lệnh/API và kịch bản bên dưới mô tả mã nguồn
+> được khóa trong hướng dẫn, không là nghiệm thu luồng nghiệp vụ mới. Quy tắc hiện hành về
+> lịch khám theo ca, giữ suất, đăng ký tại quầy, tái khám và BHYT mô phỏng nằm tại
+> [02-business-flows](../../docs/plans/02-business-flows.md); phần chưa triển khai và thứ tự sửa ở
+> [WF-01–11](../../docs/plans/07-outpatient-workflow-implementation.md), test đích ở
+> [ma trận WF](../../docs/plans/06-acceptance-runbook.md).
+> Tiếp tục dùng phần khởi động/restore phù hợp binary hiện tại; không nhập thêm field hỗ trợ BHYT
+> vào API cũ, không thay snapshot tiền hoặc kết luận đã có kiểm lịch ca từ màn hình chọn bác sĩ.
+
 **Phạm Đăng Vinh · Huy (LQHuy0210) · Trần Hoàng Anh · Thân Thế Lộc**<br>
 **Ngày biên soạn:** 24/10/2026, múi giờ Việt Nam.<br>
 **Dự án:** *MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management.*<br>

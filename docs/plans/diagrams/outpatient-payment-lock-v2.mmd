@@ -1,0 +1,21 @@
+flowchart TD
+    A["HELD: giữ suất 15 phút"] --> B{"Bắt đầu thu trước hạn?"}
+    B -->|Không| X["EXPIRED: giải phóng suất"]
+    B -->|Có| C["Billing lưu PREPARING và operationId"]
+    C --> D["Clinical khóa suất bằng fenceToken"]
+    D --> E{"Billing thu hay đóng operation?"}
+    E -->|Commit trước| F["COMPLETED: giữ receipt và eligibility"]
+    E -->|Đóng trước| G["Đã đóng chưa thu: chặn late payment"]
+    E -->|Timeout| H["Giữ khóa và đối soát cùng operationId"]
+    H --> I{"close-if-unpaid trả kết quả?"}
+    I -->|Đã thu| F
+    I -->|Đã đóng chưa thu| G
+    I -->|Mất kết nối hoặc missing| O["Giữ khóa và retry; cảnh báo sau 5 phút"]
+    F --> J{"Buổi còn hợp lệ?"}
+    J -->|Có| K["CONFIRMED: cấp số thứ tự đúng một lần"]
+    J -->|Hết buổi hoặc mismatch| R["Đối soát: giữ bằng chứng thu"]
+    G --> L{"Hold và buổi còn hạn?"}
+    L -->|Có| P["HELD: quay về hạn giữ ban đầu"]
+    L -->|Không| X
+    K --> M["Đã đến và đủ authority: bắt đầu khám"]
+    M --> N["CONSUMED: suất đã phục vụ vẫn tính sức chứa"]

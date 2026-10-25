@@ -81,7 +81,7 @@ Lab lượt đầu thiếu `lab.acceptance.billing.jar`; lỗi cấu hình chạ
 không là bằng chứng lỗi production. Lượt đủ property đã pass actual payment/result attachment; exact absolute JAR path nằm trong JSON. Pharmacy default skip có lý do rõ ràng: ca live V1 issuer
 chỉ chạy khi opt-in sau producer acceptance; skip không được tính pass. Lượt opt-in chạy riêng đã timeout chờ invoice.created;
 Billing container harness chưa được bật publication/purposes/reference. Giao Vinh
-[V-TEST-BUG-02](../../handoffs/HANDOFF-VINH-BACKEND-TEST-FAILURES.md) sửa test config và retest;
+[V-TEST-BUG-02](../../handoffs/history/2026-10-19-test-harness-findings.md) sửa test config và retest;
 chưa là bằng chứng lỗi production. Không ký ca issuer-chain từ fixture/default pass.
 
 ## Lỗi mở và giới hạn nghiệm thu
@@ -89,7 +89,7 @@ chưa là bằng chứng lỗi production. Không ký ca issuer-chain từ fixtu
 - [Gateway HA-CODE-01/02](../../handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md):
   bốn ADMIN/CASHIER positive cases bị chặn; bảy deny controls pass. Test filter/mock exchange
   chưa chứng minh JWT/HTTP/actual Billing refund flow. Các bước này cần retest sau code owner.
-- [V-TEST-BUG-01](../../handoffs/HANDOFF-VINH-BACKEND-TEST-FAILURES.md): Report DB timestamp
+- [V-TEST-BUG-01](../../handoffs/history/2026-10-19-test-harness-findings.md): Report DB timestamp
   đi trước host bound 56,3 microsecond; hai clocks khác nhau. Reruns pass không xóa lỗi gốc.
 - Chưa ký global M6/T01–T19; T11/T19 refund public path đang blocked. FE smoke và production
   cutover không nằm trong backend local run này. Không dùng số test để suy toàn bộ acceptance.
@@ -97,7 +97,7 @@ chưa là bằng chứng lỗi production. Không ký ca issuer-chain từ fixtu
   tự chứng minh mọi token, mọi financial race hoặc mọi environment.
 
 [Tool/image versions, source SHA, test hash](environment.json) ·
-[Bảng giao việc cuối](../../handoffs/BACKEND-FINAL-ASSIGNMENTS-2026-10-18.md).
+[Bảng giao việc cuối](../../handoffs/history/2026-10-18-backend-assignments.md).
 Full raw logs/XML chỉ giữ tại ignored `target/backend-final-verification` và module targets;
 XML có environment nên không publish nguyên bản. Bundle này giữ metadata/failure messages đã lọc,
 không chứa credentials, JWT hoặc patient payloads.

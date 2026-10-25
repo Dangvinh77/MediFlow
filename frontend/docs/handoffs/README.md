@@ -4,13 +4,20 @@ This registry contains only active frontend-to-frontend ownership, composition, 
 dependencies. Missing backend endpoints, DTOs, roles, events, identity claims, or Gateway contracts
 belong in [`docs/handoffs/README.md`](../../../docs/handoffs/README.md).
 
-## Active handoffs
+## Current handoffs — 26/10/2026
 
-- [Review 3 — hiển thị tên bệnh nhân, bác sĩ và khoa thay UUID](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md): Hoàng Anh đối chiếu identity contract/quyền đọc; Vinh điều phối shared và các consumer nhận theo ownership. ACTIVE; Huy đã code web Pharmacy/Report và mobile Pharmacy, chờ nghiệm thu Gateway/ảnh mới. Vinh/Lộc đã có implementation selector/nhãn trong Clinical/Lab/Billing/Notification; còn chờ nghiệm thu Gateway/ảnh mới và contract tên cho role thiếu quyền.
-
-| Handoff | Producer owner | Consumer owner | Unblocks |
+| Handoff | Status | Producer → consumer | Acceptance còn cần đối chiếu |
 |---|---|---|---|
-| [Surgery idempotency headers](HANDOFF-SHARED-HUY-IDEMPOTENCY-HEADERS.md) | Vinh — shared API wrapper | Huy — Surgery | S-04 command dispatch through the existing HTTP boundary |
+| [Reference display names](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md) | NEEDS REVALIDATION | Hoàng Anh/Core contracts + Vinh/shared → owner từng feature | Có implementation/checkpoint mới hơn 22/10; đối chiếu exact role/route, signed browser, session reset và ảnh mới; backend gap theo H-01 |
+
+Không giao viết lại selector chỉ từ mô tả ACTIVE cũ. Frontend Billing/Notification vẫn theo
+canonical ownership/delegation; backend takeover không tự đổi người sửa frontend.
+
+## Deferred, không chặn MVP
+
+[Surgery idempotency consumer](../../../docs/handoffs/deferred/frontend-surgery-idempotency.md)
+đã chuyển sang deferred. Không coi shared wrapper đã code là Surgery consumer đã nghiệm thu.
+Không mở task Surgery để hoàn thiện lịch khám/ngoại trú.
 
 ## When to create one
 

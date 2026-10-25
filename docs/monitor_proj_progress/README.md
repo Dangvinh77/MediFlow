@@ -1,5 +1,8 @@
 # Hồ sơ Review và tiến độ MediFlow
 
+**Tài liệu theo giai đoạn/bằng chứng lịch sử.** Không dùng nội dung này thay
+[nghiệp vụ ngoại trú hiện hành](../plans/02-business-flows.md) hoặc chứng nhận tính năng mới đã chạy.
+
 Cập nhật ngày **17/10/2026** theo phạm vi **MVP ngoại trú, sáu service đích**. Thư mục này chứa hồ sơ trình bày và tài sản nộp bài; thiết kế và kế hoạch kỹ thuật hiện hành nằm trong [docs/plans](../plans/README.md).
 
 Định vị thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management** — hệ thống thông tin bệnh viện tập trung vào ngoại trú cho phòng khám đa khoa/khoa khám bệnh của bệnh viện. Source Core hiện có không đồng nghĩa đã nghiệm thu đủ sáu deployment; nội trú/phẫu thuật vẫn hoãn.

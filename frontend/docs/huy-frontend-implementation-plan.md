@@ -232,11 +232,11 @@ Không tạo nút revoke-consent/safety-pause hoặc phê duyệt pháp lý từ
 
 | Gate | Owner / việc phải có | Unblocks | Theo dõi |
 |---|---|---|---|
-| SH-01 | Vinh: public API wrapper nhận header Idempotency-Key tương thích ngược | Nối Surgery commands qua Gateway | [FE handoff](handoffs/HANDOFF-SHARED-HUY-IDEMPOTENCY-HEADERS.md) |
+| SH-01 | Vinh: public API wrapper nhận header Idempotency-Key tương thích ngược | Nối Surgery commands qua Gateway | [FE handoff](../../docs/handoffs/deferred/frontend-surgery-idempotency.md) |
 | SH-02 | Vinh: shared nav/activation composition sau khi Surgery runtime được duyệt | Sidebar/khả dụng Surgery | Task release Q-02; không cần sửa shared để làm presenter |
-| GW-01 | Hoàng Anh: exact cancel/dispense Pharmacy role/method policy | DOCTOR cancel smoke | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
-| GW-02 | Hoàng Anh: các Surgery command còn thiếu; giữ default-off và deny unknown paths | Surgery command E2E | [Surgery handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
-| GW-03 | Hoàng Anh: reviewed ADMIN-only Report operator POST ingress | Rebuild/publication/rollback E2E | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
+| GW-01 | Hoàng Anh: exact cancel/dispense Pharmacy role/method policy | DOCTOR cancel smoke | [Huy care-finance handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md) |
+| GW-02 | Hoàng Anh: các Surgery command còn thiếu; giữ default-off và deny unknown paths | Surgery command E2E | [Surgery handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md) |
+| GW-03 | Hoàng Anh: reviewed ADMIN-only Report operator POST ingress | Rebuild/publication/rollback E2E | [Huy care-finance handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md) |
 | BE-01 | Huy + producer owners: Pharmacy V1 authority/activation, exact care context | P-08 public activation | Huy care-finance handoff, không đoán từ generic staff/record |
 | BE-02 | Huy + producer owners: Surgery authority/intake/consent/team/financial freshness và release | Surgery live workflow | Surgery handoff và canonical contracts |
 | BE-03 | Huy: Report published snapshot/coverage và capability gates đúng môi trường | R-06…08 public activation | Huy care-finance handoff; acceptance lịch sử theo quyết định supported release mới nhất |
@@ -851,7 +851,7 @@ Kiểm tra batch này:
 Phần việc tiếp theo trong scope Huy: P-05/P-06 (kê đơn và terminal actions legacy), sau đó đối chiếu
 outpatient MVP activation trước P-08; không lấy checkbox V0 làm bằng chứng V1 đã chạy.
 Mọi phụ thuộc backend/shared runtime được gom tại
-[handoff chung duy nhất](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+[handoff chung duy nhất](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
 
 ## 14. Checkpoint kê đơn và terminal actions — 2026-10-16
 
@@ -893,7 +893,7 @@ Kiểm tra trên source cuối:
 GW-01 vẫn cần Hoàng Anh đối chiếu exact cancel/dispense policy: controller cancel cho ADMIN/DOCTOR,
 trong khi Gateway generic PUT hiện chỉ cho ADMIN/PHARMACIST. Không đổi role hoặc gọi service port
 để vượt gate. Phần còn lại tiếp tục trong
-[một handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+[một handoff chung](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
 
 ## 15. Checkpoint Report ngoại trú theo backend MVP — 2026-10-16
 
