@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.application.service;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
@@ -96,6 +98,15 @@ public class DrugApplicationService implements ManageDrugUseCase {
     @Transactional(readOnly = true)
     public PageResult<DrugDTO> search(String keyword, PageQuery page) {
         return drugRepository.search(keyword, page).map(drugDtoMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResult<DrugDTO> search(String keyword,
+            DrugCatalogFilter filter, PageQuery page) {
+        return drugRepository.search(keyword, filter == null
+                ? DrugCatalogFilter.ALL : filter,
+                java.time.LocalDate.now(clock), page).map(drugDtoMapper::toDto);
     }
 
     /**

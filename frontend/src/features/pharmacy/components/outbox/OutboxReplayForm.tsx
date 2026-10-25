@@ -35,11 +35,11 @@ const getServerRole = (): Role | null => null;
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
     if (cause.status === 403) {
-      return "Bạn không có quyền replay outbox event này.";
+      return "Bạn không có quyền khôi phục đồng bộ dữ liệu.";
     }
 
     if (cause.code === "OUTBOX_EVENT_NOT_FOUND" || cause.status === 404) {
-      return "Không tìm thấy outbox event với mã đã nhập.";
+      return "Không tìm thấy yêu cầu đồng bộ với mã đã nhập.";
     }
 
     return hasUncertainMutationStatus(cause)
@@ -47,7 +47,7 @@ function errorMessage(cause: unknown): string {
       : cause.message;
   }
 
-  const message = cause instanceof Error ? cause.message : "Không thể replay outbox event.";
+  const message = cause instanceof Error ? cause.message : "Chưa thể khôi phục đồng bộ dữ liệu.";
   return `${message} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.`;
 }
 
@@ -135,7 +135,7 @@ function OutboxReplayFormContent() {
 
     const normalizedId = eventId.trim();
     if (!isUuid(normalizedId)) {
-      setFieldError("Event ID phải là UUID hợp lệ.");
+      setFieldError("Mã yêu cầu không hợp lệ. Vui lòng kiểm tra mã do bộ phận kỹ thuật cung cấp.");
       setState({ kind: "idle" });
       inputRef.current?.focus();
       return;
@@ -209,7 +209,7 @@ function OutboxReplayFormContent() {
         role="alert"
         className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"
       >
-        Tài khoản của bạn không có quyền replay outbox event.
+        Tài khoản của bạn không có quyền khôi phục đồng bộ dữ liệu.
       </p>
     );
   }
@@ -222,28 +222,28 @@ function OutboxReplayFormContent() {
         aria-live="polite"
       >
         <h2 id="outbox-replay-success-title" className="font-semibold text-success">
-          {state.result.replayed ? "Đã đưa event trở lại hàng đợi replay" : "Event chưa được đưa lại vào hàng đợi"}
+          {state.result.replayed ? "Đã gửi yêu cầu đồng bộ lại" : "Chưa gửi được yêu cầu đồng bộ lại"}
         </h2>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Event ID</dt>
+            <dt className="text-muted-foreground">Mã yêu cầu</dt>
             <dd className="mt-1 break-all font-mono text-xs">{state.result.eventId}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Replayed</dt>
+            <dt className="text-muted-foreground">Đã gửi lại</dt>
             <dd className="mt-1 font-semibold">{state.result.replayed ? "Có" : "Không"}</dd>
           </div>
         </dl>
         <p className="mt-4 text-sm text-muted-foreground">
-          Replay chỉ đưa lại event bất biến vào hàng đợi. Việc consumer xử lý thành công cần được
-          theo dõi ở hệ thống quan sát bên ngoài.
+          Yêu cầu đã được gửi lại để xử lý. Kết quả nghiệp vụ có thể chưa cập nhật ngay;
+          liên hệ bộ phận kỹ thuật để kiểm tra nếu dữ liệu vẫn chưa đồng bộ.
         </p>
         <button
           type="button"
           onClick={startAnotherReplay}
           className="mt-5 min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted"
         >
-          Replay event khác
+          Khôi phục yêu cầu khác
         </button>
       </section>
     );
@@ -257,10 +257,10 @@ function OutboxReplayFormContent() {
 
   return (
     <section className="mt-6 max-w-2xl rounded-xl border border-border bg-surface p-6">
-      <h2 className="text-base font-semibold">Replay event đã biết</h2>
+      <h2 className="text-base font-semibold">Khôi phục một yêu cầu đồng bộ</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Nhập đúng UUID lấy từ nguồn quan sát/quarantine bên ngoài. Màn hình này không liệt kê hoặc
-        tìm kiếm outbox event.
+        Chỉ dành cho quản trị viên khi xử lý sự cố đồng bộ. Nhập mã yêu cầu do bộ phận
+        kỹ thuật cung cấp; các thao tác kê đơn và xuất thuốc nằm trong mục Đơn thuốc.
       </p>
 
       {error && (
@@ -282,7 +282,7 @@ function OutboxReplayFormContent() {
       <form onSubmit={prepareConfirmation} noValidate className="mt-5 space-y-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="outbox-event-id" className="text-sm font-medium">
-            Event ID
+            Mã yêu cầu
           </label>
           <input
             ref={inputRef}
@@ -296,7 +296,7 @@ function OutboxReplayFormContent() {
             aria-invalid={fieldError ? true : undefined}
             aria-describedby={fieldError ? "outbox-event-id-error" : undefined}
             className={`${controlClassName} font-mono ${fieldError ? "border-danger" : ""}`}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            placeholder="Dán mã yêu cầu cần khôi phục"
           />
           {fieldError && (
             <p id="outbox-event-id-error" className="text-xs text-danger">
@@ -324,11 +324,11 @@ function OutboxReplayFormContent() {
           aria-describedby="outbox-replay-confirm-description"
         >
           <h3 id="outbox-replay-confirm-title" className="font-semibold">
-            Xác nhận replay event
+            Xác nhận khôi phục đồng bộ
           </h3>
           <p id="outbox-replay-confirm-description" className="mt-2 text-sm">
-            Hệ thống sẽ đưa lại đúng event <code className="break-all">{currentEventId}</code> vào
-            hàng đợi. Thao tác này không sửa payload và không đảm bảo consumer xử lý nghiệp vụ thành công.
+            Hệ thống sẽ gửi lại yêu cầu <code className="break-all">{currentEventId}</code> để đồng bộ.
+            Dữ liệu gốc được giữ nguyên. Việc gửi lại chưa đồng nghĩa nghiệp vụ đã hoàn tất.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
@@ -346,7 +346,7 @@ function OutboxReplayFormContent() {
               disabled={submitting}
               className="min-h-11 rounded-lg bg-warning px-4 py-2 font-medium text-warning-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Đang replay…" : "Xác nhận replay"}
+              {submitting ? "Đang gửi yêu cầu…" : "Xác nhận khôi phục"}
             </button>
           </div>
         </section>

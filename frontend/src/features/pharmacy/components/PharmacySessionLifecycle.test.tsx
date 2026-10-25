@@ -119,10 +119,10 @@ describe("Pharmacy session lifecycle", () => {
 
   it("drops pending outbox results when switching between ADMIN accounts", async () => {
     const pending = deferred<unknown>(); mocks.replay.mockReturnValue(pending.promise);
-    render(<OutboxReplayForm />); change("Event ID", id); fireEvent.click(screen.getByRole("button", { name: "Xem xác nhận" })); fireEvent.click(screen.getByRole("button", { name: "Xác nhận replay" }));
+    render(<OutboxReplayForm />); change("Mã yêu cầu", id); fireEvent.click(screen.getByRole("button", { name: "Xem xác nhận" })); fireEvent.click(screen.getByRole("button", { name: "Xác nhận khôi phục" }));
     act(() => session("session-b")); await act(async () => pending.resolve({ eventId: id, replayed: true }));
-    expect(screen.queryByText("Đã đưa event trở lại hàng đợi replay")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Event ID")).toHaveValue("");
+    expect(screen.queryByText("Đã gửi yêu cầu đồng bộ lại")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Mã yêu cầu")).toHaveValue("");
   });
 
   it("clears the prescription lookup draft across same-role sessions", () => {

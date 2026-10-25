@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.application.port.out;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,4 +41,8 @@ public interface DrugRepositoryPort {
 
     /** Tìm theo từ khóa trong tên thuốc, có phân trang. PageQuery/PageResult — không dùng Spring Pageable. */
     PageResult<Drug> search(String keyword, PageQuery page);
+
+    PageResult<Drug> search(String keyword,
+            DrugCatalogFilter filter,
+            java.time.LocalDate businessDate, PageQuery page);
 }

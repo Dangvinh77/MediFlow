@@ -12,6 +12,8 @@ import type { DrugDTO } from "../../types";
 import {
   buildDrugCatalogQuery,
   DRUG_CATALOG_PAGE_SIZES,
+  DRUG_CATALOG_FILTERS,
+  type DrugCatalogFilter,
   parseDrugCatalogQuery,
   type DrugCatalogQuery,
 } from "../../utils";
@@ -61,7 +63,7 @@ function DrugCatalogContent() {
     () => parseDrugCatalogQuery(new URLSearchParams(rawQuery)),
     [rawQuery],
   );
-  const { keyword, page, size } = query;
+  const { keyword, page, size, filter } = query;
   const [loadedResult, setResult] = useState<{ key: string; data: PageResult<DrugDTO> } | null>(null);
   const [settledRequestKey, setSettledRequestKey] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<{
@@ -72,7 +74,7 @@ function DrugCatalogContent() {
   const [retryToken, setRetryToken] = useState(0);
   const requestSequence = useRef(0);
 
-  const queryKey = `${keyword}\u0000${page}\u0000${size}`;
+  const queryKey = `${keyword}\u0000${page}\u0000${size}\u0000${filter ?? "ALL"}`;
   const requestKey = `${queryKey}\u0000${retryToken}`;
   const result = loadedResult?.key === requestKey ? loadedResult.data : null;
   const loading = settledRequestKey !== requestKey;
@@ -87,6 +89,7 @@ function DrugCatalogContent() {
         page: changes.page ?? page,
         size: changes.size ?? size,
         keyword: (changes.keyword ?? keyword).trim(),
+        ...((changes.filter ?? filter) ? { filter: changes.filter ?? filter } : {}),
       };
 
       router.replace(
@@ -94,7 +97,7 @@ function DrugCatalogContent() {
         { scroll: false },
       );
     },
-    [keyword, page, pathname, router, size],
+    [keyword, page, pathname, router, size, filter],
   );
 
   useEffect(() => {
@@ -103,7 +106,7 @@ function DrugCatalogContent() {
     const requestId = ++requestSequence.current;
 
     pharmacyApi
-      .searchDrugs({ keyword, page, size })
+      .searchDrugs({ keyword, page, size, ...(filter ? { filter } : {}) })
       .then((nextResult) => {
         if (!active || !isCurrent() || requestId !== requestSequence.current) return;
 
@@ -139,7 +142,7 @@ function DrugCatalogContent() {
     return () => {
       active = false;
     };
-  }, [isCurrent, keyword, page, requestKey, router, size, updateQuery]);
+  }, [isCurrent, keyword, page, requestKey, router, size, updateQuery, filter]);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -173,12 +176,25 @@ function DrugCatalogContent() {
         <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-center xl:w-3/5">
           <div className="min-w-0 flex-1">
             <label htmlFor="drug-keyword" className="sr-only">Tìm theo tên thuốc</label>
-            <input key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Tìm theo tên thuốc" className={controlClassName} />
+            <input maxLength={200} key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Tên thuốc hoặc hoạt chất" className={controlClassName} />
+          </div>
+          <div>
+            <label htmlFor="drug-filter" className="sr-only">Tình trạng thuốc</label>
+            <select id="drug-filter" value={filter ?? "ALL"} className={controlClassName}
+              disabled={requestError?.key === requestKey && requestError.forbidden}
+              onChange={event => updateQuery({ filter: event.target.value as DrugCatalogFilter, page: 0 })}>
+              {Object.entries(DRUG_CATALOG_FILTERS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
           </div>
           <Button type="submit" variant="primary" disabled={loading || (requestError?.key === requestKey && requestError.forbidden)}>Tìm kiếm</Button>
         </form>
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <p>Tìm được cả tên thuốc và hoạt chất. Tồn kho là số lượng hiện có, có thể gồm thuốc đang giữ cho đơn.</p>
+        {(keyword || filter) && <Button type="button" disabled={requestError?.forbidden}
+          onClick={() => updateQuery({ keyword: "", filter: "ALL", page: 0 })}>Xóa bộ lọc</Button>}
+      </div>
       {loading && <CatalogFallback />}
       {error && (
         <div role="alert" className="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
@@ -188,7 +204,7 @@ function DrugCatalogContent() {
       )}
       {!loading && !error && result && result.content.length === 0 && (
         <p role="status" className="py-8 text-sm text-muted-foreground">
-          Không tìm thấy thuốc phù hợp với bộ lọc hiện tại.
+          {keyword.trim() || filter ? "Không tìm thấy thuốc phù hợp. Thử đổi tên, hoạt chất hoặc xóa bộ lọc." : "Chưa có thuốc trong danh mục. Người quản lý nhà thuốc cần bổ sung danh mục để bắt đầu."}
         </p>
       )}
       {hasData && result && (

@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.web;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
@@ -102,6 +104,20 @@ class DrugControllerTest {
                 .andExpect(jsonPath("$.data.size").value(5));
 
         verify(manageDrugUseCase).search("para", pageQuery);
+    }
+
+    @Test
+    @WithMockUser(roles = "PHARMACIST")
+    void search_validFilterForwardsServerFilterAndRejectsUnknownValues() throws Exception {
+        var filter = DrugCatalogFilter.EXPIRING_SOON;
+        when(manageDrugUseCase.search(null, filter, PageQuery.of(null, null)))
+                .thenReturn(PageResult.of(List.of(), 0, 0, 20));
+        mockMvc.perform(get(BASE_PATH).param("filter", "EXPIRING_SOON"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Cache-Control", "no-store"));
+        mockMvc.perform(get(BASE_PATH).param("filter", "INVALID"))
+                .andExpect(status().isBadRequest());
     }
 
     @ParameterizedTest

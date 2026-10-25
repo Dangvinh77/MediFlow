@@ -34,7 +34,7 @@ export default async function DrugDetailPage({
         <section className="mt-6 rounded-xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold">Mã thuốc không hợp lệ</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            URL cần chứa một UUID hợp lệ để mở chi tiết thuốc.
+            Vui lòng quay lại danh mục và chọn thuốc cần xem.
           </p>
         </section>
       </PharmacyPageShell>

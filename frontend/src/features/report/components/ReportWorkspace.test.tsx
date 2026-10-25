@@ -8,20 +8,20 @@ vi.mock("../api", () => ({ reportApi: { monthly: mocks.monthly, daily: mocks.dai
 import { ReportWorkspace } from "./ReportWorkspace";
 
 describe("ReportWorkspace", () => {
-  beforeEach(() => { mocks.query = ""; mocks.router.replace.mockReset(); mocks.monthly.mockReset(); mocks.daily.mockReset(); mocks.topMedicines.mockReset(); vi.spyOn(window.history, "pushState").mockImplementation(() => {}); });
-  it("defaults to a single idle monthly view with URL navigation", () => {
+  beforeEach(() => { mocks.query = ""; mocks.router.replace.mockReset(); mocks.monthly.mockReset().mockResolvedValue({ month: new Date().getMonth() + 1, year: new Date().getFullYear(), departmentId: null, totalRevenue: 0, invoiceCount: 0, dailyDetails: [] }); mocks.daily.mockReset().mockResolvedValue({ reportDate: "2026-10-25", departmentId: null, visitCount: 0, labCount: 0, prescriptionCount: 0, revenue: 0 }); mocks.topMedicines.mockReset(); vi.spyOn(window.history, "pushState").mockImplementation(() => {}); });
+  it("defaults to the current monthly report with URL navigation", async () => {
     render(<ReportWorkspace />);
     expect(screen.getByRole("heading", { name: "Báo cáo tháng" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Hàng tháng" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Hàng ngày" })).toHaveAttribute("href", "/reports?view=daily");
     expect(screen.queryByLabelText("Ngày báo cáo")).not.toBeInTheDocument();
-    expect(mocks.monthly).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.monthly).toHaveBeenCalledWith(new Date().getMonth() + 1, new Date().getFullYear(), undefined));
     expect(screen.queryByRole("link", { name: "Báo cáo ngoại trú" })).not.toBeInTheDocument();
   });
-  it("only exposes the outpatient entry after the server UI gate is enabled", () => {
+  it("only exposes the outpatient entry after the server UI gate is enabled", async () => {
     render(<ReportWorkspace outpatientEnabled />);
     expect(screen.getByRole("link", { name: "Báo cáo ngoại trú" })).toHaveAttribute("href", "/reports/outpatient");
-    expect(mocks.monthly).not.toHaveBeenCalled(); expect(mocks.daily).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.monthly).toHaveBeenCalledTimes(1)); expect(mocks.daily).not.toHaveBeenCalled();
   });
   it("reads monthly URL filters and does not request inactive report types", async () => {
     mocks.query = "view=monthly&month=2&year=2024";
@@ -48,8 +48,8 @@ describe("ReportWorkspace", () => {
     mocks.query = "view=daily"; const view = render(<ReportWorkspace />);
     expect(screen.getByLabelText("Ngày báo cáo")).toBeVisible();
     mocks.query = "view=monthly&month=10&year=2026&departmentId=invalid"; view.rerender(<ReportWorkspace />);
-    expect(screen.getByLabelText("Tháng")).toHaveValue(10);
-    expect(screen.getByLabelText("Mã khoa (tùy chọn)")).toHaveValue("invalid");
+    expect(screen.getByLabelText("Tháng")).toHaveValue("10");
+    expect(screen.getByLabelText("Khoa (tùy chọn)")).toHaveValue("invalid");
     expect(screen.queryByLabelText("Ngày báo cáo")).not.toBeInTheDocument();
     expect(mocks.monthly).not.toHaveBeenCalled();
   });

@@ -134,7 +134,7 @@ function LookupWorkspace() {
       ++sequence.current;
       setLoading(false); setNotifications([]); setSearched(false); setError(null);
       setPageNumber(0); setTotalPages(0); setTotalElements(0);
-      setValidationError("Mã bệnh nhân phải là UUID hợp lệ.");
+      setValidationError("Vui lòng chọn bệnh nhân hợp lệ.");
       inputRef.current?.focus();
       return;
     }
@@ -160,7 +160,7 @@ function LookupWorkspace() {
             htmlFor="notification-patient-id"
             className="mb-1 block text-sm font-medium"
           >
-            Mã bệnh nhân
+            Bệnh nhân
           </label>
           <ReferenceInput kind="patient"
             ref={inputRef}
@@ -170,7 +170,7 @@ function LookupWorkspace() {
               setPatientId(selectedId);
               setValidationError(null);
             }}
-            placeholder="Nhập UUID bệnh nhân"
+            placeholder="Tìm bệnh nhân theo tên"
             aria-required="true"
             aria-invalid={validationError ? true : undefined}
             aria-describedby={
@@ -199,7 +199,7 @@ function LookupWorkspace() {
       ) : null}
 
       {!searched && !validationError ? (
-        <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem thông báo." />
+        <AsyncState kind="idle" message="Chọn bệnh nhân để xem lịch sử thông báo." />
       ) : null}
 
       {loading ? <AsyncState kind="loading" message="Đang tải thông báo…" /> : null}

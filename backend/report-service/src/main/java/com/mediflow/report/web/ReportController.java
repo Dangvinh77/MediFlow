@@ -48,8 +48,8 @@ public class ReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) UUID departmentId,
             HttpServletRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                readReportUseCase.daily(date, departmentId), correlationId(request)));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(readReportUseCase.daily(date, departmentId), correlationId(request)));
     }
 
     @GetMapping("/monthly")
@@ -61,8 +61,8 @@ public class ReportController {
             @RequestParam @Min(2000) @Max(2100) int year,
             @RequestParam(required = false) UUID departmentId,
             HttpServletRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                readReportUseCase.monthly(month, year, departmentId), correlationId(request)));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(readReportUseCase.monthly(month, year, departmentId), correlationId(request)));
     }
 
     @GetMapping("/top-medicines")
@@ -75,8 +75,9 @@ public class ReportController {
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit,
             HttpServletRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(readReportUseCase.topMedicines(
-                fromDate, toDate, departmentId, limit), correlationId(request)));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(readReportUseCase.topMedicines(
+                        fromDate, toDate, departmentId, limit), correlationId(request)));
     }
 
     private static String correlationId(HttpServletRequest request) {

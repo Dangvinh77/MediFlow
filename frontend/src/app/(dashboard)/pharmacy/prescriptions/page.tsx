@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
-import { PrescriptionLookup } from "@/features/pharmacy/components/prescription/PrescriptionLookup";
+import { PrescriptionList } from "@/features/pharmacy/components/prescription/PrescriptionList";
 
 export const metadata: Metadata = {
-  title: "Tra đơn thuốc | MediFlow",
+  title: "Đơn thuốc | MediFlow",
 };
 
 export default function PrescriptionLookupPage() {
   return (
     <PharmacyPageShell
-      title="Tra đơn thuốc"
-      description="Mở chi tiết đơn thuốc bằng mã UUID đã biết."
+      title="Đơn thuốc"
+      description="Xem thuốc đã kê, tình trạng thanh toán và cấp phát."
     >
       <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
-        <PrescriptionLookup />
+        <Suspense fallback={<p role="status" className="mt-6">Đang tải danh sách đơn thuốc…</p>}>
+          <PrescriptionList />
+        </Suspense>
       </RoleGate>
     </PharmacyPageShell>
   );

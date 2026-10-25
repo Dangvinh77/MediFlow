@@ -88,7 +88,7 @@ export function validateCreatePrescriptionForm(
 
   (['recordId', 'patientId', 'doctorId', 'departmentId'] as const).forEach((field) => {
     if (!isUuid(values[field])) {
-      fields[field] = "Nhập UUID hợp lệ (đúng định dạng 8-4-4-4-12).";
+      fields[field] = "Vui lòng chọn thông tin hợp lệ hoặc kiểm tra lại mã từ hồ sơ khám.";
     }
   });
 

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DrugCatalogActions } from "@/features/pharmacy/components/drug/DrugCatalogActions";
-import { PrescriptionLookup } from "@/features/pharmacy/components/prescription/PrescriptionLookup";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import {
@@ -30,7 +29,6 @@ export default function DrugCatalogPage() {
         <Suspense fallback={<CatalogFallback />}>
           <DrugCatalog />
         </Suspense>
-        <PrescriptionLookup variant="compact" />
       </RoleGate>
     </PharmacyPageShell>
   );

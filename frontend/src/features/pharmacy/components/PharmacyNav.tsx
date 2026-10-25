@@ -46,7 +46,7 @@ const navigation: readonly PharmacyNavItem[] = [
   },
   {
     href: "/pharmacy/admin/outbox",
-    label: "Khôi phục outbox",
+    label: "Khôi phục đồng bộ dữ liệu",
     capability: "canReplayOutbox",
   },
 ];
@@ -137,7 +137,7 @@ export function PharmacyNav() {
       aria-label="Điều hướng phân hệ Dược"
       className="mt-4 flex flex-wrap items-center gap-x-6 border-b border-border"
     >
-      {visibleItems.map((item) => {
+      {visibleItems.filter(item => item.capability !== "canReplayOutbox").map((item) => {
         const active = item.href === activeHref;
 
         return (
@@ -166,6 +166,15 @@ export function PharmacyNav() {
           </Link>
         );
       })}
+      {capabilities.canReplayOutbox && (
+        <details key={pathname} className="relative ml-auto text-sm">
+          <summary className="min-h-11 cursor-pointer py-3 text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary">Quản trị hệ thống</summary>
+          <div className="absolute right-0 z-10 w-64 rounded-xl border border-border bg-surface p-3 shadow-lg">
+            <p className="mb-2 text-xs text-muted-foreground">Dành cho người phụ trách kỹ thuật khi cần xử lý lỗi đồng bộ.</p>
+            <Link href="/pharmacy/admin/outbox" aria-current={activeHref === "/pharmacy/admin/outbox" ? "page" : undefined} className="inline-flex min-h-11 items-center text-primary hover:underline">Khôi phục đồng bộ dữ liệu</Link>
+          </div>
+        </details>
+      )}
     </nav>
   );
 }

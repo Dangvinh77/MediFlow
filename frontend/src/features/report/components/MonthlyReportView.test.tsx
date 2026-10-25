@@ -70,6 +70,22 @@ describe("MonthlyReportView", () => {
     await screen.findByText("12.345"); fireEvent.change(screen.getByLabelText("Tháng"), { target: { value: "10" } });
     expect(screen.getByRole("heading", { name: "Tháng 2/2024" })).toBeVisible();
     expect(mocks.monthly).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent("Bạn đã đổi bộ lọc");
+  });
+  it("selects the previous month across the year boundary without silently reloading old results", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date(2026, 0, 15));
+    try {
+      mocks.monthly.mockResolvedValue({ ...report, month: 1, year: 2026 });
+      render(<MonthlyReportView initialQuery={{ month: 1, year: 2026 }} autoLoad />);
+      await screen.findByRole("heading", { name: "Tháng 1/2026" });
+      fireEvent.click(screen.getByRole("button", { name: "Tháng trước" }));
+      expect(screen.getByLabelText("Tháng")).toHaveValue("12");
+      expect(screen.getByLabelText("Năm")).toHaveValue(2025);
+      expect(screen.getByRole("status")).toHaveTextContent("Bạn đã đổi bộ lọc");
+      expect(mocks.monthly).toHaveBeenCalledTimes(1);
+      submit();
+      await waitFor(() => expect(mocks.monthly).toHaveBeenLastCalledWith(12, 2025, undefined));
+    } finally { vi.useRealTimers(); }
   });
   it("redirects 401 and shows 403 correlation without a misleading retry button", async () => {
     mocks.monthly.mockRejectedValueOnce(new ApiRequestError("Hết phiên", 401));

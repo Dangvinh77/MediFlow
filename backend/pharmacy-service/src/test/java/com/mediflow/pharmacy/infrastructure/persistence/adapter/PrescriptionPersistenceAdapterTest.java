@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({DrugPersistenceAdapter.class, PrescriptionPersistenceAdapter.class, DispenseSlipPersistenceAdapter.class})
+@Import({DrugPersistenceAdapter.class, PrescriptionPersistenceAdapter.class, DispenseSlipPersistenceAdapter.class, PrescriptionSearchAdapter.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
 class PrescriptionPersistenceAdapterTest {
@@ -52,6 +52,26 @@ class PrescriptionPersistenceAdapterTest {
 
     @Autowired private DispenseSlipPersistenceAdapter slipAdapter;
     @Autowired private jakarta.persistence.EntityManager entityManager;
+    @Autowired private PrescriptionSearchAdapter search;
+
+    @Test
+    void searchPaginatesAndCombinesPatientStatusAndMedicationFilters() {
+        Drug drug = drugAdapter.save(newDrug("Omeprazol", "3000.00"));
+        UUID patient = UUID.randomUUID();
+        for (int index = 0; index < 3; index++) {
+            prescriptionAdapter.save(Prescription.create(UUID.randomUUID(), patient, UUID.randomUUID(), UUID.randomUUID(),
+                    LocalDate.now(), List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), null, "Omeprazol"))));
+        }
+        entityManager.flush();
+        var first = search.search("omePRA", patient, com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus.ACTIVE, new com.mediflow.common.api.PageQuery(0,2));
+        var second = search.search("omePRA", patient, null, new com.mediflow.common.api.PageQuery(1,2));
+        assertThat(first.totalElements()).isEqualTo(3);
+        assertThat(first.content()).hasSize(2).doesNotContainAnyElementsOf(second.content());
+        assertThat(second.content()).hasSize(1);
+        assertThat(search.search(null,UUID.randomUUID(),null,new com.mediflow.common.api.PageQuery(0,20)).content()).isEmpty();
+        assertThat(search.search("%",null,null,new com.mediflow.common.api.PageQuery(0,20)).content()).isEmpty();
+        assertThat(search.search(null,patient,com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus.CANCELLED,new com.mediflow.common.api.PageQuery(0,20)).content()).isEmpty();
+    }
 
     @Test
     void persistedTerminalBusinessTime_survivesNanosAndAuditTimestampChanges() {

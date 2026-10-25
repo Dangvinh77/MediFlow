@@ -12,6 +12,23 @@
 - **Compatibility expectation:** UUID vẫn là định danh trong request/response, URL và command; thay đổi cách hiển thị không đổi wire contract hay quyền truy cập.
 - **Resume owner:** Vinh điều phối kiểm tra và tổng hợp; từng dev nhận phần feature thuộc quyền mình. Bộ ảnh/Word chỉ cập nhật sau nghiệm thu.
 
+## Cập nhật hiển thị — 24/10/2026
+
+Theo yêu cầu tối ưu giao diện, UUID không còn là thông tin chính trong Pharmacy/Report.
+Tham chiếu hỗ trợ của thuốc/đơn thuốc được thu gọn; shared `ReferenceText` mặc định không
+hiện nút thông tin kỹ thuật cạnh mỗi nhãn. Notification/Report chọn bệnh nhân/khoa bằng tên;
+Pharmacy chọn hồ sơ khám bằng directory hiện hữu theo đúng bệnh nhân đã chọn.
+Các mô tả giữ UUID trực tiếp bên dưới là ghi nhận của phiên trước, không phải giao diện mới.
+
+2026-10-25: Pharmacy đã bổ sung danh sách đơn thuốc có phân trang và API đọc ngữ cảnh
+kê đơn từ Clinical, kèm các lựa chọn giá được cấu hình. Web dùng các contract này để
+bỏ nhập tay mã lượt khám và mã giá; Gateway đã được cấp quyền sửa trong tác vụ này.
+Sau khi người dùng cấp quyền sửa Core/Gateway trong tác vụ tra tên bệnh nhân, public directory
+tối thiểu chỉ trả `maBenhNhan`, `hoTen`, `ngaySinh` cho ADMIN/DOCTOR/PHARMACIST. Pharmacy
+dùng contract này để chọn tên bệnh nhân và lọc đơn bằng patientId; tên bệnh nhân cho PHARMACIST
+được đóng bằng contract mới, không mở quyền đọc toàn bộ PatientDTO. Tên nhân viên/khoa cho
+PHARMACIST và các consumer khác vẫn theo handoff riêng, chưa được cấp thêm quyền.
+
 ## Cập nhật Vinh/Lộc — 22/10/2026
 
 Đã triển khai shared directory tại app composition và selector/nhãn cho Appointment,

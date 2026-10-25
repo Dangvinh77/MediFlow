@@ -56,6 +56,8 @@ class PharmacyOutpatientApiConfigurationTest {
 
     private ApplicationContextRunner runner() {
         return new ApplicationContextRunner().withUserConfiguration(PharmacyOutpatientApiConfiguration.class)
+                .withBean(java.time.Clock.class, java.time.Clock::systemUTC)
+                .withBean(com.mediflow.pharmacy.application.port.out.OutpatientPrescriptionContextPort.class, () -> mock(com.mediflow.pharmacy.application.port.out.OutpatientPrescriptionContextPort.class))
                 .withBean(CreateContextCheckedPrescriptionUseCase.class,
                         () -> mock(CreateContextCheckedPrescriptionUseCase.class))
                 .withBean(GetPrescriptionUseCase.class, () -> mock(GetPrescriptionUseCase.class))

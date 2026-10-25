@@ -26,9 +26,9 @@ const notice: NotificationDTO = { notificationId: id, patientId: id, title: "Nh�
 function page(content = [notice], number = 0) { return { content, number, size: 20, totalPages: 2, totalElements: 21 }; }
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: unknown) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function fill(label: string, value: string) { fireEvent.change(screen.getByLabelText(label, { exact: false }), { target: { value } }); }
-function search(patient = id) { fill("Mã bệnh nhân", patient); fireEvent.submit(screen.getByLabelText("Mã bệnh nhân").closest("form")!); }
+function search(patient = id) { fill("Bệnh nhân", patient); fireEvent.submit(screen.getByLabelText("Bệnh nhân").closest("form")!); }
 function submit() { fireEvent.submit(screen.getByLabelText("Tiêu đề", { exact: false }).closest("form")!); }
-function fillSend() { fill("Mã bệnh nhân", id); fill("Tiêu đề", " Nhắc lịch khám "); fill("Nội dung", " Đến đúng giờ "); }
+function fillSend() { fill("Bệnh nhân", id); fill("Tiêu đề", " Nhắc lịch khám "); fill("Nội dung", " Đến đúng giờ "); }
 function changeSession(role: Role = "ADMIN") { act(() => { mocks.token = "session-b"; mocks.role = role; mocks.listeners.forEach(listener => listener()); }); }
 
 beforeEach(() => {
@@ -45,7 +45,7 @@ describe("Notification patient history", () => {
     render(<NotificationLookup />); search(); await screen.findByText(notice.title);
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
     await screen.findByText("Trang 2/2", { exact: false });
-    fill("Mã bệnh nhân", otherId);
+    fill("Bệnh nhân", otherId);
     await user.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
     expect(await screen.findByText("Gửi thất bại")).toBeVisible();
     expect(screen.getByText(id)).not.toBeVisible();
@@ -67,7 +67,7 @@ describe("Notification patient history", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
     expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
-    const input = screen.getByLabelText("Mã bệnh nhân"); input.focus(); fill("Mã bệnh nhân", otherId);
+    const input = screen.getByLabelText("Bệnh nhân"); input.focus(); fill("Bệnh nhân", otherId);
     await act(async () => pending.resolve(page()));
     expect(input).toHaveFocus(); expect(input).toHaveValue(otherId);
     expect(screen.getByText(id)).not.toBeVisible();
@@ -98,26 +98,26 @@ describe("Notification patient history", () => {
     render(<NotificationLookup />); search(); await screen.findByText(notice.title);
     fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" })); changeSession();
     await act(async () => pending.resolve(page()));
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
     expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
   });
   it.each(["DOCTOR", "PHARMACIST", "MANAGER", null] as const)("blocks role %s before mounting a reader", role => {
     mocks.role = role; render(<NotificationLookup />);
-    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
   });
   it("validates UUID then paginates using the submitted patient, with privacy-safe translated values", async () => {
     render(<NotificationLookup />); search("bad");
-    expect(screen.getByRole("alert")).toHaveTextContent("UUID"); expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("hợp lệ"); expect(mocks.list).not.toHaveBeenCalled();
     search(` ${id} `); expect(await screen.findByRole("link", { name: notice.title })).toHaveAttribute("href", `/notifications/${id}`);
     expect(screen.getByText("Trong ứng dụng")).toBeVisible(); expect(screen.getByText("Đã gửi")).toBeVisible();
-    fill("Mã bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    fill("Bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20));
   });
   it("focuses an invalid search and suppresses an older pending response", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);
     render(<NotificationLookup />); search(); search("invalid");
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveFocus();
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveFocus();
     await act(async () => pending.resolve(page()));
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Trang sau" })).not.toBeInTheDocument();
@@ -149,13 +149,13 @@ describe("Notification patient history", () => {
   it("retries an unavailable history using its submitted patient rather than the edited draft", async () => {
     mocks.list.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503));
     render(<NotificationLookup />); search(); await screen.findByRole("alert");
-    fill("Mã bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    fill("Bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     await screen.findByText(notice.title); expect(mocks.list).toHaveBeenLastCalledWith(id, 0, 20);
   });
   it("clears private history on session change and ignores old completion after unmount", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);
     const view = render(<NotificationLookup />); search(); changeSession();
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
     await act(async () => pending.resolve(page())); expect(screen.queryByText(notice.title)).not.toBeInTheDocument();
     const late = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(late.promise); search(); view.unmount();
     await act(async () => late.reject(new ApiRequestError("Late", 401))); expect(mocks.router.replace).not.toHaveBeenCalled();
@@ -296,15 +296,15 @@ describe("Notification manual send", () => {
     expect(mocks.send).not.toHaveBeenCalled();
   });
   it("validates required fields, focuses first error and checks channel-specific address", async () => {
-    render(<SendNotificationForm />); submit(); expect(screen.getByLabelText("Mã bệnh nhân", { exact: false })).toHaveFocus();
+    render(<SendNotificationForm />); submit(); expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveFocus();
     fillSend(); fill("Kênh", "SMS"); fill("Địa chỉ người nhận", "+84912345678"); submit();
     await waitFor(() => expect(screen.getByLabelText("Địa chỉ người nhận", { exact: false })).toHaveFocus());
     expect(mocks.send).not.toHaveBeenCalled();
   });
   it("does not move keyboard focus to an old field while editing the next input", async () => {
     render(<SendNotificationForm />); submit();
-    const patient = screen.getByLabelText("Mã bệnh nhân", { exact: false });
-    fill("Mã bệnh nhân", id);
+    const patient = screen.getByLabelText("Bệnh nhân", { exact: false });
+    fill("Bệnh nhân", id);
     const title = screen.getByLabelText("Tiêu đề", { exact: false }); title.focus(); fill("Tiêu đề", "Nhắc lịch");
     await waitFor(() => expect(title).toHaveFocus()); expect(patient).not.toHaveFocus();
   });

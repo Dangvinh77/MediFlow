@@ -94,7 +94,7 @@ function SendForm() {
   return (
     <form onSubmit={submit} noValidate aria-busy={saving || undefined} className="mt-6 max-w-3xl space-y-5 rounded-xl border border-border bg-surface p-6">
       {error && <p ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">{error}</p>}
-      <Field label="Mã bệnh nhân" htmlFor="notification-patientId" error={errors.patientId} required><ReferenceInput kind="patient" {...field("patientId")} value={values.patientId} onValueChange={(selectedId) => update("patientId", selectedId)} placeholder="UUID bệnh nhân" /></Field>
+      <Field label="Bệnh nhân" htmlFor="notification-patientId" error={errors.patientId} required><ReferenceInput kind="patient" {...field("patientId")} value={values.patientId} onValueChange={(selectedId) => update("patientId", selectedId)} placeholder="Tìm bệnh nhân theo tên" /></Field>
       <Field label="Tiêu đề" htmlFor="notification-title" error={errors.title} required><input {...field("title")} maxLength={255} value={values.title} onChange={event => update("title", event.target.value)} /></Field>
       <Field label="Nội dung" htmlFor="notification-content" error={errors.content} required><textarea {...field("content")} rows={6} value={values.content} onChange={event => update("content", event.target.value)} /></Field>
       <div className="grid gap-4 md:grid-cols-2">

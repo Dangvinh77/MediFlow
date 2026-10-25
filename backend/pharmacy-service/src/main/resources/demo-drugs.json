@@ -1,0 +1,14 @@
+[
+  {"key":"drug.paracetamol-500","drugName":"Paracetamol 500mg","activeIngredient":"Paracetamol","unit":"viên","price":1500.00,"stockQuantity":200,"lowStockThreshold":20},
+  {"key":"drug.ibuprofen-200","drugName":"Ibuprofen 200mg","activeIngredient":"Ibuprofen","unit":"viên","price":2500.00,"stockQuantity":100,"lowStockThreshold":15},
+  {"key":"drug.amoxicillin-500","drugName":"Amoxicillin 500mg","activeIngredient":"Amoxicillin","unit":"viên","price":3500.00,"stockQuantity":120,"lowStockThreshold":20},
+  {"key":"drug.cephalexin-500","drugName":"Cephalexin 500mg","activeIngredient":"Cephalexin","unit":"viên","price":4000.00,"stockQuantity":80,"lowStockThreshold":15},
+  {"key":"drug.loratadine-10","drugName":"Loratadin 10mg","activeIngredient":"Loratadine","unit":"viên","price":2000.00,"stockQuantity":60,"lowStockThreshold":10},
+  {"key":"drug.cetirizine-10","drugName":"Cetirizin 10mg","activeIngredient":"Cetirizine","unit":"viên","price":2000.00,"stockQuantity":8,"lowStockThreshold":10},
+  {"key":"drug.omeprazole-20","drugName":"Omeprazol 20mg","activeIngredient":"Omeprazole","unit":"viên","price":3000.00,"stockQuantity":90,"lowStockThreshold":15},
+  {"key":"drug.vitamin-c-500","drugName":"Vitamin C 500mg","activeIngredient":"Ascorbic acid","unit":"viên","price":1000.00,"stockQuantity":150,"lowStockThreshold":20},
+  {"key":"drug.oral-rehydration","drugName":"Oresol","activeIngredient":"Oral rehydration salts","unit":"gói","price":5000.00,"stockQuantity":50,"lowStockThreshold":10},
+  {"key":"drug.saline-09","drugName":"Natri clorid 0,9% 10ml","activeIngredient":"Sodium chloride","unit":"lọ","price":3000.00,"stockQuantity":100,"lowStockThreshold":15},
+  {"key":"drug.ambroxol-30","drugName":"Ambroxol 30mg","activeIngredient":"Ambroxol","unit":"viên","price":2500.00,"stockQuantity":70,"lowStockThreshold":10},
+  {"key":"drug.zinc-10","drugName":"Kẽm 10mg","activeIngredient":"Zinc","unit":"viên","price":1500.00,"stockQuantity":0,"lowStockThreshold":10}
+]

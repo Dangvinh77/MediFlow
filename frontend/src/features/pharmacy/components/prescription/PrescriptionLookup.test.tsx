@@ -20,7 +20,7 @@ describe("PrescriptionLookup", () => {
     const user = userEvent.setup(); render(<PrescriptionLookup variant="compact" />);
     await user.type(screen.getByLabelText("Mã đơn thuốc"), "invalid");
     await user.click(screen.getByRole("button", { name: "Tra cứu" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("UUID hợp lệ");
+    expect(screen.getByRole("alert")).toHaveTextContent("Mã đơn thuốc không hợp lệ");
     expect(screen.getByLabelText("Mã đơn thuốc")).toHaveFocus();
     expect(mocks.push).not.toHaveBeenCalled();
   });

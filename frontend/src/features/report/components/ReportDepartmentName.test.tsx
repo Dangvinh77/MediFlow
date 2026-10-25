@@ -18,7 +18,7 @@ describe("Report department display", () => {
     mocks.get.mockResolvedValue({ departmentId: first, departmentName: "Khoa Nội" });
     render(view());
     expect(await screen.findAllByText("Khoa Nội")).toHaveLength(2);
-    expect(screen.getByText(first)).toBeVisible();
+    expect(screen.queryByText(first)).not.toBeInTheDocument();
     expect(mocks.get).toHaveBeenCalledExactlyOnceWith(`/v1/org/departments/${first}`);
   });
   it("does not look up the whole-hospital scope or invalid drafts", () => {
@@ -27,11 +27,11 @@ describe("Report department display", () => {
     rendered.rerender(view("invalid"));
     expect(mocks.get).not.toHaveBeenCalled();
   });
-  it.each([403, 404, 503])("keeps the scope ID when lookup returns %s", async status => {
+  it.each([403, 404, 503])("does not expose the scope ID when lookup returns %s", async status => {
     mocks.get.mockRejectedValue(new ApiRequestError("failure", status));
     render(view());
     await waitFor(() => expect(screen.queryAllByText("Đang tra cứu tên khoa…")).toHaveLength(0));
-    expect(screen.getByText(first)).toBeVisible();
+    expect(screen.queryByText(first)).not.toBeInTheDocument();
     expect(screen.queryByText("Toàn bệnh viện")).not.toBeInTheDocument();
   });
   it("never assigns a mismatched response to the selected department", async () => {

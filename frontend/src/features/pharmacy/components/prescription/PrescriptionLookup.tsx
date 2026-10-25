@@ -36,7 +36,7 @@ function PrescriptionLookupContent({ variant }: { variant: "standalone" | "compa
     if (!getPharmacyCapabilities(getRole()).canReadPrescription) return;
     const id = prescriptionId.trim();
     if (!isUuid(id)) {
-      setError("Mã đơn thuốc phải là UUID hợp lệ.");
+      setError("Mã đơn thuốc không hợp lệ. Hãy kiểm tra lại mã trên đơn.");
       inputRef.current?.focus();
       return;
     }
@@ -75,7 +75,7 @@ function PrescriptionLookupContent({ variant }: { variant: "standalone" | "compa
             }}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? `${inputId}-error` : undefined}
-            placeholder="Mã đơn thuốc (UUID)"
+            placeholder="Dán mã được cung cấp trên đơn thuốc"
             className={`${controlClassName} ${error ? "border-danger" : ""}`}
           />
           </Field>

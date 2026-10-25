@@ -1,5 +1,82 @@
 # Frontend Workboard
 
+## Pharmacy / Report usability recheck — 2026-10-25
+
+Catalogue name/ingredient search now combines with server-side stock and expiry filters;
+counts and pages use the complete filtered result. Prescription listing retains patient/status/page
+when returning from detail. Prescribing can page through the catalogue without losing selected
+lines and marks expired/empty stock, expiry dates and provisional totals. Legacy reports load the
+current valid period, provide date/month presets and clear department selection, and warn when a
+draft filter differs from displayed results. A visible source limitation prevents interpreting
+legacy zero-fill as proof of no outpatient activity. Catalogue/detail and legacy Report reads are
+no-store. Backend roles, final price/stock authority and outpatient acceptance gates are preserved.
+
+Verification: 426/426 focused Pharmacy/Report UI tests across 34 files, TypeScript, ESLint,
+production Docker builds; a subsequent ReportWorkspace notice recheck passes 7/7. Pharmacy backend
+874 tests pass with no failures/errors/skips, including PostgreSQL ingredient/literal search and
+filter/count/page/date-boundary checks. Live Gateway checks confirm all six catalogue filters,
+ingredient search, literal wildcard handling, no-store headers and allowed/denied roles. Browser
+checks cover PHARMACIST ingredient search/stock filter and Back retaining ACTIVE status, plus ADMIN
+current-month auto-load, prior-month draft warning/submission, daily and medicine views.
+The two prepared dispense/cancel demo prescriptions remain ACTIVE/PENDING; no business data was
+changed during runtime verification.
+Report backend suite completed successfully: 1,444 tests, zero failures/errors/skips, including
+PostgreSQL/RabbitMQ integration and legacy response-cache/role checks.
+
+Open dependencies remain explicit: pharmacist doctor/department reference names require the
+existing Core/Gateway ownership handoff; complete outpatient Report coverage and legacy currency
+metadata are not established by legacy HTTP 200/zero-filled responses.
+
+## Pharmacy prescription usability — 2026-10-25
+
+Prescription browsing now loads a list without an identifier, supports patient-name selection,
+status filters and pagination, and links each result to its detail. Outpatient creation reads
+the authoritative prescribing context through Pharmacy after choosing a patient and record;
+visit and price identifiers are no longer free-text inputs. Backend Pharmacy and the two
+task-authorized Gateway read routes implement these contracts. The follow-up user authorization
+adds a minimal Core patient directory and its two Gateway rules for ADMIN/DOCTOR/PHARMACIST.
+It closes pharmacist patient-name search/display; staff/department read permissions are unchanged.
+
+Verification after the patient-name follow-up: Pharmacy UI tests 278/278 across 22 files,
+TypeScript, ESLint and the Docker production build pass. Core 334/334 and Gateway 1561/1561
+pass; Core integration tests use `-Dapi.version=1.40` for this machine's Docker compatibility.
+The earlier unchanged Pharmacy backend verification passed 871/871.
+Docker production build and public-Gateway checks pass for paged listing, filters, empty
+results, authoritative context, and denied roles. Browser verification against the refreshed
+Docker UI shows all three existing prescriptions and successful patient/record context selection.
+The follow-up browser check signs in as PHARMACIST, searches Nguyễn Văn An Demo, selects the
+12/04/1986 birth date and displays all three matching prescriptions with readable patient names.
+Public-Gateway checks pass for ADMIN/DOCTOR/PHARMACIST and verify exactly three directory fields,
+empty results, denied CASHIER access and denied PHARMACIST full-profile access. Core, Gateway and
+frontend containers are healthy; the two prepared dispense/cancel prescriptions remain untouched.
+
+## User-facing reference display — 2026-10-24
+
+Pharmacy, Report and Notification now use names and plain-language prompts as the main display.
+Shared `ReferenceText` no longer adds a technical-information control to every reference by
+default; explicit diagnostic callers may still opt in. Exact request IDs and access rules are
+unchanged. Pharmacy drug/prescription detail groups support references in a closed disclosure;
+drug names no longer repeat their UUID in prescription lines or top-medicine reports.
+
+Pharmacy maintenance moves from the main business tabs into a closed ADMIN-only administration
+menu, with plain-language recovery instructions. The drug catalogue no longer embeds an unrelated
+prescription lookup. Prescription creation selects an existing medical record through the shared
+directory scoped to the selected patient, and clears dependent selections when their source changes.
+Directory results open as a dropdown without stretching form grids, and can be dismissed with
+Escape or the close action; pending responses cannot reopen a dismissed dropdown.
+
+At this checkpoint public prescription search, an authoritative visit/price picker, and name
+access for PHARMACIST remained contract gaps. The 2026-10-25 update above closes the first two.
+No identifier, business code, permission or lookup endpoint is fabricated.
+See the existing [identity handoff](handoffs/HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md).
+
+Verification: all frontend tests **952/952** across 101 files, TypeScript, ESLint and the
+Docker production build pass. Local Docker browser checks cover Pharmacy navigation, patient
+selection and patient-scoped record search, plus the Report department picker; no clinical
+command is submitted during these read-only checks.
+Report filters also align actions at the bottom on narrow grids; their final regression run
+passes **137/137** after that layout adjustment.
+
 ## Hoàng Anh — Organization/Patient/Gateway usability review, 2026-10-23
 
 User-approved follow-up adds server-paginated staff search (accent-insensitive name/title/unit,
