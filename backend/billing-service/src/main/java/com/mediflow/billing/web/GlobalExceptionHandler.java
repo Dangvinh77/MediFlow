@@ -37,6 +37,7 @@ public class GlobalExceptionHandler {
             jakarta.servlet.http.HttpServletRequest request) {
         boolean lookup = request.getRequestURI().startsWith("/api/v1/billing/financial-clearances/");
         boolean ledger = request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
+                || request.getRequestURI().startsWith("/api/v2/billing/")
                 || request.getRequestURI().startsWith("/api/v1/billing/transactions/")
                 || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-preview")
                 || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-reconciliations")
@@ -49,6 +50,14 @@ public class GlobalExceptionHandler {
                 lookup ? "BILLING_CLEARANCE_UNAVAILABLE" : "BILLING_LEDGER_UNAVAILABLE",
                 lookup ? "Financial authority unavailable" : "Financial ledger unavailable; retry with the same operation key",
                 request);
+    }
+
+    @ExceptionHandler(com.mediflow.billing.application.port.out.ClinicalPaymentContextPort.PaymentContextUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> paymentContextUnavailable(
+            com.mediflow.billing.application.port.out.ClinicalPaymentContextPort.PaymentContextUnavailableException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "BILLING_PAYMENT_CONTEXT_UNAVAILABLE",
+                "Clinical reservation payment context is unavailable; retry the lookup", request);
     }
 
     @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)

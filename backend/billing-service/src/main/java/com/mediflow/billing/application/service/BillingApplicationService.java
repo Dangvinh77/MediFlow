@@ -119,6 +119,10 @@ public class BillingApplicationService implements ManageInvoiceUseCase, QueryRev
     @Override
     @Transactional
     public PaymentResultDTO pay(UUID id, PayInvoiceRequest r) {
+        if (invoiceRepo.isScheduledPaymentInvoice(id)) {
+            throw new com.mediflow.billing.domain.exception.BillingRuleException(
+                    "BILLING_PAYMENT_FLOW_REQUIRED", "Scheduled outpatient payments require the reservation lock flow");
+        }
         Invoice invoice = invoiceRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new InvoiceNotFoundException("Không tìm thấy hóa đơn id=" + id));
 

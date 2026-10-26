@@ -4,7 +4,12 @@ import com.mediflow.billing.application.port.in.IssueLabTestChargeUseCase;
 import com.mediflow.billing.application.port.out.LabTestChargeRepositoryPort;
 import com.mediflow.billing.application.port.out.LabTestChargeWirePort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
+import com.mediflow.billing.application.port.out.OutpatientQuoteCatalogPort;
 import com.mediflow.billing.application.service.LabTestPlannedRequestService;
+import com.mediflow.billing.application.service.IssueOutpatientQuoteService;
+import java.time.Clock;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import com.mediflow.billing.messaging.consumer.LabTestChargeConsumer;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -26,8 +31,12 @@ public class LabTestChargeConfiguration {
     }
     @Bean IssueLabTestChargeUseCase issueLabTestCharges(LabTestChargeRepositoryPort repository, PriceCatalogPort prices,
             com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort cancellations,
+            ObjectProvider<OutpatientQuoteCatalogPort> quoteCatalog,
+            ObjectProvider<IssueOutpatientQuoteService> quoteIssuer,
+            @Value("${mediflow.billing.outpatient-quotes.enabled:false}") boolean quotesEnabled,
             PlatformTransactionManager manager) {
-        var service = new LabTestPlannedRequestService(repository, prices, cancellations);
+        var service = new LabTestPlannedRequestService(repository, prices, cancellations,
+                quoteCatalog.getIfAvailable(), quoteIssuer.getIfAvailable(), quotesEnabled, Clock.systemUTC());
         var transaction = new TransactionTemplate(manager); transaction.setTimeout(5);
         return command -> transaction.execute(status -> service.issue(command));
     }

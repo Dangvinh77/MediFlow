@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.mediflow.billing.application.port.out.InvoiceRepositoryPort;
 import com.mediflow.billing.domain.model.Invoice;
@@ -32,6 +33,14 @@ import lombok.RequiredArgsConstructor;
 public class InvoicePersistenceAdapter implements InvoiceRepositoryPort {
 
     private final InvoiceJpaRepository jpaRepo;
+    private final JdbcTemplate jdbc;
+
+    @Override
+    public boolean isScheduledPaymentInvoice(UUID invoiceId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM outpatient_registration_source WHERE invoice_id=?)
+                """, Boolean.class, invoiceId));
+    }
 
     @Override
     public Optional<Invoice> findByIdForUpdate(UUID id) {
