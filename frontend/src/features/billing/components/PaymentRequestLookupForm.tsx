@@ -2,8 +2,8 @@
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -13,8 +13,11 @@ import { formatDecimal, formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { BillingSessionBoundary } from "./BillingSessionBoundary";
 import { LedgerPaymentForm } from "./LedgerPaymentForm";
+import { LabQuotePaymentAction } from "./LabQuotePaymentAction";
+import { OutpatientQuoteBreakdown } from "./OutpatientQuoteBreakdown";
+import { LabZeroLiabilityAction } from "./LabZeroLiabilityAction";
 import { billingApi } from "../api";
-import type { PaymentRequestDiscoveryDTO, PaymentRequestSourcePurpose } from "../types";
+import type { OutpatientQuoteDTO, PaymentRequestDiscoveryDTO, PaymentRequestSourcePurpose } from "../types";
 
 const purposes: Record<PaymentRequestSourcePurpose, { label: string; sourceLabel: string }> = {
   EXAM: { label: "Khám", sourceLabel: "Mã lịch khám" },
@@ -38,15 +41,24 @@ const accountStatusLabels: Record<PaymentRequestDiscoveryDTO["accountStatus"], s
   CLOSED: "Đã đóng",
 };
 
-export function PaymentRequestLookupForm() {
+interface PaymentRequestLookupFormProps {
+  quoteEnabled?: boolean;
+  zeroLiabilityEnabled?: boolean;
+}
+
+export function PaymentRequestLookupForm({ quoteEnabled = false, zeroLiabilityEnabled = false }: PaymentRequestLookupFormProps) {
   return (
     <BillingSessionBoundary identity="payment-request-discovery">
-      <PaymentRequestLookupSession />
+      <PaymentRequestLookupSession quoteEnabled={quoteEnabled} zeroLiabilityEnabled={zeroLiabilityEnabled} />
     </BillingSessionBoundary>
   );
 }
 
-function PaymentRequestLookupSession() {
+function isZeroAmount(value: string): boolean {
+  return /^0+(?:\.0+)?$/.test(value);
+}
+
+function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: PaymentRequestLookupFormProps) {
   const router = useRouter();
   const [purpose, setPurpose] = useState<PaymentRequestSourcePurpose>("EXAM");
   const [sourceId, setSourceId] = useState("");
@@ -58,8 +70,45 @@ function PaymentRequestLookupSession() {
   const [paymentLocked, setPaymentLocked] = useState(false);
   const searchLock = useRef(false);
   const generation = useRef(0);
+  const quoteGeneration = useRef(0);
+  const [quote, setQuote] = useState<OutpatientQuoteDTO | null>(null);
+  const [quoteError, setQuoteError] = useState<{ message: string; correlationId: string | null } | null>(null);
+  const [quoteUnavailable, setQuoteUnavailable] = useState(false);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [clientNow, setClientNow] = useState(0);
+
+  useEffect(() => {
+    const firstTick = window.setTimeout(() => setClientNow(Date.now()), 0);
+    const interval = window.setInterval(() => setClientNow(Date.now()), 15_000);
+    return () => { window.clearTimeout(firstTick); window.clearInterval(interval); };
+  }, []);
 
   const showCareEpisode = purpose !== "EXAM";
+
+  async function loadQuote(paymentRequestId: string) {
+    const current = ++quoteGeneration.current;
+    setQuote(null);
+    setQuoteError(null);
+    setQuoteUnavailable(false);
+    setQuoteLoading(true);
+    try {
+      const result = await billingApi.outpatientQuote(paymentRequestId);
+      if (quoteGeneration.current === current) setQuote(result);
+    } catch (cause: unknown) {
+      if (quoteGeneration.current !== current) return;
+      if (cause instanceof ApiRequestError && cause.status === 404 && cause.code === "BILLING_QUOTE_NOT_FOUND") {
+        setQuoteUnavailable(true);
+      } else {
+        setQuoteError({ message: cause instanceof Error ? cause.message : "Không thể đọc báo giá Billing.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
+      }
+    } finally {
+      if (quoteGeneration.current === current) setQuoteLoading(false);
+    }
+  }
+
+  function quoteIsCurrent(now: number) {
+    return quote !== null && Number.isFinite(Date.parse(quote.expiresAt)) && Date.parse(quote.expiresAt) > now;
+  }
 
   async function lookup() {
     if (searchLock.current || paymentLocked) return;
@@ -68,6 +117,10 @@ function PaymentRequestLookupSession() {
     setLoading(true);
     setError(null);
     setDiscovery(null);
+    quoteGeneration.current += 1;
+    setQuote(null);
+    setQuoteError(null);
+    setQuoteUnavailable(false);
     try {
       const result = await billingApi.discoverPaymentRequest({
         purpose,
@@ -76,7 +129,10 @@ function PaymentRequestLookupSession() {
         // The Billing contract binds EXAM to appointmentId for both values.
         careEpisodeId: showCareEpisode ? careEpisodeId.trim() : sourceId.trim(),
       });
-      if (generation.current === thisSearch) setDiscovery(result);
+      if (generation.current === thisSearch) {
+        setDiscovery(result);
+        if (quoteEnabled) void loadQuote(result.paymentRequestId);
+      }
     } catch (cause: unknown) {
       if (generation.current !== thisSearch) return;
       const message = cause instanceof ApiRequestError && cause.status === 404
@@ -112,12 +168,24 @@ function PaymentRequestLookupSession() {
     setCareEpisodeId("");
     setDiscovery(null);
     setError(null);
+    quoteGeneration.current += 1;
+    setQuote(null);
+    setQuoteError(null);
+    setQuoteUnavailable(false);
   }
 
   const requestIsOpen = discovery?.status === "PENDING" || discovery?.status === "PARTIALLY_PAID";
   const accountAcceptsPayment = discovery?.accountStatus !== "CLOSED" && discovery?.accountStatus !== "SETTLED";
   const notExpired = !discovery?.expiresAt || new Date(discovery.expiresAt).getTime() > new Date(discovery.observedAt).getTime();
-  const canPay = Boolean(discovery && requestIsOpen && accountAcceptsPayment && notExpired && Number.isFinite(discovery.remainingAmount) && discovery.remainingAmount > 0);
+  const quoteZero = quote !== null && isZeroAmount(quote.patientPayable);
+  const quoteExpired = quote !== null && !quoteIsCurrent(clientNow);
+  const quoteBlocksPayment = quoteEnabled && (quoteLoading || quoteError !== null || (!quote && !quoteUnavailable) || quoteExpired);
+  const labQuotePayment = quoteEnabled && purpose === "LAB_TEST";
+  const positivePayable = labQuotePayment
+    ? quote !== null && /^\d+(?:\.\d+)?$/.test(quote.patientPayable) && Number(quote.patientPayable) > 0
+    : Number.isFinite(discovery?.remainingAmount) && (discovery?.remainingAmount ?? 0) > 0;
+  const canPay = Boolean(discovery && requestIsOpen && accountAcceptsPayment && notExpired && !quoteZero && !quoteBlocksPayment
+    && positivePayable);
 
   return (
     <div className="mt-6 max-w-2xl space-y-5">
@@ -172,11 +240,27 @@ function PaymentRequestLookupSession() {
             <Info label="Hạn thanh toán" value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
             <Info label="Dữ liệu Billing ghi nhận lúc" value={formatInstant(discovery.observedAt)} />
           </dl>
+          {quoteEnabled ? <div className="space-y-3 border-t border-border pt-4">
+            {quote ? <OutpatientQuoteBreakdown quote={quote} /> : null}
+            {quoteLoading ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
+            {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; {labQuotePayment ? "luồng thanh toán LAB V2 cần báo giá trước khi thu." : "các thao tác hiện có vẫn dựa trên số dư Billing dương."}</p> : null}
+            {quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{quoteError.message}{quoteError.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{quoteError.correlationId}</span></span> : null}</p> : null}
+            {quoteExpired ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.</p> : null}
+            <Button type="button" variant="secondary" loading={quoteLoading} disabled={quoteLoading || paymentLocked} onClick={() => void loadQuote(discovery.paymentRequestId)}>Kiểm tra báo giá hiện hành</Button>
+          </div> : null}
+          {purpose === "LAB_TEST" && quoteZero && requestIsOpen && accountAcceptsPayment && notExpired ? quoteEnabled && zeroLiabilityEnabled ? <LabZeroLiabilityAction
+            paymentRequestId={discovery.paymentRequestId}
+            quoteId={quote?.quoteId ?? ""}
+            quoteExpiresAt={quote?.expiresAt ?? ""}
+            quoteCurrent={quoteIsCurrent(clientNow)}
+            enabled={zeroLiabilityEnabled}
+          /> : <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">Báo giá mô phỏng là 0 đồng. Chức năng xác nhận nghĩa vụ 0 chưa được mở; không thu tiền mặt.</p> : null}
           {canPay ? (
-            <LedgerPaymentForm requestId={discovery.paymentRequestId} remainingAmount={discovery.remainingAmount} currency={discovery.currency} onLockChange={setPaymentLocked} />
+            labQuotePayment && quote ? <LabQuotePaymentAction paymentRequestId={discovery.paymentRequestId} quote={quote} quoteCurrent={quoteIsCurrent(clientNow)} onLockChange={setPaymentLocked} />
+              : <LedgerPaymentForm requestId={discovery.paymentRequestId} remainingAmount={discovery.remainingAmount} currency={discovery.currency} onLockChange={setPaymentLocked} />
           ) : (
             <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-              Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục.
+              {quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}
             </p>
           )}
         </section>

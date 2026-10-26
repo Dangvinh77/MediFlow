@@ -37,6 +37,8 @@ eureka:
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
   notification:
+    outpatient-registration-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_REGISTRATION_CONSUMER_ENABLED:false}
     care-v1:
       enabled: ${MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED:false}
     surgery-consumer:

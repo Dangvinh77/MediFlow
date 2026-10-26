@@ -30,6 +30,10 @@ import lombok.RequiredArgsConstructor;
 public class LabTestPersistenceAdapter implements LabTestRepositoryPort {
     private final LabTestJpaRepository repository;
 
+    @Override public Optional<LabTest> findBySourceOrderId(UUID sourceOrderId) {
+        return repository.findBySourceOrderId(sourceOrderId).map(this::toDomain);
+    }
+
     @Override public LabTest save(LabTest value) {
         try {
             return toDomain(repository.saveAndFlush(toEntity(value)));

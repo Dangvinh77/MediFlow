@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant N as Y tá
+    participant C as Clinical
+    participant O as Core
+    participant B as Billing
+    participant P as Thu ngân
+    participant D as Bác sĩ
+    N->>C: Chọn session và tạo registration
+    C->>O: Kiểm nhân sự, khoa, phòng hiện hành
+    C->>C: Giữ suất 15 phút và ghi outbox
+    C-->>B: outpatient.registration.changed
+    B->>B: Tạo payment request và quote bất biến
+    P->>B: Đọc quote và gửi command cùng Idempotency-Key
+    B->>B: Lưu PREPARING trước network
+    B->>C: Acquire payment lease có fenceToken
+    C-->>B: Lease đúng reservation và revision
+    alt Người bệnh phải trả lớn hơn 0
+        B->>B: Ghi tiền thực thu, allocation, clearance
+    else Người bệnh phải trả bằng 0
+        B->>B: Ghi ZERO_LIABILITY, không tạo cash transaction
+    end
+    B->>C: Resolve bằng receipt đã commit
+    B-->>C: financial.eligibility.granted qua outbox
+    C->>C: Xác nhận phiếu và hàng chờ
+    D->>C: start-exam
+    C->>O: Kiểm bác sĩ hiện hành
+    C->>B: Kiểm clearance và bắt đầu thực hiện
+    C-->>D: Mở hồ sơ cùng lượt khám

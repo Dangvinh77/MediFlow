@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:mediflow:design:opd-sched:2026-10-26:revision:1",
-  "title": "TARGET ONLY OPD-SCHED-2026-10-26 revision 1",
+  "$id": "urn:mediflow:design:opd-sched:2026-10-26:revision:2",
+  "title": "OPD-SCHED-2026-10-26 revision 2 — implementation acceptance pending",
   "description": "Design schemas; not runtime or producer acceptance. Validate a named $defs entry. Cross-resource, arithmetic, permissions and state-transition invariants require application/PG/Rabbit tests.",
   "$defs": {
     "Break": {
@@ -667,6 +667,39 @@
               "type": "null"
             }
           ]
+        },
+        "followUpRecommendationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replacementReason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "patientAgreedToDoctorReplacement": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -690,6 +723,15 @@
           "then": {
             "properties": {
               "previousRegistrationId": {
+                "type": "null"
+              },
+              "followUpRecommendationId": {
+                "type": "null"
+              },
+              "replacementReason": {
+                "type": "null"
+              },
+              "patientAgreedToDoctorReplacement": {
                 "type": "null"
               }
             }
@@ -873,6 +915,27 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "recordId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "followUpRecommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FollowUpRecommendationDTO"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1053,6 +1116,10 @@
         "observedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "reservationRevision": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
@@ -1073,7 +1140,8 @@
         "currency",
         "status",
         "expiresAt",
-        "observedAt"
+        "observedAt",
+        "reservationRevision"
       ]
     },
     "ScheduledPaymentCommand": {
@@ -1108,6 +1176,17 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
             },
             {
               "type": "null"
@@ -1192,7 +1271,7 @@
         },
         "amount": {
           "type": "string",
-          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
         },
         "currency": {
           "const": "VND"
@@ -1204,6 +1283,34 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "basis": {
+          "enum": [
+            "PATIENT_PAYMENT",
+            "ZERO_LIABILITY"
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1216,16 +1323,76 @@
         "amount",
         "currency",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "basis",
+        "quoteId",
+        "completedAt"
       ],
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "quoteId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {
               "status": {
                 "const": "COMPLETED"
               }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "completedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
             }
+          },
+          "else": {
+            "properties": {
+              "completedAt": {
+                "type": "null"
+              },
+              "transactionId": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "COMPLETED"
+              },
+              "basis": {
+                "const": "PATIENT_PAYMENT"
+              }
+            },
+            "required": [
+              "status",
+              "basis"
+            ]
           },
           "then": {
             "properties": {
@@ -1234,11 +1401,29 @@
                 "format": "uuid"
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
           },
-          "else": {
+          "then": {
             "properties": {
               "transactionId": {
                 "type": "null"
+              },
+              "amount": {
+                "enum": [
+                  "0",
+                  "0.00"
+                ]
               }
             }
           }
@@ -1341,15 +1526,18 @@
                   "status": {
                     "const": "COMPLETED"
                   }
-                }
+                },
+                "required": [
+                  "status"
+                ]
               }
-            }
+            },
+            "required": [
+              "operation"
+            ]
           },
           "then": {
             "properties": {
-              "payment": {
-                "$ref": "#/$defs/LedgerPaymentV2DTO"
-              },
               "clearanceId": {
                 "type": "string",
                 "format": "uuid"
@@ -1358,10 +1546,66 @@
           },
           "else": {
             "properties": {
-              "payment": {
+              "clearanceId": {
                 "type": "null"
               },
-              "clearanceId": {
+              "payment": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "status": {
+                    "const": "COMPLETED"
+                  },
+                  "basis": {
+                    "const": "PATIENT_PAYMENT"
+                  }
+                },
+                "required": [
+                  "status",
+                  "basis"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payment": {
+                "$ref": "#/$defs/LedgerPaymentV2DTO"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "basis": {
+                    "const": "ZERO_LIABILITY"
+                  }
+                },
+                "required": [
+                  "basis"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payment": {
                 "type": "null"
               }
             }
@@ -1403,6 +1647,23 @@
         "expectedReservationRevision": {
           "type": "integer",
           "minimum": 1
+        },
+        "basis": {
+          "enum": [
+            "PATIENT_PAYMENT",
+            "ZERO_LIABILITY"
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1413,7 +1674,31 @@
         "sourceType",
         "sourceId",
         "careEpisodeId",
-        "expectedReservationRevision"
+        "expectedReservationRevision",
+        "basis",
+        "quoteId"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "quoteId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
       ]
     },
     "PaymentLease": {
@@ -1443,6 +1728,23 @@
         "reconcileAfter": {
           "type": "string",
           "format": "date-time"
+        },
+        "basis": {
+          "enum": [
+            "PATIENT_PAYMENT",
+            "ZERO_LIABILITY"
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1451,7 +1753,9 @@
         "reservationRevision",
         "fenceToken",
         "lockedAt",
-        "reconcileAfter"
+        "reconcileAfter",
+        "basis",
+        "quoteId"
       ]
     },
     "ClosePaymentCommand": {
@@ -1544,6 +1848,23 @@
               "type": "null"
             }
           ]
+        },
+        "basis": {
+          "enum": [
+            "PATIENT_PAYMENT",
+            "ZERO_LIABILITY"
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1555,23 +1876,44 @@
         "outcome",
         "transactionId",
         "clearanceId",
-        "completedAt"
+        "completedAt",
+        "basis",
+        "quoteId"
       ],
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "quoteId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {
               "outcome": {
                 "const": "COMPLETED"
               }
-            }
+            },
+            "required": [
+              "outcome"
+            ]
           },
           "then": {
             "properties": {
-              "transactionId": {
-                "type": "string",
-                "format": "uuid"
-              },
               "clearanceId": {
                 "type": "string",
                 "format": "uuid"
@@ -1591,6 +1933,49 @@
                 "type": "null"
               },
               "completedAt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "COMPLETED"
+              },
+              "basis": {
+                "const": "PATIENT_PAYMENT"
+              }
+            },
+            "required": [
+              "outcome",
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "transactionId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "transactionId": {
                 "type": "null"
               }
             }
@@ -1899,8 +2284,15 @@
           "format": "uuid"
         },
         "transactionId": {
-          "type": "string",
-          "format": "uuid"
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "clearanceId": {
           "type": "string",
@@ -1908,7 +2300,7 @@
         },
         "amount": {
           "type": "string",
-          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
         },
         "currency": {
           "const": "VND"
@@ -1918,7 +2310,21 @@
           "format": "date-time"
         },
         "basis": {
-          "const": "PATIENT_PAYMENT"
+          "enum": [
+            "PATIENT_PAYMENT",
+            "ZERO_LIABILITY"
+          ]
+        },
+        "quoteId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1937,7 +2343,67 @@
         "amount",
         "currency",
         "completedAt",
-        "basis"
+        "basis",
+        "quoteId"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "ZERO_LIABILITY"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "quoteId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "PATIENT_PAYMENT"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "properties": {
+              "transactionId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "transactionId": {
+                "type": "null"
+              },
+              "amount": {
+                "enum": [
+                  "0",
+                  "0.00"
+                ]
+              }
+            }
+          }
+        }
       ]
     },
     "RegistrationChangedEvent": {
@@ -2357,6 +2823,514 @@
         "number",
         "size"
       ]
+    },
+    "ReservationPaymentContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reservationStatus": {
+          "type": "string",
+          "enum": [
+            "HELD",
+            "PAYMENT_LOCKED",
+            "CONFIRMED",
+            "CONSUMED",
+            "EXPIRED",
+            "CANCELLED"
+          ]
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "reservationId",
+        "registrationId",
+        "patientId",
+        "reservationRevision",
+        "reservationStatus",
+        "expiresAt"
+      ]
+    },
+    "CurrentDoctorAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "accountExists": {
+          "type": "boolean"
+        },
+        "accountActive": {
+          "type": "boolean"
+        },
+        "currentRole": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "staffId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "staffActive": {
+          "type": "boolean"
+        },
+        "departmentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "departmentActive": {
+          "type": "boolean"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "actorAccountId",
+        "accountExists",
+        "accountActive",
+        "currentRole",
+        "staffId",
+        "staffActive",
+        "departmentId",
+        "departmentActive",
+        "observedAt"
+      ]
+    },
+    "OutpatientQuoteLineDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceType": {
+          "enum": [
+            "EXAM",
+            "LAB_TEST",
+            "PRESCRIPTION"
+          ]
+        },
+        "priceCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalogueVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "unitPrice": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "grossAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "supportRate": {
+          "type": "string",
+          "pattern": "^(?:0(?:\\.[0-9]+)?|1(?:\\.0+)?)$"
+        },
+        "supportAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "patientPayable": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        }
+      },
+      "required": [
+        "sourceId",
+        "sourceType",
+        "priceCode",
+        "catalogueVersion",
+        "policyVersion",
+        "description",
+        "quantity",
+        "unitPrice",
+        "grossAmount",
+        "supportRate",
+        "supportAmount",
+        "patientPayable"
+      ]
+    },
+    "OutpatientQuoteDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "careEpisodeType": {
+          "const": "OUTPATIENT_VISIT"
+        },
+        "careEpisodeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/OutpatientQuoteLineDTO"
+          }
+        },
+        "grossAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "supportAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "patientPayable": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?$"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "quoteId",
+        "paymentRequestId",
+        "patientId",
+        "careEpisodeType",
+        "careEpisodeId",
+        "currency",
+        "lines",
+        "grossAmount",
+        "supportAmount",
+        "patientPayable",
+        "issuedAt",
+        "expiresAt"
+      ]
+    },
+    "ZeroPayableEligibilityRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expectedReservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "reservationId",
+        "expectedReservationRevision",
+        "quoteId"
+      ]
+    },
+    "LabZeroPayableEligibilityRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "quoteId"
+      ]
+    },
+    "LabZeroPayableEligibilityDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eligibilityOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "basis": {
+          "const": "ZERO_LIABILITY"
+        },
+        "clearanceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "eligibilityOperationId",
+        "paymentRequestId",
+        "quoteId",
+        "basis",
+        "clearanceId",
+        "completedAt"
+      ]
+    },
+    "FollowUpRecommendationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recommendedFrom": {
+          "type": "string",
+          "format": "date"
+        },
+        "recommendedThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "preparationInstructions": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "recommendedFrom",
+        "recommendedThrough",
+        "reason",
+        "preparationInstructions"
+      ]
+    },
+    "FollowUpRecommendationDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recommendationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceRecordId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceRegistrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "preferredDoctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recommendedFrom": {
+          "type": "string",
+          "format": "date"
+        },
+        "recommendedThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "preparationInstructions": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "recommendationId",
+        "sourceRecordId",
+        "sourceRegistrationId",
+        "patientId",
+        "departmentId",
+        "preferredDoctorId",
+        "recommendedFrom",
+        "recommendedThrough",
+        "reason",
+        "preparationInstructions",
+        "createdAt"
+      ]
+    },
+    "FollowUpSourceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recordId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FollowUpRecommendationDTO"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "registrationId",
+        "recordId",
+        "patientId",
+        "departmentId",
+        "doctorId",
+        "completedAt",
+        "recommendation"
+      ]
+    },
+    "LabQuotedPaymentCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quoteId",
+        "amount",
+        "currency",
+        "paymentMethod"
+      ],
+      "properties": {
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]{2}$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "paymentMethod": {
+          "enum": [
+            "CASH",
+            "BANK_TRANSFER"
+          ]
+        }
+      }
     }
   },
   "anyOf": [
@@ -2476,6 +3450,39 @@
     },
     {
       "$ref": "#/$defs/RegistrationSummaryPage"
+    },
+    {
+      "$ref": "#/$defs/ReservationPaymentContext"
+    },
+    {
+      "$ref": "#/$defs/CurrentDoctorAuthority"
+    },
+    {
+      "$ref": "#/$defs/OutpatientQuoteLineDTO"
+    },
+    {
+      "$ref": "#/$defs/OutpatientQuoteDTO"
+    },
+    {
+      "$ref": "#/$defs/ZeroPayableEligibilityRequest"
+    },
+    {
+      "$ref": "#/$defs/LabZeroPayableEligibilityRequest"
+    },
+    {
+      "$ref": "#/$defs/LabZeroPayableEligibilityDTO"
+    },
+    {
+      "$ref": "#/$defs/FollowUpRecommendationRequest"
+    },
+    {
+      "$ref": "#/$defs/FollowUpRecommendationDTO"
+    },
+    {
+      "$ref": "#/$defs/FollowUpSourceSummary"
+    },
+    {
+      "$ref": "#/$defs/LabQuotedPaymentCommand"
     }
   ]
 }

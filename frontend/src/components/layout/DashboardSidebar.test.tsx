@@ -34,4 +34,12 @@ describe("MVP dashboard navigation", () => {
     render(<DashboardSidebar role={null} open={false} onClose={vi.fn()} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
+
+  it("shows C06 routes only when the server scheduling gate is enabled and only to their roles", () => {
+    const { rerender } = render(<DashboardSidebar role="NURSE" open={false} onClose={vi.fn()} schedulingEnabled={false} />);
+    expect(screen.queryByRole("link", { name: /Tiếp nhận ca khám/ })).not.toBeInTheDocument();
+    rerender(<DashboardSidebar role="NURSE" open={false} onClose={vi.fn()} schedulingEnabled />);
+    expect(screen.getByRole("link", { name: /Tiếp nhận ca khám/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Quản lý buổi khám/ })).not.toBeInTheDocument();
+  });
 });

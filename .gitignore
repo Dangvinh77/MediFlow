@@ -39,5 +39,9 @@ application-local.properties
 *.factorypath
 
 # ===== OS =====
+# Python rehearsal/contract checker runtime artifacts
+__pycache__/
+*.py[cod]
+
 .DS_Store
 Thumbs.db

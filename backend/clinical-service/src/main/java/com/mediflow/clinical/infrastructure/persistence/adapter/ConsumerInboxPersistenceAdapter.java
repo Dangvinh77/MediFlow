@@ -139,7 +139,10 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                             && claim.legacyEffectIds().size() == 1))
                 || ("clinical-exam-clearance".equals(claim.consumerName())
                     && "financial.clearance.granted".equals(claim.routingKey())
-                    && key.matches("clinical:clearance:v1:[0-9a-fA-F-]{36}"));
+                    && key.matches("clinical:clearance:v1:[0-9a-fA-F-]{36}"))
+                || ("clinical-outpatient-eligibility".equals(claim.consumerName())
+                    && "outpatient.financial.eligibility.granted".equals(claim.routingKey())
+                    && key.matches("clinical:outpatient-eligibility:v1:[0-9a-fA-F-]{36}:[1-9][0-9]{0,18}:COMPLETED"));
         if (!known) {
             throw conflict("unknown consumer contract or operation key");
         }

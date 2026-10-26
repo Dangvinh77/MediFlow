@@ -64,12 +64,12 @@ class BillingMergedMigrationPostgresTest {
     private void assertAllNamespaces() {
         for (String table : List.of("lab_test_charge_source", "admission_deposit_source",
                 "prescription_charge_source", "prescription_terminal_source", "final_admission_settlement_operation",
-                "billing_outpatient_refund_publication")) {
+                "billing_outpatient_refund_publication", "lab_zero_payable_eligibility")) {
             assertThat(jdbc.queryForObject("SELECT to_regclass(?) IS NOT NULL", Boolean.class, table))
                     .as("merged table %s", table).isTrue();
         }
         assertThat(jdbc.queryForObject("SELECT count(DISTINCT version) FROM flyway_schema_history "
-                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(25);
+                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(32);
     }
     private List<String> rows(String table) {
         // These table identifiers are a private fixed test list, never user input.

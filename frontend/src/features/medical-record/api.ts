@@ -1,11 +1,13 @@
-import { api } from "@/lib/api";
+import { api, type MutationOptions } from "@/lib/api";
 import type {
   AddDiagnosisRequest,
   ClinicalLabOrderDTO,
   CompleteRecordRequest,
   CreateClinicalLabOrderRequest,
+  CreateFollowUpRecommendationRequest,
   CreateMedicalRecordRequest,
   DiagnosisDTO,
+  FollowUpRecommendationDTO,
   MedicalRecordDTO,
   UpdateMedicalRecordRequest,
 } from "./types";
@@ -21,6 +23,20 @@ export const medicalRecordApi = {
     api.post<ClinicalLabOrderDTO>(
       `/v1/records/${encodeURIComponent(recordId)}/lab-orders`,
       body,
+    ),
+  getFollowUpRecommendation: (recordId: string) =>
+    api.get<FollowUpRecommendationDTO>(
+      `/v2/records/${encodeURIComponent(recordId)}/follow-up-recommendation`,
+    ),
+  createFollowUpRecommendation: (
+    recordId: string,
+    body: CreateFollowUpRecommendationRequest,
+    options: Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>,
+  ) =>
+    api.post<FollowUpRecommendationDTO>(
+      `/v2/records/${encodeURIComponent(recordId)}/follow-up-recommendations`,
+      body,
+      options,
     ),
   getById: (recordId: string) =>
     api.get<MedicalRecordDTO>(

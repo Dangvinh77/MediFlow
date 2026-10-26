@@ -5,6 +5,7 @@ import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.infrastructure.persistence.jpaEntity.ClinicalLabOrderJpaEntity;
 import com.mediflow.clinical.infrastructure.persistence.repository.ClinicalLabOrderJpaRepository;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -22,6 +23,13 @@ public class ClinicalLabOrderPersistenceAdapter implements ClinicalLabOrderRepos
     @Override
     public Optional<ClinicalLabOrder> findById(UUID sourceOrderId) {
         return repository.findById(sourceOrderId).map(ClinicalLabOrderPersistenceAdapter::toDomain);
+    }
+
+    @Override
+    public List<ClinicalLabOrder> findByRecordId(UUID recordId) {
+        return repository.findByRecordIdOrderByOrderedAtAscSourceOrderIdAsc(recordId).stream()
+                .map(ClinicalLabOrderPersistenceAdapter::toDomain)
+                .toList();
     }
 
     private static ClinicalLabOrderJpaEntity toEntity(ClinicalLabOrder order) {

@@ -11,8 +11,9 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
   const labels = new Map<string, Promise<string | null>>();
   const clinicalReader = role !== null && ["ADMIN", "DOCTOR", "NURSE"].includes(role);
   const orgReader = clinicalReader || role === "MANAGER";
-  const canSearch = (kind: string) => kind === "patient" || kind === "record" ? clinicalReader
-    : ["doctor", "department", "staff", "appointment"].includes(kind) && orgReader;
+  const canSearch = (kind: string) => kind === "account" ? role === "ADMIN"
+    : kind === "patient" || kind === "record" ? clinicalReader
+      : ["doctor", "department", "staff", "appointment"].includes(kind) && orgReader;
   const save = (kind: string, items: { id: string; label: string }[]) => {
     for (const item of items) labels.set(`${kind}:${item.id}`, Promise.resolve(item.label));
     return items;
@@ -29,6 +30,13 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         const items = (await organizationApi.departments(true)).filter(item => `${item.departmentName} ${item.abbreviation}`.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")))
           .map(item => ({ id: item.departmentId, label: `${item.departmentName} (${item.abbreviation})` }));
         return { items: save(kind, items.slice(page * 20, (page + 1) * 20)), hasMore: items.length > (page + 1) * 20 };
+      }
+      if (kind === "account") {
+        const result = await organizationApi.accounts({ keyword: query, role: "MANAGER", active: true, page });
+        return {
+          items: save(kind, result.content.map(item => ({ id: item.accountId, label: `${item.username} · ${item.role}` }))),
+          hasMore: result.number + 1 < result.totalPages,
+        };
       }
       if (kind === "doctor" || kind === "staff") {
         const result = await organizationApi.staff({ departmentId: scope || undefined, jobTitle: kind === "doctor" ? "DOCTOR" : undefined, page, size: 20 });
@@ -54,6 +62,7 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         if (kind === "patient") { const item = await patientApi.getById(id); return item.maBenhNhan === id ? `${item.hoTen} · ${formatLocalDate(item.ngaySinh)}` : null; }
         if (kind === "doctor" || kind === "staff") { const item = await organizationApi.staffMember(id); return item.staffId === id ? item.fullName : null; }
         if (kind === "department") { const item = await organizationApi.department(id); return item.departmentId === id ? item.departmentName : null; }
+        if (kind === "account" && role === "ADMIN") { const item = await organizationApi.account(id); return item.accountId === id ? `${item.username} · ${item.role}` : null; }
         if (kind === "appointment" && clinicalReader) { const item = await appointmentApi.getById(id); return item.appointmentId === id ? `Lịch hẹn ${formatLocalDate(item.appointmentDate)} · ${item.appointmentTime}` : null; }
         if (kind === "record") { const item = await medicalRecordApi.getById(id); return item.recordId === id ? `Hồ sơ ${formatLocalDate(item.examinationDate)}` : null; }
         return null;

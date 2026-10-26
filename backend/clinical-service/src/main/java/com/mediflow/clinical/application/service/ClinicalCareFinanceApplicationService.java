@@ -32,6 +32,7 @@ import com.mediflow.clinical.application.port.in.ReactToFinancialClearanceUseCas
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
+import com.mediflow.clinical.application.port.out.ClinicalLabOrderRepositoryPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
@@ -39,6 +40,7 @@ import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
 import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.application.port.out.LabOrderLifecyclePort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.ClinicalAppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
@@ -80,6 +82,8 @@ public class ClinicalCareFinanceApplicationService
     private final CorrelationIdProvider correlationIds;
     private final Clock clock;
     private final boolean admissionReferralsEnabled;
+    private final ClinicalLabCompletionGuard labCompletionGuard;
+    private final OutpatientRegistrationApplicationService scheduledRegistrations;
 
     public ClinicalCareFinanceApplicationService(AppointmentRepositoryPort appointments,
                                                   MedicalRecordRepositoryPort records,
@@ -94,7 +98,22 @@ public class ClinicalCareFinanceApplicationService
                                                   ClinicalDtoMapper mapper,
                                                   CorrelationIdProvider correlationIds,
                                                   Clock clock,
-                                                  boolean admissionReferralsEnabled) {
+                                                  boolean admissionReferralsEnabled,
+                                                  ClinicalLabOrderRepositoryPort clinicalLabOrders,
+                                                  LabOrderLifecyclePort labOrderLifecycle) {
+        this(appointments, records, clearances, executionAuthority, overrides, referrals, prices, outbox,
+                actors, staff, mapper, correlationIds, clock, admissionReferralsEnabled, clinicalLabOrders,
+                labOrderLifecycle, null);
+    }
+
+    public ClinicalCareFinanceApplicationService(AppointmentRepositoryPort appointments,
+            MedicalRecordRepositoryPort records, ExamClearanceRepositoryPort clearances,
+            FinancialExecutionAuthorityPort executionAuthority, EmergencyOverrideRepositoryPort overrides,
+            AdmissionReferralRepositoryPort referrals, ExamPricePolicyPort prices, ClinicalOutboxPort outbox,
+            CurrentClinicalActorPort actors, StaffLookupPort staff, ClinicalDtoMapper mapper,
+            CorrelationIdProvider correlationIds, Clock clock, boolean admissionReferralsEnabled,
+            ClinicalLabOrderRepositoryPort clinicalLabOrders, LabOrderLifecyclePort labOrderLifecycle,
+            OutpatientRegistrationApplicationService scheduledRegistrations) {
         this.appointments = appointments;
         this.records = records;
         this.clearances = clearances;
@@ -109,6 +128,8 @@ public class ClinicalCareFinanceApplicationService
         this.correlationIds = correlationIds;
         this.clock = clock;
         this.admissionReferralsEnabled = admissionReferralsEnabled;
+        this.labCompletionGuard = new ClinicalLabCompletionGuard(clinicalLabOrders, labOrderLifecycle);
+        this.scheduledRegistrations = scheduledRegistrations;
     }
 
     @Override
@@ -172,7 +193,24 @@ public class ClinicalCareFinanceApplicationService
         // An explicitly authenticated emergency approval is the audited authorization for this start.
         // It takes precedence over any persisted grant, so an old local clearance can neither reject
         // emergency care nor make the service depend on Billing availability.
-        ExamClearance clearance = emergencyOverride == null
+        boolean scheduled = appointment.getCareContractVersion() == 2;
+        if (scheduled && oldStatus == AppointmentStatus.IN_EXAM && overrideRequest == null) {
+            requireScheduledLifecycle();
+            scheduledRegistrations.startExamination(appointment, now);
+            var existing = records.findByAppointmentId(appointmentId).orElseThrow(() ->
+                    new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION", "Started exam record is missing"));
+            if (existing.getStatus() != MedicalRecordStatus.OPEN
+                    || !existing.getPatientId().equals(appointment.getPatientId())
+                    || !existing.getDoctorId().equals(appointment.getDoctorId())
+                    || !existing.getDepartmentId().equals(appointment.getDepartmentId())) {
+                throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION", "Started exam record binding differs");
+            }
+            return mapper.toDto(appointment);
+        }
+        if (scheduled && emergencyOverride != null) {
+            throw new InvalidClinicalDataException("CLINICAL_REGISTRATION_FLOW_REQUIRED", "Scheduled registrations require their confirmed reservation");
+        }
+        ExamClearance clearance = emergencyOverride == null && !scheduled
                 ? clearances.findByAppointment(appointmentId).orElse(null)
                 : null;
         boolean validClearance = false;
@@ -190,13 +228,17 @@ public class ClinicalCareFinanceApplicationService
             }
         }
 
-        UUID clearanceId = validClearance ? clearance.getClearanceId() : null;
+        UUID clearanceId = scheduled ? appointment.getExamClearanceId() : validClearance ? clearance.getClearanceId() : null;
         UUID overrideId = emergencyOverride == null ? null : emergencyOverride.getOverrideId();
         if (appointment.getCareContractVersion() == 0 && (clearanceId != null || overrideId != null)) {
             appointment.promoteToCareFinanceV2(
                     prices.resolvePriceCode(appointment.getDepartmentId()), now);
         }
-        appointment.startExam(clearanceId, overrideId, now);
+        if (scheduled) {
+            requireScheduledLifecycle();
+            scheduledRegistrations.startExamination(appointment, now);
+            appointment.startScheduledExam(clearanceId, now);
+        } else appointment.startExam(clearanceId, overrideId, now);
 
         MedicalRecord record = records.findByAppointmentId(appointmentId).orElse(null);
         if (record == null) {
@@ -283,13 +325,21 @@ public class ClinicalCareFinanceApplicationService
                 || request.disposition() == RecordDisposition.TRANSFER)) {
             throw deferredAdmission();
         }
+        String correlationId = correlationIds.currentOrCreate().toString();
+        if (appointment.getCareContractVersion() == 2) {
+            labCompletionGuard.requireAllClosed(record, appointment, correlationId);
+        }
         Instant now = clock.instant();
         AppointmentStatus oldStatus = appointment.getStatus();
         record.complete(request.disposition(), request.dispositionNote(), now);
-        appointment.complete(now);
+        if (appointment.getCareContractVersion() == 2) {
+            requireScheduledLifecycle();
+            scheduledRegistrations.completeExamination(appointment, now);
+            appointment.completeScheduled(now);
+        }
+        else appointment.complete(now);
         MedicalRecord savedRecord = records.save(record);
         Appointment savedAppointment = appointments.save(appointment);
-        String correlationId = correlationIds.currentOrCreate().toString();
         append(MEDICAL_RECORD_COMPLETED, correlationId, now, new MedicalRecordCompletedPayload(
                 savedRecord.getRecordId(), savedRecord.getAppointmentId(), savedRecord.getPatientId(),
                 savedRecord.getDepartmentId(), savedRecord.getDisposition(),
@@ -397,8 +447,17 @@ public class ClinicalCareFinanceApplicationService
     }
 
     private Appointment lockedAppointment(UUID id) {
+        if (scheduledRegistrations != null) {
+            var scheduled = scheduledRegistrations.lockScheduledAppointment(id);
+            if (scheduled.isPresent()) return scheduled.get();
+        }
         return appointments.findByIdForUpdate(id)
                 .orElseThrow(() -> new ClinicalAppointmentNotFoundException("Appointment not found: " + id));
+    }
+
+    private void requireScheduledLifecycle() {
+        if (scheduledRegistrations == null) throw new InvalidClinicalDataException(
+                "CLINICAL_REGISTRATION_FLOW_REQUIRED", "Scheduled lifecycle is unavailable");
     }
 
     private MedicalRecord lockedRecord(UUID id) {

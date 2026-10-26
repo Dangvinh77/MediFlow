@@ -20,6 +20,7 @@ public interface LabTestRepositoryPort {
     Optional<LabTest> findByIdForUpdate(UUID id);
 
     boolean existsBySourceOrderId(UUID sourceOrderId);
+    Optional<LabTest> findBySourceOrderId(UUID sourceOrderId);
 
     List<LabTest> findByPatient(UUID patientId);
 

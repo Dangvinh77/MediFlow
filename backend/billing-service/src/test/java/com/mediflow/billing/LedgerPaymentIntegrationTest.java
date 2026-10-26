@@ -14,9 +14,15 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.billing.application.dto.request.CompleteLedgerPaymentRequest;
+import com.mediflow.billing.application.dto.command.ScheduledPaymentCommand;
+import com.mediflow.billing.application.port.out.ScheduledPaymentTransactionsPort;
+import com.mediflow.billing.application.port.out.OutpatientRegistrationSourcePort;
 import com.mediflow.billing.application.port.in.ProcessLedgerPaymentUseCase;
-import com.mediflow.billing.domain.exception.BillingRuleException;
+import com.mediflow.billing.application.event.OutpatientRegistrationChangedEvent;
 import com.mediflow.billing.domain.model.PaymentMethod;
+import com.mediflow.billing.domain.model.ScheduledPaymentLease;
+import com.mediflow.billing.domain.exception.BillingRuleException;
+import com.mediflow.billing.application.dto.request.ScheduledPaymentRequest;
 import com.mediflow.billing.infrastructure.persistence.repository.BillingEventOutboxJpaRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -54,6 +60,9 @@ class LedgerPaymentIntegrationTest {
         registry.add("mediflow.jwt.secret", () -> SECRET);
         registry.add("eureka.client.enabled", () -> false);
         registry.add("mediflow.billing.ledger.enabled", () -> true);
+        registry.add("mediflow.billing.scheduled-payments.enabled", () -> true);
+        registry.add("mediflow.billing.scheduled-payments.recovery-initial-delay-ms", () -> 3600000);
+        registry.add("mediflow.billing.scheduled-payments.recovery-delay-ms", () -> 3600000);
         registry.add("mediflow.billing.refunds.enabled", () -> true);
         registry.add("mediflow.billing.clearance-lookup.enabled", () -> true);
         registry.add("mediflow.billing.outbox.enabled", () -> false);
@@ -65,11 +74,15 @@ class LedgerPaymentIntegrationTest {
     @Autowired com.mediflow.billing.application.port.in.RefundLedgerPaymentUseCase refunds;
     @Autowired PlatformTransactionManager manager;
     @Autowired BillingEventOutboxJpaRepository outbox;
+    @Autowired ScheduledPaymentTransactionsPort scheduledPayments;
+    @Autowired OutpatientRegistrationSourcePort registrationSources;
     @Autowired ObjectMapper mapper;
     @Autowired TestRestTemplate http;
     @org.springframework.boot.test.mock.mockito.MockBean(name = "billingClock")
     java.time.Clock clock;
-    private UUID account, patient, department, request, invoice, episode, source, actor;
+    @org.springframework.boot.test.mock.mockito.MockBean
+    com.mediflow.billing.infrastructure.client.ClinicalPaymentLockHttpAdapter clinicalPayment;
+    private UUID account, patient, department, request, invoice, episode, source, actor, reservation;
 
     @BeforeEach void setup() {
         org.mockito.Mockito.when(clock.instant()).thenAnswer(ignored -> Instant.now());
@@ -79,6 +92,64 @@ class LedgerPaymentIntegrationTest {
         account = UUID.randomUUID(); patient = UUID.randomUUID(); department = UUID.randomUUID();
         request = UUID.randomUUID(); invoice = UUID.randomUUID(); episode = UUID.randomUUID();
         source = UUID.randomUUID(); actor = UUID.randomUUID();
+    }
+
+    @Test void outpatientRegistrationRevisionCannotReplaceLockedSourceBindings() throws Exception {
+        UUID registrationId = UUID.randomUUID();
+        UUID originalReservation = UUID.randomUUID();
+        var first = registrationEvent(registrationId, 1, originalReservation, department,
+                UUID.randomUUID(), UUID.randomUUID(), registrationId);
+        registrationSources.apply(first, mapper.writeValueAsBytes(first), "0".repeat(64), null, null);
+
+        var changedBindings = List.of(
+                registrationEvent(registrationId, 2, UUID.randomUUID(), department,
+                        first.payload().sessionId(), first.payload().roomId(), registrationId),
+                registrationEvent(registrationId, 2, originalReservation, UUID.randomUUID(),
+                        first.payload().sessionId(), first.payload().roomId(), registrationId),
+                registrationEvent(registrationId, 2, originalReservation, department,
+                        UUID.randomUUID(), first.payload().roomId(), registrationId),
+                registrationEvent(registrationId, 2, originalReservation, department,
+                        first.payload().sessionId(), UUID.randomUUID(), registrationId));
+        changedBindings = new java.util.ArrayList<>(changedBindings);
+        changedBindings.add(registrationEvent(registrationId, 2, originalReservation, department,
+                first.payload().sessionId(), first.payload().roomId(), UUID.randomUUID()));
+
+        for (var changed : changedBindings) {
+            byte[] raw = mapper.writeValueAsBytes(changed);
+            assertThatThrownBy(() -> registrationSources.apply(changed, raw,
+                    sha256(raw), null, null))
+                    .isInstanceOf(BillingRuleException.class)
+                    .hasMessageContaining("BILLING_REGISTRATION_SOURCE_CONFLICT");
+        }
+
+        var stored = jdbc.queryForMap("SELECT registration_revision,reservation_id,department_id,session_id,room_id "
+                + "FROM outpatient_registration_source WHERE registration_id=?", registrationId);
+        assertThat(stored.get("registration_revision")).isEqualTo(1L);
+        assertThat(stored.get("reservation_id")).isEqualTo(originalReservation);
+        assertThat(stored.get("department_id")).isEqualTo(department);
+        assertThat(stored.get("session_id")).isEqualTo(first.payload().sessionId());
+        assertThat(stored.get("room_id")).isEqualTo(first.payload().roomId());
+    }
+
+    private OutpatientRegistrationChangedEvent registrationEvent(UUID registrationId, long revision,
+            UUID reservationId, UUID departmentId, UUID sessionId, UUID roomId, UUID sourceId) {
+        var fact = new OutpatientRegistrationChangedEvent.RegistrationFact(registrationId, revision, patient,
+                UUID.nameUUIDFromBytes((registrationId + ":doctor").getBytes(StandardCharsets.UTF_8)), departmentId,
+                sessionId, roomId, java.time.LocalDate.of(2026, 10, 26),
+                java.time.LocalTime.of(9, 0), java.time.LocalTime.of(9, 30), "NEW_VISIT", reservationId,
+                revision == 1 ? "HELD" : "PAYMENT_LOCKED", "AWAITING_PAYMENT", null, null,
+                Instant.parse("2026-10-26T02:00:00Z"), "OUTPATIENT_EXAM", "EXAM", sourceId,
+                "OUTPATIENT_VISIT", registrationId, null, Instant.parse("2026-10-26T01:00:00Z"));
+        return new OutpatientRegistrationChangedEvent(UUID.randomUUID(), "outpatient.registration.changed", 1,
+                Instant.parse("2026-10-26T01:00:00Z"), "trace", "clinical-service", fact);
+    }
+
+    private static String sha256(byte[] raw) {
+        try {
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(raw));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 is required", impossible);
+        }
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -155,6 +226,115 @@ class LedgerPaymentIntegrationTest {
                 .isInstanceOf(BillingRuleException.class).hasMessage("BILLING_REQUEST_SOURCE_TARGET_MISMATCH");
         assertThat(count("PAYMENT_TRANSACTION")).isZero();
         assertThat(count("BILLING_EVENT_OUTBOX")).isZero();
+    }
+
+    @Test void scheduledPaymentCommitsPreparingBeforeCallingClinicalAndReplaysReceipt() throws Exception {
+        seedScheduledRegistration();
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        org.mockito.Mockito.when(clinicalPayment.acquire(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> {
+                    var operation = (com.mediflow.billing.domain.model.ScheduledPaymentOperation) invocation.getArgument(0);
+                    entered.countDown();
+                    if (!release.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test release timed out");
+                    Instant lockedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+                    return new ScheduledPaymentLease(operation.paymentOperationId(), operation.reservationId(),
+                            operation.expectedReservationRevision() + 1, 11L, lockedAt, lockedAt.plusSeconds(120));
+                });
+        var body = new ScheduledPaymentRequest(reservation, 5, "100", "VND", "CASH", null);
+        var headers = headers("CASHIER");
+        headers.set("Idempotency-Key", "scheduled-preparing-first");
+        headers.set("X-Correlation-Id", "scheduled-preparing-trace");
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var responseFuture = executor.submit(() -> http.postForEntity(
+                    "/api/v2/billing/payment-requests/" + request + "/payments",
+                    new HttpEntity<>(body, headers), String.class));
+            assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(jdbc.queryForObject("SELECT status FROM scheduled_payment_operation", String.class))
+                    .isEqualTo("PREPARING");
+            assertThat(count("PAYMENT_TRANSACTION")).isZero();
+            release.countDown();
+            var response = responseFuture.get(15, TimeUnit.SECONDS);
+            assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.OK);
+            var operationId = UUID.fromString(mapper.readTree(response.getBody()).path("data").path("operation")
+                    .path("paymentOperationId").asText());
+            assertThat(jdbc.queryForObject("SELECT status FROM scheduled_payment_operation", String.class))
+                    .isEqualTo("COMPLETED");
+            assertThat(count("PAYMENT_TRANSACTION")).isOne();
+            assertThat(count("PAYMENT_ALLOCATION")).isOne();
+            assertThat(count("FINANCIAL_CLEARANCE")).isOne();
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM BILLING_EVENT_OUTBOX WHERE routing_key='financial.clearance.granted'", Long.class))
+                    .isZero();
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM BILLING_EVENT_OUTBOX WHERE routing_key='outpatient.financial.eligibility.granted' AND publication_enabled=FALSE", Long.class))
+                    .isOne();
+
+            var replayHeaders = headers("CASHIER");
+            replayHeaders.set("Idempotency-Key", "scheduled-preparing-first");
+            replayHeaders.set("X-Correlation-Id", "scheduled-preparing-retry");
+            var replay = http.postForEntity("/api/v2/billing/payment-requests/" + request + "/payments",
+                    new HttpEntity<>(body, replayHeaders), String.class);
+            assertThat(replay.getStatusCode()).as(replay.getBody()).isEqualTo(HttpStatus.OK);
+            assertThat(mapper.readTree(replay.getBody()).path("data").path("operation").path("paymentOperationId").asText())
+                    .isEqualTo(operationId.toString());
+            assertThat(count("PAYMENT_TRANSACTION")).isOne();
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test void closeRacingCashCommitProducesOneDurableTerminalOutcome() throws Exception {
+        seedScheduledRegistration();
+        var command = new ScheduledPaymentCommand(reservation, 5, new BigDecimal("100"), "VND", PaymentMethod.CASH, null);
+        var operation = scheduledPayments.prepare(request, command, actor, "scheduled-close-race",
+                "a".repeat(64), "scheduled-close-race-trace", Instant.now());
+        Instant lockedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        scheduledPayments.recordLease(operation.paymentOperationId(), new ScheduledPaymentLease(operation.paymentOperationId(),
+                reservation, 6, 12, lockedAt, lockedAt.plusSeconds(120)), Instant.now());
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var commit = workers.submit(() -> {
+                start.await();
+                return scheduledPayments.complete(operation.paymentOperationId(), "scheduled-close-race-trace", Instant.now());
+            });
+            var close = workers.submit(() -> {
+                start.await();
+                return scheduledPayments.closeIfUnpaid(operation.paymentOperationId(),
+                        new ScheduledPaymentTransactionsPort.ClosePaymentCommand(source, reservation, 12,
+                                "RESERVATION_RECONCILIATION"), Instant.now());
+            });
+            start.countDown();
+            commit.get(15, TimeUnit.SECONDS);
+            close.get(15, TimeUnit.SECONDS);
+        }
+        String status = jdbc.queryForObject("SELECT status FROM scheduled_payment_operation", String.class);
+        assertThat(status).isIn("COMPLETED", "CLOSED_NOT_PAID");
+        assertThat(count("PAYMENT_TRANSACTION")).isEqualTo("COMPLETED".equals(status) ? 1 : 0);
+        assertThat(count("FINANCIAL_CLEARANCE")).isEqualTo("COMPLETED".equals(status) ? 1 : 0);
+        scheduledPayments.complete(operation.paymentOperationId(), "scheduled-close-race-trace", Instant.now());
+        assertThat(jdbc.queryForObject("SELECT status FROM scheduled_payment_operation", String.class)).isEqualTo(status);
+        assertThat(count("PAYMENT_TRANSACTION")).isEqualTo("COMPLETED".equals(status) ? 1 : 0);
+    }
+
+    @Test void closeAfterLostAcquireReceiptCanFenceLateBillingRetry() {
+        seedScheduledRegistration();
+        var command = new ScheduledPaymentCommand(reservation, 5, new BigDecimal("100"), "VND", PaymentMethod.CASH, null);
+        var operation = scheduledPayments.prepare(request, command, actor, "scheduled-lost-lease",
+                "c".repeat(64), "scheduled-lost-lease-trace", Instant.now());
+        var close = scheduledPayments.closeIfUnpaid(operation.paymentOperationId(),
+                new ScheduledPaymentTransactionsPort.ClosePaymentCommand(source, reservation, 21,
+                        "RESERVATION_RECONCILIATION"), Instant.now());
+        assertThat(close.operation().status().name()).isEqualTo("CLOSED_NOT_PAID");
+        Instant lockedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var lateReceipt = scheduledPayments.recordLease(operation.paymentOperationId(),
+                new ScheduledPaymentLease(operation.paymentOperationId(), reservation, 6, 21,
+                        lockedAt, lockedAt.plusSeconds(120)), Instant.now());
+        assertThat(lateReceipt.status().name()).isEqualTo("CLOSED_NOT_PAID");
+        assertThat(lateReceipt.hasLease()).isFalse();
+        assertThat(scheduledPayments.complete(operation.paymentOperationId(), "scheduled-lost-lease-trace", Instant.now())
+                .status().name()).isEqualTo("CLOSED_NOT_PAID");
+        assertThat(count("PAYMENT_TRANSACTION")).isZero();
     }
 
     @Test void racingInstallmentsCannotOverpayOneRequest() throws Exception {
@@ -722,6 +902,44 @@ class LedgerPaymentIntegrationTest {
             jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
                     request, charge, new BigDecimal(total));
         }
+    }
+
+    private void seedScheduledRegistration() {
+        source = UUID.randomUUID();
+        episode = source;
+        reservation = UUID.randomUUID();
+        var changedAt = Instant.now().minusSeconds(30).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var expiresAt = Instant.now().plusSeconds(600).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        jdbc.update("""
+                INSERT INTO BILLING_ACCOUNT(account_id,patient_id,department_id,care_episode_type,care_episode_id,opened_at)
+                VALUES (?,?,?,'OUTPATIENT_VISIT',?,?)
+                """, account, patient, department, source, java.sql.Timestamp.from(changedAt));
+        jdbc.update("""
+                INSERT INTO PAYMENT_REQUEST(payment_request_id,invoice_id,account_id,purpose,requested_amount,currency,
+                    expires_at,created_by,created_at)
+                VALUES (?,?,?,'EXAM',?,'VND',?,?,?)
+                """, request, invoice, account, new BigDecimal("100"), java.sql.Timestamp.from(expiresAt), actor,
+                java.sql.Timestamp.from(changedAt));
+        jdbc.update("INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,record_id) VALUES (?,?)", request, source);
+        UUID charge = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO CHARGE(charge_id,account_id,patient_id,department_id,source_type,source_id,price_code,
+                    description,quantity,unit_amount,gross_amount,incurred_at)
+                VALUES (?,?,?,?,?,?,'OUTPATIENT_EXAM','Outpatient exam',1,100,100,?)
+                """, charge, account, patient, department, "EXAM", source, java.sql.Timestamp.from(changedAt));
+        jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
+                request, charge, new BigDecimal("100"));
+        jdbc.update("""
+                INSERT INTO outpatient_registration_source(registration_id,registration_revision,patient_id,doctor_id,
+                    department_id,session_id,room_id,session_date,start_time,end_time,visit_type,reservation_id,
+                    reservation_status,registration_status,reservation_expires_at,price_code,source_type,source_id,
+                    care_episode_type,care_episode_id,changed_at,payload_fingerprint,payment_request_id,invoice_id,account_id,
+                    request_issue_status)
+                VALUES (?,1,?,?,?,?,?,CURRENT_DATE,'09:00','09:30','NEW_VISIT',?,'HELD','AWAITING_PAYMENT',?,
+                    'OUTPATIENT_EXAM','EXAM',?,'OUTPATIENT_VISIT',?,?,?,?,?,?,'READY')
+                """, source, patient, UUID.randomUUID(), department, UUID.randomUUID(), UUID.randomUUID(), reservation,
+                java.sql.Timestamp.from(expiresAt), source, source, java.sql.Timestamp.from(changedAt), "b".repeat(64),
+                request, invoice, account);
     }
 
     private void seedOutpatient(String purpose, String total) {

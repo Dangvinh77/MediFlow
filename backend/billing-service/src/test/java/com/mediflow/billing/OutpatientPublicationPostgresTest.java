@@ -105,7 +105,7 @@ class OutpatientPublicationPostgresTest {
             UUID account = adapter.openAndLockExactAccount(command);
             var charge = Charge.post(account, command.patientId(), command.departmentId(), "LAB_TEST", labId,
                     "LAB_TEST", "lab", BigDecimal.ONE, new BigDecimal("80000.00"), Instant.now());
-            return adapter.saveChargeAndRequest(command, account, charge).paymentRequestId();
+            return adapter.saveChargeAndRequest(command, account, charge, charge.getGrossAmount(), null).paymentRequestId();
         });
     }
 

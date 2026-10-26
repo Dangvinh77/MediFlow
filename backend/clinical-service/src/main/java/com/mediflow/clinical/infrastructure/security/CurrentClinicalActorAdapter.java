@@ -5,6 +5,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 
@@ -23,7 +25,13 @@ public class CurrentClinicalActorAdapter implements CurrentClinicalActorPort {
                 .findFirst()
                 .orElse(null);
         if (authentication.getPrincipal() instanceof ClinicalPrincipal principal) {
-            return new ActorIdentity(principal.staffId(), principal.role());
+            UUID accountId;
+            try {
+                accountId = UUID.fromString(principal.subject());
+            } catch (IllegalArgumentException notUuid) {
+                accountId = null;
+            }
+            return new ActorIdentity(accountId, principal.staffId(), principal.patientId(), principal.role());
         }
         return new ActorIdentity(null, role);
     }

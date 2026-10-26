@@ -84,6 +84,32 @@ class LabPersistenceAdapterTest {
     @Autowired jakarta.persistence.EntityManager entityManager;
 
     @Test
+    void lifecycleLookupUsesExactSourceAndReflectsPersistedCancellation() {
+        UUID source = UUID.randomUUID();
+        LabTest test = v2Test(source);
+        tests.save(test);
+        entityManager.flush();
+        entityManager.clear();
+        var lifecycle = new com.mediflow.lab.application.service.LabOrderLifecycleService(tests,
+                java.time.Clock.fixed(Instant.parse("2026-10-26T00:00:00Z"), java.time.ZoneOffset.UTC));
+        var pending = lifecycle.lookup(source);
+        assertThat(pending.exists()).isTrue();
+        assertThat(pending.sourceOrderId()).isEqualTo(source);
+        assertThat(pending.testId()).isEqualTo(test.getTestId());
+        assertThat(pending.recordId()).isEqualTo(test.getRecordId());
+        assertThat(pending.patientId()).isEqualTo(test.getPatientId());
+        assertThat(pending.departmentId()).isEqualTo(test.getRequestingDepartmentId());
+        assertThat(pending.careEpisodeId()).isEqualTo(test.getCareEpisodeId());
+        assertThat(pending.status()).isEqualTo("AWAITING_PAYMENT");
+        test.cancel("Patient declined", UUID.randomUUID(), Instant.parse("2026-10-26T00:01:00Z"));
+        tests.save(test);
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(lifecycle.lookup(source).status()).isEqualTo("CANCELLED");
+        assertThat(lifecycle.lookup(UUID.randomUUID()).exists()).isFalse();
+    }
+
+    @Test
     void cancellationRoundTripRetainsAuditAndCancellationOutbox() {
         LabTest test = v2Test(UUID.randomUUID());
         UUID actor = UUID.randomUUID();

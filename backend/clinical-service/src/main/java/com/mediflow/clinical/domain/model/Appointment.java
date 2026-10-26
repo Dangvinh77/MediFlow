@@ -85,13 +85,13 @@ public final class Appointment {
                                       Instant examinationStartedAt, Instant completedAt, UUID cancelledBy,
                                       String cancellationReason, Instant cancelledAt) {
         validateReferences(patientId, doctorId, departmentId);
-        if (careContractVersion != 0 && careContractVersion != 1) {
+        if (careContractVersion != 0 && careContractVersion != 1 && careContractVersion != 2) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Unsupported care contract version");
         }
-        if (careContractVersion == 1 && (examPriceCode == null || examPriceCode.isBlank())) {
+        if (careContractVersion > 0 && (examPriceCode == null || examPriceCode.isBlank())) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
-                    "Version 1 appointments require an exam price code");
+                    "Care contract appointments require an exam price code");
         }
         if ((status == AppointmentStatus.READY_FOR_EXAM
                 || status == AppointmentStatus.IN_EXAM
@@ -105,9 +105,9 @@ public final class Appointment {
                 && !cancellationReason.isBlank() && cancellationReason.length() <= 500 && cancelledAt != null
                 && createdAt != null && !cancelledAt.isBefore(createdAt);
         if (anyCancellationAudit != completeCancellationAudit
-                || (careContractVersion == 1 && status == AppointmentStatus.CANCELLED && !completeCancellationAudit)
+                || (careContractVersion > 0 && status == AppointmentStatus.CANCELLED && !completeCancellationAudit)
                 || (completeCancellationAudit
-                && (careContractVersion != 1 || status != AppointmentStatus.CANCELLED))) {
+                && (careContractVersion == 0 || status != AppointmentStatus.CANCELLED))) {
             throw invalidCancellation();
         }
         return new Appointment(Objects.requireNonNull(id), patientId, doctorId, departmentId,
@@ -118,6 +118,7 @@ public final class Appointment {
     }
 
     public void update(LocalDate date, LocalTime time, String reason) {
+        requireLegacyRegistrationWrite();
         if (status != AppointmentStatus.PENDING) {
             throw new InvalidClinicalDataException("APPOINTMENT_INVALID_TRANSITION",
                     "Only a pending appointment can be updated");
@@ -131,6 +132,7 @@ public final class Appointment {
 
     /** Legacy status command. V2 examination states are reachable only through their explicit commands. */
     public void changeStatus(AppointmentStatus next) {
+        requireLegacyRegistrationWrite();
         if (status != AppointmentStatus.PENDING
                 || (next != AppointmentStatus.ARRIVED && next != AppointmentStatus.CANCELLED)) {
             String code = isCareFinanceState(next) || isCareFinanceState(status)
@@ -143,6 +145,7 @@ public final class Appointment {
 
     /** Checks the patient in and atomically opens the purpose-scoped exam payment gate. */
     public void checkIn(String priceCode, Instant at) {
+        requireLegacyRegistrationWrite();
         if (status != AppointmentStatus.PENDING || careContractVersion != 0) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Only a legacy pending appointment can enter the V2 check-in flow");
@@ -160,6 +163,7 @@ public final class Appointment {
 
     /** Stores an exact-target clearance and unlocks an appointment awaiting payment. */
     public void recordExamClearance(UUID clearanceId, Instant grantedAt) {
+        requireLegacyRegistrationWrite();
         if (clearanceId == null || grantedAt == null) {
             throw new InvalidClinicalDataException("CLINICAL_CLEARANCE_TARGET_MISMATCH",
                     "Exam clearance identity and grant time are required");
@@ -179,6 +183,7 @@ public final class Appointment {
     }
 
     public void startExam(UUID clearanceId, UUID overrideId, Instant at) {
+        requireLegacyRegistrationWrite();
         if (status != AppointmentStatus.ARRIVED
                 && status != AppointmentStatus.AWAITING_PAYMENT
                 && status != AppointmentStatus.READY_FOR_EXAM) {
@@ -208,6 +213,7 @@ public final class Appointment {
 
     /** Promotes an explicitly handled legacy arrival before a V2 examination is started. */
     public void promoteToCareFinanceV2(String priceCode, Instant at) {
+        requireLegacyRegistrationWrite();
         if (careContractVersion != 0
                 || (status != AppointmentStatus.ARRIVED
                 && status != AppointmentStatus.AWAITING_PAYMENT
@@ -225,6 +231,7 @@ public final class Appointment {
     }
 
     public void complete(Instant at) {
+        requireLegacyRegistrationWrite();
         if (status != AppointmentStatus.IN_EXAM || at == null) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Only an in-exam appointment can be completed");
@@ -236,6 +243,7 @@ public final class Appointment {
 
     /** Records the terminal, auditable V1 cancellation fact used by Billing before a refund. */
     public void cancelCareFinance(String cancellationReason, UUID cancelledBy, Instant at) {
+        requireLegacyRegistrationWrite();
         if (careContractVersion != 1
                 || (status != AppointmentStatus.AWAITING_PAYMENT
                 && status != AppointmentStatus.READY_FOR_EXAM
@@ -261,6 +269,76 @@ public final class Appointment {
         return status == AppointmentStatus.PENDING;
     }
 
+    /** Creates the V2 appointment identity which is exactly the registration/care-episode identity. */
+    public static Appointment createScheduled(UUID registrationId, UUID patientId, UUID doctorId, UUID departmentId,
+            LocalDate date, LocalTime time, String reason, Instant createdAt, Instant checkedInAt) {
+        validateReferences(patientId, doctorId, departmentId);
+        Objects.requireNonNull(registrationId, "registration id is required");
+        Objects.requireNonNull(date, "appointment date is required");
+        Objects.requireNonNull(time, "appointment time is required");
+        Objects.requireNonNull(createdAt, "appointment creation time is required");
+        return new Appointment(registrationId, patientId, doctorId, departmentId, date, time,
+                AppointmentStatus.AWAITING_PAYMENT, reason, createdAt, createdAt, (short) 2,
+                null, null, null, "OUTPATIENT_EXAM", checkedInAt, null, null, null, null, null,
+                Clock.systemDefaultZone());
+    }
+
+    /** Applies a Billing confirmation to a scheduled registration; V1 payment events cannot call this. */
+    public void confirmScheduledPayment(UUID clearanceId, Instant confirmedAt) {
+        if (careContractVersion != 2 || status != AppointmentStatus.AWAITING_PAYMENT
+                || clearanceId == null || confirmedAt == null) {
+            throw registrationFlowRequired();
+        }
+        examClearanceId = clearanceId;
+        examClearanceAt = confirmedAt;
+        status = AppointmentStatus.READY_FOR_EXAM;
+        updatedAt = confirmedAt;
+    }
+
+    public void arriveScheduled(Instant arrivedAt) {
+        if (careContractVersion != 2 || (status != AppointmentStatus.AWAITING_PAYMENT
+                && status != AppointmentStatus.READY_FOR_EXAM) || checkedInAt != null || arrivedAt == null) {
+            throw registrationFlowRequired();
+        }
+        checkedInAt = arrivedAt;
+        updatedAt = arrivedAt;
+    }
+
+    /** Scheduled registrations enter examination only through the checked-in, assigned V2 guard. */
+    public void startScheduledExam(UUID clearanceId, Instant at) {
+        if (careContractVersion != 2 || status != AppointmentStatus.READY_FOR_EXAM
+                || checkedInAt == null || examClearanceId == null || !examClearanceId.equals(clearanceId) || at == null) {
+            throw new InvalidClinicalDataException("CLINICAL_EXAM_CLEARANCE_REQUIRED",
+                    "Scheduled examination requires a confirmed, arrived registration and exact clearance");
+        }
+        status = AppointmentStatus.IN_EXAM;
+        examinationStartedAt = at;
+        updatedAt = at;
+    }
+
+    public void completeScheduled(Instant at) {
+        if (careContractVersion != 2 || status != AppointmentStatus.IN_EXAM || at == null) {
+            throw registrationFlowRequired();
+        }
+        status = AppointmentStatus.COMPLETED;
+        completedAt = at;
+        updatedAt = at;
+    }
+
+    public void cancelScheduled(String cancellationReason, UUID actorAccountId, Instant at) {
+        if (careContractVersion != 2
+                || (status != AppointmentStatus.AWAITING_PAYMENT && status != AppointmentStatus.READY_FOR_EXAM)
+                || actorAccountId == null || cancellationReason == null || cancellationReason.isBlank()
+                || cancellationReason.length() > 500 || at == null || at.isBefore(createdAt)) {
+            throw registrationFlowRequired();
+        }
+        status = AppointmentStatus.CANCELLED;
+        cancelledBy = actorAccountId;
+        this.cancellationReason = cancellationReason;
+        cancelledAt = at;
+        updatedAt = at;
+    }
+
     private static boolean isCareFinanceState(AppointmentStatus value) {
         return value == AppointmentStatus.AWAITING_PAYMENT || value == AppointmentStatus.READY_FOR_EXAM
                 || value == AppointmentStatus.IN_EXAM || value == AppointmentStatus.COMPLETED;
@@ -269,6 +347,15 @@ public final class Appointment {
     private static InvalidClinicalDataException invalidCancellation() {
         return new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                 "Only an active V1 outpatient examination may be cancelled with a reason and authenticated actor");
+    }
+
+    private void requireLegacyRegistrationWrite() {
+        if (careContractVersion == 2) throw registrationFlowRequired();
+    }
+
+    private static InvalidClinicalDataException registrationFlowRequired() {
+        return new InvalidClinicalDataException("CLINICAL_REGISTRATION_FLOW_REQUIRED",
+                "Scheduled registration writes must use the outpatient registration flow");
     }
 
     private static void validateReferences(UUID patientId, UUID doctorId, UUID departmentId) {

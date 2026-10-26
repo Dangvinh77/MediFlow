@@ -17,6 +17,9 @@ import com.mediflow.common.api.PageResult;
  */
 public interface InvoiceRepositoryPort {
 
+    /** Legacy invoice payment must not bypass a scheduled source's payment operation lock. */
+    default boolean isScheduledPaymentInvoice(UUID invoiceId) { return false; }
+
     /** Lưu mới hoặc cập nhật. Trả về đối tượng đã có đủ id + timestamps. */
     Invoice save(Invoice invoice);
 

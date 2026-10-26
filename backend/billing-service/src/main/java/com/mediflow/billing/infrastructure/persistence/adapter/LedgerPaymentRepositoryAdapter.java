@@ -27,6 +27,13 @@ public class LedgerPaymentRepositoryAdapter implements LedgerPaymentRepositoryPo
     public LedgerPaymentRepositoryAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     @Override
+    public boolean isScheduledPaymentRequest(UUID requestId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM outpatient_registration_source WHERE payment_request_id=?)
+                """, Boolean.class, requestId));
+    }
+
+    @Override
     public void lockIdempotencyKey(String key) {
         jdbc.execute("SET LOCAL lock_timeout = '3s'");
         // Cross-account key reuse must serialize before acquiring an account lock.
@@ -158,6 +165,16 @@ public class LedgerPaymentRepositoryAdapter implements LedgerPaymentRepositoryPo
                 clearance.getAppointmentId(), clearance.getRecordId(), clearance.getLabTestIds(), clearance.getPrescriptionId(),
                 clearance.getAdmissionId(), clearance.getSurgeryCaseId(), clearance.getAmount(), clearance.getCurrency(),
                 clearance.getPaymentMethod(), false, clearance.getExpiresAt(), clearance.getGrantedAt(), null);
+    }
+
+    @Override
+    public void saveZeroLiability(PaymentRequest request, UUID actorAccountId) {
+        if (actorAccountId == null || request.getRequestedAmount().signum() != 0
+                || request.getStatus() != com.mediflow.billing.domain.model.PaymentRequestStatus.PAID) {
+            throw rule("BILLING_ZERO_ELIGIBILITY_INVALID");
+        }
+        if (jdbc.update("UPDATE PAYMENT_REQUEST SET status='PAID',completed_at=? WHERE payment_request_id=? AND status='PENDING' AND requested_amount=0",
+                at(request.getCompletedAt()), request.getPaymentRequestId()) != 1) throw rule("BILLING_REQUEST_NOT_PAYABLE");
     }
 
     @Override

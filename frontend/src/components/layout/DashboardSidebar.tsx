@@ -10,16 +10,22 @@ interface NavigationItem {
   label: string;
   eyebrow: string;
   roles: readonly Role[];
+  scheduling?: boolean;
 }
 
 const navigation: readonly NavigationItem[] = [
   { group: "Tổ chức & bệnh nhân", href: "/organization", label: "Tổ chức", eyebrow: "Nhân sự & khoa", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
   { group: "Tổ chức & bệnh nhân", href: "/patients", label: "Bệnh nhân", eyebrow: "Hồ sơ định danh", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Khám ngoại trú", href: "/appointments", label: "Lịch hẹn", eyebrow: "Tiếp nhận ngoại trú", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
+  { group: "Khám ngoại trú", href: "/appointments/schedule", label: "Quản lý buổi khám", eyebrow: "Ca khám & phạm vi khoa", roles: ["ADMIN", "MANAGER"], scheduling: true },
+  { group: "Khám ngoại trú", href: "/appointments/reception", label: "Tiếp nhận ca khám", eyebrow: "Giữ chỗ & kiểm tra thu", roles: ["ADMIN", "NURSE"], scheduling: true },
+  { group: "Khám ngoại trú", href: "/appointments/my-calendar", label: "Lịch khám của tôi", eyebrow: "Lịch bác sĩ", roles: ["DOCTOR"], scheduling: true },
+  { group: "Khám ngoại trú", href: "/appointments/my-registration", label: "Phiếu khám của tôi", eyebrow: "Tra cứu phiếu cá nhân", roles: ["PATIENT"], scheduling: true },
   { group: "Khám ngoại trú", href: "/records", label: "Hồ sơ khám", eyebrow: "Chẩn đoán & kết luận", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
   { group: "Viện phí", href: "/billing", label: "Viện phí", eyebrow: "Hóa đơn & thanh toán", roles: ["ADMIN", "CASHIER"] },
+  { group: "Viện phí", href: "/billing/scheduled-payments", label: "Thu phí lịch khám", eyebrow: "Đối soát giữ chỗ", roles: ["ADMIN", "CASHIER"], scheduling: true },
   { group: "Viện phí", href: "/billing/revenue", label: "Doanh thu theo khoa", eyebrow: "Báo cáo cho quản lý", roles: ["MANAGER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
   { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
@@ -29,11 +35,12 @@ interface DashboardSidebarProps {
   role: Role | null;
   open: boolean;
   onClose: () => void;
+  schedulingEnabled?: boolean;
 }
 
-export function DashboardSidebar({ role, open, onClose }: DashboardSidebarProps) {
+export function DashboardSidebar({ role, open, onClose, schedulingEnabled = false }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const visibleNavigation = role ? navigation.filter((item) => item.roles.includes(role)) : [];
+  const visibleNavigation = role ? navigation.filter((item) => item.roles.includes(role) && (!item.scheduling || schedulingEnabled)) : [];
 
   return (
     <>

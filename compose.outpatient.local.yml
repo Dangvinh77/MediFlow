@@ -1,0 +1,57 @@
+# Opt-in rehearsal for OPD-SCHED-2026-10-26 revision 2.
+# Use after docker-compose.yml and compose.demo.local.yml; see the 26/10 runbook.
+services:
+  gateway:
+    environment:
+      MEDIFLOW_GATEWAY_SCHEDULING_V2_ENABLED: "true"
+  clinical-service:
+    environment:
+      MEDIFLOW_CLINICAL_SCHEDULING_ENABLED: "true"
+      MEDIFLOW_ADMISSION_REFERRAL_ENABLED: "false"
+  billing-service:
+    environment:
+      MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_ENABLED: "true"
+      MEDIFLOW_BILLING_OUTPATIENT_QUOTES_ENABLED: "true"
+      MEDIFLOW_BILLING_ZERO_PAYABLE_ELIGIBILITY_ENABLED: "true"
+      MEDIFLOW_BILLING_SCHEDULED_ELIGIBILITY_PUBLICATION_ENABLED: "true"
+      MEDIFLOW_BILLING_SCHEDULED_ELIGIBILITY_PUBLICATION_ACCEPTANCE_REFERENCE: "LOCAL-OUTPATIENT-REHEARSAL-2026-10-26"
+      SPRING_APPLICATION_JSON: >-
+        {
+          "billing": {
+            "care-finance": {
+              "prices": {
+                "OUTPATIENT_EXAM": {"description": "Kham moi ngoai tru demo", "unitAmount": 100000.00},
+                "OUTPATIENT_FOLLOW_UP": {"description": "Tai kham ngoai tru demo", "unitAmount": 80000.00},
+                "LAB": {"description": "Xet nghiem khac demo", "unitAmount": 80000.00},
+                "LAB_CBC": {"description": "Cong thuc mau demo", "unitAmount": 120000.00},
+                "LAB_GLUCOSE": {"description": "Duong huyet demo", "unitAmount": 40000.00}
+              }
+            },
+            "outpatient-quotes": {
+              "catalogue-version": "DEMO-CATALOGUE-2026-10-26",
+              "policy-version": "DEMO-BHYT-2026-10-25",
+              "items": [
+                {"source-type": "EXAM", "price-code": "OUTPATIENT_EXAM", "support-rate": 0.50},
+                {"source-type": "EXAM", "price-code": "OUTPATIENT_FOLLOW_UP", "support-rate": 0.50},
+                {"source-type": "LAB_TEST", "price-code": "LAB_CBC", "support-rate": 0.70},
+                {"source-type": "LAB_TEST", "price-code": "LAB_GLUCOSE", "support-rate": 0.50}
+              ]
+            }
+          },
+          "mediflow": {
+            "billing": {
+              "outpatient-refund-publication": {
+                "enabled": true,
+                "acceptance-reference": "LOCAL-OUTPATIENT-REHEARSAL-2026-10-26"
+              }
+            }
+          }
+        }
+  support-service:
+    environment:
+      MEDIFLOW_NOTIFICATION_OUTPATIENT_REGISTRATION_CONSUMER_ENABLED: "true"
+  frontend:
+    environment:
+      MEDIFLOW_SCHEDULING_UI_ENABLED: "true"
+      MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED: "true"
+      MEDIFLOW_ZERO_PAYABLE_UI_ENABLED: "true"

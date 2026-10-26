@@ -187,6 +187,54 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void billingServiceTokenAuthenticatesOnlyTheExactPaymentLockCommand() throws Exception {
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String token = Jwts.builder().subject("billing-service")
+                .claim(JwtClaims.ROLE, "SYSTEM")
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        MockHttpServletRequest request = requestWithToken(token);
+        request.setMethod("POST");
+        request.setRequestURI("/api/v2/clinical/reservations/00000000-0000-4000-8000-000000000011/payment-locks");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(authentication).isNotNull();
+        assertThat(authentication.getPrincipal()).isEqualTo(new ClinicalServicePrincipal("billing-service"));
+        assertThat(authentication.getAuthorities()).extracting("authority").containsExactly("ROLE_SYSTEM");
+
+        SecurityContextHolder.clearContext();
+        request.setRequestURI("/api/v2/clinical/reservations/not-a-uuid/payment-locks");
+        MockHttpServletResponse alias = new MockHttpServletResponse();
+        filter.doFilter(request, alias, new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(alias.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void billingServiceTokenAuthenticatesReservationPaymentContextRead() throws Exception {
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String token = Jwts.builder().subject("billing-service")
+                .claim(JwtClaims.ROLE, "SYSTEM")
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        MockHttpServletRequest request = requestWithToken(token);
+        request.setMethod("GET");
+        request.setRequestURI("/api/v2/clinical/reservations/00000000-0000-4000-8000-000000000011/payment-context");
+
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+                .isEqualTo(new ClinicalServicePrincipal("billing-service"));
+    }
+
+    @Test
     void missingExpiration_leavesRequestUnauthenticated() throws Exception {
         String token = createToken("doctor-01", "DOCTOR", SIGNING_KEY,
                 null, JwtClaims.ACCESS_TOKEN_TYPE);

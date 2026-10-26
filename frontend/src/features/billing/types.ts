@@ -145,6 +145,131 @@ export interface RevenueByDeptDTO {
   invoiceCount: number;
 }
 
+// Scheduled outpatient payment V2 DTOs. Money remains a decimal string on this wire.
+export interface RegistrationPaymentRequestDTO {
+  paymentRequestId: string;
+  invoiceId: string;
+  accountId: string;
+  registrationId: string;
+  reservationId: string;
+  reservationRevision: number;
+  patientId: string;
+  departmentId: string;
+  sourceType: "EXAM";
+  sourceId: string;
+  careEpisodeType: "OUTPATIENT_VISIT";
+  careEpisodeId: string;
+  requestedAmount: string;
+  paidAmount: string;
+  remainingAmount: string;
+  currency: "VND";
+  status: "PENDING" | "PARTIALLY_PAID" | "PAID" | "EXPIRED" | "CANCELLED";
+  expiresAt: string | null;
+  observedAt: string;
+}
+
+export interface ScheduledPaymentCommand {
+  reservationId: string;
+  expectedReservationRevision: number;
+  quoteId: string | null;
+  amount: string;
+  currency: "VND";
+  paymentMethod: "CASH" | "BANK_TRANSFER";
+  providerReference: string | null;
+}
+
+export type ScheduledPaymentBasis = "PATIENT_PAYMENT" | "ZERO_LIABILITY";
+
+export interface ZeroPayableEligibilityRequest {
+  reservationId: string;
+  expectedReservationRevision: number;
+  quoteId: string;
+}
+
+export interface LabZeroPayableEligibilityRequest {
+  quoteId: string;
+}
+
+export interface LabPaymentCommand {
+  quoteId: string;
+  amount: string;
+  currency: string;
+  paymentMethod: "CASH" | "BANK_TRANSFER";
+}
+
+export interface LabZeroPayableEligibilityDTO {
+  eligibilityOperationId: string;
+  paymentRequestId: string;
+  quoteId: string;
+  basis: "ZERO_LIABILITY";
+  clearanceId: string;
+  completedAt: string;
+}
+
+export interface OutpatientQuoteLineDTO {
+  sourceId: string;
+  sourceType: string;
+  priceCode: string;
+  catalogueVersion: string;
+  policyVersion: string;
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  grossAmount: string;
+  supportRate: string;
+  supportAmount: string;
+  patientPayable: string;
+}
+
+export interface OutpatientQuoteDTO {
+  quoteId: string;
+  paymentRequestId: string;
+  patientId: string;
+  careEpisodeType: string;
+  careEpisodeId: string;
+  currency: string;
+  lines: OutpatientQuoteLineDTO[];
+  grossAmount: string;
+  supportAmount: string;
+  patientPayable: string;
+  issuedAt: string;
+  expiresAt: string;
+}
+
+export interface ScheduledPaymentOperation {
+  paymentOperationId: string;
+  paymentRequestId: string;
+  registrationId: string;
+  reservationId: string;
+  status: "PREPARING" | "COMPLETED" | "CLOSED_NOT_PAID";
+  basis: ScheduledPaymentBasis;
+  quoteId: string | null;
+  transactionId: string | null;
+  amount: string;
+  currency: "VND";
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
+export interface LedgerPaymentV2DTO {
+  transactionId: string;
+  accountId: string;
+  paymentRequestId: string;
+  classification: "SERVICE_PAYMENT";
+  status: "COMPLETED";
+  amount: string;
+  currency: "VND";
+  paymentMethod: "CASH" | "BANK_TRANSFER";
+  completedAt: string;
+}
+
+export interface ScheduledPaymentResult {
+  operation: ScheduledPaymentOperation;
+  payment: LedgerPaymentV2DTO | null;
+  clearanceId: string | null;
+}
+
 export interface OutboxReplayResult {
   eventId: string;
   replayed: boolean;

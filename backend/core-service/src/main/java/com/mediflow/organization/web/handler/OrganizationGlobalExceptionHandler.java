@@ -5,6 +5,8 @@ import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
+import com.mediflow.organization.application.exception.SchedulingAuthorityUnavailableException;
+import com.mediflow.organization.application.exception.SchedulingScopeDeniedException;
 import com.mediflow.organization.domain.exception.AccountNotFoundException;
 import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
 import com.mediflow.organization.domain.exception.DepartmentInactiveException;
@@ -29,6 +31,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +40,8 @@ import java.util.UUID;
 /** Maps Organization errors to the shared response envelope. */
 @RestControllerAdvice(basePackages = "com.mediflow.organization.web")
 public class OrganizationGlobalExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrganizationGlobalExceptionHandler.class);
 
     private final CorrelationIdProvider correlationIds;
 
@@ -49,12 +55,26 @@ public class OrganizationGlobalExceptionHandler {
         return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getCode(), exception.getMessage());
     }
 
+    @ExceptionHandler(SchedulingScopeDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSchedulingScopeDenied(
+            SchedulingScopeDeniedException exception) {
+        return buildResponse(HttpStatus.FORBIDDEN, "SCHEDULING_SCOPE_DENIED",
+                "The account cannot manage or inspect this schedule scope");
+    }
+
+    @ExceptionHandler(SchedulingAuthorityUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSchedulingAuthorityUnavailable(
+            SchedulingAuthorityUnavailableException exception) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, "SCHEDULING_AUTHORITY_UNAVAILABLE",
+                "Scheduling authority is temporarily unavailable");
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidArgument(IllegalArgumentException exception) {
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request");
     }
 
-    @ExceptionHandler({MissingServletRequestParameterException.class,
+    @ExceptionHandler({MissingServletRequestParameterException.class, org.springframework.web.bind.MissingRequestHeaderException.class,
             HttpMessageNotReadableException.class})
     public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception exception) {
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request");
@@ -225,6 +245,7 @@ public class OrganizationGlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnknownException(Exception exception) {
+        LOGGER.error("Unhandled organization request failure", exception);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "INTERNAL_SERVER_ERROR", "An unexpected error occurred");
     }

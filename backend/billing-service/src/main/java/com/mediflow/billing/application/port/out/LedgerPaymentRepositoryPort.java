@@ -12,11 +12,14 @@ import com.mediflow.billing.domain.model.PaymentTransaction;
 
 /** Lock and every following write participate in one local Billing transaction. */
 public interface LedgerPaymentRepositoryPort {
+    /** Prevents legacy V1 cash entry from bypassing a reservation-backed operation. */
+    default boolean isScheduledPaymentRequest(UUID requestId) { return false; }
     void lockIdempotencyKey(String key);
     PaymentContext lockRequest(UUID requestId);
     void verifyRequestTargets(PaymentContext context);
     Optional<RecordedPayment> findByIdempotencyKey(String key);
     void save(PaymentTransaction transaction, PaymentRequest request, UUID actorAccountId);
+    void saveZeroLiability(PaymentRequest request, UUID actorAccountId);
     FinancialClearance saveClearance(FinancialClearance clearance);
     void allocate(PaymentTransaction transaction);
 

@@ -75,3 +75,24 @@ export interface ClinicalLabOrderDTO {
   priceCode: string;
   orderedAt: string;
 }
+
+export interface FollowUpRecommendationDTO {
+  recommendationId: string;
+  sourceRecordId: string;
+  sourceRegistrationId: string;
+  patientId: string;
+  departmentId: string;
+  preferredDoctorId: string;
+  recommendedFrom: string;
+  recommendedThrough: string;
+  reason: string;
+  preparationInstructions: string | null;
+  createdAt: string;
+}
+
+export interface CreateFollowUpRecommendationRequest {
+  recommendedFrom: string;
+  recommendedThrough: string;
+  reason: string;
+  preparationInstructions: string | null;
+}

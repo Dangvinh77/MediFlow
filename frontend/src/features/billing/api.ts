@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api, type MutationOptions } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
   PrescriptionAdjustmentDTO,
@@ -7,14 +7,24 @@ import type {
   CompleteLedgerPaymentRequest,
   CreateInvoiceRequest,
   InvoiceDTO,
+  LabZeroPayableEligibilityDTO,
+  LabZeroPayableEligibilityRequest,
   LedgerPaymentDTO,
+  LabPaymentCommand,
   OutboxReplayResult,
+  OutpatientQuoteDTO,
   PaymentResultDTO,
   PayInvoiceRequest,
   PaymentRequestDiscoveryDTO,
   PaymentRequestSourceQuery,
+  RegistrationPaymentRequestDTO,
   RevenueByDeptDTO,
+  ScheduledPaymentCommand,
+  ScheduledPaymentResult,
+  ZeroPayableEligibilityRequest,
 } from "./types";
+
+export type ScheduledPaymentCommandOptions = Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>;
 
 export const billingApi = {
   refundsDue: (prescriptionId: string) => api.get<PrescriptionAdjustmentDTO>(`/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`),
@@ -45,4 +55,18 @@ export const billingApi = {
   },
   replayOutboxEvent: (eventId: string) =>
     api.post<OutboxReplayResult>(`/v1/billing/admin/outbox/${encodeURIComponent(eventId)}/replay`),
+  scheduledPaymentRequestByRegistration: (registrationId: string) =>
+    api.get<RegistrationPaymentRequestDTO>(`/v2/billing/payment-requests/by-registration?registrationId=${encodeURIComponent(registrationId)}`),
+  outpatientQuote: (paymentRequestId: string) =>
+    api.get<OutpatientQuoteDTO>(`/v2/billing/payment-requests/${encodeURIComponent(paymentRequestId)}/quote`),
+  payScheduledRequest: (paymentRequestId: string, body: ScheduledPaymentCommand, options: ScheduledPaymentCommandOptions) =>
+    api.post<ScheduledPaymentResult>(`/v2/billing/payment-requests/${encodeURIComponent(paymentRequestId)}/payments`, body, options),
+  confirmScheduledZeroLiability: (paymentRequestId: string, body: ZeroPayableEligibilityRequest, options: ScheduledPaymentCommandOptions) =>
+    api.post<ScheduledPaymentResult>(`/v2/billing/payment-requests/${encodeURIComponent(paymentRequestId)}/zero-payable-eligibility`, body, options),
+  confirmLabZeroLiability: (paymentRequestId: string, body: LabZeroPayableEligibilityRequest, options: ScheduledPaymentCommandOptions) =>
+    api.post<LabZeroPayableEligibilityDTO>(`/v2/billing/payment-requests/${encodeURIComponent(paymentRequestId)}/lab-zero-payable-eligibility`, body, options),
+  createLabPayment: (paymentRequestId: string, body: LabPaymentCommand, options: ScheduledPaymentCommandOptions) =>
+    api.post<LedgerPaymentDTO>(`/v2/billing/payment-requests/${encodeURIComponent(paymentRequestId)}/lab-payments`, body, options),
+  scheduledPaymentOperation: (operationId: string) =>
+    api.get<ScheduledPaymentResult>(`/v2/billing/payment-operations/${encodeURIComponent(operationId)}`),
 };

@@ -27,6 +27,8 @@ public interface LabTestJpaRepository extends JpaRepository<LabTestJpaEntity, UU
     Optional<LabTestJpaEntity> findByIdForUpdate(@Param("id") UUID id);
     boolean existsBySourceOrderId(UUID sourceOrderId);
     @EntityGraph(attributePaths = "results")
+    Optional<LabTestJpaEntity> findBySourceOrderId(UUID sourceOrderId);
+    @EntityGraph(attributePaths = "results")
     List<LabTestJpaEntity> findByPatientIdOrderByRequestedDateDesc(UUID patientId);
     @EntityGraph(attributePaths = "results")
     List<LabTestJpaEntity> findByRecordIdOrderByRequestedDateDesc(UUID recordId);

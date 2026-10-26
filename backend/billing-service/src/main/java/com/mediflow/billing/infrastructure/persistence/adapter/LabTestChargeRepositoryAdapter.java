@@ -6,6 +6,8 @@ import com.mediflow.billing.application.port.out.OutpatientPublicationCohortPort
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Charge;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -75,12 +77,16 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
         require("OPEN".equals(account.get("status")), "BILLING_ACCOUNT_CHARGE_CLOSED");
         return (UUID) account.get("account_id");
     }
-    @Override public IssuedRequest saveChargeAndRequest(LabTestChargeCommand command, UUID accountId, Charge charge) {
+    @Override public IssuedRequest saveChargeAndRequest(LabTestChargeCommand command, UUID accountId, Charge charge,
+            BigDecimal requestedAmount, Instant expiresAt) {
+        require(requestedAmount != null && requestedAmount.signum() >= 0
+                && requestedAmount.compareTo(charge.getGrossAmount()) <= 0, "BILLING_PAYMENT_REQUEST_INVALID");
         UUID request = UUID.randomUUID(), invoice = UUID.randomUUID(), chargeId = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO PAYMENT_REQUEST(payment_request_id,invoice_id,account_id,purpose,requested_amount,currency)
-                VALUES (?,?,?,'LAB_TEST',?,'VND')
-                """, request, invoice, accountId, charge.getGrossAmount());
+                INSERT INTO PAYMENT_REQUEST(payment_request_id,invoice_id,account_id,purpose,requested_amount,currency,expires_at,created_at)
+                VALUES (?,?,?,'LAB_TEST',?,'VND',?,?)
+                """, request, invoice, accountId, requestedAmount, expiresAt == null ? null : Timestamp.from(expiresAt),
+                Timestamp.from(command.requestedAt()));
         jdbc.update(connection -> {
             var statement = connection.prepareStatement(
                     "INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,record_id,lab_test_ids) VALUES (?,?,?)");
@@ -103,9 +109,9 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
                 charge.getPriceCode(), charge.getDescription(), charge.getQuantity(), charge.getUnitAmount(),
                 charge.getGrossAmount(), Timestamp.from(charge.getIncurredAt()));
         jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
-                request, chargeId, charge.getGrossAmount());
+                request, chargeId, requestedAmount);
         cohort.enrollIfEligible(request);
-        return new IssuedRequest(request, invoice, charge.getGrossAmount());
+        return new IssuedRequest(request, invoice, requestedAmount);
     }
     private static void same(Object expected, Object actual) { require(Objects.equals(expected, actual), "BILLING_LAB_TEST_SOURCE_CONFLICT"); }
     private static void sameIfPresent(Object expected, Object actual) {

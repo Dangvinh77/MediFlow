@@ -45,4 +45,49 @@ describe("appointment care commands through Gateway", () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("uses the exact C06 session, own-calendar and registration routes", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 } }));
+    await appointmentApi.listConsultationSessions({ departmentId: "dept/id", fromDate: "2026-10-26", toDate: "2026-10-27", page: 1, size: 10 });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/consultation-sessions?departmentId=dept%2Fid&fromDate=2026-10-26&toDate=2026-10-27&page=1&size=10");
+
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { doctorId: "self", fromDate: "2026-10-26", toDate: "2026-11-01", timezone: "Asia/Ho_Chi_Minh", sessions: [] } }));
+    await appointmentApi.myCalendar({ weekStart: "2026-10-26" });
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v2/consultation-sessions/mine?weekStart=2026-10-26");
+
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { registrationId: "reg" } }));
+    await appointmentApi.registration("reg/id");
+    expect(fetchMock.mock.calls[2][0]).toBe("/api/v2/outpatient-registrations/reg%2Fid");
+    expect(fetchMock.mock.calls[3]).toBeUndefined();
+  });
+
+  it("lists only the signed-in patient's registrations without accepting a patient filter", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 } }));
+    await appointmentApi.myRegistrations({ page: 2, size: 10 });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/outpatient-registrations/mine?page=2&size=10");
+  });
+
+  it("lists only completed V2 source registrations through the staff follow-up picker route", async () => {
+    const page = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 };
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: page }));
+    await appointmentApi.followUpSources({ patientId: "patient/id", page: 2, size: 10 });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/outpatient-registrations/follow-up-sources?patientId=patient%2Fid&page=2&size=10");
+  });
+
+  it("sends V2 registration and session mutations with explicit idempotency and correlation headers", async () => {
+    const key = "10000000-0000-4000-8000-000000000001";
+    const options = { idempotencyKey: key, correlationId: "c06-reception-intent" };
+    const body = {
+      patientId: "patient", sessionId: "session", expectedSessionRevision: 3,
+      receptionMode: "AT_COUNTER" as const, visitType: "NEW_VISIT" as const,
+      previousRegistrationId: null, followUpRecommendationId: null, replacementReason: null,
+      patientAgreedToDoctorReplacement: null, reason: null,
+    };
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { registrationId: "registration" } }));
+    await appointmentApi.createRegistration(body, options);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/outpatient-registrations");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual(body);
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("Idempotency-Key")).toBe(key);
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("X-Correlation-Id")).toBe(options.correlationId);
+  });
 });

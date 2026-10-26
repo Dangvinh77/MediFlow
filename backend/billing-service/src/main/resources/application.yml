@@ -54,6 +54,17 @@ mediflow:
       enabled: ${MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED:false}
     ledger:
       enabled: ${MEDIFLOW_BILLING_LEDGER_ENABLED:false}
+    scheduled-payments:
+      enabled: ${MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_ENABLED:false}
+      recovery-delay-ms: ${MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_RECOVERY_DELAY_MS:30000}
+      recovery-initial-delay-ms: ${MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_RECOVERY_INITIAL_DELAY_MS:30000}
+    scheduled-eligibility-publication:
+      enabled: ${MEDIFLOW_BILLING_SCHEDULED_ELIGIBILITY_PUBLICATION_ENABLED:false}
+      acceptance-reference: ${MEDIFLOW_BILLING_SCHEDULED_ELIGIBILITY_PUBLICATION_ACCEPTANCE_REFERENCE:}
+    outpatient-quotes:
+      enabled: ${MEDIFLOW_BILLING_OUTPATIENT_QUOTES_ENABLED:false}
+    zero-payable-eligibility:
+      enabled: ${MEDIFLOW_BILLING_ZERO_PAYABLE_ELIGIBILITY_ENABLED:false}
     refunds:
       enabled: ${MEDIFLOW_BILLING_REFUNDS_ENABLED:false}
     exam-charge-consumer:
