@@ -1,6 +1,7 @@
 # Kiểm chứng khả dụng ngoại trú — 26/10/2026
 
-Candidate: `codex/outpatient-frontend-usability`, base `be8c48f8`; thay đổi trong cùng PR.
+Candidate: `codex/outpatient-frontend-usability`. Ảnh và runtime checkpoint ban đầu trên base
+`be8c48f8`; sau đó rebase lên master `4851b196` (PR #540), giữ cả contact API mới của Hoàng Anh.
 Dữ liệu tổng hợp demo, không dùng dữ liệu người bệnh thật. Không lưu token trong evidence.
 
 ## Thay đổi được kiểm chứng
@@ -22,9 +23,11 @@ Dữ liệu tổng hợp demo, không dùng dữ liệu người bệnh thật. 
 
 ## Kiểm thử tự động
 
-- Frontend: 116 file / 1.073 test qua trong đợt hồi quy toàn bộ; sau chỉnh hiển thị thu ngân,
-  chạy lại 13 test ScheduledPaymentWorkspace/ScheduledPaymentQueue đều qua.
-- Core: 362 test; Gateway: 1.584 test; Billing: 1.175 test; XML không failure/error/skip.
+- Frontend sau rebase: 117 file / 1.078 test qua (`vitest run --maxWorkers=1 --testTimeout=15000`);
+  giới hạn một worker để không tranh tài nguyên với Java/container. 13 test thu ngân cũng qua riêng.
+- Trước rebase: Core 362 / Gateway 1.584 / Billing 1.175 test. Sau rebase chạy lại toàn bộ
+  Core 385 / Gateway 1.625; Billing giữ nguyên source đã kiểm thử. [XML summary](backend-tests.json)
+  không failure/error/skip; lệnh Maven test thoát 0.
   Có cảnh báo Surefire shutdown của các Spring context dùng container sau test;
   không coi cảnh báo này là bằng chứng một nghiệp vụ đã được kiểm thử.
 - Package JAR Core/Gateway/Billing thành công sau khi dừng JAR cũ đang khóa file trên Windows.
@@ -37,6 +40,11 @@ Runtime: tám JAR/ứng dụng ở 28761,28080,28089,28082,28084–28087; Postgr
 trong hai container rehearsal riêng. Web 3000 gọi Gateway 28080 cùng origin qua Next proxy.
 Cách chạy và các bước theo role trong
 [runbook V2](../../../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md).
+Sau rebase đã build lại JAR, khởi động đủ tám ứng dụng và chạy lại booking/payment cùng
+28 kiểm tra Gateway trên stack `snapshot-20261026-202020`; JSON kèm theo là kết quả lần này.
+Đăng nhập lại bằng `demo.patient`, tải phiếu trên trình duyệt và chụp lại `patient.png`
+trên stack sau rebase: đủ tên khoa/bác sĩ/phòng, số thứ tự và hướng dẫn đến tiếp nhận.
+
 API mới và các quyền theo [A.13](../../../../docs/plans/03-contracts.md).
 
 Tổng duyệt này thực hiện ngoài giờ khám: booking ngày mai, không chứng minh đã đi hết

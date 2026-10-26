@@ -1068,3 +1068,8 @@ và patient directory đúng role; lỗi lookup không bị cache vĩnh viễn.
 
 Contract và quyền: [A.13](../../docs/plans/03-contracts.md#a13-nhãn-hiển-thị-và-danh-sách-chờ-thu--26102026).
 Đây là phạm vi ngoại trú đang hoạt động, không kích hoạt Inpatient/Surgery.
+
+Nghiệm thu candidate sau rebase master `4851b196`: frontend 1.078 test, Core 385, Gateway 1.625,
+Billing 1.175; lint/typecheck/build và 28 signed Gateway checks qua.
+[Phạm vi và ảnh nghiệm thu](evidence/outpatient-usability-2026-10-26/README.md) phân biệt rõ
+booking/payment ngoài giờ với full examination còn cần chạy đúng ca.

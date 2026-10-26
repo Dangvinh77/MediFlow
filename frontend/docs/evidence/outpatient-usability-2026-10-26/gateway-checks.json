@@ -137,21 +137,21 @@
     {
       "role": "patient",
       "method": "GET",
-      "path": "/api/v2/outpatient-registrations/74af36ee-d285-461c-8933-423b0d8dd78e",
+      "path": "/api/v2/outpatient-registrations/dedefec0-ab08-4f11-8d5c-ea16c585d497",
       "status": 200,
       "cache": "no-cache, no-store, max-age=0, must-revalidate"
     },
     {
       "role": "patient",
       "method": "GET",
-      "path": "/api/v1/org/care-labels/room/22e35071-6730-4c04-8f1f-50592f4cb545",
+      "path": "/api/v1/org/care-labels/room/71b09a28-1a25-4237-8eb9-707552650251",
       "status": 200,
       "cache": "no-store"
     },
     {
       "role": "doctor",
       "method": "PUT",
-      "path": "/api/v1/appointments/74af36ee-d285-461c-8933-423b0d8dd78e/start-exam",
+      "path": "/api/v1/appointments/dedefec0-ab08-4f11-8d5c-ea16c585d497/start-exam",
       "status": 422,
       "cache": "no-cache, no-store, max-age=0, must-revalidate"
     },
@@ -198,7 +198,7 @@
       "cache": "no-store"
     }
   ],
-  "pendingRegistrationId": "257cb29b-1c47-4f77-aca0-87bcec33a3f0",
+  "pendingRegistrationId": "f109029e-cfdd-42b2-91af-378551e43e70",
   "labels": {
     "doctor": "Lê Bác Sĩ Demo",
     "room": "Phong kham ngoai tru demo V2"

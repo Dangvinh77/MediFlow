@@ -79,7 +79,7 @@
       "method": "GET",
       "path": "/api/v1/org/staff/1f619b9e-5879-4796-adfd-01e1acf42126",
       "status": 200,
-      "correlationId": "3ca790a1-1be6-4a8a-8ab2-3f79bf424d04",
+      "correlationId": "33cb265c-fa1e-49be-b324-7c3cdaf24d21",
       "expected": [
         200
       ]
@@ -89,7 +89,7 @@
       "method": "GET",
       "path": "/api/v2/org/consultation-rooms?departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45&page=0&size=100",
       "status": 200,
-      "correlationId": "d5634b5a-e26c-4c41-aef2-fcf58007e948",
+      "correlationId": "995a07e2-84a5-42d1-b1b2-44b54aed2a92",
       "expected": [
         200
       ]
@@ -99,7 +99,7 @@
       "method": "POST",
       "path": "/api/v2/consultation-sessions",
       "status": 201,
-      "correlationId": "dd394a7a-d7a8-4bdf-95ef-61efa620bf12",
+      "correlationId": "71bb1936-37d2-4aab-a720-df5990632dc0",
       "expected": [
         201
       ]
@@ -109,7 +109,7 @@
       "method": "POST",
       "path": "/api/v2/outpatient-registrations",
       "status": 201,
-      "correlationId": "b9bdc447-339e-4882-85dd-2160404042d9",
+      "correlationId": "5cf86099-b864-42c9-a859-a820f3d934be",
       "expected": [
         201
       ]
@@ -119,7 +119,7 @@
       "method": "POST",
       "path": "/api/v2/outpatient-registrations",
       "status": 201,
-      "correlationId": "6aaa12e7-4f3d-4c3c-88c2-998591a0684f",
+      "correlationId": "72fcba14-ba68-4eec-a9be-1aad83ca85b9",
       "expected": [
         201
       ]
@@ -127,9 +127,9 @@
     {
       "role": "other",
       "method": "GET",
-      "path": "/api/v2/outpatient-registrations/74af36ee-d285-461c-8933-423b0d8dd78e",
+      "path": "/api/v2/outpatient-registrations/dedefec0-ab08-4f11-8d5c-ea16c585d497",
       "status": 404,
-      "correlationId": "97d0639c-070e-49a1-9e91-135e855a0311",
+      "correlationId": "5a461b9f-74ca-4ef3-a867-f6109a47f3a1",
       "expected": [
         403,
         404
@@ -138,9 +138,9 @@
     {
       "role": "cashier",
       "method": "GET",
-      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=74af36ee-d285-461c-8933-423b0d8dd78e",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=dedefec0-ab08-4f11-8d5c-ea16c585d497",
       "status": 404,
-      "correlationId": "b2a552df-5988-46f7-be99-de96ddb1061f",
+      "correlationId": "e4fd3725-3028-43c6-a672-005995fe9fbc",
       "expected": [
         200,
         404,
@@ -150,9 +150,9 @@
     {
       "role": "cashier",
       "method": "GET",
-      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=74af36ee-d285-461c-8933-423b0d8dd78e",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=dedefec0-ab08-4f11-8d5c-ea16c585d497",
       "status": 200,
-      "correlationId": "0b1fc664-a79f-4881-a7a5-c157b980540b",
+      "correlationId": "a52e8d53-51e8-44da-a0c3-f386c8f85a24",
       "expected": [
         200,
         404,
@@ -162,9 +162,9 @@
     {
       "role": "cashier",
       "method": "GET",
-      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/quote",
+      "path": "/api/v2/billing/payment-requests/055eef3b-bc44-49e7-b265-1599e7566ddb/quote",
       "status": 200,
-      "correlationId": "3b84b9b5-ad27-4c90-9d75-2fb02c10673f",
+      "correlationId": "6d993abc-600b-49b2-b2a9-d5f8d914cc4c",
       "expected": [
         200
       ]
@@ -172,9 +172,9 @@
     {
       "role": "cashier",
       "method": "POST",
-      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/payments",
+      "path": "/api/v2/billing/payment-requests/055eef3b-bc44-49e7-b265-1599e7566ddb/payments",
       "status": 200,
-      "correlationId": "096b885c-ff05-4469-a77a-aacd2991ba26",
+      "correlationId": "c4956694-3f3e-4ec1-b69a-8bf2ee18837f",
       "expected": [
         200,
         202
@@ -183,9 +183,9 @@
     {
       "role": "cashier",
       "method": "POST",
-      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/payments",
+      "path": "/api/v2/billing/payment-requests/055eef3b-bc44-49e7-b265-1599e7566ddb/payments",
       "status": 200,
-      "correlationId": "6f395f12-6943-4f8a-a274-3d488007a2c2",
+      "correlationId": "10bd6bcf-5d63-4080-b2ec-b52e38753115",
       "expected": [
         200
       ]
@@ -193,9 +193,9 @@
     {
       "role": "patient",
       "method": "GET",
-      "path": "/api/v2/outpatient-registrations/74af36ee-d285-461c-8933-423b0d8dd78e",
+      "path": "/api/v2/outpatient-registrations/dedefec0-ab08-4f11-8d5c-ea16c585d497",
       "status": 200,
-      "correlationId": "9ae04fe4-5373-47e2-9d2a-3b60d14be3cc",
+      "correlationId": "17e64a8c-1a0c-4ce7-8efe-d8f1f2c12ba9",
       "expected": [
         200
       ]
@@ -205,15 +205,15 @@
       "method": "GET",
       "path": "/api/v2/consultation-sessions/mine?date=2026-10-27",
       "status": 200,
-      "correlationId": "51a2a152-1691-463e-a823-af81ce1948ab",
+      "correlationId": "4b7cea9e-eff1-462f-bfa6-c60e76a5bfee",
       "expected": [
         200
       ]
     }
   ],
   "passed": true,
-  "registrationId": "74af36ee-d285-461c-8933-423b0d8dd78e",
-  "paymentRequestId": "e2781168-f5e7-46ba-b091-30f815752401",
-  "paymentOperationId": "a6d80373-a01c-4da1-b353-e682eedbe041",
-  "transactionId": "ceacdbd8-275f-4570-bbc6-db370af57bac"
+  "registrationId": "dedefec0-ab08-4f11-8d5c-ea16c585d497",
+  "paymentRequestId": "055eef3b-bc44-49e7-b265-1599e7566ddb",
+  "paymentOperationId": "f59fc1b4-6e1b-4669-a19a-54da19461adc",
+  "transactionId": "33250f23-c690-42cc-8c5a-0a1c12c1d251"
 }
