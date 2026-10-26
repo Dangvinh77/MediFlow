@@ -175,10 +175,22 @@ describe("Notification patient history", () => {
   it("validates UUID then paginates using the submitted patient, with privacy-safe translated values", async () => {
     render(<NotificationLookup />); search("bad");
     expect(screen.getByRole("alert")).toHaveTextContent("hợp lệ"); expect(mocks.list).not.toHaveBeenCalled();
-    search(` ${id} `); expect(await screen.findByRole("link", { name: notice.title })).toHaveAttribute("href", `/notifications/${id}`);
+    search(` ${id} `); await screen.findByText(notice.title);
+    expect(screen.getByRole("link", { name: "Chi tiết" })).toHaveAttribute("href", `/notifications/${id}?patientId=${id}&page=0`);
     expect(screen.getByText("Trong ứng dụng")).toBeVisible(); expect(screen.getByText("Đã gửi")).toBeVisible();
     fill("Bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20));
+  });
+  it("auto-runs the search when arriving with a patient and page already in the URL", async () => {
+    render(<NotificationLookup initialPatientId={id} initialPage={1} />);
+    await screen.findByText(notice.title);
+    expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 1, 20);
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue(id);
+  });
+  it("ignores an invalid patient id coming from the URL instead of auto-searching", () => {
+    render(<NotificationLookup initialPatientId="not-a-uuid" />);
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
   });
   it("focuses an invalid search and suppresses an older pending response", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);

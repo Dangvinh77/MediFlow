@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSession, storeSession } from "@/lib/session";
 import type { LedgerPaymentDTO, PaymentRequestDiscoveryDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ discover: vi.fn(), complete: vi.fn(), push: vi.fn(), replace: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
+const mocks = vi.hoisted(() => ({ discover: vi.fn(), complete: vi.fn(), push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace, back: mocks.back }) }));
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: import("react").ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock("../api", () => ({ billingApi: { discoverPaymentRequest: mocks.discover, completeLedgerPayment: mocks.complete } }));
 
@@ -67,6 +67,13 @@ describe("PaymentRequestLookupForm", () => {
   });
 
   afterEach(() => act(() => clearSession()));
+
+  it("lets the cashier leave the screen without looking up a charge", () => {
+    render(<PaymentRequestLookupForm />);
+    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
+    expect(mocks.back).toHaveBeenCalledOnce();
+    expect(mocks.discover).not.toHaveBeenCalled();
+  });
 
   it("discovers an exact EXAM charge and pays the server-reported remaining amount and currency", async () => {
     mocks.discover.mockResolvedValue(discovery());
