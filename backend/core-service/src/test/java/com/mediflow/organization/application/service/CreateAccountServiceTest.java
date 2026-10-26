@@ -42,6 +42,19 @@ class CreateAccountServiceTest {
     }
 
     @Test
+    void initialPasswordIsHashedAndRequiresChangeForPatientAndStaff() {
+        when(passwordHasher.hash("1")).thenReturn("initial-hash");
+        when(accountRepository.save(any(Account.class))).thenAnswer(call -> call.getArgument(0));
+        for (Role role : new Role[] { Role.PATIENT, Role.DOCTOR }) {
+            Account created = service.execute("012345678901", "1",
+                    role == Role.PATIENT ? null : UUID.randomUUID(),
+                    role == Role.PATIENT ? UUID.randomUUID() : null, role);
+            assertEquals("initial-hash", created.getPasswordHash());
+            org.junit.jupiter.api.Assertions.assertTrue(created.isMustChangePassword());
+        }
+    }
+
+    @Test
     void execute_validData_savesHashedPassword() {
         UUID staffId = UUID.randomUUID();
         when(accountRepository.existsByUsername("doctor.one"))

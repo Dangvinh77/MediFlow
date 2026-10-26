@@ -18,7 +18,7 @@ public record CreateAccountRequest(
         String username,
 
         @NotBlank(message = "Password must not be blank")
-        @Size(min = 8, max = 72, message = "Password must contain 8 to 72 characters")
+        @Size(max = 72, message = "Password must contain at most 72 characters")
         String password,
 
         UUID staffId,

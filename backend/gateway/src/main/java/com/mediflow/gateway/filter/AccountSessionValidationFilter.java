@@ -64,6 +64,12 @@ public class AccountSessionValidationFilter implements GlobalFilter, Ordered {
                             || !same(identity.staffId(), claims, JwtClaims.STAFF_ID)
                             || !same(identity.departmentId(), claims, JwtClaims.DEPARTMENT_ID)
                             || !same(identity.patientId(), claims, JwtClaims.PATIENT_ID)) return rejected(exchange);
+                    if (identity.mustChangePassword()
+                            && !(org.springframework.http.HttpMethod.PUT.equals(exchange.getRequest().getMethod())
+                            && "/api/v1/org/accounts/me/password".equals(exchange.getRequest().getPath().value()))) {
+                        return errors.write(exchange, HttpStatus.FORBIDDEN, "AUTH_PASSWORD_CHANGE_REQUIRED",
+                                "Bạn phải đổi mật khẩu ban đầu trước khi sử dụng hệ thống.");
+                    }
                     return chain.filter(exchange);
                 });
     }

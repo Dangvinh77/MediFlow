@@ -31,6 +31,8 @@ public class Account {
      */
     private String passwordHash;
 
+    private boolean mustChangePassword;
+
     /**
      *
      *
@@ -205,6 +207,7 @@ public class Account {
         }
 
         this.passwordHash = newPasswordHash;
+        this.mustChangePassword = false;
 
         touch();
     }
@@ -220,6 +223,10 @@ public class Account {
     public String getUsername() {
         return username;
     }
+
+    public boolean isMustChangePassword() { return mustChangePassword; }
+
+    public void requirePasswordChange() { this.mustChangePassword = true; }
 
     public String getPasswordHash() {
         return passwordHash;

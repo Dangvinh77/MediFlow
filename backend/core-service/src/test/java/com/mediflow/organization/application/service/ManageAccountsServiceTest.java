@@ -26,6 +26,17 @@ class ManageAccountsServiceTest {
         account = Account.create(UUID.randomUUID(), "doctor.one", "old-hash", UUID.randomUUID(), Role.DOCTOR);
         when(accounts.findByIdForUpdate(account.getAccountId())).thenReturn(Optional.of(account));
     }
+    @Test void defaultPasswordCannotBeKeptAndRestrictionClearsOnlyAfterSuccessfulChange() {
+        account.requirePasswordChange();
+        when(passwords.matches("1", "old-hash")).thenReturn(true);
+        assertThrows(InvalidAccountException.class, () -> service.changePassword(account.getAccountId(), "1", "1"));
+        assertTrue(account.isMustChangePassword());
+        verify(accounts, never()).save(any());
+        when(passwords.hash("private-password")).thenReturn("private-hash");
+        service.changePassword(account.getAccountId(), "1", "private-password");
+        assertFalse(account.isMustChangePassword());
+        verify(accounts).incrementCredentialVersion(account.getAccountId());
+    }
     @Test void wrongCurrentPasswordDoesNotWrite() {
         assertThrows(InvalidAccountException.class, () -> service.changePassword(account.getAccountId(), "wrong", "new-password"));
         verify(accounts, never()).save(any());

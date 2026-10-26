@@ -148,3 +148,21 @@ The personal staff profile allows the signed staff owner to edit email, phone an
 job, identity, qualifications and department remain administrator-managed. The form guards dirty
 navigation and duplicate submission, ignores stale session responses and does not retry writes
 automatically. Gateway account-state validation rejects revoked sessions on their next request.
+
+
+### Initial account onboarding — 26/10/2026
+
+Hoàng Anh / IMPLEMENT: user assigned saved-profile → account creation and mandatory password
+change. ADMIN sees “Lưu và tạo tài khoản” on new patient/staff forms. A successful save opens
+`/organization/accounts/new?ownerType=patient|staff&ownerId=<returned UUID>`; failed saves keep
+the draft. The account form reloads the authoritative selected profile, uses its CCCD as the
+read-only username and `1` as the read-only initial password. Missing CCCD, inactive staff and
+archived patients block creation; late results cannot overwrite a different owner/session.
+
+The requested login integration touches shared `src/lib/session.ts`, `src/app/login/page.tsx`
+and `src/app/(dashboard)/DashboardShell.tsx` and their regression tests. The access JWT's
+`mustChangePassword` is only a UX hint: Gateway enforces the persisted Organization flag.
+Restricted sessions open `/organization/security`, with logout available and business children,
+navigation and reference loads withheld. Existing PasswordForm validates and changes the
+password, clears the old session and returns to login; normal landing resumes after login with
+the new password. Mobile source is unchanged. Backend contract: docs/plans/03-contracts.md.

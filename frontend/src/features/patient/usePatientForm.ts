@@ -60,7 +60,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
     setLoading(true); setLoadError(null); setRevision((value) => value + 1);
   }
 
-  async function save() {
+  async function save(createAccount = false) {
     if (!loaded || loading || mutation.blocked) return;
     if (!patientPermissions(getRole()).write) {
       setValidationError(patientFailure(new Error("Bạn không có quyền lưu bệnh nhân."))); return;
@@ -77,7 +77,9 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
     await mutation.run(() => patientId
       ? patientApi.update(patientId, { ...patientUpdateBody(form), ...(identityChanged ? { lyDoThayDoiDinhDanh: identityReason.trim() } : {}) })
       : patientApi.create(patientCreateBody(form)),
-      (patient) => { onSaved?.(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`); });
+      (patient) => { onSaved?.(); if (createAccount && !patientId && getRole() === "ADMIN") {
+        router.push(`/organization/accounts/new?ownerType=patient&ownerId=${encodeURIComponent(patient.maBenhNhan)}`); return;
+      } router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`); });
   }
 
   return { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,

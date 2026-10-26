@@ -50,6 +50,20 @@ describe("PatientForm", () => {
     mocks.setToken("session-a");
   });
 
+  it("saves the patient before opening account creation with its returned UUID", async () => {
+    mocks.create.mockResolvedValue(patientContractFixture);
+    render(<PatientForm />); fill();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu và tạo tài khoản" }));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/accounts/new?ownerType=patient&ownerId=${patientContractFixture.maBenhNhan}`));
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not offer account administration to nurses creating a patient", () => {
+    mocks.getRole.mockReturnValue("NURSE");
+    render(<PatientForm />);
+    expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();
+  });
+
   it("requires a reason for identity correction before sending the update", async () => {
     mocks.getById.mockResolvedValue(patientContractFixture);
     render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);

@@ -105,3 +105,15 @@ fixtures before adding workflows.
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Patient tests when available. Full
 functional smoke testing requires a healthy Patient backend through the gateway and is not claimed
 by the local logic checkpoint.
+
+
+### Initial account onboarding — 26/10/2026
+
+ADMIN can use “Lưu và tạo tài khoản” on patient creation. The patient must be saved successfully
+before navigating to `/organization/accounts/new?ownerType=patient&ownerId=<returned UUID>`.
+NURSE retains patient creation permission without acquiring account administration rights.
+The composition route loads the selected patient through `patientApi`, rejects archived/missing
+identity data, and supplies `soCmnd` to the Organization account form. No cross-feature import
+is introduced. Account credentials and mandatory password change follow the
+[Organization guide](organization.md) and canonical
+[backend contract](../../../docs/plans/03-contracts.md). Mobile source is unchanged.

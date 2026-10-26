@@ -15,14 +15,14 @@ import type { CreateAccountRequest, StaffDTO } from "../types";
 import { StaffPicker } from "./StaffPicker";
 
 /** Account creation only; account management lives on the detail route. */
-export function AccountAdmin({ renderPatientPicker }: { renderPatientPicker?: (value: string, onChange: (id: string) => void, disabled: boolean) => ReactNode }) {
+export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initialOwnerId = "", initialOwnerType = "staff" }: { renderPatientPicker?: (value: string, onChange: (id: string) => void, disabled: boolean) => ReactNode; loadPatientIdentity?: (id: string) => Promise<string | null>; initialOwnerId?: string; initialOwnerType?: "staff" | "patient" }) {
   const router = useRouter();
   const mounted = useRef(true);
   const submitting = useRef(false);
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [ownerType, setOwnerType] = useState("staff");
-  const [ownerId, setOwnerId] = useState("");
+  const [password, setPassword] = useState("1");
+  const [ownerType, setOwnerType] = useState(initialOwnerType);
+  const [ownerId, setOwnerId] = useState(initialOwnerId);
   const [staff, setStaff] = useState<StaffDTO | null>(null);
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staffAttempt, setStaffAttempt] = useState(0);
@@ -35,23 +35,31 @@ export function AccountAdmin({ renderPatientPicker }: { renderPatientPicker?: (v
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    if (ownerType !== "staff" || !isUuid(ownerId)) return;
+    if (!isUuid(ownerId)) return;
     let disposed = false;
     const session = getSessionKey();
-    organizationApi.staffMember(ownerId).then(value => {
+    const load = ownerType === "staff"
+      ? organizationApi.staffMember(ownerId).then(value => ({ username: value.identityNumber, staff: value }))
+      : loadPatientIdentity ? loadPatientIdentity(ownerId).then(username => ({ username, staff: null }))
+      : Promise.reject(new Error("Không thể tải CCCD bệnh nhân."));
+    load.then(({ username, staff: value }) => {
       if (!disposed && getSessionKey() === session) {
-        if (!value.active) setStaffError("Nhân viên đã ngừng làm việc. Hãy chọn nhân viên khác.");
-        else setStaff(value);
+        if (value && !value.active) { setStaffError("Nhân viên đã ngừng làm việc. Hãy chọn nhân viên khác."); return; }
+        if (!username?.trim() || !/^[a-zA-Z0-9._-]{3,50}$/.test(username.trim())) {
+          setStaffError("Hồ sơ chưa có CCCD hợp lệ để tạo tên đăng nhập. Hãy cập nhật hồ sơ trước."); return;
+        }
+        setUsername(username.trim());
+        setStaff(value);
       }
     }).catch((cause: unknown) => {
       if (disposed || !isRequestSessionCurrent(session, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
-      else setStaffError(cause instanceof Error ? cause.message : "Không tải được chức danh nhân viên.");
+      else setStaffError(cause instanceof Error ? cause.message : "Không tải được CCCD của hồ sơ.");
     });
     return () => { disposed = true; };
-  }, [ownerId, ownerType, staffAttempt, router]);
+  }, [ownerId, ownerType, staffAttempt, router, loadPatientIdentity]);
 
-  function selectOwner(id: string) { setOwnerId(id); setStaff(null); setStaffError(null); setError(null); }
+  function selectOwner(id: string) { setUsername(""); setPassword("1"); setOwnerId(id); setStaff(null); setStaffError(null); setError(null); }
 
   async function send(body: CreateAccountRequest) {
     if (submitting.current) return;
@@ -96,7 +104,7 @@ export function AccountAdmin({ renderPatientPicker }: { renderPatientPicker?: (v
 
   function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (locked || !role) return;
+    if (locked || !role || !username || staffError) return;
     if (!isUuid(ownerId)) { setError("Vui lòng chọn hồ sơ liên kết hợp lệ."); return; }
     if (new TextEncoder().encode(password).length > 72) { setError("Mật khẩu không được quá 72 byte UTF-8."); return; }
     void send({ username: username.trim(), password, role, staffId: ownerType === "staff" ? ownerId : null, patientId: ownerType === "patient" ? ownerId : null });
@@ -106,13 +114,13 @@ export function AccountAdmin({ renderPatientPicker }: { renderPatientPicker?: (v
     <form onSubmit={create} className="rounded-xl border border-border bg-surface p-5 sm:p-6">
       <fieldset disabled={locked} className="space-y-5">
         <div><h2 className="text-lg font-semibold">Thông tin tài khoản mới</h2><p className="mt-1 text-sm text-muted-foreground">Chọn hồ sơ liên kết để tự động xác định vai trò truy cập.</p></div>
-        <Field label="Tên đăng nhập" htmlFor="account-username" required hint="3–50 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang."><input id="account-username" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Mật khẩu" htmlFor="account-password" required hint="Từ 8 đến 72 ký tự."><input id="account-password" required type="password" minLength={8} maxLength={72} autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Loại hồ sơ liên kết" htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value); selectOwner(""); }}><option value="staff">Nhân viên</option><option value="patient">Bệnh nhân</option></select></Field>
+        <Field label="Tên đăng nhập" htmlFor="account-username" required hint="Tự động lấy từ CCCD của hồ sơ được chọn."><input id="account-username" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" autoComplete="off" readOnly value={username} className={controlClassName} /></Field>
+        <Field label="Mật khẩu ban đầu" htmlFor="account-password" hint="Người dùng phải đổi mật khẩu khi đăng nhập, trước khi sử dụng hệ thống."><input id="account-password" readOnly autoComplete="off" value={password} className={controlClassName} /></Field>
+        <Field label="Loại hồ sơ liên kết" htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value === "patient" ? "patient" : "staff"); selectOwner(""); }}><option value="staff">Nhân viên</option><option value="patient">Bệnh nhân</option></select></Field>
         {ownerType === "staff" ? <StaffPicker id="account-owner" label="Nhân viên" value={ownerId} onChange={selectOwner} disabled={locked} required /> : renderPatientPicker ? renderPatientPicker(ownerId, selectOwner, locked) : <Field label="Mã bệnh nhân" htmlFor="account-owner" required><input id="account-owner" required className={controlClassName} value={ownerId} onChange={event => selectOwner(event.target.value)} /></Field>}
         <Field label="Vai trò tự động" htmlFor="account-role" hint="Vai trò được xác định từ chức danh của nhân viên hoặc hồ sơ bệnh nhân."><input id="account-role" readOnly className={controlClassName} value={role ? accountRoleLabels[role] : ownerId ? "Đang tải chức danh…" : "Chưa chọn hồ sơ"} /></Field>
-        {staffError ? <div role="alert" className="text-sm text-danger">{staffError} <Button type="button" onClick={() => { setStaffError(null); setStaffAttempt(value => value + 1); }}>Tải lại chức danh</Button></div> : null}
-        <Button type="submit" variant="primary" loading={busy} disabled={!role || !isUuid(ownerId)}>Tạo tài khoản</Button>
+        {staffError ? <div role="alert" className="text-sm text-danger">{staffError} <Button type="button" onClick={() => { setStaffError(null); setStaffAttempt(value => value + 1); }}>Tải lại hồ sơ</Button></div> : null}
+        <Button type="submit" variant="primary" loading={busy} disabled={!role || !isUuid(ownerId) || !username || Boolean(staffError)}>Tạo tài khoản</Button>
       </fieldset>
     </form>
     {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}

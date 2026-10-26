@@ -44,7 +44,7 @@ class AccountSessionValidationWebTest {
     @DynamicPropertySource
     static void route(DynamicPropertyRegistry properties) {
         properties.add("spring.cloud.gateway.routes[0].id", () -> "core-organization");
-        properties.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/api/v1/org/**");
+        properties.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/api/v1/org/**,/api/v1/notifications/**");
         properties.add("spring.cloud.gateway.routes[0].uri", () -> "http://localhost:" + DOWNSTREAM.getAddress().getPort());
     }
     @AfterAll static void closeServer() { DOWNSTREAM.stop(0); }
@@ -99,6 +99,37 @@ class AccountSessionValidationWebTest {
         request(access(2)).expectStatus().isUnauthorized();
         request(access(5)).expectStatus().isNoContent();
         assertThat(FORWARDED.get()).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
+    void defaultPasswordAllowsOnlyOwnPasswordChangeEvenIfClaimIsMissing(String role) {
+        UUID staffId = role.equals("PATIENT") ? null : staff;
+        UUID patientId = role.equals("PATIENT") ? UUID.randomUUID() : null;
+        UUID departmentId = role.equals("PATIENT") ? null : department;
+        when(accounts.lookupCurrentIdentity(eq(account), anyString())).thenReturn(Mono.just(
+                new CurrentIdentity(true, true, account, role, staffId, departmentId, patientId, 2, true)));
+        // Deliberately omit the restriction from the token: current server authority still wins.
+        String token = jwt.issueAccessToken(account, role, staffId, departmentId, patientId, 2);
+        String businessPath = role.equals("PATIENT") ? "/api/v1/notifications" : "/api/v1/org/staff/" + staff;
+        web.get().uri(businessPath).header("Authorization", "Bearer " + token)
+                .exchange().expectStatus().isForbidden().expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_PASSWORD_CHANGE_REQUIRED");
+        web.put().uri("/api/v1/org/accounts/me/password").header("Authorization", "Bearer " + token)
+                .exchange().expectStatus().isNoContent();
+        assertThat(FORWARDED.get()).isEqualTo(1);
+    }
+
+    @Test void restrictedAdminCannotManageOtherAccountsOrUseDifferentPasswordMethods() {
+        when(accounts.lookupCurrentIdentity(eq(account), anyString())).thenReturn(Mono.just(
+                new CurrentIdentity(true, true, account, "ADMIN", staff, department, null, 2, true)));
+        String token = jwt.issueAccessToken(account, "ADMIN", staff, department, null, 2, true);
+        web.put().uri("/api/v1/org/accounts/" + UUID.randomUUID() + "/password")
+                .header("Authorization", "Bearer " + token).exchange().expectStatus().isForbidden()
+                .expectBody().jsonPath("$.error.code").isEqualTo("AUTH_PASSWORD_CHANGE_REQUIRED");
+        web.get().uri("/api/v1/org/accounts/me/password").header("Authorization", "Bearer " + token)
+                .exchange().expectStatus().isForbidden();
+        assertThat(FORWARDED.get()).isZero();
     }
 
     @Test void accountAuthorityUnavailableFailsClosedWithoutForwarding() {

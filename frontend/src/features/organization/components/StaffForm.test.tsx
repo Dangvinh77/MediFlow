@@ -41,6 +41,19 @@ const targetDepartment: DepartmentDTO = {
 };
 
 describe("StaffForm", () => {
+  it("saves a staff profile before opening account creation with its returned UUID", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.createStaff.mockResolvedValue(staffContractFixture);
+    render(<StaffForm />);
+    await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
+    fireEvent.change(screen.getByLabelText(/^CCCD/), { target: { value: "012345678901" } });
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
+    fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LICENSE-001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu và tạo tài khoản" }));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/accounts/new?ownerType=staff&ownerId=${staffContractFixture.staffId}`));
+    expect(mocks.createStaff).toHaveBeenCalledTimes(1);
+  });
   it("requires a doctor's license before sending any staff command", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     render(<StaffForm />);

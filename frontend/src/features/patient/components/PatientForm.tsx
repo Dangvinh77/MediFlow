@@ -6,6 +6,7 @@ import { useEffect, useRef, useSyncExternalStore, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
+import { getRole } from "@/lib/auth";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 import { FormSection } from "./RecordLayout";
 import { patientToday } from "../logic";
@@ -27,7 +28,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   const { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving, blocked, outcomeUnknown, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
   const errorSummary = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save(); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save((event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-create-account") === "true"); }
 
   if (loading) return <AsyncState kind="loading" message="Đang tải thông tin bệnh nhân…" />;
   if (error && editing && !loaded) return <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={retry} />;
@@ -52,7 +53,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
           <Field label="Địa chỉ" error={fieldErrors.diaChi} htmlFor="patient-address"><textarea id="patient-address" aria-invalid={Boolean(fieldErrors.diaChi)} aria-describedby={fieldErrors.diaChi ? "patient-address-error" : undefined} autoComplete="street-address" maxLength={255} rows={3} value={form.diaChi} onChange={(event) => set("diaChi", event.target.value)} className={controlClassName} /></Field>
         </FormSection>
       </fieldset>
-      <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
+      <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing && getRole() === "ADMIN" ? <Button type="submit" disabled={blocked} data-create-account="true">Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
     </form>
   );
 }

@@ -50,6 +50,16 @@ class VerifyCredentialsServiceTest {
     }
 
     @Test
+    void legacyDefaultPasswordIsRestrictedOnEveryLogin() {
+        Account account = account(null, UUID.randomUUID(), true, Role.PATIENT);
+        when(accountRepository.findByUsernameForUpdate("patient.one")).thenReturn(Optional.of(account));
+        when(passwordHasher.matches("1", account.getPasswordHash())).thenReturn(true);
+        assertEquals(true, service.execute("patient.one", "1").mustChangePassword());
+        assertEquals(true, service.execute("patient.one", "1").mustChangePassword());
+        assertEquals(true, account.isMustChangePassword());
+    }
+
+    @Test
     void execute_validCredentials_returnsIdentityAndRecordsLogin() {
         UUID staffId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
