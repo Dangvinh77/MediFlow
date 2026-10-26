@@ -28,7 +28,7 @@ public class PatientDirectoryController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PHARMACIST')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PHARMACIST','CASHIER','LAB_TECH')")
     public ResponseEntity<ApiResponse<PageResult<PatientDirectoryDTO>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer page,
@@ -39,7 +39,7 @@ public class PatientDirectoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PHARMACIST')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PHARMACIST','CASHIER','LAB_TECH')")
     public ResponseEntity<ApiResponse<PatientDirectoryDTO>> getById(@PathVariable UUID id) {
         var data = PatientDirectoryDTO.from(patients.getById(id));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())

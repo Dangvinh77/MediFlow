@@ -129,3 +129,11 @@ the API facade. Preserve bare UUID references and never make a direct service-po
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Clinical tests when available. Smoke
 test both role denial and the changed `/appointments` or `/records` flow.
+
+
+## Khả dụng lịch khám — 26/10/2026
+
+Lịch bác sĩ/người bệnh và tiếp nhận dùng nhãn tên, trạng thái tiếng Việt, phân trang phiếu
+trong buổi. CONFIRMED chưa đồng nghĩa đã đến; V2 bắt đầu khám chỉ khi registration hiện hành
+trả readyForExam=true. Core care-labels trả tên tối thiểu qua Gateway, không mở hồ sơ nhân sự
+cho PATIENT. Route tạo lịch cũ chuyển sang reception khi scheduling gate được bật.

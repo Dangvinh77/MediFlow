@@ -6,6 +6,8 @@ import { getSessionKey } from "@/lib/session";
 import { prepareCommandIntent, CommandIntentError } from "@/lib/command-intent";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { appointmentApi } from "../api";
@@ -264,20 +266,19 @@ export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
       </form>
       {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
       {!loading && !loadError && sessions.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chưa có buổi khám trong bộ lọc.</p> : null}
-      {sessions.length > 0 ? <><div className="mt-4 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[48rem] text-left text-sm">
-          <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Ngày</th><th className="p-3">Giờ</th><th className="p-3">Trạng thái</th><th className="p-3">Còn chỗ</th><th className="p-3"><span className="sr-only">Thao tác</span></th></tr></thead>
-          <tbody>{sessions.map(session => <tr key={session.sessionId} className="border-t border-border">
-            <td className="p-3">{formatLocalDate(session.sessionDate)}</td><td className="p-3">{session.startTime}–{session.endTime}</td><td className="p-3">{session.status}</td><td className="p-3">{session.availableCount} / {session.capacity}</td>
-            <td className="p-3 text-right"><Button type="button" disabled={session.status !== "OPEN" || session.availableCount < 1} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}>Chọn buổi</Button></td>
-          </tr>)}</tbody>
-        </table>
-      </div>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
+      {sessions.length > 0 ? <><ul className="mt-4 grid gap-3 lg:grid-cols-2">
+        {sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4 text-sm">
+          <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span>{sessionStatusLabels[session.status]}</span></div>
+          <p><ReferenceText kind="doctor" value={session.doctorId} fallback="Bác sĩ" /></p>
+          <p><ReferenceText kind="department" value={session.departmentId} fallback="Khoa" /> · <ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></p>
+          <div className="flex flex-wrap items-center justify-between gap-3"><span>Còn {session.availableCount} / {session.capacity} chỗ</span><Button type="button" disabled={session.status !== "OPEN" || session.availableCount < 1} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}>Chọn buổi</Button></div>
+        </li>)}
+      </ul>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
     </section>
 
     {selectedSession ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Tiếp nhận vào buổi {formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground">Còn {selectedSession.availableCount} chỗ. AT_COUNTER ghi nhận đã đến; phiếu vẫn chờ thu tiền cho đến khi Billing xác nhận.</p></div>
+        <div><h2 className="text-lg font-semibold">Tiếp nhận vào buổi {formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground">Còn {selectedSession.availableCount} chỗ. Tiếp nhận tại quầy ghi nhận bệnh nhân có mặt. Phiếu được xác nhận sau khi hoàn tất thanh toán.</p></div>
         <Button type="button" variant="secondary" loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải phiếu trong buổi</Button>
       </div>
 
@@ -305,7 +306,7 @@ export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
         </label>
         {visitType === "FOLLOW_UP" ? <section className="space-y-3 rounded-lg border border-border p-4 sm:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 className="font-semibold">Lượt khám trước</h3><p className="text-sm text-muted-foreground">Chỉ chọn lượt V2 đã hoàn tất của cùng bệnh nhân và khoa.</p></div>
+            <div><h3 className="font-semibold">Lượt khám trước</h3><p className="text-sm text-muted-foreground">Chỉ chọn lượt khám theo lịch đã hoàn tất của cùng bệnh nhân và khoa.</p></div>
             <Button type="button" loading={followUpSourceLoading} disabled={!patientId.trim() || creating || Boolean(createError?.uncertain)} onClick={() => void loadFollowUpSources(0)}>Tìm lượt khám trước</Button>
           </div>
           {followUpSourceError ? <AsyncState kind="error" message={followUpSourceError.message} correlationId={followUpSourceError.correlationId} onRetry={() => void loadFollowUpSources(followUpSourcePage)} /> : null}
@@ -313,16 +314,16 @@ export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
             const sameDepartment = source.departmentId === selectedSession.departmentId;
             const selected = selectedFollowUpSource?.registrationId === source.registrationId;
             return <li key={source.registrationId} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
-              <div className="min-w-64 flex-1"><p className="font-medium">Hồ sơ <span className="font-mono">{source.recordId}</span></p><p className="mt-1 text-muted-foreground">Hoàn tất {formatInstant(source.completedAt)} · Khoa <span className="font-mono">{source.departmentId}</span> · Bác sĩ <span className="font-mono">{source.doctorId}</span></p><p className="mt-1 text-muted-foreground">{source.recommendation ? `Có đề xuất: ${formatLocalDate(source.recommendation.recommendedFrom)} – ${formatLocalDate(source.recommendation.recommendedThrough)}` : "Không có đề xuất bác sĩ; cần ghi lý do tự tái khám."}</p></div>
+              <div className="min-w-64 flex-1"><p className="font-medium">Lượt khám hoàn tất {formatInstant(source.completedAt)}</p><p className="mt-1 text-muted-foreground">Hoàn tất {formatInstant(source.completedAt)} · Khoa <ReferenceText kind="department" value={source.departmentId} fallback="Khoa" /> · Bác sĩ <ReferenceText kind="doctor" value={source.doctorId} fallback="Bác sĩ" /></p><p className="mt-1 text-muted-foreground">{source.recommendation ? `Có đề xuất: ${formatLocalDate(source.recommendation.recommendedFrom)} – ${formatLocalDate(source.recommendation.recommendedThrough)}` : "Không có đề xuất bác sĩ; cần ghi lý do tự tái khám."}</p></div>
               <Button type="button" aria-pressed={selected} disabled={!sameDepartment || creating || Boolean(createError?.uncertain)} onClick={() => {
                 setSelectedFollowUpSource(source); setUseFollowUpRecommendation(Boolean(source.recommendation)); setCreateError(null);
                 setPatientAgreedToDoctorReplacement(false); setReplacementReason("");
               }}>{sameDepartment ? selected ? "Đã chọn" : "Chọn lượt khám trước" : "Khác khoa"}</Button>
             </li>;
-          })}</ul> : <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground">Không có lượt V2 đã hoàn tất trong trang này.</p> : null}
+          })}</ul> : <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground">Không có lượt khám theo lịch đã hoàn tất trong trang này.</p> : null}
           {followUpSourcePages > 1 ? <nav aria-label="Trang lượt khám trước" className="flex items-center justify-between text-sm"><Button type="button" disabled={followUpSourceLoading || followUpSourcePage === 0} onClick={() => void loadFollowUpSources(followUpSourcePage - 1)}>Trang trước</Button><span>Trang {followUpSourcePage + 1} / {followUpSourcePages}</span><Button type="button" disabled={followUpSourceLoading || followUpSourcePage + 1 >= followUpSourcePages} onClick={() => void loadFollowUpSources(followUpSourcePage + 1)}>Trang sau</Button></nav> : null}
           {selectedFollowUpSource ? <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-            <p role="status">Đã liên kết lượt <span className="font-mono">{selectedFollowUpSource.registrationId}</span>.</p>
+            <p role="status">Đã liên kết lượt <ReferenceText kind="doctor" value={selectedFollowUpSource.doctorId} fallback="Bác sĩ lượt trước" />.</p>
             {selectedFollowUpSource.recommendation ? <>
               <label className="flex items-center gap-2"><input type="checkbox" checked={useFollowUpRecommendation} onChange={event => { setUseFollowUpRecommendation(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} />Dùng đề xuất của bác sĩ</label>
               {selectedRecommendation ? <><p>Thời gian khuyến nghị: {formatLocalDate(selectedRecommendation.recommendedFrom)} – {formatLocalDate(selectedRecommendation.recommendedThrough)}</p><p className="whitespace-pre-wrap">{selectedRecommendation.reason}</p>{selectedRecommendation.preparationInstructions ? <p className="whitespace-pre-wrap text-muted-foreground">Chuẩn bị: {selectedRecommendation.preparationInstructions}</p> : null}</> : null}
@@ -347,17 +348,17 @@ export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
       </form>
 
       {createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <p role="status" className="font-semibold">{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : `Trạng thái phiếu: ${createdRegistration.status}`}</p>
-        <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Mã phiếu</dt><dd className="break-all font-mono">{createdRegistration.registrationId}</dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Phiên bản giữ chỗ</dt><dd>{createdRegistration.reservationRevision}</dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div></dl>
+        <p role="status" className="font-semibold">{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : registrationStatusLabels[createdRegistration.status]}</p>
+        <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div></dl>
       </div> : null}
 
       {registrationError ? <AsyncState kind="error" message={registrationError.message} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession, registrationPage)} /> : null}
       {registrationList ? <section className="border-t border-border pt-4"><h3 className="font-semibold">Phiếu trong buổi</h3>
         {registrationList.length ? <ul className="mt-3 divide-y divide-border">{registrationList.map(item => <li key={item.registrationId} className="py-3 text-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2"><span className="break-all font-mono">{item.registrationId}</span><span>Bệnh nhân: <span className="font-mono">{item.patientId}</span></span><span>{item.status}</span><span>{item.queueNumber === null ? "Chưa có số" : `Số ${item.queueNumber}`}</span>{item.readyForExam ? <span>Sẵn sàng khám</span> : null}
+          <div className="flex flex-wrap items-center justify-between gap-2"><span><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></span><span>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</span><span>{registrationStatusLabels[item.status]}</span><span>{item.queueNumber === null ? "Chưa có số" : `Số ${item.queueNumber}`}</span>{item.readyForExam ? <span>Sẵn sàng khám</span> : null}
             {item.checkedInAt ? <span role="status">Đã ghi nhận khách đến</span> : item.status === "CONFIRMED" ? <Button type="button" loading={arrivalBusyId === item.registrationId} disabled={Boolean(arrivalBusyId)} onClick={() => void recordArrival(item)}>{arrivalError?.registrationId === item.registrationId && arrivalError.uncertain ? "Gửi lại cùng lệnh đến" : "Ghi nhận đã đến"}</Button> : null}
           </div>
-          {arrivalError?.registrationId === item.registrationId ? <div role="alert" className="mt-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><p>{arrivalError.message}</p>{arrivalError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{arrivalError.correlationId}</span></p> : null}{arrivalError.uncertain ? <p className="mt-2">Chưa xác định trạng thái đã đến. Gửi lại cùng lệnh để giữ nguyên khóa idempotency.</p> : null}</div> : null}
+          {arrivalError?.registrationId === item.registrationId ? <div role="alert" className="mt-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><p>{arrivalError.message}</p>{arrivalError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{arrivalError.correlationId}</span></p> : null}{arrivalError.uncertain ? <p className="mt-2">Chưa xác định trạng thái đã đến. Gửi lại cùng lệnh để tránh ghi nhận trùng.</p> : null}</div> : null}
         </li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">Chưa có phiếu nào trong buổi này.</p>}
         {registrationPages > 1 ? <nav aria-label="Trang phiếu trong buổi" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}>Trang trước</Button><span>Trang {registrationPage + 1} / {registrationPages}</span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}
       </section> : null}

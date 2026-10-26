@@ -302,3 +302,29 @@ pnpm build
 
 Nếu dùng Node mới có xung đột native Web Storage/jsdom, dùng Node 24 LTS theo runner client
 trong hướng dẫn 25/10. Không tắt assertion để biến lỗi thành kết quả đạt.
+
+
+## Kiểm tra khả dụng UI sau cập nhật ngày 26/10
+
+1. Đăng nhập ADMIN, mở quản lý ca khám: khoa/bác sĩ/phòng phải hiển thị tên và trạng thái tiếng Việt.
+2. NURSE mở tiếp nhận, chọn khoa bằng tìm kiếm, tải buổi khám, chọn buổi và bệnh nhân.
+   Với buổi ngày sau, chọn Đặt trước; đăng ký tại quầy dành cho ngày khám theo backend.
+   Tạo phiếu giữ chỗ và ghi thời hạn thu. Không coi thao tác này là đã thanh toán.
+3. CASHIER mở thu phí lịch khám, bấm **Tải khoản chờ thu**. Có thể lọc bằng tên bệnh nhân;
+   kiểm tra ngày sinh để tránh chọn người trùng tên. Chọn phiếu trong danh sách.
+   UI phải tải lại request hiện hành trước khi cho thu; kiểm tra BHYT mô phỏng và số còn phải thu.
+4. Thanh toán đúng một lần. Nếu lỗi kết nối, dùng thao tác kiểm tra/gửi lại của phiếu đang khóa;
+   không đổi người bệnh hoặc tạo lệnh thanh toán mới để né lỗi. Tải lại danh sách sau thành công:
+   phiếu đã thu đủ phải rời danh sách chờ.
+5. PATIENT mở lịch của tôi: thấy tên khoa/bác sĩ/phòng, thời gian khám và hướng dẫn đến quầy.
+   Phiếu đã xác nhận không còn hiển thị hạn giữ chỗ như một khoản đang chờ trả.
+6. DOCTOR mở lịch của tôi, tải lịch, chọn buổi: danh sách hiển thị bệnh nhân và trạng thái đến.
+   Mở phiếu đã trả tiền nhưng chưa đến: không được bắt đầu khám. Khi server xác nhận đủ điều kiện
+   trong ca thực tế, nút Bắt đầu khám mới mở. Thanh toán không tự check-in người bệnh.
+7. Thu nhỏ cửa sổ: thẻ lịch và bảng tiền phải đọc được. Mã UUID chỉ dùng đối soát/API;
+   không dùng mã làm tên người bệnh, bác sĩ hoặc phòng. Nếu lookup lỗi phải có trạng thái và thử lại.
+8. Postman: kiểm tra các API A.13, CASHIER/LAB_TECH đọc được directory tối thiểu nhưng full
+   patient profile vẫn bị từ chối; PATIENT đọc nhãn nhưng không đọc danh sách chờ thu.
+
+Không thể chứng minh toàn bộ khám/Lab trong ngày bằng đặt lịch ngày mai sau giờ làm việc.
+Tổng duyệt khám đầy đủ vẫn theo cửa sổ ca 07:00–17:00 và các bước nghiệp vụ phía trên.

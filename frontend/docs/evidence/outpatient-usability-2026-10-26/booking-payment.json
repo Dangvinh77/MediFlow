@@ -1,0 +1,219 @@
+{
+  "gateway": "http://127.0.0.1:28080",
+  "date": "2026-10-26",
+  "sessionDate": "2026-10-27",
+  "scope": "booking-payment",
+  "checks": [
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "patient",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "other",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "lab",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/api/v1/org/staff/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "correlationId": "3ca790a1-1be6-4a8a-8ab2-3f79bf424d04",
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/api/v2/org/consultation-rooms?departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45&page=0&size=100",
+      "status": 200,
+      "correlationId": "d5634b5a-e26c-4c41-aef2-fcf58007e948",
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v2/consultation-sessions",
+      "status": 201,
+      "correlationId": "dd394a7a-d7a8-4bdf-95ef-61efa620bf12",
+      "expected": [
+        201
+      ]
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "b9bdc447-339e-4882-85dd-2160404042d9",
+      "expected": [
+        201
+      ]
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "6aaa12e7-4f3d-4c3c-88c2-998591a0684f",
+      "expected": [
+        201
+      ]
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/74af36ee-d285-461c-8933-423b0d8dd78e",
+      "status": 404,
+      "correlationId": "97d0639c-070e-49a1-9e91-135e855a0311",
+      "expected": [
+        403,
+        404
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=74af36ee-d285-461c-8933-423b0d8dd78e",
+      "status": 404,
+      "correlationId": "b2a552df-5988-46f7-be99-de96ddb1061f",
+      "expected": [
+        200,
+        404,
+        503
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=74af36ee-d285-461c-8933-423b0d8dd78e",
+      "status": 200,
+      "correlationId": "0b1fc664-a79f-4881-a7a5-c157b980540b",
+      "expected": [
+        200,
+        404,
+        503
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/quote",
+      "status": 200,
+      "correlationId": "3b84b9b5-ad27-4c90-9d75-2fb02c10673f",
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/payments",
+      "status": 200,
+      "correlationId": "096b885c-ff05-4469-a77a-aacd2991ba26",
+      "expected": [
+        200,
+        202
+      ]
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/e2781168-f5e7-46ba-b091-30f815752401/payments",
+      "status": 200,
+      "correlationId": "6f395f12-6943-4f8a-a274-3d488007a2c2",
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/74af36ee-d285-461c-8933-423b0d8dd78e",
+      "status": 200,
+      "correlationId": "9ae04fe4-5373-47e2-9d2a-3b60d14be3cc",
+      "expected": [
+        200
+      ]
+    },
+    {
+      "role": "doctor",
+      "method": "GET",
+      "path": "/api/v2/consultation-sessions/mine?date=2026-10-27",
+      "status": 200,
+      "correlationId": "51a2a152-1691-463e-a823-af81ce1948ab",
+      "expected": [
+        200
+      ]
+    }
+  ],
+  "passed": true,
+  "registrationId": "74af36ee-d285-461c-8933-423b0d8dd78e",
+  "paymentRequestId": "e2781168-f5e7-46ba-b091-30f815752401",
+  "paymentOperationId": "a6d80373-a01c-4da1-b353-e682eedbe041",
+  "transactionId": "ceacdbd8-275f-4570-bbc6-db370af57bac"
+}

@@ -5,6 +5,7 @@ import { createContext, useContext, type ReactNode } from "react";
 export interface ReferenceOption { id: string; label: string }
 export interface ReferencePage { items: ReferenceOption[]; hasMore: boolean; hint?: string }
 export interface ReferenceDirectory {
+  canResolve?: (kind: string) => boolean;
   canSearch: (kind: string) => boolean;
   search: (kind: string, query: string, page: number, scope?: string) => Promise<ReferencePage>;
   resolve: (kind: string, id: string) => Promise<string | null>;

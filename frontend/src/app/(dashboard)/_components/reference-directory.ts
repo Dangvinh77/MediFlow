@@ -10,20 +10,26 @@ import { formatLocalDate } from "@/lib/format";
 export function createReferenceDirectory(role: Role | null): ReferenceDirectory {
   const labels = new Map<string, Promise<string | null>>();
   const clinicalReader = role !== null && ["ADMIN", "DOCTOR", "NURSE"].includes(role);
+  const minimalPatientReader = role === "CASHIER" || role === "LAB_TECH" || role === "PHARMACIST";
   const orgReader = clinicalReader || role === "MANAGER";
   const canSearch = (kind: string) => kind === "account" ? role === "ADMIN"
-    : kind === "patient" || kind === "record" ? clinicalReader
+    : kind === "patient" ? clinicalReader || minimalPatientReader
+      : kind === "record" ? clinicalReader
       : ["doctor", "department", "staff", "appointment"].includes(kind) && orgReader;
+  const careKinds = ["doctor", "department", "room"] as const;
+  const isCareKind = (kind: string): kind is typeof careKinds[number] => careKinds.some(value => value === kind);
+  const canResolve = (kind: string) => role !== null && role !== "SYSTEM" && (isCareKind(kind) || canSearch(kind));
   const save = (kind: string, items: { id: string; label: string }[]) => {
     for (const item of items) labels.set(`${kind}:${item.id}`, Promise.resolve(item.label));
     return items;
   };
   return {
     canSearch,
+    canResolve,
     async search(kind, query, page, scope) {
       if (!canSearch(kind)) throw new Error("Bạn chưa có quyền tìm kiếm thông tin này.");
       if (kind === "patient") {
-        const result = await patientApi.search({ keyword: query, page, size: 20 });
+        const result = minimalPatientReader ? await patientApi.directory(query, page) : await patientApi.search({ keyword: query, page, size: 20 });
         return { items: save(kind, result.content.map(patient => ({ id: patient.maBenhNhan, label: `${patient.hoTen} · ${formatLocalDate(patient.ngaySinh)}` }))), hasMore: result.number + 1 < result.totalPages };
       }
       if (kind === "department") {
@@ -39,8 +45,8 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         };
       }
       if (kind === "doctor" || kind === "staff") {
-        const result = await organizationApi.staff({ departmentId: scope || undefined, jobTitle: kind === "doctor" ? "DOCTOR" : undefined, page, size: 20 });
-        return { items: save(kind, result.content.filter(item => item.active && item.fullName.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi"))).map(item => ({ id: item.staffId, label: `${item.fullName}${item.specialization ? ` · ${item.specialization}` : ""}` }))), hasMore: result.number + 1 < result.totalPages, hint: "Tên được lọc trong từng trang. Dùng Trang sau để xem thêm nhân viên." };
+        const result = await organizationApi.staff({ departmentId: scope || undefined, jobTitle: kind === "doctor" ? "DOCTOR" : undefined, keyword: query, activeOnly: true, page, size: 20 });
+        return { items: save(kind, result.content.filter(item => item.active).map(item => ({ id: item.staffId, label: `${item.fullName}${item.specialization ? ` · ${item.specialization}` : ""}` }))), hasMore: result.number + 1 < result.totalPages };
       }
       if (kind === "appointment") {
         const result = await appointmentApi.search({ page, size: 20 });
@@ -54,19 +60,20 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
       throw new Error("Hãy chọn bệnh nhân trước khi tìm hồ sơ.");
     },
     resolve(kind, id) {
-      if (!canSearch(kind)) return Promise.resolve(null);
+      if (!canResolve(kind)) return Promise.resolve(null);
       const key = `${kind}:${id}`;
       const cached = labels.get(key);
       if (cached) return cached;
       const pending = (async () => {
-        if (kind === "patient") { const item = await patientApi.getById(id); return item.maBenhNhan === id ? `${item.hoTen} · ${formatLocalDate(item.ngaySinh)}` : null; }
+        if (isCareKind(kind)) { const item = await organizationApi.careLabel(kind, id); return item.id === id ? item.label : null; }
+        if (kind === "patient") { const item = minimalPatientReader ? await patientApi.directoryEntry(id) : await patientApi.getById(id); return item.maBenhNhan === id ? `${item.hoTen} · ${formatLocalDate(item.ngaySinh)}` : null; }
         if (kind === "doctor" || kind === "staff") { const item = await organizationApi.staffMember(id); return item.staffId === id ? item.fullName : null; }
         if (kind === "department") { const item = await organizationApi.department(id); return item.departmentId === id ? item.departmentName : null; }
         if (kind === "account" && role === "ADMIN") { const item = await organizationApi.account(id); return item.accountId === id ? `${item.username} · ${item.role}` : null; }
         if (kind === "appointment" && clinicalReader) { const item = await appointmentApi.getById(id); return item.appointmentId === id ? `Lịch hẹn ${formatLocalDate(item.appointmentDate)} · ${item.appointmentTime}` : null; }
         if (kind === "record") { const item = await medicalRecordApi.getById(id); return item.recordId === id ? `Hồ sơ ${formatLocalDate(item.examinationDate)}` : null; }
         return null;
-      })().catch(error => { labels.delete(key); throw error; });
+      })().then(label => { if (label === null) labels.delete(key); return label; }).catch(error => { labels.delete(key); throw error; });
       labels.set(key, pending);
       return pending;
     },

@@ -27,6 +27,8 @@ export interface StaffSearchParams {
 export const organizationApi = {
   updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email: string | null; address: string | null }) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
+  careLabel: (kind: "doctor" | "department" | "room", id: string) =>
+    api.get<{ id: string; label: string }>(`/v1/org/care-labels/${kind}/${encodeURIComponent(id)}`),
   account: (accountId: string) =>
     api.get<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}`),
   accounts: (params: { keyword?: string; role?: string; active?: boolean; page?: number } = {}) => {

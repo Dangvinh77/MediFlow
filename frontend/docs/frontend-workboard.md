@@ -1052,3 +1052,19 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
 Every new UI mutation must still confirm the owner controller, request/response DTO, Gateway
 method/role matrix and error codes. Missing producer behavior becomes a handoff, never a guessed
 frontend contract.
+
+## Cải thiện thao tác ngoại trú — 26/10/2026
+
+Lịch bác sĩ, lịch bệnh nhân, tiếp nhận và quản lý buổi khám dùng tên khoa/bác sĩ/phòng,
+trạng thái tiếng Việt và thẻ co giãn. Lịch bác sĩ có phân trang danh sách bệnh nhân.
+Phiếu phân biệt đã thanh toán/chưa đến, đã đến/chờ khám; nút bắt đầu khám V2 chỉ mở
+khi đọc registration hiện hành có `readyForExam=true`. Route tạo lịch cũ chuyển sang
+quầy tiếp nhận khi scheduling được bật.
+
+Thu ngân tìm khoản chờ thu theo tên/ngày sinh, chọn phiếu rồi tải lại thông tin thu hiện hành;
+không cần gõ UUID cho luồng thông thường. Chi tiết BHYT dùng tỷ lệ phần trăm và tiền định dạng;
+định danh đối soát nằm trong phần mở rộng. Shared reference directory dùng API nhãn tối thiểu
+và patient directory đúng role; lỗi lookup không bị cache vĩnh viễn.
+
+Contract và quyền: [A.13](../../docs/plans/03-contracts.md#a13-nhãn-hiển-thị-và-danh-sách-chờ-thu--26102026).
+Đây là phạm vi ngoại trú đang hoạt động, không kích hoạt Inpatient/Surgery.
