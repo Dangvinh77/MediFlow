@@ -1,0 +1,73 @@
+services:
+  core-service:
+    environment:
+      MEDIFLOW_DEMO_SEED_ENABLED: "true"
+
+  clinical-service:
+    environment:
+      MEDIFLOW_CARE_FINANCE_V2_ENABLED: "true"
+      MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED: "true"
+
+  lab-service:
+    environment:
+      MEDIFLOW_CARE_FINANCE_V2: "true"
+      MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED: "true"
+
+  pharmacy-service:
+    environment:
+      MEDIFLOW_CARE_FINANCE_V2: "true"
+      MEDIFLOW_PHARMACY_IDENTITY_ENABLED: "true"
+      MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED: "true"
+      MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED: "true"
+      MEDIFLOW_PHARMACY_CLEARANCE_AUTHORITY_ENABLED: "true"
+      MEDIFLOW_PHARMACY_OUTPATIENT_API_ENABLED: "true"
+      MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED: "true"
+      MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE: "LOCAL-DEMO-REHEARSAL-2026-10-24"
+
+  billing-service:
+    environment:
+      MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED: "true"
+      MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES: "RX-DEMO"
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED: "true"
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES: "EXAM,LAB_TEST,PRESCRIPTION"
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE: "LOCAL-DEMO-REHEARSAL-2026-10-24"
+      SPRING_APPLICATION_JSON: >-
+        {
+          "billing": {
+            "care-finance": {
+              "prices": {
+                "OUTPATIENT_EXAM": {
+                  "description": "Phi kham ngoai tru demo",
+                  "unitAmount": 150000.00
+                },
+                "LAB": {
+                  "description": "Phi xet nghiem demo",
+                  "unitAmount": 80000.00
+                }
+              }
+            }
+          },
+          "mediflow": {
+            "billing": {
+              "outpatient-refund-publication": {
+                "enabled": true,
+                "acceptance-reference": "LOCAL-DEMO-REHEARSAL-2026-10-24"
+              }
+            }
+          }
+        }
+
+  support-service:
+    environment:
+      MEDIFLOW_CARE_FINANCE_V2: "true"
+      MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED: "true"
+      MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED: "true"
+      MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED: "true"
+      MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED: "true"
+      MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED: "true"
+
+  frontend:
+    environment:
+      MEDIFLOW_OUTPATIENT_UI_ENABLED: "true"
+      MEDIFLOW_PHARMACY_PRESCRIPTION_MODE: "outpatient"
+      MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED: "true"
