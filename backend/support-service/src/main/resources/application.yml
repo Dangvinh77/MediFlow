@@ -34,6 +34,8 @@ mediflow:
     outpatient-read:
       enabled: ${MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED:false}
   notification:
+    outpatient-registration-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_REGISTRATION_CONSUMER_ENABLED:false}
     datasource:
       url: ${MEDIFLOW_NOTIFICATION_DB_URL}
       username: ${MEDIFLOW_NOTIFICATION_DB_USER}
