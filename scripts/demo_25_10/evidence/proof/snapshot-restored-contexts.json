@@ -1,0 +1,26 @@
+{
+  "organization": {
+    "publicTables": 13
+  },
+  "patient": {
+    "publicTables": 4
+  },
+  "clinical": {
+    "publicTables": 13
+  },
+  "lab": {
+    "publicTables": 9
+  },
+  "pharmacy": {
+    "publicTables": 18
+  },
+  "billing": {
+    "publicTables": 48
+  },
+  "notification": {
+    "publicTables": 9
+  },
+  "report": {
+    "publicTables": 60
+  }
+}

@@ -2,6 +2,92 @@
 
 ## Một nguồn wire truth
 
+Evidence source audit 26/10 nằm ở [WF-01 source lock](09-outpatient-source-lock-2026-10-26.md)
+và manifest SHA-256 đi kèm. Đây là baseline quan sát, không phát hành schema mới;
+G-01–11 phải có wire và nghiệm thu producer/consumer trước khi đóng WF-01; slice lịch/giữ suất
+đã có TARGET wire tại phụ lục A, chưa là producer implementation.
+
+**Cập nhật nghiệp vụ 25/10/2026:** [02](02-business-flows.md) là nguồn quy tắc khám mới,
+tái khám, lịch khám và BHYT mô phỏng. Bảng dưới là gap thiết kế cần khóa contract, không
+phải schema/endpoint đã phát hành. Các route/event V1 ở phần sau giữ nguyên cho baseline.
+
+## Hợp đồng cần bổ sung cho luồng 25/10 — chưa triển khai
+
+Ngày 26/10 đã cụ thể hóa phần lịch khám, quyền theo khoa và reservation/payment ở
+[phụ lục A](#opd-scheduling-v2).
+Đây là TARGET wire để triển khai; chưa có producer/consumer implementation acceptance.
+Các phần revisit, chính sách hỗ trợ/zero payable và Report vẫn theo gap WF-01, không suy đã đóng.
+
+| Trao đổi | Authority và thông tin cần có | Tính nhất quán bắt buộc |
+|---|---|---|
+| Staff/khoa/phòng đủ điều kiện | Core cung cấp identity và eligibility; Clinical gọi REST bằng service credential | Missing khác unavailable; backend kiểm lại khi tạo/đổi lịch |
+| Lịch khám và giữ suất | Clinical owns schedule/slot/reservation, revision, capacity, expiry, actor | Giữ suất local atomic; không hai người lấy cùng suất cuối; không đọc DB Core |
+| Lịch cá nhân ngày/tuần | Clinical lấy doctor/staff identity từ signed actor, lọc khoảng ngày theo timezone nghiệp vụ | DOCTOR không đổi doctorId trên URL/body để đọc lịch cá nhân người khác; PATIENT không đọc danh sách bệnh nhân |
+| Quản lý lịch theo khoa | Clinical kiểm ADMIN hoặc MANAGER và phạm vi khoa authoritative | Không có phạm vi MANAGER thì deny; phòng/bác sĩ chồng giờ bị chặn tại backend |
+| Đăng ký tại quầy | Clinical nhận patient, loại lượt, lịch, nguồn tái khám nếu có | Một intent/idempotency key; nguồn tái khám đúng patient; đã có mặt cùng intent |
+| Quote sau hỗ trợ | Billing owns item mapping, policy version, gross/support/patient payable, currency, expiry | Giá server snapshot; replay cùng intent trả cùng quote; input khác báo conflict |
+| Thu tiền và giữ suất | Clinical/Billing trao reservation identity/revision và payment operation | Có quyền giữ ổn định trước nhận thu; expiry/cancel không cắt ngang payment chưa rõ kết quả |
+| Xác nhận phiếu | Billing phát financial eligibility đúng EXAM source; Clinical quyết định schedule confirmation | Patient liability đủ và suất còn hợp lệ; không dùng payment.completed như quyền phổ quát |
+| Nghĩa vụ bằng 0 | Billing lưu policy/source-bound eligibility riêng | Không giả payment bằng 0, không mở mọi dịch vụ của patient |
+| Tái khám | Clinical owns lời hẹn, previous visit/record reference, target date/window, reason | Không đổi episode của lượt cũ; không coi lời hẹn là reservation đã xác nhận |
+| Lab lifecycle | Clinical order và Lab test giữ exact visit/record/source | Đủ tài chính rồi thực hiện; result/cancel có version và actor; Clinical không hoàn tất khi pending bắt buộc |
+| Report/Notification | Snapshot nguồn đủ loại lượt và breakdown tiền, confirmation/change facts | Report không đoán loại lượt; Notification không gọi appointment.created là phiếu đã thanh toán |
+
+Tên như `ConsultationSchedule`, `FollowUpRecommendation`, `policyVersion`, `supportAmount`
+ở thiết kế là thuật ngữ đề xuất, chưa được phép gửi vào live DTO. Khóa wire trong WF-01
+trước implementation: path/method/role, request/response/errors, nullable fields, producer
+subject/event version, source identity và golden fixture. Breaking meaning dùng version mới;
+không thêm optional field rồi đổi nghĩa tổng tiền cũ. Không tự tăng V1/V2 theo ngày tài liệu.
+
+Luồng request/response đích: UI → same-origin Gateway → Clinical tạo registration và reservation;
+Billing nhận nguồn tạo quote/charge qua hợp đồng đã khóa; UI hiển thị chờ chuẩn bị thu nếu event
+chưa tới. Thu ngân gửi payment idempotently tới Billing; response cho biết kết quả thu, không
+khẳng định Clinical đã xử lý event. UI đọc lại phiếu tới khi confirmed hoặc trạng thái cần đối soát,
+có retry read hữu hạn; không tự gửi lại payment. Sau đủ tài chính, Clinical xác nhận cùng reservation
+và phát fact để Notification cập nhật. Không tạo distributed transaction giữa hai service.
+
+```mermaid
+sequenceDiagram
+    actor N as Y tá
+    participant C as Clinical
+    participant B as Billing
+    actor T as Thu ngân
+    participant S as Support
+    actor P as Người bệnh
+    N->>C: Đăng ký tại quầy và giữ suất
+    C-->>N: Mã lượt và thông tin dự kiến
+    C-->>B: Nguồn yêu cầu phí khám
+    B->>B: Snapshot giá và hỗ trợ mô phỏng
+    T->>B: Xem quote đúng lượt
+    B-->>T: Phần người bệnh phải trả
+    T->>B: Thu tiền với idempotency key
+    B->>C: Kiểm và giữ quyền dùng suất cho payment operation
+    C-->>B: Quyền giữ suất ổn định cho operation
+    B->>B: Ghi payment và allocation
+    B-->>T: Receipt thu tiền
+    B-->>C: Financial eligibility đúng nguồn
+    C->>C: Xác nhận suất và phiếu khám
+    C-->>S: Fact phiếu đã xác nhận
+    N->>C: Đọc trạng thái phiếu
+    C-->>N: Phiếu đã xác nhận hoặc đang chờ xử lý
+    S-->>P: Thông báo cá nhân cập nhật
+```
+
+Bản xuất để xem/in: [SVG](diagrams/outpatient-confirmation-sequence.svg),
+[Mermaid source](diagrams/outpatient-confirmation-sequence.mmd).
+
+Mũi tên bất đồng bộ trong sơ đồ là thiết kế ngữ nghĩa; event name/wire cụ thể chỉ tồn tại sau
+source lock. Với zero payable thay bước thu tiền bằng quyết định eligibility có audit của Billing.
+Sơ đồ mô tả happy path. Nếu Clinical từ chối giữ suất hoặc unavailable, Billing dừng trước khi
+ghi nhận thu; không tiếp tục các bước receipt/grant/confirmation phía sau.
+Late payment sau lost reservation phải có trạng thái đối soát, không tự cấp số thứ tự vượt suất.
+Report/Notification có thể cập nhật chậm; không chặn thu tiền vì Support unavailable.
+
+Hoàn phí cần snapshot nguyên bản và linkage actual patient payment/allocation/refund. Không gửi
+supportAmount vào cash payment/refund fact như tiền đã nhận. Phần hỗ trợ mô phỏng bị hủy cần
+adjustment riêng; duplicate event không tạo thêm patient liability hoặc grant. Thuốc mặc định
+hỗ trợ 0%, Pharmacy vẫn là nguồn giá catalogue/stock, Billing là nguồn chính sách tài chính.
+
 Tài liệu này quyết định phạm vi và quy tắc tích hợp. Exact field names/types/nullability/roles/
 errors lấy từ live controllers, DTOs, serializers và producer fixtures ở source, sau đó khóa
 manifest M6-02. Không dùng thiết kế mới để khẳng định endpoint/event chưa code đã tồn tại.
@@ -29,8 +115,8 @@ Nếu chưa đủ, ghi task mở; không đổi demo thành V0 mà vẫn gọi t
 | /api/v1/appointments/**, /api/v1/records/** | Clinical | Vinh |
 | /api/v1/lab/** | Lab | Vinh |
 | /api/v1/pharmacy/** | Pharmacy | Huy |
-| /api/v1/billing/** | Billing | Lộc |
-| /api/v1/reports/**, /api/v1/notifications/** | Support | Huy/Lộc |
+| /api/v1/billing/** | Billing | Vinh |
+| /api/v1/reports/**, /api/v1/notifications/** | Support | Huy/Report, Vinh/Notification |
 | /api/v1/inpatient/**, /api/v1/surgery/** | Không route trong profile MVP | Deferred |
 
 Prefix không thay exact endpoint/role matrix. Gateway phải deny method/path ngoài manifest,
@@ -209,3 +295,372 @@ là scope mới của tài liệu này. Không sửa payload của chúng theo m
   coverage, replay/publication; producer đã có không chứng minh consumer đã hoàn thành.
 
 Không bật admission medication hoặc occupancy V2 trong MVP chỉ vì merge producer này.
+
+<a id="opd-scheduling-v2"></a>
+
+## Phụ lục A — TARGET wire lịch khám và giữ suất 26/10/2026
+
+Contract ID `OPD-SCHED-2026-10-26`, revision 1. Trạng thái: **DESIGN SPECIFIED / NOT IMPLEMENTED**.
+Các path/DTO/event ở phụ lục này là yêu cầu triển khai mới, không dùng để test demo binary hiện tại.
+Không thay các route/serializer V1 đã phát hành. Schema máy đọc và ví dụ target ở
+[JSON Schema](contracts/outpatient-scheduling-v2.schema.json) và
+[examples](contracts/outpatient-scheduling-v2.examples.json). Chúng là design fixtures, không phải golden
+fixtures của producer và không được chép vào source tests rồi tuyên bố producer đã nghiệm thu.
+
+### A.1. Lựa chọn và ranh giới
+
+Đã xét ba hướng: chỉ ghép create/check-in hiện có ở frontend (ít thay đổi nhưng không bảo vệ capacity),
+gộp thu tiền và giữ suất trong một database (mâu thuẫn authority/context hiện hành), hoặc local transactions
+với reservation và payment operation bền vững. Chọn hướng cuối, giữ Clinical/Billing độc lập.
+
+Clinical owns session/reservation/registration/queue position; Core owns account/staff/department/room
+và quyền quản lý khoa; Billing owns payment request/operation/cash/eligibility. Không cross-context SQL.
+Một registration mới có `registrationId = appointmentId = careEpisodeId = EXAM sourceId`; đây là quyết định
+wire cho flow mới, không đổi các walk-in/record-based sources V1 lịch sử. `reservationId`, `sessionId`,
+`paymentRequestId`, `paymentOperationId`, `clearanceId` luôn là các identity riêng.
+
+HTTP mới dùng `/api/v2/...`; frontend tiếp tục shared `api` và same-origin `/api/v2/...`.
+Gateway cần route/rule **mới** tới Clinical/Core/Billing; wildcard V1 hiện tại không tự cho phép V2.
+Các service không được mở cổng trực tiếp cho UI để vượt Gateway. Các endpoint internal dưới đây
+được gọi bằng discovery/service credential, không public human route.
+
+### A.2. Quy ước chung, idempotency và lỗi
+
+- Response giữ `ApiResponse<T>`: success/data/error/timestamp/correlationId; lỗi có data=null,
+  error={code,message,details}, thành công error=null. Timestamp/facts UTC RFC3339.
+- UUID canonical; LocalDate `YYYY-MM-DD`; LocalTime `HH:mm`; timezone cố định `Asia/Ho_Chi_Minh`.
+  Mọi khoảng ca/nghỉ là `[startTime,endTime)`. Tại 17:00 không nhận buổi mới; endTime tối đa 17:00.
+- Command human bắt buộc `X-Correlation-Id` nonblank tối đa 120 và `Idempotency-Key` nonblank tối đa
+  120 ký tự ASCII printable không space. Payment V2 cũng dùng **header**; V1 vẫn giữ key trong body.
+  Header correlation cho read optional, thiếu thì server tạo và echo. Internal request bắt buộc correlation.
+- Idempotency scope=(verified actor account hoặc service subject, method, canonical path, key).
+  Normalize DTO theo typed values, giữ null khác string rỗng; chưa qua validation không tạo receipt.
+  Exact replay trả original data, HTTP status và Location, `Idempotency-Replayed: true`; không tính lại
+  expiry, queue number, operationId hay giá. Same key khác typed input trả 409 `IDEMPOTENCY_CONFLICT`.
+  Actor bị khóa/mất quyền vẫn bị deny trước khi đọc receipt; không phát lại dữ liệu trái quyền.
+- Receipt retention tối thiểu 30 ngày cho schedule command; registration/payment/lease receipts giữ
+  cùng vòng đời hồ sơ/ledger, không tự purge để key cũ có thể tạo effect lần hai. Hết hạn dữ liệu
+  idempotency thì giữ tombstone hoặc deny reuse, không coi key lịch sử là command mới.
+- Mutation optimistic dùng `expectedRevision` trong body, không đồng thời dùng If-Match. Revision
+  bắt đầu 1. JSON có field thừa hoặc thiếu field bắt buộc trả 400 `INVALID_REQUEST` cho request V2.
+- Tiền trong **DTO V2 mới** là decimal string dạng `100000.00`, không dấu phân tách hàng nghìn;
+  currency=`VND`. V1/events hiện có giữ BigDecimal numeric wire. Không dùng JS float để quyết định thu.
+- Read list có page mặc định 0, size 20, tối đa 100; PageResult content/totalElements/totalPages/number/size.
+  Bộ lọc không được cấp quyền bị 403, không trả danh sách rỗng để che lỗi quyền. ID không tồn tại
+  hoặc ngoài resource scope trả cùng 404 `RESOURCE_NOT_FOUND`; own-calendar không cho chọn doctorId.
+
+| HTTP | Code target | Điều kiện |
+|---|---|---|
+| 400 | INVALID_REQUEST, INVALID_IDEMPOTENCY_KEY | Sai schema/header/date/range; query không được hỗ trợ |
+| 401 | AUTH_UNAUTHORIZED | Thiếu/sai/hết hạn credential |
+| 403 | SCHEDULING_SCOPE_DENIED | Role không được phép hoặc query khoa ngoài assigned scope |
+| 404 | RESOURCE_NOT_FOUND | Không có resource nhìn thấy trong scope |
+| 404 | PAYMENT_REQUEST_NOT_READY, PAYMENT_OPERATION_NOT_FOUND | Read request chưa sẵn sàng hoặc internal operation không tồn tại; không chứng minh chưa thu để nhả khóa |
+| 409 | REVISION_CONFLICT, IDEMPOTENCY_CONFLICT | Stale revision hoặc key reuse khác input |
+| 409 | SESSION_OVERLAP, SESSION_CAPACITY_EXHAUSTED | Ca/phòng chồng hoặc hết suất |
+| 409 | SESSION_HAS_REGISTRATIONS, RESERVATION_NOT_PAYABLE | Thay cấu hình ảnh hưởng phiếu hoặc hold đã hết/hủy |
+| 409 | PAYMENT_OPERATION_IN_PROGRESS, PAYMENT_OPERATION_CLOSED | Đã có operation khác hoặc đã đóng không thu |
+| 409 | BILLING_PAYMENT_FLOW_REQUIRED, CLINICAL_REGISTRATION_FLOW_REQUIRED | Cố dùng write V1 cho source V2 |
+| 422 | SCHEDULE_INELIGIBLE, FOLLOW_UP_NOT_ENABLED, PAYMENT_AMOUNT_MISMATCH | Không đủ eligibility, follow-up chưa mở, amount không khớp phần còn phải trả |
+| 503 | SCHEDULING_AUTHORITY_UNAVAILABLE, PAYMENT_AUTHORITY_UNAVAILABLE | Timeout/5xx/malformed provider; không biến thành missing hoặc thanh toán thất bại chắc chắn |
+
+### A.3. Authority và phòng — Core, owner Hoàng Anh
+
+MVP dùng danh sách khoa quản lý được ADMIN cấp **theo accountId** trong Core, revision và audit riêng.
+Không lấy departmentHeadId hoặc staff.departmentId làm quyền MANAGER. ADMIN toàn phòng khám;
+MANAGER account active + staff active + assignment của khoa active; không assignment thì deny.
+ADMIN grant không tự đổi role: chỉ account role MANAGER mới dùng danh sách quyền này.
+
+| Method/path TARGET | Caller/role | Request → data |
+|---|---|---|
+| `GET /api/v2/org/accounts/{id}/schedule-management-scope` | ADMIN | ScopeSnapshot; không cho MANAGER đọc quyền account khác |
+| `PUT /api/v2/org/accounts/{id}/schedule-management-scope` | ADMIN | ScopeCommand → ScopeSnapshot; idempotent, replace toàn bộ list |
+| `GET /api/v2/org/scheduling-authority?actorAccountId=&departmentId=` | Service subject clinical-service, role SYSTEM, type service | SchedulingAuthority; snapshot current account/staff/khoa/assignment |
+| `GET /api/v2/org/consultation-eligibility?doctorId=&departmentId=&roomId=` | clinical-service/SYSTEM/service | ConsultationEligibility; kiểm các identity cùng snapshot Core |
+| `GET /api/v2/org/consultation-rooms?departmentId=&page=&size=` | ADMIN/MANAGER | PageResult<RoomSummary>; Core kiểm scope, chỉ active CONSULTATION rooms |
+
+`ScopeCommand={expectedRevision,departmentIds,reason}`; lần đầu expectedRevision=0, revision mới=1;
+departmentIds là array UUID duy nhất, [] là thu hồi toàn bộ; reason 1–500, tối đa 100 khoa.
+Core từ chối unknown/inactive khoa, cấp list nonempty cho account không active MANAGER hoặc staff không hợp lệ
+bằng 422 SCHEDULE_INELIGIBLE. List [] được phép thu hồi cả khi account đã inactive/đổi role.
+Read account chưa có assignment trả revision=0, departmentIds=[]; account không tồn tại
+trả 404. ScopeSnapshot={accountId,revision,departmentIds,updatedAt,updatedByAccountId}; hai audit fields
+null chỉ ở snapshot revision=0. Update/revoke và outbox/audit/receipt cùng transaction Core.
+
+`SchedulingAuthority={actorAccountId,accountExists,accountActive,currentRole,staffId,staffActive,
+departmentId,departmentActive,canManageSchedules,scopeRevision,observedAt}`. currentRole/staffId null
+khi không có account/association; scopeRevision=0 nếu chưa có assignment. Subject Clinical không được
+chuyển accountId người khác từ human body vào authority call: account lấy từ verified access principal.
+Clinical so currentRole với signed role; mismatch deny, không tự nâng role. Account ADMIN active có thể
+canManageSchedules=true mà staffId null; MANAGER bắt buộc staffId và staffActive=true.
+
+`ConsultationEligibility={doctorId,doctorExists,doctorActive,eligibleDoctor,doctorDepartmentId,
+departmentId,departmentExists,departmentActive,roomId,roomExists,roomActive,roomDepartmentId,
+roomType,eligible,observedAt}`. eligible chỉ true nếu doctor đủ điều kiện, cùng khoa active,
+room active cùng khoa và roomType=`CONSULTATION`. Kết quả missing vẫn 200 với flags false/null tương ứng;
+503 là unavailable. Department/room UUID requested vẫn echo, không tạo UUID thay thế.
+
+RoomSummary={roomId,departmentId,roomName,roomType}; không expose staff contacts/medical records.
+Core hiện lưu roomType dưới dạng string, chưa có enum CONSULTATION được khóa từ source.
+Giá trị CONSULTATION ở đây là hợp đồng TARGET: owner Core phải chuẩn hóa/kiểm kê dữ liệu phòng
+và nghiệm thu mapping trước khi mở gate; không tự coi mọi roomType cũ là phòng khám hợp lệ.
+Credential internal TTL tối đa 60 giây, sub allowlist chính xác clinical-service, role SYSTEM, type service;
+không human/refresh token hoặc chỉ tin X-Role. Clinical không cache positive authority cho mutation.
+Quyền có hiệu lực tại snapshot kiểm tra từng command; không hứa transaction nguyên tử xuyên Core/Clinical.
+Thu hồi quyền chặn các command sau khi Core trả revision mới; không tự hủy phiếu đã thu từ trước.
+
+### A.4. Buổi nhận khám và lịch bác sĩ — Clinical, owner Vinh
+
+| Method/path TARGET | Role và scope | Input → data |
+|---|---|---|
+| `POST /api/v2/consultation-sessions` | ADMIN/MANAGER có scope khoa | SessionCreate → SessionDTO; 201 + Location |
+| `PUT /api/v2/consultation-sessions/{id}` | ADMIN/MANAGER scoped | SessionUpdate → SessionDTO; 200 |
+| `PUT /api/v2/consultation-sessions/{id}/status` | ADMIN/MANAGER scoped | SessionStatusCommand → SessionDTO; 200 |
+| `GET /api/v2/consultation-sessions` | ADMIN/MANAGER/NURSE | departmentId bắt buộc, fromDate/toDate, page/size; PageResult<SessionDTO> |
+| `GET /api/v2/consultation-sessions/mine` | DOCTOR | weekStart thứ Hai hoặc date, đúng một trong hai; DoctorCalendar |
+| `GET /api/v2/consultation-sessions/{id}/registrations` | ADMIN/MANAGER scoped/NURSE/assigned DOCTOR | page/size; PageResult<RegistrationSummary> |
+
+SessionCreate={doctorId,departmentId,roomId,sessionDate,startTime,endTime,breaks,capacity}.
+breaks là array không null, có thể [], tối đa 20 phần tử; mỗi phần tử={startTime,endTime}. Capacity integer 1–200
+là giới hạn kỹ thuật demo, không định mức chuyên môn. Thời gian 07:00≤start<end≤17:00, breaks nằm
+trọn trong ca, không chồng, không phủ kín ca. Các khoảng ca của cùng doctor **hoặc** room không chồng,
+kể cả trạng thái STOPPED; chỉ CANCELLED bỏ ràng buộc. Hai ca liền nhau được phép.
+
+SessionUpdate gồm toàn bộ SessionCreate + expectedRevision/reason; không chuyển departmentId.
+Muốn đổi khoa thì hủy ca rỗng và tạo mới. Có HELD/PAYMENT_LOCKED/CONFIRMED/CONSUMED thì chỉ được đổi
+capacity≥occupied và capacity≥1; đổi doctor/room/date/times/breaks bị SESSION_HAS_REGISTRATIONS.
+Ca có người đã phục vụ vẫn không sửa các trường này. Replay exact command vẫn trả receipt ban đầu.
+
+SessionStatusCommand={expectedRevision,status,reason}; status chỉ OPEN/STOPPED/CANCELLED.
+OPEN↔STOPPED được phép, mở lại kiểm Core eligibility. STOPPED không nhận giữ chỗ mới nhưng các hold
+đã có còn hạn vẫn được thanh toán/xác nhận. CANCELLED terminal, chỉ cho khi occupied=0;
+không tự hủy phiếu hoặc tự hoàn tiền. Không DELETE ca; audit before/after/actor/reason.
+
+SessionDTO={sessionId,revision,doctorId,departmentId,roomId,sessionDate,startTime,endTime,breaks,capacity,
+status,heldCount,paymentLockedCount,confirmedCount,consumedCount,availableCount,observedAt}.
+revision là **configuration revision**, không tăng theo từng lượt giữ suất. Counter là snapshot server;
+available=capacity-held-paymentLocked-confirmed-consumed, không âm. Cancellation trước phục vụ chỉ
+trả capacity sau khi lease/outcome đã được xử lý; completed vẫn chiếm consumed, không cộng lần hai.
+
+List giới hạn khoảng ngày tối đa 31 ngày; fromDate≤toDate. ADMIN/NURSE đọc khoa được chỉ định,
+MANAGER chỉ assignment; NURSE không có quyền tạo/sửa ca. Directory chỉ cho chọn, mutation recheck server.
+DoctorCalendar={doctorId,fromDate,toDate,timezone,sessions}; sessions là list SessionDTO tối đa 7 ngày,
+weekStart là thứ Hai theo Asia/Ho_Chi_Minh, date là 1 ngày. Không nhận doctorId query kể cả trùng mình.
+Actor staffId từ signed credential; thiếu identity hoặc inactive thì deny. Không có buổi → sessions=[],
+provider lỗi → 503. Week response không chứa danh sách người bệnh/diagnoses.
+
+RegistrationSummary={registrationId,patientId,visitType,status,checkedInAt,queueNumber,readyForExam}.
+DOCTOR chỉ đọc registrations của session được phân công; không nhận doctorId body. MANAGER chỉ xem
+tóm tắt vận hành, không tự mở quyền xem hồ sơ khám. Họ tên cần directory tối thiểu đã kiểm quyền,
+không lấy từ bảng khác của Core hoặc mở broad patient endpoint cho mọi role.
+
+### A.5. Đăng ký và giữ một suất — Clinical
+
+| Method/path TARGET | Role | Input → data |
+|---|---|---|
+| `POST /api/v2/outpatient-registrations` | ADMIN/NURSE | RegistrationCreate → RegistrationDTO; 201 + Location |
+| `GET /api/v2/outpatient-registrations/{id}` | ADMIN/NURSE/assigned DOCTOR hoặc owner PATIENT | RegistrationDTO; PATIENT dùng signed patientId |
+| `PUT /api/v2/outpatient-registrations/{id}/arrival` | ADMIN/NURSE | RevisionCommand → RegistrationDTO; 200 |
+| `PUT /api/v2/outpatient-registrations/{id}/cancellation` | ADMIN/NURSE hoặc assigned DOCTOR | CancellationCommand → RegistrationDTO; 200 |
+
+RegistrationCreate={patientId,sessionId,expectedSessionRevision,receptionMode,visitType,
+previousRegistrationId,reason}. receptionMode=AT_COUNTER/PREBOOKED; visitType ở slice này chỉ NEW_VISIT,
+previousRegistrationId phải null. FOLLOW_UP trả FOLLOW_UP_NOT_ENABLED cho tới khi WF-04 có contract riêng;
+không gắn nhãn tái khám bằng cách nhét text vào reason. reason nullable tối đa 1000.
+
+Một transaction Clinical: khóa session, kiểm OPEN/config revision/Core doctor-room eligibility/patient,
+unique intent, chống trùng lượt active cùng patient/session, giữ một suất và tạo registration/outbox/receipt.
+Database guard chống last-seat race; hai registration khác key không thể cùng lấy suất cuối.
+AT_COUNTER đặt checkedInAt=server now; PREBOOKED=null, arrival command ghi lần đầu bằng server time.
+Không thêm command 'xác nhận tiếp nhận' trước thu cho người đã AT_COUNTER.
+PREBOOKED ở slice này cũng hoàn tất thu trong TTL 15 phút từ lúc đăng ký; khi CONFIRMED,
+reservation không bị TTL HELD giải phóng, được giữ cho ngày/buổi đã chọn. Khi đến chỉ ghi
+arrival và xử lý khoản phát sinh nếu có. Đặt trước để tới ngày khám mới thu là policy khác,
+chưa được mở bằng receptionMode này.
+
+Reservation hết hạn tại server now+15 phút khi HELD; past session date hoặc buổi đã kết thúc không nhận mới.
+Chỉ giới hạn reservation bởi buổi/TTL, không chia 15 phút thành thời lượng khám. Tại t==expiresAt hold
+không còn payable, trừ khi payment lease đã chuyển PAYMENT_LOCKED trước thời điểm đó. Bắt đầu thu cũng
+phải trước endTime của buổi; late arrival đã thanh toán được xử lý vận hành, không tự đổi bác sĩ/ca.
+
+RegistrationDTO={registrationId,revision,patientId,doctorId,departmentId,roomId,sessionId,sessionDate,
+startTime,endTime,receptionMode,visitType,previousRegistrationId,status,reservationId,reservationRevision,
+reservationStatus,reservationExpiresAt,checkedInAt,queueNumber,readyForExam,createdAt,updatedAt}.
+Ngày/giờ/bác sĩ là snapshot của buổi, chưa được gọi là lịch đã xác nhận khi status=AWAITING_PAYMENT.
+queueNumber null trước CONFIRMED; số tăng duy nhất trong session khi xác nhận, không tái dùng số đã hủy.
+readyForExam chỉ true khi CONFIRMED + checkedInAt!=null + eligibility mà Clinical biết còn hợp lệ;
+đây là hint cho UI, không gọi execution-starts có side effect để tính một GET. Start command phải kiểm
+current authority/schedule/execution guards lại, không tin boolean frontend.
+
+Điểm tích hợp bắt đầu khám giữ `PUT /api/v1/appointments/{id}/start-exam` và wire
+`StartExamRequest` đang khóa ở source audit, normal body `{"emergencyOverride":null}`.
+Với registrationContractVersion=2, implementation phải dispatch sang guard mới: assigned doctor,
+CONFIRMED, checkedInAt khác null, reservation CONFIRMED và exact financial execution authority.
+Transaction Clinical chuyển IN_EXAM/CONSUMED, tạo record đúng episode và registration fact cùng commit;
+retry không tạo record hoặc consumedCount lần hai. Slice lịch khám không mở emergencyOverride để
+bỏ qua các điều kiện trên. Endpoint complete/Lab giữ wire hiện có, cần bổ sung lifecycle integration
+theo WF-07; không tuyên bố schema lịch khám đã nghiệm thu vòng khám/Lab.
+
+Trạng thái registration: AWAITING_PAYMENT → CONFIRMED → IN_EXAM → COMPLETED, hoặc
+AWAITING_PAYMENT → EXPIRED/CANCELLED; lỗi paid/confirmation mismatch → RECONCILIATION_REQUIRED.
+Không cần trạng thái registration PAYMENT_PENDING: reservationStatus thể hiện PAYMENT_LOCKED.
+Hủy trước khám dùng expectedRevision/reason (1–500); PAYMENT_LOCKED bị 409 PAYMENT_OPERATION_IN_PROGRESS.
+Hủy CONFIRMED trước IN_EXAM phát cancellation và nghĩa vụ hoàn, không trả tiền tự động. Hủy/đổi sau
+IN_EXAM không thuộc command này; theo clinical cancellation/adjustment policy riêng, không giải phóng suất đã phục vụ.
+
+Reservation chuyển CONFIRMED→CONSUMED khi bắt đầu khám, không đợi complete. Hoàn tất hồ sơ chỉ đổi
+registration IN_EXAM→COMPLETED; không giảm consumedCount. Clinical resolution/recovery không bị buộc
+gọi Core chỉ để áp receipt tài chính đã có; Core unavailable chặn allocation mới/quản lý ca và bắt đầu
+khám khi thiếu authority, không cản ghi nhận outcome cash để đối soát. Bác sĩ bị ngừng hoạt động sau
+giữ suất cần xử lý vận hành có audit, không tự chuyển bác sĩ hoặc xóa payment.
+
+### A.6. Thu tiền có khóa suất — Billing và Clinical
+
+Slice này thu **toàn bộ số còn phải trả, dương**, bằng CASH/BANK_TRANSFER; không mở partial payment mới,
+zero-payable hoặc INSURANCE cash. BHYT policy/zero-liability thuộc WF-05/06, cần contract bổ sung.
+Billing vẫn phải giữ primitive ledger/cash facts và refund guards đã có.
+
+| Method/path TARGET | Caller | Request → data |
+|---|---|---|
+| `GET /api/v2/billing/payment-requests/by-registration?registrationId=` | ADMIN/CASHIER | RegistrationPaymentRequestDTO; 404 PAYMENT_REQUEST_NOT_READY nếu source chưa xử lý, UI read retry hữu hạn |
+| `POST /api/v2/billing/payment-requests/{id}/payments` | ADMIN/CASHIER | ScheduledPaymentCommand → ScheduledPaymentResult; 200 completed hoặc 202 PREPARING |
+| `GET /api/v2/billing/payment-operations/{id}` | ADMIN/CASHIER hoặc clinical-service/SYSTEM | ScheduledPaymentResult; human scope theo payment request; internal bắt buộc query registrationId/reservationId khớp binding |
+| `POST /api/v2/clinical/reservations/{id}/payment-locks` | billing-service/SYSTEM/service | PaymentLockCommand → PaymentLease; 200 |
+| `POST /api/v2/billing/payment-operations/{id}/close-if-unpaid` | clinical-service/SYSTEM/service | ClosePaymentCommand → ScheduledPaymentResult; 200 COMPLETED/CLOSED_NOT_PAID |
+| `PUT /api/v2/clinical/reservations/{id}/payment-resolution` | billing-service/SYSTEM/service | PaymentResolution → RegistrationDTO; 200 |
+
+Source registration binding trong Billing do fact Clinical ở A.7 tạo, không từ human body tự khai.
+RegistrationPaymentRequestDTO={paymentRequestId,invoiceId,accountId,registrationId,reservationId,
+patientId,departmentId,sourceType,sourceId,careEpisodeType,careEpisodeId,requestedAmount,paidAmount,
+remainingAmount,currency,status,expiresAt,observedAt}. sourceType=EXAM; episodeType=OUTPATIENT_VISIT;
+sourceId=careEpisodeId=registrationId. requested/paid/remaining decimal strings; snapshot không phải lease.
+
+ScheduledPaymentCommand={reservationId,expectedReservationRevision,amount,currency,paymentMethod,
+providerReference}; idempotency header bắt buộc. Billing so reservationId với source binding, amount
+với remaining under lock, currency/method hợp lệ; không nhận giá/bác sĩ/patient/lease token do thu ngân chọn.
+ProviderReference null cho CASH; BANK_TRANSFER là thu ngân đối chiếu bằng chứng mô phỏng, reference
+1–120 bắt buộc, không tích hợp ngân hàng thật. Không gọi một transaction chưa biết outcome là thất bại.
+
+PaymentOperation={paymentOperationId,paymentRequestId,registrationId,reservationId,status,transactionId,
+amount,currency,createdAt,updatedAt}; status PREPARING/COMPLETED/CLOSED_NOT_PAID.
+transactionId chỉ nonnull ở COMPLETED. ScheduledPaymentResult={operation,payment,clearanceId}; payment là
+LedgerPaymentV2DTO khi completed, money V2 dạng string; payment/clearanceId=null khi PREPARING/CLOSED_NOT_PAID.
+COMPLETED có clearanceId nonnull để Clinical đối soát kết quả khi event eligibility bị trễ.
+Exact replay còn PREPARING trả 202 **cùng operationId**, khi COMPLETED trả 200 cùng receipt; đây là
+ngoại lệ read-current của command receipt chung A.2, không tạo payment mới. CLOSED trả 409 PAYMENT_OPERATION_CLOSED.
+
+Trình tự bắt buộc:
+
+1. Billing lưu PREPARING + stable operationId/command fingerprint/actor dưới unique key; mỗi request
+   chỉ một operation chưa terminal. Không giữ DB transaction/row lock trong lúc gọi mạng.
+2. Billing gọi Clinical payment-locks với operationId và exact binding; Clinical khóa reservation,
+   kiểm HELD chưa expiry/session chưa kết thúc, revision và patient/source; đổi PAYMENT_LOCKED,
+   tạo fenceToken tăng đơn điệu, ghi operation receipt cùng transaction. Không kiểm 'còn suất' lần hai
+   để chiếm suất khác: chính reservation này đã chiếm một suất.
+3. Billing có lease mới mở local transaction, khóa operation/request/account, kiểm chưa CLOSED,
+   source và amount vẫn khớp rồi ghi payment/allocation/request/clearance/outbox/COMPLETED cùng commit.
+   Lease ID/fence binding được persist với operation. Một concurrent close tranh cùng operation row.
+   Lease acquire hợp lệ trước TTL cho phép operation này commit sau TTL; không áp nguyên guard expiry
+   V1 vào đường mới rồi thu thất bại giữa chừng. Không nới expiry cho V1 hay operation chưa có lease.
+4. Response thu tiền chỉ chứng minh Billing commit. Clinical nhận resolution/fact (A.7), kiểm exact
+   operation/fence/binding/financial eligibility, chuyển reservation CONFIRMED và registration CONFIRMED,
+   cấp queueNumber cùng outbox/receipt trong transaction. Trước đó UI hiển thị 'Đã thu, chờ xác nhận lịch'.
+5. Nếu Clinical từ chối acquire lease, Billing đóng operation CLOSED_NOT_PAID; không ghi payment.
+   Nếu HTTP acquire timeout, giữ PREPARING và retry cùng operation; không tự chuyển CLOSED chỉ từ timeout.
+
+PaymentLockCommand={paymentOperationId,paymentRequestId,registrationId,patientId,sourceType,sourceId,
+careEpisodeId,expectedReservationRevision}. Expected revision chỉ kiểm ở acquire lần đầu;
+exact replay cùng operation/binding trả original fence dù revision đã tăng. Changed binding trả 409.
+PaymentLease={paymentOperationId,reservationId,reservationRevision,fenceToken,lockedAt,reconcileAfter}.
+reconcileAfter=lockedAt+2 phút là lúc worker bắt đầu đối soát, **không là hạn tự giải phóng**.
+Internal commands dùng paymentOperationId/fence làm business idempotency key; không yêu cầu tạo
+Idempotency-Key header khác qua từng retry. Exact binding được giữ trong receipt; changed binding conflict.
+
+ClosePaymentCommand={registrationId,reservationId,fenceToken,reason}; reason=RESERVATION_RECONCILIATION.
+Billing khóa operation: COMPLETED trả original completed receipt/clearance; PREPARING chuyển CLOSED_NOT_PAID;
+vắng operation trả 404 PAYMENT_OPERATION_NOT_FOUND, Clinical giữ khóa và báo lỗi đối soát,
+không trả 'missing nên cứ release'. PREPARING đã phải persist trước acquire; mất row là lỗi cần phục hồi,
+không được tự bịa amount/receipt để tạo một response CLOSED.
+Sau khi CLOSED, mọi late payment attempt cùng ID đều bị từ chối. Khác binding là 409; timeout/5xx giữ khóa.
+
+PaymentResolution={paymentOperationId,paymentRequestId,registrationId,reservationId,fenceToken,outcome,
+transactionId,clearanceId,completedAt}; outcome=COMPLETED/CLOSED_NOT_PAID. Hoàn tất cần ba fields cuối
+nonnull; CLOSED cần chúng null. Clinical chỉ nhận Billing service credential, không nhận human xác nhận.
+Nếu COMPLETED: CONFIRMED (không claim lần hai); nếu CLOSED: trở lại HELD khi TTL và buổi còn hạn,
+ngược lại EXPIRED và giải phóng. COMPLETED đến sau cuối buổi chuyển RECONCILIATION_REQUIRED,
+không tự cấp số khám cho buổi đã kết thúc; giữ cash receipt để xử lý đổi lịch/hoàn có audit.
+Mỗi operation chỉ một terminal resolution; CLOSED không được thành
+COMPLETED trong local policy. Mismatch giữ RECONCILIATION_REQUIRED + evidence, không chiếm thêm suất.
+
+Worker Clinical quét PAYMENT_LOCKED đến reconcileAfter bằng durable cursor/lease; gọi close-if-unpaid,
+áp kết quả bằng cùng routine resolution. Worker chết/restart tiếp tục cursor; lỗi provider bounded retry
+và thông báo vận hành, không drop hoặc giữ im lặng vô hạn. Poll mặc định 30 giây, backoff tối đa 60 giây;
+sau 5 phút chưa đối soát được tạo cảnh báo. Không có timeout đơn phương giải phóng trong outage.
+
+Billing worker tiếp tục PREPARING bằng cùng operation/lease, hoặc thấy CLOSED thì dừng. Worker Clinical
+có thể đóng PREPARING trước khi tiền được commit; Billing phải kiểm terminal row trong transaction cuối.
+Sau close/release, Clinical giữ tombstone operation/fence để late acquire request không hồi sinh hold.
+Đây là chốt chống 'hết giờ → cấp lại suất → payment cũ tới muộn'. Không cần distributed transaction.
+
+### A.7. Fact mới, replay và thứ tự sự kiện
+
+Các fact mới đều envelope eventId/eventType/version/occurredAt/correlationId/producer/payload,
+integer `version=1` vì là **event type mới**; không liên quan HTTP `/v2`. Routing key bằng eventType.
+Original bytes/eventId persist trong outbox; không serialize lại khi retry. Các event cũ không đổi schema.
+
+| Event type mới | Producer → consumer | Payload |
+|---|---|---|
+| `outpatient.registration.changed` | clinical-service → Billing/Notification/Report | RegistrationFact |
+| `outpatient.financial.eligibility.granted` | billing-service → Clinical | EligibilityFact |
+
+RegistrationFact={registrationId,registrationRevision,patientId,doctorId,departmentId,sessionId,
+roomId,sessionDate,startTime,endTime,visitType,reservationId,reservationStatus,status,checkedInAt,
+queueNumber,reservationExpiresAt,priceCode,sourceType,sourceId,careEpisodeType,careEpisodeId,cancellation,changedAt}.
+cancellation=null trừ status CANCELLED; khi CANCELLED bắt buộc
+{actorAccountId,actorStaffId,reason,cancelledAt}, actorStaffId nullable cho ADMIN không có staff association.
+EXPIRED do clock/worker không giả actor human. Billing dùng reservationExpiresAt làm expiry snapshot,
+nhưng operation đã acquire lease hợp lệ được xử lý theo A.6.
+priceCode do Clinical server policy quyết định, không nhận từ request tiếp nhận. Slice này NEW_VISIT
+và OUTPATIENT_EXAM theo catalogue mapping đã cấu hình; unknown price giữ source chờ xử lý, không giả giá 0.
+AWAITING_PAYMENT mở đúng một EXAM source/request; CONFIRMED không tạo phí lần hai; CANCELLED/EXPIRED
+đóng nguồn chưa thu hoặc ghi nghĩa vụ adjustment, không tự refund tiền đã nhận.
+
+EligibilityFact={paymentOperationId,paymentRequestId,registrationId,reservationId,fenceToken,patientId,
+sourceType,sourceId,careEpisodeType,careEpisodeId,transactionId,clearanceId,amount,currency,completedAt,basis}.
+basis=PATIENT_PAYMENT duy nhất ở slice này, amount là liability đã thu đủ (decimal string); không hỗ trợ
+basis zero-liability cho tới contract WF-06. Clinical xác minh current Billing authority khi cần bắt đầu khám;
+event không là quyền vĩnh viễn sau refund/revoke.
+
+Consumer key=eventId + raw hash; business keys: registrationId/registrationRevision và
+paymentOperationId/fenceToken/outcome. Exact replay no-op; cùng key khác bytes/snapshot conflict/quarantine.
+Revision registration thấp hơn có thể bỏ projection stale nhưng vẫn lưu receipt; nếu terminal cancellation
+đến trước create, Billing giữ terminal tombstone và không mở charge khi create cũ tới muộn. Revision gap
+giữ pending/reconcile từ producer, không đoán event chưa thấy. Chỉ CONFIRMED fact mới là notice xác nhận;
+AWAITING_PAYMENT có thể báo tiếp nhận/chờ thu. Report chưa có visit/support consumer mới thì giữ gate OFF.
+
+Billing payment.completed V1 vẫn là cash evidence đúng ý nghĩa cũ. Với source mới không đồng thời phát
+financial.clearance.granted V1 để legacy Clinical consumer bỏ qua reservation; chỉ fact eligibility mới
+dẫn xác nhận. Clearance lookup/execution-starts vẫn đối soát exact source đã lưu, không bỏ guards cũ.
+
+### A.8. Tương thích, kích hoạt và nghiệm thu
+
+Target gates mới, mặc định OFF: `mediflow.clinical.scheduling.enabled`,
+`mediflow.billing.scheduled-payments.enabled`, `mediflow.gateway.scheduling-v2.enabled`.
+Frontend target gate `MEDIFLOW_SCHEDULING_UI_ENABLED=false`; Core scope/eligibility/directory có acceptance
+trước bật Clinical mutations. Đây là tên cấu hình **cần tạo**, chưa có tác dụng trong config hiện tại.
+Không tái dùng nhãn acceptance reference local demo cũ cho feature mới.
+
+Clinical gắn registrationContractVersion=2 vào nguồn mới; write V1 tiếp nhận/check-in/hủy/sửa lịch
+đối với nguồn đó bị CLINICAL_REGISTRATION_FLOW_REQUIRED. `start-exam` được giữ làm điểm tích hợp
+theo A.5, phải chọn guard theo contract version; không cho đường legacy bypass reservation/arrival.
+Billing không cho thanh toán V1 vào request bound reservation mới:
+BILLING_PAYMENT_FLOW_REQUIRED. V1 rows/receipts/JSON lịch sử giữ nguyên; read compatibility cần test,
+không migrate dữ liệu cũ thành schedule giả. Binary rollback không được nhận write nguồn version 2;
+tắt ingress V2, giữ worker đối soát bằng binary biết V2 cho tới khi payment operation hết pending.
+
+Nghiệm thu tối thiểu: schema/examples target hợp lệ; Core scope own/other/revoked/unavailable;
+doctor/room overlap và last-seat race trên PG; idempotency concurrent/conflict; payment crash trước/sau
+lease/commit/outbox; close-vs-commit và late acquire; replay/out-of-order Rabbit; Gateway human/internal
+deny; NURSE đăng ký một lần, CASHIER thu/retry đúng operation, DOCTOR own day/week, PATIENT xem đúng phiếu.
+Hash của target examples không thay producer bytes acceptance. Đọc [ma trận nghiệm thu slice](10-scheduling-contract-acceptance.md)
+và [source audit WF-01](09-outpatient-source-lock-2026-10-26.md) để biết gate nào còn mở.

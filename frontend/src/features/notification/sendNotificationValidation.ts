@@ -6,7 +6,7 @@ export type SendNotificationErrors = Partial<Record<keyof SendNotificationValues
 
 export function validateSendNotification(values: SendNotificationValues): SendNotificationErrors {
   const errors: SendNotificationErrors = {};
-  if (!isUuid(values.patientId.trim())) errors.patientId = "Mã bệnh nhân phải là UUID hợp lệ.";
+  if (!isUuid(values.patientId.trim())) errors.patientId = "Vui lòng chọn bệnh nhân hợp lệ.";
   if (!values.title.trim() || values.title.trim().length > 255) errors.title = "Nhập tiêu đề, tối đa 255 ký tự.";
   if (!values.content.trim()) errors.content = "Nhập nội dung thông báo.";
   const address = values.recipientAddress.trim();

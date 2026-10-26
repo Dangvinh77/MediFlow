@@ -1,0 +1,290 @@
+[
+  {
+    "name": "com.mediflow.lab.application.dto.LabDtoValidationTest",
+    "tests": "5",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "1.354"
+  },
+  {
+    "name": "com.mediflow.lab.application.event.LabCareFinanceV2ContractFixtureTest",
+    "tests": "5",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "1.607"
+  },
+  {
+    "name": "com.mediflow.lab.application.event.LabEventJsonContractTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.156"
+  },
+  {
+    "name": "com.mediflow.lab.application.mapper.LabTestDtoMapperTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.043"
+  },
+  {
+    "name": "com.mediflow.lab.application.service.LabApplicationServiceTest",
+    "tests": "8",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "5.046"
+  },
+  {
+    "name": "com.mediflow.lab.application.service.LabCareFinanceV2ApplicationServiceTest",
+    "tests": "26",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.887"
+  },
+  {
+    "name": "com.mediflow.lab.application.service.LabIntegrationServiceTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.086"
+  },
+  {
+    "name": "com.mediflow.lab.application.service.LabRequestCreationApplicationServiceTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.036"
+  },
+  {
+    "name": "com.mediflow.lab.domain.model.LabCareFinanceV2DomainTest",
+    "tests": "13",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.282"
+  },
+  {
+    "name": "com.mediflow.lab.domain.model.LabTestTest",
+    "tests": "26",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.569"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.client.LabBillingExecutionAuthorityAdapterTest",
+    "tests": "19",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "3.239"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.client.LabClinicalOrderContextAdapterTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.205"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.JwtSecretConfigurationTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "2.897"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.LabApplicationConfigTest",
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.29"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.LabClinicalOrderContextConfigurationTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "1.923"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.LabOutpatientMvpModeConfigurationTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.037"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.OpenApiConfigTest",
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.016"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.OperationalMetadataConfigTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.108"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.RabbitConfigTest",
+    "tests": "9",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.042"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.config.SecurityConfigTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "11.718"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.correlation.CorrelationIdFilterTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.198"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.messaging.LabEventPublisherAdapterTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "2.23"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.messaging.LabListenerRabbitIntegrationTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "79.249"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxDispatcherTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.269"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxRabbitIntegrationTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "97.282"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.persistence.ConsumerInboxPostgresTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "12.099"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest",
+    "tests": "14",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "15.757"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.security.AuthenticatedStaffContextAdapterTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.013"
+  },
+  {
+    "name": "com.mediflow.lab.infrastructure.security.JwtAuthFilterTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.071"
+  },
+  {
+    "name": "com.mediflow.lab.messaging.consumer.FinancialClearanceConsumerTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.242"
+  },
+  {
+    "name": "com.mediflow.lab.messaging.consumer.inbox.InboxEvidenceFactoryTest",
+    "tests": "5",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.032"
+  },
+  {
+    "name": "com.mediflow.lab.messaging.consumer.LabQueueConsumerTest",
+    "tests": "8",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.793"
+  },
+  {
+    "name": "com.mediflow.lab.messaging.consumer.MedicalRecordCreatedConsumerTest",
+    "tests": "10",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.266"
+  },
+  {
+    "name": "com.mediflow.lab.messaging.consumer.PaymentCompletedConsumerTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.258"
+  },
+  {
+    "name": "com.mediflow.lab.web.GlobalExceptionHandlerTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "3.371"
+  },
+  {
+    "name": "com.mediflow.lab.web.LabControllerTest",
+    "tests": "12",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "2.404"
+  }
+]

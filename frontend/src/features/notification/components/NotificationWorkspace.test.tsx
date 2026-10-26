@@ -6,12 +6,12 @@ import type { Role } from "@/lib/roles";
 import type { NotificationDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
-  role: "ADMIN" as Role | null, token: "session-a", accessToken: null as string | null, listeners: new Set<() => void>(),
+  role: "ADMIN" as Role | null, token: "session-a", listeners: new Set<() => void>(),
   list: vi.fn(), detail: vi.fn(), send: vi.fn(), router: { push: vi.fn(), replace: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
-  getRole: () => mocks.role, getSessionKey: () => mocks.token, getToken: () => mocks.accessToken,
+  getRole: () => mocks.role, getSessionKey: () => mocks.token, getToken: () => mocks.token,
   subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => mocks.listeners.delete(listener); },
 }));
 vi.mock("../api", () => ({ notificationApi: { byPatient: mocks.list, getById: mocks.detail, send: mocks.send } }));
@@ -26,22 +26,84 @@ const notice: NotificationDTO = { notificationId: id, patientId: id, title: "Nh�
 function page(content = [notice], number = 0) { return { content, number, size: 20, totalPages: 2, totalElements: 21 }; }
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: unknown) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function fill(label: string, value: string) { fireEvent.change(screen.getByLabelText(label, { exact: false }), { target: { value } }); }
-function search(patient = id) { fill("Mã bệnh nhân", patient); fireEvent.submit(screen.getByLabelText("Mã bệnh nhân").closest("form")!); }
+function search(patient = id) { fill("Bệnh nhân", patient); fireEvent.submit(screen.getByLabelText("Bệnh nhân").closest("form")!); }
 function submit() { fireEvent.submit(screen.getByLabelText("Tiêu đề", { exact: false }).closest("form")!); }
-function fillSend() { fill("Mã bệnh nhân", id); fill("Tiêu đề", " Nhắc lịch khám "); fill("Nội dung", " Đến đúng giờ "); }
+function fillSend() { fill("Bệnh nhân", id); fill("Tiêu đề", " Nhắc lịch khám "); fill("Nội dung", " Đến đúng giờ "); }
 function changeSession(role: Role = "ADMIN") { act(() => { mocks.token = "session-b"; mocks.role = role; mocks.listeners.forEach(listener => listener()); }); }
-function accessTokenWithPatientId(patientId: string) {
-  const base64url = btoa(JSON.stringify({ patientId })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return `header.${base64url}.signature`;
+function patientToken(patientId: string | null, extra: Record<string, unknown> = {}) {
+  return `header.${btoa(JSON.stringify({ sub: otherId, role: "PATIENT", type: "access", patientId, ...extra }))}.signature`;
 }
 
 beforeEach(() => {
-  mocks.role = "ADMIN"; mocks.token = "session-a"; mocks.accessToken = null; mocks.listeners.clear();
+  mocks.role = "ADMIN"; mocks.token = "session-a"; mocks.listeners.clear();
   mocks.list.mockReset().mockResolvedValue(page()); mocks.detail.mockReset().mockResolvedValue(notice);
   mocks.send.mockReset().mockResolvedValue(notice); mocks.router.push.mockReset(); mocks.router.replace.mockReset();
 });
 
 describe("Notification patient history", () => {
+  it("automatically loads the signed patient identity instead of the account subject, with no patient selector", async () => {
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    mocks.list.mockImplementation((_id: string, number: number) => Promise.resolve(page([notice], number)));
+    render(<NotificationLookup />);
+    expect(await screen.findByText(notice.title)).toBeVisible();
+    expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 0, 20);
+    expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Thông báo của tôi" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20));
+    fireEvent.click(await screen.findByRole("button", { name: "Tải lại lịch sử" }));
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(3));
+    expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20);
+  });
+  it.each([
+    "broken-token", patientToken(null), patientToken("invalid"),
+    patientToken(id, { role: "ADMIN" }), patientToken(id, { type: "refresh" }),
+    patientToken(id, { staffId: otherId }),
+  ])("does not query arbitrary patients when the current patient identity is unusable: %s", token => {
+    mocks.role = "PATIENT"; mocks.token = token;
+    render(<NotificationLookup />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tài khoản chưa có hồ sơ bệnh nhân hợp lệ");
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument();
+  });
+  it("switches patient inboxes and discards a late response from the previous account", async () => {
+    const old = deferred<ReturnType<typeof page>>();
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    mocks.list.mockReturnValueOnce(old.promise).mockResolvedValueOnce(page([{ ...notice, title: "Thông báo tài khoản mới" }]));
+    render(<NotificationLookup />);
+    act(() => { mocks.token = patientToken(otherId); mocks.listeners.forEach(listener => listener()); });
+    expect(await screen.findByText("Thông báo tài khoản mới")).toBeVisible();
+    expect(mocks.list).toHaveBeenLastCalledWith(otherId, 0, 20);
+    await act(async () => old.resolve(page()));
+    expect(screen.queryByText(notice.title)).not.toBeInTheDocument();
+  });
+  it("refreshes an empty personal inbox without requesting another patient's identity", async () => {
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    mocks.list.mockResolvedValueOnce(page([]));
+    render(<NotificationLookup />);
+    expect(await screen.findByText("Bạn chưa có thông báo.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
+    expect(await screen.findByText(notice.title)).toBeVisible();
+    expect(mocks.list).toHaveBeenLastCalledWith(id, 0, 20);
+  });
+  it.each([401, 403, 503])("handles a personal inbox HTTP %i without exposing a patient selector", async status => {
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    mocks.list.mockRejectedValueOnce(new ApiRequestError("Unavailable", status));
+    render(<NotificationLookup />);
+    if (status === 401) {
+      await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
+    } else {
+      await screen.findByRole("alert");
+      if (status === 403) {
+        expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+      } else {
+        fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+        expect(await screen.findByText(notice.title)).toBeVisible();
+        expect(mocks.list).toHaveBeenLastCalledWith(id, 0, 20);
+      }
+    }
+    expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument();
+  });
   it("refreshes the submitted patient and current page, without resending or using the edited draft", async () => {
     const user = userEvent.setup();
     mocks.list.mockResolvedValueOnce(page()).mockResolvedValueOnce(page([notice], 1))
@@ -49,7 +111,7 @@ describe("Notification patient history", () => {
     render(<NotificationLookup />); search(); await screen.findByText(notice.title);
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
     await screen.findByText("Trang 2/2", { exact: false });
-    fill("Mã bệnh nhân", otherId);
+    fill("Bệnh nhân", otherId);
     await user.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
     expect(await screen.findByText("Gửi thất bại")).toBeVisible();
     expect(screen.getByText(id)).not.toBeVisible();
@@ -71,7 +133,7 @@ describe("Notification patient history", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
     expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
-    const input = screen.getByLabelText("Mã bệnh nhân"); input.focus(); fill("Mã bệnh nhân", otherId);
+    const input = screen.getByLabelText("Bệnh nhân"); input.focus(); fill("Bệnh nhân", otherId);
     await act(async () => pending.resolve(page()));
     expect(input).toHaveFocus(); expect(input).toHaveValue(otherId);
     expect(screen.getByText(id)).not.toBeVisible();
@@ -102,38 +164,38 @@ describe("Notification patient history", () => {
     render(<NotificationLookup />); search(); await screen.findByText(notice.title);
     fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" })); changeSession();
     await act(async () => pending.resolve(page()));
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
     expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
   });
   it.each(["DOCTOR", "PHARMACIST", "MANAGER", null] as const)("blocks role %s before mounting a reader", role => {
     mocks.role = role; render(<NotificationLookup />);
-    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
   });
   it("validates UUID then paginates using the submitted patient, with privacy-safe translated values", async () => {
     render(<NotificationLookup />); search("bad");
-    expect(screen.getByRole("alert")).toHaveTextContent("UUID"); expect(mocks.list).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("hợp lệ"); expect(mocks.list).not.toHaveBeenCalled();
     search(` ${id} `); await screen.findByText(notice.title);
     expect(screen.getByRole("link", { name: "Chi tiết" })).toHaveAttribute("href", `/notifications/${id}?patientId=${id}&page=0`);
     expect(screen.getByText("Trong ứng dụng")).toBeVisible(); expect(screen.getByText("Đã gửi")).toBeVisible();
-    fill("Mã bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    fill("Bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20));
   });
   it("auto-runs the search when arriving with a patient and page already in the URL", async () => {
     render(<NotificationLookup initialPatientId={id} initialPage={1} />);
     await screen.findByText(notice.title);
     expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 1, 20);
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue(id);
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue(id);
   });
   it("ignores an invalid patient id coming from the URL instead of auto-searching", () => {
     render(<NotificationLookup initialPatientId="not-a-uuid" />);
     expect(mocks.list).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
   });
   it("focuses an invalid search and suppresses an older pending response", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);
     render(<NotificationLookup />); search(); search("invalid");
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveFocus();
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveFocus();
     await act(async () => pending.resolve(page()));
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Trang sau" })).not.toBeInTheDocument();
@@ -151,41 +213,26 @@ describe("Notification patient history", () => {
     await act(async () => old.reject(new ApiRequestError("Old session", 401)));
     expect(screen.getByText(notice.title)).toBeVisible(); expect(mocks.router.replace).not.toHaveBeenCalled();
   });
-  it("auto-loads a patient's own notifications from their token, with no field to fill in", async () => {
-    mocks.role = "PATIENT"; mocks.accessToken = accessTokenWithPatientId(id);
-    render(<NotificationLookup />);
-    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument();
-    await screen.findByText(notice.title);
-    expect(mocks.list).toHaveBeenCalledExactlyOnceWith(id, 0, 20);
-    expect(screen.getByRole("heading", { name: "Thông báo của bạn" })).toBeVisible();
-  });
-  it("does not offer retry for a patient denied their own just-decoded id", async () => {
-    mocks.role = "PATIENT"; mocks.accessToken = accessTokenWithPatientId(id);
+  it("does not offer retry for cross-patient denial, but permits a new patient search", async () => {
     mocks.list.mockRejectedValueOnce(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "history-trace"));
-    render(<NotificationLookup />);
+    render(<NotificationLookup />); search();
     expect(await screen.findByRole("alert")).toHaveTextContent("history-trace");
     expect(screen.getByRole("alert")).toHaveTextContent("không có quyền");
     expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
-  });
-  it("shows a clear fallback instead of a lookup field when the account has no patientId claim", () => {
-    mocks.role = "PATIENT"; mocks.accessToken = null;
-    render(<NotificationLookup />);
-    expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument();
-    expect(mocks.list).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("đăng nhập lại");
-    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
-    expect(mocks.router.replace).toHaveBeenCalledWith("/login");
+    search(); expect(mocks.list).toHaveBeenCalledTimes(1);
+    search(otherId); await screen.findByText(notice.title);
+    expect(mocks.list).toHaveBeenLastCalledWith(otherId, 0, 20);
   });
   it("retries an unavailable history using its submitted patient rather than the edited draft", async () => {
     mocks.list.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503));
     render(<NotificationLookup />); search(); await screen.findByRole("alert");
-    fill("Mã bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    fill("Bệnh nhân", otherId); fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     await screen.findByText(notice.title); expect(mocks.list).toHaveBeenLastCalledWith(id, 0, 20);
   });
   it("clears private history on session change and ignores old completion after unmount", async () => {
     const pending = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(pending.promise);
     const view = render(<NotificationLookup />); search(); changeSession();
-    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
     await act(async () => pending.resolve(page())); expect(screen.queryByText(notice.title)).not.toBeInTheDocument();
     const late = deferred<ReturnType<typeof page>>(); mocks.list.mockReturnValueOnce(late.promise); search(); view.unmount();
     await act(async () => late.reject(new ApiRequestError("Late", 401))); expect(mocks.router.replace).not.toHaveBeenCalled();
@@ -326,15 +373,15 @@ describe("Notification manual send", () => {
     expect(mocks.send).not.toHaveBeenCalled();
   });
   it("validates required fields, focuses first error and checks channel-specific address", async () => {
-    render(<SendNotificationForm />); submit(); expect(screen.getByLabelText("Mã bệnh nhân", { exact: false })).toHaveFocus();
+    render(<SendNotificationForm />); submit(); expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveFocus();
     fillSend(); fill("Kênh", "SMS"); fill("Địa chỉ người nhận", "+84912345678"); submit();
     await waitFor(() => expect(screen.getByLabelText("Địa chỉ người nhận", { exact: false })).toHaveFocus());
     expect(mocks.send).not.toHaveBeenCalled();
   });
   it("does not move keyboard focus to an old field while editing the next input", async () => {
     render(<SendNotificationForm />); submit();
-    const patient = screen.getByLabelText("Mã bệnh nhân", { exact: false });
-    fill("Mã bệnh nhân", id);
+    const patient = screen.getByLabelText("Bệnh nhân", { exact: false });
+    fill("Bệnh nhân", id);
     const title = screen.getByLabelText("Tiêu đề", { exact: false }); title.focus(); fill("Tiêu đề", "Nhắc lịch");
     await waitFor(() => expect(title).toHaveFocus()); expect(patient).not.toHaveFocus();
   });

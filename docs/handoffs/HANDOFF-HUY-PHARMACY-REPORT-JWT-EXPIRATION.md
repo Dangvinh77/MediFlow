@@ -1,5 +1,16 @@
 # Huy — yêu cầu JWT expiration nhất quán ở Pharmacy và Report
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-05`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Huy/Pharmacy/Report → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Ngày: 2026-10-19. Base: `cc3789a81340cca8aac564a305d7c629a0c1bac4`.
 Owner production: **Huy**; Vinh chạy kiểm thử và review sau sửa.
 

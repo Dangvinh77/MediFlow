@@ -181,7 +181,7 @@ public final class LabBillingExecutionAuthorityAdapter implements LabExecutionAu
 
     private static void requireExactLocalTarget(LabFinancialClearance grant, UUID testId) {
         if (grant == null || testId == null || !testId.equals(grant.testId())
-                || !testId.equals(grant.clearanceTargetId())
+                || grant.clearanceTargetId() == null
                 || grant.purpose() != ClearancePurpose.LAB_TEST
                 || grant.careEpisodeType() != CareEpisodeType.OUTPATIENT_VISIT
                 || grant.careEpisodeId() == null || grant.patientId() == null

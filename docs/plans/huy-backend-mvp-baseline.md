@@ -394,7 +394,7 @@ audits pass. No DB reset, restore, Flyway repair or HELD/broker state changes.
 
 H6-10.2/.3 close LOCAL preparation; plan is **24/48**. H6-10.4 and H6-11 still require real
 stores, producer/consumer acceptance and Lộc/shared/Hoàng Anh integration. Main H6-10 not closed.
-[Support handoff](../handoffs/HANDOFF-HUY-MVP.md) records exact entry point/bean/
+[Support handoff](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md) records exact entry point/bean/
 property/resource names, host security/scheduler obligations, runtime and Gateway changes. Do not
 sum these local subtasks into the global M6 backlog or reopen deferred Surgery/full-V2 tasks.
 
@@ -507,7 +507,7 @@ noncanonical IDs or transport failure is unavailable, never implicit permission.
 compares invoice/account/patient/PRESCRIPTION/OUTPATIENT_VISIT/episode and original grant timestamps
 immediately before effects; it also rechecks expiry after verification. This is a current observation,
 not a distributed reservation/lease against a later revocation. Billing-owned live acceptance remains
-in the [activation handoff](../handoffs/HANDOFF-HUY-MVP.md).
+in the [activation handoff](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 The public API now requires six gates: global V2, identity, clinical-context, clearance-consumer,
 clearance-authority and outpatient-api. Missing current-authority provider fails closed in the MVP

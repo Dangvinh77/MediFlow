@@ -454,7 +454,7 @@ Source Core đã chuyển Patient/Organization nên batch 4 sửa fixture paths 
 test classes (compatibility only), không đổi payload/logical producer hoặc bật Surgery. 40 identity
 HTTP tests local chạy lại; real Core .03.4 còn mở. Huy hỗ trợ profile canonical outpatient-mvp,
 không sửa mode của Vinh, Gateway, Notification, Compose/root build/CI.
-Owner actions chi tiết: [Support handoff](../handoffs/HANDOFF-HUY-MVP.md).
+Owner actions chi tiết: [Support handoff](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 Batch 6: Docker đã chạy; [10 đầu việc kiểm chứng](huy-mvp-batch-6-acceptance.md) bổ sung
 public creation/lifecycle → real PG, Report five-key intake → real Rabbit/PG, duplicate/conflict,
@@ -482,7 +482,7 @@ và tích hợp Support, gồm host và shared build/runtime/Gateway cần thi�
   hai classifier lib, host executable/discovery support-service, explicit module imports/profiles,
   namespaces/credentials và scoped security. Build/package đạt, actual JAR guard probe đạt,
   28 SQL copies nguyên bytes; [runbook](../../backend/support-service/README.md) và
-  [verification/giới hạn](../handoffs/HANDOFF-HUY-MVP.md#9-support-host--2026-10-17).
+  [verification/giới hạn](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md#9-support-host--2026-10-17).
   Không dùng mục này để coi real PG/Rabbit hoặc cả task H6-11 đã đạt.
 - [x] **H6-11.2** Wire hai datasource/EMF/Flyway/tx riêng với migration resource locations không lẫn;
   Report và Notification giữ credentials/stores riêng, không cross-store transaction/SQL.
@@ -639,7 +639,7 @@ disposable local tests. Phần local của H6-06.4/H6-12.2 đã có evidence; li
 Support/Gateway và historical/operator proof vẫn cần owner nên không tick thay.
 
 Toàn bộ việc cần nhận, owner, exact source gap và acceptance nằm trong **một file**
-[handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md). Sáu handoff/pointer backend Huy cũ đã được gộp, không giữ
+[handoff chung Huy](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md). Sáu handoff/pointer backend Huy cũ đã được gộp, không giữ
 thêm file pointer/backlog trùng. Core retarget đã có packaged acceptance; Surgery chỉ ghi deferred,
 không tạo việc mới để tăng scope. Giữ nguyên mẫu số và tiến độ 38/48, không đổi tiêu chí để tăng %.
 
@@ -660,7 +660,7 @@ Theo lựa chọn của người dùng, tiếp tục
 phần không cần Docker; không dùng kết quả biên dịch thay cho database/runtime acceptance.
 
 Tiến độ vẫn **38/48**. Mục còn mở và yêu cầu chạy lại PostgreSQL tiếp tục nằm trong
-[handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md#7-backend-continuation--pharmacy-disposition-guard-2026-10-16).
+[handoff chung Huy](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md#7-backend-continuation--pharmacy-disposition-guard-2026-10-16).
 
 ### Support composition — 2026-10-17
 
@@ -680,7 +680,7 @@ Các test Billing/Notification container từ mục 8 handoff vẫn chưa chạy
 Đóng **H6-11.1**, tiến độ **39/48**. H6-11.2/.3 đã có implementation và non-container checks,
 giữ mở cho runtime resource/security acceptance; H6-11.4 và paid-chain/cutover vẫn cần Docker
 và operator evidence. Tất cả phần còn lại cập nhật trong đúng
-[một handoff chung](../handoffs/HANDOFF-HUY-MVP.md#9-support-host--2026-10-17).
+[một handoff chung](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md#9-support-host--2026-10-17).
 
 ### Chốt tích hợp backend — 2026-10-17
 
@@ -709,7 +709,7 @@ trùng lượt chạy. Source IDs/hashes/commands và map T02/T07–T19 ở
 
 Đóng H6-06.2/.4, H6-11.2/.3/.4, H6-12.1/.2: **46/48**. Chỉ H6-02.3/H6-12.3 còn mở vì
 thiếu approved historical clone/broker inventory và rehearsal. Checklist duy nhất ở
-[handoff chung](../handoffs/HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17).
+[handoff chung](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md#10-integrated-backend-closeout--2026-10-17).
 Không suy ra global M6, paid Lab hoặc frontend acceptance từ slice này.
 
 ### Hoàn tất hai task vận hành còn lại — 2026-10-17

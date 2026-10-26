@@ -2,7 +2,8 @@
 
 import type { PrescriptionLineFieldErrors, PrescriptionLineFormValue } from "./prescriptionFormValidation";
 import type { DrugDTO } from "../../types";
-import { formatVnd } from "../../utils";
+import { formatDate, formatVnd, getDrugExpiryState } from "../../utils";
+import { Pagination } from "@/components/ui/Pagination";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
 
@@ -15,6 +16,9 @@ interface PrescriptionLinesEditorProps {
   drugKeyword: string;
   drugLoading: boolean;
   drugError: string | null;
+  drugPage: number;
+  drugPageInfo: { totalPages: number; totalElements: number };
+  onDrugPageChange: (page: number) => void;
   onDrugKeywordChange: (value: string) => void;
   onSearchDrugs: () => void;
   onChange: (rowKey: string, patch: Partial<PrescriptionLineFormValue>) => void;
@@ -35,6 +39,9 @@ export function PrescriptionLinesEditor({
   drugKeyword,
   drugLoading,
   drugError,
+  drugPage,
+  drugPageInfo,
+  onDrugPageChange,
   onDrugKeywordChange,
   onSearchDrugs,
   onChange,
@@ -86,7 +93,7 @@ export function PrescriptionLinesEditor({
                 onSearchDrugs();
               }
             }}
-            placeholder="Ví dụ: Paracetamol"
+            placeholder="Tìm theo tên thuốc hoặc hoạt chất"
             className={inputClass(false)}
           />
         </div>
@@ -109,9 +116,14 @@ export function PrescriptionLinesEditor({
       {listError && <p role="alert" className="text-sm text-danger">{listError}</p>}
       {drugOptions.length === 0 && !drugLoading && !drugError && (
         <p className="text-sm text-muted-foreground">
-          Chưa có thuốc trong lựa chọn. Hãy tìm theo tên thuốc.
+          Không có thuốc phù hợp. Thử đổi tên thuốc hoặc hoạt chất.
         </p>
       )}
+
+      {!drugError && drugPageInfo.totalPages > 1 && <Pagination page={drugPage}
+        totalPages={drugPageInfo.totalPages} totalElements={drugPageInfo.totalElements}
+        loading={disabled || drugLoading} onPageChange={onDrugPageChange} />}
+      <p className="text-xs text-muted-foreground">Thuốc đã chọn được giữ khi đổi trang tìm kiếm. Tồn hiện có có thể gồm số lượng đang giữ cho đơn khác; hệ thống kiểm tra lại khi tạo đơn.</p>
 
       <div className="space-y-4">
         {lines.map((line, index) => {
@@ -154,15 +166,18 @@ export function PrescriptionLinesEditor({
                       <option
                         key={drug.drugId}
                         value={drug.drugId}
-                        disabled={selectedDrugIds.has(drug.drugId.toLowerCase()) && drug.drugId !== line.drugId}
+                        disabled={drug.drugId !== line.drugId && (selectedDrugIds.has(drug.drugId.toLowerCase())
+                          || drug.stockQuantity === 0 || getDrugExpiryState(drug.expiryDate) === "EXPIRED")}
                       >
-                        {drug.drugName} · {drug.unit} · {formatVnd(drug.price)} · tồn {drug.stockQuantity}
+                        {drug.drugName} · {drug.unit} · {formatVnd(drug.price)} · tồn {drug.stockQuantity}{getDrugExpiryState(drug.expiryDate) === "EXPIRED" ? " · Hết hạn" : ""}
                       </option>
                     ))}
                   </select>
                   {selectedDrug && (
                     <p className="text-xs text-muted-foreground">
                       Giá tham khảo: {formatVnd(selectedDrug.price)} / {selectedDrug.unit} · tồn {selectedDrug.stockQuantity}
+                      {` · Hạn dùng: ${formatDate(selectedDrug.expiryDate)}`}
+                      {getDrugExpiryState(selectedDrug.expiryDate) === "EXPIRING_SOON" && " · Sắp hết hạn"}
                     </p>
                   )}
                 </Field>
@@ -202,6 +217,10 @@ export function PrescriptionLinesEditor({
           );
         })}
       </div>
+      <p className="border-t border-border pt-4 text-sm">Tổng tiền tham khảo: <strong>{formatVnd(lines.reduce((sum, line) => {
+        const quantity = Number(line.quantity);
+        return sum + (line.drug && Number.isInteger(quantity) && quantity > 0 ? line.drug.price * quantity : 0);
+      }, 0))}</strong>. Giá và số tiền chính thức được xác nhận khi tạo đơn thành công.</p>
     </section>
   );
 }

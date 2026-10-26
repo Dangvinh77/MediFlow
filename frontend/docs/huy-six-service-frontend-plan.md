@@ -1,5 +1,10 @@
 # Plan code FE Huy — chốt MVP 6 service
 
+> Cập nhật điều phối 26/10/2026: đây là checkpoint thực thi theo baseline ghi bên dưới.
+> Nghiệp vụ đợt tiếp theo theo [kế hoạch ngoại trú](../../docs/plans/07-outpatient-workflow-implementation.md);
+> phụ thuộc hiện hành theo [registry bàn giao](../../docs/handoffs/README.md).
+> Quyền giao theo task và kết quả kiểm thử cũ không tự mở rộng sang đợt triển khai mới.
+
 **Ngày lập:** 2026-10-18. **Owner thực thi:** Huy (`LQHuy0210`).  
 **Source baseline:** `025ef39e358756a28043d9809fad165096528fbf` trên nhánh local `Huy`.  
 **Trạng thái:** FE ACCEPTANCE COMPLETE trong môi trường kiểm thử cô lập — **14/14 task (100%)**, **56/56 subtask (100%)**; checkpoint và giới hạn ở mục 25. Không phải production rollout approval.
@@ -42,8 +47,8 @@ mới nằm ngoài plan. Giữ source/data hiện có và các gate mặc địn
 User trả lời câu hỏi giao `api.ts`/`api.test.ts`: **“làm cho cả pharma và toàn bộ support luôn đi”**.
 Trong task này Huy thực hiện HF6-02 và Notification, không chờ handoff cho Lộc/Vinh.
 Quyền này không đổi canonical ownership và không mở thêm shared shell/config/auth hoặc feature khác.
-Mọi phụ thuộc tiếp tục gom vào [HANDOFF-HUY-MVP.md](../../docs/handoffs/HANDOFF-HUY-MVP.md),
-không tạo handoff mới. Không tạo raw fetch hoặc cross-feature imports để vượt dependency.
+Phụ thuộc của checkpoint này được giữ trong [Huy checkpoints](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
+Phụ thuộc mới phải đối chiếu và đăng ký tại registry hiện hành. Không tạo raw fetch hoặc cross-feature imports để vượt dependency.
 
 ## 2. Phần kế thừa, không code lại
 
@@ -486,7 +491,7 @@ Original Compose volumes không bị thay đổi; test containers đã tự dọ
 
 Đóng thêm HF6-09.1, HF6-10.2/.4, HF6-11.1: **6/14 task, 39/56 subtask**; Pharmacy/Report gốc
 **5/12 task, 35/48 subtask**, Notification vẫn 4/8. HF6-06/09/11/14 không đóng toàn task chỉ từ API harness.
-Shared old-request 401/session race còn ở [handoff chung, mục 6](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+Shared old-request 401/session race còn ở [handoff chung, mục 6](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
 
 ## 10. Đợt tiếp theo — 10 đầu việc denial/keyboard
 
@@ -652,7 +657,7 @@ Verification:
 Còn **HF6-09 (1/4), HF6-11 (1/4), HF6-12 (3/4), HF6-14 (0/4)**: accepted Report coverage và
 ADMIN/MANAGER/ON-OFF, workflow Report sau đối soát và session/privacy, signed Notification
 ADMIN/NURSE/PATIENT/manual IN_APP/lifecycle, rồi release cuối. Shared late-401 vẫn ở
-[handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md); không mở shared auth scope trong lượt này.
+[handoff chung](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md); không mở shared auth scope trong lượt này.
 Đã STOP hold, dọn disposable processes/containers, dừng FE test và trả theme System/logout;
 Docker Desktop vẫn chạy. Chưa commit/push hoặc rollout production.
 
@@ -668,7 +673,7 @@ không sửa backend `paymentConfirmed`, API DTO, shared auth/transport, hoặc 
   backend command kiểm quyền/clearance. Giữ cancel/dispensed guards và compatibility V0.
 - Timeout 408 đọc lại trạng thái trước lần xác nhận mới; không tự retry mutation. Session/mode
   remount bỏ dialog và callback cũ. Không đánh dấu paid/dispensed khi server trả lỗi.
-- Source audit và dependency episode/priceCode cho Vinh ở [handoff chung, mục 6](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+- Source audit và dependency episode/priceCode cho Vinh ở [handoff chung, mục 6](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
 
 **Code verification:** Pharmacy và routes **233/233 tests, 21 files**; typecheck/lint/build PASS.
 Full FE lần đầu **529/532**: một lỗi Lab fixture và hai timeout Inpatient. Chạy lại riêng hai file:
@@ -801,7 +806,7 @@ cũ là lịch sử. Chưa thể ghi bốn task còn lại hoàn tất chỉ t�
 2. Notification refund consumer OFF mặc định và hold hiện tại không bật. Không tự bật consumer
    để đóng HF6-14.3; lifecycle/payment không thay refund hoặc missing-claim signed denial.
 3. Shared late-401 dependency và Lab fixture vẫn giữ trong handoff chung. Outpatient Report UI
-   OFF; không kích hoạt thêm Surgery/Inpatient/full V2. Chỉ dùng `HANDOFF-HUY-MVP.md` hiện có.
+   OFF; không kích hoạt thêm Surgery/Inpatient/full V2. Đối chiếu phụ thuộc mới tại [registry hiện hành](../../docs/handoffs/README.md); checkpoint cũ được giữ trong history.
 
 ### Cập nhật sau audit: writer Report H6-13 — 2026-10-20
 
@@ -1026,7 +1031,7 @@ Không lấy acceptance của candidate trước để đóng acceptance mới.
 Các lookup dedupe theo context/phiên; lỗi/403/404 có fallback và giữ ID, không đoán tên.
 PHARMACIST không được gọi public Patient/Staff/Department detail theo role matrix hiện tại;
 UI báo giới hạn. Quyết định contract nếu cần tên cho dược sĩ nằm trong
-[handoff chung Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo handoff mới.
+[handoff chung Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md), không tạo handoff mới.
 Production gates vẫn OFF; không sửa backend/shared hoặc mở Surgery/Inpatient.
 
 Verification của đợt này trên working tree nhánh Huy, baseline `acee395f`:

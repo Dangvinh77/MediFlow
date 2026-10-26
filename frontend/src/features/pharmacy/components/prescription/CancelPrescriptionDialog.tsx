@@ -118,7 +118,7 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
       }}>
       <h4 id="cancel-prescription-title" className="font-semibold">Xác nhận hủy đơn thuốc</h4>
       <p className="mt-2 text-sm text-muted-foreground">
-        Đơn <code className="break-all">{prescriptionId}</code> sẽ được hủy. Số lượng đang giữ cho đơn sẽ được giải phóng theo kết quả xử lý.
+        Đơn thuốc đang xem sẽ được hủy. Số lượng đang giữ cho đơn sẽ được giải phóng theo kết quả xử lý.
       </p>
       {formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{formError}</p>}
       <form onSubmit={submit} noValidate className="mt-4 space-y-4">

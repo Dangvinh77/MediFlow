@@ -25,6 +25,14 @@ import org.springframework.context.annotation.Profile;
         "mediflow.pharmacy.clearance-consumer.enabled", "mediflow.pharmacy.clearance-authority.enabled"}, havingValue = "true")
 public class PharmacyOutpatientApiConfiguration {
     @Bean
+    com.mediflow.pharmacy.application.port.in.GetPrescribingContextUseCase prescribingContext(
+            com.mediflow.pharmacy.application.port.out.OutpatientPrescriptionContextPort contexts,
+            @org.springframework.beans.factory.annotation.Value("${mediflow.pharmacy.prescribing.price-codes:}") String codes,
+            java.time.Clock clock) {
+        return new com.mediflow.pharmacy.application.service.PrescribingContextService(contexts,
+                java.util.Arrays.stream(codes.split(",")).map(String::trim).filter(code -> !code.isEmpty()).distinct().toList(), clock);
+    }
+    @Bean
     CreateOutpatientPrescriptionUseCase publicOutpatientPrescriptionCreator(
             CreateContextCheckedPrescriptionUseCase writer, GetPrescriptionUseCase reader) {
         return new PublicOutpatientPrescriptionCreationService(writer, reader);

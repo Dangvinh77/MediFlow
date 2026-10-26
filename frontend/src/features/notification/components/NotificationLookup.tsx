@@ -13,9 +13,9 @@ import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
-import { decodeOwnPatientId } from "../own-patient-id";
 import type { NotificationDTO } from "../types";
 import { channelLabels, statusPresentation } from "../presentation";
+import { readNotificationPatientId } from "../patient-identity";
 import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
 
 const NOTIFICATION_PAGE_SIZE = 20;
@@ -65,8 +65,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
   // A patient is their own single record: skip asking them to paste their own id at all.
-  const ownPatientId = role === "PATIENT" ? decodeOwnPatientId(token) : null;
-  const selfServiceBlocked = role === "PATIENT" && !ownPatientId;
+  const ownPatientId = role === "PATIENT" ? readNotificationPatientId(token) : null;
   const validInitialPatientId = ownPatientId ?? (initialPatientId && isUuid(initialPatientId) ? initialPatientId : "");
   const [patientId, setPatientId] = useState(validInitialPatientId);
   const [activePatientId, setActivePatientId] = useState(validInitialPatientId);
@@ -149,7 +148,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
       ++sequence.current;
       setLoading(false); setNotifications([]); setSearched(false); setError(null);
       setPageNumber(0); setTotalPages(0); setTotalElements(0);
-      setValidationError("Mã bệnh nhân phải là UUID hợp lệ.");
+      setValidationError("Vui lòng chọn bệnh nhân hợp lệ.");
       inputRef.current?.focus();
       return;
     }
@@ -161,6 +160,10 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
   }
 
   const showTable = !loading && !error && notifications.length > 0;
+
+  if (role === "PATIENT" && !ownPatientId) {
+    return <NotificationDenied message="Tài khoản chưa có hồ sơ bệnh nhân hợp lệ. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên để kiểm tra hồ sơ liên kết." correlationId={null} />;
+  }
 
   return (
     <section className="mt-6 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-label="Lịch sử thông báo">
@@ -176,7 +179,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
               htmlFor="notification-patient-id"
               className="mb-1 block text-sm font-medium"
             >
-              Mã bệnh nhân
+              Bệnh nhân
             </label>
             <ReferenceInput kind="patient"
               ref={inputRef}
@@ -186,7 +189,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
                 setPatientId(selectedId);
                 setValidationError(null);
               }}
-              placeholder="Nhập UUID bệnh nhân"
+              placeholder="Tìm bệnh nhân theo tên"
               aria-required="true"
               aria-invalid={validationError ? true : undefined}
               aria-describedby={
@@ -215,12 +218,8 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
         </p>
       ) : null}
 
-      {selfServiceBlocked ? (
-        <AsyncState kind="error" message="Không xác định được bệnh nhân từ tài khoản đăng nhập. Hãy đăng nhập lại." onRetry={() => router.replace("/login")} />
-      ) : null}
-
-      {!searched && !validationError && role !== "PATIENT" ? (
-        <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem thông báo." />
+      {!searched && !validationError ? (
+        <AsyncState kind="idle" message="Chọn bệnh nhân để xem lịch sử thông báo." />
       ) : null}
 
       {loading ? <AsyncState kind="loading" message="Đang tải thông báo…" /> : null}
@@ -244,7 +243,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
       {searched && !loading && !error ? (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{role === "PATIENT" ? "Thông báo của bạn" : "Kết quả tra cứu thông báo"}</h2>
+            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{role === "PATIENT" ? "Thông báo của tôi" : "Kết quả tra cứu thông báo"}</h2>
             {role !== "PATIENT" ? <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: <ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p> : null}
           </div>
           <button type="button" onClick={() => void loadNotifications(lastRequest.patientId, lastRequest.page)}
@@ -255,7 +254,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
       ) : null}
 
       {searched && !loading && !error && notifications.length === 0 ? (
-        <AsyncState kind="empty" message="Bệnh nhân chưa có thông báo." />
+        <AsyncState kind="empty" message={role === "PATIENT" ? "Bạn chưa có thông báo." : "Bệnh nhân chưa có thông báo."} />
       ) : null}
 
       {showTable ? (

@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor N as Y tá
+    participant C as Clinical
+    participant B as Billing
+    actor T as Thu ngân
+    participant S as Support
+    actor P as Người bệnh
+    N->>C: Đăng ký tại quầy và giữ suất
+    C-->>N: Mã lượt và thông tin dự kiến
+    C-->>B: Nguồn yêu cầu phí khám
+    B->>B: Snapshot giá và hỗ trợ mô phỏng
+    T->>B: Xem quote đúng lượt
+    B-->>T: Phần người bệnh phải trả
+    T->>B: Thu tiền với idempotency key
+    B->>C: Kiểm và giữ quyền dùng suất cho payment operation
+    C-->>B: Quyền giữ suất ổn định cho operation
+    B->>B: Ghi payment và allocation
+    B-->>T: Receipt thu tiền
+    B-->>C: Financial eligibility đúng nguồn
+    C->>C: Xác nhận suất và phiếu khám
+    C-->>S: Fact phiếu đã xác nhận
+    N->>C: Đọc trạng thái phiếu
+    C-->>N: Phiếu đã xác nhận hoặc đang chờ xử lý
+    S-->>P: Thông báo cá nhân cập nhật

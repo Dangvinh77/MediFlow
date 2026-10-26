@@ -1,5 +1,16 @@
 # Review3 runtime follow-up 22 October 2026
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-08`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Owner từng context → Vinh tổng hợp acceptance.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 Status: OPEN. These observations come from the local Review3 Gateway environment on
 22 October 2026. They are not a release acceptance result.
 
@@ -50,3 +61,11 @@ Acceptance: obtain accepted projection coverage using the documented publication
 and recovery workflow, then verify the daily query through Gateway. Preserve
 unavailable coverage as an error until the service accepts it; do not fabricate
 report values. Review3 screenshots describe the actual coverage error.
+
+25 October Pharmacy/Report UI recheck: the local Gateway lists three prescriptions
+for the demo patient while the legacy current-month Report returns zero-filled
+details. Legacy HTTP 200 is not coverage acceptance. The web legacy workspace now
+warns users explicitly and directs them to the source workflow for cross-checking;
+the outpatient gate remains closed. The task-authorized minimal patient directory
+now resolves patient names for PHARMACIST, but doctor/department reference access
+and accepted outpatient Report coverage remain open dependencies above.

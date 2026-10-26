@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 608.0469999999999 1687.7020000000002" width="608.0469999999999" height="1687.7020000000002" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,76.9 299.39225,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,153.8 299.39225,193.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,230.70000000000002 299.39225,270.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,307.6 299.39225,347.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="E" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,384.5 299.39225,424.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,461.4 299.39225,501.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="H" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="264.4415833333333,676.1533333333332 264.4415833333333,739.1039999999999 176.57099999999997,739.1039999999999 176.57099999999997,811.4039999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="I" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="334.34291666666667,676.1533333333332 334.34291666666667,739.1039999999999 422.21349999999995,739.1039999999999 422.2135,811.4039999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="H" data-to="J" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="176.57099999999997,848.3039999999999 176.57099999999997,868.3039999999999 299.39225,868.3039999999999 299.39225,888.3039999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="I" data-to="J" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="422.21349999999995,848.3039999999999 422.21349999999995,868.3039999999999 299.39225,868.3039999999999 299.39225,888.3039999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="J" data-to="K" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,925.2039999999998 299.39225,965.2039999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="K" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,1002.1039999999998 299.39225,1042.1039999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L" data-to="M" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="272.5925833333333,1176.102333333333 272.5925833333333,1230.9019999999998 212.56175000000002,1230.9019999999998 212.56175000000002,1303.2019999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="M" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="212.56175000000002,1340.1019999999999 212.56175000000002,1380.1019999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L" data-to="O" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="326.19191666666666,1176.102333333333 326.19191666666666,1291.2019999999998 386.22275,1291.2019999999998 386.22275,1445.002 332.07191666666665,1445.002 332.07191666666665,1457.002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="N" data-to="O" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="212.56175000000002,1417.002 212.56175000000002,1445.002 266.7125833333333,1445.002 266.7125833333333,1457.002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="O" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,1493.902 299.39225,1513.902 161.3805,1513.902 161.3805,1533.902" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="O" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.39225,1493.902 299.39225,1513.902 437.404,1513.902 437.404,1533.902" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="161.3805,1570.8020000000001 161.3805,1590.8020000000001 299.39225,1590.8020000000001 299.39225,1610.8020000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="437.404,1570.8020000000001 437.404,1590.8020000000001 299.39225,1590.8020000000001 299.39225,1610.8020000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="G" data-to="H" data-label="Có">
+  <rect x="161.07099999999997" y="746.1039999999999" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="176.42999999999998" y="761.2539999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="G" data-to="I" data-label="Không">
+  <rect x="397.71349999999995" y="746.1039999999999" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="421.98249999999996" y="761.2539999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Không</text>
+</g>
+<g class="edge-label" data-from="L" data-to="M" data-label="Có">
+  <rect x="197.06175000000002" y="1237.9019999999998" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="212.42075000000003" y="1253.052" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="L" data-to="O" data-label="Không">
+  <rect x="361.72275" y="1391.702" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="385.99175" y="1406.852" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Không</text>
+</g>
+<g class="node" data-id="A" data-label="Người bệnh đến quầy" data-shape="rectangle">
+  <rect x="217.28475" y="40" width="164.21499999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Người bệnh đến quầy</text>
+</g>
+<g class="node" data-id="B" data-label="Tìm hoặc tạo hồ sơ bệnh nhân" data-shape="rectangle">
+  <rect x="190.97924999999998" y="116.9" width="216.82600000000002" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Tìm hoặc tạo hồ sơ bệnh nhân</text>
+</g>
+<g class="node" data-id="C" data-label="Chọn khám mới hoặc tái khám" data-shape="rectangle">
+  <rect x="195.05475" y="193.8" width="208.67499999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="212.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chọn khám mới hoặc tái khám</text>
+</g>
+<g class="node" data-id="D" data-label="Chọn khoa và lịch bác sĩ còn suất" data-shape="rectangle">
+  <rect x="178.01174999999998" y="270.70000000000005" width="242.76100000000002" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="289.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chọn khoa và lịch bác sĩ còn suất</text>
+</g>
+<g class="node" data-id="E" data-label="Đăng ký và giữ suất 15 phút" data-shape="rectangle">
+  <rect x="202.83524999999997" y="347.6" width="193.114" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="366.05" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Đăng ký và giữ suất 15 phút</text>
+</g>
+<g class="node" data-id="F" data-label="Billing tính giá và hỗ trợ mô phỏng" data-shape="rectangle">
+  <rect x="181.71675" y="424.5" width="235.35099999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="442.95" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Billing tính giá và hỗ trợ mô phỏng</text>
+</g>
+<g class="node" data-id="G" data-label="Người bệnh còn phải trả?" data-shape="diamond">
+  <polygon points="299.39225,501.4 404.24424999999997,606.252 299.39225,711.1039999999999 194.54025000000001,606.252" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="606.252" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Người bệnh còn phải trả?</text>
+</g>
+<g class="node" data-id="H" data-label="Thu ngân ghi nhận thanh toán" data-shape="rectangle">
+  <rect x="70.75149999999996" y="811.4039999999999" width="211.639" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176.57099999999997" y="829.8539999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Thu ngân ghi nhận thanh toán</text>
+</g>
+<g class="node" data-id="I" data-label="Billing xác nhận nghĩa vụ bằng 0" data-shape="rectangle">
+  <rect x="306.3905" y="811.4039999999999" width="231.64600000000002" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="422.21349999999995" y="829.8539999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Billing xác nhận nghĩa vụ bằng 0</text>
+</g>
+<g class="node" data-id="J" data-label="Xác nhận phiếu và số thứ tự" data-shape="rectangle">
+  <rect x="199.87125" y="888.3039999999999" width="199.042" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="906.7539999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Xác nhận phiếu và số thứ tự</text>
+</g>
+<g class="node" data-id="K" data-label="Bác sĩ bắt đầu khám" data-shape="rectangle">
+  <rect x="219.13725" y="965.2039999999998" width="160.51" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="983.6539999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Bác sĩ bắt đầu khám</text>
+</g>
+<g class="node" data-id="L" data-label="Cần xét nghiệm?" data-shape="diamond">
+  <polygon points="299.39225,1042.1039999999998 379.79125,1122.5029999999997 299.39225,1202.9019999999996 218.99325,1122.5029999999997" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="1122.5029999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Cần xét nghiệm?</text>
+</g>
+<g class="node" data-id="M" data-label="Chỉ định rồi thu phí Lab và thực hiện" data-shape="rectangle">
+  <rect x="83.40075000000004" y="1303.2019999999998" width="258.32199999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212.56175000000002" y="1321.6519999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chỉ định rồi thu phí Lab và thực hiện</text>
+</g>
+<g class="node" data-id="N" data-label="Bác sĩ đọc kết quả trong cùng lượt" data-shape="rectangle">
+  <rect x="92.66325" y="1380.1019999999999" width="239.797" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212.56175000000002" y="1398.552" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Bác sĩ đọc kết quả trong cùng lượt</text>
+</g>
+<g class="node" data-id="O" data-label="Kết luận và kê đơn nếu cần" data-shape="rectangle">
+  <rect x="201.35325" y="1457.002" width="196.078" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="1475.452" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Kết luận và kê đơn nếu cần</text>
+</g>
+<g class="node" data-id="P" data-label="Thu tiền thuốc rồi cấp thuốc nếu có" data-shape="rectangle">
+  <rect x="40" y="1533.902" width="242.76100000000002" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="161.3805" y="1552.352" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Thu tiền thuốc rồi cấp thuốc nếu có</text>
+</g>
+<g class="node" data-id="Q" data-label="Hoàn tất khám và hẹn tái khám nếu cần" data-shape="rectangle">
+  <rect x="306.761" y="1533.902" width="261.28599999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="437.404" y="1552.352" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Hoàn tất khám và hẹn tái khám nếu cần</text>
+</g>
+<g class="node" data-id="R" data-label="Đối soát khi các nghĩa vụ đã xử lý xong" data-shape="rectangle">
+  <rect x="166.15575000000004" y="1610.8020000000001" width="266.47299999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="299.39225" y="1629.2520000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Đối soát khi các nghĩa vụ đã xử lý xong</text>
+</g>
+</svg>

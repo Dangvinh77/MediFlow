@@ -108,8 +108,7 @@ export function DispensePrescriptionDialog({ prescriptionId, totalAmount, lineCo
       <h4 id="dispense-prescription-title" className="font-semibold">Xác nhận xuất thuốc</h4>
       <p className="mt-2 text-sm text-muted-foreground">Kiểm tra đơn trước khi xác nhận. Hệ thống sẽ kiểm tra lại thanh toán và tồn kho khi xử lý.</p>
       {formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{formError}</p>}
-      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
-        <div><dt className="text-muted-foreground">Mã đơn thuốc</dt><dd className="mt-1 break-all font-mono text-xs">{prescriptionId}</dd></div>
+      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
         <div><dt className="text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold tabular-nums">{formatVnd(totalAmount)}</dd></div>
         <div><dt className="text-muted-foreground">Số dòng thuốc</dt><dd className="mt-1">{lineCount}</dd></div>
       </dl>

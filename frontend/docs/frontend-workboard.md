@@ -1,5 +1,90 @@
 # Frontend Workboard
 
+## Điều phối tài liệu — 2026-10-26
+
+Nghiệp vụ mới và thứ tự triển khai theo [kế hoạch ngoại trú](../../docs/plans/07-outpatient-workflow-implementation.md).
+Phụ thuộc theo [registry backend](../../docs/handoffs/README.md) và [registry frontend](handoffs/README.md).
+Các mục theo ngày bên dưới là checkpoint của baseline tương ứng; số test cũ không nghiệm thu
+lịch khám, đặt chỗ, tái khám hoặc chính sách BHYT mới. Chưa cập nhật trạng thái hoàn thành của
+các tính năng này chỉ bằng đợt chuẩn hóa tài liệu.
+
+## Pharmacy / Report usability recheck — 2026-10-25
+
+Catalogue name/ingredient search now combines with server-side stock and expiry filters;
+counts and pages use the complete filtered result. Prescription listing retains patient/status/page
+when returning from detail. Prescribing can page through the catalogue without losing selected
+lines and marks expired/empty stock, expiry dates and provisional totals. Legacy reports load the
+current valid period, provide date/month presets and clear department selection, and warn when a
+draft filter differs from displayed results. A visible source limitation prevents interpreting
+legacy zero-fill as proof of no outpatient activity. Catalogue/detail and legacy Report reads are
+no-store. Backend roles, final price/stock authority and outpatient acceptance gates are preserved.
+
+Verification: 426/426 focused Pharmacy/Report UI tests across 34 files, TypeScript, ESLint,
+production Docker builds; a subsequent ReportWorkspace notice recheck passes 7/7. Pharmacy backend
+874 tests pass with no failures/errors/skips, including PostgreSQL ingredient/literal search and
+filter/count/page/date-boundary checks. Live Gateway checks confirm all six catalogue filters,
+ingredient search, literal wildcard handling, no-store headers and allowed/denied roles. Browser
+checks cover PHARMACIST ingredient search/stock filter and Back retaining ACTIVE status, plus ADMIN
+current-month auto-load, prior-month draft warning/submission, daily and medicine views.
+The two prepared dispense/cancel demo prescriptions remain ACTIVE/PENDING; no business data was
+changed during runtime verification.
+Report backend suite completed successfully: 1,444 tests, zero failures/errors/skips, including
+PostgreSQL/RabbitMQ integration and legacy response-cache/role checks.
+
+Open dependencies remain explicit: pharmacist doctor/department reference names require the
+existing Core/Gateway ownership handoff; complete outpatient Report coverage and legacy currency
+metadata are not established by legacy HTTP 200/zero-filled responses.
+
+## Pharmacy prescription usability — 2026-10-25
+
+Prescription browsing now loads a list without an identifier, supports patient-name selection,
+status filters and pagination, and links each result to its detail. Outpatient creation reads
+the authoritative prescribing context through Pharmacy after choosing a patient and record;
+visit and price identifiers are no longer free-text inputs. Backend Pharmacy and the two
+task-authorized Gateway read routes implement these contracts. The follow-up user authorization
+adds a minimal Core patient directory and its two Gateway rules for ADMIN/DOCTOR/PHARMACIST.
+It closes pharmacist patient-name search/display; staff/department read permissions are unchanged.
+
+Verification after the patient-name follow-up: Pharmacy UI tests 278/278 across 22 files,
+TypeScript, ESLint and the Docker production build pass. Core 334/334 and Gateway 1561/1561
+pass; Core integration tests use `-Dapi.version=1.40` for this machine's Docker compatibility.
+The earlier unchanged Pharmacy backend verification passed 871/871.
+Docker production build and public-Gateway checks pass for paged listing, filters, empty
+results, authoritative context, and denied roles. Browser verification against the refreshed
+Docker UI shows all three existing prescriptions and successful patient/record context selection.
+The follow-up browser check signs in as PHARMACIST, searches Nguyễn Văn An Demo, selects the
+12/04/1986 birth date and displays all three matching prescriptions with readable patient names.
+Public-Gateway checks pass for ADMIN/DOCTOR/PHARMACIST and verify exactly three directory fields,
+empty results, denied CASHIER access and denied PHARMACIST full-profile access. Core, Gateway and
+frontend containers are healthy; the two prepared dispense/cancel prescriptions remain untouched.
+
+## User-facing reference display — 2026-10-24
+
+Pharmacy, Report and Notification now use names and plain-language prompts as the main display.
+Shared `ReferenceText` no longer adds a technical-information control to every reference by
+default; explicit diagnostic callers may still opt in. Exact request IDs and access rules are
+unchanged. Pharmacy drug/prescription detail groups support references in a closed disclosure;
+drug names no longer repeat their UUID in prescription lines or top-medicine reports.
+
+Pharmacy maintenance moves from the main business tabs into a closed ADMIN-only administration
+menu, with plain-language recovery instructions. The drug catalogue no longer embeds an unrelated
+prescription lookup. Prescription creation selects an existing medical record through the shared
+directory scoped to the selected patient, and clears dependent selections when their source changes.
+Directory results open as a dropdown without stretching form grids, and can be dismissed with
+Escape or the close action; pending responses cannot reopen a dismissed dropdown.
+
+At this checkpoint public prescription search, an authoritative visit/price picker, and name
+access for PHARMACIST remained contract gaps. The 2026-10-25 update above closes the first two.
+No identifier, business code, permission or lookup endpoint is fabricated.
+See the existing [identity handoff](handoffs/HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md).
+
+Verification: all frontend tests **952/952** across 101 files, TypeScript, ESLint and the
+Docker production build pass. Local Docker browser checks cover Pharmacy navigation, patient
+selection and patient-scoped record search, plus the Report department picker; no clinical
+command is submitted during these read-only checks.
+Report filters also align actions at the bottom on narrow grids; their final regression run
+passes **137/137** after that layout adjustment.
+
 ## Hoàng Anh — Organization/Patient/Gateway usability review, 2026-10-23
 
 User-approved follow-up adds server-paginated staff search (accent-insensitive name/title/unit,
@@ -545,7 +630,7 @@ outside this change.
   no Lab/Inpatient source changes or full-suite PASS claim. Logs: ignored `.patient-*.log` files.
 
 Signed Gateway/browser/packaged acceptance remains open. Shared old-request 401 session clearing
-remains tracked in `docs/handoffs/HANDOFF-HUY-MVP.md`; Patient guards cannot fix shared transport.
+was tracked in the [Huy checkpoint](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md); current follow-up uses the [handoff registry](../../docs/handoffs/README.md). Patient guards cannot fix shared transport.
 Headless entry points, mounting requirements and limits: [Patient guide](services/patient.md).
 Changes are local; no commit or push at this checkpoint.
 
@@ -726,7 +811,7 @@ không dùng 48/48 backend làm tiến độ FE hoặc reset lịch sử.
 - Audit 2026-10-18, baseline `025ef39e`: Pharmacy/Report **235/235 tests, 22 files**,
   typecheck/lint PASS. Không chạy build/browser trong lượt audit; chưa có FE production diff mới.
 - Surgery/Inpatient/full V2 deferred; logical feature folders giữ riêng. Dependency dùng
-  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo file bàn giao mới.
+  [một handoff Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md), không tạo file bàn giao mới.
 - Foundation checkpoint trước mở rộng scope: 268/268 Pharmacy/Report, 24 files; full 396/396,
   47 files và typecheck/lint/build PASS. **Final candidate: 474/474 tests, 53 files**, zero failures/skips;
   typecheck/lint/build PASS, exit 0. Chỉ có jsdom navigation warning hiện có. Chi tiết ở plan mục 8.
@@ -787,7 +872,7 @@ Tiếp tục **FE-VINH-MVP-01/04**, chưa đóng toàn task hoặc mở V1 contr
   Đây là local evidence; signed-role/real-source/Support acceptance còn mở.
 - Chi tiết [plan mục 15](huy-frontend-implementation-plan.md#15-checkpoint-report-ngoại-trú-theo-backend-mvp--2026-10-16).
   Đây là task MVP bổ sung; giữ mẫu số lịch sử 11/30 và 50/123, không mở Surgery/full V2.
-  Phụ thuộc dùng [handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  Phụ thuộc dùng [handoff chung](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
   Thay đổi batch mới chưa commit/push.
 - P-08 còn cần shared API hỗ trợ header `Idempotency-Key`, cùng source/paid/activation acceptance.
   DTO đọc đơn hiện chưa xuất metadata V1; không suy diễn fields hoặc tự mở public mutation.
@@ -806,7 +891,7 @@ Task: một phần **FE-VINH-MVP-01/04 / FE-LAB-04**, theo component lifecycle/p
   stale mutation, đổi hồ sơ xóa cancel draft, quyền NURSE/DOCTOR/LAB_TECH/ADMIN, terminal states,
   payment/lifecycle riêng biệt và giữ nguyên textual results. Mock API/session; không paid E2E.
 - Backend dependencies đã refresh: Lộc L1/L2 đã có; Lộc L3/L4 và Hoàng Anh G1 còn mở tại
-  [handoff backend](../../docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+  [handoff backend](../../docs/handoffs/history/2026-10-18-billing-notification-checkpoints.md).
   Không mở lại Lab-order/Rx producer implementation; FE-02/03 V1 controls vẫn chờ runtime acceptance.
 - Verification final: `pnpm typecheck`, `pnpm lint`, `pnpm build` đều exit 0;
   `pnpm test -- --maxWorkers=2`: **277/277 tests, 35 files**, không failures/skips;
@@ -848,7 +933,7 @@ shared frame chỉ trong những paths được giao ở mục kế tiếp. Khô
   xác nhận bằng bàn phím và bố cục desktop/mobile dùng cùng theme Sáng/Tối/Hệ thống.
   Fixture/session cô lập, không dùng DB/token thật, đã đăng xuất và dừng server kiểm tra.
 - Phụ thuộc runtime/Gateway/source/paid/Support/coverage gom vào
-  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  [một handoff Huy](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
   Local UI/test không thay signed-role hoặc sáu-app backend acceptance. Chưa commit/push.
 
 ## Khung dùng chung 6 service — 2026-10-16
@@ -878,7 +963,7 @@ MVP mới. Scope canonical đã chuyển về ngoại trú; Inpatient/Surgery de
 FE-INPATIENT-03 để đóng MVP. Không xóa code/UI lịch sử trong lượt cập nhật workboard này.
 
 Backend source lock, việc Vinh còn phải làm và handoffs cho các owner nằm tại
-[Vinh backend closeout](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
+[Vinh backend closeout](../../docs/handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
 Giữ một registry cho backend gaps; frontend không tự suy contract thay producer.
 
 | Thứ tự | Việc tiếp theo của Vinh | Điều kiện |

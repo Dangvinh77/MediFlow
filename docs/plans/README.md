@@ -1,12 +1,12 @@
 # MediFlow — thiết kế MVP ngoại trú
 
-Cập nhật ngày 2026-10-14 theo yêu cầu giảm khối lượng công việc và tập trung minh chứng hệ thống phân tán.
+Cập nhật nghiệp vụ ngày 2026-10-25; giữ baseline kiến trúc sáu deployments từ 14/10.
 Đây là bộ tài liệu đích mới, thay các thiết kế, spec, plan và handoff cũ trong thư mục docs.
 Code chưa được chuyển thành 6 service chỉ bằng việc thay tài liệu.
 
 Định vị thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Giữ định hướng HIS; phạm vi đồ án là phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện, không phải toàn bộ quy trình nội trú/phẫu thuật. Xem [định vị và CURRENT/TARGET](01-system-design.md).
 
-Source hiện tại đã có Core chứa Organization/Patient; Support host chưa có. Cập nhật mô tả này không đóng các task/gate nghiệm thu còn mở.
+Source đã có Core chứa Organization/Patient và Support chứa Report/Notification. Nghiệp vụ mới 25/10 chưa được triển khai chỉ bằng cập nhật tài liệu; không tự đóng gate nghiệm thu.
 
 ## Đọc gì
 
@@ -16,12 +16,16 @@ Source hiện tại đã có Core chứa Organization/Patient; Support host chư
 | [Luồng nghiệp vụ](02-business-flows.md) | Khám ngoại trú, Lab, thuốc, thanh toán và các trường hợp lỗi |
 | [Hợp đồng tích hợp](03-contracts.md) | REST, event, identifier, quyền và tương thích với code |
 | [Dữ liệu và độ tin cậy](04-data-reliability.md) | Database, transaction, outbox/inbox, concurrency và recovery |
-| [Plan triển khai](05-implementation-plan.md) | 18 task chính, 72 subtask, owner, dependency và tiêu chí đóng |
+| [Plan triển khai baseline](05-implementation-plan.md) | 18 task/72 subtask và evidence kỹ thuật lịch sử |
+| [Điều chỉnh nghiệp vụ 25/10](07-outpatient-workflow-implementation.md) | WF-01–11: lịch khám, tiếp nhận, tái khám, BHYT mô phỏng, cleanup tài liệu |
+| [Chuẩn hóa tài liệu 26/10](08-documentation-cleanup-2026-10-26.md) | Phân loại current/history/deferred, registry hiện hành và danh sách file di chuyển/xóa |
+| [WF-01 source audit 26/10](09-outpatient-source-lock-2026-10-26.md) | API/DTO/event/gates hiện có, fingerprints và G-01–11 còn cần khóa hợp đồng |
+| [Nghiệm thu hợp đồng lịch khám/giữ suất](10-scheduling-contract-acceptance.md) | TARGET wire trong 03, JSON Schema/ví dụ và SC-01–20; chưa là implementation hoặc runtime acceptance |
 | [Plan backend riêng Huy](2026-10-14-huy-backend-mvp-adjustment-plan.md) | Phân rã M6: 12 task/48 subtask cho Pharmacy, Report và phối hợp Support; Surgery hoãn |
 | [Nghiệm thu và vận hành](06-acceptance-runbook.md) | Test matrix, demo, triển khai, rollback và bằng chứng |
 | [Quy tắc coding](../ai/README.md) | Backend, FE/mobile, ownership và Git |
 
-Chỉ sáu tài liệu đánh số và quy tắc coding chứa nội dung canonical. Các file ở đường dẫn cũ còn
+Tài liệu 01–06 và quy tắc coding chứa nội dung canonical; 07 là kế hoạch thực hiện và sổ xử lý tài liệu phái sinh, không tạo nguồn contract thứ hai. Các file ở đường dẫn cũ còn
 được AGENTS/README/skill tham chiếu, nếu tồn tại, là chỉ dẫn ngắn tới bộ này, không phải một
 bản spec hoặc backlog thứ hai. Không dùng checklist lịch sử để giao thêm việc ngoài MVP.
 
@@ -36,8 +40,8 @@ Checklist này không là bằng chứng deployment hoặc cấp quyền sửa h
 
 Kiểm chứng batch 6: [10 phần việc và kết quả PostgreSQL/RabbitMQ](huy-mvp-batch-6-acceptance.md).
 Tiếp nối batch 7: [current Billing clearance và selective delivery](huy-backend-mvp-baseline.md#12-current-clearance-and-selective-outpatient-delivery),
-và [batch 8 runtime acceptance](huy-mvp-batch-8-acceptance.md). Plan Huy đạt 37/48 subtask;
-producer rollout/Support và nghiệm thu chung vẫn có gate riêng.
+và [batch 8 runtime acceptance](huy-mvp-batch-8-acceptance.md). Plan Huy có các checkpoint lịch sử riêng; kết quả local mới hơn xem runbook cutover mục 8–9.
+Producer rollout và nghiệm thu nghiệp vụ 25/10 vẫn có gate riêng.
 
 ## Quyết định phạm vi
 

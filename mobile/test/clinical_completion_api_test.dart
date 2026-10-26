@@ -161,13 +161,24 @@ void main() {
   );
 
   test('appointment create, edit, check-in, start and cancel match live wire bodies', () async {
+    final today = DateTime.now();
+    final createDate = DateTime(
+      today.year,
+      today.month,
+      today.day + 1,
+    ).toIso8601String().substring(0, 10);
+    final editDate = DateTime(
+      today.year,
+      today.month,
+      today.day + 2,
+    ).toIso8601String().substring(0, 10);
     adapter.data = appointmentJson();
     await appointments.create(
       AppointmentDraft(
         patientId: patientId,
         doctorId: doctorId,
         departmentId: departmentId,
-        date: '2026-10-22',
+        date: createDate,
         time: '09:30',
         reason: ' Follow-up ',
       ),
@@ -178,14 +189,14 @@ void main() {
       'patientId': patientId,
       'doctorId': doctorId,
       'departmentId': departmentId,
-      'appointmentDate': '2026-10-22',
+      'appointmentDate': createDate,
       'appointmentTime': '09:30',
       'reason': 'Follow-up',
     });
 
     await appointments.update(
       appointmentId,
-      AppointmentEdit(date: '2026-10-23', time: '10:00', reason: ''),
+      AppointmentEdit(date: editDate, time: '10:00', reason: ''),
     );
     expect(adapter.requests.last.method, 'PUT');
     expect(
@@ -193,7 +204,7 @@ void main() {
       '/api/v1/appointments/$appointmentId',
     );
     expect(adapter.requests.last.data, {
-      'appointmentDate': '2026-10-23',
+      'appointmentDate': editDate,
       'appointmentTime': '10:00',
       'reason': null,
     });

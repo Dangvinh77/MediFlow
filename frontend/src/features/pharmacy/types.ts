@@ -3,6 +3,14 @@
  * UUID, LocalDate and Instant values cross the JSON boundary as strings;
  * BigDecimal values cross as numbers and must not be recalculated as source of truth.
  */
+/** Work-directory fields from Organization StaffResponse used to bind the prescribing department. */
+export interface PrescribingDoctorDTO {
+  staffId: string;
+  departmentId: string | null;
+  jobTitle: string;
+  active: boolean;
+}
+
 export type PrescriptionStatus =
   | "ACTIVE"
   | "FULFILLED"
@@ -129,4 +137,20 @@ export interface DispenseDTO {
 export interface OutboxReplayResult {
   eventId: string;
   replayed: boolean;
+}
+export interface PrescribingContextDTO {
+  recordId: string;
+  patientId: string;
+  doctorId: string;
+  departmentId: string;
+  careEpisodeType: "OUTPATIENT_VISIT";
+  careEpisodeId: string;
+  priceCodes: string[];
+}
+
+/** Core's minimal public patient-directory wire contract. */
+export interface PharmacyPatientIdentityDTO {
+  maBenhNhan: string;
+  hoTen: string;
+  ngaySinh: string;
 }

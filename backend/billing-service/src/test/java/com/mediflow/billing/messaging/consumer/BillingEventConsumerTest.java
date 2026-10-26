@@ -38,12 +38,97 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class BillingEventConsumerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+            .disable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     private final AccrueFeeUseCase accrueFeeUseCase = mock(AccrueFeeUseCase.class);
     private final SagaCompensationUseCase sagaCompensationUseCase = mock(SagaCompensationUseCase.class);
     private final SurgeryChargeUseCase surgeryChargeUseCase = mock(SurgeryChargeUseCase.class);
     private final BillingEventConsumer consumer =
             new BillingEventConsumer(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper);
+
+    @Test
+    void versionedMedicalRecordFactDoesNotAccrueAnotherExamFee() throws Exception {
+        outpatientConsumer().onMessage(fixture("medicalrecord.created"));
+        verifyNoInteractions(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase);
+    }
+
+    @Test
+    void versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered() throws Exception {
+        var current = outpatientConsumer();
+        current.onMessage(fixture("lab.result.created"));
+        current.onMessage(fixture("lab.result.created"));
+        verifyNoInteractions(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase);
+    }
+
+    @Test
+    void versionedFactsCannotFallBackToLegacyWhenIssuerIsDisabled() throws Exception {
+        for (var key : java.util.List.of("medicalrecord.created", "lab.result.created")) {
+            var message = fixture(key);
+            assertThatThrownBy(() -> consumer.onMessage(message)).isInstanceOf(IllegalArgumentException.class);
+        }
+        verifyNoInteractions(accrueFeeUseCase);
+    }
+
+    @Test
+    void malformedVersionedFactsAreRejectedWithoutLegacyEffects() throws Exception {
+        var current = outpatientConsumer();
+        for (var key : java.util.List.of("medicalrecord.created", "lab.result.created")) {
+            var original = fixture(key);
+            for (var mutation : java.util.List.of("producer", "version", "payload", "careEpisodeType", "patientId")) {
+                var tree = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(original.getBody());
+                switch (mutation) {
+                    case "producer" -> tree.put("producer", "untrusted-service");
+                    case "version" -> tree.put("version", 2);
+                    case "payload" -> tree.remove("payload");
+                    case "careEpisodeType" -> ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get("payload"))
+                            .put("careEpisodeType", "ADMISSION");
+                    case "patientId" -> ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get("payload"))
+                            .remove("patientId");
+                    default -> throw new AssertionError(mutation);
+                }
+                var malformed = new Message(objectMapper.writeValueAsBytes(tree), propertiesFor(key));
+                assertThatThrownBy(() -> current.onMessage(malformed)).isInstanceOf(IllegalArgumentException.class);
+            }
+        }
+        verifyNoInteractions(accrueFeeUseCase);
+    }
+
+    @Test
+    void configuredV1IssuersDoNotAllowFlatLifecycleFactsToCreateLegacyFees() throws Exception {
+        var event = new MedicalRecordCreatedEvent(UUID.randomUUID(), Instant.now(), "cid",
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null);
+        assertThatThrownBy(() -> outpatientConsumer().onMessage(messageFor("medicalrecord.created", event)))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(accrueFeeUseCase);
+    }
+
+    @Test
+    void duplicateKeysTrailingJsonAndMismatchedExamSourceAreRejected() throws Exception {
+        var key = "medicalrecord.created";
+        var original = fixture(key);
+        var json = new String(original.getBody(), java.nio.charset.StandardCharsets.UTF_8);
+        var mismatched = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(json);
+        ((com.fasterxml.jackson.databind.node.ObjectNode) mismatched.get("payload"))
+                .put("sourceId", "00000000-0000-4000-8000-000000000099");
+        for (var raw : java.util.List.of(json + " {}", json.replace("\"version\": 1", "\"version\": 1, \"version\": 1"),
+                objectMapper.writeValueAsString(mismatched))) {
+            var message = new Message(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8), propertiesFor(key));
+            assertThatThrownBy(() -> outpatientConsumer().onMessage(message)).isInstanceOf(IllegalArgumentException.class);
+        }
+        verifyNoInteractions(accrueFeeUseCase);
+    }
+
+    private BillingEventConsumer outpatientConsumer() {
+        return new BillingEventConsumer(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase,
+                objectMapper, null, null, null, null, null, mock(LabTestChargeConsumer.class),
+                null, null, mock(ExamChargeConsumer.class), null);
+    }
+
+    private Message fixture(String key) throws Exception {
+        try (var input = getClass().getResourceAsStream("/contracts/outpatient-lifecycle/" + key + ".v1.json")) {
+            return new Message(java.util.Objects.requireNonNull(input).readAllBytes(), propertiesFor(key));
+        }
+    }
 
     @Test
     void medicalRecordCreated_routesToAccrueFeeUseCase() throws Exception {

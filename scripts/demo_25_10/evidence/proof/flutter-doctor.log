@@ -1,0 +1,43 @@
+[√] Flutter (Channel stable, 3.47.0, on Microsoft Windows [Version 10.0.26200.8875], locale en-US) [837ms]
+    • Flutter version 3.47.0 on channel stable at E:\DEV\Coding_Resource\Flutter\flutter_windows_3.47.0-stable\flutter
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision 4cf2416426 (2 months ago), 2026-08-11 11:53:49 -0700
+    • Engine revision 5f77625673
+    • Dart version 3.13.0
+    • DevTools version 2.60.0
+    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, enable-record-use, enable-swift-package-manager, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[√] Windows Version (Windows 11 or higher, 25H2, 2009) [2.6s]
+
+[!] Android toolchain - develop for Android devices (Android SDK version 36.0.0) [3.9s]
+    • Android SDK at C:\Users\VIP\AppData\Local\Android\sdk
+    • Emulator version 37.1.11.0 (build_id 15917651) (CL:N/A)
+    • Platform android-36, build-tools 36.0.0
+    • Java binary at: C:\Program Files\Zulu\zulu21.50.19-ca-jdk21.0.11-win_x64\bin\java.exe
+      This JDK was found in the system PATH.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment Zulu21.50+19-CA (build 21.0.11+10-LTS)
+    ! Some Android licenses not accepted. To resolve this, run: flutter doctor --android-licenses
+
+[√] Chrome - develop for the web [384ms]
+    • Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[!] Visual Studio - develop Windows apps (SQL Server Management Studio 22 22.7.1) [383ms]
+    • Visual Studio at C:\Program Files\Microsoft SQL Server Management Studio 22\Release
+    • SQL Server Management Studio 22 version 22.7.11911.148
+    • Windows 10 SDK version 10.0.26100.0
+    X Visual Studio is missing necessary components. Please re-run the Visual Studio installer for the "Desktop development with C++" workload, and include these components:
+        MSVC v142 - VS 2019 C++ x64/x86 build tools
+         - If there are multiple build tool versions available, install the latest
+        C++ CMake tools for Windows
+        Windows 10 SDK
+
+[√] Connected device (3 available) [2.4s]
+    • Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.26200.8875]
+    • Chrome (web)      • chrome  • web-javascript • Google Chrome 156.0.8078.47
+    • Edge (web)        • edge    • web-javascript • Microsoft Edge 156.0.4314.42
+
+[√] Network resources [784ms]
+    • All expected network resources are available.
+
+! Doctor found issues in 2 categories.

@@ -109,7 +109,7 @@ Zero rows do not certify no in-flight work, historical completeness, or readines
 
 The host/shared changes above are implemented under the user's task-scoped assignment of
 2026-10-17. Runtime verification is recorded in the existing
-[common handoff](../handoffs/HANDOFF-HUY-MVP.md). Do not start a second
+[common handoff](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md). Do not start a second
 standalone Report alongside Support on the same DB to simulate a safe canary.
 
 ## 4. Rollback without deleting accepted writes
@@ -164,7 +164,7 @@ was unavailable, so container-backed rows remain **NOT RUN in this refresh**.
 | T15 — replay/publication/owner-only reads | Report replay/publication services and web tests | Publication-service suites rerun: 30 operational + 9 financial passed. Packaged Support/Notification isolation remains unaccepted. |
 | T16 — poison, retry, rollback, confirms | Pharmacy/Report Rabbit integration suites and outbox tests | **Not rerun** in this refresh; Docker broker/DB evidence is required. |
 | T17 — deferred services remain off | Pharmacy/Report MVP deferred-configuration and profile-alias tests | Pharmacy configuration suites rerun: 2 + 2 passed. Report configuration suites and full six-app flag matrix remain open. |
-| T18 — six-service startup and rollback | [Handoff chung Huy, sections 3–4](../handoffs/HANDOFF-HUY-MVP.md#3-support-composition--hợp-đồng-report-đã-cung-cấp) | No Support host or runtime change was made; remains shared-scope work. |
+| T18 — six-service startup and rollback | [Handoff chung Huy, sections 3–4](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md#3-support-composition--hợp-đồng-report-đã-cung-cấp) | No Support host or runtime change was made; remains shared-scope work. |
 | T19 — Gateway policy and FE smoke | Gateway owner acceptance and frontend workboard | Outside Huy backend scope; no Gateway/FE test was run or claimed. |
 
 The refresh executed 15 non-container test classes across Pharmacy and Report (215 tests,
@@ -320,7 +320,7 @@ Surefire/Failsafe directories. These generated files are ignored locally and upl
 
 Huy closes H6-06.2/.4, H6-11.2/.3/.4 and H6-12.1/.2: **46/48**. H6-02.3 and H6-12.3 remain
 open for an approved historical clone and broker inventory/cutover rehearsal. Their complete
-operator checklist is consolidated in the [single Huy handoff](../handoffs/HANDOFF-HUY-MVP.md).
+operator checklist is consolidated in the [single Huy handoff](../handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 No additional feature code or foreign-owner handoff is required by the exercised Rx/Support
 slice. Global M6 completion and production activation are separate decisions.
 

@@ -1,5 +1,17 @@
 # Surgery Service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**DEFERRED:** ngoài MVP ngoại trú; giữ source/data/migrations, không dùng checklist dưới để mở gate.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Surgery is future scope; the retained implementation does not make the outpatient MVP a completed hospital-wide system. Canonical positioning: [system design](../../docs/plans/01-system-design.md).
 
 
@@ -10,7 +22,7 @@ The implementation notes and historical test counts below are not an active back
 runtime acceptance. Do not enable Surgery or delete its source/data to close the Huy MVP plan.
 Only compatibility fixture paths were aligned to Core; production callers still require a separate
 reactivation task. Current scope: [Huy plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
-[Core compatibility handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
+[Core compatibility handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 Owner: Huy (`LQHuy0210`). Port `8091`, owned DB `mediflow_surgery`, base path `/api/v1/surgery`.
 Current scope: [MVP design](../../docs/plans/01-system-design.md), [bounded-context pointer](../../docs/ai/services/surgery.md).
@@ -80,7 +92,7 @@ Fixed nested-envelope V1 events on `mediflow.events`: `surgery.case.created` for
 after case creation; `surgery.completed` for actual post-operation reconciliation. Routing key equals
 eventType, no `.v1` suffix, producer `surgery-service`. Lộc may read the
 [producer fixtures and Billing scenarios](src/test/resources/contracts/surgery-outcomes-v1/README.md)
-and [canonical contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md) after pull.
+and [canonical contract](../../docs/plans/03-contracts.md) after pull.
 Includes admission/outpatient, planned/performed quantity changes, unknown price code and repeated
 delivery transport tests. Names/version are settled; catalogue pricing and consumer effects remain
 Billing-owned. V7 rows stay HELD, with no live referral/creation caller or V1 dispatcher enabled.
@@ -354,7 +366,7 @@ remains OFF. See the ten-ID closure ledger (historical document retired; outside
 Billing-side switch `MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED` defaults false. Existing Surgery
 business/consumer/publication switches and held V1 rows are unchanged. The REST contract and
 Billing-owned fixture directory are in
-[SURGERY-BILLING](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
+[SURGERY-BILLING](../../docs/plans/03-contracts.md).
 
 The runtime profile also discovers `SurgeryBillingRuntimeAcceptanceIT`, which starts the current
 packaged Billing JVM with separate PostgreSQL/RabbitMQ and calls it through the actual Surgery

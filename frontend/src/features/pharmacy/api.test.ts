@@ -5,11 +5,35 @@ import { pharmacyApi } from "./api";
 import { prepareOutpatientPrescriptionIntent } from "./outpatientPrescriptionIntent";
 
 describe("Pharmacy HTTP contracts", () => {
+  it("resolves a prescribing doctor's department through Gateway", () => {
+    pharmacyApi.getPrescribingDoctor("doctor/id");
+    expect(mocks.get).toHaveBeenCalledWith("/v1/org/staff/doctor%2Fid");
+  });
+  it("searches and resolves minimal patient identities through Gateway", () => {
+    pharmacyApi.searchPatients("An & Bình", 2);
+    expect(mocks.get).toHaveBeenCalledWith("/v1/patients/directory/search?keyword=An+%26+B%C3%ACnh&page=2&size=20");
+    pharmacyApi.getPatientIdentity("patient-id");
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/patients/directory/patient-id");
+    pharmacyApi.searchPrescriptions({ patientId: "patient-id" });
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/pharmacy/prescriptions?page=0&size=20&patientId=patient-id");
+  });
+  it("discovers prescriptions and source context through Gateway", () => {
+    pharmacyApi.searchPrescriptions({ keyword: " O & M ", status: "ACTIVE", page: 1 });
+    expect(mocks.get).toHaveBeenCalledWith("/v1/pharmacy/prescriptions?page=1&size=20&keyword=O+%26+M&status=ACTIVE");
+    pharmacyApi.getPrescribingContext("record-id");
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/pharmacy/prescriptions/prescribing/context?recordId=record-id");
+  });
   beforeEach(() => { mocks.get.mockReset(); mocks.post.mockReset(); mocks.put.mockReset(); });
   it("encodes drug name with backend pagination and omits blank keyword", () => {
     pharmacyApi.searchDrugs({ keyword: " A & B ", page: 2, size: 50 });
     expect(mocks.get).toHaveBeenCalledWith("/v1/pharmacy/drugs?page=2&size=50&keyword=A+%26+B");
     pharmacyApi.searchDrugs({ keyword: " " });
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/pharmacy/drugs?page=0&size=20");
+  });
+  it("sends inventory filters to the server and leaves ALL backwards compatible", () => {
+    pharmacyApi.searchDrugs({ keyword: "ingredient", filter: "EXPIRING_SOON", page: 1 });
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/pharmacy/drugs?page=1&size=20&filter=EXPIRING_SOON&keyword=ingredient");
+    pharmacyApi.searchDrugs({ filter: "ALL" });
     expect(mocks.get).toHaveBeenLastCalledWith("/v1/pharmacy/drugs?page=0&size=20");
   });
   it("preserves the bodyless dispense and known-event replay contracts", () => {

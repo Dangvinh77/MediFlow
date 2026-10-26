@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.web;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
@@ -55,11 +57,15 @@ public class DrugController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) DrugCatalogFilter filter,
             @RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String correlationId) {
-        PageResult<DrugDTO> result = manageDrugUseCase.search(keyword, PageQuery.of(page, size));
-        return ResponseEntity.ok(ApiResponse.ok(result, normalizeCorrelationId(correlationId)));
+        PageResult<DrugDTO> result = filter == null
+                ? manageDrugUseCase.search(keyword, PageQuery.of(page, size))
+                : manageDrugUseCase.search(keyword, filter, PageQuery.of(page, size));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(result, normalizeCorrelationId(correlationId)));
     }
 
     /**
@@ -76,8 +82,8 @@ public class DrugController {
             @RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String correlationId) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                manageDrugUseCase.getById(id), normalizeCorrelationId(correlationId)));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(manageDrugUseCase.getById(id), normalizeCorrelationId(correlationId)));
     }
 
     /**

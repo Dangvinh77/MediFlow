@@ -2,6 +2,7 @@
 
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 import { PharmacyIdentity } from "../PharmacyIdentity";
+import { ReferenceText } from "@/components/references/ReferenceText";
 
 import Link from "next/link";
 import {
@@ -92,28 +93,12 @@ function DetailError({ message, onRetry }: { message: string; onRetry?: () => vo
   );
 }
 
-function CopyValue({ label, value, identity }: { label: string; value: string | null; identity?: "patient" | "doctor" | "department" }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    if (!value) return;
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
-  }
-
+function PrescriptionField({ label, value, identity }: { label: string; value: string | null; identity?: "patient" | "doctor" | "department" }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-1 flex items-center gap-2">
-        {identity && value ? <PharmacyIdentity kind={identity} id={value} /> : <code className="break-all text-xs">{value ?? "Không có"}</code>}
-        {value && <button type="button" aria-label={`Chép ${label.toLowerCase()}`} onClick={copy} className="shrink-0 rounded border border-border px-2 py-1 text-xs hover:bg-surface-muted">
-          {copied ? "Đã chép" : "Chép"}
-        </button>}
+        {!value ? "Không có" : identity ? <PharmacyIdentity kind={identity} id={value} /> : <ReferenceText kind="record" value={value} fallback="Hồ sơ khám" />}
       </dd>
     </div>
   );
@@ -261,7 +246,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
   if (!canRead) {
     return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Tài khoản của bạn không có quyền xem đơn thuốc.</p>;
   }
-  if (!isUuid(prescriptionId)) return <p role="alert" className="mt-6 text-sm text-danger">Mã đơn thuốc phải là UUID hợp lệ.</p>;
+  if (!isUuid(prescriptionId)) return <p role="alert" className="mt-6 text-sm text-danger">Mã đơn thuốc không hợp lệ. Hãy kiểm tra lại mã trên đơn.</p>;
   if (loading && !prescription && !notFound && !dispenseNotFound && !error) return <DetailLoading />;
 
   if (notFound) {
@@ -280,7 +265,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
       <section className="mt-6 space-y-4 rounded-xl border border-warning/40 bg-warning/10 p-6">
         {feedback}
         <h2 className="text-lg font-semibold">Chưa có phiếu xuất thuốc</h2>
-        <p className="mt-2 text-sm">Đơn thuốc tồn tại nhưng backend chưa trả về phiếu xuất tương ứng. Đây là trạng thái khác với việc không tìm thấy đơn thuốc.</p>
+        <p className="mt-2 text-sm">Chưa tải được phiếu xuất của đơn này. Vui lòng tải lại sau hoặc liên hệ người phụ trách nhà thuốc.</p>
         <Link href="/pharmacy/prescriptions" className="mt-4 inline-flex rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted">Quay lại tra cứu</Link>
       </section>
     );
@@ -304,7 +289,6 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
 
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="break-all font-mono text-xs text-muted-foreground">{prescription.prescriptionId}</p>
           <h2 className="mt-1 text-xl font-semibold">Chi tiết đơn thuốc</h2>
           <p className="mt-1 text-sm text-muted-foreground">Ngày kê: {formatDate(prescription.prescribedDate)}</p>
         </div>
@@ -398,10 +382,10 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
       <section className="rounded-xl border border-border bg-surface p-6">
         <h3 className="text-base font-semibold">Thông tin kê đơn</h3>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <CopyValue label="Mã hồ sơ bệnh án" value={prescription.recordId} />
-          <CopyValue label="Bệnh nhân" value={prescription.patientId} identity="patient" />
-          <CopyValue label="Bác sĩ kê đơn" value={prescription.doctorId} identity="doctor" />
-          <CopyValue label="Khoa" value={prescription.departmentId} identity="department" />
+          <PrescriptionField label="Hồ sơ khám" value={prescription.recordId} />
+          <PrescriptionField label="Bệnh nhân" value={prescription.patientId} identity="patient" />
+          <PrescriptionField label="Bác sĩ kê đơn" value={prescription.doctorId} identity="doctor" />
+          <PrescriptionField label="Khoa" value={prescription.departmentId} identity="department" />
           <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Ngày kê đơn</dt><dd className="mt-1">{formatDate(prescription.prescribedDate)}</dd></div>
         </dl>
@@ -417,7 +401,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
             <tbody className="divide-y divide-border">
               {prescription.lines.map((line) => (
                 <tr key={line.lineId}>
-                  <td className="px-3 py-3"><div>{line.drugName ?? "(Không còn tên thuốc)"}</div><code className="text-xs text-muted-foreground">{line.drugId}</code></td>
+                  <td className="px-3 py-3"><div>{line.drugName ?? "Chưa có thông tin tên thuốc"}</div></td>
                   <td className="px-3 py-3">{line.quantity}</td>
                   <td className="px-3 py-3">{formatVnd(line.unitPrice)}</td>
                   <td className="px-3 py-3">{line.dosage ?? "—"}</td>
@@ -431,10 +415,10 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
 
       {(prescription.cancelledAt || prescription.cancelledBy || prescription.cancellationReason) && (
         <section className="rounded-xl border border-border bg-surface p-6">
-          <h3 className="text-base font-semibold">Kiểm toán hủy đơn</h3>
+          <h3 className="text-base font-semibold">Thông tin hủy đơn</h3>
           <dl className="mt-4 grid gap-4 sm:grid-cols-3">
             <div><dt className="text-xs text-muted-foreground">Thời điểm</dt><dd className="mt-1">{formatDateTime(prescription.cancelledAt)}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Người hủy</dt><dd className="mt-1 break-all">{prescription.cancelledBy ?? "—"}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">Người hủy</dt><dd className="mt-1"><ReferenceText value={prescription.cancelledBy} fallback="Đã ghi nhận tài khoản thực hiện" /></dd></div>
             <div><dt className="text-xs text-muted-foreground">Lý do</dt><dd className="mt-1">{prescription.cancellationReason ?? "—"}</dd></div>
           </dl>
         </section>
@@ -446,6 +430,12 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
           <div><dt className="text-xs text-muted-foreground">Tạo lúc</dt><dd className="mt-1">{formatDateTime(prescription.createdAt)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Cập nhật lúc</dt><dd className="mt-1">{formatDateTime(prescription.updatedAt)}</dd></div>
         </dl>
+        <details className="mt-4 text-sm text-muted-foreground">
+          <summary className="cursor-pointer">Mã tham chiếu khi cần hỗ trợ</summary>
+          <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+            {[["Đơn thuốc", prescription.prescriptionId], ["Hồ sơ khám", prescription.recordId], ["Bệnh nhân", prescription.patientId], ["Bác sĩ", prescription.doctorId], ["Khoa", prescription.departmentId], ["Tài khoản hủy", prescription.cancelledBy]].filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd className="mt-1 break-all font-mono">{value}</dd></div>)}
+          </dl>
+        </details>
       </section>
     </section>
   );

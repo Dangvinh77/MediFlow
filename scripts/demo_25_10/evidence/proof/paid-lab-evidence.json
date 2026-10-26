@@ -1,0 +1,106 @@
+{
+  "clearance" : {
+    "eventId" : "f7c35449-f12b-4f22-818e-e16377df495c",
+    "eventType" : "financial.clearance.granted",
+    "version" : 1,
+    "occurredAt" : "2026-10-25T01:07:04.197948400Z",
+    "correlationId" : "16523398-9d77-4f1b-8870-6610aef21355",
+    "producer" : "billing-service",
+    "payload" : {
+      "clearanceId" : "936097ec-ccea-4c4a-a1bb-e4c3c8223680",
+      "invoiceId" : "80418da5-5cb8-4dfa-90d5-cd9509905110",
+      "accountId" : "6d938b7b-c7d0-42c3-b22b-86010a3a1a8f",
+      "patientId" : "f7baf835-e223-41c0-aa57-80994a1dc32f",
+      "careEpisodeType" : "OUTPATIENT_VISIT",
+      "careEpisodeId" : "a3790f04-d525-4061-abba-a2d073de1e9e",
+      "purpose" : "LAB_TEST",
+      "appointmentId" : null,
+      "recordId" : "2a82ab9f-0f04-4e0c-970a-7aadd30a3a4c",
+      "labTestIds" : [ "4b8410b6-d0b5-4f6d-9c8f-2c2b95844b4a" ],
+      "prescriptionId" : null,
+      "admissionId" : null,
+      "surgeryCaseId" : null,
+      "amount" : 150000.0,
+      "currency" : "VND",
+      "paymentMethod" : "CASH",
+      "expiresAt" : null,
+      "emergencyOverride" : false
+    }
+  },
+  "labTestId" : "4b8410b6-d0b5-4f6d-9c8f-2c2b95844b4a",
+  "sourceOrderId" : "ce433632-c19b-4d48-9683-888ef8f302bd",
+  "resultEvent" : {
+    "eventId" : "4593554b-7bf3-4869-a830-7e05f4d8c494",
+    "payload" : {
+      "labId" : "4b8410b6-d0b5-4f6d-9c8f-2c2b95844b4a",
+      "labType" : "CBC",
+      "results" : [ {
+        "unit" : "g/dL",
+        "value" : "13.2",
+        "resultId" : "651e7aa5-88ab-4db1-9b8a-6ea44c91a5ae",
+        "indicator" : "Hemoglobin",
+        "referenceRange" : "12.0-16.0"
+      } ],
+      "recordId" : "2a82ab9f-0f04-4e0c-970a-7aadd30a3a4c",
+      "patientId" : "f7baf835-e223-41c0-aa57-80994a1dc32f",
+      "conclusion" : "No abnormality observed",
+      "verifiedBy" : "b9f4dbed-b1ab-4332-9f98-c9286a3a56ce",
+      "completedAt" : "2026-10-25T01:07:28.506522800Z",
+      "departmentId" : "5f5e2e5e-4370-4fae-90db-cf2759b28a57",
+      "careEpisodeId" : "a3790f04-d525-4061-abba-a2d073de1e9e",
+      "performedDate" : "2026-10-25",
+      "resultVersion" : 1,
+      "careEpisodeType" : "OUTPATIENT_VISIT"
+    },
+    "version" : 1,
+    "producer" : "lab-service",
+    "eventType" : "lab.result.created",
+    "occurredAt" : "2026-10-25T01:07:28.506522800Z",
+    "correlationId" : "5114cdb7-a16a-4cb2-8c35-89d6622522f6"
+  },
+  "examPayment" : {
+    "transactionId" : "171bd80c-38fd-4849-ac75-eb6f768fa139",
+    "accountId" : "6d938b7b-c7d0-42c3-b22b-86010a3a1a8f",
+    "paymentRequestId" : "03f122b9-6f04-4fce-926e-f9fff48537d8",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 100000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-25T01:06:38.285433Z"
+  },
+  "appointmentId" : "a3790f04-d525-4061-abba-a2d073de1e9e",
+  "labPayment" : {
+    "transactionId" : "9dbad63b-0790-4da4-84b5-a3a84378351f",
+    "accountId" : "6d938b7b-c7d0-42c3-b22b-86010a3a1a8f",
+    "paymentRequestId" : "05fb8356-d3f3-46dd-8764-09fb96976a62",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 150000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-25T01:07:04.197948Z"
+  },
+  "completedRecord" : {
+    "recordId" : "2a82ab9f-0f04-4e0c-970a-7aadd30a3a4c",
+    "patientId" : "f7baf835-e223-41c0-aa57-80994a1dc32f",
+    "doctorId" : "9a5eeaf6-d446-42a1-adcd-32b9448b9073",
+    "departmentId" : "5f5e2e5e-4370-4fae-90db-cf2759b28a57",
+    "examinationDate" : "2026-10-25",
+    "symptoms" : null,
+    "appointmentId" : "a3790f04-d525-4061-abba-a2d073de1e9e",
+    "diagnoses" : [ {
+      "diagnosisId" : "620b31ac-88c9-4c23-90e9-a567684ec375",
+      "diagnosisName" : "Outpatient follow up",
+      "description" : "CBC reviewed",
+      "icdCode" : "Z09"
+    } ],
+    "createdAt" : "2026-10-25T01:07:02.386534Z",
+    "updatedAt" : "2026-10-25T01:07:52.323671700Z",
+    "status" : "COMPLETED",
+    "disposition" : "OUTPATIENT_FOLLOW_UP",
+    "dispositionNote" : "Follow up after reviewed CBC",
+    "completedAt" : "2026-10-25T01:07:52.323671700Z"
+  },
+  "recordId" : "2a82ab9f-0f04-4e0c-970a-7aadd30a3a4c"
+}

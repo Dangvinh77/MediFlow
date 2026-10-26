@@ -38,10 +38,10 @@ class OutpatientDeliveryMigrationPostgresTest {
         var lease=jdbc.queryForMap("SELECT * FROM pharmacy_scheduler_lease WHERE job_name='ISOLATED_V20_UPGRADE'");
         var checksums=jdbc.queryForList("SELECT version,checksum FROM flyway_schema_history WHERE success ORDER BY installed_rank");
         var latest=Flyway.configure().dataSource(data).locations("classpath:db/migration").load();
-        assertThat(latest.migrate().migrationsExecuted).isOne();latest.validate();
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);latest.validate();
         assertThat(jdbc.queryForList(projection)).isEqualTo(before);
         assertThat(jdbc.queryForMap("SELECT * FROM pharmacy_scheduler_lease WHERE job_name='ISOLATED_V20_UPGRADE'")).isEqualTo(lease);
-        assertThat(jdbc.queryForList("SELECT version,checksum FROM flyway_schema_history WHERE success AND version<>'20' ORDER BY installed_rank")).isEqualTo(checksums);
+        assertThat(jdbc.queryForList("SELECT version,checksum FROM flyway_schema_history WHERE success AND version::int<=19 ORDER BY installed_rank")).isEqualTo(checksums);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_outpatient_delivery_cohort",Long.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_event_outbox WHERE care_delivery_cohort_id IS NOT NULL",Long.class)).isZero();
         assertThatThrownBy(()->jdbc.update("UPDATE pharmacy_event_outbox SET delivery_enabled=true WHERE event_id=?",held))

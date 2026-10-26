@@ -46,4 +46,4 @@ Không tự cài toolchain, chấp nhận license hoặc bật backend gates.
 
 Tiến độ vẫn **8/12 DONE**;08/10 PARTIAL vì transport/adapters,11 DEPENDENCY,12 PARTIAL local.
 Không thêm điểm hoàn thành bằng tests doubles hoặc build. Dependency giữ đúng
-[một handoff chung](../../../../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo nhiều file handoff.
+[một handoff chung](../../../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md), không tạo nhiều file handoff.

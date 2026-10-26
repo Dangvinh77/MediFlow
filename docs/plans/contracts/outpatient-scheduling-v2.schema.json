@@ -1,0 +1,2481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mediflow:design:opd-sched:2026-10-26:revision:1",
+  "title": "TARGET ONLY OPD-SCHED-2026-10-26 revision 1",
+  "description": "Design schemas; not runtime or producer acceptance. Validate a named $defs entry. Cross-resource, arithmetic, permissions and state-transition invariants require application/PG/Rabbit tests.",
+  "$defs": {
+    "Break": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      "required": [
+        "startTime",
+        "endTime"
+      ]
+    },
+    "SessionCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Break"
+          },
+          "maxItems": 20
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "doctorId",
+        "departmentId",
+        "roomId",
+        "sessionDate",
+        "startTime",
+        "endTime",
+        "breaks",
+        "capacity"
+      ]
+    },
+    "SessionUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Break"
+          },
+          "maxItems": 20
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "doctorId",
+        "departmentId",
+        "roomId",
+        "sessionDate",
+        "startTime",
+        "endTime",
+        "breaks",
+        "capacity",
+        "expectedRevision",
+        "reason"
+      ]
+    },
+    "SessionStatusCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "OPEN",
+            "STOPPED",
+            "CANCELLED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "status",
+        "reason"
+      ]
+    },
+    "SessionDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Break"
+          },
+          "maxItems": 20
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "OPEN",
+            "STOPPED",
+            "CANCELLED"
+          ]
+        },
+        "heldCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "paymentLockedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "consumedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "availableCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "sessionId",
+        "revision",
+        "doctorId",
+        "departmentId",
+        "roomId",
+        "sessionDate",
+        "startTime",
+        "endTime",
+        "breaks",
+        "capacity",
+        "status",
+        "heldCount",
+        "paymentLockedCount",
+        "confirmedCount",
+        "consumedCount",
+        "availableCount",
+        "observedAt"
+      ]
+    },
+    "DoctorCalendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fromDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "toDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "const": "Asia/Ho_Chi_Minh"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SessionDTO"
+          }
+        }
+      },
+      "required": [
+        "doctorId",
+        "fromDate",
+        "toDate",
+        "timezone",
+        "sessions"
+      ]
+    },
+    "ScopeCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "departmentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "departmentIds",
+        "reason"
+      ]
+    },
+    "ScopeSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "departmentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "updatedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedByAccountId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "accountId",
+        "revision",
+        "departmentIds",
+        "updatedAt",
+        "updatedByAccountId"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "revision": {
+                "const": 0
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "departmentIds": {
+                "maxItems": 0
+              },
+              "updatedAt": {
+                "type": "null"
+              },
+              "updatedByAccountId": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedByAccountId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SchedulingAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "accountExists": {
+          "type": "boolean"
+        },
+        "accountActive": {
+          "type": "boolean"
+        },
+        "currentRole": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "staffId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "staffActive": {
+          "type": "boolean"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentActive": {
+          "type": "boolean"
+        },
+        "canManageSchedules": {
+          "type": "boolean"
+        },
+        "scopeRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "actorAccountId",
+        "accountExists",
+        "accountActive",
+        "currentRole",
+        "staffId",
+        "staffActive",
+        "departmentId",
+        "departmentActive",
+        "canManageSchedules",
+        "scopeRevision",
+        "observedAt"
+      ]
+    },
+    "ConsultationEligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "doctorExists": {
+          "type": "boolean"
+        },
+        "doctorActive": {
+          "type": "boolean"
+        },
+        "eligibleDoctor": {
+          "type": "boolean"
+        },
+        "doctorDepartmentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentExists": {
+          "type": "boolean"
+        },
+        "departmentActive": {
+          "type": "boolean"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomExists": {
+          "type": "boolean"
+        },
+        "roomActive": {
+          "type": "boolean"
+        },
+        "roomDepartmentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "roomType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "doctorId",
+        "doctorExists",
+        "doctorActive",
+        "eligibleDoctor",
+        "doctorDepartmentId",
+        "departmentId",
+        "departmentExists",
+        "departmentActive",
+        "roomId",
+        "roomExists",
+        "roomActive",
+        "roomDepartmentId",
+        "roomType",
+        "eligible",
+        "observedAt"
+      ]
+    },
+    "RoomSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "roomType": {
+          "const": "CONSULTATION"
+        }
+      },
+      "required": [
+        "roomId",
+        "departmentId",
+        "roomName",
+        "roomType"
+      ]
+    },
+    "RegistrationCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expectedSessionRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "receptionMode": {
+          "type": "string",
+          "enum": [
+            "AT_COUNTER",
+            "PREBOOKED"
+          ]
+        },
+        "visitType": {
+          "type": "string",
+          "enum": [
+            "NEW_VISIT",
+            "FOLLOW_UP"
+          ]
+        },
+        "previousRegistrationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "patientId",
+        "sessionId",
+        "expectedSessionRevision",
+        "receptionMode",
+        "visitType",
+        "previousRegistrationId",
+        "reason"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "visitType": {
+                "const": "NEW_VISIT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "previousRegistrationId": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "previousRegistrationId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RevisionCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "expectedRevision"
+      ]
+    },
+    "CancellationCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "reason"
+      ]
+    },
+    "RegistrationDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "receptionMode": {
+          "type": "string",
+          "enum": [
+            "AT_COUNTER",
+            "PREBOOKED"
+          ]
+        },
+        "visitType": {
+          "type": "string",
+          "enum": [
+            "NEW_VISIT",
+            "FOLLOW_UP"
+          ]
+        },
+        "previousRegistrationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "AWAITING_PAYMENT",
+            "CONFIRMED",
+            "IN_EXAM",
+            "COMPLETED",
+            "EXPIRED",
+            "CANCELLED",
+            "RECONCILIATION_REQUIRED"
+          ]
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reservationStatus": {
+          "type": "string",
+          "enum": [
+            "HELD",
+            "PAYMENT_LOCKED",
+            "CONFIRMED",
+            "CONSUMED",
+            "EXPIRED",
+            "CANCELLED"
+          ]
+        },
+        "reservationExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checkedInAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queueNumber": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readyForExam": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "registrationId",
+        "revision",
+        "patientId",
+        "doctorId",
+        "departmentId",
+        "roomId",
+        "sessionId",
+        "sessionDate",
+        "startTime",
+        "endTime",
+        "receptionMode",
+        "visitType",
+        "previousRegistrationId",
+        "status",
+        "reservationId",
+        "reservationRevision",
+        "reservationStatus",
+        "reservationExpiresAt",
+        "checkedInAt",
+        "queueNumber",
+        "readyForExam",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RegistrationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "visitType": {
+          "type": "string",
+          "enum": [
+            "NEW_VISIT",
+            "FOLLOW_UP"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "AWAITING_PAYMENT",
+            "CONFIRMED",
+            "IN_EXAM",
+            "COMPLETED",
+            "EXPIRED",
+            "CANCELLED",
+            "RECONCILIATION_REQUIRED"
+          ]
+        },
+        "checkedInAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queueNumber": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readyForExam": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "registrationId",
+        "patientId",
+        "visitType",
+        "status",
+        "checkedInAt",
+        "queueNumber",
+        "readyForExam"
+      ]
+    },
+    "RegistrationPaymentRequestDTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "invoiceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceType": {
+          "const": "EXAM"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "careEpisodeType": {
+          "const": "OUTPATIENT_VISIT"
+        },
+        "careEpisodeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "requestedAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})\\.[0-9]{2}$"
+        },
+        "paidAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})\\.[0-9]{2}$"
+        },
+        "remainingAmount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,16})\\.[0-9]{2}$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "PARTIALLY_PAID",
+            "PAID",
+            "EXPIRED",
+            "CANCELLED"
+          ]
+        },
+        "expiresAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "paymentRequestId",
+        "invoiceId",
+        "accountId",
+        "registrationId",
+        "reservationId",
+        "patientId",
+        "departmentId",
+        "sourceType",
+        "sourceId",
+        "careEpisodeType",
+        "careEpisodeId",
+        "requestedAmount",
+        "paidAmount",
+        "remainingAmount",
+        "currency",
+        "status",
+        "expiresAt",
+        "observedAt"
+      ]
+    },
+    "ScheduledPaymentCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expectedReservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": [
+            "CASH",
+            "BANK_TRANSFER"
+          ]
+        },
+        "providerReference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "reservationId",
+        "expectedReservationRevision",
+        "amount",
+        "currency",
+        "paymentMethod",
+        "providerReference"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "paymentMethod": {
+                "const": "CASH"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "providerReference": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "providerReference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PaymentOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARING",
+            "COMPLETED",
+            "CLOSED_NOT_PAID"
+          ]
+        },
+        "transactionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "paymentOperationId",
+        "paymentRequestId",
+        "registrationId",
+        "reservationId",
+        "status",
+        "transactionId",
+        "amount",
+        "currency",
+        "createdAt",
+        "updatedAt"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "COMPLETED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "transactionId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "transactionId": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LedgerPaymentV2DTO": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transactionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "classification": {
+          "const": "SERVICE_PAYMENT"
+        },
+        "status": {
+          "const": "COMPLETED"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": [
+            "CASH",
+            "BANK_TRANSFER"
+          ]
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "transactionId",
+        "accountId",
+        "paymentRequestId",
+        "classification",
+        "status",
+        "amount",
+        "currency",
+        "paymentMethod",
+        "completedAt"
+      ]
+    },
+    "ScheduledPaymentResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/PaymentOperation"
+        },
+        "payment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LedgerPaymentV2DTO"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clearanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation",
+        "payment",
+        "clearanceId"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "status": {
+                    "const": "COMPLETED"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payment": {
+                "$ref": "#/$defs/LedgerPaymentV2DTO"
+              },
+              "clearanceId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "payment": {
+                "type": "null"
+              },
+              "clearanceId": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PaymentLockCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceType": {
+          "const": "EXAM"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "careEpisodeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expectedReservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "paymentOperationId",
+        "paymentRequestId",
+        "registrationId",
+        "patientId",
+        "sourceType",
+        "sourceId",
+        "careEpisodeId",
+        "expectedReservationRevision"
+      ]
+    },
+    "PaymentLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fenceToken": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lockedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reconcileAfter": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "paymentOperationId",
+        "reservationId",
+        "reservationRevision",
+        "fenceToken",
+        "lockedAt",
+        "reconcileAfter"
+      ]
+    },
+    "ClosePaymentCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fenceToken": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "const": "RESERVATION_RECONCILIATION"
+        }
+      },
+      "required": [
+        "registrationId",
+        "reservationId",
+        "fenceToken",
+        "reason"
+      ]
+    },
+    "PaymentResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fenceToken": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "COMPLETED",
+            "CLOSED_NOT_PAID"
+          ]
+        },
+        "transactionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clearanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "paymentOperationId",
+        "paymentRequestId",
+        "registrationId",
+        "reservationId",
+        "fenceToken",
+        "outcome",
+        "transactionId",
+        "clearanceId",
+        "completedAt"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "COMPLETED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "transactionId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "clearanceId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "transactionId": {
+                "type": "null"
+              },
+              "clearanceId": {
+                "type": "null"
+              },
+              "completedAt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RegistrationFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "doctorId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "visitType": {
+          "type": "string",
+          "enum": [
+            "NEW_VISIT",
+            "FOLLOW_UP"
+          ]
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationStatus": {
+          "type": "string",
+          "enum": [
+            "HELD",
+            "PAYMENT_LOCKED",
+            "CONFIRMED",
+            "CONSUMED",
+            "EXPIRED",
+            "CANCELLED"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "AWAITING_PAYMENT",
+            "CONFIRMED",
+            "IN_EXAM",
+            "COMPLETED",
+            "EXPIRED",
+            "CANCELLED",
+            "RECONCILIATION_REQUIRED"
+          ]
+        },
+        "checkedInAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queueNumber": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priceCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "sourceType": {
+          "const": "EXAM"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "careEpisodeType": {
+          "const": "OUTPATIENT_VISIT"
+        },
+        "careEpisodeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "changedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reservationExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cancellation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "actorAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "actorStaffId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "pattern": "\\S"
+                },
+                "cancelledAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "actorAccountId",
+                "actorStaffId",
+                "reason",
+                "cancelledAt"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "registrationId",
+        "registrationRevision",
+        "patientId",
+        "doctorId",
+        "departmentId",
+        "sessionId",
+        "roomId",
+        "sessionDate",
+        "startTime",
+        "endTime",
+        "visitType",
+        "reservationId",
+        "reservationStatus",
+        "status",
+        "checkedInAt",
+        "queueNumber",
+        "priceCode",
+        "sourceType",
+        "sourceId",
+        "careEpisodeType",
+        "careEpisodeId",
+        "changedAt",
+        "reservationExpiresAt",
+        "cancellation"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "CANCELLED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cancellation": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "actorAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "actorStaffId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "\\S"
+                  },
+                  "cancelledAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "actorAccountId",
+                  "actorStaffId",
+                  "reason",
+                  "cancelledAt"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "cancellation": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EligibilityFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paymentOperationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "paymentRequestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "registrationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fenceToken": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "patientId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceType": {
+          "const": "EXAM"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "careEpisodeType": {
+          "const": "OUTPATIENT_VISIT"
+        },
+        "careEpisodeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "transactionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "clearanceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,16}\\.[0-9]{2}|0\\.(?:0[1-9]|[1-9][0-9]))$"
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "basis": {
+          "const": "PATIENT_PAYMENT"
+        }
+      },
+      "required": [
+        "paymentOperationId",
+        "paymentRequestId",
+        "registrationId",
+        "reservationId",
+        "fenceToken",
+        "patientId",
+        "sourceType",
+        "sourceId",
+        "careEpisodeType",
+        "careEpisodeId",
+        "transactionId",
+        "clearanceId",
+        "amount",
+        "currency",
+        "completedAt",
+        "basis"
+      ]
+    },
+    "RegistrationChangedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "outpatient.registration.changed"
+        },
+        "version": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "producer": {
+          "const": "clinical-service"
+        },
+        "payload": {
+          "$ref": "#/$defs/RegistrationFact"
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "correlationId",
+        "producer",
+        "payload"
+      ]
+    },
+    "EligibilityGrantedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "outpatient.financial.eligibility.granted"
+        },
+        "version": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "producer": {
+          "const": "billing-service"
+        },
+        "payload": {
+          "$ref": "#/$defs/EligibilityFact"
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "correlationId",
+        "producer",
+        "payload"
+      ]
+    },
+    "ApiError": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "field",
+              "message"
+            ]
+          }
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "details"
+      ]
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": false
+        },
+        "data": {
+          "type": "null"
+        },
+        "error": {
+          "$ref": "#/$defs/ApiError"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "SessionDTOResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/SessionDTO"
+        },
+        "error": {
+          "type": "null"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "RegistrationDTOResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/RegistrationDTO"
+        },
+        "error": {
+          "type": "null"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "ScheduledPaymentResultResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/ScheduledPaymentResult"
+        },
+        "error": {
+          "type": "null"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "PaymentLeaseResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/PaymentLease"
+        },
+        "error": {
+          "type": "null"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "ScopeSnapshotResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/ScopeSnapshot"
+        },
+        "error": {
+          "type": "null"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "success",
+        "data",
+        "error",
+        "timestamp",
+        "correlationId"
+      ]
+    },
+    "SessionDTOPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SessionDTO"
+          }
+        },
+        "totalElements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "content",
+        "totalElements",
+        "totalPages",
+        "number",
+        "size"
+      ]
+    },
+    "RoomSummaryPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RoomSummary"
+          }
+        },
+        "totalElements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "content",
+        "totalElements",
+        "totalPages",
+        "number",
+        "size"
+      ]
+    },
+    "RegistrationSummaryPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RegistrationSummary"
+          }
+        },
+        "totalElements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "content",
+        "totalElements",
+        "totalPages",
+        "number",
+        "size"
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Break"
+    },
+    {
+      "$ref": "#/$defs/SessionCreate"
+    },
+    {
+      "$ref": "#/$defs/SessionUpdate"
+    },
+    {
+      "$ref": "#/$defs/SessionStatusCommand"
+    },
+    {
+      "$ref": "#/$defs/SessionDTO"
+    },
+    {
+      "$ref": "#/$defs/DoctorCalendar"
+    },
+    {
+      "$ref": "#/$defs/ScopeCommand"
+    },
+    {
+      "$ref": "#/$defs/ScopeSnapshot"
+    },
+    {
+      "$ref": "#/$defs/SchedulingAuthority"
+    },
+    {
+      "$ref": "#/$defs/ConsultationEligibility"
+    },
+    {
+      "$ref": "#/$defs/RoomSummary"
+    },
+    {
+      "$ref": "#/$defs/RegistrationCreate"
+    },
+    {
+      "$ref": "#/$defs/RevisionCommand"
+    },
+    {
+      "$ref": "#/$defs/CancellationCommand"
+    },
+    {
+      "$ref": "#/$defs/RegistrationDTO"
+    },
+    {
+      "$ref": "#/$defs/RegistrationSummary"
+    },
+    {
+      "$ref": "#/$defs/RegistrationPaymentRequestDTO"
+    },
+    {
+      "$ref": "#/$defs/ScheduledPaymentCommand"
+    },
+    {
+      "$ref": "#/$defs/PaymentOperation"
+    },
+    {
+      "$ref": "#/$defs/LedgerPaymentV2DTO"
+    },
+    {
+      "$ref": "#/$defs/ScheduledPaymentResult"
+    },
+    {
+      "$ref": "#/$defs/PaymentLockCommand"
+    },
+    {
+      "$ref": "#/$defs/PaymentLease"
+    },
+    {
+      "$ref": "#/$defs/ClosePaymentCommand"
+    },
+    {
+      "$ref": "#/$defs/PaymentResolution"
+    },
+    {
+      "$ref": "#/$defs/RegistrationFact"
+    },
+    {
+      "$ref": "#/$defs/EligibilityFact"
+    },
+    {
+      "$ref": "#/$defs/RegistrationChangedEvent"
+    },
+    {
+      "$ref": "#/$defs/EligibilityGrantedEvent"
+    },
+    {
+      "$ref": "#/$defs/ApiError"
+    },
+    {
+      "$ref": "#/$defs/ErrorResponse"
+    },
+    {
+      "$ref": "#/$defs/SessionDTOResponse"
+    },
+    {
+      "$ref": "#/$defs/RegistrationDTOResponse"
+    },
+    {
+      "$ref": "#/$defs/ScheduledPaymentResultResponse"
+    },
+    {
+      "$ref": "#/$defs/PaymentLeaseResponse"
+    },
+    {
+      "$ref": "#/$defs/ScopeSnapshotResponse"
+    },
+    {
+      "$ref": "#/$defs/SessionDTOPage"
+    },
+    {
+      "$ref": "#/$defs/RoomSummaryPage"
+    },
+    {
+      "$ref": "#/$defs/RegistrationSummaryPage"
+    }
+  ]
+}

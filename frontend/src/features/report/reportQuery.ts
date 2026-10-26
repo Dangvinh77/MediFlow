@@ -22,7 +22,7 @@ export function readMonthlyReportQuery(params: URLSearchParams, now = new Date()
     year: rawYear === null ? now.getFullYear() : Number(rawYear),
     departmentId: params.get("departmentId")?.trim() || undefined,
   };
-  return { query, autoLoad: rawMonth !== null && rawYear !== null && validateMonthlyReportQuery(query) === null };
+  return { query, autoLoad: validateMonthlyReportQuery(query) === null };
 }
 
 export function buildMonthlyReportQuery(params: URLSearchParams, query: MonthlyReportQuery) {
@@ -35,12 +35,12 @@ export function buildMonthlyReportQuery(params: URLSearchParams, query: MonthlyR
   return next.toString();
 }
 
-export function readDailyReportQuery(params: URLSearchParams) {
+export function readDailyReportQuery(params: URLSearchParams, now = new Date()) {
   const query: DailyReportQuery = {
-    date: params.get("date") ?? "",
+    date: params.get("date") ?? localReportDate(now),
     departmentId: params.get("departmentId")?.trim() || undefined,
   };
-  return { query, autoLoad: params.has("date") && validateDailyReportQuery(query) === null };
+  return { query, autoLoad: validateDailyReportQuery(query) === null };
 }
 
 export function buildDailyReportQuery(params: URLSearchParams, query: DailyReportQuery) {
@@ -59,7 +59,7 @@ export function readTopMedicinesQuery(params: URLSearchParams, now = new Date())
     limit: params.has("limit") ? Number(params.get("limit")) : 10,
     departmentId: params.get("departmentId")?.trim() || undefined,
   };
-  return { query, autoLoad: params.has("fromDate") && params.has("toDate") && validateTopMedicinesQuery(query) === null };
+  return { query, autoLoad: validateTopMedicinesQuery(query) === null };
 }
 
 export function buildTopMedicinesQuery(params: URLSearchParams, query: TopMedicinesQuery) {

@@ -20,7 +20,7 @@ and reviewed V1 activation remain open; local consumer tests do not release the 
 For the outpatient MVP, Billing/Clinical/Report/Notification owners must accept these same bytes,
 agree V0/V1 routing/cutover and terminal adjustment rules before enabling delivery. Inpatient is
 deferred and does not block outpatient acceptance. The active gate is
-[`HANDOFF-HUY-MVP.md`](../../../../../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+[`HANDOFF-HUY-MVP.md`](../../../../../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 ## Outpatient relationship supplied to Clinical
 

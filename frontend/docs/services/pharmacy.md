@@ -1,5 +1,12 @@
 # Frontend Service: Pharmacy
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 2026-10-19 signed acceptance PASS: actual issuer DOCTOR creates V1 in the browser, CASHIER public
 API pays, PHARMACIST refreshes and dispenses in the browser. Payment alone leaves PENDING;
 one dispense reduces stock 40→37 and terminal retry preserves one effect. Actual ADMIN creates
@@ -90,7 +97,7 @@ explicit request/error states. Drug flows add UUID/DTO guards, field focus, sync
 locks and server-returned stock. Conflict/unknown stock outcomes refresh before a new command;
 outbox confirmation supports Escape/cancel and distinguishes replayed=false. Drug tests: 40/40;
 outbox tests: 11/11. Browser fixture smoke covers create/detail/adjust and mobile layouts. Signed
-actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 2026-10-16 prescription continuation: P-05 is FE-local complete; P-06 has all four local subtasks
 complete but remains open for real-role Gateway smoke. V0 create uses the shared themed controls,
@@ -109,6 +116,25 @@ See [checkpoint 14](../huy-frontend-implementation-plan.md#14-checkpoint-kê-đ�
 - `frontend/docs/pharmacy-frontend-implementation-plan.md`
 
 ## Current UI baseline
+
+2026-10-25 patient-name follow-up: the primary prescription filter selects a patient by
+name and birth date, then sends `patientId` to the paged prescription API. The default view
+and “Xem tất cả” retain all prescriptions. Core's task-authorized minimal patient-directory
+endpoints supply exactly `maBenhNhan`, `hoTen`, `ngaySinh` for ADMIN/DOCTOR/PHARMACIST.
+Pharmacist patient labels also use that limited contract; staff/department permissions are
+unchanged. No client-side filtering of only the current prescription page is used.
+
+Verification: 278 Pharmacy frontend tests, typecheck, lint and Docker production build pass;
+Core 334 tests and Gateway 1561 tests pass. Public-Gateway role checks and a PHARMACIST browser
+search for Nguyễn Văn An Demo (12/04/1986) return the three existing prescriptions. Full patient
+profile access remains forbidden to PHARMACIST. The deployed containers are healthy.
+
+2026-10-25: the prescription landing page loads a paged list automatically, with patient-name
+selection, status filtering and detail links. Manual UUID lookup remains an optional shortcut.
+Outpatient creation selects patient and record; Pharmacy's prescribing-context read endpoint
+supplies the authoritative doctor, department, care episode and configured price choices.
+Changing patient clears the selected record and its context. Loading failures block submission
+and offer retry. PHARMACIST patient names now use the minimal Core directory described above.
 
 Pharmacy currently has the deepest frontend implementation: drug catalog/detail/create/stock
 adjustment; prescription create/lookup/detail; cancel and dispense actions; and an ADMIN outbox
@@ -140,3 +166,12 @@ guards, and keep replay restricted to a known event ID and ADMIN UX gate.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, focused Pharmacy tests when available, and smoke
 test role-specific create/adjust/cancel/dispense/replay actions affected by the change.
+
+## Pharmacy usability follow-up — 2026-10-25
+
+The catalogue searches names and ingredients and filters on-hand stock/expiry across the full
+server result before pagination. Filters live in the URL and can be cleared together. Prescription
+list patient/status/page state survives detail navigation and browser Back. Patient selection is
+cleared with “Xem tất cả”. Drug selection during prescribing has pagination, preserves selected
+lines across pages, marks expired/empty stock, and shows expiry and an explicitly provisional total.
+The backend remains authoritative for stock, reservations and the final price.

@@ -85,6 +85,7 @@ class ReportControllerTest {
                         .param("departmentId", departmentId.toString())
                         .header("X-Correlation-Id", "corr-123"))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.visitCount").value(4))
                 .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()))
@@ -102,6 +103,7 @@ class ReportControllerTest {
                         .param("month", "2")
                         .param("year", "2028"))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.month").value(2))
                 .andExpect(jsonPath("$.data.departmentId").doesNotExist());
@@ -118,6 +120,7 @@ class ReportControllerTest {
                         .param("fromDate", "2026-09-01")
                         .param("toDate", "2026-09-30"))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].totalQuantity").value(3));
 
@@ -176,6 +179,7 @@ class ReportControllerTest {
             for (MockHttpServletRequestBuilder request : reportRequests()) {
                 mockMvc.perform(request.with(user("report-reader").roles(role)))
                         .andExpect(status().isOk())
+                        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
                         .andExpect(jsonPath("$.success").value(true));
             }
         }
@@ -195,6 +199,7 @@ class ReportControllerTest {
 
         String response = mockMvc.perform(get(BASE_PATH + "/daily").param("date", date.toString()))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
                 .andReturn().getResponse().getContentAsString();
 
         assertThat(response).contains("visitCount")

@@ -1,5 +1,28 @@
 # Core Service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
+## Minimal patient directory for prescriptions — 2026-10-25
+
+Task-authorized Core/Gateway addition: ADMIN, DOCTOR and PHARMACIST can read
+`GET /api/v1/patients/directory/search?keyword=...&page=0&size=20` and
+`GET /api/v1/patients/directory/{id}`. These return only `maBenhNhan`, `hoTen` and
+`ngaySinh`, inside the existing paged/single ApiResponse envelope, with correlation
+and `Cache-Control: no-store`. Search reuses Patient's owned read use case and pagination.
+The prescription UI selects the exact patient before filtering Pharmacy's prescriptions;
+equal names are disambiguated by date of birth. Existing full-profile search/detail and
+mutation roles remain in force; PHARMACIST does not gain access to those endpoints.
+
 ## Organization directory and own unit — 2026-10-23
 
 `GET /api/v1/org/staff` accepts optional `keyword` (trimmed, at most 100 characters)

@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,16 +63,34 @@ public class DrugPersistenceAdapter implements DrugRepositoryPort {
 
     @Override
     public PageResult<Drug> search(String keyword, PageQuery query) {
-        Pageable pageable = PageRequest.of(query.page(), query.size());
+        Pageable pageable = PageRequest.of(query.page(), query.size(),
+                org.springframework.data.domain.Sort.by("drugName", "drugId"));
         // Chuẩn hóa null thành chuỗi rỗng để PostgreSQL luôn bind tham số dưới dạng varchar.
         // Điều này cũng giữ đúng semantics: không có từ khóa thì trả về toàn bộ danh mục.
-        String normalizedKeyword = keyword == null ? "" : keyword;
+        String normalizedKeyword = literalKeyword(keyword);
         Page<DrugJpaEntity> page = jpaRepo.search(normalizedKeyword, pageable);
         return PageResult.of(
                 page.getContent().stream().map(this::toDomain).toList(),
                 page.getTotalElements(),
                 query.page(),
                 query.size());
+    }
+
+    @Override
+    public PageResult<Drug> search(String keyword,
+            DrugCatalogFilter filter,
+            java.time.LocalDate businessDate, PageQuery query) {
+        var pageable = PageRequest.of(query.page(), query.size(),
+                org.springframework.data.domain.Sort.by("drugName", "drugId"));
+        var page = jpaRepo.searchFiltered(literalKeyword(keyword), filter.name(),
+                businessDate, businessDate.plusDays(30), pageable);
+        return PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
+                page.getTotalElements(), query.page(), query.size());
+    }
+
+    private static String literalKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().replace("\\", "\\\\")
+                .replace("%", "\\%").replace("_", "\\_");
     }
 
     // ---- map entity ↔ domain (thủ công, không MapStruct — quy tắc domain không lọt ra ngoài) ----

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ReferenceProvider, type ReferenceDirectory } from "./ReferenceProvider";
@@ -11,6 +11,33 @@ function directory(overrides: Partial<ReferenceDirectory> = {}): ReferenceDirect
 }
 
 describe("reference selection", () => {
+  it("dismisses the dropdown without changing the selection and restores input focus", async () => {
+    const onValueChange = vi.fn();
+    render(<ReferenceProvider directory={directory()}><ReferenceInput aria-label="Bệnh nhân" placeholder="Tìm bệnh nhân theo tên" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);
+    expect(screen.getByPlaceholderText("Tìm bệnh nhân theo tên")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    const option = await screen.findByRole("button", { name: "Nguyễn An · 12/05/1995" });
+    option.focus(); fireEvent.keyDown(option, { key: "Escape" });
+    expect(screen.queryByRole("button", { name: "Nguyễn An · 12/05/1995" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toHaveFocus();
+    expect(onValueChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Đóng danh sách" }));
+    expect(screen.getByRole("textbox")).toHaveFocus();
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it("does not reopen a dismissed dropdown when a pending search finishes", async () => {
+    let finish!: (value: { items: { id: string; label: string }[]; hasMore: boolean }) => void;
+    const search = vi.fn(() => new Promise<{ items: { id: string; label: string }[]; hasMore: boolean }>(resolve => { finish = resolve; }));
+    render(<ReferenceProvider directory={directory({ search })}><ReferenceInput aria-label="Bệnh nhân" kind="patient" value="" onValueChange={vi.fn()} /></ReferenceProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
+    await act(async () => finish({ items: [{ id, label: "Nguyễn An" }], hasMore: false }));
+    expect(screen.queryByRole("button", { name: "Nguyễn An" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tìm lựa chọn" })).toBeEnabled();
+  });
+
   it("shows names and emits only the selected server identity; editing clears that identity", async () => {
     const user = userEvent.setup(); const onValueChange = vi.fn(); const source = directory();
     const { rerender } = render(<ReferenceProvider directory={source}><ReferenceInput id="patient" aria-label="Bệnh nhân" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);
@@ -51,7 +78,7 @@ describe("reference selection", () => {
     expect(await screen.findByText("Nguyễn An")).toBeInTheDocument();
     rerender(<ReferenceProvider directory={directory({ resolve: () => new Promise(() => {}) })}><ReferenceText kind="patient" value={id} /></ReferenceProvider>);
     expect(screen.queryByText("Nguyễn An")).not.toBeInTheDocument();
-    expect(screen.getByText(id)).toHaveAttribute("hidden");
+    expect(screen.getByText(id)).not.toBeVisible();
   });
   it("offers the next result page even when the current page has no match", async () => {
     const search = vi.fn().mockResolvedValueOnce({ items: [], hasMore: true }).mockResolvedValueOnce({ items: [{ id, label: "Nguyễn An" }], hasMore: false });
@@ -65,11 +92,11 @@ describe("reference selection", () => {
   });
 
   it("collapses technical identity again when the displayed reference changes", () => {
-    const { rerender } = render(<ReferenceText value={id} fallback="Hóa đơn" />);
+    const { rerender } = render(<ReferenceText value={id} fallback="Hóa đơn" technical />);
     expect(screen.getByText(id)).not.toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Thông tin kỹ thuật" }));
     expect(screen.getByText(id)).toBeVisible();
-    rerender(<ReferenceText value="another-id" fallback="Hóa đơn" />);
+    rerender(<ReferenceText value="another-id" fallback="Hóa đơn" technical />);
     expect(screen.getByText("another-id")).not.toBeVisible();
     expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
   });

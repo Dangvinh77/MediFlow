@@ -1,8 +1,19 @@
 # Vinh — kiểm thử toàn bộ backend MVP
 
+## Điều phối hiện hành — 26/10/2026
+
+- Registry ID: `H-09`; status: `NEEDS REVALIDATION`.
+- Bàn giao hiện tại: Tất cả backend owner → Vinh verification.
+- [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
+- Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
+  không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
+- Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Hồ sơ phát hiện và checkpoint
+
 **Phân công người dùng:** 2026-10-18. **Owner kiểm thử:** Vinh (`Harori` / `Dangvinh77`).
 **Trạng thái:** ĐÃ CHẠY regression và selected acceptance; CHƯA ĐÓNG vì hai Gateway routes, flaky test Report và Pharmacy V1 opt-in timeout do thiếu publisher config.
-[Kết quả thực chạy](../acceptance/backend-2026-10-18/README.md) · [Bảng giao việc cuối](BACKEND-FINAL-ASSIGNMENTS-2026-10-18.md).
+[Kết quả thực chạy](../acceptance/backend-2026-10-18/README.md) · [Bảng giao việc cuối](history/2026-10-18-backend-assignments.md).
 **Baseline rà soát:** master `025ef39e` đã gồm PR #427. Khóa final acceptance revision sau
 hai fixes Gateway của Hoàng Anh; baseline này chưa có fixes đó.
 
@@ -68,7 +79,7 @@ test IDs, expected/actual và report paths trong bundle bền vững có manifes
 | Task/scenario | Source SHA | Kết quả | Command/counts/exit | Evidence/hash hoặc bug/dev code |
 |---|---|---|---|---|
 | V-TEST-01 | 025ef39e + test acceptance Gateway | PASS build | Fresh reactor install, exit 0, không chạy tests | Tool/image/test hash trong evidence |
-| V-TEST-02 | 025ef39e | FAIL | 6854 tests; 1 failure Report; 0 errors/skips | [V-TEST-BUG-01](HANDOFF-VINH-BACKEND-TEST-FAILURES.md), Vinh sửa test |
+| V-TEST-02 | 025ef39e | FAIL | 6854 tests; 1 failure Report; 0 errors/skips | [V-TEST-BUG-01](history/2026-10-19-test-harness-findings.md), Vinh sửa test |
 | V-TEST-03 | 025ef39e + test Gateway | BLOCKED | 11 filter acceptance cases; 4 failures, 7 pass | HA-CODE-01/02 Hoàng Anh code; Vinh retest token/HTTP/actual refund |
 | V-TEST-04/05 | 025ef39e | Selected slices đã chạy | Lab đủ property pass; historical clone rehearsal pass; Pharmacy V1 opt-in 1 error cần V-TEST-BUG-02 | [Evidence](../acceptance/backend-2026-10-18/README.md); không suy full matrix pass |
 | V-TEST-06 | Chưa có Gateway fix revision | OPEN | Full final regression, CI/FE/global signoff chưa hoàn tất | Vinh nhận commit fixes và tổng hợp cuối |

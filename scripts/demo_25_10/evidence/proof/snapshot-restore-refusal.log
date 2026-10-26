@@ -1,0 +1,6 @@
+You are now connected to database "postgres" as user "postgres".
+You are now connected to database "mediflow_organization" as user "postgres".
+psql:/tmp/demo.sql:10747: ERROR:  P0001: MediFlow demo restore refused: database mediflow_organization contains public user tables/relations: public.account, public.account_creation_receipt, public.department, public.flyway_schema_history, public.local_demo_profile_receipt, public.local_demo_seed_receipt, public.operating_room, public.organization_event_outbox, public.room, public.staff, public.staff_creation_receipt, public.surgery_authority_outbox, public.surgical_capability
+HINT:  Use empty isolated demo databases. Stop applications before import. This file will not delete existing tables or data.
+CONTEXT:  PL/pgSQL function inline_code_block line 12 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3897

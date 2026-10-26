@@ -66,7 +66,23 @@ describe("DrugCatalog", () => {
   it("shows explicit empty search results", async () => {
     mocks.search.mockResolvedValue({ ...page(), content: [], totalElements: 0, totalPages: 0 });
     render(<DrugCatalog />);
+    expect(await screen.findByText(/Chưa có thuốc trong danh mục/)).toBeVisible();
+  });
+  it("keeps server-side stock filters in search, pagination and reset URLs", async () => {
+    mocks.query = "filter=LOW_STOCK&page=2&keyword=A";
+    mocks.search.mockResolvedValue({ ...page(), number: 2, totalPages: 3, totalElements: 41 });
+    const view = render(<DrugCatalog />);
+    await screen.findByRole("link", { name: "Thuốc A" });
+    expect(mocks.search).toHaveBeenCalledWith({ keyword: "A", page: 2, size: 20, filter: "LOW_STOCK" });
+    fireEvent.change(screen.getByLabelText("Tình trạng thuốc"), { target: { value: "EXPIRED" } });
+    expect(mocks.router.replace).toHaveBeenLastCalledWith("/pharmacy/drugs?page=0&size=20&filter=EXPIRED&keyword=A", { scroll: false });
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bộ lọc" }));
+    expect(mocks.router.replace).toHaveBeenLastCalledWith("/pharmacy/drugs?page=0&size=20", { scroll: false });
+    mocks.query = "filter=OUT_OF_STOCK";
+    mocks.search.mockResolvedValue({ ...page(), content: [], totalElements: 0, totalPages: 0 });
+    view.rerender(<DrugCatalog />);
     expect(await screen.findByText(/Không tìm thấy thuốc phù hợp/)).toBeVisible();
+    expect(screen.queryByText(/Chưa có thuốc trong danh mục/)).not.toBeInTheDocument();
   });
   it("redirects rejected authentication to login", async () => {
     mocks.search.mockRejectedValue(new ApiRequestError("Hết phiên", 401)); render(<DrugCatalog />);

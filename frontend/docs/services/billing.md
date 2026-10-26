@@ -1,5 +1,12 @@
 # Frontend Service: Billing
 
+> **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
+> mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
+> Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
+> không tự chứng minh nghiệp vụ mới đã có. Triển khai theo
+> [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
+> và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
+
 **Frontend owner:** Lộc (`locgit-89`). Vinh's 2026-10-20/21 closeout was a temporary `DELEGATED`
 task; Lộc resumes active `IMPLEMENT` on this feature from 2026-10-22. Backend ownership follows
 the root AGENTS.md.

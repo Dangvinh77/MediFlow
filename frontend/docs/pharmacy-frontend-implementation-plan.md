@@ -1613,7 +1613,7 @@ sửa/revert file của nhánh khác và phải báo file shared trước khi ch
 Mỗi task AI phải thực hiện theo thứ tự:
 
 1. Đọc `AGENTS.md`, `frontend/AGENTS.md`, `docs/ai/12-frontend.md`, plan này.
-2. Chạy changelog theo root instruction.
+2. Xem working tree và lịch sử Git gần nhất theo root instruction.
 3. Mở lại controller/DTO/enum backend liên quan ngay trước khi code.
 4. Ghi contract sẽ dùng: method, path, request, response, role, error codes.
 5. Chỉ sửa các file task sở hữu; giữ nguyên thay đổi hiện có của người khác.

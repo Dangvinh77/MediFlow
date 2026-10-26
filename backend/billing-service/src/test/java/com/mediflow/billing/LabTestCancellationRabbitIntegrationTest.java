@@ -215,8 +215,10 @@ class LabTestCancellationRabbitIntegrationTest {
             } catch (RuntimeException cancelled) { return null; }
         });
         send(cancellationFixture());
-        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
-                assertThat(jdbc.queryForObject("SELECT status FROM outpatient_cancellation_source", String.class)).isEqualTo("APPLIED"));
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+            assertThat(count("outpatient_cancellation_source")).isOne();
+            assertThat(jdbc.queryForObject("SELECT status FROM outpatient_cancellation_source", String.class)).isEqualTo("APPLIED");
+        });
         UUID payment = paymentTask.get();
         assertThat(jdbc.queryForObject("SELECT status FROM CHARGE", String.class)).isEqualTo("VOIDED");
         assertThat(jdbc.queryForObject("SELECT status FROM PAYMENT_REQUEST", String.class)).isEqualTo("CANCELLED");

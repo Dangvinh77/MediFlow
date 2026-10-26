@@ -203,7 +203,7 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
   }, [drugId, isCurrent, requestKey, router]);
 
   if (!isUuid(drugId)) {
-    return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Mã thuốc không hợp lệ. Vui lòng dùng mã UUID đầy đủ.</p>;
+    return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Đường dẫn thuốc không hợp lệ. Vui lòng chọn lại thuốc từ danh mục.</p>;
   }
 
   if (loading && !drug && !notFound && !error) return <>{uncertaintyNotice}<DetailLoading /></>;
@@ -257,7 +257,6 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
       )}
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="break-all font-mono text-xs text-muted-foreground">{drug.drugId}</p>
           <h2 className="mt-1 break-words text-xl font-semibold">{drug.drugName}</h2>
           <p className="mt-1 break-words text-sm text-muted-foreground">
             {drug.activeIngredient ?? "—"}
@@ -315,6 +314,7 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
           <div><dt className="text-xs text-muted-foreground">Tạo lúc</dt><dd className="mt-1">{formatDateTime(drug.createdAt)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Cập nhật lúc</dt><dd className="mt-1">{formatDateTime(drug.updatedAt)}</dd></div>
         </dl>
+        <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu khi cần hỗ trợ</summary><code className="mt-2 block break-all text-xs">{drug.drugId}</code></details>
       </section>
     </section>
   );

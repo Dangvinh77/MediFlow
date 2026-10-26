@@ -1,5 +1,7 @@
 package com.mediflow.pharmacy.application.port.in;
 
+import com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter;
+
 import java.util.UUID;
 
 import com.mediflow.common.api.PageQuery;
@@ -25,6 +27,9 @@ public interface ManageDrugUseCase {
 
     /** Tìm thuốc theo từ khóa trong tên, phân trang bằng PageQuery/PageResult của common (không dùng Spring Pageable). */
     PageResult<DrugDTO> search(String keyword, PageQuery page);
+
+    PageResult<DrugDTO> search(String keyword,
+            DrugCatalogFilter filter, PageQuery page);
 
     /**
      * Điều chỉnh tồn kho của một thuốc (nhập thêm / giảm). Cần {@code id} để biết <b>điều chỉnh cho thuốc nào</b>;

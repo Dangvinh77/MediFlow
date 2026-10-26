@@ -1,0 +1,103 @@
+WARNING: A Java agent has been loaded dynamically (C:\Users\VIP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 17, Failures: 5, Errors: 0, Skipped: 0, Time elapsed: 5.737 s <<< FAILURE! -- in com.mediflow.billing.messaging.consumer.BillingEventConsumerTest
+[ERROR] com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedMedicalRecordFactDoesNotAccrueAnotherExamFee -- Time elapsed: 1.595 s <<< FAILURE!
+org.mockito.exceptions.verification.NoInteractionsWanted:
+
+No interactions wanted here:
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedMedicalRecordFactDoesNotAccrueAnotherExamFee(BillingEventConsumerTest.java:52)
+But found these interactions on mock 'accrueFeeUseCase':
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:215)
+Actually, above is the only interaction with this mock.
+	at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedMedicalRecordFactDoesNotAccrueAnotherExamFee(BillingEventConsumerTest.java:52)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered -- Time elapsed: 0.051 s <<< FAILURE!
+org.mockito.exceptions.verification.NoInteractionsWanted:
+
+No interactions wanted here:
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered(BillingEventConsumerTest.java:60)
+But found these interactions on mock 'accrueFeeUseCase':
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+***
+For your reference, here is the list of all invocations ([?] - means unverified).
+1. [?]-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+2. [?]-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+
+	at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered(BillingEventConsumerTest.java:60)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.malformedVersionedFactsAreRejectedWithoutLegacyEffects -- Time elapsed: 0.314 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting code to raise a throwable.
+	at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.malformedVersionedFactsAreRejectedWithoutLegacyEffects(BillingEventConsumerTest.java:90)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.configuredV1IssuersDoNotAllowFlatLifecycleFactsToCreateLegacyFees -- Time elapsed: 0.016 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting code to raise a throwable.
+	at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.configuredV1IssuersDoNotAllowFlatLifecycleFactsToCreateLegacyFees(BillingEventConsumerTest.java:100)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedFactsCannotFallBackToLegacyWhenIssuerIsDisabled -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError:
+
+Expecting code to raise a throwable.
+	at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedFactsCannotFallBackToLegacyWhenIssuerIsDisabled(BillingEventConsumerTest.java:67)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Failures:
+[ERROR]   BillingEventConsumerTest.configuredV1IssuersDoNotAllowFlatLifecycleFactsToCreateLegacyFees:100
+Expecting code to raise a throwable.
+[ERROR]   BillingEventConsumerTest.malformedVersionedFactsAreRejectedWithoutLegacyEffects:90
+Expecting code to raise a throwable.
+[ERROR]   BillingEventConsumerTest.versionedFactsCannotFallBackToLegacyWhenIssuerIsDisabled:67
+Expecting code to raise a throwable.
+[ERROR]   BillingEventConsumerTest.versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered:60
+No interactions wanted here:
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedLabResultFactDoesNotAccrueAnotherLabFeeEvenWhenRedelivered(BillingEventConsumerTest.java:60)
+But found these interactions on mock 'accrueFeeUseCase':
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+***
+For your reference, here is the list of all invocations ([?] - means unverified).
+1. [?]-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+2. [?]-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:217)
+
+[ERROR]   BillingEventConsumerTest.versionedMedicalRecordFactDoesNotAccrueAnotherExamFee:52
+No interactions wanted here:
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumerTest.versionedMedicalRecordFactDoesNotAccrueAnotherExamFee(BillingEventConsumerTest.java:52)
+But found these interactions on mock 'accrueFeeUseCase':
+-> at com.mediflow.billing.messaging.consumer.BillingEventConsumer.onMessage(BillingEventConsumer.java:215)
+Actually, above is the only interaction with this mock.
+[ERROR] Tests run: 17, Failures: 5, Errors: 0, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project billing-service: There are test failures.
+[ERROR]
+[ERROR] Please refer to E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source\backend\billing-service\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :billing-service

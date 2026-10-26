@@ -80,6 +80,41 @@ class DrugPersistenceAdapterTest {
     }
 
     @Test
+    void search_matchesIngredientAndTreatsWildcardsLiterally() {
+        adapter.save(newDrug("Brand A"));
+        adapter.save(newDrug("Brand 10%_special"));
+        assertThat(adapter.search("HOẠT CHẤT", new PageQuery(0, 20)).totalElements()).isEqualTo(2);
+        assertThat(adapter.search("%_", new PageQuery(0, 20)).content())
+                .extracting(Drug::getDrugName).containsExactly("Brand 10%_special");
+        assertThat(adapter.search("missing", new PageQuery(0, 20)).content()).isEmpty();
+    }
+
+    @Test
+    void search_filtersWholeCatalogueBeforePaginationWithInclusiveExpiryBoundaries() {
+        LocalDate today = LocalDate.of(2026, 10, 25);
+        for (int i = 0; i < 6; i++) {
+            var entity = drugEntity();
+            entity.setDrugName("Drug " + i);
+            entity.setStockQuantity(i == 0 ? 0 : i == 1 ? 1 : 20);
+            entity.setLowStockThreshold(2);
+            entity.setExpiryDate(i == 2 ? today.minusDays(1) : i == 3 ? today
+                    : i == 4 ? today.plusDays(30) : today.plusDays(31));
+            repository.saveAndFlush(entity);
+        }
+        var page = new PageQuery(0, 1);
+        var filters = com.mediflow.pharmacy.application.dto.query.DrugCatalogFilter.class;
+        assertThat(adapter.search(null, Enum.valueOf(filters, "OUT_OF_STOCK"), today, page).totalElements()).isEqualTo(1);
+        assertThat(adapter.search(null, Enum.valueOf(filters, "LOW_STOCK"), today, page).totalElements()).isEqualTo(1);
+        assertThat(adapter.search(null, Enum.valueOf(filters, "IN_STOCK"), today, page).totalElements()).isEqualTo(5);
+        assertThat(adapter.search(null, Enum.valueOf(filters, "EXPIRED"), today, page).totalElements()).isEqualTo(1);
+        var soon = adapter.search(null, Enum.valueOf(filters, "EXPIRING_SOON"), today, page);
+        assertThat(soon.totalElements()).isEqualTo(2);
+        assertThat(soon.content()).extracting(Drug::getDrugName).containsExactly("Drug 3");
+        assertThat(adapter.search(null, Enum.valueOf(filters, "EXPIRING_SOON"), today, new PageQuery(1, 1)).content())
+                .extracting(Drug::getDrugName).containsExactly("Drug 4");
+    }
+
+    @Test
     void save_existingDrugPreservesCreatedAt() {
         Drug created = adapter.save(newDrug("Paracetamol 500mg"));
         assertThat(created.getCreatedAt()).isNotNull();

@@ -1,24 +1,5 @@
 # MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management
 
-<!-- commit-activity:start -->
-## Commit activity
-
-Changelog updated through **2026-10-24 00:27:32 Asia/Saigon** · **986 unique commits**
-
-| Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
-|---|---:|---:|---:|---|---|---|
-| Harori | 616 | 57 | 10.81 | 2026-09-27 (35) | 18:00 (87) | 2026-10-24 00:27:32 |
-| LQHuy0210 | 217 | 37 | 5.86 | 2026-09-13 (27) | 08:00 (34) | 2026-10-22 14:51:02 |
-| TranHoangAnh94 | 87 | 30 | 2.90 | 2026-10-22 (9) | 23:00 (16) | 2026-10-23 10:09:29 |
-| locgit-89 | 66 | 18 | 3.67 | 2026-10-16 (11) | 15:00 (19) | 2026-10-22 00:28:51 |
-
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=c5cf51254b5e)
-
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=ca92db9481b9)
-
-_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
-<!-- commit-activity:end -->
-
 ## Project overview
 
 **MediFlow** is a distributed hospital information system designed to coordinate outpatient workflows, including patient registration, appointments, medical examinations, laboratory testing, prescriptions, billing, dispensing, reporting and in-app notifications. Inpatient care and surgery management are reserved for future development; their existing source and data are preserved.

@@ -55,6 +55,6 @@ OutpatientPrescriptionLifecycleApplicationService và CareDispenseTransactionSer
 Tests dùng doubles chỉ chứng minh client behavior; không chứng minh clearance thật, quyền actor
 thật, stock giảm đúng một lần hoặc phiếu xuất duy nhất. Không gọi build/widget là browser acceptance.
 Không sửa app/core/platform/backend/FE/gates. Dependency chỉ cập nhật trong
-[handoff chung](../../../../../docs/handoffs/HANDOFF-HUY-MVP.md).
+[handoff chung](../../../../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 
 Verdict: **LOCAL FEATURE VERIFICATION PASS; COMMAND TRANSPORT/INTEGRATED ACCEPTANCE PENDING**.

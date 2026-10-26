@@ -1,5 +1,17 @@
 # lab-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Lab owns outpatient test requests, processing and results; laboratory lifecycle and payment authority remain separate.
@@ -9,7 +21,7 @@ Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../
 
 Lab tests and results (`LAB_TEST`, `LAB_RESULT`).
 
-Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
+Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
 
 - **Port:** 8084 · **Base path:** `/api/v1/lab` · **DB:** `mediflow_lab` (PostgreSQL)
 - **Owns tables:** `LAB_TEST`, `LAB_RESULT`
@@ -33,7 +45,7 @@ The RabbitMQ publisher sends JSON events to the durable shared exchange only aft
 commit. Inbound consumers use explicit producer IDs; Billing supplies `labTestIds` and Clinical
 supplies record identifiers. Cross-service fields and remaining target workflow work are recorded
 in the [event catalog](../../docs/ai/06-events-rabbitmq.md), the
-[care-finance contracts](../../docs/handoffs/care-finance/README.md), and the
+[care-finance contracts](../../docs/plans/03-contracts.md), and the
 [active handoff registry](../../docs/handoffs/README.md).
 
 Integration adapters are organized under:

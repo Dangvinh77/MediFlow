@@ -93,4 +93,5 @@ Không weakened tests/permissive fallback để green CI. Evidence ghi commit/fl
 Conventional Commits, focused owner changes. Không tự push/merge từ task đọc/plan/docs.
 Mỗi commit đúng một human author theo scripts/allowed-contributors.json; không đổi identity
 để impersonate, không Co-Authored-By/AI/session trailers. Giữ hooks/required checks.
-Trước code đọc changelog rồi [docs index](../README.md), contracts, plan và nearest AGENTS.
+Trước code xem `git status --short`, `git log -5 --oneline`, rồi đọc [docs index](../README.md),
+contracts, plan, nearest AGENTS và source/test liên quan trực tiếp.

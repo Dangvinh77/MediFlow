@@ -1,5 +1,18 @@
 # report-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+Standalone launcher của Report/Notification là compatibility/rollback; mặc định chạy Support.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Report covers outpatient read models and source-evidenced reporting. The [Support host](../support-service/README.md) now composes its plain library with Notification; the standalone launcher remains for rollback.
@@ -21,7 +34,7 @@ Namespaced migration copies live at `classpath:mediflow/report/db/migration`, by
 Standalone keeps its original datasource and aliases for compatibility. All Report transactions
 select reportTransactionManager; native adapters select reportJdbcTemplate. Security/advice/Rabbit
 beans and scheduled work are now namespaced, module security matches Report routes only.
-Full composition contract and owner actions: [Support handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
+Full composition contract and owner actions: [Support handoff](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md).
 Local wiring does not prove real DB/broker/Support startup acceptance.
 
 Cutover preparation and rollback checklist: [owned runbook](../../docs/plans/huy-mvp-cutover-runbook.md).
@@ -106,7 +119,7 @@ unavailable; no transaction is fabricated. Unsupported correction/replacement fa
 effects; new refunds after an APPLIED final account require a future original-allocation earned
 reversal contract. No source-retention purge, Gateway changes, gate enablement or HELD release.
 Dated publisher/history absence notes below are earlier tranches, not the current finite financial
-workflow. [Canonical release and limits](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#supported-available-history-release-and-controlled-publication--2026-10-11).
+workflow. [Canonical release and limits](../../docs/plans/03-contracts.md).
 
 2026-10-09 admission follow-up: the existing opt-in operational receiver now counts actual
 `admission.started` once at admittedAt/start department, with exact admission evidence, delivery/
@@ -250,7 +263,7 @@ hashes and unresolved state survive. V24 records immutable restore actor/origin/
 Restore starts a separate BUILDING generation, never mutates live sources or creates a report
 publication. Advance/reconcile still uses the existing bounded rebuild use case.
 This supplies local recovery only: digests are not signatures, and verified replay is not accepted
-pre-V2 history. [Canonical archive contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#portable-local-financial-evidence-archive--2026-10-11).
+pre-V2 history. [Canonical archive contract](../../docs/plans/03-contracts.md).
 
 ## Tests
 
@@ -260,7 +273,7 @@ original/cumulative amount and rebuild both cash-out scopes, while PENDING/REJEC
 inventory. Bounded generation-row-fenced batches commit facts/scopes/progress atomically and
 bidirectional reconciliation verifies only the finite accepted state. Old gross-only runs and live
 tables are unchanged. It does not retry copied pending refunds, invent recognition/liability,
-publish reads or establish historical coverage. [Canonical semantics](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-paired-finite-accepted-cash-rebuild--v17-2026-10-08)
+publish reads or establish historical coverage. [Canonical semantics](../../docs/plans/03-contracts.md)
 and [current evidence](../../docs/plans/huy-backend-mvp-baseline.md).
 
 ```bash
@@ -282,3 +295,10 @@ mvn -q -pl backend/report-service -am verify
 mvn -q -pl backend/report-service -am -DskipTests javadoc:javadoc
 mvn -q -pl backend/report-service -am dependency:analyze
 ```
+
+## Read freshness follow-up — 2026-10-25
+
+Legacy daily, monthly and top-medicines responses use `Cache-Control: no-store`.
+Readers request the current server projection again on refresh; projection ingestion can still
+lag source events. This changes neither aggregation nor authorization, currency semantics,
+zero-fill behavior, or the default-closed outpatient report acceptance gate.

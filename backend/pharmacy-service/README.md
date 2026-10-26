@@ -1,5 +1,33 @@
 # pharmacy-service
 
+## Cách đọc sau chuẩn hóa — 26/10/2026
+
+**Nghiệp vụ hiện hành:** theo bộ quy tắc ngoại trú, không theo trạng thái checkpoint lịch sử.
+
+- [Luồng nghiệp vụ và lịch khám/BHYT mô phỏng](../../docs/plans/02-business-flows.md).
+- [Hợp đồng tích hợp hiện hành](../../docs/plans/03-contracts.md); live DTO/controller/fixtures là wire truth.
+- [Bàn giao còn cần xử lý hoặc xác minh](../../docs/handoffs/README.md).
+- [Kế hoạch thay đổi và owner](../../docs/plans/07-outpatient-workflow-implementation.md).
+
+Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ phạm vi phiên bản/ngày được ghi.
+Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
+
+## Prescription browsing and assisted prescribing — 2026-10-25
+
+`GET /api/v1/pharmacy/prescriptions` lists prescriptions newest first, with zero-based
+`page`, bounded `size`, optional `keyword` (drug name), `patientId`, and `status` filters.
+ADMIN, DOCTOR and PHARMACIST may read it. The response is the standard paged envelope
+of existing `PrescriptionDTO` objects; opening a prescription does not require knowing its UUID.
+
+`GET /api/v1/pharmacy/prescriptions/prescribing/context?recordId=...` is restricted to
+ADMIN and DOCTOR. Under the existing outpatient activation gates it reads the authoritative
+Clinical context, validates freshness and doctor ownership, and returns the record's patient,
+doctor, department and care episode together with configured prescription price codes.
+It never derives the episode from a record or appointment ID. Configure
+`MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES` explicitly; Compose supplies the same policy
+variable as Billing (`MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES`, local default `DRUG`).
+An absent policy or unavailable Clinical context blocks assisted prescribing with a readable error.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Pharmacy owns drugs, prescriptions, stock and dispensing in the outpatient MVP; current activation/acceptance gates below still apply.
@@ -89,7 +117,7 @@ Expiry and proof timestamps are re-evaluated after reservation reads, including 
 exact record/patient/prescriber/department/episode and recheck freshness after receipt/stock lock
 waits. Calls are service-authenticated and outside mutation transactions, with absence distinct
 from outage. This is necessary relationship evidence only; public V1 remains fail-closed and
-HELD rows remain blocked. [Canonical contract](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
+HELD rows remain blocked. [Canonical contract](../../docs/plans/03-contracts.md).
 
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. The
@@ -114,6 +142,45 @@ infrastructure/persistence   infrastructure/messaging   infrastructure/security 
 ```
 
 ## Run locally
+
+### Docker startup and persistent local data
+
+From the repository root, run `docker compose up -d`. No rebuild is needed when
+the images already exist. Compose provisions `mediflow_pharmacy_docker` using
+the idempotent `pharmacy-db-init` job, waits for it to complete, and starts Pharmacy.
+Flyway creates/validates the schema and retains its migration history on subsequent starts.
+The database uses the existing PostgreSQL volume, so `docker compose down` preserves data.
+Do not run `docker compose down -v` to restart the application.
+
+This Docker-specific database deliberately leaves the legacy `mediflow_pharmacy`
+untouched: the observed local legacy store had five empty tables without Flyway history.
+Do not enable automatic baseline/repair or repoint an environment containing business data
+without a reviewed migration. Non-Docker application defaults still use `mediflow_pharmacy`.
+Compose also supplies the explicit local Billing prescription price policy `DRUG` by default;
+an environment override can select another approved code. Outpatient workflow/event gates
+remain opt-in; a healthy catalogue does not establish paid dispensing acceptance.
+
+Check startup with `docker compose ps -a` and
+`docker compose logs --tail 100 pharmacy-db-init pharmacy-service billing-service`.
+The provisioner should exit with code 0; Pharmacy and Billing should become healthy.
+
+Compose enables `MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED=true` by default. At the first
+startup, Pharmacy creates 12 synthetic catalogue entries from `demo-drugs.json`
+through its normal drug creation use case. Prices/stock are demonstration values;
+all entries have manufacturer `MediFlow Demo`. The sample includes plentiful,
+low-stock and out-of-stock entries for UI demonstrations. Initial expiry is three
+years after the first seed date; restart never extends an existing expiry date.
+
+V21 stores one receipt per stable seed key, atomically with drug creation. PostgreSQL
+transaction advisory locking serializes simultaneous startups. Restart does not add
+duplicates, reset stock/price/name, or recreate deleted entries. User-created medicines
+are untouched. Data and receipts persist in the PostgreSQL volume. Set the environment
+variable to `false` to disable future seeding (already-created data stays). Outside
+Compose it defaults OFF, and prod/production/test/acceptancefixture profiles exclude
+the runner even with the flag ON. This catalogue seed does not create prescriptions,
+payments or cross-context identities.
+
+### Running outside Docker
 
 1. Create the database once: `CREATE DATABASE mediflow_pharmacy;`
 2. Start `eureka-server` (8761), then `gateway` (8080), then this service.
@@ -274,3 +341,15 @@ mvn -pl backend/pharmacy-service verify      # + integration (Testcontainers, ne
 
 For the installed Docker Desktop engine, the verified command is
 `mvn -q -f backend/pharmacy-service/pom.xml -Dapi.version=1.44 test`.
+
+## Catalogue usability follow-up — 2026-10-25
+
+`GET /api/v1/pharmacy/drugs` accepts optional `filter`: `ALL`, `IN_STOCK`,
+`LOW_STOCK`, `OUT_OF_STOCK`, `EXPIRING_SOON`, `EXPIRED`. Filtering and total counts
+run before pagination. Stock filters describe on-hand quantity, including any reserved stock;
+they do not promise dispensable availability. `LOW_STOCK` means positive quantity at or below
+the threshold; zero stock has its own filter. Expiring soon includes today through 30 days ahead;
+expired means strictly before today, using the application Clock's business date.
+Keyword search matches name or active ingredient case-insensitively; `%`, `_`, and backslash
+are literal search characters. Results have stable name/identity ordering. Catalogue and drug
+detail reads use `Cache-Control: no-store` so revisits request current prices and stock.
