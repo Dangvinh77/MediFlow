@@ -104,3 +104,7 @@ trạng thái bàn giao được quản lý tại [registry hiện hành](../han
 [Hướng dẫn chạy V2](../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md)
 dùng overlay opt-in; không đổi nhãn snapshot/baseline 25/10 thành kết quả mới.
 Chưa có command renew quote; GET không gia hạn. Giới hạn này phải được giải thích khi demo.
+
+[Bằng chứng 26/10](../acceptance/outpatient-2026-10-26/README.md): module tests,
+frontend sau merge master, JAR topology và API booking/payment đã đạt theo phạm vi ghi trong biên bản.
+UI PATIENT/DOCTOR đã xem trực tiếp; full exam–Lab–follow-up và toàn ma trận WF-11 còn mở.

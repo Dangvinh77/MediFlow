@@ -6,6 +6,9 @@ nghiệm thu liên service/UI vẫn cần bằng chứng riêng. Dùng
 [runbook V2](../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md) để chạy Postman và UI. [WF-01 source baseline](09-outpatient-source-lock-2026-10-26.md)
 vẫn được giữ nguyên fingerprint, không ghi đè bằng target fixtures.
 
+Kết quả thực thi có giới hạn ở [biên bản 26/10](../acceptance/outpatient-2026-10-26/README.md):
+booking/payment qua JAR và hai lát UI đã đạt; chưa đủ đóng toàn ma trận C/SC hoặc WF-11.
+
 ## 1. Cách đọc và kiểm bộ ví dụ
 
 - [Schema](contracts/outpatient-scheduling-v2.schema.json): `$defs` là DTO được gọi tên trong 03;

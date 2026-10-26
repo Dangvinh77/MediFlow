@@ -7,6 +7,9 @@ baseline cũ; SQL 25/10 cung cấp dữ liệu tổng hợp và lịch sử, kh�
 Mỗi lần tổng duyệt phải ghi commit, ngày chạy, vai trò, các UUID và kết quả thực tế.
 Kiểm thử tự động đạt không thay cho nghiệm thu đầy đủ trên UI.
 
+Kết quả đã chạy và phần chưa nghiệm thu được ghi riêng tại
+[bằng chứng 26/10](../../docs/acceptance/outpatient-2026-10-26/README.md).
+
 ## 1. Kiến trúc và tiền trong demo
 
 ![Luồng giữ suất và thanh toán](../../docs/plans/diagrams/outpatient-rehearsal-v2.svg)
