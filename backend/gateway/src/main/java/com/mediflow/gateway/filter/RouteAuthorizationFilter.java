@@ -23,6 +23,9 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
     private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private static final List<RouteRule> RULES = List.of(
+            rule("/api/v1/org/care-labels/{kind}/{id}", HttpMethod.GET,
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE,
+                    Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH, Roles.PATIENT),
             rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.GET, Roles.ADMIN),
             rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v2/org/consultation-rooms", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
@@ -44,6 +47,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v2/outpatient-registrations/{id}/arrival", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
             rule("/api/v2/outpatient-registrations/{id}/cancellation", HttpMethod.PUT,
                     Roles.ADMIN, Roles.NURSE, Roles.DOCTOR),
+            rule("/api/v2/billing/payment-requests", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v2/billing/payment-requests/by-registration", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v2/billing/payment-requests/{id}/payments", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v2/billing/payment-requests/{id}/quote", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
@@ -79,8 +83,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/accounts/{id}/status", HttpMethod.PUT, Roles.ADMIN),
 
             rule("/api/v1/patients", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
-            rule("/api/v1/patients/directory/search", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
-            rule("/api/v1/patients/directory/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
+            rule("/api/v1/patients/directory/search", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH),
+            rule("/api/v1/patients/directory/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH),
             rule("/api/v1/patients/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PATIENT),
             rule("/api/v1/patients", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/patients/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),

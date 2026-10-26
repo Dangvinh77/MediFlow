@@ -14,6 +14,11 @@ function mutableFields(body: UpdatePatientRequest): UpdatePatientRequest {
 }
 
 export const patientApi = {
+  directoryEntry: (id: string) => api.get<Pick<PatientDTO, "maBenhNhan" | "hoTen" | "ngaySinh">>(`/v1/patients/directory/${encodeURIComponent(id)}`),
+  directory: (keyword: string, page = 0) => {
+    const query = new URLSearchParams({ keyword, page: String(page), size: "20" });
+    return api.get<PageResult<Pick<PatientDTO, "maBenhNhan" | "hoTen" | "ngaySinh">>>(`/v1/patients/directory/search?${query}`);
+  },
   getById: (patientId: string) =>
     api.get<PatientDTO>(`/v1/patients/${encodeURIComponent(patientId)}`),
   search: (params: PatientSearchParams = {}) => {

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
+import { ReferenceProvider } from "@/components/references/ReferenceProvider";
 import { PatientRegistrationWorkspace } from "./PatientRegistrationWorkspace";
 
 const mocks = vi.hoisted(() => ({ mine: vi.fn() }));
@@ -28,7 +29,8 @@ describe("patient own registrations", () => {
     const user = userEvent.setup();
     render(<PatientRegistrationWorkspace enabled />);
     await user.click(screen.getByRole("button", { name: "Tải phiếu của tôi" }));
-    expect(await screen.findByText("my-registration")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Khám mới · 27/10/2026" })).toBeInTheDocument();
+    expect(screen.queryByText("my-registration")).not.toBeInTheDocument();
     expect(mocks.mine).toHaveBeenCalledWith({ page: 0, size: 10 });
     expect(mocks.mine.mock.calls[0][0]).not.toHaveProperty("patientId");
     expect(screen.getByText("Chưa cấp số trước khi xác nhận")).toBeInTheDocument();
@@ -59,4 +61,16 @@ describe("patient own registrations", () => {
     expect(screen.getByText("Theo dõi huyết áp")).toBeInTheDocument();
     expect(screen.getByText("Mang theo sổ đo huyết áp")).toBeInTheDocument();
   });
+});
+
+it("shows patient-friendly care names and no obsolete hold expiry on a confirmed visit", async () => {
+  mocks.mine.mockResolvedValue({ content: [{ ...ownRegistration, status: "CONFIRMED", queueNumber: 3 }], totalPages: 1, number: 0 });
+  render(<ReferenceProvider directory={{ canSearch: () => false, canResolve: () => true, search: vi.fn(), resolve: async kind => ({ doctor: "BS Nguyễn An", department: "Khoa Nội", room: "Phòng Nội 1" })[kind] ?? null }}><PatientRegistrationWorkspace enabled /></ReferenceProvider>);
+  await userEvent.click(screen.getByRole("button", { name: "Tải phiếu của tôi" }));
+  expect(await screen.findByText("BS Nguyễn An")).toBeVisible();
+  expect(await screen.findByText("Khoa Nội")).toBeVisible();
+  expect(await screen.findByText("Phòng Nội 1")).toBeVisible();
+  expect(screen.queryByText("Hạn thanh toán giữ chỗ")).not.toBeInTheDocument();
+  expect(screen.getByText(/Vui lòng đến quầy tiếp nhận/)).toBeVisible();
+  expect(screen.queryByText("CONFIRMED")).not.toBeInTheDocument();
 });

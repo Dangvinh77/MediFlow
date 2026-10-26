@@ -6,9 +6,11 @@ import { getSessionKey } from "@/lib/session";
 import { prepareCommandIntent, CommandIntentError } from "@/lib/command-intent";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
-import { formatInstant } from "@/lib/format";
+import { formatDecimal, formatInstant } from "@/lib/format";
 import { billingApi } from "../api";
 import { clearScheduledPaymentRecovery, readScheduledPaymentRecovery, saveScheduledPaymentRecovery } from "../payment-recovery";
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { ScheduledPaymentQueue } from "./ScheduledPaymentQueue";
 import { OutpatientQuoteBreakdown } from "./OutpatientQuoteBreakdown";
 import type { OutpatientQuoteDTO, RegistrationPaymentRequestDTO, ScheduledPaymentCommand, ScheduledPaymentResult, ZeroPayableEligibilityRequest } from "../types";
 
@@ -51,6 +53,7 @@ function terminalResult(result: ScheduledPaymentResult | null) {
 
 export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroLiabilityEnabled = false }: ScheduledPaymentWorkspaceProps) {
   const [registrationId, setRegistrationId] = useState("");
+  const [manualLookupOpen, setManualLookupOpen] = useState(true);
   const [request, setRequest] = useState<RegistrationPaymentRequestDTO | null>(null);
   const [lookupError, setLookupError] = useState<WorkspaceError | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -109,8 +112,8 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
     return quote !== null && Number.isFinite(Date.parse(quote.expiresAt)) && Date.parse(quote.expiresAt) > now;
   }
 
-  async function lookup() {
-    const id = registrationId.trim();
+  async function lookup(selectedRegistrationId?: string) {
+    const id = (selectedRegistrationId ?? registrationId).trim();
     if (!id || lookupBusy || lookupLock.current || paymentBusy || paymentLock.current || checkingOperation || operationCheckLock.current || pending || uncertain) return;
     lookupLock.current = true;
     const generation = ++lookupGeneration.current;
@@ -379,9 +382,10 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const patientFormVisible = hasDue && !quoteZero && Number.isSafeInteger(request.reservationRevision) && request.reservationRevision > 0 && !lookupBusy && !pending && !completed && !closed;
 
   return <div className="space-y-6">
-    <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">Tra cứu khoản thu theo mã phiếu</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Billing quyết định số tiền còn phải thu. Chỉ thu toàn bộ số dư dương của yêu cầu này.</p>
+    <ScheduledPaymentQueue disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
+    <details open={manualLookupOpen} onToggle={event => setManualLookupOpen(event.currentTarget.open)} className="rounded-xl border border-border bg-surface p-5">
+      <summary className="cursor-pointer text-lg font-semibold">Tra cứu phiếu được cung cấp</summary>
+      <p className="mt-1 text-sm text-muted-foreground">Có thể chọn phiếu từ danh sách phía trên hoặc dùng mã phiếu được cung cấp khi cần hỗ trợ tra cứu. Số tiền phải thu do hệ thống kiểm tra.</p>
       <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void lookup(); }}>
         <label className="flex-1 space-y-1 text-sm font-medium" htmlFor="scheduled-registration-id">
           <span>Mã phiếu đăng ký</span>
@@ -389,24 +393,28 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
         </label>
         <Button type="submit" loading={lookupBusy} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain}>Tra cứu khoản thu</Button>
       </form>
-      {lookupError ? <div className="mt-4"><AsyncState kind="error" message={lookupError.message} correlationId={lookupError.correlationId} onRetry={() => void lookup()} /></div> : null}
-    </section>
+    </details>
+    {lookupBusy ? <p role="status" className="text-sm text-muted-foreground">Đang kiểm tra khoản thu hiện hành…</p> : null}
+    {lookupError ? <AsyncState kind="error" message={lookupError.message} correlationId={lookupError.correlationId} onRetry={() => void lookup()} /> : null}
 
     {request ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div>
-        <h2 className="text-lg font-semibold">Khoản phải thu</h2>
+        <h2 className="text-lg font-semibold">{completed ? "Khoản đã xử lý" : "Khoản phải thu"}</h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          <div><dt className="text-muted-foreground">Mã yêu cầu Billing</dt><dd className="break-all font-mono">{request.paymentRequestId}</dd></div>
-          <div><dt className="text-muted-foreground">Mã bệnh nhân</dt><dd className="break-all font-mono">{request.patientId}</dd></div>
-          <div><dt className="text-muted-foreground">Phiên bản giữ chỗ</dt><dd>{Number.isSafeInteger(request.reservationRevision) ? request.reservationRevision : "Chưa có"}</dd></div>
-          <div><dt className="text-muted-foreground">Còn phải thu</dt><dd className="font-semibold">{request.remainingAmount} {request.currency}</dd></div>
-          <div><dt className="text-muted-foreground">Đã thu</dt><dd>{request.paidAmount} {request.currency}</dd></div>
+          <div><dt className="text-muted-foreground">Khoa</dt><dd><ReferenceText kind="department" value={request.departmentId} fallback="Khoa" /></dd></div>
+          <div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={request.patientId} fallback="Bệnh nhân" /></dd></div>
+
+          {!completed ? <>
+          <div><dt className="text-muted-foreground">Còn phải thu</dt><dd className="font-semibold">{formatDecimal(request.remainingAmount)} {request.currency}</dd></div>
+          <div><dt className="text-muted-foreground">Đã thu</dt><dd>{formatDecimal(request.paidAmount)} {request.currency}</dd></div>
           <div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(request.expiresAt)}</dd></div>
-          <div><dt className="text-muted-foreground">Trạng thái Billing</dt><dd>{request.status}</dd></div>
+          <div><dt className="text-muted-foreground">Trạng thái Billing</dt><dd>{{ PENDING: "Chờ thanh toán", PARTIALLY_PAID: "Đã thanh toán một phần", PAID: "Đã thanh toán", EXPIRED: "Hết hạn", CANCELLED: "Đã hủy" }[request.status] ?? "Cần kiểm tra"}</dd></div>
+          </> : null}
         </dl>
+        {completed ? <Button className="mt-3" type="button" loading={lookupBusy} onClick={() => void lookup()}>Cập nhật số dư</Button> : null}
       </div>
 
-      {quoteEnabled ? <div className="space-y-3 border-t border-border pt-4">
+      {quoteEnabled && !completed ? <div className="space-y-3 border-t border-border pt-4">
         {quote ? <OutpatientQuoteBreakdown quote={quote} /> : null}
         {quoteBusy ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
         {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; chỉ có thể tiếp tục thu số dư dương do Billing xác nhận.</p> : null}
@@ -416,14 +424,14 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
       </div> : null}
 
       {completed ? zeroConfirmed && paymentResult?.clearanceId
-        ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Đã xác nhận nghĩa vụ 0 đồng. Mã xác nhận: <span className="font-mono">{paymentResult.clearanceId}</span></p>
+        ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Đã xác nhận nghĩa vụ 0 đồng. <ReferenceText value={paymentResult.clearanceId} fallback="Xác nhận đã lưu" technical /></p>
         : <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Billing đã xác nhận khoản thu hoặc nghĩa vụ của yêu cầu này.</p> : null}
       {pending ? <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-        <p>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu và khóa idempotency." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu và khóa idempotency."}</p>
+        <p>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu để tránh thu trùng." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu để tránh thu trùng."}</p>
         <Button className="mt-3" loading={checkingOperation} onClick={() => void checkOperation()}>Kiểm tra trạng thái giao dịch</Button>
       </div> : null}
       {closed ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm">Billing đã xác nhận giao dịch này được đóng mà chưa thu tiền. Tra cứu lại khoản thu trước khi thao tác tiếp.</p> : null}
-      {paymentResult?.operation.status === "COMPLETED" && paymentResult.payment ? <p className="break-all text-sm text-muted-foreground">Biên nhận: <span className="font-mono">{paymentResult.payment.transactionId}</span> · {paymentResult.payment.amount} {paymentResult.payment.currency}</p> : null}
+      {paymentResult?.operation.status === "COMPLETED" && paymentResult.payment ? <p className="break-all text-sm text-muted-foreground">Biên nhận: <ReferenceText value={paymentResult.payment.transactionId} fallback="Biên nhận đã lưu" technical /> · {formatDecimal(paymentResult.payment.amount)} {paymentResult.payment.currency}</p> : null}
       {paymentError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
         <p>{paymentError.message}</p>
         {paymentError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{paymentError.correlationId}</span></p> : null}
@@ -444,13 +452,13 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
         </label> : null}
         <div className="sm:col-span-2">
           <Button type="submit" loading={paymentBusy} disabled={quoteBlocksAction || uncertain && lastIntent?.kind !== "PATIENT_PAYMENT"}>{uncertain ? "Gửi lại cùng yêu cầu" : "Thu phí lịch khám"}</Button>
-          <p className="mt-2 text-xs text-muted-foreground">Số tiền được lấy nguyên văn từ Billing: {request.remainingAmount} {request.currency}. Giao dịch chưa hoàn tất sẽ giữ nguyên khóa để đối soát.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Số tiền được lấy nguyên văn từ Billing: {formatDecimal(request.remainingAmount)} {request.currency}. Giao dịch chưa hoàn tất sẽ giữ nguyên khóa để đối soát.</p>
         </div>
       </form> : null}
       {retryPatient && !patientFormVisible ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}>Gửi lại cùng yêu cầu thu</Button> : null}
       {retryZero ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}>Gửi lại cùng lệnh xác nhận nghĩa vụ 0</Button> : null}
       {canConfirmZero ? <div className="border-t border-border pt-4">
-        <p className="mb-3 text-sm">Báo giá hiện hành cho thấy người bệnh phải trả 0. Xác nhận nghĩa vụ này tạo clearance riêng, không ghi nhận tiền mặt.</p>
+        <p className="mb-3 text-sm">Báo giá hiện hành cho thấy người bệnh phải trả 0. Xác nhận nghĩa vụ này ghi nhận điều kiện thanh toán riêng, không ghi nhận tiền mặt.</p>
         <Button type="button" variant="primary" loading={paymentBusy} onClick={startZeroLiability}>Xác nhận nghĩa vụ 0 đồng</Button>
       </div> : null}
       {quoteZero && quoteEnabled && !zeroLiabilityEnabled && !completed && !pending ? <p role="status" className="border-t border-border pt-4 text-sm text-warning">Báo giá là 0 đồng nhưng chức năng xác nhận nghĩa vụ 0 chưa được mở. Không thu tiền mặt.</p> : null}

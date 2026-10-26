@@ -1,4 +1,4 @@
-import { formatInstant } from "@/lib/format";
+import { formatDecimal, formatInstant } from "@/lib/format";
 import type { OutpatientQuoteDTO } from "../types";
 
 export function OutpatientQuoteBreakdown({ quote }: { quote: OutpatientQuoteDTO }) {
@@ -7,32 +7,27 @@ export function OutpatientQuoteBreakdown({ quote }: { quote: OutpatientQuoteDTO 
       <div>
         <h3 className="font-semibold">Báo giá ngoại trú</h3>
         <p className="mt-1 text-xs text-muted-foreground">Hỗ trợ BHYT mô phỏng · giả định cấu hình hiện tại áp dụng cho tất cả mục hợp lệ.</p>
-        <p className="mt-1 break-all text-xs text-muted-foreground">Yêu cầu {quote.paymentRequestId} · bệnh nhân {quote.patientId} · {quote.careEpisodeType} {quote.careEpisodeId}</p>
+
       </div>
-      <span className="font-mono text-xs text-muted-foreground">{quote.quoteId}</span>
+
     </div>
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[46rem] text-left text-sm">
-        <caption className="sr-only">Chi tiết giá và khoản hỗ trợ mô phỏng</caption>
-        <thead className="border-b border-border text-xs text-muted-foreground">
-          <tr><th className="py-2 pr-3">Mục phí</th><th className="py-2 pr-3">Số lượng × đơn giá</th><th className="py-2 pr-3">Tạm tính</th><th className="py-2 pr-3">Hỗ trợ mô phỏng</th><th className="py-2">Người bệnh</th></tr>
-        </thead>
-        <tbody className="divide-y divide-border/70">
-          {quote.lines.map((line, index) => <tr key={`${line.sourceId}:${line.priceCode}:${index}`}>
-            <td className="py-2 pr-3"><span className="font-medium">{line.description}</span><span className="mt-1 block text-xs text-muted-foreground">{line.sourceType} · {line.priceCode}</span><span className="mt-1 block break-all font-mono text-[11px] text-muted-foreground">Nguồn {line.sourceId} · catalogue {line.catalogueVersion} · policy {line.policyVersion}</span></td>
-            <td className="py-2 pr-3 tabular-nums">{line.quantity} × {line.unitPrice} {quote.currency}</td>
-            <td className="py-2 pr-3 tabular-nums">{line.grossAmount} {quote.currency}</td>
-            <td className="py-2 pr-3 tabular-nums">{line.supportAmount} {quote.currency} <span className="text-xs text-muted-foreground">({line.supportRate})</span></td>
-            <td className="py-2 tabular-nums">{line.patientPayable} {quote.currency}</td>
-          </tr>)}
-        </tbody>
-      </table>
-    </div>
+    <ul className="divide-y divide-border" aria-label="Chi tiết giá và khoản hỗ trợ mô phỏng">
+      {quote.lines.map((line, index) => <li key={`${line.sourceId}:${line.priceCode}:${index}`} className="space-y-3 py-3 text-sm">
+        <h4 className="font-medium">{line.description}</h4>
+        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div><dt className="text-xs text-muted-foreground">Số lượng × đơn giá</dt><dd>{formatDecimal(line.quantity)} × {formatDecimal(line.unitPrice)} {quote.currency}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Trước hỗ trợ</dt><dd>{formatDecimal(line.grossAmount)} {quote.currency}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Hỗ trợ BHYT mô phỏng ({formatDecimal(Number(line.supportRate) * 100)}%)</dt><dd>{formatDecimal(line.supportAmount)} {quote.currency}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Người bệnh trả</dt><dd className="font-semibold">{formatDecimal(line.patientPayable)} {quote.currency}</dd></div>
+        </dl>
+      </li>)}
+    </ul>
     <dl className="grid gap-3 text-sm sm:grid-cols-3">
-      <div><dt className="text-muted-foreground">Tổng trước hỗ trợ</dt><dd className="font-semibold tabular-nums">{quote.grossAmount} {quote.currency}</dd></div>
-      <div><dt className="text-muted-foreground">Hỗ trợ BHYT mô phỏng</dt><dd className="font-semibold tabular-nums">{quote.supportAmount} {quote.currency}</dd></div>
-      <div><dt className="text-muted-foreground">Người bệnh dự kiến trả</dt><dd className="font-semibold tabular-nums">{quote.patientPayable} {quote.currency}</dd></div>
+      <div><dt className="text-muted-foreground">Tổng trước hỗ trợ</dt><dd className="font-semibold tabular-nums">{formatDecimal(quote.grossAmount)} {quote.currency}</dd></div>
+      <div><dt className="text-muted-foreground">Hỗ trợ BHYT mô phỏng</dt><dd className="font-semibold tabular-nums">{formatDecimal(quote.supportAmount)} {quote.currency}</dd></div>
+      <div><dt className="text-muted-foreground">Người bệnh dự kiến trả</dt><dd className="font-semibold tabular-nums">{formatDecimal(quote.patientPayable)} {quote.currency}</dd></div>
     </dl>
+    <details className="text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer">Thông tin đối soát</summary><dl className="space-y-2 break-all pt-2"><div><dt>Mã báo giá</dt><dd className="font-mono">{quote.quoteId}</dd></div><div><dt>Mã yêu cầu</dt><dd className="font-mono">{quote.paymentRequestId}</dd></div>{quote.lines.map((line, index) => <div key={index}><dt>{line.description}</dt><dd>{line.priceCode} · {line.catalogueVersion} · {line.policyVersion} · {line.sourceId}</dd></div>)}</dl></details>
     <p className="text-xs text-muted-foreground">Báo giá hết hạn: {formatInstant(quote.expiresAt)} · Cấp lúc: {formatInstant(quote.issuedAt)}</p>
   </section>;
 }

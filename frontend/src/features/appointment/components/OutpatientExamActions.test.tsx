@@ -4,6 +4,7 @@ import type { Role } from "@/lib/roles";
 import type { AppointmentDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
+  registration: vi.fn(),
   checkIn: vi.fn(),
   startExam: vi.fn(),
   changeStatus: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 vi.mock("../api", () => ({
   appointmentApi: {
+    registration: mocks.registration,
     checkIn: mocks.checkIn,
     startExam: mocks.startExam,
     changeStatus: mocks.changeStatus,
@@ -216,4 +218,23 @@ describe("outpatient appointment actions", () => {
     expect(onUpdated).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
+});
+
+it("allows a scheduled exam only after current server readiness, and never infers readiness from payment", async () => {
+  mocks.token = "doctor-session";
+  mocks.registration.mockResolvedValue({ registrationId: readyAppointment.appointmentId, readyForExam: true });
+  const { onUpdated } = renderActions({ appointment: { ...readyAppointment, careContractVersion: 2 }, role: "DOCTOR" });
+  mocks.startExam.mockResolvedValue({ ...readyAppointment, careContractVersion: 2, status: "IN_EXAM" });
+  fireEvent.click(await screen.findByRole("button", { name: "Bắt đầu khám" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+  await waitFor(() => expect(onUpdated).toHaveBeenCalled());
+  expect(mocks.registration).toHaveBeenCalledWith(readyAppointment.appointmentId);
+});
+
+it("keeps a paid scheduled patient waiting until the server confirms arrival and readiness", async () => {
+  mocks.token = "doctor-session";
+  mocks.registration.mockResolvedValue({ registrationId: readyAppointment.appointmentId, readyForExam: false, checkedInAt: null });
+  renderActions({ appointment: { ...readyAppointment, careContractVersion: 2 }, role: "DOCTOR" });
+  expect(await screen.findByText(/Chờ bệnh nhân đến quầy tiếp nhận/)).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Bắt đầu khám" })).not.toBeInTheDocument();
 });

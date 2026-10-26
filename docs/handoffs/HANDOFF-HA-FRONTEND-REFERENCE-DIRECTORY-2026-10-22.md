@@ -2,12 +2,21 @@
 
 ## Điều phối hiện hành — 26/10/2026
 
-- Registry ID: `H-01`; status: `ACTIVE CONTRACT GAP`.
+- Registry ID: `H-01`; status: `NEEDS REVALIDATION`.
 - Bàn giao hiện tại: Hoàng Anh/Core/Gateway → consumer frontend theo ownership.
 - [Registry và phần acceptance còn thiếu](README.md) là nguồn giao việc hiện tại.
 - Các base/branch, status, owner và test counts trong checkpoint dưới giữ theo ngày;
   không là bằng chứng bug còn tồn tại hoặc task phải code lại trên HEAD.
 - Nghiệp vụ mới dùng [WF-01–11](../plans/07-outpatient-workflow-implementation.md), không đóng từ evidence baseline.
+
+## Cập nhật implementation — 26/10/2026
+
+Contract tối thiểu đã triển khai cho CASHIER/LAB_TECH (patient directory) và mọi human role
+(care-labels doctor/department/room); xem [A.13](../plans/03-contracts.md).
+Shared frontend đã nối đúng role; tìm tên bác sĩ dùng keyword phía server.
+Không dùng mô tả giới hạn ngày 22/10 bên dưới để yêu cầu mở full PatientDTO cho các role này.
+Chỉ chuyển NEEDS REVALIDATION: nghiệm thu consumer toàn bộ web/mobile và session reset vẫn
+phải đối chiếu theo từng phạm vi; đợt này tập trung ngoại trú web, không đóng thay mobile.
 
 ## Hồ sơ phát hiện và checkpoint
 

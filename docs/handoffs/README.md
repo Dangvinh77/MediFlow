@@ -20,7 +20,7 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 
 | ID | Trạng thái | Producer/code owner → người nhận | Việc cụ thể còn phải xác minh | Hồ sơ/acceptance |
 |---|---|---|---|---|
-| H-01 | ACTIVE CONTRACT GAP | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Chốt reference DTO tối thiểu theo role; directory PHARMACIST đã có checkpoint 25/10, không yêu cầu tạo lại; phần CASHIER/LAB_TECH/PATIENT và staff name phải khóa từ source | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
+| H-01 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Contract A.13 đã triển khai cho CASHIER/LAB_TECH directory và PATIENT care-labels; đối chiếu consumer/session reset web/mobile trước khi đóng | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
 | H-02 | NEEDS REVALIDATION | Hoàng Anh/Core → Vinh verification | Patient outbox, department-head/race: implementation có checkpoint 21/10; kiểm consumer/replay và packaged trên artifact cuối | [Core audit](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) |
 | H-03 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → Vinh verification | JWT expiration và caller credential verifier đã có bản sửa; đối chiếu merged revision, test và runtime; race chuyển H-02, không mở task thứ hai | [JWT/Core](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
 | H-04 | NEEDS REVALIDATION | Hoàng Anh/Gateway + Vinh/Billing → Vinh verification | Hai refund routes đã có code và policy proof; còn xác nhận đúng phạm vi HTTP/Billing/refund race, không giao viết lại routes | [Refund routes](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) |

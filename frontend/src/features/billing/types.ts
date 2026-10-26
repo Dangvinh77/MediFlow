@@ -274,3 +274,12 @@ export interface OutboxReplayResult {
   eventId: string;
   replayed: boolean;
 }
+
+/** Selection only; payment details must be reloaded from the by-registration endpoint. */
+export interface ScheduledPaymentQueueItem {
+  registrationId: string;
+  patientId: string;
+  departmentId: string;
+  createdAt: string;
+  expiresAt: string;
+}

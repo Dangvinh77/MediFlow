@@ -31,9 +31,9 @@ describe("Appointment list filters and request lifecycle", () => {
     mocks.search.mockResolvedValue(emptyPage);
     render(<AppointmentTable />);
     await screen.findByText("Chưa có lịch hẹn phù hợp.");
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "department" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "department" } });
     fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Mã khoa phải là UUID hợp lệ.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Chọn khoa từ danh sách tìm kiếm.");
     expect(mocks.search).toHaveBeenCalledTimes(1);
   });
 
@@ -41,11 +41,11 @@ describe("Appointment list filters and request lifecycle", () => {
     mocks.search.mockResolvedValue({ ...emptyPage, content: [appointment], totalPages: 2, totalElements: 21 });
     render(<AppointmentTable />);
     await screen.findByText("First visit");
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.change(screen.getByLabelText("Ngày hẹn"), { target: { value: "2026-10-17" } });
     fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
     await waitFor(() => expect(mocks.search).toHaveBeenCalledTimes(2));
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     await waitFor(() => expect(mocks.search).toHaveBeenCalledTimes(3));
     expect(mocks.search).toHaveBeenLastCalledWith({
@@ -61,11 +61,11 @@ describe("Appointment list filters and request lifecycle", () => {
       .mockResolvedValueOnce(emptyPage);
     render(<AppointmentTable />);
     await screen.findByText("Chưa có lịch hẹn phù hợp.");
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Tạm thời không tải được");
     expect(screen.getByText("appointment-correlation")).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     await screen.findByText("Chưa có lịch hẹn phù hợp.");
     expect(mocks.search).toHaveBeenLastCalledWith({ departmentId: "123e4567-e89b-42d3-a456-426614174000", page: 0 });
@@ -79,9 +79,9 @@ describe("Appointment list filters and request lifecycle", () => {
     render(<AppointmentTable />);
     await screen.findByText("Chưa có lịch hẹn phù hợp.");
     const form = screen.getByRole("button", { name: "Lọc" }).closest("form")!;
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.submit(form);
-    fireEvent.change(screen.getByLabelText("Mã khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.submit(form);
     expect(await screen.findByText("Latest filter")).toBeVisible();
     await act(async () => older.reject(new ApiRequestError("Older filter failed", 503, "UNAVAILABLE")));

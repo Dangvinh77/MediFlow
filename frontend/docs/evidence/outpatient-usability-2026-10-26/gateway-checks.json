@@ -1,0 +1,206 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "patient",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "lab",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/api/v1/org/staff/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/doctor/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/department/9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/doctor/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/department/9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/doctor/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/department/9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/patients/directory/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/patients/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+      "status": 403,
+      "cache": null
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/patients/directory/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/patients/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+      "status": 403,
+      "cache": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/patients/directory/54fb1ca5-65a7-4ba2-9a0a-48c65832b246",
+      "status": 403,
+      "cache": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests",
+      "status": 403,
+      "cache": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/dedefec0-ab08-4f11-8d5c-ea16c585d497",
+      "status": 200,
+      "cache": "no-cache, no-store, max-age=0, must-revalidate"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/org/care-labels/room/71b09a28-1a25-4237-8eb9-707552650251",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "doctor",
+      "method": "PUT",
+      "path": "/api/v1/appointments/dedefec0-ab08-4f11-8d5c-ea16c585d497/start-exam",
+      "status": 422,
+      "cache": "no-cache, no-store, max-age=0, must-revalidate"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "doctor",
+      "method": "GET",
+      "path": "/api/v2/consultation-sessions/mine?date=2026-10-27",
+      "status": 200,
+      "cache": "no-cache, no-store, max-age=0, must-revalidate"
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "cache": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "cache": "no-cache, no-store, max-age=0, must-revalidate"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests?patientId=a834af06-1bb4-4736-a203-6c064a9e8f9a",
+      "status": 200,
+      "cache": "no-store"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests?patientId=a834af06-1bb4-4736-a203-6c064a9e8f9a",
+      "status": 200,
+      "cache": "no-store"
+    }
+  ],
+  "pendingRegistrationId": "f109029e-cfdd-42b2-91af-378551e43e70",
+  "labels": {
+    "doctor": "Lê Bác Sĩ Demo",
+    "room": "Phong kham ngoai tru demo V2"
+  }
+}

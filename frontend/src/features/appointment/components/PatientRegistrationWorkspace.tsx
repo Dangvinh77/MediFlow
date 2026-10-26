@@ -5,6 +5,8 @@ import { ApiRequestError } from "@/lib/api";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { formatInstant, formatLocalDate } from "@/lib/format";
+import { ReferenceText } from "@/components/references/ReferenceText";
+import { registrationStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
 import type { RegistrationDTO } from "../types";
 
@@ -36,15 +38,23 @@ export function PatientRegistrationWorkspace({ enabled }: { enabled: boolean }) 
     }
   }
 
-  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tra cứu phiếu lịch khám V2 chưa được mở.</p>;
+  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tra cứu phiếu lịch khám chưa được mở.</p>;
 
   return <div className="space-y-6">
     <section className="rounded-xl border border-border bg-surface p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Phiếu đăng ký của tôi</h2><p className="mt-1 text-sm text-muted-foreground">Danh sách được máy chủ giới hạn theo tài khoản bệnh nhân đang đăng nhập.</p></div><Button type="button" loading={loading} onClick={() => void load(0)}>Tải phiếu của tôi</Button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Phiếu đăng ký của tôi</h2><p className="mt-1 text-sm text-muted-foreground">Theo dõi lịch hẹn, thanh toán và hướng dẫn tái khám của bạn.</p></div><Button type="button" loading={loading} onClick={() => void load(0)}>Tải phiếu của tôi</Button></div>
       {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void load()} /> : null}
       {registrations ? registrations.length ? <ul className="mt-4 divide-y divide-border">{registrations.map(item => <li key={item.registrationId} className="space-y-3 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="break-all font-mono text-sm font-semibold">{item.registrationId}</h3><p className="mt-1 text-sm">{formatLocalDate(item.sessionDate)} · {item.startTime}–{item.endTime}</p></div><span className="rounded-full border border-border px-3 py-1 text-xs font-medium">{item.status}</span></div>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3"><div><dt className="text-muted-foreground">Hình thức</dt><dd>{item.receptionMode === "AT_COUNTER" ? "Tiếp nhận tại quầy" : "Đăng ký trước"}</dd></div><div><dt className="text-muted-foreground">Mã khoa</dt><dd className="break-all font-mono">{item.departmentId}</dd></div><div><dt className="text-muted-foreground">Mã bác sĩ</dt><dd className="break-all font-mono">{item.doctorId}</dd></div><div><dt className="text-muted-foreground">Trạng thái thanh toán giữ chỗ</dt><dd>{item.reservationStatus}</dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(item.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{item.status === "CONFIRMED" && item.queueNumber !== null ? item.queueNumber : "Chưa cấp số trước khi xác nhận"}</dd></div></dl>
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-base font-semibold">{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"} · {formatLocalDate(item.sessionDate)}</h3><p className="mt-1 text-sm">{formatLocalDate(item.sessionDate)} · {item.startTime}–{item.endTime}</p></div><span className="rounded-full border border-border px-3 py-1 text-xs font-medium">{registrationStatusLabels[item.status]}</span></div>
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <div><dt className="text-muted-foreground">Khoa</dt><dd><ReferenceText kind="department" value={item.departmentId} fallback="Khoa khám" /></dd></div>
+          <div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={item.doctorId} fallback="Bác sĩ phụ trách" /></dd></div>
+          <div><dt className="text-muted-foreground">Phòng khám</dt><dd><ReferenceText kind="room" value={item.roomId} fallback="Phòng khám" /></dd></div>
+          <div><dt className="text-muted-foreground">Hình thức</dt><dd>{item.receptionMode === "AT_COUNTER" ? "Tiếp nhận tại quầy" : "Đăng ký trước"}</dd></div>
+          {item.status === "AWAITING_PAYMENT" ? <div><dt className="text-muted-foreground">Hạn thanh toán giữ chỗ</dt><dd>{formatInstant(item.reservationExpiresAt)}</dd></div> : null}
+          <div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{item.queueNumber !== null ? item.queueNumber : "Chưa cấp số trước khi xác nhận"}</dd></div>
+        </dl>
+        {item.status === "CONFIRMED" ? <p role="status" className="rounded-lg border border-info/30 bg-info/5 p-3 text-sm">{item.checkedInAt ? "Đã ghi nhận bạn có mặt. Vui lòng chờ gọi tên theo hướng dẫn tại phòng khám." : "Lịch khám đã xác nhận. Vui lòng đến quầy tiếp nhận vào ngày hẹn để ghi nhận có mặt trước khi khám."}</p> : null}
         {item.followUpRecommendation ? <section aria-label="Đề xuất tái khám" className="space-y-2 rounded-lg border border-info/30 bg-info/5 p-4">
           <div><h4 className="font-semibold">Đề xuất tái khám</h4><p className="mt-1 text-sm">Khoảng ngày khuyến nghị: {formatLocalDate(item.followUpRecommendation.recommendedFrom)} – {formatLocalDate(item.followUpRecommendation.recommendedThrough)}</p></div>
           <div><h5 className="text-sm font-medium">Lý do</h5><p className="mt-1 whitespace-pre-wrap text-sm">{item.followUpRecommendation.reason}</p></div>

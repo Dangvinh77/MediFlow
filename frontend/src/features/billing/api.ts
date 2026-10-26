@@ -20,6 +20,7 @@ import type {
   RegistrationPaymentRequestDTO,
   RevenueByDeptDTO,
   ScheduledPaymentCommand,
+  ScheduledPaymentQueueItem,
   ScheduledPaymentResult,
   ZeroPayableEligibilityRequest,
 } from "./types";
@@ -27,6 +28,11 @@ import type {
 export type ScheduledPaymentCommandOptions = Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>;
 
 export const billingApi = {
+  scheduledPaymentQueue: (patientId: string, page = 0) => {
+    const query = new URLSearchParams({ page: String(page), size: "10" });
+    if (patientId) query.set("patientId", patientId);
+    return api.get<PageResult<ScheduledPaymentQueueItem>>(`/v2/billing/payment-requests?${query}`);
+  },
   refundsDue: (prescriptionId: string) => api.get<PrescriptionAdjustmentDTO>(`/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`),
   recordRefund: (transactionId: string, body: RefundLedgerPaymentRequest) => api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(transactionId)}/refunds`, body),
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),
