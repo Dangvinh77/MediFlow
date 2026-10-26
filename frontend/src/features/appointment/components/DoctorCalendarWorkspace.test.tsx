@@ -28,7 +28,7 @@ describe("doctor own calendar", () => {
     await user.clear(screen.getByLabelText("Ngày tham chiếu"));
     await user.type(screen.getByLabelText("Ngày tham chiếu"), "2026-10-28");
     await user.click(screen.getByRole("button", { name: "Tải lịch của tôi" }));
-    expect(await screen.findByText("08:00–12:00")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /08:00–12:00/ })).toBeInTheDocument();
     expect(mocks.calendar).toHaveBeenCalledWith({ weekStart: "2026-10-26" });
     expect(mocks.calendar.mock.calls[0][0]).not.toHaveProperty("doctorId");
   });

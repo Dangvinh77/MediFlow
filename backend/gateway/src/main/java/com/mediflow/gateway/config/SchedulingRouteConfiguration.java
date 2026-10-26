@@ -24,6 +24,7 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/records/*/follow-up-recommendations", "/api/v2/records/*/follow-up-recommendation")
                         .uri("lb://clinical-service"))
                 .route("scheduling-billing", route -> route.path(
+                        "/api/v2/billing/payment-requests",
                         "/api/v2/billing/payment-requests/by-registration",
                         "/api/v2/billing/payment-requests/*/payments", "/api/v2/billing/payment-operations/*",
                         "/api/v2/billing/payment-requests/*/quote",

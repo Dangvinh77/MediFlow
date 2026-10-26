@@ -71,6 +71,23 @@ class ScheduledPaymentRecoveryFairnessPostgresTest {
                 + "WHERE payment_operation_id=?", Integer.class, operationIds.get(2))).isEqualTo(1);
     }
 
+    @Test
+    void cashierQueuePagesInArrivalOrderFiltersPatientAndHidesTerminalOrExpiredRequests() {
+        var queue = new ScheduledPaymentQueueAdapter(jdbc);
+        var first = queue.find(patientId, com.mediflow.common.api.PageQuery.of(0, 2));
+        assertThat(first.totalElements()).isEqualTo(3);
+        assertThat(first.totalPages()).isEqualTo(2);
+        assertThat(first.content()).hasSize(2);
+        var second = queue.find(patientId, com.mediflow.common.api.PageQuery.of(1, 2));
+        assertThat(second.content()).hasSize(1);
+        assertThat(first.content().get(0).createdAt()).isBefore(second.content().get(0).createdAt());
+        assertThat(queue.find(UUID.randomUUID(), com.mediflow.common.api.PageQuery.of(0, 10)).content()).isEmpty();
+        jdbc.update("UPDATE PAYMENT_REQUEST SET status='PAID' WHERE payment_request_id=(SELECT payment_request_id FROM outpatient_registration_source WHERE registration_id=?)", first.content().get(0).registrationId());
+        jdbc.update("UPDATE PAYMENT_REQUEST SET expires_at=CURRENT_TIMESTAMP-INTERVAL '1 second' WHERE payment_request_id=(SELECT payment_request_id FROM outpatient_registration_source WHERE registration_id=?)", first.content().get(1).registrationId());
+        jdbc.update("UPDATE outpatient_registration_source SET registration_status='CANCELLED' WHERE registration_id=?", second.content().get(0).registrationId());
+        assertThat(queue.find(null, com.mediflow.common.api.PageQuery.of(0, 10)).content()).isEmpty();
+    }
+
     private final List<UUID> operationIds = new ArrayList<>();
 
     private void seedPreparingOperations(int count) {

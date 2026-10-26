@@ -14,7 +14,7 @@ import { formatLocalDate } from "@/lib/format";
 import type { Role } from "@/lib/roles";
 import { isUuid } from "@/lib/validation";
 import { appointmentApi, type AppointmentSearchParams } from "../api";
-import { appointmentStatusPresentation } from "../presentation";
+import { getAppointmentStatusPresentation } from "../presentation";
 import type { AppointmentDTO } from "../types";
 
 interface RequestError {
@@ -104,7 +104,7 @@ export function AppointmentTable() {
     event.preventDefault();
     const normalizedDepartmentId = departmentId.trim();
     if (normalizedDepartmentId && !isUuid(normalizedDepartmentId)) {
-      setValidationError("Mã khoa phải là UUID hợp lệ.");
+      setValidationError("Chọn khoa từ danh sách tìm kiếm.");
       return;
     }
     setValidationError(null);
@@ -138,12 +138,12 @@ export function AppointmentTable() {
       ) : null}
       <form onSubmit={onFilter} className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0 flex-1">
-          <label htmlFor="appointment-department" className="mb-1 block text-sm font-medium">Mã khoa</label>
+          <label htmlFor="appointment-department" className="mb-1 block text-sm font-medium">Khoa</label>
           <ReferenceInput kind="department"
             id="appointment-department"
             value={departmentId}
             onValueChange={(selectedId) => setDepartmentId(selectedId)}
-            placeholder="UUID khoa"
+            placeholder="Tìm theo tên khoa"
             aria-describedby={validationError ? "appointment-department-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
@@ -176,7 +176,7 @@ export function AppointmentTable() {
               </thead>
               <tbody>
                 {appointments.map((appointment) => {
-                  const status = appointmentStatusPresentation[appointment.status];
+                  const status = getAppointmentStatusPresentation(appointment);
                   return (
                     <tr key={appointment.appointmentId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(appointment.appointmentDate)}</td>

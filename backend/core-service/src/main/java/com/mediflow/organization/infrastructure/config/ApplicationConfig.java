@@ -50,6 +50,12 @@ import com.mediflow.organization.application.service.ScheduleManagementScopeServ
 @Configuration
 public class ApplicationConfig {
         @Bean
+        public com.mediflow.organization.application.port.in.GetCareLabelUseCase getCareLabelUseCase(
+                        StaffRepository staff, DepartmentRepository departments, RoomRepository rooms) {
+                return new com.mediflow.organization.application.service.GetCareLabelService(staff, departments, rooms);
+        }
+
+        @Bean
         public ManageScheduleManagementScopeUseCase manageScheduleManagementScopeUseCase(
                         SchedulingAuthorityRepository repository,
                         ScheduleManagementScopeEventPublisher events) {

@@ -147,7 +147,7 @@ describe("Prescription terminal actions", () => {
     mocks.dispense.mockRejectedValue(new ApiRequestError("Drug expired", 422, "DRUG_EXPIRED", [], "expiry-rx"));
     await open("dispense"); submit("dispense"); const message = await screen.findByText(/expiry-rx/);
     expect(message).toHaveTextContent("kiểm tra kết quả"); expect(message).not.toHaveTextContent("đã ghi nhận");
-    expect(mocks.get).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(2));
   });
   it.each(["cancel", "dispense"] as const)("keeps %s forbidden denial visible and blocks another submission", async action => {
     (action === "cancel" ? mocks.cancel : mocks.dispense).mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "forbidden-rx"));

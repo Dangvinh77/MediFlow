@@ -23,6 +23,12 @@ import org.springframework.beans.factory.annotation.Value;
 @ConditionalOnProperty(name = {"mediflow.billing.ledger.enabled", "mediflow.billing.scheduled-payments.enabled"},
         havingValue = "true")
 public class ScheduledPaymentConfiguration {
+    @Bean
+    com.mediflow.billing.application.port.in.FindScheduledPaymentQueueUseCase scheduledPaymentQueue(
+            com.mediflow.billing.application.port.out.ScheduledPaymentQueuePort queue) {
+        return new com.mediflow.billing.application.service.FindScheduledPaymentQueueService(queue);
+    }
+
     public static final String REGISTRATION_QUEUE = "billing.scheduled-registration.q";
 
     @Bean

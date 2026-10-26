@@ -39,7 +39,7 @@ class PatientDirectoryControllerWebTest {
     @Autowired ObjectMapper json;
     @MockBean GetPatientUseCase patients;
 
-    @ParameterizedTest @ValueSource(strings = {"ADMIN", "DOCTOR", "PHARMACIST"})
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "DOCTOR", "PHARMACIST", "CASHIER", "LAB_TECH"})
     void returnsOnlyTheThreeDirectoryFieldsWithPaginationAndCorrelation(String role) throws Exception {
         UUID id = UUID.randomUUID();
         var dto = new PatientDTO(id, "Nguyễn An", LocalDate.of(1990, 1, 1), Gender.M,
@@ -62,8 +62,8 @@ class PatientDirectoryControllerWebTest {
         assertThat(json.readTree(detail.getResponse().getContentAsString()).at("/data").size()).isEqualTo(3);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"PATIENT", "NURSE", "CASHIER", "LAB_TECH", "MANAGER", "SYSTEM"})
-    void deniesRolesOutsideThePrescribingAndDispensingWorkflow(String role) throws Exception {
+    @ParameterizedTest @ValueSource(strings = {"PATIENT", "NURSE", "MANAGER", "SYSTEM"})
+    void deniesRolesOutsideTheCareStaffDirectory(String role) throws Exception {
         mvc.perform(get("/api/v1/patients/directory/search").header("Authorization", bearer(role)))
                 .andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/patients/directory/{id}", UUID.randomUUID()).header("Authorization", bearer(role)))

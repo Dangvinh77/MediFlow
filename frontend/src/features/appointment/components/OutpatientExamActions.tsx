@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
@@ -8,7 +8,7 @@ import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { useCommand } from "@/lib/use-command";
 import { appointmentApi } from "../api";
-import type { AppointmentDTO } from "../types";
+import type { AppointmentDTO, RegistrationDTO } from "../types";
 
 interface OutpatientExamActionsProps {
   appointment: AppointmentDTO;
@@ -33,7 +33,20 @@ function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefre
   const [confirm, setConfirm] = useState<"check-in" | "start" | "cancel" | null>(null);
   const canCheckIn = (role === "ADMIN" || role === "NURSE")
     && appointment.status === "PENDING" && appointment.careContractVersion === 0;
-  const canStart = (role === "ADMIN" || role === "DOCTOR")
+  const [scheduledRead, setScheduledRead] = useState<{ id: string; item: RegistrationDTO | null; error: boolean } | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (appointment.careContractVersion >= 2 && role === "DOCTOR" && appointment.status === "READY_FOR_EXAM") {
+      appointmentApi.registration(appointment.appointmentId).then(item => {
+        if (active) setScheduledRead({ id: appointment.appointmentId, item: item.registrationId === appointment.appointmentId ? item : null, error: item.registrationId !== appointment.appointmentId });
+      }).catch(() => { if (active) setScheduledRead({ id: appointment.appointmentId, item: null, error: true }); });
+    }
+    return () => { active = false; };
+  }, [appointment, role]);
+  const scheduled = scheduledRead?.id === appointment.appointmentId ? scheduledRead : null;
+  const canStartScheduled = role === "DOCTOR" && appointment.careContractVersion >= 2
+    && appointment.status === "READY_FOR_EXAM" && scheduled?.item?.readyForExam === true;
+  const canStart = canStartScheduled || (role === "ADMIN" || role === "DOCTOR")
     && appointment.status === "READY_FOR_EXAM" && appointment.careContractVersion === 1
     && Boolean(appointment.examClearanceId);
   const canEditOrCancel = (role === "ADMIN" || role === "DOCTOR" || role === "NURSE")
@@ -56,6 +69,7 @@ function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefre
       <h2 className="text-lg font-semibold">Khám ngoại trú</h2>
       {appointment.status === "AWAITING_PAYMENT" ? <p role="status" className="text-sm text-warning">Đang chờ xác nhận thanh toán phí khám. Chỉ bắt đầu khi hệ thống ghi nhận đủ điều kiện.</p> : null}
       {appointment.status === "IN_EXAM" ? <p role="status" className="text-sm text-success">Đã bắt đầu khám. Hồ sơ khám đã được hệ thống tạo.</p> : null}
+      {appointment.careContractVersion >= 2 && appointment.status === "READY_FOR_EXAM" && role === "DOCTOR" && !canStartScheduled ? <p role="status" className="text-sm text-muted-foreground">{!scheduled ? "Đang kiểm tra điều kiện khám…" : scheduled.error ? "Chưa kiểm tra được điều kiện khám. Chọn Cập nhật trạng thái để thử lại." : !scheduled.item?.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận để ghi nhận có mặt." : "Chưa đủ điều kiện bắt đầu. Kiểm tra giờ khám và trạng thái phiếu, sau đó cập nhật lại."}</p> : null}
       <CommandFeedback error={command.error} uncertain={command.uncertain} />
       <div className="flex flex-wrap gap-3">
         {canCheckIn ? <Button type="button" variant="primary" disabled={command.busy || command.uncertain} onClick={() => setConfirm("check-in")}>Tiếp nhận bệnh nhân</Button> : null}

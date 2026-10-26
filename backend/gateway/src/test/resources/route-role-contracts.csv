@@ -54,8 +54,8 @@ core-service,POST,/api/v1/patients,ADMIN|NURSE,true
 # PATIENT may read only the signed patientId; Core checks it before data access.
 core-service,GET,/api/v1/patients/{id},ADMIN|DOCTOR|NURSE|PATIENT,true
 core-service,GET,/api/v1/patients,ADMIN|DOCTOR|NURSE,true
-core-service,GET,/api/v1/patients/directory/search,ADMIN|DOCTOR|PHARMACIST,true
-core-service,GET,/api/v1/patients/directory/{id},ADMIN|DOCTOR|PHARMACIST,true
+core-service,GET,/api/v1/patients/directory/search,ADMIN|DOCTOR|PHARMACIST|CASHIER|LAB_TECH,true
+core-service,GET,/api/v1/patients/directory/{id},ADMIN|DOCTOR|PHARMACIST|CASHIER|LAB_TECH,true
 core-service,PUT,/api/v1/patients/{id},ADMIN|NURSE,true
 core-service,DELETE,/api/v1/patients/{id},ADMIN,true
 inpatient-service,POST,/api/v1/inpatient/admissions,ADMIN|DOCTOR,true
@@ -139,3 +139,5 @@ core-service,GET,/api/v1/org/accounts,ADMIN,true
 core-service,GET,/api/v1/org/accounts/{id},ADMIN,true
 core-service,PUT,/api/v1/org/accounts/me/password,ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH|PATIENT,true
 core-service,PUT,/api/v1/org/accounts/{id}/password,ADMIN,true
+core-service,GET,/api/v1/org/care-labels/{kind}/{id},ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH|PATIENT,true
+billing-service,GET,/api/v2/billing/payment-requests,ADMIN|CASHIER,true

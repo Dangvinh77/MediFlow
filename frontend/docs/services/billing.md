@@ -96,3 +96,11 @@ perform authoritative financial arithmetic in JavaScript.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Billing tests when available. Smoke test
 invalid patient UUID, empty/error/retry, pagination, permission denial, and the changed payment flow.
+
+
+## Khả dụng thu phí lịch khám — 26/10/2026
+
+Luồng chính dùng ScheduledPaymentQueue: tìm bệnh nhân theo tên/ngày sinh, chọn khoản chờ thu,
+rồi tải request/quote hiện hành. Mã đối soát thu gọn khi chọn từ danh sách; số tiền định dạng
+chỉ phục vụ hiển thị, command giữ decimal string server. Queue không cấp quyền thu và không
+thay reservation lock/idempotency/uncertain recovery. Contract A.13 trong docs/plans/03-contracts.md.

@@ -11,7 +11,7 @@ import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import type { Role } from "@/lib/roles";
 import { appointmentApi } from "../api";
-import { appointmentStatusPresentation } from "../presentation";
+import { getAppointmentStatusPresentation } from "../presentation";
 import type { AppointmentDTO, LegacyAppointmentStatus } from "../types";
 import { AppointmentMutationError } from "./AppointmentMutationError";
 import { OutpatientExamActions } from "./OutpatientExamActions";
@@ -173,7 +173,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
     return <AsyncState kind="empty" message="Không có dữ liệu lịch hẹn." />;
   }
 
-  const status = appointmentStatusPresentation[appointment.status];
+  const status = getAppointmentStatusPresentation(appointment);
   const canAct = role !== null && actionRoles.includes(role) && appointment.status === "PENDING";
   const hasLifecycleInformation = appointment.careContractVersion > 0
     || appointment.checkedInAt !== null
@@ -185,7 +185,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
     <section className="mt-6 space-y-6">
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Mã lịch hẹn</p>
+          <p className="text-sm text-muted-foreground">Phiếu khám</p>
           <p className="mt-1 break-all font-mono text-sm"><ReferenceText kind="appointment" value={appointment.appointmentId} fallback="Lịch hẹn" /></p>
         </div>
         <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
@@ -225,7 +225,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
           </p>
           <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <LifecycleTimestamp label="Tiếp nhận" value={appointment.checkedInAt} />
-            <LifecycleTimestamp label="Đủ điều kiện khám" value={appointment.examClearanceAt} />
+            <LifecycleTimestamp label="Xác nhận thanh toán" value={appointment.examClearanceAt} />
             <LifecycleTimestamp label="Bắt đầu khám" value={appointment.examinationStartedAt} />
             <LifecycleTimestamp label="Hoàn tất" value={appointment.completedAt} />
           </dl>

@@ -38,6 +38,7 @@ class SchedulingRouteAuthorizationTest {
         check("GET", "/api/v2/outpatient-registrations/123", "ADMIN", "NURSE", "DOCTOR", "PATIENT");
         check("PUT", "/api/v2/outpatient-registrations/123/arrival", "ADMIN", "NURSE");
         check("PUT", "/api/v2/outpatient-registrations/123/cancellation", "ADMIN", "NURSE", "DOCTOR");
+        check("GET", "/api/v2/billing/payment-requests", "ADMIN", "CASHIER");
         check("GET", "/api/v2/billing/payment-requests/by-registration", "ADMIN", "CASHIER");
         check("POST", "/api/v2/billing/payment-requests/123/payments", "ADMIN", "CASHIER");
         check("GET", "/api/v2/billing/payment-requests/123/quote", "ADMIN", "CASHIER");
@@ -59,6 +60,13 @@ class SchedulingRouteAuthorizationTest {
             for (String method : List.of("GET", "POST", "PUT", "DELETE")) check(method, path);
         }
         check("DELETE", "/api/v2/consultation-sessions/123");
+    }
+
+    @Test
+    void careLabelsAllowOnlyHumanReadsWithoutOpeningStaffProfiles() {
+        check("GET", "/api/v1/org/care-labels/doctor/123", "ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT");
+        for (String method : List.of("POST", "PUT", "DELETE", "PATCH")) check(method, "/api/v1/org/care-labels/doctor/123");
+        check("GET", "/api/v1/org/care-labels/doctor/123/extra");
     }
 
     private void check(String method, String path, String... permitted) {

@@ -904,3 +904,30 @@ requests fail 403 `AUTH_PASSWORD_CHANGE_REQUIRED` (or existing route denial). Pu
 refresh and health keep existing semantics; service-token scope is unchanged. Closing the
 browser, deleting browser state or refreshing credentials cannot clear the Organization flag.
 Ship Core with V14, Gateway and the web client together; old binaries do not enforce this rule.
+### A.13. Nhãn hiển thị và danh sách chờ thu — 26/10/2026
+
+`GET /api/v1/org/care-labels/{kind}/{id}` nhận `kind=doctor|department|room`, trả
+`ApiResponse<{id: UUID, label: string}>`, `Cache-Control: no-store`. Cho tám human roles
+ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH/PATIENT; không cho SYSTEM.
+Chỉ trả tên bác sĩ (JobTitle.DOCTOR), khoa hoặc phòng CONSULTATION; không trả email,
+điện thoại hay hồ sơ nhân viên. Không tồn tại/khác loại trả 404; loại không hỗ trợ trả 400.
+Tên lịch sử có thể đọc khi danh mục ngừng hoạt động; tên không chứng minh quyền đặt khám.
+
+Patient directory `GET /api/v1/patients/directory/search` và `/{id}` cho
+ADMIN/DOCTOR/PHARMACIST/CASHIER/LAB_TECH, chỉ `{maBenhNhan,hoTen,ngaySinh}`.
+CASHIER/LAB_TECH dùng directory để phân biệt người trùng tên, không được mở full patient profile.
+
+`GET /api/v2/billing/payment-requests?patientId=&page=&size=` cho ADMIN/CASHIER,
+trả `ApiResponse<PageResult<ScheduledPaymentQueueItem>>`, `Cache-Control: no-store`.
+Item chính xác `{registrationId,patientId,departmentId,createdAt,expiresAt}`.
+Chỉ liệt kê nguồn EXAM/AWAITING_PAYMENT còn hạn, request PENDING/PARTIALLY_PAID;
+sắp `createdAt ASC, registrationId ASC`, lọc/count/phân trang tại Billing.
+Chỉ đọc store Billing; không join DB Clinical/Patient. Danh sách là phương tiện tìm phiếu,
+không là bằng chứng số tiền, quyền thu hay đủ điều kiện khám. Khi chọn, frontend gọi lại
+`GET /api/v2/billing/payment-requests/by-registration?registrationId=...` và dùng quote,
+reservationRevision, idempotency key theo các contract trước. Gate scheduled-payments/ledger
+và các kiểm tra chống thu trùng, uncertain outcome, clearance không đổi.
+
+UUID giữ nguyên trong API/URL; giao diện nghiệp vụ hiển thị nhãn, ngày sinh, ngày/giờ.
+PATIENT có quyền đọc care-label nhưng không được tìm danh sách nhân viên/bệnh nhân.
+`CONFIRMED` thanh toán chưa đồng nghĩa đã đến; `readyForExam` do server xác định.

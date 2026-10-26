@@ -1,0 +1,24 @@
+{
+  "base": "4851b196",
+  "counts": {
+    "core-service": {
+      "tests": 385,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gateway": {
+      "tests": 1625,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "billing-service": {
+      "tests": 1175,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "notes": "Core/Gateway rerun after rebase; Billing full suite on unchanged Billing source before rebase. Maven test exit 0, including Surefire shutdown warnings."
+}
