@@ -83,7 +83,7 @@ export function patientFailure(cause: unknown, mutation = false): PatientFailure
   if (apiError?.code && fieldsByCode[apiError.code]) fieldErrors[fieldsByCode[apiError.code]] = apiError.message;
   return {
     message: outcomeUnknown
-      ? "Chưa xác định được kết quả lưu/xóa. Hãy tra cứu lại bệnh nhân trước khi thực hiện yêu cầu mới."
+      ? "Chưa xác định được kết quả lưu/lưu trữ. Hãy tra cứu lại bệnh nhân trước khi thực hiện yêu cầu mới."
       : cause instanceof Error ? cause.message : "Không thể xử lý bệnh nhân.",
     correlationId: apiError?.correlationId ?? null, status: apiError?.status ?? null,
     code: apiError?.code, fieldErrors, outcomeUnknown,

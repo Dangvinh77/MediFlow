@@ -25,8 +25,9 @@ class PatientWriteApplicationServiceTest {
     private final PatientRepositoryPort repository = mock(PatientRepositoryPort.class);
     private final PatientEventPublisherPort events = mock(PatientEventPublisherPort.class);
     private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
+    private final com.mediflow.patient.application.port.out.PatientIdentityAuditPort audit = mock(com.mediflow.patient.application.port.out.PatientIdentityAuditPort.class);
     private final PatientWriteApplicationService service = new PatientWriteApplicationService(
-            repository, new PatientDtoMapper(), events, correlationIds);
+            repository, new PatientDtoMapper(), events, correlationIds, audit);
     private final UUID correlationId = UUID.randomUUID();
 
     @BeforeEach
@@ -60,11 +61,11 @@ class PatientWriteApplicationServiceTest {
     void updatePublishesUpdatedEventAndKeepsIdentityNumber() {
         Patient patient = Patient.create("Nguyen Van A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", "Hanoi", "0900000000", "a@example.com", null);
-        when(repository.findById(patient.patientId())).thenReturn(Optional.of(patient));
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
 
         var dto = service.update(patient.patientId(), new UpdatePatientRequest(
                 "Nguyen Van B", LocalDate.of(1991, 1, 1), Gender.F,
-                "Da Nang", "0900000001", "b@example.com", null, null));
+                "Da Nang", "0900000001", "b@example.com", null, null, "Correct birth date"));
 
         assertThat(dto.soCmnd()).isEqualTo("001");
         assertThat(dto.hoTen()).isEqualTo("Nguyen Van B");
@@ -75,10 +76,10 @@ class PatientWriteApplicationServiceTest {
     void correctsIdentityAndAllowsKeepingTheSameNumber() {
         Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", null, null, null, null);
-        when(repository.findById(patient.patientId())).thenReturn(Optional.of(patient));
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
         var createdAt = patient.createdAt();
         var request = new UpdatePatientRequest("A", patient.dateOfBirth(), Gender.M,
-                null, null, null, null, " 002 ");
+                null, null, null, null, " 002 ", "Correct identity");
 
         var corrected = service.update(patient.patientId(), request);
         var unchanged = service.update(patient.patientId(), request);
@@ -95,11 +96,11 @@ class PatientWriteApplicationServiceTest {
     void duplicateCorrectionDoesNotMutateOrSaveOrPublish() {
         Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", null, null, null, null);
-        when(repository.findById(patient.patientId())).thenReturn(Optional.of(patient));
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
         when(repository.existsByIdentityNumberAndPatientIdNot("002", patient.patientId())).thenReturn(true);
 
         assertThatThrownBy(() -> service.update(patient.patientId(), new UpdatePatientRequest(
-                "B", patient.dateOfBirth(), Gender.M, null, null, null, null, " 002 ")))
+                "B", patient.dateOfBirth(), Gender.M, null, null, null, null, " 002 ", "Correct identity")))
                 .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class);
         assertThat(patient.identityNumber()).isEqualTo("001");
         assertThat(patient.fullName()).isEqualTo("A");
@@ -110,10 +111,44 @@ class PatientWriteApplicationServiceTest {
     @Test
     void deleteMissingPatientThrowsNotFound() {
         UUID id = UUID.randomUUID();
-        when(repository.findById(id)).thenReturn(Optional.empty());
+        when(repository.findByIdForUpdate(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(id)).isInstanceOf(PatientNotFoundException.class);
         verify(repository, never()).deleteById(any());
+    }
+
+    @Test
+    void archiveRetainsPatientIdentityAndNeverPhysicallyDeletes() {
+        Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M, "001", null, null, null, null);
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
+        service.delete(patient.patientId());
+        service.delete(patient.patientId());
+        verify(events).publishArchived(any());
+        assertThat(patient.archived()).isTrue();
+        assertThat(patient.identityNumber()).isEqualTo("001");
+        verify(repository).save(patient);
+        verify(repository, never()).deleteById(any());
+        assertThatThrownBy(() -> service.update(patient.patientId(), new UpdatePatientRequest(
+                "B", patient.dateOfBirth(), Gender.M, null, null, null, null, null)))
+                .hasMessageContaining("lưu trữ");
+    }
+
+    @Test
+    void identityCorrectionRequiresReasonAndAuditsOnlyActualChanges() {
+        Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M, "001", null, null, null, null);
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
+        assertThatThrownBy(() -> service.update(patient.patientId(), new UpdatePatientRequest(
+                "A", patient.dateOfBirth(), Gender.M, null, null, null, null, "002")))
+                .hasMessageContaining("lý do");
+        verify(repository, never()).save(any());
+        verifyNoInteractions(audit, events);
+        var request = new UpdatePatientRequest("A", patient.dateOfBirth(), Gender.M,
+                null, null, null, null, "002", "  Verified document  ");
+        service.update(patient.patientId(), request);
+        service.update(patient.patientId(), request);
+        verify(audit).record(eq(patient.patientId()), eq("Verified document"), eq("001"), eq("002"),
+                eq(patient.dateOfBirth()), eq(patient.dateOfBirth()), any(), eq(correlationId));
+        verifyNoMoreInteractions(audit);
     }
 
     private CreatePatientRequest createRequest(String identityNumber) {

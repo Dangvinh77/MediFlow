@@ -13,6 +13,8 @@ public interface PatientRepositoryPort {
 
     Optional<Patient> findById(UUID patientId);
 
+    Optional<Patient> findByIdForUpdate(UUID patientId);
+
     PageResult<Patient> search(String keyword, PageQuery page);
 
     boolean existsById(UUID patientId);

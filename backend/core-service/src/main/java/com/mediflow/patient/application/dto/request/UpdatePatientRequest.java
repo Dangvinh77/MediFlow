@@ -38,5 +38,11 @@ public record UpdatePatientRequest(
 
         @Size(min = 1, max = 20, message = "soCmnd phải có từ 1 đến 20 ký tự")
         @Pattern(regexp = "(?s).*\\S.*", message = "soCmnd không được để trống")
-        String soCmnd) {
+        String soCmnd,
+        @Size(max = 500, message = "lyDoThayDoiDinhDanh tối đa 500 ký tự")
+        String lyDoThayDoiDinhDanh) {
+    public UpdatePatientRequest(String hoTen, LocalDate ngaySinh, Gender gioiTinh, String diaChi,
+            String soDienThoai, String email, String bhytSo, String soCmnd) {
+        this(hoTen, ngaySinh, gioiTinh, diaChi, soDienThoai, email, bhytSo, soCmnd, null);
+    }
 }

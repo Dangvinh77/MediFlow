@@ -22,7 +22,7 @@ export function StaffDepartment({ departmentId, canOpen = true }: { departmentId
     }).catch((cause: unknown) => { if (!active || !isRequestSessionCurrent(session, cause)) return; if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setFailed(true); });
     return () => { active = false; };
   }, [departmentId, attempt, router]);
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Đơn vị công tác</dt><dd className="mt-1 text-sm">{department ? <><span>{department.departmentName}</span>{canOpen ? <Link href={`/organization/departments/${departmentId}`} className="ml-2 font-semibold text-primary hover:underline">Detail</Link> : null}</>
+  return <div><dt className="text-sm text-muted-foreground">Đơn vị công tác</dt><dd className="mt-1 text-sm">{department ? <><span>{department.departmentName}</span>{canOpen ? <Link href={`/organization/departments/${departmentId}`} className="ml-2 font-semibold text-primary hover:underline">Detail</Link> : null}</>
     : failed ? <span>Chưa tải được tên đơn vị. <button type="button" className="text-primary underline" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}>Thử lại</button></span>
     : "Đang tải tên đơn vị…"}</dd></div>;
 }

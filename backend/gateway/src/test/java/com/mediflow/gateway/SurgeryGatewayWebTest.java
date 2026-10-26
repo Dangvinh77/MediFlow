@@ -35,6 +35,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 @AutoConfigureWebTestClient
 class SurgeryGatewayWebTest {
+    // Route/forwarding contract fixture. AccountSessionValidationWebTest exercises the real guard.
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.mediflow.gateway.filter.AccountSessionValidationFilter sessionValidation;
+
+    @org.junit.jupiter.api.BeforeEach
+    void isolateAccountStateDependency() {
+        org.mockito.Mockito.when(sessionValidation.filter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(call -> ((org.springframework.cloud.gateway.filter.GatewayFilterChain) call.getArgument(1))
+                        .filter(call.getArgument(0)));
+    }
+
 
     private static final AtomicInteger REQUESTS = new AtomicInteger();
     private static final AtomicReference<String> PATH = new AtomicReference<>();

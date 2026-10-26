@@ -266,3 +266,14 @@ Content-Type: application/json
 {
   "newPassword": "{{newPassword}}"
 }
+
+### Tự sửa liên hệ (7 role nhân viên; id bắt buộc khớp staffId trong JWT)
+PUT {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/contact
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "phoneNumber": "0901234567",
+  "email": "staff@example.com",
+  "address": "Hà Nội"
+}

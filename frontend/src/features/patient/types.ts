@@ -12,6 +12,7 @@ export interface PatientDTO {
   bhytSo: string | null;
   createdAt: string;
   updatedAt: string;
+  daLuuTru?: boolean;
 }
 
 export interface CreatePatientRequest {
@@ -26,4 +27,4 @@ export interface CreatePatientRequest {
 }
 
 /** Omitted/null soCmnd preserves the current number for older clients. */
-export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd"> & { soCmnd?: string | null };
+export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd"> & { soCmnd?: string | null; lyDoThayDoiDinhDanh?: string | null };

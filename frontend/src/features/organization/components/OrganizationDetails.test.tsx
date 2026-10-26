@@ -109,10 +109,10 @@ it("shows department contacts, real head and members across all pages", async ()
     .mockResolvedValueOnce({ content: [{ ...staffContractFixture, fullName: "Doctor Head" }], totalPages: 2 });
   render(<DepartmentDetail departmentId={departmentContractFixture.departmentId} />);
   expect(await screen.findByText("Outpatient care")).toBeVisible();
-  expect(await screen.findByRole("link", { name: "Detail Doctor Head" })).toHaveAttribute("href", `/organization/staff/${staffContractFixture.staffId}`);
+  expect(await screen.findByRole("link", { name: "Xem chi tiết Doctor Head" })).toHaveAttribute("href", `/organization/staff/${staffContractFixture.staffId}`);
   expect(screen.getByText("Doctor Head · Bác sĩ")).toBeVisible();
   expect(screen.getByText("2 đang làm việc · 2 nhân sự trong đơn vị")).toBeVisible();
-  expect(screen.getByRole("link", { name: "Detail Nurse Member" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Xem chi tiết Nurse Member" })).toBeVisible();
   expect(mocks.staff).toHaveBeenLastCalledWith({ departmentId: departmentContractFixture.departmentId, page: 1, size: 100 });
   mocks.staff.mockResolvedValue({ content: [] as StaffDTO[], totalPages: 0 });
 });

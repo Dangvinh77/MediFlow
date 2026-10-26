@@ -18,7 +18,7 @@ it("retries the failed filtered page, then selects the exact account", async () 
   await screen.findByText(accountContractFixture.username);
   expect(mocks.accounts.mock.calls[2][0]).toEqual(mocks.accounts.mock.calls[1][0]);
   expect(mocks.accounts.mock.calls[2][0].page).toBe(1);
-  expect(screen.getByRole("link", { name: `Detail ${accountContractFixture.username}` })).toHaveAttribute("href", `/organization/accounts/${accountContractFixture.accountId}`);
+  expect(screen.getByRole("link", { name: `Xem chi tiết ${accountContractFixture.username}` })).toHaveAttribute("href", `/organization/accounts/${accountContractFixture.accountId}`);
   expect(screen.getByRole("link", { name: "Tạo tài khoản" })).toHaveAttribute("href", "/organization/accounts/new");
 });
 it("ignores the old search result after a new filter is submitted", async () => {

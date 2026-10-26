@@ -14,6 +14,19 @@ import static org.mockito.ArgumentMatchers.argThat;
 
 class OrganizationEventOutboxAdapterTest {
     @Test
+    void selfContactFactUsesOutboxWithoutPrivateContactValues() {
+        OrganizationEventOutboxStore store = mock(OrganizationEventOutboxStore.class);
+        var publisher = new OrganizationEventOutboxAdapter(store, new Jackson2JsonMessageConverter());
+        var event = new com.mediflow.organization.application.event.StaffContactUpdatedEvent(
+                UUID.randomUUID(), Instant.now(), "trace", UUID.randomUUID());
+        publisher.publishStaffContactUpdated(event);
+        verify(store).append(eq(event.eventId()), eq(event.occurredAt()), eq(event.correlationId()),
+                eq(event.ROUTING_KEY), eq(event.getClass().getName()),
+                argThat(payload -> payload.contains(event.staffId().toString())
+                        && !payload.contains("email") && !payload.contains("phoneNumber") && !payload.contains("address")));
+    }
+
+    @Test
     void publisherPersistsEventIntentWithStableWireTypeAndBytes() {
         OrganizationEventOutboxStore store = mock(OrganizationEventOutboxStore.class);
         OrganizationEventOutboxAdapter publisher = new OrganizationEventOutboxAdapter(

@@ -1,5 +1,6 @@
 package com.mediflow.patient.infrastructure.messaging;
 
+import com.mediflow.patient.application.event.PatientArchivedEvent;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConverter;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,11 @@ public class PatientEventPublisherAdapter implements PatientEventPublisherPort {
     @Override
     public void publishUpdated(PatientUpdatedEvent event) {
         append(event.eventId(), event.occurredAt(), event.correlationId(), RabbitConfig.RK_PATIENT_UPDATED, event);
+    }
+
+    @Override
+    public void publishArchived(PatientArchivedEvent event) {
+        append(event.eventId(), event.occurredAt(), event.correlationId(), RabbitConfig.RK_PATIENT_ARCHIVED, event);
     }
 
     private void append(UUID id, Instant occurredAt, String correlationId, String routingKey, Object event) {

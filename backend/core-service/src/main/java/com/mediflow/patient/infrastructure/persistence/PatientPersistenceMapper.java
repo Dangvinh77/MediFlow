@@ -10,7 +10,7 @@ public class PatientPersistenceMapper {
         return Patient.restore(entity.getPatientId(), entity.getFullName(), entity.getDateOfBirth(),
                 entity.getGender(), entity.getIdentityNumber(), entity.getAddress(),
                 entity.getPhoneNumber(), entity.getEmail(), entity.getHealthInsuranceNumber(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getCreatedAt(), entity.getUpdatedAt(), entity.isArchived());
     }
 
     public PatientJpaEntity toEntity(Patient patient) {
@@ -25,6 +25,6 @@ public class PatientPersistenceMapper {
                 patient.email(),
                 patient.healthInsuranceNumber(),
                 patient.createdAt(),
-                patient.updatedAt());
+                patient.updatedAt()).withArchived(patient.archived());
     }
 }

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Fo
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { DataTableShell } from "@/components/ui/DataTableShell";
+import { DirectorySection as DataTableShell } from "./RecordLayout";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
@@ -121,11 +121,11 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
 
   return (
     <section>
-      {notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xóa bệnh nhân.</p> : null}
-      <DataTableShell title="Hồ sơ bệnh nhân" description="Tra cứu theo họ tên hoặc CMND/CCCD. Chọn Detail để xem hồ sơ." actions={(role === "ADMIN" || role === "NURSE") ? <Link href="/patients/new" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Thêm bệnh nhân</Link> : undefined}>
-      <form onSubmit={onSearch} className="flex flex-col gap-3 border-t border-border bg-surface-muted/40 p-4 sm:flex-row sm:items-end sm:px-5">
+      {notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã lưu trữ bệnh nhân. Mã và dữ liệu hồ sơ vẫn được giữ lại.</p> : null}
+      <DataTableShell title="Hồ sơ bệnh nhân" description="Tra cứu theo họ tên hoặc CMND/CCCD. Mở hồ sơ để xem thông tin và cập nhật." actions={(role === "ADMIN" || role === "NURSE") ? <Link href="/patients/new" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Thêm bệnh nhân</Link> : undefined}>
+      <form onSubmit={onSearch} className="flex flex-col gap-3 border-t border-border p-5 sm:flex-row sm:items-end lg:px-6">
         <div className="min-w-0 flex-1 sm:max-w-lg"><Field label="Từ khóa bệnh nhân" htmlFor="patient-keyword"><input id="patient-keyword" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Nhập họ tên hoặc CMND/CCCD" className={controlClassName} /></Field></div>
-        <Button type="submit" variant="primary" disabled={loading}>Tìm kiếm</Button>
+        <Button type="submit" disabled={loading}>Tìm kiếm</Button>
         <Button type="button" onClick={onReset} disabled={loading}>Xóa lọc</Button>
       </form>
 
@@ -146,16 +146,17 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
 
       {!loading && !error && patients.length > 0 ? (
         <>
+          <p role="status" className="border-t border-border px-5 py-3 text-sm text-muted-foreground lg:px-6"><span className="font-semibold tabular-nums text-foreground">{totalElements}</span> hồ sơ{activeKeyword ? <> phù hợp với “{activeKeyword}”</> : null}</p>
           <div className="overflow-x-auto border-t border-border">
             <table className="w-full min-w-3xl text-left text-sm"><caption className="sr-only">Danh sách hồ sơ bệnh nhân</caption>
-              <thead className="border-b border-border bg-surface-muted">
+              <thead className="border-b border-border text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-3">Họ tên</th>
                   <th scope="col" className="px-4 py-3">Ngày sinh</th>
                   <th scope="col" className="px-4 py-3">Giới tính</th>
                   <th scope="col" className="px-4 py-3">CMND/CCCD</th>
                   <th scope="col" className="px-4 py-3">Điện thoại</th>
-                  <th scope="col" className="px-4 py-3">Action</th>
+                  <th scope="col" className="px-4 py-3">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,12 +165,12 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
                     key={patient.maBenhNhan}
                     className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0"
                   >
-                    <td className="px-4 py-3 font-medium"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{patient.hoTen.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><span>{patient.hoTen}</span></span></td>
-                    <td className="px-4 py-3">{formatLocalDate(patient.ngaySinh)}</td>
-                    <td className="px-4 py-3">{patient.gioiTinh === "M" ? "Nam" : "Nữ"}</td>
-                    <td className="px-4 py-3">{patient.soCmnd}</td>
-                    <td className="px-4 py-3">{patient.soDienThoai ?? "—"}</td>
-                    <td className="px-4 py-3"><Link href={`/patients/${patient.maBenhNhan}`} aria-label={`Detail ${patient.hoTen}`} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Detail</Link></td>
+                    <td className="px-4 py-2 font-medium"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-foreground">{patient.hoTen.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><Link href={`/patients/${patient.maBenhNhan}`} className="rounded font-semibold underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{patient.hoTen}</Link></span></td>
+                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatLocalDate(patient.ngaySinh)}</td>
+                    <td className="px-4 py-2">{patient.gioiTinh === "M" ? "Nam" : "Nữ"}</td>
+                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{patient.soCmnd}</td>
+                    <td className="px-4 py-2">{patient.soDienThoai ?? "—"}</td>
+                    <td className="px-4 py-2"><Link href={`/patients/${patient.maBenhNhan}`} aria-label={`Xem chi tiết ${patient.hoTen}`} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Xem chi tiết</Link></td>
                   </tr>
                 ))}
               </tbody>

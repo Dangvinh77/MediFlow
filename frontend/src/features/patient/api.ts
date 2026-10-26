@@ -26,7 +26,7 @@ export const patientApi = {
   },
   create: (body: CreatePatientRequest) => api.post<PatientDTO>("/v1/patients", { ...mutableFields(body), soCmnd: body.soCmnd }),
   update: (patientId: string, body: UpdatePatientRequest) =>
-    api.put<PatientDTO>(`/v1/patients/${encodeURIComponent(patientId)}`, { ...mutableFields(body), ...(body.soCmnd === undefined ? {} : { soCmnd: body.soCmnd }) }),
+    api.put<PatientDTO>(`/v1/patients/${encodeURIComponent(patientId)}`, { ...mutableFields(body), ...(body.soCmnd === undefined ? {} : { soCmnd: body.soCmnd }), ...(body.lyDoThayDoiDinhDanh === undefined ? {} : { lyDoThayDoiDinhDanh: body.lyDoThayDoiDinhDanh }) }),
   delete: (patientId: string) =>
     api.delEmpty(`/v1/patients/${encodeURIComponent(patientId)}`),
 };

@@ -17,5 +17,5 @@ export function OwnStaffDepartment({ staffId }: { staffId: string }) {
     });
     return () => { active = false; };
   }, [staffId, attempt]);
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Khoa/phòng công tác</dt><dd className="mt-1 text-sm">{state.name ?? (state.error ? <><span>{state.error}</span> <button type="button" className="text-primary underline" onClick={() => { setState({}); setAttempt(value => value + 1); }}>Tải lại đơn vị</button></> : "Đang tải đơn vị…")}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground">Khoa/phòng công tác</dt><dd className="mt-1 text-sm">{state.name ?? (state.error ? <><span>{state.error}</span> <button type="button" className="text-primary underline" onClick={() => { setState({}); setAttempt(value => value + 1); }}>Tải lại đơn vị</button></> : "Đang tải đơn vị…")}</dd></div>;
 }

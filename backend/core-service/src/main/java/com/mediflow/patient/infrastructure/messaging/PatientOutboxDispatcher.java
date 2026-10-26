@@ -71,7 +71,9 @@ public class PatientOutboxDispatcher {
         properties.setCorrelationId(delivery.correlationId());
         properties.setHeader("__TypeId__", delivery.routingKey().equals(RabbitConfig.RK_PATIENT_CREATED)
                 ? "com.mediflow.patient.application.event.PatientCreatedEvent"
-                : "com.mediflow.patient.application.event.PatientUpdatedEvent");
+                : delivery.routingKey().equals(RabbitConfig.RK_PATIENT_ARCHIVED)
+                    ? "com.mediflow.patient.application.event.PatientArchivedEvent"
+                    : "com.mediflow.patient.application.event.PatientUpdatedEvent");
         var confirmation = new CorrelationData(delivery.id() + ":" + UUID.randomUUID());
         rabbit.send(RabbitConfig.EXCHANGE, delivery.routingKey(),
                 new Message(delivery.payload().getBytes(StandardCharsets.UTF_8), properties), confirmation);

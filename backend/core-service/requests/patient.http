@@ -89,6 +89,7 @@ Content-Type: application/json
 {
   "hoTen": "Nguyễn Văn A (đã đổi)",
   "soCmnd": "079090001235",
+  "lyDoThayDoiDinhDanh": "Đối chiếu CCCD gốc của bệnh nhân",
   "ngaySinh": "1990-01-15",
   "gioiTinh": "M",
   "diaChi": "88 Võ Văn Tần, Quận 3, TP.HCM",
@@ -97,6 +98,6 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Xoá bệnh nhân (ADMIN)
+### Lưu trữ bệnh nhân (ADMIN, 204; giữ UUID và lịch sử; không xóa vật lý)
 DELETE {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}

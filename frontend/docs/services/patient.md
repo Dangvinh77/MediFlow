@@ -19,8 +19,9 @@
 ## Current UI baseline
 
 `/patients` contains paged search and detail. `ADMIN`/`NURSE` can create and update patients;
-`ADMIN` can delete after explicit confirmation. ADMIN/NURSE can correct `soCmnd` on the existing
-patient UUID; conflicts preserve the draft for correction. The service-only existence lookup
+`ADMIN` can archive after explicit confirmation; records and historical references are retained. ADMIN/NURSE can correct `soCmnd` on the existing
+patient UUID; changing CCCD or birth date requires an audited reason (maximum 500 characters).
+Archived records are read-only and excluded from active search; conflicts preserve the draft for correction. The service-only existence lookup
 remains unavailable to browser code.
 
 ## Owner queue

@@ -10,6 +10,7 @@ import { isRequestSessionCurrent } from "../request-session";
 import type { StaffDTO, JobTitle } from "../types";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
 import { OwnStaffDepartment } from "./OwnStaffDepartment";
+import { OwnStaffContactForm } from "./OwnStaffContactForm";
 
 const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", MANAGER: "Quản lý", ADMINISTRATIVE: "Hành chính" };
 
@@ -39,10 +40,10 @@ export function PersonalStaffProfile({ staffId }: { staffId: string }) {
       <DetailSection title="Thông tin cá nhân"><Info label="Họ và tên" value={staff.fullName} /><Info label="CCCD" value={staff.identityNumber} /><Info label="Ngày sinh" value={staff.dateOfBirth?.split("-").reverse().join("/") ?? null} /><Info label="Giới tính" value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label="Địa chỉ" value={staff.address} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection>
       <DetailSection title="Thông tin công tác"><OwnStaffDepartment staffId={staff.staffId} /><Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} /><Info label="Trình độ chuyên môn" value={staff.qualification} /><Info label="Giấy phép" value={staff.licenseNumber} /><Info label="Ngày vào làm" value={staff.hireDate?.split("-").reverse().join("/") ?? null} /><Info label="Trạng thái" value={staff.active ? "Đang làm việc" : "Đã ngừng làm việc"} /></DetailSection>
     </div>
-    <p className="text-sm text-muted-foreground">Nếu cần cập nhật thông tin cá nhân hoặc công tác, vui lòng liên hệ quản trị viên.</p>
+    <OwnStaffContactForm key={staff.staffId} staff={staff} onSaved={setStaff} />
   </div>;
 }
 
 function Info({ label, value }: { label: string; value: string | null }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-sm">{value ?? "—"}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value ?? "—"}</dd></div>;
 }

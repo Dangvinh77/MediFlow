@@ -1,6 +1,7 @@
 # Downstream guard snapshot at 27b8832d25daee8218250224af3f8334318a37df (2026-10-17).
 # service,method,path,downstreamRoles,publishedInEdgePolicy
 # Internal SYSTEM-only endpoints are excluded. Deferred route flags still control routing.
+core-service,PUT,/api/v1/org/staff/{id}/contact,ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
 core-service,GET,/api/v1/org/staff/{id}/department,ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
 billing-service,POST,/api/v1/billing/accounts/{id}/deposit-allocations,ADMIN|CASHIER,false
 billing-service,POST,/api/v1/billing/accounts/{id}/settlement-reconciliations,ADMIN|CASHIER,false

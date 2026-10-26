@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DataTableShell } from "@/components/ui/DataTableShell";
+import { DirectorySection as DataTableShell } from "./RecordLayout";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
@@ -106,31 +106,31 @@ export function DepartmentList({ onLoaded, category = "all" }: {
         <div className="overflow-x-auto border-t border-border">
           <table className="w-full min-w-3xl text-left text-sm">
             <caption className="sr-only">{title}</caption>
-            <thead className="border-b border-border bg-surface-muted">
+            <thead className="border-b border-border text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">{category === "offices" ? "Tên phòng" : "Tên khoa"}</th>
                 <th scope="col" className="px-4 py-3">Viết tắt</th>
                 <th scope="col" className="px-4 py-3">Loại</th>
                 <th scope="col" className="px-4 py-3">Địa điểm</th>
                 <th scope="col" className="px-4 py-3">Trạng thái</th>
-                <th scope="col" className="px-4 py-3">Action</th>
+                <th scope="col" className="px-4 py-3">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {visibleDepartments.map((department) => (
                 <tr key={department.departmentId} className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0">
-                  <td className="px-4 py-3 font-medium">{department.departmentName}</td>
-                  <td className="px-4 py-3">{department.abbreviation}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2 font-medium"><Link href={`/organization/departments/${department.departmentId}`} className="rounded font-semibold underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{department.departmentName}</Link></td>
+                  <td className="px-4 py-2">{department.abbreviation}</td>
+                  <td className="px-4 py-2">
                     {departmentTypeLabels[department.departmentType] ?? "Không xác định"}
                   </td>
-                  <td className="px-4 py-3">{department.location || "—"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2">{department.location || "—"}</td>
+                  <td className="px-4 py-2">
                     <StatusBadge tone={department.active ? "success" : "neutral"}>
                       {department.active ? "Đang hoạt động" : "Ngừng hoạt động"}
                     </StatusBadge>
                   </td>
-                  <td className="px-4 py-3"><Link href={`/organization/departments/${department.departmentId}`} aria-label={`Detail ${department.departmentName}`} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Detail</Link></td>
+                  <td className="px-4 py-2"><Link href={`/organization/departments/${department.departmentId}`} aria-label={`Xem chi tiết ${department.departmentName}`} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Xem chi tiết</Link></td>
                 </tr>
               ))}
             </tbody>

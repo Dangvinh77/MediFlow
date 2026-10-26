@@ -55,6 +55,12 @@ public class PatientJpaEntity {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "archived", nullable = false)
+    private boolean archived;
+
+    public boolean isArchived() { return archived; }
+    public PatientJpaEntity withArchived(boolean archived) { this.archived = archived; return this; }
+
     protected PatientJpaEntity() {
     }
 

@@ -93,7 +93,7 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
     return <AsyncState kind="error" message={message} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
   }
   if (loading || (editing && loadedDepartmentId !== departmentId)) return <AsyncState kind="loading" message="Đang tải thông tin khoa/phòng…" />;
-  return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5">
+  return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
     {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
     <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
     <fieldset disabled={saving} className="min-w-0 space-y-5">
@@ -113,6 +113,6 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
         <Field label="Trạng thái" htmlFor="department-active"><select id="department-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select></Field>
       </FormSection> : null}
     </fieldset>
-    <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-5"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</Button></div>
   </form>;
 }

@@ -80,6 +80,9 @@ class PatientServiceIntegrationTest {
     private com.mediflow.patient.application.port.in.UpdatePatientUseCase updatePatient;
 
     @Autowired
+    private com.mediflow.patient.application.port.in.DeletePatientUseCase archivePatient;
+
+    @Autowired
     private ReadPatientIdentityUseCase patientLookup;
 
     @Autowired
@@ -109,8 +112,14 @@ class PatientServiceIntegrationTest {
 
     @org.junit.jupiter.api.BeforeEach
     void clearOutboxFixture() {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(UUID.randomUUID().toString(), null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))));
         jdbc().update("DELETE FROM patient_event_outbox");
     }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearActor() { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
 
     private org.springframework.jdbc.core.JdbcTemplate jdbc() {
         return new org.springframework.jdbc.core.JdbcTemplate(patientDataSource);
@@ -244,22 +253,24 @@ class PatientServiceIntegrationTest {
                 Gender.M, prefix + "-a", null, null, null, null));
         PatientDTO second = createPatient.create(new CreatePatientRequest("Race B", LocalDate.of(1990, 1, 1),
                 Gender.F, prefix + "-b", null, null, null, null));
+        var actor = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         var start = new java.util.concurrent.CyclicBarrier(2);
         try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
             var results = new java.util.ArrayList<java.util.concurrent.Future<Boolean>>();
             for (PatientDTO patient : java.util.List.of(first, second)) {
                 results.add(pool.submit(() -> {
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(actor);
                     start.await(10, java.util.concurrent.TimeUnit.SECONDS);
                     try {
                         updatePatient.update(patient.maBenhNhan(),
                                 new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
                                         patient.hoTen(), patient.ngaySinh(), patient.gioiTinh(),
-                                        null, null, null, null, prefix + "-shared"));
+                                        null, null, null, null, prefix + "-shared", "Verified original identity"));
                         return true;
                     } catch (com.mediflow.common.exception.DuplicateResourceException
                              | org.springframework.dao.DataIntegrityViolationException expected) {
                         return false;
-                    }
+                    } finally { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
                 }));
             }
             int successes = 0;
@@ -283,7 +294,7 @@ class PatientServiceIntegrationTest {
         PatientDTO second = createPatient.create(new CreatePatientRequest("Identity B", LocalDate.of(1990, 1, 1),
                 Gender.F, prefix + "-other", null, null, null, null));
         var correction = new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
-                first.hoTen(), first.ngaySinh(), first.gioiTinh(), null, null, null, null, prefix + "-new");
+                first.hoTen(), first.ngaySinh(), first.gioiTinh(), null, null, null, null, prefix + "-new", "Verified original identity");
         var persistedCreatedAt = patientRepository.findById(first.maBenhNhan()).orElseThrow().getCreatedAt();
 
         PatientDTO updated = updatePatient.update(first.maBenhNhan(), correction);
@@ -300,11 +311,63 @@ class PatientServiceIntegrationTest {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> updatePatient.update(first.maBenhNhan(),
                 new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
-                        "Rejected name", first.ngaySinh(), first.gioiTinh(), null, null, null, null, second.soCmnd())))
+                        "Rejected name", first.ngaySinh(), first.gioiTinh(), null, null, null, null, second.soCmnd(), "Verified original identity")))
                 .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class);
         var persisted = patientRepository.findById(first.maBenhNhan()).orElseThrow();
         assertThat(persisted.getIdentityNumber()).isEqualTo(prefix + "-new");
         assertThat(persisted.getFullName()).isEqualTo(first.hoTen());
+        assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_identity_audit WHERE patient_id = ?", Long.class,
+                first.maBenhNhan())).isEqualTo(1);
+        var audit = jdbc().queryForMap("SELECT * FROM patient_identity_audit WHERE patient_id = ?", first.maBenhNhan());
+        assertThat(audit.get("previous_identity_number")).isEqualTo(prefix + "-old");
+        assertThat(audit.get("current_identity_number")).isEqualTo(prefix + "-new");
+        assertThat(audit.get("actor_account_id").toString()).isEqualTo(
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+
+    @Test
+    void archiveKeepsLookupAndUniqueIdentityButHidesPatientFromActiveSearch() throws Exception {
+        eventQueue = "patient.archive.integration." + UUID.randomUUID();
+        amqpAdmin.declareQueue(new Queue(eventQueue, true, false, false));
+        amqpAdmin.declareBinding(BindingBuilder.bind(new Queue(eventQueue))
+                .to(new TopicExchange(RabbitConfig.EXCHANGE)).with(RabbitConfig.RK_PATIENT_ARCHIVED));
+        PatientDTO patient = newPatient("Archive retained");
+        archivePatient.delete(patient.maBenhNhan());
+        archivePatient.delete(patient.maBenhNhan());
+        var stored = patientRepository.findById(patient.maBenhNhan()).orElseThrow();
+        assertThat(stored.isArchived()).isTrue();
+        dispatcher.dispatch();
+        Message fact = rabbitTemplate.receive(eventQueue, 5_000);
+        assertThat(fact).isNotNull();
+        assertThat(fact.getMessageProperties().getHeaders().get("__TypeId__"))
+                .isEqualTo("com.mediflow.patient.application.event.PatientArchivedEvent");
+        assertThat(objectMapper.readTree(fact.getBody()).get("patientId").asText()).isEqualTo(patient.maBenhNhan().toString());
+        assertThat(rabbitTemplate.receive(eventQueue, 200)).isNull();
+        assertThat(stored.getIdentityNumber()).isEqualTo(patient.soCmnd());
+        assertThat(patientRepository.search(patient.soCmnd(), org.springframework.data.domain.PageRequest.of(0, 20))).isEmpty();
+        assertThat(patientRepository.existsByIdentityNumber(patient.soCmnd())).isTrue();
+        assertThat(patientLookup.exists(patient.maBenhNhan()).exists()).isTrue();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> updatePatient.update(patient.maBenhNhan(), correction(patient, "Rejected")))
+                .hasMessageContaining("lưu trữ");
+    }
+
+    @Test
+    void identityAuditAndPatientRollbackTogetherIfOutboxAppendFails() {
+        PatientDTO patient = newPatient("Atomic correction");
+        long before = jdbc().queryForObject("SELECT count(*) FROM patient_event_outbox", Long.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("outbox failed")).when(outbox)
+                .append(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+        try {
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> updatePatient.update(patient.maBenhNhan(),
+                    new com.mediflow.patient.application.dto.request.UpdatePatientRequest(patient.hoTen(), patient.ngaySinh(),
+                            patient.gioiTinh(), null, null, null, null, "ATOMIC-" + UUID.randomUUID().toString().substring(0, 8), "Verified original")))
+                    .isInstanceOf(org.springframework.dao.InvalidDataAccessApiUsageException.class)
+                    .hasRootCauseInstanceOf(IllegalStateException.class);
+        } finally { org.mockito.Mockito.reset(outbox); }
+        assertThat(patientRepository.findById(patient.maBenhNhan()).orElseThrow().getIdentityNumber()).isEqualTo(patient.soCmnd());
+        assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_identity_audit WHERE patient_id = ?", Long.class, patient.maBenhNhan())).isZero();
+        assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_event_outbox", Long.class)).isEqualTo(before);
     }
 
     @Test

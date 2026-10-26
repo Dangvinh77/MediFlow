@@ -8,7 +8,7 @@
 > và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
 
 **Owner:** Hoàng Anh (`TranHoangAnh94`)  
-**Backend:** `backend/organization-service/**`  
+**Backend:** `backend/core-service/src/main/java/com/mediflow/organization/**`
 **Contract context:** [`docs/ai/services/organization.md`](../../../docs/ai/services/organization.md)
 
 ## Writable frontend scope
@@ -140,3 +140,11 @@ Deploy/restart updated Core (V11/V12 migrations) before the frontend. Core now f
 profile fields on previously tracked seed masters exactly once, preserving nonempty edits.
 A completion receipt prevents later restarts from refilling fields the user clears. Fresh seed
 data has sample values. See Core README for transaction, adoption and date-conflict behavior.
+
+## Self-contact update — 2026-10-25
+
+The personal staff profile allows the signed staff owner to edit email, phone and address through
+`PUT /api/v1/org/staff/{id}/contact`. All seven staff roles may use this for their own profile;
+job, identity, qualifications and department remain administrator-managed. The form guards dirty
+navigation and duplicate submission, ignores stale session responses and does not retry writes
+automatically. Gateway account-state validation rejects revoked sessions on their next request.

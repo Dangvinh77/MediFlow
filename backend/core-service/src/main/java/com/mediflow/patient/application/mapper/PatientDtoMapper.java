@@ -20,6 +20,6 @@ public final class PatientDtoMapper {
                 patient.email(),
                 patient.healthInsuranceNumber(),
                 patient.createdAt(),
-                patient.updatedAt());
+                patient.updatedAt(), patient.archived());
     }
 }

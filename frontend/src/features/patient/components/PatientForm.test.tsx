@@ -50,6 +50,16 @@ describe("PatientForm", () => {
     mocks.setToken("session-a");
   });
 
+  it("requires a reason for identity correction before sending the update", async () => {
+    mocks.getById.mockResolvedValue(patientContractFixture);
+    render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByDisplayValue(patientContractFixture.hoTen);
+    fireEvent.change(screen.getByLabelText(/Số CMND\/CCCD/), { target: { value: "001234567899" } });
+    submit();
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Lý do thay đổi định danh/)).toBeRequired();
+  });
+
   it("validates programmatic submissions independently of native HTML", async () => {
     render(<PatientForm />);
     submit();
@@ -88,6 +98,7 @@ describe("PatientForm", () => {
     const identity = screen.getByLabelText(/Số CMND\/CCCD/);
     expect(identity).toBeEnabled();
     fireEvent.change(identity, { target: { value: " 001234567891 " } });
+    fireEvent.change(screen.getByLabelText(/Lý do thay đổi định danh/), { target: { value: "Đối chiếu giấy tờ gốc" } });
     submit();
 
     await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(1));
@@ -125,12 +136,14 @@ describe("PatientForm", () => {
 
     const identity = screen.getByLabelText(/Số CMND\/CCCD/);
     fireEvent.change(identity, { target: { value: "002" } });
+    fireEvent.change(screen.getByLabelText(/Lý do thay đổi định danh/), { target: { value: "Đối chiếu giấy tờ gốc" } });
     submit();
     expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("edit-trace");
     expect(identity).toHaveValue("002");
     expect(mocks.router.push).not.toHaveBeenCalled();
 
     fireEvent.change(identity, { target: { value: "003" } });
+    fireEvent.change(screen.getByLabelText(/Lý do thay đổi định danh/), { target: { value: "Đối chiếu giấy tờ gốc" } });
     submit();
     await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(2));
     expect(mocks.update).toHaveBeenLastCalledWith(patientContractFixture.maBenhNhan, expect.objectContaining({ soCmnd: "003" }));

@@ -20,6 +20,8 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
   const [fieldErrors, setFieldErrors] = useState<PatientFieldErrors>({});
   const [validationError, setValidationError] = useState<PatientFailure | null>(null);
   const [revision, setRevision] = useState(0);
+  const [originalIdentity, setOriginalIdentity] = useState<{ soCmnd: string; ngaySinh: string } | null>(null);
+  const [identityReason, setIdentityReason] = useState("");
   const mutation = usePatientMutation(patientId ?? "create");
 
   useEffect(() => {
@@ -29,6 +31,10 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
     const current = () => active && token === getSessionKey();
     patientApi.getById(patientId).then((patient) => {
       if (!current()) return;
+      if (patient.daLuuTru) {
+        setLoadError(patientFailure(new Error("Hồ sơ đã lưu trữ, không thể chỉnh sửa."))); return;
+      }
+      setOriginalIdentity({ soCmnd: patient.soCmnd, ngaySinh: patient.ngaySinh });
       setForm(patientToDraft(patient)); setLoaded(true);
     }).catch((cause: unknown) => {
       if (!current()) return;
@@ -38,6 +44,8 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
   }, [patientId, revision]);
 
   const error = validationError ?? mutation.error ?? loadError;
+  const identityChanged = Boolean(patientId && originalIdentity &&
+    (form.soCmnd.trim() !== originalIdentity.soCmnd || form.ngaySinh !== originalIdentity.ngaySinh));
   useEffect(() => { if (error?.status === 401) router.replace("/login"); }, [error, router]);
 
   function set<K extends keyof PatientDraft>(key: K, value: PatientDraft[K]) {
@@ -62,14 +70,17 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
     if (Object.keys(errors).length) {
       setValidationError(patientFailure(new Error(Object.values(errors)[0]))); return;
     }
+    if (identityChanged && (!identityReason.trim() || identityReason.trim().length > 500)) {
+      setValidationError(patientFailure(new Error("Vui lòng nhập lý do thay đổi CCCD hoặc ngày sinh (tối đa 500 ký tự)."))); return;
+    }
     setValidationError(null);
     await mutation.run(() => patientId
-      ? patientApi.update(patientId, patientUpdateBody(form))
+      ? patientApi.update(patientId, { ...patientUpdateBody(form), ...(identityChanged ? { lyDoThayDoiDinhDanh: identityReason.trim() } : {}) })
       : patientApi.create(patientCreateBody(form)),
       (patient) => { onSaved?.(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`); });
   }
 
-  return { form, set, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,
+  return { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,
     outcomeUnknown: mutation.outcomeUnknown,
     error, fieldErrors: { ...mutation.error?.fieldErrors, ...fieldErrors }, save, retry };
 }
