@@ -146,7 +146,7 @@ deliverable có thể chỉ là tests/evidence; chỉ sửa production khi đã 
 
 Được sửa `backend/billing-service/**` và evidence trong handoff này. Service khác, root POM,
 common, Compose, scripts/CI và frontend chỉ đọc. Không sửa producer/consumer để test Billing đạt.
-Trước code: chạy changelog; đọc root/module AGENTS, `docs/ai/README.md`, canonical plans 03/04/06
+Trước code: xem working tree và lịch sử Git; đọc root/module AGENTS, `docs/ai/README.md`, canonical plans 03/04/06
 và các care-finance contracts được module AGENTS chỉ định. Đối chiếu live DTO/serializer/fixtures.
 Không thêm migration nếu chỉ cần bổ sung test; không sửa checksum migration đã giao.
 
@@ -642,7 +642,7 @@ vẫn `false` — hành vi hiện tại không đổi khi chưa bật.
 ### Review/rerun PR #401 — 2026-10-16
 
 Reviewed Billing code `bea617db` integrated with master `07cc2ad0`; integration edits only
-resolve changelog and refresh handoff/plan claims. Java 21.0.11, Docker Desktop 29.8.0,
+resolve generated Git activity metadata and refresh handoff/plan claims. Java 21.0.11, Docker Desktop 29.8.0,
 PostgreSQL `postgres:16-alpine`, RabbitMQ `rabbitmq:3.13-alpine`.
 
 Command from repository root: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`,
@@ -701,7 +701,7 @@ Không cần PG/Rabbit/Docker cho suite Gateway; không bật Billing/deployment
 
 | Command | Fresh result |
 |---|---|
-| `node scripts/changelog.js --summary` | Sandbox EPERM khi spawn cmd; chạy lại ngoài sandbox: thiếu sqlite3. `node scripts/changelog.js --limit 5` chạy thành công; đối chiếu thêm `git log -5 --oneline`. |
+| Tiện ích thống kê Git cũ (đã gỡ ngày 26/10/2026) | Bằng chứng lịch sử: lần đầu bị EPERM khi spawn cmd; lần chạy lại thiếu sqlite3. Đã dùng bảng lịch sử và đối chiếu thêm `git log -5 --oneline`. |
 | `mvn -q -pl backend/gateway -am '-Dtest=BillingDiscoveryGatewayWebTest' '-Dsurefire.failIfNoSpecifiedTests=false' test` trước production rule | RED: 22 tests, 10 failures, 0 errors/skips. 8 cases thiếu rule GET, 2 cases test helper đọc body HEAD; đã sửa helper theo HTTP HEAD semantics. Lần gọi đầu thiếu quote Maven property trong PowerShell bị CLI parse error, không phải test run. |
 | `mvn -q -pl backend/gateway -am test` | Exit 0; Gateway **256 tests, 0 failures, 0 errors, 0 skips**, gồm discovery **22/22**. Parent/common reactor không có test reports; không cộng test lịch sử/Billing vào số này. |
 | Targeted command ở trên sau khi chỉnh payment test body mirror live DTO | Exit 0; **22 tests, 0 failures/errors/skips**. |

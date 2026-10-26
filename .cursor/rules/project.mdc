@@ -12,10 +12,10 @@ rules of its own**, so there is nothing here to drift out of sync.
 
 ## ⚡ First thing every session
 
-Before writing ANY code, read the changelog:
+Before writing code, inspect the working tree and recent Git history:
 ```bash
-node scripts/changelog.js --summary
-node scripts/changelog.js --limit 5
+git status --short
+git log -5 --oneline
 ```
 
 ## Where the instructions are

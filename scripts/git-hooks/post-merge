@@ -1,6 +1,0 @@
-#!/bin/sh
-# post-merge — Rebuild changelog cache after pull/merge.
-# Non-blocking: always exits 0.
-
-node "$(git rev-parse --show-toplevel)/scripts/changelog.js" --rebuild 2>&1 | sed 's/^/[changelog] /'
-exit 0

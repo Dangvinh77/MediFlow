@@ -2,7 +2,7 @@
 
 Candidate: existing `Huy` checkout, base `d5373058`, plus feature-local Pharmacy/domain/data/
 presentation/test changes and the plan/manifest/README/single-handoff updates. No new branch,
-commit or push; pre-existing changelog modification preserved. No shared app/core, other feature,
+commit or push; pre-existing generated Git activity metadata modification preserved. No shared app/core, other feature,
 backend, gates, package or lockfile change.
 
 ## Implemented and tested

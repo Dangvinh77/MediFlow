@@ -45,7 +45,7 @@ appointment query filtering is per server page, explicitly explained by the resu
 ## PR preparation — 2026-10-22
 
 Candidate rebased by copying only scoped changes onto `origin/master` at `3100d7b5` in a
-managed worktree; unrelated changelog and Review3 working files were excluded. Existing Huy
+managed worktree; unrelated generated Git activity metadata and Review3 working files were excluded. Existing Huy
 identity implementations and handoff progress were preserved. Independent review found one
 transient name-read retry gap; fixed with a read-only retry and regression observed red then
 green (8/8 shared-control tests). Follow-up review: GO subject to PR checks. Next.js production
