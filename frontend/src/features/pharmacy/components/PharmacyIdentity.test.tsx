@@ -8,7 +8,7 @@ import { CreatePrescriptionForm } from "./prescription/CreatePrescriptionForm";
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("../api", () => ({ pharmacyApi: { searchDrugs: () => Promise.resolve({ content: [] }) } }));
+vi.mock("../api", () => ({ pharmacyApi: { getPrescribingDoctor: (id: string) => mocks.get(`/v1/org/staff/${id}`), searchDrugs: () => Promise.resolve({ content: [] }) } }));
 vi.mock("@/lib/api", async original => ({ ...await original<typeof import("@/lib/api")>(), api: { get: mocks.get } }));
 const first = "00000000-0000-4000-8000-000000000001";
 const second = "00000000-0000-4000-8000-000000000002";
@@ -34,19 +34,19 @@ describe("Pharmacy public identity display", () => {
   it("connects the actual creation form to the display resolver while preserving its UUID inputs", async () => {
     mocks.get.mockImplementation((path: string) => Promise.resolve(path.includes("patients")
       ? { maBenhNhan: first, hoTen: "Nguyễn An" }
-      : path.includes("staff") ? { staffId: second, fullName: "Bác sĩ Bình" }
+      : path.includes("staff") ? { staffId: second, fullName: "Bác sĩ Bình", departmentId: first, jobTitle: "DOCTOR", active: true }
         : { departmentId: first, departmentName: "Khoa Nội" }));
     render(<CreatePrescriptionForm mode="legacy" />);
     fireEvent.change(screen.getByLabelText("Bệnh nhân", { exact: false }), { target: { value: first } });
-    fireEvent.change(screen.getByLabelText("Khoa khám", { exact: false }), { target: { value: first } });
     fireEvent.change(screen.getByLabelText("Bác sĩ kê đơn", { exact: false }), { target: { value: second } });
     expect(await screen.findByText("Nguyễn An")).toBeVisible();
     expect(await screen.findByText("Bác sĩ Bình")).toBeVisible();
     expect(await screen.findByText("Khoa Nội")).toBeVisible();
     expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveValue(first);
     expect(screen.getByLabelText("Bác sĩ kê đơn", { exact: false })).toHaveValue(second);
-    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue(first);
-    expect(mocks.get).toHaveBeenCalledTimes(3);
+    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("Khoa của bác sĩ đã chọn");
+    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveAttribute("readonly");
+    expect(mocks.get).toHaveBeenCalledTimes(4);
   });
   it("uses only the minimal patient directory for PHARMACIST", async () => {
     storeSession({ accessToken: "pharmacist", refreshToken: "refresh", role: "PHARMACIST" });

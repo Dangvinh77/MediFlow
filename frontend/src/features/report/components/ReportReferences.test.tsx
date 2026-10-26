@@ -28,6 +28,18 @@ describe("Report shared department selection", () => {
     vi.clearAllMocks(); localStorage.clear(); storeSession({ accessToken: "manager", refreshToken: "refresh", role: "MANAGER" });
     mocks.daily.mockResolvedValue({ reportDate: "2024-02-29", departmentId: department, visitCount: 1, labCount: 0, prescriptionCount: 0, revenue: 0 });
   });
+  it("clears outpatient department selection and its visible label before submitting whole-hospital scope", async () => {
+    const onQuerySubmit = vi.fn(() => true);
+    render(<ReferenceProvider directory={directory()}><OutpatientReportView
+      initialQuery={{ mode: "daily", fromDate: "2024-02-29", toDate: "2024-02-29", year: 2024 }}
+      autoLoad={false} onQuerySubmit={onQuerySubmit} /></ReferenceProvider>);
+    await select();
+    expect(screen.getByLabelText("Khoa (tùy chọn)")).toHaveValue("Khoa Nội");
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ chọn khoa" }));
+    expect(screen.getByLabelText("Khoa (tùy chọn)")).toHaveValue("");
+    fireEvent.submit(screen.getByLabelText("Khoa (tùy chọn)").closest("form")!);
+    expect(onQuerySubmit).toHaveBeenCalledWith(expect.objectContaining({ departmentId: undefined }));
+  });
   it("sends the selected UUID and uses the dashboard directory for result scope", async () => {
     const source = directory();
     render(<ReferenceProvider directory={source}><DailyReportView initialQuery={{ date: "2024-02-29" }} /></ReferenceProvider>);

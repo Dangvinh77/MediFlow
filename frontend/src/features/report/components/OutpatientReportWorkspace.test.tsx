@@ -55,8 +55,33 @@ describe("Outpatient report workspace", () => {
     expect(within(periods).getAllByRole("definition")).toHaveLength(7);
     for (const value of within(periods).getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "2024-03-01" } });
+    expect(screen.getByText(/Bạn đã đổi bộ lọc/)).toBeVisible();
     expect(within(result).getByRole("heading", { level: 2 })).toHaveTextContent("29/02/2024 đến 29/02/2024");
     expect(mocks.daily).toHaveBeenCalledTimes(1);
+  });
+  it("warns about an edited year while retaining the loaded monthly result", async () => {
+    mocks.query = "view=monthly&year=2024";
+    mocks.monthly.mockResolvedValue({ ...zero, fromDate: "2024-01-01", toDate: "2024-12-31" });
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
+    fireEvent.change(screen.getByLabelText("Năm báo cáo"), { target: { value: "2025" } });
+    expect(screen.getByText(/Bạn đã đổi bộ lọc/)).toBeVisible();
+    expect(mocks.monthly).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByLabelText("Năm báo cáo"), { target: { value: "2024" } });
+    expect(screen.queryByText(/Bạn đã đổi bộ lọc/)).not.toBeInTheDocument();
+  });
+  it("quick date choices update the draft without fetching a different report automatically", async () => {
+    mocks.daily.mockResolvedValue(zero);
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
+    fireEvent.click(screen.getByRole("button", { name: "7 ngày gần nhất" }));
+    const start = (screen.getByLabelText("Từ ngày") as HTMLInputElement).value;
+    const end = (screen.getByLabelText("Đến ngày") as HTMLInputElement).value;
+    expect((Date.parse(end) - Date.parse(start)) / 86400000).toBe(6);
+    expect(mocks.daily).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/Bạn đã đổi bộ lọc/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Tháng này" }));
+    expect((screen.getByLabelText("Từ ngày") as HTMLInputElement).value).toBe(`${end.slice(0, 7)}-01`);
   });
   it("displays server net cash including a negative value without recomputing totals", async () => {
     mocks.daily.mockResolvedValue({ ...zero, periods: [{ ...zero.periods[0], cashReceived: 100, refunds: 200, netCash: -125.5 }] });

@@ -130,7 +130,7 @@ describe("outpatient prescription form", () => {
     mocks.create.mockRejectedValue(new TypeError("Unknown outcome"));
     render(<CreatePrescriptionForm />); await validForm(); submit(); await screen.findByRole("alert");
     await user.click(screen.getByRole("button", { name: "Đã kiểm tra đơn cũ, bắt đầu đơn mới" }));
-    expect(screen.getByLabelText("Hồ sơ khám", { exact: false })).toHaveFocus();
+    expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveFocus();
     expect(mocks.create).toHaveBeenCalledTimes(1);
   });
   it("focuses unknown-outcome feedback when draft controls become locked", async () => {
