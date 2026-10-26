@@ -69,6 +69,11 @@ public class JwtTokenService {
 
     public String issueAccessToken(UUID accountId, String role, UUID staffId, UUID departmentId,
             UUID patientId, long credentialVersion) {
+        return issueAccessToken(accountId, role, staffId, departmentId, patientId, credentialVersion, false);
+    }
+
+    public String issueAccessToken(UUID accountId, String role, UUID staffId, UUID departmentId,
+            UUID patientId, long credentialVersion, boolean mustChangePassword) {
         return build(
                 accountId.toString(),
                 role,
@@ -77,7 +82,7 @@ public class JwtTokenService {
                 staffId,
                 departmentId,
                 patientId,
-                UUID.randomUUID().toString(), credentialVersion);
+                UUID.randomUUID().toString(), credentialVersion, mustChangePassword);
     }
 
     public String issueRefreshToken(UUID userId, String role) {
@@ -152,7 +157,13 @@ public class JwtTokenService {
             UUID departmentId,
             UUID patientId,
             String correlationId, Long credentialVersion) {
+        return build(subject, role, tokenType, ttlSeconds, staffId, departmentId, patientId,
+                correlationId, credentialVersion, false);
+    }
 
+    private String build(String subject, String role, String tokenType, long ttlSeconds,
+            UUID staffId, UUID departmentId, UUID patientId, String correlationId,
+            Long credentialVersion, boolean mustChangePassword) {
         Objects.requireNonNull(subject, "subject is required");
         Objects.requireNonNull(role, "role is required");
 
@@ -180,6 +191,7 @@ public class JwtTokenService {
             builder.claim(JwtClaims.PATIENT_ID, patientId.toString());
         }
         if (credentialVersion != null) builder.claim(CREDENTIAL_VERSION_CLAIM, credentialVersion);
+        if (JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)) builder.claim("mustChangePassword", mustChangePassword);
         return builder.signWith(key).compact();
     }
 

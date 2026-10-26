@@ -277,3 +277,33 @@ Content-Type: application/json
   "email": "staff@example.com",
   "address": "Hà Nội"
 }
+
+
+### ADMIN: create a patient account with CCCD username and initial password.
+### Use an existing patient UUID. Existing active-owner replacement still requires explicit confirmation.
+POST {{host}}/api/v1/org/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{initialAccountCommandKey}}
+
+{
+  "username": "012345678901",
+  "password": "1",
+  "staffId": null,
+  "patientId": "{{patientId}}",
+  "role": "PATIENT"
+}
+
+### Login with password 1: access JWT mustChangePassword=true. Repeat login/refresh keeps the flag.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{"username":"012345678901","password":"1"}
+
+### Restricted human bearer: this is the only permitted business command until changed.
+### After 200, old access/refresh credentials are revoked. Login with the new password.
+PUT {{host}}/api/v1/org/accounts/me/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"currentPassword":"1","newPassword":"replace-with-private-password"}

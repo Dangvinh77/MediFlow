@@ -135,11 +135,13 @@ public class CreateAccountService implements CreateAccountUseCase {
                 patientId,
                 role);
 
+        if ("1".equals(rawPassword)) account.requirePasswordChange();
         AccountOwnerPolicy.check(accountRepository, account, replaceActiveAccount);
         return accountRepository.save(account);
     }
 
     private void validateRawPassword(String rawPassword) {
+        if ("1".equals(rawPassword)) return;
         if (rawPassword == null
                 || rawPassword.length() < MIN_PASSWORD_LENGTH
                 || rawPassword.length() > MAX_PASSWORD_LENGTH) {

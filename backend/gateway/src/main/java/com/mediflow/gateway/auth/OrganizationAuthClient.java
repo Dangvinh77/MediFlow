@@ -242,9 +242,13 @@ public class OrganizationAuthClient {
             UUID departmentId,
             UUID patientId,
             String role,
-            long credentialVersion) {
+            long credentialVersion,
+            boolean mustChangePassword) {
+        public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, String role, long credentialVersion) {
+            this(accountId, staffId, departmentId, patientId, role, credentialVersion, false);
+        }
         public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, String role) {
-            this(accountId, staffId, departmentId, patientId, role, 0);
+            this(accountId, staffId, departmentId, patientId, role, 0, false);
         }
     }
 
@@ -256,10 +260,14 @@ public class OrganizationAuthClient {
             UUID staffId,
             UUID departmentId,
             UUID patientId,
-            long credentialVersion) {
+            long credentialVersion,
+            boolean mustChangePassword) {
+        public CurrentIdentity(boolean exists, boolean active, UUID accountId, String role, UUID staffId, UUID departmentId, UUID patientId, long credentialVersion) {
+            this(exists, active, accountId, role, staffId, departmentId, patientId, credentialVersion, false);
+        }
         public CurrentIdentity(boolean exists, boolean active, UUID accountId, String role,
                 UUID staffId, UUID departmentId, UUID patientId) {
-            this(exists, active, accountId, role, staffId, departmentId, patientId, 0);
+            this(exists, active, accountId, role, staffId, departmentId, patientId, 0, false);
         }
     }
 

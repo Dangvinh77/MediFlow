@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { mustChangePassword } from "@/lib/session";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   getRole,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/auth";
 
 function landingPage() {
+  if (mustChangePassword()) return "/organization/security";
   switch (getRole()) {
     case "PATIENT": return "/notifications";
     case "CASHIER": return "/billing";

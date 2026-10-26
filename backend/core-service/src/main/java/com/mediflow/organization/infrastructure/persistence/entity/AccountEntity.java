@@ -33,6 +33,9 @@ public class AccountEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
     @Column(name = "staff_id")
     private UUID staffId;
 
@@ -102,6 +105,10 @@ public class AccountEntity {
     public String getUsername() {
         return username;
     }
+
+    public boolean isMustChangePassword() { return mustChangePassword; }
+
+    public void requirePasswordChange() { this.mustChangePassword = true; }
 
     public String getPasswordHash() {
         return passwordHash;

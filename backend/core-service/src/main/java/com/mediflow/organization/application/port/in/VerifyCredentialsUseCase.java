@@ -14,9 +14,12 @@ public interface VerifyCredentialsUseCase {
             UUID departmentId,
             UUID patientId,
             Role role,
-            long credentialVersion) {
+            long credentialVersion, boolean mustChangePassword) {
+        public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, Role role, long credentialVersion) {
+            this(accountId, staffId, departmentId, patientId, role, credentialVersion, false);
+        }
         public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, Role role) {
-            this(accountId, staffId, departmentId, patientId, role, 0);
+            this(accountId, staffId, departmentId, patientId, role, 0, false);
         }
     }
 }

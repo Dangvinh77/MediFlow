@@ -29,6 +29,7 @@ function StaffFormWorkspace({ staffId }: Props) {
   const [profile, setProfile] = useState<StaffProfile>({ dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null });
   const mounted = useRef(true);
   const submitting = useRef(false);
+  const createAccountAfterSave = useRef(false);
   const savedProfile = useRef<{ fingerprint: string; session: string | null } | null>(null);
   const originalDepartment = useRef<string | null>(null);
 
@@ -79,6 +80,7 @@ function StaffFormWorkspace({ staffId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+    createAccountAfterSave.current = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-create-account") === "true";
     if (jobTitle === "DOCTOR" && !licenseNumber.trim()) {
       setError("Bác sĩ phải có số giấy phép hành nghề.");
       return;
@@ -161,7 +163,9 @@ function StaffFormWorkspace({ staffId }: Props) {
         const staff = await organizationApi.createStaff(body, creationIntent.key);
         creationIntent.settle();
         if (!mounted.current || getSessionKey() !== sessionToken) return;
-        markSaved(); router.push(`/organization/staff/${staff.staffId}?notice=created`);
+        markSaved(); router.push(createAccountAfterSave.current
+          ? `/organization/accounts/new?ownerType=staff&ownerId=${encodeURIComponent(staff.staffId)}`
+          : `/organization/staff/${staff.staffId}?notice=created`);
         completed = true;
       }
     } catch (cause: unknown) {
@@ -220,6 +224,6 @@ function StaffFormWorkspace({ staffId }: Props) {
         <Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" autoComplete="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing ? <Button type="submit" data-create-account="true" disabled={saving}>Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
   </form>;
 }

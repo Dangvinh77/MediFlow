@@ -90,6 +90,24 @@ class OrganizationServiceIntegrationTest {
         assertThat(staffStore.searchDirectory(unit.getDepartmentId(), JobTitle.NURSE, "dang anh", true, false, paging).content()).isEmpty();
     }
     @Test
+    void initialPasswordRestrictionSurvivesReloadAndClearsWithCredentialRevocation() {
+        String username = "initial." + UUID.randomUUID();
+        var created = createAccountUseCase.execute(username, "1", null, UUID.randomUUID(), Role.PATIENT);
+        assertThat(manageAccounts.getById(created.getAccountId()).isMustChangePassword()).isTrue();
+        assertThat(lookupAccountIdentityUseCase.lookup(created.getAccountId()).mustChangePassword()).isTrue();
+        assertThat(verifyCredentialsUseCase.execute(username, "1").mustChangePassword()).isTrue();
+        assertThat(verifyCredentialsUseCase.execute(username, "1").mustChangePassword()).isTrue();
+        assertThrows(RuntimeException.class, () -> manageAccounts.changePassword(created.getAccountId(), "wrong", "private-password"));
+        assertThat(lookupAccountIdentityUseCase.lookup(created.getAccountId()).mustChangePassword()).isTrue();
+        manageAccounts.changePassword(created.getAccountId(), "1", "private-password");
+        var current = lookupAccountIdentityUseCase.lookup(created.getAccountId());
+        assertThat(current.mustChangePassword()).isFalse();
+        assertThat(current.credentialVersion()).isEqualTo(1);
+        assertThat(verifyCredentialsUseCase.execute(username, "private-password").mustChangePassword()).isFalse();
+        assertThrows(RuntimeException.class, () -> verifyCredentialsUseCase.execute(username, "1"));
+    }
+
+    @Test
     void differentConcurrentCreatesForOneOwnerLeaveExactlyOneActiveAccount() throws Exception {
         UUID patient = UUID.randomUUID();
         try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {

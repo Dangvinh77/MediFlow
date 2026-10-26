@@ -7,6 +7,15 @@ vi.mock("@/components/theme/ThemeToggle", () => ({ ThemeToggle: () => null }));
 import LoginPage from "./page";
 afterEach(() => { act(() => clearSession()); vi.clearAllMocks(); });
 describe("role-aware login landing", () => {
+  it.each(["PATIENT", "ADMIN", "MANAGER", "NURSE", "DOCTOR", "CASHIER", "LAB_TECH", "PHARMACIST"] as const)("forces %s with the initial password to change it after reopening login", async role => {
+    const accessToken = `header.${btoa(JSON.stringify({ mustChangePassword: true }))}.signature`;
+    act(() => storeSession({ accessToken, refreshToken: "r", role }));
+    const view = render(<LoginPage />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/organization/security"));
+    view.unmount(); router.replace.mockClear();
+    render(<LoginPage />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/organization/security"));
+  });
   it("starts without demo credentials", () => {
     localStorage.clear();
     render(<LoginPage />);

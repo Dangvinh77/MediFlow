@@ -1,0 +1,27 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import { clearSession, storeSession } from "@/lib/session";
+const mocks = vi.hoisted(() => ({ pathname: "/patients", router: { replace: vi.fn() }, references: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => mocks.pathname }));
+vi.mock("@/components/layout/DashboardSidebar", () => ({ DashboardSidebar: () => <nav>Business navigation</nav> }));
+vi.mock("@/components/layout/DashboardHeader", () => ({ DashboardHeader: () => <header>Business header</header> }));
+vi.mock("./_components/DashboardReferences", () => ({ DashboardReferences: ({ children }: { children: React.ReactNode }) => { mocks.references(); return children; } }));
+import DashboardShell from "./DashboardShell";
+afterEach(() => { act(() => clearSession()); vi.clearAllMocks(); mocks.pathname = "/patients"; });
+it("blocks child screens and reference calls, including after reopening, until the password is changed", async () => {
+  const accessToken = `header.${btoa(JSON.stringify({ mustChangePassword: true }))}.signature`;
+  act(() => storeSession({ accessToken, refreshToken: "refresh", role: "PATIENT" }));
+  const view = render(<DashboardShell schedulingEnabled={false}><div>Patient data</div></DashboardShell>);
+  await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/organization/security"));
+  expect(screen.queryByText("Patient data")).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  expect(mocks.references).not.toHaveBeenCalled();
+  view.unmount();
+  mocks.pathname = "/organization/security";
+  render(<DashboardShell schedulingEnabled={false}><div>Password form</div></DashboardShell>);
+  expect(screen.getByText("Password form")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Đổi mật khẩu để tiếp tục" })).toBeInTheDocument();
+  expect(mocks.references).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+  expect(mocks.router.replace).toHaveBeenCalledWith("/login");
+});

@@ -49,6 +49,7 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
                     .orElse(null);
         }
 
+        if ("1".equals(rawPassword)) account.requirePasswordChange();
         account.recordLogin();
         accountRepository.save(account);
 
@@ -58,7 +59,7 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
                 departmentId,
                 account.getPatientId(),
                 account.getRole(),
-                accountRepository.credentialVersion(account.getAccountId()));
+                accountRepository.credentialVersion(account.getAccountId()), account.isMustChangePassword());
     }
 
     private InvalidCredentialsException invalidCredentials() {

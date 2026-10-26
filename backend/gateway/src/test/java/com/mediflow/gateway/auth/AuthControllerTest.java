@@ -35,6 +35,25 @@ class AuthControllerTest {
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
 
     @Test
+    void repeatedLoginAndRefreshPreserveRequiredPasswordChange() {
+        JwtTokenService jwt = new JwtTokenService(new JwtProperties(SECRET, 30, 1440, 1));
+        OrganizationAuthClient organization = mock(OrganizationAuthClient.class);
+        UUID account = UUID.randomUUID(), patient = UUID.randomUUID();
+        String correlation = UUID.randomUUID().toString();
+        when(organization.verify("012345678901", "1", correlation)).thenReturn(Mono.just(
+                new OrganizationAuthClient.VerifiedAccount(account, null, null, patient, "PATIENT", 0, true)));
+        when(organization.lookupCurrentIdentity(account, correlation)).thenReturn(Mono.just(
+                new OrganizationAuthClient.CurrentIdentity(true, true, account, "PATIENT", null, null, patient, 0, true)));
+        var controller = new AuthController(jwt, organization);
+        for (int attempt = 0; attempt < 2; attempt++) {
+            var login = (LoginResponse) controller.login(new LoginRequest("012345678901", "1"), correlation).block().getBody();
+            assertThat(jwt.parse(login.accessToken()).get("mustChangePassword", Boolean.class)).isTrue();
+            var refresh = (AuthDtos.RefreshResponse) controller.refresh(new RefreshRequest(login.refreshToken()), correlation).block().getBody();
+            assertThat(jwt.parse(refresh.accessToken()).get("mustChangePassword", Boolean.class)).isTrue();
+        }
+    }
+
+    @Test
     void refreshBeforePasswordChangeIsRejectedButNewLoginVersionWorks() {
         JwtTokenService jwt = new JwtTokenService(new JwtProperties(SECRET, 30, 1440, 1));
         OrganizationAuthClient organization = mock(OrganizationAuthClient.class);

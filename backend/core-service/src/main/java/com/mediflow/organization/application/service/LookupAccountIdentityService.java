@@ -38,6 +38,6 @@ public class LookupAccountIdentityService implements LookupAccountIdentityUseCas
                 account.getStaffId(),
                 departmentId,
                 account.getPatientId(),
-                accounts.credentialVersion(account.getAccountId()));
+                accounts.credentialVersion(account.getAccountId()), account.isMustChangePassword());
     }
 }

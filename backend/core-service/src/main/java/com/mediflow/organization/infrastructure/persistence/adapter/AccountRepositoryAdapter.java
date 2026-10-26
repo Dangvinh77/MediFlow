@@ -105,7 +105,7 @@ public class AccountRepositoryAdapter implements AccountRepository {
     }
 
     private Account toDomain(AccountEntity entity) {
-        return new Account(
+        Account account = new Account(
                 entity.getAccountId(),
                 entity.getUsername(),
                 entity.getPasswordHash(),
@@ -116,10 +116,12 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 entity.getLastLoginAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
+        if (entity.isMustChangePassword()) account.requirePasswordChange();
+        return account;
     }
 
     private AccountEntity toEntity(Account account) {
-        return new AccountEntity(
+        AccountEntity entity = new AccountEntity(
                 account.getAccountId(),
                 account.getUsername(),
                 account.getPasswordHash(),
@@ -130,5 +132,7 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 account.getLastLoginAt(),
                 account.getCreatedAt(),
                 account.getUpdatedAt());
+        if (account.isMustChangePassword()) entity.requirePasswordChange();
+        return entity;
     }
 }

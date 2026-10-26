@@ -8,6 +8,27 @@ Các mục theo ngày bên dưới là checkpoint của baseline tương ứng; 
 lịch khám, đặt chỗ, tái khám hoặc chính sách BHYT mới. Chưa cập nhật trạng thái hoàn thành của
 các tính năng này chỉ bằng đợt chuẩn hóa tài liệu.
 
+## Patient / Staff account onboarding — 2026-10-26
+
+Hoàng Anh / IMPLEMENT, user-assigned: patient/staff creation → account form with authoritative
+CCCD username and initial password `1`; persisted mandatory password change before business use.
+Context scope: Core Organization, Gateway, Patient/Organization features and Organization routes.
+Required shared login integration is limited to `src/lib/session.ts`, `src/app/login/page.tsx`,
+`src/app/(dashboard)/DashboardShell.tsx` and matching tests. No mobile source changes.
+Canonical behavior and deployment are in [contracts](../../docs/plans/03-contracts.md#initial-account-password--26102026);
+web details are in [Organization](services/organization.md) and [Patient](services/patient.md).
+
+Verification on the working tree based on `4851b196`: 204 web regression tests / 26 files,
+full frontend lint, production build and TypeScript pass. Full Maven Core/Gateway test command
+exits 0: 375 Core and 1,605 Gateway tests, zero failures/errors/skips. The extra 19-case
+Gateway session slice verifies the password-change error on normally allowed endpoints for all
+eight human roles. PostgreSQL/RabbitMQ integration verifies V14 and persisted flag/credential
+revocation. Surefire logged a 30-second fork cleanup timeout after `System.exit(0)` while an
+outbox scheduler waited on a stopped test database; all test assertions completed successfully.
+Edge browser QA uses intercepted fixture APIs: both save→account flows, derived credentials,
+restricted login, reopened storage, no business requests before change, password change→new
+login→normal landing, desktop and 390px layouts; zero page errors and horizontal overflow.
+
 ## Patient / Organization access control — 2026-10-25
 
 Patient archival replaces hard deletion; historical identity is retained. Identity corrections

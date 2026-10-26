@@ -876,6 +876,34 @@ Clinical inbox tiếp nhận cả PATIENT_PAYMENT và ZERO_LIABILITY và đối 
 ACK HTTP và event có thể đến khác thứ tự; cả hai phải cho cùng kết quả idempotent.
 
 
+## Initial account password — 26/10/2026
+
+User-assigned Core Organization/Gateway rule: the web account form selects an existing
+staff/patient UUID, derives username from `StaffDTO.identityNumber` / Patient `soCmnd`,
+and submits initial password `1`. Existing create request names, idempotency, owner replacement,
+and ADMIN permission stay unchanged. `CreateAccountService` accepts `1` as the only
+exception to the existing 8–72 character creation policy; self-change still requires at least
+8 characters, at most 72 UTF-8 bytes, and a password different from the old one.
+
+M6-02 source lock: `CreateAccountRequest`, `VerifiedAccountResponse`, `VerifyCredentialsUseCase`,
+`AccountIdentityLookupDTO`, `OrganizationAuthClient`, `AuthController`, `JwtTokenService`,
+and `AccountSessionValidationWebTest` are the producer/consumer authority for this change.
+The signed access JWT and both internal verify/identity projections add boolean
+`mustChangePassword`. Public login/refresh response shapes remain unchanged. Refresh re-reads
+the current Organization projection before issuing an access token.
+
+Organization migration V14 stores `account.must_change_password`, default false for existing
+accounts. Creating password `1` sets it in the same transaction as the salted password hash.
+A successful legacy login with password `1` also persists the flag before tokens are issued.
+Changing the password clears it and increments `credentialVersion` atomically; wrong-current,
+weak or unchanged passwords do not clear it. No plaintext password is persisted.
+
+Gateway checks the live flag on every authorized human request, independently of the JWT hint.
+While true, only exact `PUT /api/v1/org/accounts/me/password` is forwarded; other business
+requests fail 403 `AUTH_PASSWORD_CHANGE_REQUIRED` (or existing route denial). Public login,
+refresh and health keep existing semantics; service-token scope is unchanged. Closing the
+browser, deleting browser state or refreshing credentials cannot clear the Organization flag.
+Ship Core with V14, Gateway and the web client together; old binaries do not enforce this rule.
 ### A.13. Nhãn hiển thị và danh sách chờ thu — 26/10/2026
 
 `GET /api/v1/org/care-labels/{kind}/{id}` nhận `kind=doctor|department|room`, trả

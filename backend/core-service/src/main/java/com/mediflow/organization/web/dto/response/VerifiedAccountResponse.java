@@ -11,7 +11,7 @@ public record VerifiedAccountResponse(
         UUID departmentId,
         UUID patientId,
         Role role,
-        long credentialVersion) {
+        long credentialVersion, boolean mustChangePassword) {
 
     public static VerifiedAccountResponse from(VerifiedAccount account) {
         return new VerifiedAccountResponse(
@@ -20,6 +20,6 @@ public record VerifiedAccountResponse(
                 account.departmentId(),
                 account.patientId(),
                 account.role(),
-                account.credentialVersion());
+                account.credentialVersion(), account.mustChangePassword());
     }
 }
