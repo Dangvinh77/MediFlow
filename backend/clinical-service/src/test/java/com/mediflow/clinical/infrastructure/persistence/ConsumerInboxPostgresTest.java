@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.clinical.application.dto.authority.PaymentRecoveryOperation;
 import com.mediflow.clinical.application.dto.command.ConsumerInboxClaim;
 import com.mediflow.clinical.application.exception.ConsumerInboxConflictException;
 import com.mediflow.clinical.application.port.out.ConsumerInboxPort.InboxOutcome;
+import com.mediflow.clinical.application.port.out.OutpatientPaymentRecoveryPort;
 import com.mediflow.clinical.application.service.ConsumerInboxBoundary;
 import com.mediflow.clinical.infrastructure.persistence.adapter.ConsumerInboxPersistenceAdapter;
+import com.mediflow.clinical.infrastructure.persistence.adapter.OutpatientPaymentRecoveryPersistenceAdapter;
 import com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactory;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -24,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -47,7 +51,7 @@ class ConsumerInboxPostgresTest {
     @org.junit.jupiter.api.Test
     void freshSchema_preservesExactDeliveryBytesAndDedupeSemantics() {
         TestDatabase db = migrateFresh();
-        assertThat(latestVersion(db)).isEqualTo("8");
+        assertThat(latestVersion(db)).isEqualTo("11");
         ConsumerInboxBoundary boundary = boundary(db);
         String operationKey = "clinical:lab-result:v0:" + LAB_ID;
         UUID firstEvent = UUID.fromString("00000000-0000-0000-0000-000000001101");
@@ -81,6 +85,67 @@ class ConsumerInboxPostgresTest {
         assertThat(count(db, "consumer_inbox_delivery")).isEqualTo(2);
         assertThat(count(db, "consumer_inbox_operation")).isEqualTo(1);
         assertThat(count(db, "consumer_inbox_test_effect")).isEqualTo(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void outpatientEligibility_contractAcceptsFenceScopedDedupeAndRejectsChangedBusinessBytes() {
+        TestDatabase db = migrateFresh();
+        ConsumerInboxBoundary boundary = boundary(db);
+        UUID eventOne = UUID.fromString("00000000-0000-0000-0000-000000001601");
+        UUID eventTwo = UUID.fromString("00000000-0000-0000-0000-000000001602");
+        UUID operationId = UUID.fromString("00000000-0000-0000-0000-000000001603");
+        String operationKey = "clinical:outpatient-eligibility:v1:" + operationId + ":19:COMPLETED";
+        ConsumerInboxClaim first = eligibilityClaim(eventOne, operationKey, "corr-eligibility-one", "120.00");
+
+        assertThat(deliver(db, boundary, first, () -> insertEffect(db, "eligibility", operationKey)))
+                .isEqualTo(InboxOutcome.APPLIED);
+        ConsumerInboxClaim sameOperation = eligibilityClaim(eventTwo, operationKey, "corr-eligibility-two", "120.00");
+        assertThat(deliver(db, boundary, sameOperation, () -> insertEffect(db, "eligibility", operationKey)))
+                .isEqualTo(InboxOutcome.DUPLICATE_OPERATION);
+        assertThat(canonicalFor(db, eventTwo)).containsExactly(canonicalFor(db, eventOne));
+
+        ConsumerInboxClaim changedBusiness = eligibilityClaim(UUID.randomUUID(), operationKey,
+                "corr-eligibility-changed", "121.00");
+        assertThatThrownBy(() -> deliver(db, boundary, changedBusiness,
+                () -> insertEffect(db, "eligibility", operationKey)))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        assertThat(count(db, "consumer_inbox_test_effect")).isEqualTo(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void recoveryClaims_areDurableExclusiveBackedOffAndAlertOnce() {
+        TestDatabase db = migrateFresh();
+        PaymentIds ids = seedLockedPayment(db);
+        OutpatientPaymentRecoveryPort recovery = new OutpatientPaymentRecoveryPersistenceAdapter(
+                new NamedParameterJdbcTemplate(db.dataSource));
+        Instant started = Instant.parse("2026-10-26T04:00:00Z");
+        UUID firstOwner = UUID.randomUUID();
+        UUID secondOwner = UUID.randomUUID();
+
+        PaymentRecoveryOperation firstClaim = transaction(db, () -> recovery.claimDue(firstOwner, started,
+                started.plusSeconds(45), 10).getFirst());
+        assertThat(firstClaim.paymentOperationId()).isEqualTo(ids.operationId());
+        assertThat(firstClaim.attemptCount()).isEqualTo(1);
+        assertThat(firstClaim.recoveryOwner()).isEqualTo(firstOwner);
+        assertThat(transaction(db, () -> recovery.claimDue(secondOwner, started.plusSeconds(1),
+                started.plusSeconds(46), 10))).isEmpty();
+
+        Instant alertAt = started.plusSeconds(300);
+        assertThat(transaction(db, () -> recovery.defer(firstClaim, alertAt,
+                alertAt.plusSeconds(30), "BILLING_HTTP_503"))).isTrue();
+        assertThat(transaction(db, () -> recovery.claimDue(secondOwner, alertAt.plusSeconds(10),
+                alertAt.plusSeconds(55), 10))).isEmpty();
+
+        PaymentRecoveryOperation retry = transaction(db, () -> recovery.claimDue(secondOwner,
+                alertAt.plusSeconds(30), alertAt.plusSeconds(75), 10).getFirst());
+        assertThat(retry.firstAttemptAt()).isEqualTo(started);
+        assertThat(retry.attemptCount()).isEqualTo(2);
+        assertThat(transaction(db, () -> recovery.defer(retry, alertAt.plusSeconds(31),
+                alertAt.plusSeconds(91), "BILLING_HTTP_503"))).isFalse();
+        assertThat(db.jdbc.queryForObject("SELECT recovery_attempt_count FROM outpatient_payment_operation_receipt "
+                + "WHERE payment_operation_id = ?", Integer.class, ids.operationId())).isEqualTo(2);
+        assertThat(db.jdbc.queryForObject("SELECT recovery_alerted_at IS NOT NULL FROM outpatient_payment_operation_receipt "
+                + "WHERE payment_operation_id = ?", Boolean.class, ids.operationId())).isTrue();
     }
 
     @org.junit.jupiter.api.Test
@@ -163,7 +228,7 @@ class ConsumerInboxPostgresTest {
 
         migrate(db, null);
 
-        assertThat(latestVersion(db)).isEqualTo("8");
+        assertThat(latestVersion(db)).isEqualTo("11");
         createEffectTable(db);
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "attached_result")).isEqualTo(2);
@@ -277,8 +342,80 @@ class ConsumerInboxPostgresTest {
                 operationKey, body);
     }
 
+    private static ConsumerInboxClaim eligibilityClaim(UUID eventId, String operationKey,
+            String correlationId, String amount) {
+        String payload = "{\"paymentOperationId\":\"00000000-0000-0000-0000-000000001603\","
+                + "\"paymentRequestId\":\"00000000-0000-0000-0000-000000001604\","
+                + "\"registrationId\":\"00000000-0000-0000-0000-000000001605\","
+                + "\"reservationId\":\"00000000-0000-0000-0000-000000001606\","
+                + "\"fenceToken\":19,\"patientId\":\"00000000-0000-0000-0000-000000001607\","
+                + "\"sourceType\":\"EXAM\",\"sourceId\":\"00000000-0000-0000-0000-000000001605\","
+                + "\"careEpisodeType\":\"OUTPATIENT_VISIT\","
+                + "\"careEpisodeId\":\"00000000-0000-0000-0000-000000001605\","
+                + "\"transactionId\":\"00000000-0000-0000-0000-000000001608\","
+                + "\"clearanceId\":\"00000000-0000-0000-0000-000000001609\","
+                + "\"amount\":\"" + amount + "\",\"currency\":\"VND\","
+                + "\"completedAt\":\"2026-10-26T04:00:00Z\",\"basis\":\"PATIENT_PAYMENT\",\"quoteId\":null}";
+        String json = "{\"eventId\":\"" + eventId + "\","
+                + "\"eventType\":\"outpatient.financial.eligibility.granted\",\"version\":1,"
+                + "\"occurredAt\":\"2026-10-26T04:00:00Z\",\"correlationId\":\"" + correlationId + "\","
+                + "\"producer\":\"billing-service\",\"payload\":" + payload + "}";
+        byte[] body = json.getBytes(StandardCharsets.UTF_8);
+        return evidence().create("clinical-outpatient-eligibility", "outpatient.financial.eligibility.granted",
+                eventId, operationKey, body);
+    }
+
     private static InboxEvidenceFactory evidence() {
         return new InboxEvidenceFactory(new ObjectMapper());
+    }
+
+    private static PaymentIds seedLockedPayment(TestDatabase db) {
+        UUID registrationId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        UUID roomId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UUID reservationId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
+        UUID operationId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-10-26T04:00:00Z");
+        db.jdbc.update("""
+                INSERT INTO appointment (appointment_id, patient_id, doctor_id, department_id, appointment_date,
+                    appointment_time, status, reason, created_at, care_contract_version, exam_price_code)
+                VALUES (?, ?, ?, ?, DATE '2026-10-27', TIME '09:00', 'AWAITING_PAYMENT', 'Visit', ?, 2, 'OUTPATIENT_EXAM')
+                """, registrationId, patientId, doctorId, departmentId, Timestamp.from(now));
+        db.jdbc.update("""
+                INSERT INTO consultation_session (session_id, revision, doctor_id, department_id, room_id,
+                    session_date, start_time, end_time, breaks, capacity, status, held_count,
+                    payment_locked_count, confirmed_count, consumed_count, available_count, created_at, updated_at)
+                VALUES (?, 1, ?, ?, ?, DATE '2026-10-27', TIME '09:00', TIME '10:00', '[]'::jsonb,
+                    1, 'OPEN', 0, 1, 0, 0, 0, ?, ?)
+                """, sessionId, doctorId, departmentId, roomId, Timestamp.from(now), Timestamp.from(now));
+        db.jdbc.update("""
+                INSERT INTO outpatient_registration (registration_id, session_id, patient_id, revision,
+                    reception_mode, visit_type, status, reservation_id, reservation_revision,
+                    reservation_status, reservation_expires_at, active_payment_operation_id, active_fence_token,
+                    locked_at, reconcile_after, created_at, updated_at)
+                VALUES (?, ?, ?, 1, 'PREBOOKED', 'NEW_VISIT', 'AWAITING_PAYMENT', ?, 2,
+                    'PAYMENT_LOCKED', ?, ?, 19, ?, ?, ?, ?)
+                """, registrationId, sessionId, patientId, reservationId,
+                Timestamp.from(now.plusSeconds(3600)), operationId, Timestamp.from(now), Timestamp.from(now.minusSeconds(120)),
+                Timestamp.from(now), Timestamp.from(now));
+        db.jdbc.update("""
+                INSERT INTO outpatient_payment_operation_receipt (payment_operation_id, payment_request_id,
+                    registration_id, reservation_id, patient_id, source_type, source_id, care_episode_id,
+                    expected_reservation_revision, lease_reservation_revision, fence_token, state,
+                    locked_at, reconcile_after, basis, quote_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 'EXAM', ?, ?, 2, 2, 19, 'PAYMENT_LOCKED', ?, ?, 'PATIENT_PAYMENT', NULL, ?, ?)
+                """, operationId, requestId, registrationId, reservationId, patientId, registrationId,
+                registrationId, Timestamp.from(now), Timestamp.from(now.minusSeconds(120)),
+                Timestamp.from(now), Timestamp.from(now));
+        return new PaymentIds(operationId);
+    }
+
+    private static <T> T transaction(TestDatabase db, java.util.function.Supplier<T> action) {
+        return new TransactionTemplate(db.transactionManager).execute(status -> action.get());
     }
 
     private static byte[] labResultBody(UUID eventId, String correlationId, String value) {
@@ -339,6 +476,8 @@ class ConsumerInboxPostgresTest {
     private static void failIfCalled() {
         throw new AssertionError("An unapplied inbox claim must not execute its business effect");
     }
+
+    private record PaymentIds(UUID operationId) { }
 
     private record TestDatabase(String schema, DriverManagerDataSource dataSource, JdbcTemplate jdbc,
                                 PlatformTransactionManager transactionManager) { }

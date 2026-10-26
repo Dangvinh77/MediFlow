@@ -37,6 +37,7 @@ import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
+import com.mediflow.clinical.application.port.out.ClinicalLabOrderRepositoryPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
@@ -44,15 +45,20 @@ import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
 import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.application.port.out.LabOrderLifecyclePort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.model.AdmissionPriority;
 import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.CareEpisodeType;
+import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.domain.model.ClearancePurpose;
 import com.mediflow.clinical.domain.model.Diagnosis;
+import com.mediflow.clinical.domain.model.ExamClearance;
 import com.mediflow.clinical.domain.model.MedicalRecord;
+import com.mediflow.clinical.domain.model.MedicalRecordStatus;
+import com.mediflow.clinical.application.dto.authority.LabOrderLifecycleSnapshot;
 import com.mediflow.clinical.domain.model.RecordDisposition;
 import com.mediflow.common.exception.DuplicateResourceException;
 
@@ -69,16 +75,20 @@ class ClinicalCareFinanceApplicationServiceTest {
     private final AdmissionReferralRepositoryPort referrals = mock(AdmissionReferralRepositoryPort.class);
     private final ExamPricePolicyPort prices = mock(ExamPricePolicyPort.class);
     private final ClinicalOutboxPort outbox = mock(ClinicalOutboxPort.class);
+    private final ClinicalLabOrderRepositoryPort clinicalLabOrders = mock(ClinicalLabOrderRepositoryPort.class);
+    private final LabOrderLifecyclePort labOrderLifecycle = mock(LabOrderLifecyclePort.class);
     private final CurrentClinicalActorPort actors = mock(CurrentClinicalActorPort.class);
     private final StaffLookupPort staff = mock(StaffLookupPort.class);
     private final ClinicalDtoMapper mapper = mock(ClinicalDtoMapper.class);
     private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
+    private final OutpatientRegistrationApplicationService scheduled = mock(OutpatientRegistrationApplicationService.class);
     private final ClinicalCareFinanceApplicationService service = new ClinicalCareFinanceApplicationService(
             appointments, records, clearances, executionAuthority, overrides, referrals, prices, outbox, actors, staff, mapper,
-            correlationIds, CLOCK, true);
+            correlationIds, CLOCK, true, clinicalLabOrders, labOrderLifecycle, scheduled);
     private final ClinicalCareFinanceApplicationService outpatientMvpService =
             new ClinicalCareFinanceApplicationService(appointments, records, clearances, executionAuthority, overrides, referrals,
-                    prices, outbox, actors, staff, mapper, correlationIds, CLOCK, false);
+                    prices, outbox, actors, staff, mapper, correlationIds, CLOCK, false,
+                    clinicalLabOrders, labOrderLifecycle);
 
     @BeforeEach
     void setUp() {
@@ -383,6 +393,44 @@ class ClinicalCareFinanceApplicationServiceTest {
     }
 
     @Test
+    void complete_scheduledRecordWithInProgressLabOrder_failsBeforeAnyCompletionWrite() {
+        UUID appointmentId = UUID.randomUUID();
+        UUID recordId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        UUID clearanceId = UUID.randomUUID();
+        Appointment appointment = Appointment.createScheduled(appointmentId, patientId, doctorId, departmentId,
+                LocalDate.now(CLOCK), LocalTime.NOON, "Follow up", NOW, NOW);
+        appointment.confirmScheduledPayment(clearanceId, NOW);
+        appointment.startScheduledExam(clearanceId, NOW);
+        MedicalRecord record = MedicalRecord.restore(recordId, patientId, doctorId, departmentId,
+                LocalDate.now(CLOCK), "Fever", appointmentId,
+                List.of(Diagnosis.create("Influenza", null, "J10")), NOW, null);
+        ClinicalLabOrder order = ClinicalLabOrder.create(recordId, patientId, doctorId, departmentId,
+                appointmentId, "CBC", LocalDate.now(CLOCK), "CBC_PRICE", NOW);
+        when(actors.current()).thenReturn(new ActorIdentity(doctorId, "DOCTOR"));
+        when(staff.departmentOf(doctorId)).thenReturn(Optional.of(departmentId));
+        when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(clinicalLabOrders.findByRecordId(recordId)).thenReturn(List.of(order));
+        when(labOrderLifecycle.lifecycle(org.mockito.ArgumentMatchers.eq(order.sourceOrderId()), any(String.class)))
+                .thenReturn(new LabOrderLifecycleSnapshot(order.sourceOrderId(), true, UUID.randomUUID(),
+                        recordId, patientId, departmentId, "OUTPATIENT_VISIT", appointmentId, "IN_PROGRESS", NOW));
+
+        assertThatThrownBy(() -> service.complete(recordId,
+                new CompleteRecordRequest(RecordDisposition.OUTPATIENT_FOLLOW_UP, "Return in one week")))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_ORDER_PENDING");
+
+        assertThat(record.getStatus()).isEqualTo(MedicalRecordStatus.OPEN);
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
+        verify(records, never()).save(record);
+        verify(appointments, never()).save(appointment);
+        verifyNoOutboxEvent();
+    }
+
+    @Test
     void complete_repeatedCommand_publishesCompletedFactOnce() {
         Appointment appointment = appointment();
         authorize(appointment);
@@ -437,6 +485,38 @@ class ClinicalCareFinanceApplicationServiceTest {
 
         verify(records, never()).save(any());
         verifyNoOutboxEvent();
+    }
+
+    @Test
+    void startExam_scheduledConfirmedArrival_dispatchesToV2Lifecycle() {
+        UUID appointmentId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        UUID clearanceId = UUID.randomUUID();
+        Appointment appointment = Appointment.createScheduled(appointmentId, patientId, doctorId, departmentId,
+                LocalDate.now(CLOCK), LocalTime.NOON, "Scheduled visit", NOW, NOW);
+        appointment.confirmScheduledPayment(clearanceId, NOW);
+        ExamClearance clearance = ExamClearance.grant(UUID.randomUUID(), clearanceId, UUID.randomUUID(),
+                UUID.randomUUID(), appointmentId, null, patientId, CareEpisodeType.OUTPATIENT_VISIT,
+                appointmentId, ClearancePurpose.EXAM, BigDecimal.TEN, "VND", NOW.plusSeconds(300), false, NOW);
+        authorize(appointment);
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(clearances.findByAppointment(appointmentId)).thenReturn(Optional.of(clearance));
+        when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.empty());
+        when(mapper.toDto(any(Appointment.class))).thenReturn(null);
+
+        service.startExam(appointmentId, new StartExamRequest(null));
+
+        assertThat(appointment.getCareContractVersion()).isEqualTo((short) 2);
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
+        assertThat(appointment.getExaminationStartedAt()).isEqualTo(NOW);
+        verify(executionAuthority).start(org.mockito.ArgumentMatchers.eq(clearanceId),
+                org.mockito.ArgumentMatchers.argThat(request -> request.operationId().equals(appointmentId)
+                        && request.sourceType().equals("EXAM") && request.sourceId().equals(appointmentId)
+                        && request.patientId().equals(patientId) && request.careEpisodeId().equals(appointmentId)),
+                any(String.class));
+        verify(records).save(any(MedicalRecord.class));
     }
 
     @Test

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,25 @@ import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
 import com.mediflow.clinical.application.port.out.LegacyClinicalEventMetadata;
 import com.mediflow.clinical.infrastructure.persistence.jpaEntity.ClinicalOutboxEventJpaEntity;
 import com.mediflow.clinical.infrastructure.persistence.repository.ClinicalOutboxJpaRepository;
-
-import lombok.RequiredArgsConstructor;
+import com.mediflow.clinical.infrastructure.messaging.ClinicalOutpatientRegistrationEventSerializer;
 
 @Component
-@RequiredArgsConstructor
 public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
     private final ClinicalOutboxJpaRepository repository;
     private final ObjectMapper objectMapper;
+    private final ClinicalOutpatientRegistrationEventSerializer outpatientSerializer;
+
+    @Autowired
+    public ClinicalOutboxPersistenceAdapter(ClinicalOutboxJpaRepository repository, ObjectMapper objectMapper,
+            ClinicalOutpatientRegistrationEventSerializer outpatientSerializer) {
+        this.repository = repository;
+        this.objectMapper = objectMapper;
+        this.outpatientSerializer = outpatientSerializer;
+    }
+
+    public ClinicalOutboxPersistenceAdapter(ClinicalOutboxJpaRepository repository, ObjectMapper objectMapper) {
+        this(repository, objectMapper, new ClinicalOutpatientRegistrationEventSerializer(objectMapper));
+    }
 
     @Override
     @Transactional
@@ -38,6 +50,39 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
                 .eventVersion(event.version())
                 .correlationId(event.correlationId())
                 .payload(payload)
+                .occurredAt(event.occurredAt())
+                .retryCount(0)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public void appendRawOutpatientEvent(DomainEventEnvelope<?> event) {
+        Objects.requireNonNull(event, "Clinical outpatient event is required");
+        if (event.version() != 1 || event.correlationId() == null || event.correlationId().isBlank()
+                || !"clinical-service".equals(event.producer())
+                || !("outpatient.registration.changed".equals(event.eventType())
+                || "outpatient.financial.eligibility.granted".equals(event.eventType()))) {
+            throw new IllegalArgumentException("Unsupported Clinical outpatient event envelope");
+        }
+        byte[] wirePayload = outpatientSerializer.serialize(event);
+        JsonNode payload;
+        try {
+            payload = objectMapper.reader()
+                    .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                    .readTree(wirePayload);
+        } catch (IOException malformedPayload) {
+            throw new IllegalArgumentException("Clinical outpatient event must be valid JSON", malformedPayload);
+        }
+        repository.save(ClinicalOutboxEventJpaEntity.builder()
+                .eventId(event.eventId())
+                .aggregateType(aggregateType(event.eventType()))
+                .aggregateId(aggregateId(event, payload))
+                .eventType(event.eventType())
+                .eventVersion(event.version())
+                .correlationId(event.correlationId())
+                .payload(payload)
+                .payloadBytes(wirePayload)
                 .occurredAt(event.occurredAt())
                 .retryCount(0)
                 .build());
@@ -117,6 +162,9 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
     }
 
     private static String aggregateType(String eventType) {
+        if (eventType.startsWith("outpatient.")) {
+            return "OUTPATIENT_REGISTRATION";
+        }
         if (eventType.startsWith("appointment.")) {
             return "APPOINTMENT";
         }
@@ -130,6 +178,7 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
         JsonNode payload = envelope.path("payload");
         String field = switch (event.eventType()) {
             case "appointment.status.changed", "appointment.exam.cancelled" -> "appointmentId";
+            case "outpatient.registration.changed", "outpatient.financial.eligibility.granted" -> "registrationId";
             case "admission.requested" -> "admissionRequestId";
             default -> "recordId";
         };

@@ -68,6 +68,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
             Date expiration = claims.getExpiration();
             String path = request.getRequestURI().substring(request.getContextPath().length());
+            if (isScheduledPaymentInternalPath(path)) {
+                Date issued = claims.getIssuedAt();
+                long now = System.currentTimeMillis();
+                boolean exactMethod = path.endsWith("/payment-locks")
+                        ? "POST".equals(request.getMethod())
+                        : path.endsWith("/payment-resolution")
+                                ? "PUT".equals(request.getMethod()) : "GET".equals(request.getMethod());
+                if (!exactMethod || !"billing-service".equals(subject)
+                        || !JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType) || !"SYSTEM".equals(role)
+                        || issued == null || expiration == null || expiration.getTime() <= now
+                        || issued.getTime() > now + 5000 || expiration.getTime() <= issued.getTime()
+                        || expiration.getTime() - issued.getTime() > 60000) {
+                    SecurityContextHolder.clearContext();
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    return false;
+                }
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                        new ClinicalServicePrincipal(subject), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_SYSTEM"))));
+                return true;
+            }
             boolean prescriptionContextLookup = path.matches("/api/v1/records/[^/]+/prescription-context");
             boolean labOrderContextLookup = path.matches("/api/v1/lab-orders/[^/]+/context");
             if (prescriptionContextLookup || labOrderContextLookup) {
@@ -123,8 +144,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             String staffIdClaim = claims.get(JwtClaims.STAFF_ID, String.class);
             UUID staffId = staffIdClaim == null ? null : UUID.fromString(staffIdClaim);
+            String patientIdClaim = claims.get(JwtClaims.PATIENT_ID, String.class);
+            UUID patientId = patientIdClaim == null ? null : UUID.fromString(patientIdClaim);
+            if ((staffIdClaim != null && !staffId.toString().equals(staffIdClaim))
+                    || (patientIdClaim != null && !patientId.toString().equals(patientIdClaim))) {
+                SecurityContextHolder.clearContext();
+                return true;
+            }
             var authentication = new UsernamePasswordAuthenticationToken(
-                    new ClinicalPrincipal(subject, role, staffId),
+                    new ClinicalPrincipal(subject, role, staffId, patientId),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
@@ -144,5 +172,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static boolean isLabOrderContextLookup(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return path.matches("/api/v1/lab-orders/[^/]+/context");
+    }
+
+    private static boolean isScheduledPaymentInternalPath(String path) {
+        return path.matches("/api/v2/clinical/reservations/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/payment-locks")
+                || path.matches("/api/v2/clinical/reservations/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/payment-resolution")
+                || path.matches("/api/v2/clinical/reservations/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/payment-context");
     }
 }

@@ -12,6 +12,7 @@ import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
+import com.mediflow.clinical.application.port.out.ClinicalLabOrderRepositoryPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
@@ -19,6 +20,7 @@ import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
 import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.application.port.out.LabOrderLifecyclePort;
 import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.application.service.ClinicalCareFinanceApplicationService;
@@ -48,9 +50,12 @@ public class ClinicalCareFinanceFeatureConfiguration {
             CorrelationIdProvider correlationIds,
             @Qualifier("clinicalCareFinanceClock") Clock clinicalCareFinanceClock,
             @Value("${mediflow.features.admission-referral.enabled:false}") boolean admissionReferralsEnabled,
-            OutpatientMvpMode outpatientMvpMode) {
+            OutpatientMvpMode outpatientMvpMode,
+            ClinicalLabOrderRepositoryPort clinicalLabOrders,
+            LabOrderLifecyclePort labOrderLifecycle,
+            org.springframework.beans.factory.ObjectProvider<com.mediflow.clinical.application.service.OutpatientRegistrationApplicationService> scheduled) {
         return new ClinicalCareFinanceApplicationService(appointments, records, clearances, executionAuthority, overrides,
                 referrals, prices, outbox, actors, staff, mapper, correlationIds, clinicalCareFinanceClock,
-                admissionReferralsEnabled && !outpatientMvpMode.enabled());
+                admissionReferralsEnabled && !outpatientMvpMode.enabled(), clinicalLabOrders, labOrderLifecycle, scheduled.getIfAvailable());
     }
 }
