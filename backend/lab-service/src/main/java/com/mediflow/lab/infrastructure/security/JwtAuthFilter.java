@@ -64,6 +64,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
+                authenticateLifecycleService(request, claims);
+                return;
+            }
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
                     || !StringUtils.hasText(subject)
                     || !StringUtils.hasText(role)
@@ -94,5 +98,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException exception) {
             return null;
         }
+    }
+
+    private void authenticateLifecycleService(HttpServletRequest request, Claims claims) {
+        var now = java.time.Instant.now();
+        var issued = claims.getIssuedAt(); var expires = claims.getExpiration();
+        if (!"GET".equals(request.getMethod())
+                || !request.getRequestURI().matches("/api/v2/lab/source-orders/[0-9a-fA-F-]{36}/lifecycle")
+                || !"clinical-service".equals(claims.getSubject())
+                || !"SYSTEM".equals(claims.get(JwtClaims.ROLE, String.class))
+                || issued == null || expires == null || !expires.toInstant().isAfter(now)
+                || issued.toInstant().isAfter(now) || !expires.after(issued)
+                || java.time.Duration.between(issued.toInstant(), expires.toInstant()).getSeconds() > 60
+                || claims.containsKey(JwtClaims.STAFF_ID) || claims.containsKey(JwtClaims.PATIENT_ID)
+                || claims.containsKey(JwtClaims.DEPARTMENT_ID)) return;
+        var auth = new UsernamePasswordAuthenticationToken(new LabServicePrincipal(claims.getSubject()), null,
+                List.of(new SimpleGrantedAuthority("ROLE_SYSTEM")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }
