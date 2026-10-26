@@ -14,6 +14,7 @@ import type {
   PrescriptionDTO,
   PrescribingContextDTO,
   PharmacyPatientIdentityDTO,
+  PrescribingDoctorDTO,
 } from "./types";
 
 // lib/api.ts prepends `/api`; feature APIs only declare the gateway resource path.
@@ -27,6 +28,9 @@ export interface DrugSearchParams {
 }
 
 export const pharmacyApi = {
+  getPrescribingDoctor(id: string) {
+    return api.get<PrescribingDoctorDTO>(`/v1/org/staff/${encodeURIComponent(id)}`);
+  },
   searchPatients(keyword: string, page = 0) {
     const query = new URLSearchParams({ keyword, page: String(page), size: "20" });
     return api.get<PageResult<PharmacyPatientIdentityDTO>>(`/v1/patients/directory/search?${query}`);
