@@ -52,6 +52,8 @@ def await_ready(probe, timeout=180):
 def main():
     keep = argparse.ArgumentParser()
     keep.add_argument("--keep", action="store_true")
+    keep.add_argument("--scheduling", action="store_true",
+                      help="Enable the opt-in outpatient revision 2 rehearsal overlay")
     options = keep.parse_args()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     evidence = HERE / "evidence" / ("snapshot-" + stamp)
@@ -63,7 +65,10 @@ def main():
         for port in PORTS.values():
             with socket.socket() as candidate:
                 candidate.bind(("127.0.0.1", port))
-        compose = json.loads(command("docker", "compose", "config", "--format", "json").stdout)["services"]
+        compose_args = ["docker", "compose", "-f", "docker-compose.yml"]
+        if options.scheduling:
+            compose_args.extend(["-f", "compose.demo.local.yml", "-f", "compose.outpatient.local.yml"])
+        compose = json.loads(command(*compose_args, "config", "--format", "json").stdout)["services"]
         for name in NAMES:
             jar = ROOT / "backend" / name / "target" / (name + "-0.0.1-SNAPSHOT.jar")
             if not jar.is_file():
@@ -81,6 +86,10 @@ def main():
                           "-d", "postgres", "-f", "/tmp/demo.sql", log=evidence / "restore-refusal.log", check=False)
         if refused.returncode == 0 or "demo restore refused" not in (refused.stdout + refused.stderr).lower():
             raise RuntimeError("The populated-target restore guard was not confirmed")
+        if options.scheduling:
+            command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
+            command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+                    "-d", "mediflow_organization", "-f", "/tmp/scheduling.sql", log=evidence / "scheduling-seed.log")
         counts = {}
         for context in DATABASES:
             query = "SELECT count(*) FROM pg_tables WHERE schemaname='public'"
@@ -143,16 +152,20 @@ def main():
                 env["MEDIFLOW_ORGANIZATION_AUTH_TIMEOUT_MILLIS"] = "15000"
             env["MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE"] = "LOCAL-DEMO-REHEARSAL"
             if name == "billing-service":
+                # The scheduling lock adapter uses direct internal HTTP in Docker.
+                # Packaged JAR rehearsal must use the isolated Clinical port instead.
+                env["MEDIFLOW_CLIENTS_CLINICAL_SERVICE"] = "http://127.0.0.1:28082"
                 env["MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES"] = "RX-DEMO"
                 env["MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES"] = "EXAM,LAB_TEST,PRESCRIPTION"
                 env["MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE"] = "LOCAL-DEMO-REHEARSAL"
-                env["SPRING_APPLICATION_JSON"] = json.dumps({
-                    "billing.care-finance.prices.OUTPATIENT_EXAM.unitAmount": 150000,
-                    "billing.care-finance.prices.OUTPATIENT_EXAM.description": "Phi kham ngoai tru demo",
-                    "billing.care-finance.prices.LAB.unitAmount": 80000,
-                    "billing.care-finance.prices.LAB.description": "Phi xet nghiem demo",
-                    "mediflow.billing.outpatient-refund-publication.enabled": True,
-                    "mediflow.billing.outpatient-refund-publication.acceptance-reference": "LOCAL-DEMO-REHEARSAL"})
+                if not options.scheduling:
+                    env["SPRING_APPLICATION_JSON"] = json.dumps({
+                        "billing.care-finance.prices.OUTPATIENT_EXAM.unitAmount": 150000,
+                        "billing.care-finance.prices.OUTPATIENT_EXAM.description": "Phi kham ngoai tru demo",
+                        "billing.care-finance.prices.LAB.unitAmount": 80000,
+                        "billing.care-finance.prices.LAB.description": "Phi xet nghiem demo",
+                        "mediflow.billing.outpatient-refund-publication.enabled": True,
+                        "mediflow.billing.outpatient-refund-publication.acceptance-reference": "LOCAL-DEMO-REHEARSAL"})
             jar = ROOT / "backend" / name / "target" / (name + "-0.0.1-SNAPSHOT.jar")
             stream = (evidence / (name + ".log")).open("w", encoding="utf-8")
             streams.append(stream)
@@ -169,6 +182,7 @@ def main():
             print(name + " UP", flush=True)
         (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
         manifest = {"evidence": str(evidence), "gateway": "http://127.0.0.1:28080", "ports": PORTS,
+                    "scheduling": options.scheduling,
                     "containers": containers, "pids": [p.pid for p in applications], "stopFile": str(evidence / "stop")}
         (HERE / "evidence" / "active-rehearsal.local.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         (evidence / "result.txt").write_text("PASS: eight database restores, populated-target refusal, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")

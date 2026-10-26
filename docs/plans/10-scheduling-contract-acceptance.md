@@ -1,9 +1,9 @@
 # Nghiệm thu hợp đồng lịch khám và giữ suất — 26/10/2026
 
 Đây là ma trận triển khai/nghiệm thu phái sinh từ [03 phụ lục A](03-contracts.md#opd-scheduling-v2),
-không là schema thứ hai. Contract `OPD-SCHED-2026-10-26`, revision 1 là TARGET được mô tả;
-chưa có producer implementation, Gateway route hoặc nghiệm thu liên service. Các bước dưới đây
-không phải lệnh Postman chạy được trên demo hiện tại. [WF-01 source baseline](09-outpatient-source-lock-2026-10-26.md)
+không là schema thứ hai. Contract `OPD-SCHED-2026-10-26`, revision 2 đã có source triển khai trên nhánh PR. Kiểm thử module và schema được ghi bên dưới;
+nghiệm thu liên service/UI vẫn cần bằng chứng riêng. Dùng
+[runbook V2](../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md) để chạy Postman và UI. [WF-01 source baseline](09-outpatient-source-lock-2026-10-26.md)
 vẫn được giữ nguyên fingerprint, không ghi đè bằng target fixtures.
 
 ## 1. Cách đọc và kiểm bộ ví dụ
@@ -17,7 +17,7 @@ vẫn được giữ nguyên fingerprint, không ghi đè bằng target fixtures
   Schema không chứng minh authority, tổng sức chứa, quan hệ UUID, thời gian bắt đầu nhỏ hơn kết thúc,
   overlap, money arithmetic hoặc transaction safety.
 - Mẫu `100000.00` là giao dịch thu dương chưa áp hỗ trợ, không thay bảng giá hoặc chính sách BHYT đã chốt.
-  Schema slice này không nghiệm thu policy, FOLLOW_UP hay zero-liability.
+  Bộ schema có wire FOLLOW_UP, quote và zero-liability; không chứng minh tính toán hay authority runtime.
 
 Có thể kiểm độc lập bằng Python với `jsonschema` đã cài, chạy từ repo root:
 
@@ -42,7 +42,7 @@ for case in examples["schemaCases"]:
 print("Schema examples passed:", len(examples["schemaCases"]))
 ```
 
-Kết quả kiểm lượt tài liệu: **39 định nghĩa, 69 schema cases đạt kỳ vọng**, trong đó 21 payload sai
+Kết quả kiểm schema revision 2: **50 định nghĩa, 87 schema cases đạt kỳ vọng**, trong đó 25 payload sai
 bị từ chối; **18 semantic cases chưa chạy trên backend**. Không gọi schema examples là producer golden fixtures.
 
 ## 2. Sơ đồ xử lý payment lock
@@ -57,12 +57,12 @@ không tự giải phóng khóa. Missing operation không là bằng chứng ch�
 
 | Mốc | Owner và nguồn sẽ thay đổi | Acceptance bắt buộc | Trạng thái |
 |---|---|---|---|
-| C-01 Core scheduling authority | Hoàng Anh; Organization web/application/domain/persistence trong core-service, migrations mới và tests | ADMIN cấp/revoke scope theo account; MANAGER own/other khoa; role/staff inactive; room eligibility/directory; service credential allowlist | NOT IMPLEMENTED |
-| C-02 Clinical session + hold | Vinh; clinical-service domain/model, application/ports/services, web, persistence/migration mới | overlap doctor/room, breaks/giờ/zone, revision conflict, capacity counter, last-seat PG race, idempotent registration | NOT IMPLEMENTED |
-| C-03 Billing operation và request binding | Vinh; billing-service ledger service/config/repository/outbox, controller V2 và migrations mới | PREPARING trước network; lock acquire; full positive patient liability; key/actor/binding guard; không bypass bằng V1 | NOT IMPLEMENTED |
-| C-04 Clinical/Billing recovery | Vinh; hai context cùng own store/receipt/outbox, internal clients/workers | close-vs-commit, timeout/restart, missing giữ khóa, stale fence, late acquire, confirmation sau cuối buổi | NOT IMPLEMENTED |
-| C-05 Gateway + producer/consumer fixtures | Hoàng Anh/Gateway; Vinh/Clinical/Billing/Notification; Huy/Report | V2 exact route/method/role, human/internal deny; raw bytes/revision/order replay; V1 regression | NOT IMPLEMENTED |
-| C-06 Frontend schedule/reception/doctor/patient | Theo frontend ownership; không suy từ ownership backend | ADMIN/MANAGER quản lý ca; NURSE giữ suất; CASHIER pending/receipt; DOCTOR own day/week; PATIENT own phiếu | NOT IMPLEMENTED |
+| C-01 Core scheduling authority | Hoàng Anh; Organization web/application/domain/persistence trong core-service, migrations mới và tests | ADMIN cấp/revoke scope theo account; MANAGER own/other khoa; role/staff inactive; room eligibility/directory; service credential allowlist | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
+| C-02 Clinical session + hold | Vinh; clinical-service domain/model, application/ports/services, web, persistence/migration mới | overlap doctor/room, breaks/giờ/zone, revision conflict, capacity counter, last-seat PG race, idempotent registration | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
+| C-03 Billing operation và request binding | Vinh; billing-service ledger service/config/repository/outbox, controller V2 và migrations mới | PREPARING trước network; lock acquire; full positive patient liability; key/actor/binding guard; không bypass bằng V1 | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
+| C-04 Clinical/Billing recovery | Vinh; hai context cùng own store/receipt/outbox, internal clients/workers | close-vs-commit, timeout/restart, missing giữ khóa, stale fence, late acquire, confirmation sau cuối buổi | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
+| C-05 Gateway + producer/consumer fixtures | Hoàng Anh/Gateway; Vinh/Clinical/Billing/Notification; Huy/Report | V2 exact route/method/role, human/internal deny; raw bytes/revision/order replay; V1 regression | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
+| C-06 Frontend schedule/reception/doctor/patient | Theo frontend ownership; không suy từ ownership backend | ADMIN/MANAGER quản lý ca; NURSE giữ suất; CASHIER pending/receipt; DOCTOR own day/week; PATIENT own phiếu | SOURCE IMPLEMENTED; END-TO-END ACCEPTANCE PENDING |
 
 Tên thư mục ở bảng theo blueprint hiện hành. Trước khi viết code phải đọc nearest AGENTS và khóa
 exact class/migration version trong plan của mốc; không cấp quyền Core/Gateway/Report/Pharmacy từ tài liệu này.
@@ -114,8 +114,9 @@ Trên UI, kiểm tuần tự với các tài khoản demo được cấp role th
 6. Ngắt kết nối trong một lần thu; UI không đổi key và không gọi thành công khi chưa có outcome.
 7. Kiểm nhận thông báo chưa thu khác xác nhận sau thu, mất quyền, khoa khác và bệnh nhân khác.
 
-Mốc này chưa triển khai FOLLOW_UP, policy BHYT/zero-liability, vòng Lab hoàn chỉnh hoặc thay báo cáo tổng hợp;
-nghiệm thu đủ SC không tự đóng toàn bộ WF-01–11. Các yêu cầu đó vẫn ở 02/06/07 và G-05–10.
+Phạm vi SC ban đầu không bao phủ FOLLOW_UP, policy BHYT/zero-liability hoặc vòng Lab hoàn chỉnh.
+Source PR đã bổ sung các phần này theo phụ lục A; phải nghiệm thu thêm theo 02/06/07 và G-05–10,
+không suy rằng nghiệm thu đủ SC là đã đóng toàn bộ WF-01–11 hoặc thay báo cáo tổng hợp.
 
 ## 6. Tiêu chí sẵn sàng bật gate
 
@@ -124,4 +125,4 @@ nghiệm thu đủ SC không tự đóng toàn bộ WF-01–11. Các yêu cầu 
 - C-06 chỉ mở theo producer acceptance; không gọi port trực tiếp hoặc trộn DTO V1/V2 để tránh lỗi.
 - Kiểm migration trên fresh và persisted test DB; giữ checksum cũ; rollback không nhận write V2 bằng binary V1.
 - Đọc effective configuration và artifact của cả Gateway/Clinical/Core/Billing/Support; không chỉ nhìn YAML source.
-- Không coi 69 schema checks trong lượt tài liệu là 69 business tests hoặc chứng nhận sẵn sàng bảo vệ.
+- Không coi 87 schema checks là 87 business tests hoặc chứng nhận sẵn sàng bảo vệ.

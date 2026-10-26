@@ -1,6 +1,6 @@
 {
   "contractId": "OPD-SCHED-2026-10-26",
-  "revision": 1,
+  "revision": 2,
   "status": "TARGET_DESIGN_ONLY_NOT_PRODUCER_ACCEPTANCE",
   "identityPolicy": "All UUIDs are synthetic design examples; do not use them as existing demo IDs.",
   "moneyPolicy": "100000.00 is an uncovered positive-payment example, not an activated BHYT quote or current catalogue assertion.",
@@ -307,7 +307,8 @@
         "currency": "VND",
         "status": "PENDING",
         "expiresAt": "2026-10-27T00:15:00Z",
-        "observedAt": "2026-10-27T00:00:00Z"
+        "observedAt": "2026-10-27T00:00:00Z",
+        "reservationRevision": 1
       }
     },
     {
@@ -337,7 +338,10 @@
         "amount": "100000.00",
         "currency": "VND",
         "createdAt": "2026-10-27T00:05:00Z",
-        "updatedAt": "2026-10-27T00:05:00Z"
+        "updatedAt": "2026-10-27T00:05:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null,
+        "completedAt": null
       }
     },
     {
@@ -371,7 +375,10 @@
           "amount": "100000.00",
           "currency": "VND",
           "createdAt": "2026-10-27T00:05:00Z",
-          "updatedAt": "2026-10-27T00:06:00Z"
+          "updatedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null,
+          "completedAt": "2026-10-27T00:06:00Z"
         },
         "payment": {
           "transactionId": "00000000-0000-4000-8000-000000000012",
@@ -399,7 +406,9 @@
         "sourceType": "EXAM",
         "sourceId": "00000000-0000-4000-8000-000000000006",
         "careEpisodeId": "00000000-0000-4000-8000-000000000006",
-        "expectedReservationRevision": 1
+        "expectedReservationRevision": 1,
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -412,7 +421,9 @@
         "reservationRevision": 2,
         "fenceToken": 1,
         "lockedAt": "2026-10-27T00:05:00Z",
-        "reconcileAfter": "2026-10-27T00:07:00Z"
+        "reconcileAfter": "2026-10-27T00:07:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -439,7 +450,9 @@
         "outcome": "COMPLETED",
         "transactionId": "00000000-0000-4000-8000-000000000012",
         "clearanceId": "00000000-0000-4000-8000-000000000013",
-        "completedAt": "2026-10-27T00:06:00Z"
+        "completedAt": "2026-10-27T00:06:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -493,7 +506,8 @@
         "amount": "100000.00",
         "currency": "VND",
         "completedAt": "2026-10-27T00:06:00Z",
-        "basis": "PATIENT_PAYMENT"
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -562,7 +576,8 @@
           "amount": "100000.00",
           "currency": "VND",
           "completedAt": "2026-10-27T00:06:00Z",
-          "basis": "PATIENT_PAYMENT"
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null
         }
       }
     },
@@ -680,7 +695,10 @@
             "amount": "100000.00",
             "currency": "VND",
             "createdAt": "2026-10-27T00:05:00Z",
-            "updatedAt": "2026-10-27T00:06:00Z"
+            "updatedAt": "2026-10-27T00:06:00Z",
+            "basis": "PATIENT_PAYMENT",
+            "quoteId": null,
+            "completedAt": "2026-10-27T00:06:00Z"
           },
           "payment": {
             "transactionId": "00000000-0000-4000-8000-000000000012",
@@ -712,7 +730,9 @@
           "reservationRevision": 2,
           "fenceToken": 1,
           "lockedAt": "2026-10-27T00:05:00Z",
-          "reconcileAfter": "2026-10-27T00:07:00Z"
+          "reconcileAfter": "2026-10-27T00:07:00Z",
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null
         },
         "error": null,
         "timestamp": "2026-10-27T00:00:00Z",
@@ -892,7 +912,10 @@
           "amount": "100000.00",
           "currency": "VND",
           "createdAt": "2026-10-27T00:05:00Z",
-          "updatedAt": "2026-10-27T00:05:00Z"
+          "updatedAt": "2026-10-27T00:05:00Z",
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null,
+          "completedAt": null
         },
         "payment": null,
         "clearanceId": null
@@ -912,7 +935,10 @@
         "amount": "100000.00",
         "currency": "VND",
         "createdAt": "2026-10-27T00:05:00Z",
-        "updatedAt": "2026-10-27T00:06:00Z"
+        "updatedAt": "2026-10-27T00:06:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null,
+        "completedAt": null
       }
     },
     {
@@ -928,7 +954,9 @@
         "outcome": "CLOSED_NOT_PAID",
         "transactionId": null,
         "clearanceId": null,
-        "completedAt": null
+        "completedAt": null,
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -1213,7 +1241,10 @@
         "amount": "100000.00",
         "currency": "VND",
         "createdAt": "2026-10-27T00:05:00Z",
-        "updatedAt": "2026-10-27T00:06:00Z"
+        "updatedAt": "2026-10-27T00:06:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null,
+        "completedAt": "2026-10-27T00:06:00Z"
       }
     },
     {
@@ -1229,7 +1260,9 @@
         "outcome": "CLOSED_NOT_PAID",
         "transactionId": "00000000-0000-4000-8000-000000000012",
         "clearanceId": "00000000-0000-4000-8000-000000000013",
-        "completedAt": "2026-10-27T00:06:00Z"
+        "completedAt": "2026-10-27T00:06:00Z",
+        "basis": "PATIENT_PAYMENT",
+        "quoteId": null
       }
     },
     {
@@ -1259,7 +1292,8 @@
           "amount": "100000.00",
           "currency": "VND",
           "completedAt": "2026-10-27T00:06:00Z",
-          "basis": "PATIENT_PAYMENT"
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null
         }
       }
     },
@@ -1290,7 +1324,8 @@
           "amount": "100000.00",
           "currency": "VND",
           "completedAt": "2026-10-27T00:06:00Z",
-          "basis": "PATIENT_PAYMENT"
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null
         }
       }
     },
@@ -1321,7 +1356,8 @@
           "amount": "100000.00",
           "currency": "VND",
           "completedAt": "2026-10-27T00:06:00Z",
-          "basis": "PATIENT_PAYMENT"
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null
         }
       }
     },
@@ -1340,7 +1376,10 @@
           "amount": "100000.00",
           "currency": "VND",
           "createdAt": "2026-10-27T00:05:00Z",
-          "updatedAt": "2026-10-27T00:06:00Z"
+          "updatedAt": "2026-10-27T00:06:00Z",
+          "basis": "PATIENT_PAYMENT",
+          "quoteId": null,
+          "completedAt": "2026-10-27T00:06:00Z"
         },
         "payment": {
           "transactionId": "00000000-0000-4000-8000-000000000012",
@@ -1438,6 +1477,319 @@
           "cancellation": null
         }
       }
+    },
+    {
+      "id": "valid-ReservationPaymentContext",
+      "definition": "ReservationPaymentContext",
+      "schemaValid": true,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "reservationRevision": 1,
+        "reservationStatus": "HELD",
+        "expiresAt": "2026-10-27T00:15:00Z"
+      }
+    },
+    {
+      "id": "valid-CurrentDoctorAuthority",
+      "definition": "CurrentDoctorAuthority",
+      "schemaValid": true,
+      "payload": {
+        "actorAccountId": "00000000-0000-4000-8000-000000000001",
+        "accountExists": true,
+        "accountActive": true,
+        "currentRole": "DOCTOR",
+        "staffId": "00000000-0000-4000-8000-000000000002",
+        "staffActive": true,
+        "departmentId": "00000000-0000-4000-8000-000000000003",
+        "departmentActive": true,
+        "observedAt": "2026-10-26T00:00:00Z"
+      }
+    },
+    {
+      "id": "valid-OutpatientQuoteLineDTO",
+      "definition": "OutpatientQuoteLineDTO",
+      "schemaValid": true,
+      "payload": {
+        "sourceId": "00000000-0000-4000-8000-000000000001",
+        "sourceType": "EXAM",
+        "priceCode": "OUTPATIENT_EXAM",
+        "catalogueVersion": "DEMO-CATALOGUE-2026-10-25",
+        "policyVersion": "DEMO-BHYT-2026-10-25",
+        "description": "Khám mới",
+        "quantity": "1",
+        "unitPrice": "100000",
+        "grossAmount": "100000",
+        "supportRate": "0.5",
+        "supportAmount": "50000",
+        "patientPayable": "50000"
+      }
+    },
+    {
+      "id": "valid-OutpatientQuoteDTO",
+      "definition": "OutpatientQuoteDTO",
+      "schemaValid": true,
+      "payload": {
+        "quoteId": "00000000-0000-4000-8000-000000000001",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000001",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000001",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "currency": "VND",
+        "lines": [
+          {
+            "sourceId": "00000000-0000-4000-8000-000000000001",
+            "sourceType": "EXAM",
+            "priceCode": "OUTPATIENT_EXAM",
+            "catalogueVersion": "DEMO-CATALOGUE-2026-10-25",
+            "policyVersion": "DEMO-BHYT-2026-10-25",
+            "description": "Khám mới",
+            "quantity": "1",
+            "unitPrice": "100000",
+            "grossAmount": "100000",
+            "supportRate": "0.5",
+            "supportAmount": "50000",
+            "patientPayable": "50000"
+          }
+        ],
+        "grossAmount": "100000",
+        "supportAmount": "50000",
+        "patientPayable": "50000",
+        "issuedAt": "2026-10-26T01:00:00Z",
+        "expiresAt": "2026-10-26T01:15:00Z"
+      }
+    },
+    {
+      "id": "valid-ZeroPayableEligibilityRequest",
+      "definition": "ZeroPayableEligibilityRequest",
+      "schemaValid": true,
+      "payload": {
+        "reservationId": "00000000-0000-4000-8000-000000000001",
+        "expectedReservationRevision": 1,
+        "quoteId": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "valid-LabZeroPayableEligibilityRequest",
+      "definition": "LabZeroPayableEligibilityRequest",
+      "schemaValid": true,
+      "payload": {
+        "quoteId": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "valid-LabZeroPayableEligibilityDTO",
+      "definition": "LabZeroPayableEligibilityDTO",
+      "schemaValid": true,
+      "payload": {
+        "eligibilityOperationId": "00000000-0000-4000-8000-000000000001",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000001",
+        "quoteId": "00000000-0000-4000-8000-000000000001",
+        "basis": "ZERO_LIABILITY",
+        "clearanceId": "00000000-0000-4000-8000-000000000001",
+        "completedAt": "2026-10-26T01:00:00Z"
+      }
+    },
+    {
+      "id": "valid-FollowUpRecommendationRequest",
+      "definition": "FollowUpRecommendationRequest",
+      "schemaValid": true,
+      "payload": {
+        "recommendedFrom": "2026-10-27",
+        "recommendedThrough": "2026-11-02",
+        "reason": "Đánh giá đáp ứng điều trị",
+        "preparationInstructions": null
+      }
+    },
+    {
+      "id": "valid-FollowUpRecommendationDTO",
+      "definition": "FollowUpRecommendationDTO",
+      "schemaValid": true,
+      "payload": {
+        "recommendationId": "00000000-0000-4000-8000-000000000001",
+        "sourceRecordId": "00000000-0000-4000-8000-000000000001",
+        "sourceRegistrationId": "00000000-0000-4000-8000-000000000001",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "departmentId": "00000000-0000-4000-8000-000000000001",
+        "preferredDoctorId": "00000000-0000-4000-8000-000000000001",
+        "recommendedFrom": "2026-10-27",
+        "recommendedThrough": "2026-11-02",
+        "reason": "Đánh giá đáp ứng điều trị",
+        "preparationInstructions": null,
+        "createdAt": "2026-10-26T01:00:00Z"
+      }
+    },
+    {
+      "id": "valid-FollowUpSourceSummary",
+      "definition": "FollowUpSourceSummary",
+      "schemaValid": true,
+      "payload": {
+        "registrationId": "00000000-0000-4000-8000-000000000001",
+        "recordId": "00000000-0000-4000-8000-000000000001",
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "departmentId": "00000000-0000-4000-8000-000000000001",
+        "doctorId": "00000000-0000-4000-8000-000000000001",
+        "completedAt": "2026-10-26T01:00:00Z",
+        "recommendation": {
+          "recommendationId": "00000000-0000-4000-8000-000000000001",
+          "sourceRecordId": "00000000-0000-4000-8000-000000000001",
+          "sourceRegistrationId": "00000000-0000-4000-8000-000000000001",
+          "patientId": "00000000-0000-4000-8000-000000000001",
+          "departmentId": "00000000-0000-4000-8000-000000000001",
+          "preferredDoctorId": "00000000-0000-4000-8000-000000000001",
+          "recommendedFrom": "2026-10-27",
+          "recommendedThrough": "2026-11-02",
+          "reason": "Đánh giá đáp ứng điều trị",
+          "preparationInstructions": null,
+          "createdAt": "2026-10-26T01:00:00Z"
+        }
+      }
+    },
+    {
+      "id": "valid-zero-PaymentOperation",
+      "definition": "PaymentOperation",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "status": "COMPLETED",
+        "transactionId": null,
+        "amount": "0.00",
+        "currency": "VND",
+        "createdAt": "2026-10-27T00:05:00Z",
+        "updatedAt": "2026-10-27T00:05:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": "00000000-0000-4000-8000-000000000001",
+        "completedAt": "2026-10-26T01:00:00Z"
+      }
+    },
+    {
+      "id": "invalid-zero-without-quote-PaymentOperation",
+      "definition": "PaymentOperation",
+      "schemaValid": false,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "status": "COMPLETED",
+        "transactionId": null,
+        "amount": "0.00",
+        "currency": "VND",
+        "createdAt": "2026-10-27T00:05:00Z",
+        "updatedAt": "2026-10-27T00:05:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": null,
+        "completedAt": "2026-10-26T01:00:00Z"
+      }
+    },
+    {
+      "id": "valid-zero-PaymentResolution",
+      "definition": "PaymentResolution",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "outcome": "COMPLETED",
+        "transactionId": null,
+        "clearanceId": "00000000-0000-4000-8000-000000000001",
+        "completedAt": "2026-10-26T01:00:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "invalid-zero-without-quote-PaymentResolution",
+      "definition": "PaymentResolution",
+      "schemaValid": false,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "outcome": "COMPLETED",
+        "transactionId": null,
+        "clearanceId": "00000000-0000-4000-8000-000000000001",
+        "completedAt": "2026-10-26T01:00:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": null
+      }
+    },
+    {
+      "id": "valid-zero-EligibilityFact",
+      "definition": "EligibilityFact",
+      "schemaValid": true,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "transactionId": null,
+        "clearanceId": "00000000-0000-4000-8000-000000000013",
+        "amount": "0.00",
+        "currency": "VND",
+        "completedAt": "2026-10-27T00:06:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "invalid-zero-without-quote-EligibilityFact",
+      "definition": "EligibilityFact",
+      "schemaValid": false,
+      "payload": {
+        "paymentOperationId": "00000000-0000-4000-8000-000000000009",
+        "paymentRequestId": "00000000-0000-4000-8000-000000000010",
+        "registrationId": "00000000-0000-4000-8000-000000000006",
+        "reservationId": "00000000-0000-4000-8000-000000000007",
+        "fenceToken": 1,
+        "patientId": "00000000-0000-4000-8000-000000000001",
+        "sourceType": "EXAM",
+        "sourceId": "00000000-0000-4000-8000-000000000006",
+        "careEpisodeType": "OUTPATIENT_VISIT",
+        "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+        "transactionId": null,
+        "clearanceId": "00000000-0000-4000-8000-000000000013",
+        "amount": "0.00",
+        "currency": "VND",
+        "completedAt": "2026-10-27T00:06:00Z",
+        "basis": "ZERO_LIABILITY",
+        "quoteId": null
+      }
+    },
+    {
+      "id": "lab-quoted-payment-positive",
+      "definition": "LabQuotedPaymentCommand",
+      "payload": {
+        "quoteId": "11111111-1111-4111-8111-111111111111",
+        "amount": "36000.00",
+        "currency": "VND",
+        "paymentMethod": "CASH"
+      },
+      "schemaValid": true
+    },
+    {
+      "id": "lab-quoted-payment-missing-quote",
+      "definition": "LabQuotedPaymentCommand",
+      "payload": {
+        "amount": "36000.00",
+        "currency": "VND",
+        "paymentMethod": "CASH"
+      },
+      "schemaValid": false
     }
   ],
   "semanticCases": [

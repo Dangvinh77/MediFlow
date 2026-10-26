@@ -1,8 +1,9 @@
 # Triển khai điều chỉnh nghiệp vụ ngoại trú — 25/10/2026
 
 Đây là kế hoạch phái sinh từ [luồng nghiệp vụ](02-business-flows.md), không là nguồn
-contract thứ hai. Người dùng giao chỉnh tài liệu; lượt này không triển khai source,
-migration, cấu hình BHYT hoặc thay dữ liệu demo. Các phần việc dưới đây đều chưa nghiệm thu.
+contract thứ hai. Ngày 26/10 người dùng giao triển khai source, migration, cấu hình và UI trên toàn bộ phạm vi
+liên quan của Hoàng Anh/Vinh/Lộc. Source đang triển khai trên nhánh PR; không coi có code là đã
+nghiệm thu hết các phần việc bên dưới.
 Không cộng các task này vào tỷ lệ 18 task/72 subtask của baseline triển khai 14/10.
 
 ## Các quyết định đã chốt
@@ -44,10 +45,11 @@ production cho owner khác; gap producer được bàn giao theo root AGENTS.
 Baseline đã được ghi; WF-01 vẫn mở vì wire mới và golden fixture acceptance chưa hoàn tất.
 
 Cập nhật thiết kế tiếp ngày 26/10: [03 phụ lục A](03-contracts.md#opd-scheduling-v2)
-đã đặc tả TARGET `OPD-SCHED-2026-10-26` revision 1 cho schedule, Core department scope,
+đã đặc tả TARGET `OPD-SCHED-2026-10-26` revision 2 cho schedule, Core department scope,
 NEW_VISIT registration và payment lease/recovery. [Ma trận SC-01–20](10-scheduling-contract-acceptance.md)
 ghi thứ tự nghiệm thu và giới hạn của schema examples. Đây là phần thiết kế của G-01–04 và
-một phần G-09/G-11; chưa có producer/consumer code, chưa đóng WF-01 hoặc các gap còn lại.
+một phần G-09/G-11. Đã có producer/consumer, migration, Gateway và UI có gate;
+ma trận nghiệm thu runtime/UI vẫn là điều kiện đóng WF-11.
 
 | Nguồn đã đối chiếu trong lượt tài liệu | Hiện trạng quan sát | Gap với nghiệp vụ mới |
 |---|---|---|
@@ -85,3 +87,20 @@ chỉ vì có ngày cũ. Tài liệu từng đúng với binary cũ là baseline
 
 Đợt chuẩn hóa tiếp theo được ghi tại [biên bản 26/10/2026](08-documentation-cleanup-2026-10-26.md);
 trạng thái bàn giao được quản lý tại [registry hiện hành](../handoffs/README.md).
+
+
+## Trạng thái source ngày 26/10 trong PR triển khai
+
+| Phạm vi | Đã triển khai | Điều kiện còn phải xác nhận |
+|---|---|---|
+| WF-02/03 | Core authority; buổi/sức chứa; giữ suất; PREPARING/lease/fence; recovery | Tổng duyệt API/UI trên packaged JAR với dữ liệu hôm demo |
+| WF-04 | Liên kết lượt completed; lời hẹn; đổi bác sĩ có lý do/đồng ý; PATIENT own lời hẹn | Tổng duyệt vòng hai và các quyền sai vai trò |
+| WF-05/06 | Quote bất biến, policy version, hỗ trợ theo dòng; EXAM/LAB zero; LAB positive quote-bound | Dataset 100% riêng và kiểm Report cash không tăng do zero |
+| WF-07 | Lab lifecycle lookup; chặn complete khi chỉ định chưa xong; giữ cùng lượt đọc kết quả | Tổng duyệt vòng Lab qua broker/clearance |
+| WF-08 | Giữ catalogue/stock guards outpatient hiện hành | Không có policy hỗ trợ thuốc mới; hồi quy luồng cấp phát |
+| WF-09/10 | Notification theo revision, Gateway quyền, các workspace UI và command recovery | Report coverage và UI đa vai trò trên stack mới |
+| WF-01/11 | Manifest lịch sử giữ nguyên; wire revision 2 + schema checker + runbook V2 | Chỉ đóng sau khi ma trận và evidence khớp commit cuối |
+
+[Hướng dẫn chạy V2](../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md)
+dùng overlay opt-in; không đổi nhãn snapshot/baseline 25/10 thành kết quả mới.
+Chưa có command renew quote; GET không gia hạn. Giới hạn này phải được giải thích khi demo.

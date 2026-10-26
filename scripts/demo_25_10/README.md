@@ -1,5 +1,9 @@
 # MediFlow demo 25/10/2026
 
+**Luồng mới có lịch khám/giữ suất/tái khám/quote:** dùng
+[runbook ngoại trú V2 ngày 26/10](MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md).
+Runbook này có overlay opt-in, cách chạy JAR cách ly, bước Postman/UI theo role và giới hạn nghiệm thu.
+
 **Đọc trước khi bảo vệ:** [nghiệp vụ hiện hành 25/10](../../docs/plans/02-business-flows.md)
 đã chốt lịch khám, tái khám và BHYT mô phỏng. Các runbook ở đây vẫn là baseline runtime;
 chưa chứng minh các yêu cầu mới đã có. Xem [gap và tiêu chí chuyển demo](../../docs/plans/07-outpatient-workflow-implementation.md).

@@ -1,8 +1,12 @@
 # H-10 — Hợp đồng liên owner cho điều chỉnh ngoại trú
 
-**Status:** ACTIVE CONTRACT GAP. **Ngày:** 26/10/2026.
+**Status:** NEEDS REVALIDATION. **Ngày:** 26/10/2026.
 **Điều phối/resume:** Vinh. **Baseline:** `dc2b8f2e5c9eb3c373a6feb0b2047ca22adf8317` + working tree local.
-**Phạm vi:** chốt hợp đồng cho WF-02–10, không cấp quyền sửa production module của owner khác.
+**Phạm vi:** hợp đồng và acceptance WF-02–10. Người dùng đã giao quyền task-scoped
+triển khai các module liên quan trên toàn repo; source revision 2 nằm trong PR triển khai.
+Các mục cần chốt/fixture dự kiến bên dưới ghi nguồn gốc gap, không là kết luận source mới còn thiếu.
+Đối chiếu [trạng thái triển khai](../plans/07-outpatient-workflow-implementation.md) và
+[runbook V2](../../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md) trước khi giao sửa tiếp.
 
 Đọc [source audit và G-01–11](../plans/09-outpatient-source-lock-2026-10-26.md),
 [manifest raw SHA-256](../plans/source-lock/2026-10-26-outpatient.json), [03](../plans/03-contracts.md)

@@ -23,6 +23,7 @@ di chuyển tài liệu không tự đóng các acceptance còn thiếu.
 - [Dữ liệu và độ tin cậy](plans/04-data-reliability.md)
 - [Plan 18 task và 72 subtask](plans/05-implementation-plan.md)
 - [Nghiệm thu và vận hành](plans/06-acceptance-runbook.md)
+- [Chạy và test ngoại trú V2 theo role — 26/10](../scripts/demo_25_10/MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md)
 - [Quy tắc coding](ai/README.md)
 
 Compose mặc định có 6 business deployment ngoại trú: Core, Clinical, Lab, Pharmacy, Billing, Support. Core chứa Organization/Patient; [Support host](../backend/support-service/README.md) nhúng hai plain libraries Report/Notification, giữ launchers cũ để rollback. Gateway/Eureka là hạ tầng, common là thư viện. 8 context stores active vẫn tách biệt; không gộp DB để đạt số 6. Ngày 2026-10-17 đã đạt real PG/Rabbit, packaged Support restart và luồng EXAM/Rx thật trong sáu apps qua Gateway, gồm current-store rollback giữ accepted writes. Sau đó đã cold-copy chính persisted Compose volumes hiện có, inventory hai Rabbit nodes cũ và đạt Support cutover/rollback/broker restart giữ bốn writes mới; original-volume hashes không đổi. Huy 48/48 cho môi trường local đã quan sát, không tự bật activation gates hoặc ký thay dữ liệu môi trường khác. Evidence ở [runbook Huy mục 8–9](plans/huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).

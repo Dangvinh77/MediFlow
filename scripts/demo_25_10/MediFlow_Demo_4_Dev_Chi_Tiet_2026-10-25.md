@@ -1,5 +1,10 @@
 # MediFlow — Cẩm nang demo và bảo vệ đồ án dành cho 4 thành viên
 
+> **Bổ sung 26/10 — lịch khám và báo giá V2:** để chạy source mới của PR ngoại trú,
+> dùng [hướng dẫn V2](MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md). Tài liệu đó có
+> `compose.outpatient.local.yml`, bước Postman/UI theo role và BHYT mô phỏng. Nội dung
+> bên dưới giữ vai trò baseline 25/10, gồm quy trình restore SQL; không trộn API hai baseline.
+
 > **Phạm vi baseline — cập nhật 25/10/2026:** các lệnh/API và kịch bản bên dưới mô tả mã nguồn
 > được khóa trong hướng dẫn, không là nghiệm thu luồng nghiệp vụ mới. Quy tắc hiện hành về
 > lịch khám theo ca, giữ suất, đăng ký tại quầy, tái khám và BHYT mô phỏng nằm tại
