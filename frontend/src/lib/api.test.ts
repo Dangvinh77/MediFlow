@@ -32,6 +32,15 @@ describe("shared API transport", () => {
     expect(sent().method).toBe("POST");
     expect(sent().body).toBe(JSON.stringify({ careContractVersion: 1 }));
   });
+  it("sends the target correlation header alongside an idempotency key", async () => {
+    respond();
+    await api.post("/v2/outpatient-registrations", { patientId: "patient" }, {
+      idempotencyKey: key,
+      correlationId: "c06-register-intent",
+    });
+    expect(new Headers(sent().headers).get("X-Correlation-Id")).toBe("c06-register-intent");
+    expect(new Headers(sent().headers).get("Idempotency-Key")).toBe(key);
+  });
   it.each(["headers", "body"])("bounds a stalled %s response and never retries a write", async stage => {
     vi.useFakeTimers();
     fetchMock.mockImplementation((_url, init) => {

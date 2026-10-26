@@ -226,6 +226,8 @@ async function request<T>(
 export interface MutationOptions {
   /** Stable key for one user intent; callers retain it when retrying that intent. */
   idempotencyKey?: string;
+  /** V2 commands require an explicit correlation ID for every attempt. */
+  correlationId?: string;
 }
 
 function mutationInit(
@@ -240,6 +242,15 @@ function mutationInit(
       throw new Error("Idempotency-Key must contain 1–160 characters without line breaks.");
     }
     init.headers = { "Idempotency-Key": key };
+  }
+  if (options?.correlationId !== undefined) {
+    const correlationId = options.correlationId;
+    if (!correlationId.trim() || correlationId.length > 120 || /[\r\n]/.test(correlationId)) {
+      throw new Error("X-Correlation-Id must contain 1–120 characters without line breaks.");
+    }
+    const headers = new Headers(init.headers);
+    headers.set("X-Correlation-Id", correlationId);
+    init.headers = headers;
   }
   // Some state-transition endpoints use POST/PUT without a JSON request body.
   if (data === undefined) {

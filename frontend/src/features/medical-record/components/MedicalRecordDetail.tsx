@@ -14,12 +14,14 @@ import { medicalRecordApi } from "../api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordDisposition } from "../types";
 import { AddDiagnosisForm } from "./AddDiagnosisForm";
 import { CompleteRecordForm } from "./CompleteRecordForm";
+import { FollowUpRecommendationPanel } from "./FollowUpRecommendationPanel";
 import { Button } from "@/components/ui/Button";
 
 interface MedicalRecordDetailProps {
   recordId: string;
   notice?: "created" | "updated";
   outpatientEnabled?: boolean;
+  schedulingV2Enabled?: boolean;
 }
 
 interface RequestError {
@@ -69,7 +71,7 @@ export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
   return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, role }: MedicalRecordDetailProps & { role: Role | null }) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, role }: MedicalRecordDetailProps & { role: Role | null }) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -191,6 +193,12 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         <Link href={`/records/${record.recordId}/lab-order`} className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted">Chỉ định xét nghiệm</Link>
         <CompleteRecordForm key={requestKey} record={record} onCompleted={(updated) => setState({ key: requestKey, status: "success", record: updated })} />
       </> : null}
+
+      {record.status === "COMPLETED" ? <FollowUpRecommendationPanel
+        recordId={record.recordId}
+        enabled={schedulingV2Enabled}
+        canCreate={role === "DOCTOR"}
+      /> : null}
 
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={retry}>Cập nhật hồ sơ</Button>

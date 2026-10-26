@@ -191,8 +191,9 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockResolvedValueOnce({ ...test, status: "READY", clearanceId: "10000000-0000-4000-8000-000000000007" })
       .mockResolvedValueOnce({ ...test, testId: "next-test", labType: "Xét nghiệm tiếp theo", status: "COMPLETED" });
     const view = render(<LabDetail testId={test.testId} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Bắt đầu xét nghiệm" }));
-    expect(mocks.start).toHaveBeenCalledWith(test.testId);
+    const startButton = await screen.findByRole("button", { name: "Bắt đầu xét nghiệm" });
+    await act(async () => { fireEvent.click(startButton); });
+    await waitFor(() => expect(mocks.start).toHaveBeenCalledWith(test.testId));
     view.rerender(<LabDetail testId="next-test" />);
     expect(await screen.findByText("Xét nghiệm tiếp theo")).toBeVisible();
     await act(async () => pending.resolve({ ...test, status: "IN_PROGRESS" }));

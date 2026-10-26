@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { medicalRecordApi } from "./api";
-import type { ClinicalLabOrderDTO } from "./types";
+import type { ClinicalLabOrderDTO, FollowUpRecommendationDTO } from "./types";
 
 vi.mock("client-only", () => ({}));
 vi.mock("@/lib/session", () => ({ getToken: () => "test-token", getSessionKey: () => "test-session", getRefreshToken: () => null, clearSession: vi.fn() }));
@@ -39,6 +39,36 @@ describe("record care commands through Gateway", () => {
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual(request);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates and reads the immutable V2 follow-up recommendation through the record routes", async () => {
+    const request = {
+      recommendedFrom: "2026-11-01",
+      recommendedThrough: "2026-11-30",
+      reason: "Review symptoms after treatment.",
+      preparationInstructions: null,
+    };
+    const recommendation: FollowUpRecommendationDTO = {
+      recommendationId: "recommendation-1", sourceRecordId: "record-1", sourceRegistrationId: "registration-1",
+      patientId: "patient-1", departmentId: "department-1", preferredDoctorId: "doctor-1",
+      ...request, createdAt: "2026-10-26T04:00:00Z",
+    };
+    fetchMock.mockResolvedValueOnce(Response.json({ success: true, data: recommendation }, { status: 201 }));
+    expect(await medicalRecordApi.createFollowUpRecommendation("record/1", request, {
+      idempotencyKey: "follow-up-key", correlationId: "follow-up-trace",
+    })).toEqual(recommendation);
+    const [postUrl, postInit] = fetchMock.mock.calls[0];
+    expect(postUrl).toBe("/api/v2/records/record%2F1/follow-up-recommendations");
+    expect(postInit.method).toBe("POST");
+    expect(JSON.parse(postInit.body)).toEqual(request);
+    expect(new Headers(postInit.headers).get("Idempotency-Key")).toBe("follow-up-key");
+    expect(new Headers(postInit.headers).get("X-Correlation-Id")).toBe("follow-up-trace");
+
+    fetchMock.mockResolvedValueOnce(Response.json({ success: true, data: recommendation }));
+    expect(await medicalRecordApi.getFollowUpRecommendation("record/1")).toEqual(recommendation);
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v2/records/record%2F1/follow-up-recommendation");
+    expect(fetchMock.mock.calls[1][1].method).toBe("GET");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("keeps field validation details and correlation ID for the form", async () => {

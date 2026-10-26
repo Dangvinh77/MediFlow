@@ -30,6 +30,7 @@ export default async function RecordDetailPage({ params, searchParams }: RecordD
           <MedicalRecordDetail
             recordId={id}
             outpatientEnabled={outpatientUiEnabled()}
+            schedulingV2Enabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"}
             notice={notice === "created" || notice === "updated" ? notice : undefined}
           />
         </RoleGate>

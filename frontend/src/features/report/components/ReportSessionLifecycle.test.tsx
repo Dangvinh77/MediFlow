@@ -25,8 +25,8 @@ function session(token = "session-a", role: Role = "ADMIN") { storeSession({ acc
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (cause: unknown) => void; const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; }); return { promise, resolve, reject }; }
 
 describe("Report private session lifecycle", () => {
-  beforeEach(() => { vi.resetAllMocks(); session(); });
-  afterEach(() => clearSession());
+  beforeEach(() => { vi.resetAllMocks(); act(() => session()); });
+  afterEach(() => act(() => clearSession()));
 
   it.each(cases)("focuses $name denied feedback once and leaves filters available to keyboard users", async item => {
     item.api.mockRejectedValue(new ApiRequestError("Không được phép đọc", 403, "FORBIDDEN", [], "report-focus"));
@@ -56,7 +56,8 @@ describe("Report private session lifecycle", () => {
       .mockResolvedValueOnce(cases[3].response);
     render(cases[3].element);
     const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
-    expect(feedback).toHaveFocus(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(feedback).toHaveFocus());
+    expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
     await user.tab(); expect(screen.getByRole("button", { name: "Thử lại" })).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(await screen.findByText("Đã đối soát")).toBeVisible();
