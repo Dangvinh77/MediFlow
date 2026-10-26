@@ -20,7 +20,6 @@ if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo [ok] Git hooks enabled: core.hooksPath = scripts/git-hooks
 echo       - prepare-commit-msg strips AI attribution trailers
 echo       - commit-msg allows exactly the 4 contributors in scripts/allowed-contributors.json
-echo       - post-commit / post-merge maintain the changelog (.changelog/)
 
 for /f "delims=" %%v in ('git config --get core.hooksPath') do set "HP=%%v"
 echo Active hooksPath: %HP%

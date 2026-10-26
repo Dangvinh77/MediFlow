@@ -10,9 +10,6 @@ echo "==> Hospital MSA toolkit bootstrap (Unix)"
 if [ -d "scripts/git-hooks" ]; then
   git config core.hooksPath scripts/git-hooks
   echo "[ok] Git hooks installed (4 contributors, no co-author)"
-  if have node; then
-    node scripts/changelog.js --init 2>/dev/null && echo "[ok] CHANGELOG.db initialized" || echo "[note] changelog init skipped (no sqlite3)"
-  fi
 else
   echo "[MISSING] scripts/git-hooks/ not found — hooks not configured"
 fi
@@ -44,6 +41,5 @@ echo ""
 echo "Next steps:"
 echo "  1) Read docs/ai/README.md (the coding standards)."
 echo "  2) Build:  mvn -q -DskipTests install   (once the service modules exist)."
-echo "  3) Init changelog: node scripts/changelog.js --init  (already done above)."
-echo "  4) Restart Claude Code or Codex, then run /index-codebase or \$index-codebase."
-echo "  5) Before coding, run: node scripts/changelog.js --summary"
+echo "  3) Restart Claude Code or Codex, then run /index-codebase or \$index-codebase."
+echo "  4) Before coding, inspect git status --short and git log -5 --oneline."

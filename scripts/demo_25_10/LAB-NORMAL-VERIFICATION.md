@@ -66,7 +66,8 @@ Chạy tại root repository bằng PowerShell:
 ```powershell
 git fetch origin master
 git rev-parse origin/master
-node scripts/changelog.js --summary
+git status --short
+git log -5 --oneline
 mvn -q -pl backend/lab-service -am '-Dtest=LabBillingExecutionAuthorityAdapterTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
 mvn -q -pl backend/lab-service -am test
 mvn -q -pl backend/core-service,backend/gateway,backend/eureka-server,backend/clinical-service,backend/lab-service,backend/billing-service -am -DskipTests package

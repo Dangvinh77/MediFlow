@@ -10,11 +10,6 @@ $hooksDir = Join-Path (Get-Location) "scripts/git-hooks"
 if (Test-Path $hooksDir) {
     git config core.hooksPath scripts/git-hooks
     Write-Host "[ok] Git hooks installed (4 contributors, no co-author)" -ForegroundColor Green
-    if (Test-Cmd node) {
-        node scripts/changelog.js --init 2>$null
-        if ($?) { Write-Host "[ok] CHANGELOG.db initialized" -ForegroundColor Green }
-        else { Write-Host "[note] changelog init skipped (no sqlite3)" -ForegroundColor Yellow }
-    }
 } else {
     Write-Host "[MISSING] scripts/git-hooks/ not found — hooks not configured" -ForegroundColor Red
 }
@@ -48,7 +43,6 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1) Read docs/ai/README.md (the coding standards)."
 Write-Host "  2) Build:  mvn -q -DskipTests install   (once the service modules exist)."
-Write-Host "  3) Init changelog: node scripts/changelog.js --init  (already done above)."
-Write-Host "  4) Restart Claude Code or Codex, then index the graph: /index-codebase or `$index-codebase."
+Write-Host "  3) Restart Claude Code or Codex, then index the graph: /index-codebase or `$index-codebase."
 Write-Host "     (Or ask the agent to run index_repository on the repo root.)"
-Write-Host "  5) Before coding, run: node scripts/changelog.js --summary" -ForegroundColor Cyan
+Write-Host "  4) Before coding, inspect git status --short and git log -5 --oneline." -ForegroundColor Cyan

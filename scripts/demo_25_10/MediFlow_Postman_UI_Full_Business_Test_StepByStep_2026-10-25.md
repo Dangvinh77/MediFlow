@@ -84,7 +84,8 @@ Mở PowerShell tại root; những terminal khác cũng bắt đầu từ root,
 Set-Location 'E:\DEV\Coding_Resource\Project\e_PROJECT\Semester4\Source'
 git status --short --branch
 git rev-parse HEAD
-node scripts/changelog.js --summary
+git status --short
+git log -5 --oneline
 java -version
 mvn -version
 python --version
