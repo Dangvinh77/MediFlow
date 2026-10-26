@@ -24,7 +24,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   const router = useRouter();
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const editing = Boolean(patientId);
-  const { form, set, loading, loaded, saving, blocked, outcomeUnknown, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
+  const { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving, blocked, outcomeUnknown, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
   const errorSummary = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save(); }
@@ -33,11 +33,12 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   if (error && editing && !loaded) return <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={retry} />;
 
   return (
-    <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5">
+    <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
       {error ? <div role="alert" aria-label="Không thể lưu bệnh nhân" ref={errorSummary} tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><p>{error.message}</p>{error.correlationId ? <p className="mt-1 font-mono text-xs">Mã theo dõi: {error.correlationId}</p> : null}</div> : null}
       <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
       {outcomeUnknown ? <PatientSaveRecovery patientId={patientId} draft={form} onVerified={patient => { markSaved(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}`); }} /> : null}
       <fieldset disabled={blocked} className="min-w-0 space-y-5">
+        {identityChanged ? <FormSection title="Xác nhận thay đổi định danh" description="CCCD hoặc ngày sinh đã thay đổi. Lý do và người thực hiện sẽ được lưu vào lịch sử."><Field label="Lý do thay đổi định danh" htmlFor="patient-identity-reason" required><textarea id="patient-identity-reason" required maxLength={500} rows={3} value={identityReason} onChange={event => setIdentityReason(event.target.value)} className={controlClassName} /></Field></FormSection> : null}
         <FormSection title="Thông tin cá nhân" description="Thông tin định danh của bệnh nhân. Kiểm tra kỹ CMND/CCCD trước khi lưu.">
           <Field label="Họ tên" error={fieldErrors.hoTen} htmlFor="patient-name" required><input id="patient-name" aria-invalid={Boolean(fieldErrors.hoTen)} aria-describedby={fieldErrors.hoTen ? "patient-name-error" : undefined} autoComplete="name" required maxLength={100} value={form.hoTen} onChange={(event) => set("hoTen", event.target.value)} className={controlClassName} /></Field>
           <Field label="Ngày sinh" error={fieldErrors.ngaySinh} htmlFor="patient-birth-date" required><input id="patient-birth-date" aria-invalid={Boolean(fieldErrors.ngaySinh)} aria-describedby={fieldErrors.ngaySinh ? "patient-birth-date-error" : undefined} required type="date" max={patientToday()} value={form.ngaySinh} onChange={(event) => set("ngaySinh", event.target.value)} className={controlClassName} /></Field>
@@ -51,7 +52,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
           <Field label="Địa chỉ" error={fieldErrors.diaChi} htmlFor="patient-address"><textarea id="patient-address" aria-invalid={Boolean(fieldErrors.diaChi)} aria-describedby={fieldErrors.diaChi ? "patient-address-error" : undefined} autoComplete="street-address" maxLength={255} rows={3} value={form.diaChi} onChange={(event) => set("diaChi", event.target.value)} className={controlClassName} /></Field>
         </FormSection>
       </fieldset>
-      <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-5"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
+      <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
     </form>
   );
 }

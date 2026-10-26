@@ -20,6 +20,15 @@ public final class Patient {
     private String healthInsuranceNumber;
     private final Instant createdAt;
     private Instant updatedAt;
+    private boolean archived;
+
+    public boolean archived() { return archived; }
+
+    public void archive() {
+        if (archived) return;
+        this.archived = true;
+        this.updatedAt = Instant.now();
+    }
 
     private Patient(
             UUID patientId,
@@ -76,6 +85,16 @@ public final class Patient {
                 updatedAt);
     }
 
+    /** Rehydrates persisted archive state; there is no command to reopen an archived record. */
+    public static Patient restore(UUID patientId, String fullName, LocalDate dateOfBirth, Gender gender,
+            String identityNumber, String address, String phoneNumber, String email,
+            String healthInsuranceNumber, Instant createdAt, Instant updatedAt, boolean archived) {
+        Patient patient = restore(patientId, fullName, dateOfBirth, gender, identityNumber,
+                address, phoneNumber, email, healthInsuranceNumber, createdAt, updatedAt);
+        patient.archived = archived;
+        return patient;
+    }
+
     public static Patient create(
             String fullName,
             LocalDate dateOfBirth,
@@ -111,6 +130,7 @@ public final class Patient {
     public void update(
             String fullName, LocalDate dateOfBirth, Gender gender, String address,
             String phoneNumber, String email, String healthInsuranceNumber, String identityNumber) {
+        if (archived) throw invalid("PATIENT_ARCHIVED", "Hồ sơ đã lưu trữ, không thể chỉnh sửa");
         validateFullName(fullName);
         validateDateOfBirth(dateOfBirth);
         validateGender(gender);

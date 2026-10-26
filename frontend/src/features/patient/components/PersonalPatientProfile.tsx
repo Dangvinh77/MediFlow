@@ -42,5 +42,5 @@ export function PersonalPatientProfile({ patientId }: { patientId: string }) {
 }
 
 function Info({ label, value }: { label: string; value: string | null }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-sm">{value ?? "—"}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value ?? "—"}</dd></div>;
 }

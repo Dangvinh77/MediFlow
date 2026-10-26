@@ -8,6 +8,21 @@ Các mục theo ngày bên dưới là checkpoint của baseline tương ứng; 
 lịch khám, đặt chỗ, tái khám hoặc chính sách BHYT mới. Chưa cập nhật trạng thái hoàn thành của
 các tính năng này chỉ bằng đợt chuẩn hóa tài liệu.
 
+## Patient / Organization access control — 2026-10-25
+
+Patient archival replaces hard deletion; historical identity is retained. Identity corrections
+require an audited reason. Personal staff profiles support self-contact editing only. Gateway
+checks current account state and credential version for each protected human request. Exact
+behavior and rollout are recorded in `docs/plans/03-contracts.md`. Mobile code is unchanged.
+
+Verification (2026-10-26): 223 web tests across 30 files pass; focused ESLint and production
+build/TypeScript pass. Core has 357 passing tests and Gateway has 1,591, with zero failures,
+errors or skips in the final Surefire reports (the corrected Patient integration slice was
+rerun separately). PostgreSQL/RabbitMQ checks cover retained archive identity, a single archive
+fact with the correct wire type, identity uniqueness under concurrent correction, and atomic
+audit/outbox rollback. Browser fixtures verify reason submission, self-contact field isolation,
+and archived read-only detail with no JavaScript errors. Runtime production data was not changed.
+
 ## Pharmacy / Report usability recheck — 2026-10-25
 
 Catalogue name/ingredient search now combines with server-side stock and expiry filters;

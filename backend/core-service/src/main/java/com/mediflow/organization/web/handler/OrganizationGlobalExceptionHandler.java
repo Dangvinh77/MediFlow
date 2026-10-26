@@ -236,9 +236,10 @@ public class OrganizationGlobalExceptionHandler {
                 "BUSINESS_RULE_VIOLATION", exception.getMessage());
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler({AccessDeniedException.class,
+            com.mediflow.organization.domain.exception.OwnStaffContactAccessDeniedException.class})
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
-            AccessDeniedException exception) {
+            RuntimeException exception) {
         return buildResponse(HttpStatus.FORBIDDEN,
                 "FORBIDDEN", "You do not have permission to perform this operation");
     }

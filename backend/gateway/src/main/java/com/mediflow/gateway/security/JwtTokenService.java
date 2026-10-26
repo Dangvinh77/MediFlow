@@ -64,6 +64,11 @@ public class JwtTokenService {
             UUID staffId,
             UUID departmentId,
             UUID patientId) {
+        return issueAccessToken(accountId, role, staffId, departmentId, patientId, 0);
+    }
+
+    public String issueAccessToken(UUID accountId, String role, UUID staffId, UUID departmentId,
+            UUID patientId, long credentialVersion) {
         return build(
                 accountId.toString(),
                 role,
@@ -72,7 +77,7 @@ public class JwtTokenService {
                 staffId,
                 departmentId,
                 patientId,
-                UUID.randomUUID().toString());
+                UUID.randomUUID().toString(), credentialVersion);
     }
 
     public String issueRefreshToken(UUID userId, String role) {

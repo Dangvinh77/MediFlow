@@ -13,11 +13,13 @@ export const patientContractFixture = {
   bhytSo: null,
   createdAt: "2026-08-13T10:00:00Z",
   updatedAt: "2026-08-13T10:00:00Z",
+  daLuuTru: false,
 } satisfies PatientDTO;
 
 /** Update DTO fixture includes a corrected identity number. */
 export const updatePatientContractFixture = {
   soCmnd: "001234567891",
+  lyDoThayDoiDinhDanh: "Đối chiếu CCCD gốc",
   hoTen: "Nguyen Van A",
   ngaySinh: "1990-01-15",
   gioiTinh: "M",

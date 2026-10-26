@@ -44,6 +44,17 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 })
 @AutoConfigureWebTestClient
 class BillingDiscoveryGatewayWebTest {
+    // Route/forwarding contract fixture. AccountSessionValidationWebTest exercises the real guard.
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.mediflow.gateway.filter.AccountSessionValidationFilter sessionValidation;
+
+    @org.junit.jupiter.api.BeforeEach
+    void isolateAccountStateDependency() {
+        org.mockito.Mockito.when(sessionValidation.filter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(call -> ((org.springframework.cloud.gateway.filter.GatewayFilterChain) call.getArgument(1))
+                        .filter(call.getArgument(0)));
+    }
+
     private static final String PATH = "/api/v1/billing/payment-requests/by-source";
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
     private static final String QUERY = "purpose=LAB_TEST&sourceId=00000000-0000-4000-8000-000000000002"

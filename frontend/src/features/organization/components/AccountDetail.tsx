@@ -71,7 +71,7 @@ export function AccountDetail({ accountId, renderPatientLink }: { accountId: str
     <DetailSection title="Chi tiết tài khoản">
       <Info label="Tên đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
       <Info label="Trạng thái" value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />
-      <div><dt className="text-xs font-semibold uppercase text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1 break-words text-sm">{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}>Bệnh nhân: Xem hồ sơ</Link> : "Chưa liên kết"}</dd></div>
+      <div><dt className="text-sm text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1.5 break-words text-sm leading-6">{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}>Bệnh nhân: Xem hồ sơ</Link> : "Chưa liên kết"}</dd></div>
       <Info label="Mã tài khoản" value={account.accountId} /><Info label="Lần đăng nhập gần nhất" value={formatInstant(account.lastLoginAt)} />
       <Info label="Ngày tạo" value={formatInstant(account.createdAt)} /><Info label="Cập nhật lần cuối" value={formatInstant(account.updatedAt)} />
     </DetailSection>
@@ -83,4 +83,4 @@ export function AccountDetail({ accountId, renderPatientLink }: { accountId: str
   </section>;
 }
 
-function Info({ label, value }: { label: string; value: string }) { return <div><dt className="text-xs font-semibold uppercase text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-sm">{value}</dd></div>; }
+function Info({ label, value }: { label: string; value: string }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value}</dd></div>; }

@@ -25,6 +25,8 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email: string | null; address: string | null }) =>
+    api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
   account: (accountId: string) =>
     api.get<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}`),
   accounts: (params: { keyword?: string; role?: string; active?: boolean; page?: number } = {}) => {

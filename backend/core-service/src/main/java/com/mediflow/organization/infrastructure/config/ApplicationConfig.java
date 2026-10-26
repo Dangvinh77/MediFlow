@@ -1,5 +1,7 @@
 package com.mediflow.organization.infrastructure.config;
 
+import com.mediflow.organization.application.service.UpdateOwnStaffContactService;
+import com.mediflow.organization.application.port.in.UpdateOwnStaffContactUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -55,6 +57,10 @@ public class ApplicationConfig {
                                 java.time.Clock.systemUTC());
         }
 
+        @Bean
+        public UpdateOwnStaffContactUseCase updateOwnStaffContactUseCase(StaffRepository staff, EventPublisher events, CorrelationIdProvider correlationIds) {
+                return new UpdateOwnStaffContactService(staff, events, correlationIds);
+        }
         @Bean
         public com.mediflow.organization.application.port.in.GetOwnStaffDepartmentUseCase getOwnStaffDepartmentUseCase(
                         StaffRepository staff, DepartmentRepository departments) {

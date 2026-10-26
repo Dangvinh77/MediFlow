@@ -18,5 +18,12 @@ public record PatientDTO(
         String email,
         String bhytSo,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        boolean daLuuTru) {
+    public PatientDTO(UUID maBenhNhan, String hoTen, LocalDate ngaySinh, Gender gioiTinh,
+            String soCmnd, String diaChi, String soDienThoai, String email, String bhytSo,
+            Instant createdAt, Instant updatedAt) {
+        this(maBenhNhan, hoTen, ngaySinh, gioiTinh, soCmnd, diaChi, soDienThoai, email, bhytSo,
+                createdAt, updatedAt, false);
+    }
 }

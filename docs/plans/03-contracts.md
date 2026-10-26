@@ -123,6 +123,44 @@ Prefix không thay exact endpoint/role matrix. Gateway phải deny method/path n
 không OR roles của hai module co-host. Account verify và exists/lookup là service-only,
 không public human API. Giữ ApiResponse/PageResult và correlation như source.
 
+## Core/Gateway access-control changes — 2026-10-25
+
+- Patient `DELETE /api/v1/patients/{id}` remains ADMIN-only and returns 204, but now
+  archives instead of physically deleting. Repeating it is idempotent. `PatientDTO.daLuuTru`
+  exposes the state. Active search excludes archived records; authorized get-by-id and
+  service existence/minimal lookup retain the UUID and identity. The unique identity number
+  remains reserved. Updating an archived record returns 422 `PATIENT_ARCHIVED`.
+  Archival does not cancel visits, disable accounts or establish clearance in other contexts.
+- ADMIN/NURSE correction of `soCmnd` or `ngaySinh` on the existing Patient PUT requires
+  `lyDoThayDoiDinhDanh` (nonblank, at most 500 characters). Missing reason returns 422
+  `PATIENT_IDENTITY_REASON_REQUIRED`; unchanged identity does not require a reason.
+  A locked Patient row, its correction audit and event outbox commit in one Patient transaction.
+  Audit stores signed actor account/role, reason, before/after identity and birth date, time and
+  correlation ID. Audit values are private persistence data; no public audit endpoint is added.
+- `PUT /api/v1/org/staff/{id}/contact` accepts only `phoneNumber`, `email`, `address`
+  (nullable, omitted values clear the corresponding contact value; full replacement of these
+  three fields). ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH must match the signed
+  `staffId`, including ADMIN. PATIENT/SYSTEM and absent/foreign staff identity are denied.
+  Full administrator staff editing remains ADMIN-only. Identity, job, department, licence,
+  qualifications and account permissions cannot be changed through self-contact updates.
+- Login/refresh access tokens now carry `credentialVersion`. Gateway validates each protected
+  human request against the existing signed Organization account identity lookup: active state,
+  credential version, role and staff/department/patient claims must all match. Stale sessions
+  return 401 `AUTH_SESSION_REVOKED`; unavailable authority fails closed with 503/504
+  `AUTH_UPSTREAM_UNAVAILABLE`. No cache means the next request observes a committed change;
+  in-flight requests are not cancelled. Legacy tokens without a version mean version zero.
+  Public authentication/health and signed SYSTEM routes keep their existing guards.
+  This adds one Organization lookup per authorized human request and makes availability depend
+  on that authority. Business ports must remain internal: direct calls bypass Gateway revocation.
+- Additive, flat event facts are `patient.archived` and `staff.contact.updated`, each containing
+  only `eventId`, `occurredAt`, `correlationId`, and `patientId`/`staffId`. They use the owning
+  context's transactional outbox. No downstream action or consumer is activated; unbound facts
+  follow the existing bounded retry/quarantine policy and remain retained for investigation.
+
+Patient migration `V4__patient_archive_and_identity_audit.sql` adds the archive flag and audit
+store. Client rollout must include the reason field before users correct identity; mobile clients
+that omit it receive the explicit validation error. Mobile code and token storage are unchanged.
+
 ## REST dependencies
 
 Organization hiện yêu cầu `departmentHeadId` trong request

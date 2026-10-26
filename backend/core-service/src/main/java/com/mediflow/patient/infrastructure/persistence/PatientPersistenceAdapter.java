@@ -32,6 +32,11 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     }
 
     @Override
+    public Optional<Patient> findByIdForUpdate(UUID patientId) {
+        return repository.findByIdForUpdate(patientId).map(mapper::toDomain);
+    }
+
+    @Override
     public PageResult<Patient> search(String keyword, PageQuery query) {
         var page = repository.search(keyword == null || keyword.isBlank() ? "" : keyword.trim(),
                 PageRequest.of(query.page(), query.size()));

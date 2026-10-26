@@ -1,5 +1,6 @@
 package com.mediflow.organization.infrastructure.messaging;
 
+import com.mediflow.organization.application.event.StaffContactUpdatedEvent;
 import com.mediflow.organization.application.event.DepartmentCreatedEvent;
 import com.mediflow.organization.application.event.StaffCreatedEvent;
 import com.mediflow.organization.application.event.StaffDepartmentChangedEvent;
@@ -39,6 +40,11 @@ public class OrganizationEventOutboxAdapter implements EventPublisher {
         append(event, StaffDepartmentChangedEvent.ROUTING_KEY, StaffDepartmentChangedEvent.class.getName());
     }
 
+    @Override
+    public void publishStaffContactUpdated(StaffContactUpdatedEvent event) {
+        append(event, event.ROUTING_KEY, event.getClass().getName());
+    }
+
     private void append(Object event, String routingKey, String typeId) {
         MessageProperties properties = new MessageProperties();
         byte[] body = converter.toMessage(event, properties).getBody();
@@ -47,6 +53,7 @@ public class OrganizationEventOutboxAdapter implements EventPublisher {
             case DepartmentCreatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             case StaffCreatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             case StaffDepartmentChangedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
+            case StaffContactUpdatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             default -> throw new IllegalArgumentException("Unsupported organization event type");
         };
         store.append(common.id(), common.occurredAt(), common.correlationId(), routingKey,

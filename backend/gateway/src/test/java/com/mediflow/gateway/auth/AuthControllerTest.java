@@ -48,11 +48,14 @@ class AuthControllerTest {
         assertThat(controller.refresh(new RefreshRequest(oldToken), correlationId).block().getStatusCode().value())
                 .isEqualTo(401);
         var newToken = jwt.issueRefreshToken(accountId, "DOCTOR", staffId, null, null, 1);
-        assertThat(controller.refresh(new RefreshRequest(newToken), correlationId).block().getStatusCode().value())
-                .isEqualTo(200);
+        var refreshed = controller.refresh(new RefreshRequest(newToken), correlationId).block();
+        assertThat(refreshed.getStatusCode().value()).isEqualTo(200);
+        var refreshedBody = (AuthDtos.RefreshResponse) refreshed.getBody();
+        assertThat(jwt.parse(refreshedBody.accessToken()).get(JwtTokenService.CREDENTIAL_VERSION_CLAIM, Number.class).longValue()).isEqualTo(1);
         when(organization.verify("doctor", "new-password", correlationId)).thenReturn(Mono.just(
                 new OrganizationAuthClient.VerifiedAccount(accountId, staffId, null, null, "DOCTOR", 1)));
         var login = (LoginResponse) controller.login(new LoginRequest("doctor", "new-password"), correlationId).block().getBody();
+        assertThat(jwt.parse(login.accessToken()).get(JwtTokenService.CREDENTIAL_VERSION_CLAIM, Number.class).longValue()).isEqualTo(1);
         assertThat(jwt.parse(login.refreshToken()).get(JwtTokenService.CREDENTIAL_VERSION_CLAIM, Number.class).longValue())
                 .isEqualTo(1);
     }

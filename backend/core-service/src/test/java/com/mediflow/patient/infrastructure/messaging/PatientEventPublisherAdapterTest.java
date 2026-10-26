@@ -32,6 +32,19 @@ class PatientEventPublisherAdapterTest {
     }
 
     @Test
+    void archiveEventContainsOnlyIdentityAndCommitsThroughOutbox() throws Exception {
+        var event = new com.mediflow.patient.application.event.PatientArchivedEvent(
+                UUID.randomUUID(), Instant.now(), "corr", UUID.randomUUID());
+        adapter.publishArchived(event);
+        var payload = ArgumentCaptor.forClass(String.class);
+        verify(store).append(eq(event.eventId()), eq(event.occurredAt()), eq(event.correlationId()),
+                eq(RabbitConfig.RK_PATIENT_ARCHIVED), payload.capture());
+        var json = mapper.readTree(payload.getValue());
+        assertThat(json.size()).isEqualTo(4);
+        assertThat(json.get("patientId").asText()).isEqualTo(event.patientId().toString());
+    }
+
+    @Test
     void updatedEventIsStoredAndPersistenceFailurePropagatesToRollbackCaller() {
         var event = new PatientUpdatedEvent(UUID.randomUUID(), Instant.now(), "corr", UUID.randomUUID(),
                 "Nguyen Van A", "a@example.com", "0900000000", "New address");

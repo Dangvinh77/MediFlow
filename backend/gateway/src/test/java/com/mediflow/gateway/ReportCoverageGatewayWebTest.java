@@ -39,6 +39,17 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 })
 @AutoConfigureWebTestClient
 class ReportCoverageGatewayWebTest {
+    // Route/forwarding contract fixture. AccountSessionValidationWebTest exercises the real guard.
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.mediflow.gateway.filter.AccountSessionValidationFilter sessionValidation;
+
+    @org.junit.jupiter.api.BeforeEach
+    void isolateAccountStateDependency() {
+        org.mockito.Mockito.when(sessionValidation.filter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(call -> ((org.springframework.cloud.gateway.filter.GatewayFilterChain) call.getArgument(1))
+                        .filter(call.getArgument(0)));
+    }
+
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
     private static final String PREVIEW = "/api/v1/reports/outpatient/coverage/preview";
     private static final String ACCEPT = "/api/v1/reports/outpatient/coverage/acceptances";

@@ -56,7 +56,7 @@ describe("PatientDetail read logic", () => {
     mocks.getById.mockResolvedValue(patientContractFixture);
     render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
-    const trigger = screen.getByRole("button", { name: "Xóa bệnh nhân" });
+    const trigger = screen.getByRole("button", { name: "Lưu trữ bệnh nhân" });
     fireEvent.click(trigger);
     const confirmation = screen.getByRole("alertdialog");
     expect(confirmation).toHaveFocus();
@@ -73,9 +73,9 @@ describe("PatientDetail read logic", () => {
     const response = deferred<void>(); mocks.delete.mockReturnValue(response.promise);
     render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
-    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" }));
     expect(mocks.delete).not.toHaveBeenCalled();
-    const confirm = screen.getByRole("button", { name: "Xác nhận xóa" });
+    const confirm = screen.getByRole("button", { name: "Xác nhận lưu trữ" });
     fireEvent.click(confirm); fireEvent.click(confirm);
     expect(mocks.delete).toHaveBeenCalledTimes(1);
     await act(async () => response.resolve());
@@ -87,8 +87,8 @@ describe("PatientDetail read logic", () => {
     const response = deferred<void>(); mocks.delete.mockReturnValue(response.promise);
     const view = render(<PatientDetail patientId="one" />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
-    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
-    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận lưu trữ" }));
     view.rerender(<PatientDetail patientId="two" />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -103,8 +103,8 @@ describe("PatientDetail read logic", () => {
     mocks.delete.mockReturnValue(response.promise);
     render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
-    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
-    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận lưu trữ" }));
 
     act(() => mocks.setToken("session-b"));
     await act(async () => { response.resolve(); });
@@ -155,15 +155,15 @@ describe("PatientDetail read logic", () => {
     const view = render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
     expect(screen.getByRole("link", { name: "Chỉnh sửa" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Xóa bệnh nhân" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Lưu trữ bệnh nhân" })).not.toBeInTheDocument();
 
     view.rerender(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     mocks.getRole.mockReturnValue("ADMIN");
     // Auth subscriptions drive the role change; rerender after changing the mocked snapshot.
     view.rerender(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
-    expect(screen.getByRole("button", { name: "Xóa bệnh nhân" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("không thể hoàn tác");
+    expect(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("không xóa hồ sơ khám");
     fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(mocks.delete).not.toHaveBeenCalled();
@@ -175,8 +175,8 @@ describe("PatientDetail read logic", () => {
     mocks.delete.mockRejectedValue(new ApiRequestError("Hồ sơ đang được tham chiếu", 409, "PATIENT_DELETE_REFERENCED"));
     render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByRole("heading", { name: "Nguyen Van A" });
-    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
-    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận lưu trữ" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Hồ sơ đang được tham chiếu");
     expect(mocks.delete).toHaveBeenCalledWith(patientContractFixture.maBenhNhan);

@@ -76,6 +76,18 @@ These values must remain consistent across:
 | PUT    | `/api/v1/patients/{id}`              | `UpdatePatientRequest` | `PatientDTO`       | ADMIN, NURSE         |
 | DELETE | `/api/v1/patients/{id}`              | -                      | `204 No Content`   | ADMIN                |
 
+### Archive and identity correction (2026-10-25)
+
+DELETE is now an idempotent ADMIN-only archive. It retains the UUID, unique identity number and
+historical references. Search excludes archived rows; authorized get/exists/minimal lookup still
+find them. `PatientDTO.daLuuTru` exposes archive state. Archived records reject updates with
+422 `PATIENT_ARCHIVED`.
+
+Changing CCCD (`soCmnd`) or birth date (`ngaySinh`) requires `lyDoThayDoiDinhDanh`, a nonblank
+reason up to 500 characters. ADMIN/NURSE permissions remain unchanged. Missing reason returns
+422 `PATIENT_IDENTITY_REASON_REQUIRED`. Patient identity audit and event outbox share the Patient
+transaction. Exact rollout and session validation rules are in [the canonical contracts](../../../docs/plans/03-contracts.md).
+
 ### DTO fields
 
 Persistence identifiers remain English, but public DTO fields use Vietnamese `camelCase` to match
@@ -93,6 +105,7 @@ email
 bhytSo
 createdAt
 updatedAt
+daLuuTru
 ```
 
 Example:

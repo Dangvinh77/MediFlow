@@ -7,6 +7,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PatientTest {
     @Test
+    void archiveIsIdempotentAndBlocksFurtherDemographicMutation() {
+        Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M, "001", null, null, null, null);
+        patient.archive();
+        var archivedAt = patient.updatedAt();
+        patient.archive();
+        assertThat(patient.updatedAt()).isEqualTo(archivedAt);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> patient.update(
+                "B", patient.dateOfBirth(), Gender.F, null, null, null, null)).hasMessageContaining("lưu trữ");
+        assertThat(patient.fullName()).isEqualTo("A");
+        assertThat(patient.archived()).isTrue();
+    }
+
+    @Test
     void rejectsInvalidIdentityCorrectionBeforeChangingAnyFields() {
         Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", null, null, null, null);

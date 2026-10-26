@@ -11,9 +11,8 @@ import { ProfileWorkspace } from "./profile/ProfileWorkspace";
 export function OrganizationWorkspace() {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   if (role !== "ADMIN") return <PageShell title="Hồ sơ cá nhân" description="Thông tin của bạn và bảo mật tài khoản."><ProfileWorkspace /></PageShell>;
-  return <PageShell title="Quản trị tổ chức" description="Quản lý khoa phòng, nhân sự và tài khoản trong bệnh viện.">
+  return <PageShell title="Quản trị tổ chức" description="Quản lý khoa phòng, nhân sự và tài khoản trong bệnh viện." actions={<OrganizationAdminActions />}>
     <RoleGate allowed={["ADMIN"]}>
-      <OrganizationAdminActions />
       <OrganizationDirectory />
     </RoleGate>
   </PageShell>;

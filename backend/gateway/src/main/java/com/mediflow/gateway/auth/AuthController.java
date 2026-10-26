@@ -59,7 +59,7 @@ public class AuthController {
                             account.role(),
                             account.staffId(),
                             account.departmentId(),
-                            account.patientId());
+                            account.patientId(), account.credentialVersion());
                     String refreshToken = jwt.issueRefreshToken(
                             account.accountId(),
                             account.role(),
@@ -137,7 +137,7 @@ public class AuthController {
                             identity.role(),
                             identity.staffId(),
                             identity.departmentId(),
-                            identity.patientId());
+                            identity.patientId(), identity.credentialVersion());
                     return ResponseEntity.ok((Object) new RefreshResponse(accessToken));
                 })
                 .onErrorResume(UpstreamTimeoutException.class, exception -> Mono.just(errorResponse(

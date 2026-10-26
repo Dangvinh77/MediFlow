@@ -18,6 +18,7 @@ public class RabbitConfig {
     public static final String QUEUE = "patient.q";
     public static final String DLQ = "patient.dlq";
     public static final String RK_PATIENT_CREATED = "patient.created";
+    public static final String RK_PATIENT_ARCHIVED = "patient.archived";
     public static final String RK_PATIENT_UPDATED = "patient.updated";
     public static final String RK_PAYMENT_COMPLETED = "payment.completed";
     private static final String DEAD_LETTER_ROUTING_KEY = "patient.dead-letter";

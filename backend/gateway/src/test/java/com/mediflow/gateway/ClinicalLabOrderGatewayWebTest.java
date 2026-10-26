@@ -33,6 +33,17 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 })
 @AutoConfigureWebTestClient
 class ClinicalLabOrderGatewayWebTest {
+    // Route/forwarding contract fixture. AccountSessionValidationWebTest exercises the real guard.
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.mediflow.gateway.filter.AccountSessionValidationFilter sessionValidation;
+
+    @org.junit.jupiter.api.BeforeEach
+    void isolateAccountStateDependency() {
+        org.mockito.Mockito.when(sessionValidation.filter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(call -> ((org.springframework.cloud.gateway.filter.GatewayFilterChain) call.getArgument(1))
+                        .filter(call.getArgument(0)));
+    }
+
     private static final AtomicInteger FORWARDED = new AtomicInteger();
     private static final AtomicReference<String> PATH = new AtomicReference<>();
     private static final AtomicReference<String> METHOD = new AtomicReference<>();
