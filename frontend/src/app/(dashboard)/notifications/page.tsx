@@ -11,7 +11,7 @@ export default function NotificationsPage() {
   return (
     <PageShell
       title="Thông báo"
-      description="Tra cứu thông báo theo mã bệnh nhân."
+      description="Xem thông báo cá nhân hoặc tra cứu lịch sử thông báo theo quyền của bạn."
     >
       <RoleGate allowed={["ADMIN", "NURSE", "PATIENT"]}>
         <NotificationLookup />

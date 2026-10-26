@@ -1,7 +1,15 @@
 services:
+  postgres:
+    volumes:
+      - mediflow-pgdata:/var/lib/postgresql/data
+
+  rabbitmq:
+    volumes:
+      - mediflow-rabbitdata:/var/lib/rabbitmq
+
   core-service:
     environment:
-      MEDIFLOW_DEMO_SEED_ENABLED: "true"
+      MEDIFLOW_DEMO_SEED_ENABLED: "false"
 
   clinical-service:
     environment:
@@ -15,6 +23,9 @@ services:
 
   pharmacy-service:
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
+      MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED: "false"
+      MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES: "RX-DEMO"
       MEDIFLOW_CARE_FINANCE_V2: "true"
       MEDIFLOW_PHARMACY_IDENTITY_ENABLED: "true"
       MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED: "true"
@@ -71,3 +82,9 @@ services:
       MEDIFLOW_OUTPATIENT_UI_ENABLED: "true"
       MEDIFLOW_PHARMACY_PRESCRIPTION_MODE: "outpatient"
       MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED: "true"
+
+volumes:
+  mediflow-pgdata:
+    name: mediflow-demo-20261025-pg-v1
+  mediflow-rabbitdata:
+    name: mediflow-demo-20261025-rabbit-v1
