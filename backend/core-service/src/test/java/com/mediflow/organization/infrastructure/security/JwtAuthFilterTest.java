@@ -138,6 +138,50 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void schedulingAuthorityRoutes_requireAllowlistedShortLivedClinicalServiceToken() throws Exception {
+        String valid = createToken("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(50));
+        MockHttpServletRequest request = requestWithToken(valid);
+        request.setRequestURI("/api/v2/org/scheduling-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+
+        SecurityContextHolder.clearContext();
+        String wrongSubject = createToken("pharmacy-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(60));
+        request = requestWithToken(wrongSubject);
+        request.setRequestURI("/api/v2/org/scheduling-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(valid);
+        request.setRequestURI("/api/v2/org/current-doctor-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(wrongSubject);
+        request.setRequestURI("/api/v2/org/current-doctor-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+
+        SecurityContextHolder.clearContext();
+        String longLived = createToken("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(61));
+        request = requestWithToken(longLived);
+        request.setRequestURI("/api/v2/org/consultation-eligibility");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(longLived);
+        request.setRequestURI("/api/v2/org/current-doctor-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void humanAccessTokenWithNonUuidSubject_isNotAccepted() throws Exception {
         String token = createToken("not-an-account-id", "ADMIN", JwtClaims.ACCESS_TOKEN_TYPE,
                 Instant.now().plusSeconds(300));

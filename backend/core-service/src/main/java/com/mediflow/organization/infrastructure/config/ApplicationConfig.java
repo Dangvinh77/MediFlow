@@ -12,6 +12,7 @@ import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
 import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
+import com.mediflow.organization.application.port.in.ManageScheduleManagementScopeUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.AccountRepository;
@@ -21,6 +22,8 @@ import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.application.port.out.StaffCreationReceiptRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
+import com.mediflow.organization.application.port.out.ScheduleManagementScopeEventPublisher;
+import com.mediflow.organization.application.port.out.SchedulingAuthorityRepository;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService;
 import com.mediflow.organization.application.service.CreateAccountService;
 import com.mediflow.organization.application.service.CreateDepartmentService;
@@ -40,9 +43,18 @@ import com.mediflow.organization.application.service.UpdateAccountStatusService;
 import com.mediflow.organization.application.service.VerifyCredentialsService;
 import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
 import com.mediflow.organization.application.service.UpdateStaffService;
+import com.mediflow.organization.application.service.ScheduleManagementScopeService;
 
 @Configuration
 public class ApplicationConfig {
+        @Bean
+        public ManageScheduleManagementScopeUseCase manageScheduleManagementScopeUseCase(
+                        SchedulingAuthorityRepository repository,
+                        ScheduleManagementScopeEventPublisher events) {
+                return new ScheduleManagementScopeService(repository, events,
+                                java.time.Clock.systemUTC());
+        }
+
         @Bean
         public com.mediflow.organization.application.port.in.GetOwnStaffDepartmentUseCase getOwnStaffDepartmentUseCase(
                         StaffRepository staff, DepartmentRepository departments) {

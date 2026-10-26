@@ -71,7 +71,8 @@ public class CoreSecurityConfiguration {
     SecurityFilterChain organizationSecurityChain(
             HttpSecurity http, JwtAuthFilter filter, ObjectMapper mapper,
             CorrelationIdProvider ids) throws Exception {
-        return authenticatedChain(http, "/api/v1/org/**", filter, mapper, ids::currentOrCreate);
+        return authenticatedChain(http, filter, mapper, ids::currentOrCreate,
+                "/api/v1/org/**", "/api/v2/org/**");
     }
 
     @Bean
@@ -81,7 +82,8 @@ public class CoreSecurityConfiguration {
             com.mediflow.patient.infrastructure.security.JwtAuthFilter filter,
             ObjectMapper mapper,
             com.mediflow.patient.application.port.out.CorrelationIdProvider ids) throws Exception {
-        return authenticatedChain(http, "/api/v1/patients/**", filter, mapper, ids::currentOrCreate);
+        return authenticatedChain(http, filter, mapper, ids::currentOrCreate,
+                "/api/v1/patients/**");
     }
 
     @Bean
@@ -95,9 +97,9 @@ public class CoreSecurityConfiguration {
     }
 
     private SecurityFilterChain authenticatedChain(
-            HttpSecurity http, String path, jakarta.servlet.Filter filter,
-            ObjectMapper mapper, Supplier<UUID> ids) throws Exception {
-        return http.securityMatcher(path).csrf(csrf -> csrf.disable())
+            HttpSecurity http, jakarta.servlet.Filter filter,
+            ObjectMapper mapper, Supplier<UUID> ids, String... paths) throws Exception {
+        return http.securityMatcher(paths).csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()

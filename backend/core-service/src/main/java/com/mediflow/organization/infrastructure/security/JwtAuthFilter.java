@@ -89,7 +89,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
                 if (!StringUtils.hasText(subject)
                         || !Roles.SYSTEM.equals(role)
-                        || containsHumanIdentityClaim(claims)) {
+                        || containsHumanIdentityClaim(claims)
+                        || isClinicalAuthorityRequest(request.getRequestURI())
+                                && (!"clinical-service".equals(subject)
+                                        || !hasShortServiceLifetime(claims))) {
                     SecurityContextHolder.clearContext();
                     return;
                 }
@@ -158,6 +161,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static boolean containsHumanIdentityClaim(Claims claims) {
         return HUMAN_IDENTITY_CLAIMS.stream().anyMatch(claims::containsKey);
+    }
+
+    private static boolean isClinicalAuthorityRequest(String path) {
+        return "/api/v2/org/scheduling-authority".equals(path)
+                || "/api/v2/org/consultation-eligibility".equals(path)
+                || "/api/v2/org/current-doctor-authority".equals(path);
+    }
+
+    private static boolean hasShortServiceLifetime(Claims claims) {
+        if (claims.getIssuedAt() == null || claims.getExpiration() == null) return false;
+        java.time.Instant issuedAt = claims.getIssuedAt().toInstant();
+        java.time.Instant expiresAt = claims.getExpiration().toInstant();
+        return !issuedAt.isAfter(java.time.Instant.now().plusSeconds(5))
+                && !expiresAt.isAfter(issuedAt.plusSeconds(60));
     }
 
     private static boolean isUuid(String value) {
