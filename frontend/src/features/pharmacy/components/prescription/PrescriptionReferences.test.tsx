@@ -22,7 +22,7 @@ const options = {
 function directory(): ReferenceDirectory {
   return {
     canSearch: () => true,
-    search: vi.fn(async (kind: string) => ({ items: options[kind as keyof typeof options], hasMore: false })),
+    search: vi.fn(async (kind: string, _query, _page, scope) => ({ items: kind === "record" && scope !== patient ? [] : options[kind as keyof typeof options], hasMore: false })),
     resolve: vi.fn(async (kind, id) => options[kind as keyof typeof options]?.find(item => item.id === id)?.label ?? null),
   };
 }
@@ -36,7 +36,7 @@ async function choose(label: string, name: string) {
 }
 async function context() {
   await choose("Bệnh nhân", "Nguyễn An");
-  await choose("Hồ sơ khám", "Hồ sơ 29/02/2024 · Khám định kỳ"); await screen.findByText("Đã lấy thông tin kê đơn từ hồ sơ khám.");
+  await screen.findByText("Đã lấy thông tin kê đơn từ hồ sơ khám.");
 }
 describe("Pharmacy with the shared dashboard reference directory", () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe("Pharmacy with the shared dashboard reference directory", () => {
     render(<ReferenceProvider directory={source}><CreatePrescriptionForm /></ReferenceProvider>);
     await context();
     expect(mocks.context).toHaveBeenCalledWith(record);
-    expect(source.search).toHaveBeenCalledWith("record", "Hồ sơ 29/02/2024 · Khám định kỳ", 0, patient);
+    expect(source.search).toHaveBeenCalledWith("record", "", 0, patient);
     fill("Ngày kê đơn", "2024-02-29");
     fireEvent.change(await screen.findByRole("combobox", { name: /^Thuốc/ }), { target: { value: patient } });
     fireEvent.submit(field("Hồ sơ khám").closest("form")!);

@@ -14,7 +14,7 @@ import { channelLabels, statusPresentation } from "../presentation";
 import type { NotificationDTO } from "../types";
 import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
 
-interface Props { notificationId: string; notice?: "sent" }
+interface Props { notificationId: string; notice?: "sent"; backHref?: string }
 
 export function NotificationDetail(props: Props) {
   return <NotificationAccess permission="detail"><DetailWorkspace key={props.notificationId} {...props} /></NotificationAccess>;
@@ -26,7 +26,7 @@ function DetailWorkspace(props: Props) {
   return <DetailRequest key={attempt} {...props} focusResult={attempt > 0} onRetry={() => setAttempt(value => value + 1)} />;
 }
 
-function DetailRequest({ notificationId, notice, onRetry, focusResult }: Props & { onRetry: () => void; focusResult: boolean }) {
+function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult }: Props & { onRetry: () => void; focusResult: boolean }) {
   const router = useRouter();
   const isCurrent = useNotificationRequestScope("detail");
   const [notification, setNotification] = useState<NotificationDTO | null>(null);
@@ -67,7 +67,7 @@ function DetailRequest({ notificationId, notice, onRetry, focusResult }: Props &
             : <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={onRetry} />}
         </div>
       </div>
-      <Link href="/notifications" className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
+      <Link href={backHref ?? "/notifications"} className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
     </>
   );
   if (!notification) return <AsyncState kind="loading" message="Đang tải thông báo…" />;
@@ -75,17 +75,44 @@ function DetailRequest({ notificationId, notice, onRetry, focusResult }: Props &
   return (
     <section className="mt-6 space-y-6">
       {notice === "sent" && <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã tiếp nhận yêu cầu gửi thông báo.</p>}
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-surface p-6">
-        <div className="min-w-0 flex-1"><p className="text-sm text-muted-foreground">{channelLabels[notification.channel] ?? "Không xác định"}</p><h2 ref={headingRef} tabIndex={-1} className="mt-1 break-words rounded-sm text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notification.title}</h2><p className="mt-2 break-all font-mono text-xs text-muted-foreground"><ReferenceText value={notification.notificationId} fallback="Thông báo" /></p></div>
-        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-      </div>
-      <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2">
-        <Info label="Bệnh nhân" value={notification.patientId} /><Info label="Tạo lúc" value={formatInstant(notification.createdAt)} /><Info label="Gửi lúc" value={formatInstant(notification.sentAt)} /><Info label="Lý do thất bại" value={notification.failureReason} />
-      </dl>
-      <section className="rounded-xl border border-border bg-surface p-6"><h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Nội dung</h2><p className="mt-3 whitespace-pre-wrap break-words text-sm">{notification.content}</p></section>
+
+      <section aria-label="Tổng quan" className="rounded-xl border border-border bg-surface p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tổng quan</h2>
+        <dl className="mt-3 grid gap-5 sm:grid-cols-2">
+          <Info label="Bệnh nhân" value={notification.patientId} />
+          <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trạng thái</dt><dd className="mt-1"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></dd></div>
+          <Info label="Tạo lúc" value={formatInstant(notification.createdAt)} />
+          <Info label="Gửi lúc" value={formatInstant(notification.sentAt)} />
+        </dl>
+      </section>
+
+      <section aria-label="Tiêu đề và nội dung" className="space-y-4 rounded-xl border border-border bg-surface p-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tiêu đề</p>
+          <h2 ref={headingRef} tabIndex={-1} className="mt-1 rounded-sm break-words text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notification.title}</h2>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nội dung</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm">{notification.content}</p>
+        </div>
+      </section>
+
+      <section aria-label="Thông tin gửi" className="rounded-xl border border-border bg-surface p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Thông tin gửi</h2>
+        <dl className="mt-3 grid gap-5 sm:grid-cols-2">
+          <Info label="Kênh" value={channelLabels[notification.channel] ?? "Không xác định"} />
+          <Info label="Lý do thất bại" value={notification.failureReason} />
+        </dl>
+      </section>
+
+      <section aria-label="Thông tin kỹ thuật" className="rounded-xl border border-border bg-surface p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Thông tin kỹ thuật</h2>
+        <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{notification.notificationId}</p>
+      </section>
+
       <div className="flex flex-wrap gap-3">
         <button type="button" onClick={onRetry} className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Tải lại thông báo</button>
-        <Link href="/notifications" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
+        <Link href={backHref ?? "/notifications"} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
       </div>
     </section>
   );

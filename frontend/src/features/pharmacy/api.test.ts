@@ -5,6 +5,10 @@ import { pharmacyApi } from "./api";
 import { prepareOutpatientPrescriptionIntent } from "./outpatientPrescriptionIntent";
 
 describe("Pharmacy HTTP contracts", () => {
+  it("resolves a prescribing doctor's department through Gateway", () => {
+    pharmacyApi.getPrescribingDoctor("doctor/id");
+    expect(mocks.get).toHaveBeenCalledWith("/v1/org/staff/doctor%2Fid");
+  });
   it("searches and resolves minimal patient identities through Gateway", () => {
     pharmacyApi.searchPatients("An & Bình", 2);
     expect(mocks.get).toHaveBeenCalledWith("/v1/patients/directory/search?keyword=An+%26+B%C3%ACnh&page=2&size=20");

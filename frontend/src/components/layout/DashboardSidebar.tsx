@@ -26,6 +26,7 @@ const navigation: readonly NavigationItem[] = [
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
   { group: "Viện phí", href: "/billing", label: "Viện phí", eyebrow: "Hóa đơn & thanh toán", roles: ["ADMIN", "CASHIER"] },
   { group: "Viện phí", href: "/billing/scheduled-payments", label: "Thu phí lịch khám", eyebrow: "Đối soát giữ chỗ", roles: ["ADMIN", "CASHIER"], scheduling: true },
+  { group: "Viện phí", href: "/billing/revenue", label: "Doanh thu theo khoa", eyebrow: "Báo cáo cho quản lý", roles: ["MANAGER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
   { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
 ];

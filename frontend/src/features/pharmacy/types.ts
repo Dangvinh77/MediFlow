@@ -3,6 +3,14 @@
  * UUID, LocalDate and Instant values cross the JSON boundary as strings;
  * BigDecimal values cross as numbers and must not be recalculated as source of truth.
  */
+/** Work-directory fields from Organization StaffResponse used to bind the prescribing department. */
+export interface PrescribingDoctorDTO {
+  staffId: string;
+  departmentId: string | null;
+  jobTitle: string;
+  active: boolean;
+}
+
 export type PrescriptionStatus =
   | "ACTIVE"
   | "FULFILLED"

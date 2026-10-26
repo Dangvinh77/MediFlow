@@ -4,10 +4,10 @@ import { ApiRequestError } from "@/lib/api";
 import type { Role } from "@/lib/roles";
 import type { DrugDTO } from "../../types";
 
-const mocks = vi.hoisted(() => ({ role: "DOCTOR" as Role | null, search: vi.fn(), create: vi.fn(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ role: "DOCTOR" as Role | null, search: vi.fn(), doctor: vi.fn(), create: vi.fn(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, getSessionKey: () => "actor-token", subscribeToAuthChanges: () => () => {} }));
-vi.mock("../../api", () => ({ pharmacyApi: { searchDrugs: mocks.search, createPrescription: mocks.create } }));
+vi.mock("../../api", () => ({ pharmacyApi: { searchDrugs: mocks.search, getPrescribingDoctor: mocks.doctor, createPrescription: mocks.create } }));
 import { CreatePrescriptionForm } from "./CreatePrescriptionForm";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -17,7 +17,8 @@ function fill(label: string, value: string) { fireEvent.change(screen.getByLabel
 function submit() { fireEvent.submit(screen.getByLabelText("Hồ sơ khám", { exact: false }).closest("form")!); }
 async function validForm() {
   await screen.findByRole("option", { name: /Paracetamol/ });
-  for (const label of ["Bệnh nhân", "Khoa khám", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
+  for (const label of ["Bệnh nhân", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
+  await waitFor(() => expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("Khoa của bác sĩ đã chọn"));
   fill("Ngày kê đơn", "2024-02-29"); fill("Số lượng", "2"); fill("Cách dùng", " Sau ăn ");
   fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
 }
@@ -25,6 +26,7 @@ async function validForm() {
 describe("CreatePrescriptionForm", () => {
   beforeEach(() => {
     mocks.role = "DOCTOR"; mocks.search.mockReset().mockResolvedValue({ content: [drug] });
+    mocks.doctor.mockReset().mockResolvedValue({ staffId: id, departmentId: id, jobTitle: "DOCTOR", active: true });
     mocks.create.mockReset(); mocks.router.replace.mockReset();
   });
   it.each(["PHARMACIST", "MANAGER", null] as const)("does not read catalog or create with role %s", role => {
@@ -34,7 +36,8 @@ describe("CreatePrescriptionForm", () => {
   it("focuses the first missing identifier and later the invalid drug selector", async () => {
     render(<CreatePrescriptionForm mode="legacy" />); submit();
     await waitFor(() => expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveFocus());
-    for (const label of ["Bệnh nhân", "Khoa khám", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
+    for (const label of ["Bệnh nhân", "Bác sĩ kê đơn", "Hồ sơ khám"]) fill(label, id);
+    await waitFor(() => expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("Khoa của bác sĩ đã chọn"));
     submit();
     await waitFor(() => expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveFocus());
     expect(mocks.create).not.toHaveBeenCalled();
@@ -51,6 +54,55 @@ describe("CreatePrescriptionForm", () => {
     await waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith({ keyword: "Khác", page: 0, size: 20 }));
     expect(await screen.findByText(/Giá tham khảo:.*2.500/)).toBeVisible();
     expect(screen.getByRole("combobox", { name: /^Thuốc/ })).toHaveValue(id);
+  });
+  it("locks the department to the selected doctor and clears it immediately when changing doctors", async () => {
+    const nextId = "00000000-0000-4000-8000-000000000002";
+    let resolve!: (value: unknown) => void;
+    mocks.doctor.mockResolvedValueOnce({ staffId: id, departmentId: nextId, jobTitle: "DOCTOR", active: true })
+      .mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    render(<CreatePrescriptionForm mode="legacy" />); await validForm();
+    const department = screen.getByLabelText("Khoa khám", { exact: false });
+    expect(department).toHaveAttribute("readonly");
+    fill("Bác sĩ kê đơn", nextId);
+    expect(department).toHaveValue("");
+    submit();
+    expect(mocks.create).not.toHaveBeenCalled();
+    await act(async () => resolve({ staffId: nextId, departmentId: id, jobTitle: "DOCTOR", active: true }));
+    await waitFor(() => expect(department).toHaveValue("Khoa của bác sĩ đã chọn"));
+    mocks.create.mockResolvedValue({ prescriptionId: "new-rx" }); submit();
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ doctorId: nextId, departmentId: id }));
+  });
+  it("ignores a late department response after the doctor is cleared", async () => {
+    let resolve!: (value: unknown) => void;
+    mocks.doctor.mockReturnValue(new Promise(done => { resolve = done; }));
+    render(<CreatePrescriptionForm mode="legacy" />);
+    fill("Bác sĩ kê đơn", id);
+    fill("Bác sĩ kê đơn", "");
+    await act(async () => resolve({ staffId: id, departmentId: id, jobTitle: "DOCTOR", active: true }));
+    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("");
+    expect(screen.getByPlaceholderText("Chọn bác sĩ trước")).toBeVisible();
+  });
+  it("blocks creation after a lookup failure and lets the user retry", async () => {
+    mocks.doctor.mockRejectedValueOnce(new Error("offline"));
+    render(<CreatePrescriptionForm mode="legacy" />);
+    fill("Bác sĩ kê đơn", id);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa lấy được khoa");
+    submit(); expect(mocks.create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lấy khoa lại" }));
+    await waitFor(() => expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("Khoa của bác sĩ đã chọn"));
+    expect(mocks.doctor).toHaveBeenCalledTimes(2);
+  });
+  it.each([
+    { staffId: id, departmentId: id, jobTitle: "DOCTOR", active: false },
+    { staffId: id, departmentId: id, jobTitle: "NURSE", active: true },
+    { staffId: id, departmentId: null, jobTitle: "DOCTOR", active: true },
+    { staffId: "other", departmentId: id, jobTitle: "DOCTOR", active: true },
+  ])("rejects an invalid doctor relationship: %j", async data => {
+    mocks.doctor.mockResolvedValue(data);
+    render(<CreatePrescriptionForm mode="legacy" />); fill("Bác sĩ kê đơn", id);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Bác sĩ chưa có khoa hợp lệ");
+    expect(screen.getByLabelText("Khoa khám", { exact: false })).toHaveValue("");
+    submit(); expect(mocks.create).not.toHaveBeenCalled();
   });
   it("browses more than twenty drugs without losing selected lines and blocks unavailable choices", async () => {
     mocks.search.mockResolvedValueOnce({ content: [drug], number: 0, totalPages: 2, totalElements: 21 })

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReferenceText } from "@/components/references/ReferenceText";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -11,6 +12,7 @@ import { billingApi } from "../api";
 import type { OutboxReplayResult } from "../types";
 
 export function OutboxReplayForm() {
+  const router = useRouter();
   const [eventId, setEventId] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const command = useCommand();
@@ -58,7 +60,10 @@ export function OutboxReplayForm() {
         />
       </Field>
 
-      <Button type="submit" variant="primary" loading={replaying} disabled={command.uncertain}>Phát lại event</Button>
+      <div className="flex gap-2">
+        <Button type="submit" variant="primary" loading={replaying} disabled={command.uncertain}>Phát lại event</Button>
+        <Button type="button" onClick={() => router.back()}>Quay lại</Button>
+      </div>
     </form>
   );
 }

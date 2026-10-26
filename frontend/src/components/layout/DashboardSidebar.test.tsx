@@ -25,6 +25,11 @@ describe("MVP dashboard navigation", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("lets managers reach the department revenue report without typing a URL", () => {
+    render(<DashboardSidebar role="MANAGER" open={false} onClose={vi.fn()} />);
+    expect(screen.getByRole("link", { name: /Doanh thu theo khoa/ })).toHaveAttribute("href", "/billing/revenue");
+  });
+
   it("exposes no business routes without a role", () => {
     render(<DashboardSidebar role={null} open={false} onClose={vi.fn()} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
