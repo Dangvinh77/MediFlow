@@ -270,6 +270,12 @@ Các lệnh Docker/psql ở mục 4.3–4.4 chạy được trong CMD, PowerShel
 SQL có schema, dữ liệu và Flyway history của **tám context active**; broker và cấu hình
 ứng dụng không nằm trong snapshot. Chưa chạy backend trước khi restore xong.
 
+**Không chạy tất cả code block trong cả tài liệu như một script.** Với demo hoàn toàn
+bằng Docker, làm mục 4.2 → 4.3 → 4.4 → 4.5 → **4.6 Cách A**. Bỏ **4.6 Cách B** và
+**chương 5** vì đó là phương án chạy web/backend trên host thay thế container.
+Mục 4.7 chỉ dùng khi đổi cấu hình, 4.8 khi dừng/mở lại; chương 6 chỉ cần nếu demo mobile.
+Phần 7 trở đi là chuẩn bị và thao tác nghiệp vụ theo role, không phải bootstrap bổ sung.
+
 **Kiểm tra stack local ngày 25/10, trước khi chuyển sang snapshot:** các container
 đều healthy nhưng PostgreSQL/RabbitMQ dùng `source_mediflow-pgdata` và
 `source_mediflow-rabbitdata`; Core/Pharmacy bật seed; Pharmacy dùng database
@@ -301,7 +307,7 @@ Kết quả phải lần lượt là `jdbc:postgresql://postgres:5432/mediflow_p
 - Lab/Pharmacy/Support dùng `MEDIFLOW_CARE_FINANCE_V2`.
 - Web có cờ UI riêng.
 - Billing cần bật discovery/publication phù hợp và có bảng giá V1.
-- Compose bật consumer Rx của Billing nhưng giá trị mặc định của `MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES` rỗng; code policy sẽ từ chối khởi động khi thiếu allowlist.
+- Pharmacy và Billing phải thống nhất allowlist mã giá `RX-DEMO`; mặc định `DRUG` trong base Compose hiện tại không thay cho cấu hình demo này. Billing không được bật consumer Rx với allowlist rỗng.
 - Các giá `billing.pricing.default-exam-fee/default-lab-fee` của nhánh cũ không thay cho `billing.care-finance.prices` trong V1.
 - Publication bật sau khi tạo dữ liệu không tự biến các outbox row lịch sử HELD thành row được phép gửi.
 
@@ -463,7 +469,7 @@ không dùng `down -v`, `DROP DATABASE` hay sửa SQL để vượt guard.
 ### 4.4.2. Chỉ chạy PostgreSQL và RabbitMQ
 
 ```shell
-docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --force-recreate postgres rabbitmq
+docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --force-recreate --wait --wait-timeout 180 postgres rabbitmq
 docker compose -f docker-compose.yml -f compose.demo.local.yml ps
 docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T postgres pg_isready -U postgres
 docker compose -f docker-compose.yml -f compose.demo.local.yml exec -T rabbitmq rabbitmq-diagnostics -q ping
@@ -478,6 +484,9 @@ Fresh volume chạy `scripts/init-databases.sql`; database xuất hiện sau ini
 dataset demo. Volume cũ không tự chạy init lại chỉ vì restart container. [S04]
 `--force-recreate` thay container để chắc chắn nhận volume đã chọn; dữ liệu vẫn nằm
 trong named volume, không bị xóa khi thay container.
+`--wait` đợi các container healthy; nếu hết thời gian hoặc lệnh trả lỗi, đọc log và
+xử lý trước khi chạy bước tiếp theo. Nếu Compose chưa hỗ trợ cờ này, cần cập nhật
+Docker Compose hoặc tự đợi healthy như các lệnh kiểm tra bên trên.
 
 ### 4.4.3. Nạp snapshot tám context trước khi chạy backend
 
@@ -540,7 +549,7 @@ trên Eureka kiểm tra `CORE-SERVICE`. Tương tự, Support chứa Report/Noti
 **Terminal 1 — Eureka:**
 
 ```shell
-docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build eureka-server
+docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build --wait --wait-timeout 180 eureka-server
 ```
 
 Mở `http://localhost:8761`. Đợi service lên rồi tiếp tục.
@@ -548,7 +557,7 @@ Mở `http://localhost:8761`. Đợi service lên rồi tiếp tục.
 **Terminal 1 — Gateway và sáu ứng dụng:**
 
 ```powershell
-docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build gateway core-service clinical-service lab-service pharmacy-service billing-service support-service
+docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build --wait --wait-timeout 300 gateway core-service clinical-service lab-service pharmacy-service billing-service support-service
 docker compose -f docker-compose.yml -f compose.demo.local.yml ps
 ```
 
@@ -565,6 +574,36 @@ docker compose -f docker-compose.yml -f compose.demo.local.yml logs --tail=100 c
 Muốn theo dõi liên tục, thêm `-f`; Ctrl+C chỉ thoát việc theo dõi log, không tắt container đang chạy nền.
 
 ## 4.5. Xác minh backend
+
+**Kết quả chạy lại ngày 25/10/2026 trên source `dc2b8f2e`:** đã tạo hai volume demo
+`mediflow-demo-20261025-pg-v1`/`mediflow-demo-20261025-rabbit-v1`, restore SQL exit code 0,
+build image bằng Docker (có sử dụng build cache), khởi động đủ stack và kiểm tra:
+
+| Kiểm tra | Kết quả thực tế |
+|---|---|
+| PostgreSQL, RabbitMQ, Eureka, Gateway, sáu business deployments và frontend | 11 container healthy |
+| `pharmacy-db-init` | Exited (0), là job tạo database, không cần chạy liên tục |
+| Health HTTP tại 8761/8080/8089/8082/8084/8085/8086/8087 | Cả tám trả 200, `UP` |
+| Flyway Core/Clinical/Lab/Pharmacy/Billing/Support | Validate thành công; Pharmacy nâng snapshot V20 lên V21 thành công |
+| Đăng nhập 10 tài khoản ở mục 7.1 qua Gateway | Cả 10 trả 200, đúng role |
+| Đọc khoa, bệnh nhân lịch sử, lịch hẹn, Lab, thuốc, Notification qua Gateway bằng role tương ứng | Cả sáu trả 200 |
+| Report ngày 2025-06-15, khoa `9a6dd24a-1c1f-4122-9e31-7cfea345ec45` | 200 với `demo.manager` |
+| Đăng nhập qua proxy frontend `:3000/api/v1/auth/login` | 200 |
+| Trình duyệt: login ADMIN → danh sách bệnh nhân → tìm `HIST_2025_COMPLETED_AND_REFUNDS` | Hiển thị đúng một bệnh nhân lịch sử; danh sách chưa lọc có 24 bệnh nhân |
+
+Log khởi động của sáu business deployments không có dòng `ERROR` tại thời điểm kiểm tra.
+Backend mất khoảng 75–82 giây để start trên máy kiểm tra, nên không mở UI ngay khi vừa
+thấy container được tạo. Lệnh `up --wait --wait-timeout 300` kiểm tra lại stack đã trả
+exit code 0. Đây là kiểm chứng bootstrap, migration, login và đọc dữ liệu; chưa chạy
+lại toàn bộ luồng tạo khám → thu tiền → Lab/kê đơn/cấp phát/hoàn tiền của phần 8–11.
+Kết quả này không bao gồm mobile native hay clean build không cache.
+Evidence local lưu tại `scripts/demo_25_10/evidence/docker-sequence-20261025/`
+(`restore.log`, `http-smoke.json`, `startup-summary.json`, `web-patients.png`);
+thư mục evidence local có thể không tồn tại trên máy clone mới.
+
+Nếu Compose cảnh báo volume cũ `source_mediflow-*` có label trùng nhưng được
+`left untouched`, đó là volume cũ đang được giữ lại. Xác nhận `.Mounts` dùng hai
+volume demo ở trên; không xóa volume cũ chỉ để mất cảnh báo.
 
 Trên PowerShell:
 
@@ -594,7 +633,7 @@ Sau đó:
 ### Cách A: Web trong Docker
 
 ```powershell
-docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build frontend
+docker compose -f docker-compose.yml -f compose.demo.local.yml up -d --build --wait --wait-timeout 180 frontend
 ```
 
 Mở `http://localhost:3000/login`.
