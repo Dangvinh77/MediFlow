@@ -23,6 +23,33 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
     private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private static final List<RouteRule> RULES = List.of(
+            rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.PUT, Roles.ADMIN),
+            rule("/api/v2/org/consultation-rooms", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/consultation-sessions", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.NURSE),
+            rule("/api/v2/consultation-sessions", HttpMethod.POST, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/consultation-sessions/mine", HttpMethod.GET, Roles.DOCTOR),
+            rule("/api/v2/consultation-sessions/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/consultation-sessions/{id}/status", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/consultation-sessions/{id}/registrations", HttpMethod.GET,
+                    Roles.ADMIN, Roles.MANAGER, Roles.NURSE, Roles.DOCTOR),
+            rule("/api/v2/outpatient-registrations", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v2/outpatient-registrations/mine", HttpMethod.GET, Roles.PATIENT),
+            rule("/api/v2/outpatient-registrations/follow-up-sources", HttpMethod.GET, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v2/records/{id}/follow-up-recommendations", HttpMethod.POST, Roles.DOCTOR),
+            rule("/api/v2/records/{id}/follow-up-recommendation", HttpMethod.GET,
+                    Roles.ADMIN, Roles.NURSE, Roles.DOCTOR, Roles.PATIENT),
+            rule("/api/v2/outpatient-registrations/{id}", HttpMethod.GET,
+                    Roles.ADMIN, Roles.NURSE, Roles.DOCTOR, Roles.PATIENT),
+            rule("/api/v2/outpatient-registrations/{id}/arrival", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v2/outpatient-registrations/{id}/cancellation", HttpMethod.PUT,
+                    Roles.ADMIN, Roles.NURSE, Roles.DOCTOR),
+            rule("/api/v2/billing/payment-requests/by-registration", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
+            rule("/api/v2/billing/payment-requests/{id}/payments", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
+            rule("/api/v2/billing/payment-requests/{id}/quote", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
+            rule("/api/v2/billing/payment-requests/{id}/zero-payable-eligibility", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
+            rule("/api/v2/billing/payment-requests/{id}/lab-zero-payable-eligibility", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
+            rule("/api/v2/billing/payment-operations/{id}", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v1/org/operating-rooms", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/operating-rooms/{id}", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v1/org/departments", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
@@ -149,6 +176,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/pharmacy/prescriptions/{id}/dispense", HttpMethod.PUT, Roles.ADMIN, Roles.PHARMACIST),
             rule("/api/v1/pharmacy/admin/outbox/{id}/replay", HttpMethod.POST, Roles.ADMIN),
 
+            rule("/api/v2/billing/payment-requests/{id}/lab-payments", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v1/billing/invoices/**", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v1/billing/patient/**", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
             rule("/api/v1/billing/invoices", HttpMethod.POST, Roles.ADMIN, Roles.CASHIER),
@@ -244,6 +272,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
     private record RouteRule(String pattern, HttpMethod method, Set<String> roles) {
         private boolean matches(String path) {
+            if (pattern.equals("/api/v2/outpatient-registrations/{id}")
+                    && Set.of("/api/v2/outpatient-registrations/mine", "/api/v2/outpatient-registrations/follow-up-sources").contains(path)) return false;
             return PATH_MATCHER.match(pattern, path);
         }
     }

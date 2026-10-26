@@ -58,6 +58,9 @@ eureka:
 
 # JWT — the same externally supplied secret must be configured for Gateway and Organization.
 mediflow:
+  gateway:
+    scheduling-v2:
+      enabled: ${MEDIFLOW_GATEWAY_SCHEDULING_V2_ENABLED:false}
   routes:
     surgery:
       enabled: ${MEDIFLOW_GATEWAY_SURGERY_ENABLED:false}

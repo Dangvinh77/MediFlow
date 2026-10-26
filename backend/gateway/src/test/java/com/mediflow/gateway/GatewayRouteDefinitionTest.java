@@ -27,6 +27,13 @@ class GatewayRouteDefinitionTest {
     private RouteLocator routeLocator;
 
     @Test
+    void schedulingV2IsNotPublishedByDefault() {
+        assertThat(routeLocator.getRoutes()
+                .filter(route -> route.getId().startsWith("scheduling-"))
+                .collectList().block()).isEmpty();
+    }
+
+    @Test
     void supportRoutesKeepPublicPathsAndTargetTheSharedHost() {
         for (String context : new String[]{"report", "notification"}) {
             Route route = routeLocator.getRoutes()
