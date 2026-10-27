@@ -63,8 +63,17 @@ class ClinicalLabOrderApplicationServiceTest {
         when(orders.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
-    @Test
-    void create_persistsGeneratedAuthorityFromExactOpenInExamVisit() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {1, 2})
+    void create_persistsGeneratedAuthorityFromExactOpenInExamVisit(int version) {
+        if (version == 2) {
+            Appointment scheduled = Appointment.createScheduled(APPOINTMENT_ID, PATIENT, DOCTOR, DEPARTMENT,
+                    LocalDate.of(2026, 9, 21), LocalTime.NOON, null, NOW, NOW);
+            UUID clearanceId = UUID.randomUUID();
+            scheduled.confirmScheduledPayment(clearanceId, NOW);
+            scheduled.startScheduledExam(clearanceId, NOW);
+            when(appointments.findByIdForUpdate(APPOINTMENT_ID)).thenReturn(Optional.of(scheduled));
+        }
         var service = service(true);
 
         var created = service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
@@ -80,6 +89,20 @@ class ClinicalLabOrderApplicationServiceTest {
         assertThat(created.priceCode()).isEqualTo("LAB-CBC");
         assertThat(created.orderedAt()).isEqualTo(NOW);
         verify(orders).save(any(ClinicalLabOrder.class));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 3})
+    void create_rejectsUnsupportedCareContractEvenDuringExam(int version) {
+        Appointment unsupported = Appointment.restore(APPOINTMENT_ID, PATIENT, DOCTOR, DEPARTMENT,
+                LocalDate.of(2026, 9, 21), LocalTime.NOON, AppointmentStatus.IN_EXAM, "cough",
+                NOW.minusSeconds(600), NOW, (short) version, UUID.randomUUID(), NOW.minusSeconds(300),
+                null, "OUTPATIENT_EXAM", NOW.minusSeconds(300), NOW.minusSeconds(120), null);
+        when(appointments.findByIdForUpdate(APPOINTMENT_ID)).thenReturn(Optional.of(unsupported));
+        assertThatThrownBy(() -> service(true).create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), "LAB-CBC")))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_ORDER_CONTEXT_MISMATCH");
+        verify(orders, never()).save(any());
     }
 
     @Test

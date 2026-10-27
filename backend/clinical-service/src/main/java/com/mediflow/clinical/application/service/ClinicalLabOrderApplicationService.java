@@ -85,7 +85,7 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
                 && record.getDoctorId().equals(appointment.getDoctorId())
                 && record.getDepartmentId().equals(appointment.getDepartmentId());
         if (!recordMatchesAppointment || record.getStatus() != MedicalRecordStatus.OPEN
-                || appointment.getCareContractVersion() != 1
+                || (appointment.getCareContractVersion() != 1 && appointment.getCareContractVersion() != 2)
                 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_CONTEXT_MISMATCH",
                     "Lab orders require the matching active outpatient examination");
