@@ -91,12 +91,11 @@ class ClinicalLabOrderApplicationServiceTest {
         verify(orders).save(any(ClinicalLabOrder.class));
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 3})
-    void create_rejectsUnsupportedCareContractEvenDuringExam(int version) {
+    @Test
+    void create_rejectsLegacyCareContractEvenDuringExam() {
         Appointment unsupported = Appointment.restore(APPOINTMENT_ID, PATIENT, DOCTOR, DEPARTMENT,
                 LocalDate.of(2026, 9, 21), LocalTime.NOON, AppointmentStatus.IN_EXAM, "cough",
-                NOW.minusSeconds(600), NOW, (short) version, UUID.randomUUID(), NOW.minusSeconds(300),
+                NOW.minusSeconds(600), NOW, (short) 0, UUID.randomUUID(), NOW.minusSeconds(300),
                 null, "OUTPATIENT_EXAM", NOW.minusSeconds(300), NOW.minusSeconds(120), null);
         when(appointments.findByIdForUpdate(APPOINTMENT_ID)).thenReturn(Optional.of(unsupported));
         assertThatThrownBy(() -> service(true).create(record.getRecordId(), new CreateClinicalLabOrderRequest(

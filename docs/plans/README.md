@@ -6,7 +6,7 @@ Code chưa được chuyển thành 6 service chỉ bằng việc thay tài li�
 
 Định vị thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Giữ định hướng HIS; phạm vi đồ án là phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện, không phải toàn bộ quy trình nội trú/phẫu thuật. Xem [định vị và CURRENT/TARGET](01-system-design.md).
 
-Source đã có Core chứa Organization/Patient và Support chứa Report/Notification. Nghiệp vụ mới 25/10 chưa được triển khai chỉ bằng cập nhật tài liệu; không tự đóng gate nghiệm thu.
+Source đã có Core chứa Organization/Patient và Support chứa Report/Notification. Scheduling/quote và slice NURSE onboarding đã có implementation; trạng thái source, packaged API và UI được ghi riêng trong các biên bản. Không tự đóng gate nghiệm thu chỉ vì có code.
 
 ## Đọc gì
 
@@ -20,7 +20,10 @@ Source đã có Core chứa Organization/Patient và Support chứa Report/Notif
 | [Điều chỉnh nghiệp vụ 25/10](07-outpatient-workflow-implementation.md) | WF-01–11: lịch khám, tiếp nhận, tái khám, BHYT mô phỏng, cleanup tài liệu |
 | [Chuẩn hóa tài liệu 26/10](08-documentation-cleanup-2026-10-26.md) | Phân loại current/history/deferred, registry hiện hành và danh sách file di chuyển/xóa |
 | [WF-01 source audit 26/10](09-outpatient-source-lock-2026-10-26.md) | API/DTO/event/gates hiện có, fingerprints và G-01–11 còn cần khóa hợp đồng |
-| [Nghiệm thu hợp đồng lịch khám/giữ suất](10-scheduling-contract-acceptance.md) | TARGET wire trong 03, JSON Schema/ví dụ và SC-01–20; chưa là implementation hoặc runtime acceptance |
+| [Nghiệm thu hợp đồng lịch khám/giữ suất](10-scheduling-contract-acceptance.md) | Wire trong 03, JSON Schema/ví dụ và SC-01–20; implementation có gate, trạng thái runtime/UI có bằng chứng riêng |
+| [Source ONB 27/10](11-patient-onboarding-source-acceptance-2026-10-27.md) | ONB-01–05 đã merge; module/frontend tests và giới hạn nghiệm thu |
+| [Dọn mã đã hoàn thành](12-unused-code-cleanup-2026-10-27.md) | Biên bản cleanup PR #545; giữ Surgery/Inpatient và các cổng mở rộng |
+| [Tiếp tục nghiệm thu ONB](13-onboarding-closeout-2026-10-27.md) | Candidate mới, runner login muộn, hồi quy và dọn checklist đã xong |
 | [Plan backend riêng Huy](2026-10-14-huy-backend-mvp-adjustment-plan.md) | Phân rã M6: 12 task/48 subtask cho Pharmacy, Report và phối hợp Support; Surgery hoãn |
 | [Nghiệm thu và vận hành](06-acceptance-runbook.md) | Test matrix, demo, triển khai, rollback và bằng chứng |
 | [Quy tắc coding](../ai/README.md) | Backend, FE/mobile, ownership và Git |

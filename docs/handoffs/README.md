@@ -38,6 +38,10 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 
 ## Tách việc mới khỏi việc kiểm chứng baseline
 
+H-11 checkpoint 27/10: [87 checks Gateway và UI kết quả](../acceptance/onboarding-2026-10-27/README.md)
+đã đạt theo phạm vi ghi trong biên bản; vẫn NEEDS REVALIDATION cho timeout/concurrency,
+login đầu ở lần đến thứ hai, draft/unavailable/replay và recovery xác minh danh tính.
+
 WF-01–11 là backlog nghiệp vụ mới: schedule, reception, revisit, hỗ trợ BHYT và UI/Report.
 Chúng không được coi đã hoàn thành bởi acceptance baseline 17–25/10. Source lock trước khi
 sửa; nếu cần producer khác đổi field/permission thì mở handoff với exact fixture và consumer.

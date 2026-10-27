@@ -188,3 +188,6 @@ Không có claim bệnh viện production/legal compliance từ demo học phầ
 
 Cập nhật source ONB 27/10: xem [bằng chứng module/frontend tests và phần còn mở](11-patient-onboarding-source-acceptance-2026-10-27.md).
 Không dùng source tests để đánh dấu toàn bộ ONB-A01–12 đã đạt qua Gateway/UI.
+
+Checkpoint tiếp theo: [ONB closeout 27/10](13-onboarding-closeout-2026-10-27.md)
+phân biệt ca Gateway đã chạy với ma trận ONB-A01–12 còn phải nghiệm thu đầy đủ.

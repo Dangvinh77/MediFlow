@@ -20,6 +20,8 @@ di chuyển tài liệu không tự đóng các acceptance còn thiếu.
 - [Hợp đồng tích hợp](plans/03-contracts.md)
 - [WF-01: đối chiếu source và khoảng trống hợp đồng](plans/09-outpatient-source-lock-2026-10-26.md)
 - [Hợp đồng lịch khám/giữ suất và ma trận nghiệm thu](plans/10-scheduling-contract-acceptance.md)
+- [Source NURSE onboarding đã triển khai](plans/11-patient-onboarding-source-acceptance-2026-10-27.md)
+- [Tiếp tục nghiệm thu và dọn checklist 27/10](plans/13-onboarding-closeout-2026-10-27.md)
 - [Dữ liệu và độ tin cậy](plans/04-data-reliability.md)
 - [Plan 18 task và 72 subtask](plans/05-implementation-plan.md)
 - [Nghiệm thu và vận hành](plans/06-acceptance-runbook.md)

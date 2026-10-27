@@ -1,0 +1,1018 @@
+{
+  "gateway": "http://127.0.0.1:28080",
+  "date": "2026-10-27",
+  "sessionDate": "2026-10-27",
+  "sourceHead": "9b2bba85c0885153d17f67a3656ee5ded3197e39",
+  "applicationJarSha256": {
+    "core-service": "d6107ac5c7bf627cf848081149c08eb3a9dc02d3a2ed578b3f91570dc2f33b15",
+    "clinical-service": "cf7af60b4fff1c0120b2b2fec2b9fa55eb972b2f0a5d9c73881bd47276f7ec67",
+    "lab-service": "8fee226b6beb953f9f74419665bd581b7cdbd5bf79ef640031583de1f7e1897a",
+    "billing-service": "1cd9237555ddba1126d5fb7c71545697c8f03cbecb96c9d3f4b7118908f1302e",
+    "support-service": "dd6ed58092ef34e0edca2bea5071009c19de88898800d19cc21d555eaf3e1744",
+    "pharmacy-service": "164cb76fa7e60dd3f2587a76c24693637a8fcb9e25a8832a56866f928a333166",
+    "gateway": "b14c7d8c980327cc75e83a17fccea7c26592ae724883c9581a9581eef61c9309",
+    "eureka-server": "a6aefab4427faf4d1043dc663a700354835b1ffc420fd5815341d93849635f83"
+  },
+  "runnerSha256": {
+    "accept_scheduling.py": "ff402fd442e00ed01b82b78d3dc990bafbd19bd1dd9e80f8a0f01ea9e6d5c766",
+    "onboarding_acceptance.py": "fc23a6d10bd4125d2e8070ab8cdf5ca3d4837c9d09fb31e853c3f9c49bc3959f"
+  },
+  "scope": "onboarding-exam-lab-follow-up",
+  "checks": [
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "other",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "lab",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "GET",
+      "path": "/api/v1/patients?keyword=ONB3350bc24dc4e4c92&page=0&size=20",
+      "status": 200,
+      "correlationId": "cb13dd93-500c-4db5-8ca2-794d03392bd4",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/patients",
+      "status": 201,
+      "correlationId": "375a3a69-d176-47c4-ac62-c1d3d993e5c7",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 201,
+      "correlationId": "9f61bf89-4486-4210-b125-8c208afaec8e",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 200,
+      "correlationId": "7d216f5d-65ad-400b-8552-bc8d1a48eaa7",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 409,
+      "correlationId": "7607b900-2bf7-4086-ab2c-12292bc64c3c",
+      "expected": [
+        409
+      ],
+      "errorCode": "PATIENT_ACCOUNT_ALREADY_ISSUED"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 409,
+      "correlationId": "73936aa8-575a-4bb6-8b48-9aabacd09471",
+      "expected": [
+        409
+      ],
+      "errorCode": "ACCOUNT_IDEMPOTENCY_KEY_REUSED"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 404,
+      "correlationId": "731b181c-314f-43b1-a1b2-d6ee2d8d1627",
+      "expected": [
+        404
+      ],
+      "errorCode": "PATIENT_NOT_FOUND"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 400,
+      "correlationId": "c90f1c23-b0be-4121-b170-02728d0f841c",
+      "expected": [
+        400
+      ],
+      "errorCode": "INVALID_REQUEST"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 400,
+      "correlationId": "74333488-9b46-4980-899f-d2c0e48a529e",
+      "expected": [
+        400
+      ],
+      "errorCode": "INVALID_REQUEST"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 400,
+      "correlationId": "7f20ecd2-2872-4cf1-b031-a4402319d045",
+      "expected": [
+        400
+      ],
+      "errorCode": "INVALID_REQUEST"
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 403,
+      "correlationId": "c5674b64-3ed5-430c-82e0-423214a76fd0",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_FORBIDDEN"
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/accounts",
+      "status": 403,
+      "correlationId": "9991a2de-bc18-44ca-b2e0-49cbcdbd36bf",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_FORBIDDEN"
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/api/v1/org/staff/1f619b9e-5879-4796-adfd-01e1acf42126",
+      "status": 200,
+      "correlationId": "c6e3613b-ad5d-435e-bf8d-1c029f2984cb",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/api/v2/org/consultation-rooms?departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45&page=0&size=100",
+      "status": 200,
+      "correlationId": "80e46c25-4f80-4f7b-8aed-82a46ebc5a71",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v2/consultation-sessions",
+      "status": 201,
+      "correlationId": "8e5203ec-baca-4d96-917a-44a325bb5da6",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "4fe68a62-d2f9-404c-a841-8087265bf644",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "ce90b6dd-3a0b-4cad-af4b-3b96f8d30efd",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 404,
+      "correlationId": "f9d965d7-4570-4a82-8a97-27085f80ff51",
+      "expected": [
+        403,
+        404
+      ],
+      "errorCode": "RESOURCE_NOT_FOUND"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 404,
+      "correlationId": "fa5b30d3-af00-4ef5-ad4b-04b017712e4c",
+      "expected": [
+        200,
+        404,
+        503
+      ],
+      "errorCode": "PAYMENT_REQUEST_NOT_READY"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/by-registration?registrationId=94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 200,
+      "correlationId": "6c7cf1d8-1aa2-485d-a1c2-a7f80673f832",
+      "expected": [
+        200,
+        404,
+        503
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/e89334b9-22ec-43a4-93e7-ccd568cde15b/quote",
+      "status": 200,
+      "correlationId": "ba0693e8-f1e8-46ac-a296-dee477b284c0",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/e89334b9-22ec-43a4-93e7-ccd568cde15b/payments",
+      "status": 200,
+      "correlationId": "59596cbf-96ad-418c-ba72-326921ae10ba",
+      "expected": [
+        200,
+        202
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/e89334b9-22ec-43a4-93e7-ccd568cde15b/payments",
+      "status": 200,
+      "correlationId": "a21ac940-6680-4b7b-ab73-b1f951881f79",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 200,
+      "correlationId": "e9ae0b47-52c0-47f5-a05b-5fdfdb1be2aa",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "GET",
+      "path": "/api/v2/consultation-sessions/mine?date=2026-10-27",
+      "status": 200,
+      "correlationId": "61542e09-fbce-4c96-9f77-afdddef9c5ac",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "PUT",
+      "path": "/api/v1/appointments/94f7908e-f25f-4053-8eb5-7994460cc324/start-exam",
+      "status": 200,
+      "correlationId": "3e4d0e8a-6754-45fc-baec-1fa266ae9615",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "GET",
+      "path": "/api/v1/records/patient/207cba79-f573-445f-8c18-052fa56b2b0e",
+      "status": 200,
+      "correlationId": "bfea9e24-bbe2-493d-8976-b9a80f55c973",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/records/4040eb59-7891-4f54-b5f3-d15676225dbc/diagnoses",
+      "status": 201,
+      "correlationId": "2411c0cd-061d-4f68-99f7-a5bd047fb124",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/records/4040eb59-7891-4f54-b5f3-d15676225dbc/lab-orders",
+      "status": 201,
+      "correlationId": "dd84b0f5-c31a-4acb-8706-60bd090d6645",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v1/lab",
+      "status": 201,
+      "correlationId": "15420f2d-edcf-4792-af1e-49fc2e2cf2fa",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "PUT",
+      "path": "/api/v1/records/4040eb59-7891-4f54-b5f3-d15676225dbc/complete",
+      "status": 422,
+      "correlationId": "060dfdda-e579-403b-a35f-3867a0190e90",
+      "expected": [
+        409,
+        422
+      ],
+      "errorCode": "CLINICAL_LAB_ORDER_PENDING"
+    },
+    {
+      "role": "lab",
+      "method": "PUT",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c/start",
+      "status": 422,
+      "correlationId": "7e3ed386-83b9-47a1-897e-5076d563b43a",
+      "expected": [
+        409,
+        422
+      ],
+      "errorCode": "LAB_CLEARANCE_REQUIRED"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/billing/payment-requests/by-source?purpose=LAB_TEST&sourceId=e2d3168f-7f9a-4a78-86eb-19e728596d3c&patientId=207cba79-f573-445f-8c18-052fa56b2b0e&careEpisodeId=94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 404,
+      "correlationId": "d50aab89-b2c5-431a-8896-8d9251aa6cdf",
+      "expected": [
+        200,
+        404,
+        503
+      ],
+      "errorCode": "BILLING_PAYMENT_REQUEST_NOT_FOUND"
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v1/billing/payment-requests/by-source?purpose=LAB_TEST&sourceId=e2d3168f-7f9a-4a78-86eb-19e728596d3c&patientId=207cba79-f573-445f-8c18-052fa56b2b0e&careEpisodeId=94f7908e-f25f-4053-8eb5-7994460cc324",
+      "status": 200,
+      "correlationId": "01f647ee-71a4-47f7-a388-83c46bd78dcd",
+      "expected": [
+        200,
+        404,
+        503
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "GET",
+      "path": "/api/v2/billing/payment-requests/8dc01116-50fc-4cf5-bd49-8d0d2cf571e3/quote",
+      "status": 200,
+      "correlationId": "55580db2-4159-4d49-8adb-aa5da5873ada",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/8dc01116-50fc-4cf5-bd49-8d0d2cf571e3/lab-payments",
+      "status": 200,
+      "correlationId": "6da224b3-7c67-439a-87c5-10b08fa3fb50",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "cashier",
+      "method": "POST",
+      "path": "/api/v2/billing/payment-requests/8dc01116-50fc-4cf5-bd49-8d0d2cf571e3/lab-payments",
+      "status": 200,
+      "correlationId": "02e93b53-1652-4523-97d3-d3cddc03c667",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c",
+      "status": 200,
+      "correlationId": "2734f866-7529-4630-8f64-8cd9b1a7a336",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "lab",
+      "method": "GET",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c",
+      "status": 200,
+      "correlationId": "73a64c8b-ee7b-4db1-8824-621cd3b5582a",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "lab",
+      "method": "PUT",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c/start",
+      "status": 200,
+      "correlationId": "00a63d70-c1ef-482c-8606-bcdba52a4a19",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "lab",
+      "method": "PUT",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c/results",
+      "status": 200,
+      "correlationId": "347e0ac5-0a1c-4dc5-a36a-99065f65666f",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "PUT",
+      "path": "/api/v1/records/4040eb59-7891-4f54-b5f3-d15676225dbc/complete",
+      "status": 200,
+      "correlationId": "1f63b99b-4da4-4180-b98d-5ba9f3e03bc4",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "doctor",
+      "method": "POST",
+      "path": "/api/v2/records/4040eb59-7891-4f54-b5f3-d15676225dbc/follow-up-recommendations",
+      "status": 201,
+      "correlationId": "d85cc4c5-31e2-46cf-99d2-670ccbb54ff2",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/207cba79-f573-445f-8c18-052fa56b2b0e?page=0&size=100",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/207cba79-f573-445f-8c18-052fa56b2b0e?page=0&size=100",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine",
+      "status": 403,
+      "correlationId": "2b03d4b9-3d3d-467b-ba2f-a401ca87df35",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_PASSWORD_CHANGE_REQUIRED"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/lab/mine",
+      "status": 403,
+      "correlationId": "80386aa5-6bd7-42ab-8ce6-96efb2483912",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_PASSWORD_CHANGE_REQUIRED"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/207cba79-f573-445f-8c18-052fa56b2b0e?page=0&size=100",
+      "status": 403,
+      "correlationId": "2fd87f26-afaa-41ec-b1ba-36639a24eb81",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_PASSWORD_CHANGE_REQUIRED"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/mine",
+      "status": 403,
+      "correlationId": "d22c7dff-e6c5-41ae-8257-6e56f8fb3d29",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_PASSWORD_CHANGE_REQUIRED"
+    },
+    {
+      "role": "patient",
+      "method": "PUT",
+      "path": "/api/v1/org/accounts/me/password",
+      "status": 200,
+      "correlationId": "362a1648-5c36-4b6e-a4fe-94954ead34ac",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine",
+      "status": 401,
+      "correlationId": "0a118630-abce-4118-8509-55da2ee5a8f1",
+      "expected": [
+        401
+      ],
+      "errorCode": "AUTH_SESSION_REVOKED"
+    },
+    {
+      "role": "expired-session",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "status": 401,
+      "correlationId": "8c9544c7-1902-4f7d-afa1-a71674942403",
+      "expected": [
+        401
+      ],
+      "errorCode": "AUTH_INVALID_REFRESH_TOKEN"
+    },
+    {
+      "role": "expired-session",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 401,
+      "correlationId": "6237a5b4-8040-443c-878d-231147447977",
+      "expected": [
+        401
+      ],
+      "errorCode": "AUTH_INVALID_CREDENTIALS"
+    },
+    {
+      "role": "patient",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 200,
+      "correlationId": "11410b0b-cd40-49e9-8358-25ec6c2b6e4d",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "877ff493-61f5-4cd3-b281-225ca3ab3884",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/lab/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "2ac6d95d-73ac-4700-8d16-cc5c6d596613",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/207cba79-f573-445f-8c18-052fa56b2b0e?page=0&size=100",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine?patientId=a834af06-1bb4-4736-a203-6c064a9e8f9a",
+      "status": 400,
+      "correlationId": "bee9730d-99f2-4126-9bcb-89943cea7ca7",
+      "expected": [
+        400
+      ],
+      "errorCode": "INVALID_REQUEST"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/lab/mine?patientId=a834af06-1bb4-4736-a203-6c064a9e8f9a",
+      "status": 400,
+      "correlationId": "e0fed90f-6f33-461a-a916-c723ff77e933",
+      "expected": [
+        400
+      ],
+      "errorCode": "INVALID_REQUEST"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/4040eb59-7891-4f54-b5f3-d15676225dbc",
+      "status": 403,
+      "correlationId": "4ff78e18-bb1d-4217-b32a-37580ffbbdd9",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_FORBIDDEN"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/lab/e2d3168f-7f9a-4a78-86eb-19e728596d3c",
+      "status": 403,
+      "correlationId": "5c69a1fd-d8f8-40e6-a31e-8b46e6594f9e",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_FORBIDDEN"
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v1/records/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "c006bff9-2886-4930-9c79-79fff714a01d",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v1/lab/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "db631230-6f5f-4b93-9357-f2ebf680593d",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/207cba79-f573-445f-8c18-052fa56b2b0e?page=0&size=100",
+      "status": 403,
+      "correlationId": null,
+      "expected": [
+        403,
+        404
+      ],
+      "errorCode": "NOTIFICATION_ACCESS_DENIED"
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v1/notifications/dcd57878-03c9-47c5-98b6-00952a235f6e",
+      "status": 403,
+      "correlationId": null,
+      "expected": [
+        403,
+        404
+      ],
+      "errorCode": "NOTIFICATION_ACCESS_DENIED"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/records/4040eb59-7891-4f54-b5f3-d15676225dbc/follow-up-recommendation",
+      "status": 200,
+      "correlationId": "1fe2eff5-8b1f-4520-8e69-988d09b4ced9",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "other",
+      "method": "GET",
+      "path": "/api/v2/records/4040eb59-7891-4f54-b5f3-d15676225dbc/follow-up-recommendation",
+      "status": 404,
+      "correlationId": "b0bcbba4-5192-47c4-9bc9-760b58d39f90",
+      "expected": [
+        404
+      ],
+      "errorCode": "RESOURCE_NOT_FOUND"
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "02783a57-9a49-4ca4-bd0f-de7083f94fcf",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/follow-up-sources?patientId=207cba79-f573-445f-8c18-052fa56b2b0e&page=0&size=100",
+      "status": 200,
+      "correlationId": "7dfca239-ef4e-4323-8611-6fe7b05dbf8a",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/api/v2/consultation-sessions",
+      "status": 201,
+      "correlationId": "ce38b860-f664-4303-bfb7-7035625235c1",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "1631b6d6-736a-44c7-b8f3-f3a2f1773897",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "POST",
+      "path": "/api/v2/outpatient-registrations",
+      "status": 201,
+      "correlationId": "7ddab0bf-1ebb-4b2e-a42b-74d35fb1c121",
+      "expected": [
+        201
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v2/outpatient-registrations/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "2d822eb6-59eb-49f4-aa61-00c641826876",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "nurse",
+      "method": "PUT",
+      "path": "/api/v1/org/accounts/4ebdb54d-ec1c-4b40-a001-1c9d791d2edf/password",
+      "status": 403,
+      "correlationId": "672513d3-10c2-44ba-819e-3b33075c13f7",
+      "expected": [
+        403
+      ],
+      "errorCode": "AUTH_FORBIDDEN"
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/api/v1/org/accounts/4ebdb54d-ec1c-4b40-a001-1c9d791d2edf/password",
+      "status": 200,
+      "correlationId": "d9bdd910-4996-4dec-a99d-06e16f287366",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine",
+      "status": 401,
+      "correlationId": "a9893730-ecb5-4ddd-85a8-4822661e2af6",
+      "expected": [
+        401
+      ],
+      "errorCode": "AUTH_SESSION_REVOKED"
+    },
+    {
+      "role": "expired-session",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 401,
+      "correlationId": "c998869c-0d55-45ea-8841-3f422fd0fdaa",
+      "expected": [
+        401
+      ],
+      "errorCode": "AUTH_INVALID_CREDENTIALS"
+    },
+    {
+      "role": "patient",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "correlationId": null,
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    },
+    {
+      "role": "patient",
+      "method": "GET",
+      "path": "/api/v1/records/mine?page=0&size=100",
+      "status": 200,
+      "correlationId": "5d228d2b-0c1b-4208-8cbc-740da82cf737",
+      "expected": [
+        200
+      ],
+      "errorCode": null
+    }
+  ],
+  "passed": true,
+  "patientId": "207cba79-f573-445f-8c18-052fa56b2b0e",
+  "accountId": "4ebdb54d-ec1c-4b40-a001-1c9d791d2edf",
+  "patientLoginDeferred": true,
+  "sessionId": "084a43b8-cedc-4352-aa02-38cb44240857",
+  "registrationId": "94f7908e-f25f-4053-8eb5-7994460cc324",
+  "paymentRequestId": "e89334b9-22ec-43a4-93e7-ccd568cde15b",
+  "paymentOperationId": "f13daabb-93fc-4bee-8fd9-9ff5c2acd136",
+  "transactionId": "55da5f65-bff7-43f9-83e7-0e2384906c3a",
+  "testId": "e2d3168f-7f9a-4a78-86eb-19e728596d3c",
+  "noticesBeforeFirstLogin": [
+    "dcd57878-03c9-47c5-98b6-00952a235f6e",
+    "9231de3e-b6bf-405f-b826-233c93bf9030",
+    "33de5c7a-f321-43f2-9ddd-79e9b38bf73f"
+  ],
+  "firstLoginAfterClinicalCompletion": true,
+  "ownExamResultCount": 1,
+  "ownLabResultCount": 1,
+  "recordId": "4040eb59-7891-4f54-b5f3-d15676225dbc",
+  "recommendationId": "45846c56-91fd-46ac-b7a3-d25642da4fa3",
+  "followUpRegistrationId": "c8c4aef9-8a53-4763-b0f7-3f26afe47573",
+  "followUpSessionId": "4958a9fb-14bf-4e8c-a227-f03b1fa1cfdd",
+  "samePatientRegistrationCount": 2,
+  "recoveryKeepsAccount": true
+}

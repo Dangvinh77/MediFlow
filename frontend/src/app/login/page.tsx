@@ -73,6 +73,10 @@ export default function LoginPage() {
         <ThemeToggle />
       </div>
       <h1 className="text-2xl font-bold">Đăng nhập MediFlow</h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Bệnh nhân đăng nhập khi cần xem kết quả khám, xét nghiệm và thông báo tái khám.
+        Bạn vẫn có thể được tiếp nhận và khám tại quầy khi chưa dùng tài khoản.
+      </p>
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           Tài khoản
@@ -108,6 +112,10 @@ export default function LoginPage() {
           {loading ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
       </form>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Nếu quên mật khẩu, liên hệ quầy tiếp nhận để được xác minh và hỗ trợ khôi phục
+        tài khoản hiện có. Không cần tạo hồ sơ bệnh nhân mới.
+      </p>
     </main>
   );
 }
