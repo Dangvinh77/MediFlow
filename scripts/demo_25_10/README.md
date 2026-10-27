@@ -88,6 +88,30 @@ clients. Native Android/iOS/Windows have separate toolchain requirements in
 
 ## Evidence and scenario guide
 
+### Nurse onboarding rehearsal
+
+After building the candidate JARs, start the disposable scheduling stack with
+`python scripts/demo_25_10/rehearse_snapshot.py --scheduling --keep`. In a second
+terminal, before 17:00 Asia/Ho_Chi_Minh, run:
+
+```powershell
+python scripts/demo_25_10/accept_scheduling.py --onboarding --output scripts/demo_25_10/evidence/onboarding.local.json
+```
+
+The runner checks that the Gateway matches `active-rehearsal.local.json`. It creates
+a synthetic patient/account through NURSE commands, completes paid EXAM/Lab and
+follow-up advice before the first patient login, then tests password/session gates,
+own results, in-app history, linked revisit and existing ADMIN password recovery.
+Credentials stay in memory; evidence records statuses, error codes and operation IDs.
+It does not prove real-world identity verification or all UI failure/recovery cases.
+
+Use `--session-id <UUID>` only to reuse a session from this disposable stack while
+repeating with a new synthetic patient; a fresh stack avoids overlapping demo sessions.
+Do not use the runner against a project/deployed database. Stop the stack with the
+`stopFile` in its manifest so its runner removes only its own processes/containers.
+
+### Historical and current evidence
+
 - [Complete changed-file list](CHANGED-FILES.txt): production, regression, demo and proof files in this PR.
 - [Follow-up verification](FOLLOWUP-VERIFICATION.md): Billing listener, SQL restore,
   topology/client results and remaining limits.

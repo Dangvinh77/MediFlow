@@ -75,6 +75,10 @@ inactive trước archive và kiểm chính xác conflict code khi đổi patien
 
 ## Phần còn lại
 
+Checkpoint tiếp theo đã chạy packaged happy path và UI đọc kết quả:
+[Gateway/UI 27/10](../acceptance/onboarding-2026-10-27/README.md).
+Đoạn dưới ghi giới hạn của checkpoint source ban đầu; biên bản mới xác định các ca còn thiếu.
+
 Chưa chạy ONB-A01–12 trên stack packaged cuối qua Gateway và trình duyệt, chưa có ảnh UI và
 effect counts toàn hành trình mới → thanh toán → khám → Lab → lời hẹn → login muộn.
 H-11 giữ **NEEDS REVALIDATION**; không tuyên bố đóng WF-11. Tái khám dùng hồ sơ/account cũ,

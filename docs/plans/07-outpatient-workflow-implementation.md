@@ -48,103 +48,27 @@ web theo nhu cầu mà không làm chậm luồng khám. Nghiệp vụ authorita
 **Architecture:** Patient giữ hồ sơ; Organization giữ tài khoản/credential; Clinical giữ lượt
 khám; Lab giữ kết quả; Notification giữ in-app history. Gateway xác minh quyền và phiên.
 **Tech Stack:** Spring Boot/Maven, PostgreSQL/RabbitMQ, Next.js/TypeScript/pnpm hiện có.
-Cập nhật triển khai 27/10: đã bổ sung source cấp account, kết quả cá nhân và thông báo.
-Các checkbox dưới đây giữ vai trò tiêu chí nghiệm thu đầy đủ, không đánh đồng unit/integration
-tests với toàn luồng Gateway/UI. Trạng thái cụ thể tại
+Cập nhật 27/10: ONB-01–05 đã được triển khai và merge qua PR #544; cleanup source
+qua PR #545. Các bước triển khai đã hoàn thành được rút thành bảng dưới; không giữ
+checklist viết code như backlog mới. Chi tiết source, fixtures và module/frontend tests tại
 [biên bản source ONB](11-patient-onboarding-source-acceptance-2026-10-27.md).
 User đã giao triển khai các module/path nêu trong slice này và tạo PR; ownership dài hạn không đổi.
 
-### ONB-01 — khóa source và hợp đồng, Hoàng Anh/Core/Gateway phối hợp Vinh
+| Slice | Trạng thái source | Phần cần nghiệm thu tiếp |
+|---|---|---|
+| ONB-01 | Đã khóa command/DTO/fixtures cấp PATIENT riêng và patient-existence port | Đối chiếu runtime candidate cuối với 03; không mở endpoint ADMIN tổng quát cho NURSE |
+| ONB-02 | Command idempotent, một account/patient, credential version và Gateway password gate; Gateway replay/quyền/phiên cũ đã kiểm | Timeout sau commit/outcome recovery trên UI và hai NURSE concurrent qua Gateway |
+| ONB-03 | Tìm/tạo patient → cấp account → tiếp nhận; giữ patient/key khi phục hồi; login không chặn khám | Tổng duyệt trình duyệt đa vai trò và phục hồi gián đoạn |
+| ONB-04 | Clinical/Lab own-result APIs và UI; Gateway own-resource và UI kết quả thật sau vòng khám/Lab đã kiểm | Draft/empty/unavailable UI và đọc Lab khi lượt còn mở |
+| ONB-05 | Ba fact kết quả khám/Lab/lời hẹn → in-app history; trước login và đọc lại sau login muộn đã kiểm | Broker replay effect counts trên packaged candidate; không suy đã đọc hoặc có SMS/email/push |
 
-- [ ] Đọc nearest AGENTS, DTO/use case/tests và source lock trước thay đổi. Baseline đọc source
-  tại `f28d25b4`: `AccountController.createAccount` và Gateway POST accounts chỉ ADMIN;
-  `PatientController` cho NURSE tạo/tìm/sửa hồ sơ; `PatientForm` chỉ ADMIN có nút cấp account.
-- [ ] Khóa producer/consumer fixtures cho nghiệp vụ cấp PATIENT riêng: chỉ nhận patient đã
-  xác minh, actor từ credential, không nhận role/staffId/replaceActiveAccount tùy ý; xác định
-  rõ response, idempotency, duplicate/timeout recovery và cách giao thông tin đăng nhập.
-  Route/DTO mới là TARGET cho đến khi cập nhật 03 cùng fixture và tests; không sửa role của
-  endpoint quản trị tổng quát để làm đường tắt.
-- [ ] Xác minh qua application port rằng patient tồn tại; Organization không đọc Patient DB.
-  Khóa chính sách mật khẩu ban đầu với `mustChangePassword` của tài khoản; không triển khai
-  bằng điều kiện “bệnh nhân có lượt đầu tiên” hoặc bắt đổi ở mỗi lần đăng nhập.
-
-Files đọc/sửa theo owner: `backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java`,
-`backend/core-service/src/main/java/com/mediflow/organization/application/service/CreateAccountService.java`,
-`backend/core-service/src/main/java/com/mediflow/organization/application/service/AccountOwnerPolicy.java`,
-`backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java`,
-`backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java`.
-Theo dõi bàn giao tại [H-11](../handoffs/HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md).
-
-### ONB-02 — cấp tài khoản có giới hạn, Hoàng Anh/Core/Gateway
-
-- [ ] Bổ sung tests từ chối NURSE cấp role nhân viên, gắn sai patient, thay account đang hoạt
-  động; tests cùng key/cùng payload trả cùng outcome và cùng key/khác payload bị conflict.
-- [ ] Chạy tests mới để xác nhận thiếu hành vi, rồi triển khai command chuyên biệt theo
-  contract ONB-01. Backend bảo vệ đồng thời hai command cấp account cùng patient, không chỉ
-  disable nút trên UI. Migration nếu cần phải append-only trong đúng store Organization.
-- [ ] Giữ `AccountSessionValidationFilter` kiểm trạng thái tài khoản hiện tại, đổi mật khẩu
-  thành công thu hồi phiên cũ; tests cả login/refresh và truy cập trực tiếp qua Gateway.
-- [ ] Chạy `mvn -q -pl backend/core-service,backend/gateway -am test`; yêu cầu zero failures/errors,
-  ghi skipped riêng. Thử concurrency trên PostgreSQL thật trước khi đóng bước.
-
-Tests bổ sung tại `backend/core-service/src/test/java/com/mediflow/organization/application/service/CreateAccountServiceTest.java`,
-`backend/core-service/src/test/java/com/mediflow/organization/web/controller/AccountControllerSecurityTest.java`,
-`backend/gateway/src/test/java/com/mediflow/gateway/AccountSessionValidationWebTest.java`,
-và suite riêng cho command chuyên biệt theo wire đã khóa.
-
-### ONB-03 — giao diện tiếp nhận liên tục, Hoàng Anh/FE Patient phối hợp Vinh/Appointment
-
-- [ ] Bổ sung component tests NURSE tìm/tạo hồ sơ, cấp PATIENT, tiếp tục đăng ký dù chưa login;
-  account timeout không tạo patient lần hai và trạng thái chưa rõ cho phép tra outcome.
-- [ ] Thực hiện qua shared `src/lib/api.ts`; giữ tiến độ theo patient đã xác minh. Nối tìm/tạo
-  hồ sơ → cấp tài khoản → đăng ký buổi khám, hiển thị kết quả từng bước và cách phục hồi.
-  App route composition nối các feature, không import chéo feature hoặc gọi raw fetch.
-- [ ] Bệnh nhân cũ dùng account cũ; “khám mới” không có nghĩa tạo patient/account mới. Phiếu
-  tại quầy ghi có mặt theo command hiện hành; thanh toán vẫn là điều kiện vào khám.
-- [ ] Giữ login/DashboardShell/PasswordForm theo cờ tài khoản, không chuyển hướng người bệnh
-  chỉ vì có lịch khám mới. Có hướng dẫn “Đăng nhập khi cần xem kết quả và thông báo”.
-
-Files: `frontend/src/features/patient/components/PatientForm.tsx`,
-`frontend/src/features/patient/usePatientMutation.ts`, `frontend/src/features/patient/components/PatientSaveRecovery.tsx`,
-`frontend/src/features/patient/components/PatientForm.test.tsx`,
-`frontend/src/features/appointment/components/ReceptionWorkspace.tsx` và `.test.tsx`,
-`frontend/src/features/organization/components/PasswordForm.tsx`, `frontend/src/app/login/page.tsx`,
-`frontend/src/app/(dashboard)/DashboardShell.tsx`. Đọc nearest AGENTS trước sửa từng path.
-
-### ONB-04 — kết quả cá nhân, Vinh/Clinical/Lab phối hợp Hoàng Anh/Gateway
-
-- [ ] Audit toàn bộ read routes và ownership use case trước công bố patient portal. Source
-  đã đọc: `MedicalRecordController` và `LabController` đang cung cấp staff reads; không dùng
-  chúng làm bằng chứng đã có PATIENT xem kết quả. `FollowUpRecommendationController` có
-  PATIENT read nhưng vẫn phải xác minh own-resource và fixtures.
-- [ ] Khóa DTO kết quả dành cho PATIENT và trạng thái phát hành trong 03; test đúng chủ thể,
-  người khác, draft/chưa có kết quả, nguồn unavailable, phân trang và truy cập URL trực tiếp.
-- [ ] Bổ sung hoặc tái sử dụng own-resource read use case sau audit; patientId từ authenticated
-  mapping, không tin query/body của client. Không thêm PATIENT vào mọi endpoint staff.
-- [ ] Làm UI kết quả khám/Lab/lời hẹn từ contract đã nghiệm thu; có loading/error/empty/retry.
-  Không suy diagnosis từ thông báo và không chuyển lời hẹn thành lịch đã đặt.
-
-Source trọng tâm: `backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java`,
-`backend/clinical-service/src/main/java/com/mediflow/clinical/web/FollowUpRecommendationController.java`,
-`backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java`,
-`frontend/src/features/medical-record/`, `frontend/src/features/lab/` và Gateway policy.
-Chạy `mvn -q -pl backend/clinical-service,backend/lab-service,backend/gateway -am test`
-sau thay đổi producer/route; chỉ chuyển sang UI sau fixtures producer/consumer khớp.
-
-### ONB-05 — thông báo không phụ thuộc lần login, Vinh/Notification + owner FE
-
-- [ ] Kiểm mapping patient/account từ nguồn chính thức và event coverage cho kết quả khám,
-  Lab và lời hẹn; bổ sung fixtures/tests còn thiếu trước thay consumer. Kết quả Lab có thể
-  đến khi lượt chưa hoàn tất, không yêu cầu chờ kết luận khám mới lưu thông báo Lab.
-- [ ] Chứng minh lưu thông báo cho account chưa từng login; login muộn vẫn thấy history đúng
-  người. Replay event không gửi trùng; thông báo không tự đánh dấu người bệnh đã đọc kết quả.
-- [ ] Frontend Notification theo owner trong docs/ai/15; backend ownership không tự mở quyền FE.
-  Chỉ in-app, không thêm email/SMS/push. Chạy `mvn -q -pl backend/notification-service -am test`.
+Bàn giao liên owner vẫn theo [H-11](../handoffs/HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md).
+Chỉ đóng sau nghiệm thu producer/consumer trong 06; có source và test không tự đóng handoff.
 
 ### ONB-06 — nghiệm thu trên candidate cuối, Vinh verification + các owner
 
 - [ ] Chạy ONB-A01–12 trong 06 qua Gateway và UI, PostgreSQL/RabbitMQ thật cho race/replay.
-- [ ] Từ `frontend/`, chạy `pnpm exec vitest run src/features/patient/components/PatientForm.test.tsx src/features/patient/usePatientMutation.test.ts src/features/appointment/components/ReceptionWorkspace.test.tsx src/features/organization/components/PasswordForm.test.tsx src/app/login/page.test.tsx`;
+- [x] Từ `frontend/`, chạy `pnpm exec vitest run src/features/patient/components/PatientForm.test.tsx src/features/patient/usePatientMutation.test.ts src/features/appointment/components/ReceptionWorkspace.test.tsx src/features/organization/components/PasswordForm.test.tsx src/app/login/page.test.tsx`;
   tiếp theo `pnpm typecheck`, `pnpm lint`, `pnpm build`.
   Chạy toàn bộ `pnpm test` khi tích hợp candidate cuối; ghi số run/fail/skipped thực tế.
 - [ ] Hồi quy WF-T01/04/12/16: khám mới người cũ, đăng ký có mặt, tái khám linked source,
@@ -152,6 +76,12 @@ sau thay đổi producer/route; chỉ chuyển sang UI sau fixtures producer/con
 - [ ] Lưu commit/flags, request/response đã che dữ liệu nhạy cảm, ảnh UI và effect counts;
   phân biệt đã có code, tests đạt và packaged/API/UI đạt. Chỉ đóng H-11 khi cả producer và
   consumer đạt ONB-A01–12; kết quả slice này không tự đóng toàn bộ WF-11.
+
+Checkpoint [Gateway/UI 27/10](../acceptance/onboarding-2026-10-27/README.md): full frontend
+119 files/1.097 tests, typecheck/lint/build đạt; 87 HTTP checks mới → khám → Lab → login muộn →
+tái khám/recovery và 20 checks khám mới người cũ đạt. Đã sửa Billing source/settled TTL và
+Clinical V2 diagnosis/Lab-order guards bằng regression. Ảnh UI và giới hạn từng ca ở biên bản;
+timeout/concurrency/draft/unavailable/vòng đọc Lab còn mở, không tick toàn ma trận.
 
 ## Source lock trước triển khai
 

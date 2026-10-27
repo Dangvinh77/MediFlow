@@ -7,12 +7,15 @@ import argparse
 import base64
 import datetime as dt
 import json
+import hashlib
 from pathlib import Path
+import subprocess
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from onboarding_acceptance import OnboardingAcceptance
 
 
 def main():
@@ -21,7 +24,21 @@ def main():
     parser.add_argument('--output', default='scripts/demo_25_10/evidence/scheduling.local.json')
     parser.add_argument('--booking-only', action='store_true',
                         help='Validate booking/payment for tomorrow without starting an examination')
+    parser.add_argument('--onboarding', action='store_true',
+                        help='Use a nurse-issued new patient account; log in only after results exist')
+    parser.add_argument('--session-id', type=uuid.UUID,
+                        help='Use an existing rehearsal session when repeating with a fresh synthetic patient')
     args = parser.parse_args()
+    if args.onboarding and args.booking_only:
+        parser.error('--onboarding requires the full examination/Lab/follow-up scenario')
+    root = Path(__file__).resolve().parents[2]
+    manifest_path = Path(__file__).resolve().parent / 'evidence/active-rehearsal.local.json'
+    if not manifest_path.is_file():
+        parser.error('Start the disposable rehearse_snapshot.py --scheduling --keep stack first')
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    if (manifest.get('gateway') != args.gateway.rstrip('/') or not manifest.get('scheduling')
+            or Path(manifest['stopFile']).exists()):
+        parser.error('Gateway must match the active disposable scheduling rehearsal')
     tokens, claims, checks = {}, {}, []
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).date()
     clinic_now = dt.datetime.now(dt.timezone(dt.timedelta(hours=7)))
@@ -29,7 +46,7 @@ def main():
     if not args.booking_only and clinic_now.hour >= 17:
         parser.error('Full examination rehearsal requires a session before 17:00 Asia/Ho_Chi_Minh; use --booking-only after hours')
 
-    def call(role, method, path, body=None, expected=(200,), key=None):
+    def call(role, method, path, body=None, expected=(200,), key=None, expected_error=None):
         headers = {'Content-Type': 'application/json', 'X-Correlation-Id': 'accept-opd-' + uuid.uuid4().hex}
         if role in tokens:
             headers['Authorization'] = 'Bearer ' + tokens[role]
@@ -43,42 +60,65 @@ def main():
         except urllib.error.HTTPError as error:
             status, envelope = error.code, json.load(error)
         checks.append({'role': role, 'method': method, 'path': path, 'status': status,
-                       'correlationId': envelope.get('correlationId'), 'expected': list(expected)})
+                       'correlationId': envelope.get('correlationId'), 'expected': list(expected),
+                       'errorCode': (envelope.get('error') or {}).get('code')})
         print(f'{role} {method} {path}: {status}', flush=True)
         if status not in expected:
             raise AssertionError(f'{role} {method} {path}: {status} {envelope.get("error")}')
+        if expected_error:
+            assert (envelope.get('error') or {}).get('code') == expected_error, path
         # Gateway authentication returns its own DTO; business APIs use ApiResponse.
         return envelope.get('data') if 'data' in envelope else envelope
 
-    def login(role, username):
+    def login(role, username, password='MediFlowDemo@2026'):
         data = call(role, 'POST', '/api/v1/auth/login',
-                    {'username': username, 'password': 'MediFlowDemo@2026'})
+                    {'username': username, 'password': password})
         tokens[role] = data['accessToken']
         # Only read returned identity for test inputs. The server verifies every token.
         segment = tokens[role].split('.')[1]
         claims[role] = json.loads(base64.urlsafe_b64decode(segment + '=' * (-len(segment) % 4)))
+        return data
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     result = {'gateway': args.gateway, 'date': str(today), 'sessionDate': str(session_date),
-              'scope': 'booking-payment' if args.booking_only else 'exam-lab-follow-up',
+              'sourceHead': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+              'applicationJarSha256': {name: hashlib.sha256((root / 'backend' / name / 'target' / (name + '-0.0.1-SNAPSHOT.jar')).read_bytes()).hexdigest()
+                                      for name in ['core-service', 'clinical-service', 'lab-service', 'billing-service',
+                                                   'support-service', 'pharmacy-service', 'gateway', 'eureka-server']},
+              'runnerSha256': {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                               for name in ['accept_scheduling.py', 'onboarding_acceptance.py']},
+              'scope': 'onboarding-exam-lab-follow-up' if args.onboarding else
+                       ('booking-payment' if args.booking_only else 'exam-lab-follow-up'),
               'checks': checks, 'passed': False}
     try:
         for role, username in [('admin', 'demo.admin'), ('nurse', 'demo.nurse'), ('doctor', 'demo.doctor'),
                                ('cashier', 'demo.cashier'), ('patient', 'demo.patient'), ('other', 'demo.patient2'),
                                ('lab', 'demo.lab')]:
+            if args.onboarding and role == 'patient':
+                continue
             login(role, username)
+        onboarding = OnboardingAcceptance(call, login, tokens, claims, result) if args.onboarding else None
         doctor_id = claims['doctor']['staffId']
-        patient_id = claims['patient']['patientId']
+        patient_id = onboarding.begin() if onboarding else claims['patient']['patientId']
         staff = call('admin', 'GET', '/api/v1/org/staff/' + doctor_id)
         department_id = staff['departmentId']
         rooms = call('admin', 'GET', '/api/v2/org/consultation-rooms?' + urllib.parse.urlencode(
             {'departmentId': department_id, 'page': 0, 'size': 100}))['content']
         if not rooms:
             raise AssertionError('Seed has no active consultation room for the doctor department')
-        session = call('admin', 'POST', '/api/v2/consultation-sessions', {
-            'doctorId': doctor_id, 'departmentId': department_id, 'roomId': rooms[0]['roomId'],
-            'sessionDate': str(session_date), 'startTime': '07:00', 'endTime': '17:00', 'breaks': [], 'capacity': 10}, (201,))
+        if args.session_id:
+            available = call('admin', 'GET', '/api/v2/consultation-sessions?' + urllib.parse.urlencode({
+                'departmentId': department_id, 'fromDate': str(session_date),
+                'toDate': str(session_date), 'page': 0, 'size': 100}))
+            session = next(item for item in available['content'] if item['sessionId'] == str(args.session_id))
+            assert session['doctorId'] == doctor_id and session['departmentId'] == department_id
+            assert session['sessionDate'] == str(session_date) and session['availableCount'] > 0
+        else:
+            session = call('admin', 'POST', '/api/v2/consultation-sessions', {
+                'doctorId': doctor_id, 'departmentId': department_id, 'roomId': rooms[0]['roomId'],
+                'sessionDate': str(session_date), 'startTime': '07:00', 'endTime': '17:00', 'breaks': [], 'capacity': 10}, (201,))
+        result['sessionId'] = session['sessionId']
         body = {'patientId': patient_id, 'sessionId': session['sessionId'],
                 'expectedSessionRevision': session['revision'],
                 'receptionMode': 'PREBOOKED' if args.booking_only else 'AT_COUNTER', 'visitType': 'NEW_VISIT'}
@@ -120,7 +160,7 @@ def main():
         result.update(paymentRequestId=request_id, paymentOperationId=operation_id,
                       transactionId=receipt['payment']['transactionId'])
         for attempt in range(30):
-            confirmed = call('patient', 'GET', '/api/v2/outpatient-registrations/' + registration_id)
+            confirmed = call('nurse' if onboarding else 'patient', 'GET', '/api/v2/outpatient-registrations/' + registration_id)
             if confirmed['status'] == 'CONFIRMED':
                 break
             time.sleep(2)
@@ -186,13 +226,18 @@ def main():
         recommendation = call('doctor', 'POST', '/api/v2/records/' + record_id + '/follow-up-recommendations', {
             'recommendedFrom': str(tomorrow), 'recommendedThrough': str(tomorrow + dt.timedelta(days=7)),
             'reason': 'Kiem tra lai sau dieu tri demo', 'preparationInstructions': 'Mang ket qua lan truoc'}, (201,))
+        if onboarding:
+            onboarding.release_results(record_id, test_id, recommendation)
         mine = call('patient', 'GET', '/api/v2/outpatient-registrations/mine?page=0&size=100')
         own = next(item for item in mine['content'] if item['registrationId'] == registration_id)
         assert own['recordId'] == record_id and own['followUpRecommendation']['recommendationId'] == recommendation['recommendationId']
         sources = call('nurse', 'GET', '/api/v2/outpatient-registrations/follow-up-sources?' + urllib.parse.urlencode(
             {'patientId': patient_id, 'page': 0, 'size': 100}))
         assert any(source['registrationId'] == registration_id for source in sources['content'])
-        result.update(recordId=record_id, recommendationId=recommendation['recommendationId'], passed=True)
+        result.update(recordId=record_id, recommendationId=recommendation['recommendationId'])
+        if onboarding:
+            onboarding.revisit(registration_id, session, tomorrow)
+        result['passed'] = True
         print('PASS: V2 registration, quote/payment replay, confirmed exam, paid Lab/result, completed record, patient follow-up advice')
     finally:
         output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')

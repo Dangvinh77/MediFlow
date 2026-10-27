@@ -248,15 +248,26 @@ class ClinicalApplicationServiceTest {
         verifyNoInteractions(publisher);
     }
 
-    @Test
-    void outpatientMvp_allowsDiagnosisOnlyForAssignedDoctorDuringActiveV1Exam() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {1, 2})
+    void outpatientMvp_allowsDiagnosisOnlyForAssignedDoctorDuringActiveExam(int version) {
         UUID patientId = UUID.randomUUID();
         UUID doctorId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
-        Appointment appointment = Appointment.create(patientId, doctorId, departmentId,
-                LocalDate.now().plusDays(1), LocalTime.NOON, null);
-        appointment.checkIn("OUTPATIENT_EXAM", java.time.Instant.now());
-        appointment.startExam(UUID.randomUUID(), null, java.time.Instant.now());
+        var now = java.time.Instant.now();
+        Appointment appointment;
+        if (version == 2) {
+            appointment = Appointment.createScheduled(UUID.randomUUID(), patientId, doctorId, departmentId,
+                    LocalDate.now(), LocalTime.NOON, null, now, now);
+            UUID clearanceId = UUID.randomUUID();
+            appointment.confirmScheduledPayment(clearanceId, now);
+            appointment.startScheduledExam(clearanceId, now);
+        } else {
+            appointment = Appointment.create(patientId, doctorId, departmentId,
+                    LocalDate.now().plusDays(1), LocalTime.NOON, null);
+            appointment.checkIn("OUTPATIENT_EXAM", now);
+            appointment.startExam(UUID.randomUUID(), null, now);
+        }
         MedicalRecord record = MedicalRecord.openForAppointment(patientId, doctorId, departmentId,
                 LocalDate.now(), null, appointment.getAppointmentId(), java.time.Instant.now());
         when(records.findByIdForUpdate(record.getRecordId())).thenReturn(Optional.of(record));

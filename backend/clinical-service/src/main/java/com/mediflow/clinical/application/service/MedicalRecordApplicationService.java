@@ -189,7 +189,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
         boolean sameTarget = record.getPatientId().equals(appointment.getPatientId())
                 && record.getDoctorId().equals(appointment.getDoctorId())
                 && record.getDepartmentId().equals(appointment.getDepartmentId());
-        if (!sameTarget || appointment.getCareContractVersion() != 1
+        if (!sameTarget || (appointment.getCareContractVersion() != 1 && appointment.getCareContractVersion() != 2)
                 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
             throw legacyRecordWriteDisabled();
         }
