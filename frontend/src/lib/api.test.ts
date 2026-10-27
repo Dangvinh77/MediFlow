@@ -85,6 +85,20 @@ describe("shared API transport", () => {
     await expect(api.post("/v1/command", {}, { idempotencyKey: key })).rejects.toThrow("Connection lost");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it.each([500, 502, 503])("explains an unknown write outcome from a bodyless proxy %i without changing the intent", async status => {
+    fetchMock.mockResolvedValueOnce(new Response("Upstream unavailable", { status }));
+    await expect(api.post("/v1/org/patient-accounts", { patientId: "saved-patient" }, { idempotencyKey: key }))
+      .rejects.toMatchObject({ status, message: "Chưa nhận được kết quả từ hệ thống. Hãy đối soát bằng cùng yêu cầu trước khi tạo mới." });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new Headers(sent().headers).get("Idempotency-Key")).toBe(key);
+    expect(session.clearSession).not.toHaveBeenCalled();
+  });
+  it("offers a read retry when the result provider returns no error envelope", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("Unavailable", { status: 503 }));
+    await expect(api.get("/v1/lab/mine"))
+      .rejects.toMatchObject({ status: 503, message: "Chưa thể tải dữ liệu từ hệ thống. Vui lòng thử lại." });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it.each(["signed-token", null])("preserves a new login when an older request started with %s", async (originalToken) => {
     session.getToken.mockReturnValue(originalToken);
     let finish!: (response: Response) => void;

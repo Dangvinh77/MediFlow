@@ -29,6 +29,8 @@ def main():
                         help='Use a nurse-issued new patient account; log in only after results exist')
     parser.add_argument('--issuance-recovery', action='store_true',
                         help='Also exercise two distinct nurses and a lost committed response through Gateway')
+    parser.add_argument('--result-event-replay', action='store_true',
+                        help='Capture/replay exact result facts on the disposable broker before first login (requires pika)')
     parser.add_argument('--login-before-lab', action='store_true',
                         help='Onboarding variant: first login during the open visit, before Lab completes')
     parser.add_argument('--login-after-return', action='store_true',
@@ -40,10 +42,12 @@ def main():
     args = parser.parse_args()
     if args.onboarding and args.booking_only:
         parser.error('--onboarding requires the full examination/Lab/follow-up scenario')
-    if (args.issuance_recovery or args.login_before_lab or args.login_after_return or args.follow_up_session_id) and not args.onboarding:
+    if (args.issuance_recovery or args.result_event_replay or args.login_before_lab or args.login_after_return or args.follow_up_session_id) and not args.onboarding:
         parser.error('Issuance recovery, early login and follow-up session reuse require --onboarding')
     if args.login_before_lab and args.login_after_return:
         parser.error('Choose only one initial patient login timing')
+    if args.result_event_replay and args.login_before_lab:
+        parser.error('Result replay acceptance requires patient login after all result notices')
     root = Path(__file__).resolve().parents[2]
     manifest_path = Path(__file__).resolve().parent / 'evidence/active-rehearsal.local.json'
     if not manifest_path.is_file():
@@ -103,14 +107,19 @@ def main():
                                       for name in ['core-service', 'clinical-service', 'lab-service', 'billing-service',
                                                    'support-service', 'pharmacy-service', 'gateway', 'eureka-server']},
               'runnerSha256': {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                               for name in ['accept_scheduling.py', 'onboarding_acceptance.py', 'issuance_acceptance.py']},
+                               for name in ['accept_scheduling.py', 'onboarding_acceptance.py', 'issuance_acceptance.py',
+                                            'result_replay_acceptance.py']},
               'scope': 'onboarding-exam-lab-follow-up' if args.onboarding else
                        ('booking-payment' if args.booking_only else 'exam-lab-follow-up'),
               'loginTiming': ('before-lab' if args.login_before_lab else
                               'after-second-reception' if args.login_after_return else 'after-clinical-completion')
                              if args.onboarding else 'existing-account',
               'checks': checks, 'passed': False}
+    observer = None
     try:
+        if args.result_event_replay:
+            from result_replay_acceptance import ResultReplayAcceptance
+            observer = ResultReplayAcceptance.begin(manifest_path, args.gateway)
         for role, username in [('admin', 'demo.admin'), ('nurse', 'demo.nurse'), ('doctor', 'demo.doctor'),
                                ('cashier', 'demo.cashier'), ('patient', 'demo.patient'), ('other', 'demo.patient2'),
                                ('lab', 'demo.lab')]:
@@ -256,7 +265,14 @@ def main():
         if onboarding:
             if args.login_after_return:
                 onboarding.return_before_login(registration_id, session, session_date)
-            onboarding.release_results(record_id, test_id, recommendation)
+            def verify_replay(notices):
+                result['resultEventReplay'] = observer.verify(
+                    call, patient_id, record_id, test_id, recommendation['recommendationId'],
+                    [notice['notificationId'] for notice in notices])
+                result['resultEventReplay']['completedBeforeFirstPatientLogin'] = 'patient' not in tokens
+                assert result['resultEventReplay']['completedBeforeFirstPatientLogin']
+            onboarding.release_results(record_id, test_id, recommendation,
+                                       before_first_login=verify_replay if observer else None)
         mine = call('patient', 'GET', '/api/v2/outpatient-registrations/mine?page=0&size=100')
         own = next(item for item in mine['content'] if item['registrationId'] == registration_id)
         assert own['recordId'] == record_id and own['followUpRecommendation']['recommendationId'] == recommendation['recommendationId']
@@ -269,6 +285,8 @@ def main():
         result['passed'] = True
         print('PASS: V2 registration, quote/payment replay, confirmed exam, paid Lab/result, completed record, patient follow-up advice')
     finally:
+        if observer:
+            observer.close()
         output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
 
 

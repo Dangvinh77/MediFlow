@@ -47,7 +47,7 @@ class OnboardingAcceptance:
                              patientLoginDeferred=True)
         return self.patient_id
 
-    def release_results(self, record_id, test_id, recommendation):
+    def release_results(self, record_id, test_id, recommendation, before_first_login=None):
         late_login = 'patient' not in self.tokens
         # Observe durable in-app history through authorized staff reads.
         history_path = f'/api/v1/notifications/patient/{self.patient_id}?page=0&size=100'
@@ -61,6 +61,9 @@ class OnboardingAcceptance:
         assert {row['title'] for row in notices} == expected_titles and len(notices) == 3
         assert all(row['patientId'] == self.patient_id and row['channel'] == 'IN_APP' for row in notices)
         self.evidence['completionNoticeIds'] = [row['notificationId'] for row in notices]
+        if before_first_login:
+            assert late_login, 'Replay must be verified before the initial patient login'
+            before_first_login(notices)
         if late_login:
             self.evidence['noticesBeforeFirstLogin'] = self.evidence['completionNoticeIds']
             self.first_login()

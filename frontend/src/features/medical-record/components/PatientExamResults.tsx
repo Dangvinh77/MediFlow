@@ -13,6 +13,6 @@ export function PatientExamResults({ schedulingEnabled }: { schedulingEnabled: b
         {record.diagnoses.map(diagnosis => <li key={diagnosis.diagnosisId}>{diagnosis.diagnosisName}{diagnosis.icdCode ? ` (${diagnosis.icdCode})` : ""}{diagnosis.description ? `: ${diagnosis.description}` : ""}</li>)}
       </ul></div>
       {record.dispositionNote ? <p className="whitespace-pre-wrap">Kết luận và hướng dẫn: {record.dispositionNote}</p> : null}
-      <FollowUpRecommendationPanel recordId={record.recordId} enabled={schedulingEnabled} canCreate={false} />
+      <FollowUpRecommendationPanel recordId={record.recordId} enabled={schedulingEnabled} canCreate={false} patientView />
     </article>} />;
 }
