@@ -22,6 +22,7 @@ di chuyển tài liệu không tự đóng các acceptance còn thiếu.
 - [Hợp đồng lịch khám/giữ suất và ma trận nghiệm thu](plans/10-scheduling-contract-acceptance.md)
 - [Source NURSE onboarding đã triển khai](plans/11-patient-onboarding-source-acceptance-2026-10-27.md)
 - [Tiếp tục nghiệm thu và dọn checklist 27/10](plans/13-onboarding-closeout-2026-10-27.md)
+- [Phục hồi onboarding và Lab trong lượt mở](plans/14-onboarding-recovery-acceptance-2026-10-27.md)
 - [Dữ liệu và độ tin cậy](plans/04-data-reliability.md)
 - [Plan 18 task và 72 subtask](plans/05-implementation-plan.md)
 - [Nghiệm thu và vận hành](plans/06-acceptance-runbook.md)
@@ -33,3 +34,7 @@ Compose mặc định có 6 business deployment ngoại trú: Core, Clinical, La
 Inpatient/Surgery và V2 nâng cao tạm hoãn.
 Code, database và các thay đổi FE được giữ nguyên. Các đường dẫn cũ chỉ là chỉ dẫn đọc,
 không một bộ spec/backlog thứ hai hoặc bằng chứng đã triển khai topology mới.
+
+Checkpoint mới: [hoàn thiện trước vòng thử trực tiếp](plans/15-demo-readiness-closeout-2026-10-27.md),
+[bằng chứng broker/UI/frontend](acceptance/demo-readiness-2026-10-27/README.md) và
+[runbook cho Vinh, Huy, Hoàng Anh](plans/16-three-developer-demo-acceptance-2026-10-27.md).

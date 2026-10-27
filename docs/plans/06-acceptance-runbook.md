@@ -16,10 +16,12 @@ WF-T05/07 và các ca BHYT bên dưới là tiêu chí toàn bộ nghiệp vụ 
 bằng chứng endpoint mới đã hỗ trợ tất cả. API/UI acceptance chỉ chạy sau khi producer,
 consumer và Gateway của candidate đã triển khai đúng wire.
 
-### Nghiệm thu luồng điều chỉnh 25/10 — tất cả chưa chạy
+### Ma trận nghiệm thu luồng điều chỉnh 25/10
 
-Đây là test cần triển khai theo [07](07-outpatient-workflow-implementation.md), không phải
-request có thể copy vào Postman hiện tại. Từng case phải khóa endpoint/body/event fixture từ
+Đây là tiêu chí theo [07](07-outpatient-workflow-implementation.md); một số nhánh đã chạy
+ở [checkpoint Gateway/UI](../acceptance/onboarding-2026-10-27/README.md) và
+[checkpoint recovery/open Lab](../acceptance/onboarding-recovery-2026-10-27/README.md).
+Không suy toàn case đạt từ một nhánh API. Từng case phải khóa endpoint/body/event fixture từ
 source mới, chạy API qua Gateway và UI với đúng role. Không sửa SQL để đặt trạng thái mong muốn.
 Giữ evidence commit/flags/IDs, request/response redacted, ảnh UI và số effect trước/sau.
 
@@ -192,3 +194,7 @@ Không dùng source tests để đánh dấu toàn bộ ONB-A01–12 đã đạt
 
 Checkpoint tiếp theo: [ONB closeout 27/10](13-onboarding-closeout-2026-10-27.md)
 phân biệt ca Gateway đã chạy với ma trận ONB-A01–12 còn phải nghiệm thu đầy đủ.
+
+Lượt bổ sung 27/10: [89 HTTP checks + exact-byte broker replay và UI account recovery](../acceptance/demo-readiness-2026-10-27/README.md).
+[Runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md) gom thứ tự thử
+và mẫu ghi nhận; không thay hoặc tự ký các tiêu chí ONB/WF/SC trong tài liệu này.

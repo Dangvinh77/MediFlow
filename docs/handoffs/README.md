@@ -39,8 +39,10 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 ## Tách việc mới khỏi việc kiểm chứng baseline
 
 H-11 checkpoint 27/10: [87 checks Gateway và UI kết quả](../acceptance/onboarding-2026-10-27/README.md)
-đã đạt theo phạm vi ghi trong biên bản; vẫn NEEDS REVALIDATION cho timeout/concurrency,
-login đầu ở lần đến thứ hai, draft/unavailable/replay và recovery xác minh danh tính.
+đã đạt theo phạm vi ghi trong biên bản. [Checkpoint tiếp theo: 107 + 99 observations](../acceptance/onboarding-recovery-2026-10-27/README.md)
+đã kiểm hai NURSE concurrent, mất phản hồi sau commit/retry, tiếp nhận lần hai cùng ngày trước
+login, API pending results và đọc Lab trong lượt mở. Vẫn NEEDS REVALIDATION cho UI phục hồi/
+unavailable, broker replay, quay lại ngày khác và recovery xác minh danh tính.
 
 WF-01–11 là backlog nghiệp vụ mới: schedule, reception, revisit, hỗ trợ BHYT và UI/Report.
 Chúng không được coi đã hoàn thành bởi acceptance baseline 17–25/10. Source lock trước khi
@@ -71,3 +73,9 @@ compatibility và resume owner. Không suy quyền sửa module từ handoff.
 Sau khi cả hai phía đạt acceptance: chuyển lasting rules vào 02/03/04 hoặc service runbook;
 ghi evidence tương ứng, xóa handoff và registry entry cùng thay đổi. Evidence gốc được giữ.
 Nếu chỉ có implementation và thiếu acceptance thì giữ NEEDS REVALIDATION; không xóa để làm sạch.
+
+Checkpoint bổ sung H-11: [broker replay, browser recovery và frontend](../acceptance/demo-readiness-2026-10-27/README.md)
+đã có bằng chứng theo phạm vi; [runbook ba developer](../plans/16-three-developer-demo-acceptance-2026-10-27.md)
+gom phần thử trực tiếp còn lại. Các mô tả UI recovery/broker chưa kiểm ở checkpoint trước
+là lịch sử và đã được bổ sung bằng chứng; trạng thái NEEDS REVALIDATION vẫn giữ cho ký
+ma trận đầy đủ, quay lại ngày khác và quy trình xác minh danh tính recovery.

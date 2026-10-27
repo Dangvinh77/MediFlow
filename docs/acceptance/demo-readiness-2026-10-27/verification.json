@@ -1,0 +1,39 @@
+{
+  "codeCommit": "d496b49e015b4e5073e259d5a59d8d2cefa51e44",
+  "runtimeEvidenceSourceHead": "43c20412667ad3008dcd6d0ac33c85d7d3828bdc",
+  "runnerIdentity": {
+    "accept_scheduling.py": {
+      "windowsWorktreeSha256": "a04cbe175d3fa64bc120d8666e25befde1fd435473dc9e67942852d8a350e712",
+      "gitBlob": "4f69fe5fdc86b93613e45c53cdca972fff6b5b63",
+      "unchangedSinceAcceptance": true
+    },
+    "onboarding_acceptance.py": {
+      "windowsWorktreeSha256": "c67879cd155b5419f4902064e6a0a04a7958e2d2600f1c254365515c398440ff",
+      "gitBlob": "11856e2805b5aab025aa4a14ef988edfbb66af40",
+      "unchangedSinceAcceptance": true
+    },
+    "issuance_acceptance.py": {
+      "windowsWorktreeSha256": "acaca1574777ff406594a4919c9e9e63ac09cf5f933aa4a1e019ebfcc4a3167e",
+      "gitBlob": "a4285579079e440b16fc96691044fd38f36a6dd8",
+      "unchangedSinceAcceptance": true
+    },
+    "result_replay_acceptance.py": {
+      "windowsWorktreeSha256": "324a6db40fb727ee94410bda4ade31712481d57071b25576ab5be3f1c36e511d",
+      "gitBlob": "fc603509a0ddead36ad44a68ae3e47ed6ca8e7e9",
+      "unchangedSinceAcceptance": true
+    }
+  },
+  "frontend": {
+    "vitest": {
+      "files": 121,
+      "passed": 1108,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed"
+  },
+  "pythonCompile": "passed",
+  "diffCheck": "passed",
+  "review": "self-review using local review-pr checklist; no independent reviewer sign-off"
+}

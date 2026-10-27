@@ -63,6 +63,9 @@ chạy lại toàn bộ, không bỏ qua test lỗi.
 
 ## Phần còn mở
 
+Danh sách dưới là giới hạn checkpoint này. Phần đã chạy tiếp sau merge PR #546 xem
+[recovery/open Lab: 107 + 99 observations](../onboarding-recovery-2026-10-27/README.md).
+
 H-11 vẫn **NEEDS REVALIDATION**, WF-11 chưa đóng. ONB-A01–12 chưa được coi đạt toàn bộ UI/API:
 chưa có fault injection timeout sau commit/outcome recovery, hai NURSE concurrent,
 lần đầu login ở lần đến bệnh viện thứ hai, draft/empty/unavailable UI, broker replay effect counts,

@@ -170,10 +170,20 @@ async function requestJson<T>(
         ? legacy.error
         : nestedError?.code;
 
+    // A proxy may lose a committed response and return plain text/HTML. Keep
+    // the status for intent recovery; never turn an unknown outcome into success.
+    const uncertain = response.status === 408 || response.status >= 500;
+    const mutation = init?.method !== undefined && !["GET", "HEAD"].includes(init.method.toUpperCase());
+    const fallbackMessage = uncertain
+      ? mutation
+        ? "Chưa nhận được kết quả từ hệ thống. Hãy đối soát bằng cùng yêu cầu trước khi tạo mới."
+        : "Chưa thể tải dữ liệu từ hệ thống. Vui lòng thử lại."
+      : `Yêu cầu chưa được thực hiện (HTTP ${response.status}).`;
+
     throw new ApiRequestError(
       nestedError?.message ??
         legacy?.message ??
-        `Request failed (${response.status})`,
+        fallbackMessage,
       response.status,
       code,
       nestedError?.details ?? [],

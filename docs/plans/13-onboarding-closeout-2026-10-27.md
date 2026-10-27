@@ -63,6 +63,8 @@ theo nghiệp vụ [02](02-business-flows.md) và wire [03](03-contracts.md).
 
 Kế hoạch triển khai tiếp trong lượt này đã thực hiện; ONB-06/H-11 chưa đóng toàn bộ.
 Danh sách ca timeout/concurrent, login đầu ở lần đến thứ hai, draft/unavailable, broker replay
-và đọc Lab khi lượt còn mở được giữ ở [biên bản nghiệm thu](../acceptance/onboarding-2026-10-27/README.md).
+và đọc Lab khi lượt còn mở tại thời điểm này được giữ ở [biên bản nghiệm thu](../acceptance/onboarding-2026-10-27/README.md).
+Tiến độ mới sau pull PR #546 ở [kế hoạch 14](14-onboarding-recovery-acceptance-2026-10-27.md)
+và [107 + 99 observations](../acceptance/onboarding-recovery-2026-10-27/README.md); không ghi đè kết quả lịch sử.
 Không xóa handoff hoặc test đang bảo vệ Surgery/Inpatient. UI copy login đã giải thích web tùy chọn
 và recovery dùng tài khoản hiện có. Những bảng acceptance lịch sử giữ số test của đúng checkpoint.

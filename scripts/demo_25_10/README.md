@@ -105,6 +105,21 @@ own results, in-app history, linked revisit and existing ADMIN password recovery
 Credentials stay in memory; evidence records statuses, error codes and operation IDs.
 It does not prove real-world identity verification or all UI failure/recovery cases.
 
+Additional ONB-06 variants (each still requires `--onboarding`):
+
+- `--issuance-recovery`: two distinct NURSE actors race to issue one account; a loopback
+  proxy drops a committed Gateway response and the client retries the same command.
+- `--login-before-lab`: first login/password change during the open visit; pending results
+  are hidden and completed Lab is readable before exam completion, keeping the EXAM receipt.
+- `--login-after-return`: second AT_COUNTER NEW_VISIT after the first completed visit,
+  before the first patient login. Synthetic same-day return; initial password change still applies.
+- `--follow-up-session-id <UUID>`: reuse a tomorrow session when repeating onboarding
+  alongside `--session-id <today UUID>`; both must belong to this disposable rehearsal.
+
+Choose at most one of the two login timing variants. Run early-login separately from
+late-login to retain evidence that web use is optional throughout the clinical journey.
+See [107 + 99 Gateway observations and limits](../../docs/acceptance/onboarding-recovery-2026-10-27/README.md).
+
 Use `--session-id <UUID>` only to reuse a session from this disposable stack while
 repeating with a new synthetic patient; a fresh stack avoids overlapping demo sessions.
 Do not use the runner against a project/deployed database. Stop the stack with the
@@ -125,3 +140,28 @@ Do not use the runner against a project/deployed database. Stop the stack with t
 Topology health and snapshot restore smoke do not certify every refund, Pharmacy
 dispense or Report coverage workflow. The normal paid Lab acceptance specifically
 exercises Core/Clinical/Lab/Billing with real PostgreSQL/RabbitMQ.
+
+### Result replay and browser recovery acceptance — 27/10
+
+On the disposable scheduling stack, before 17:00 Asia/Ho_Chi_Minh:
+
+```powershell
+# Optional broker tool dependency; use an isolated environment
+python -m venv scripts/demo_25_10/evidence/replay-tools.local
+scripts/demo_25_10/evidence/replay-tools.local/Scripts/python.exe -m pip install pika==1.3.2
+scripts/demo_25_10/evidence/replay-tools.local/Scripts/python.exe scripts/demo_25_10/accept_scheduling.py --onboarding --result-event-replay --output scripts/demo_25_10/evidence/result-replay.local.json
+```
+
+The observer captures real producer bytes/properties, republishes each fact three times,
+checks active Notification queue drain/DLQ and unchanged patient notification IDs before
+the initial patient login. Early-login mode is incompatible. Evidence records source SHA
+and runner/JAR hashes. Never replay against a project broker.
+
+For browser-only response-loss rehearsal, start `gateway_fault_proxy.py --drop-next-issuance-response --stop-with-rehearsal` against the active manifest, then
+point the local Next server at `GATEWAY_URL=http://127.0.0.1:28081`. It drops one successful
+issuance response after upstream commit and writes sanitized metadata inside that rehearsal
+evidence folder. Preserve the browser intent and patient; reload and reconcile the same
+request. Stop the proxy/Next server after testing; do not change deployment defaults.
+
+[Evidence and limits](../../docs/acceptance/demo-readiness-2026-10-27/README.md),
+[three-developer manual runbook](../../docs/plans/16-three-developer-demo-acceptance-2026-10-27.md).

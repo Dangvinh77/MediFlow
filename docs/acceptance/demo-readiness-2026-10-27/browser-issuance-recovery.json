@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "upstream": "http://127.0.0.1:28080",
+  "fault": "drop-next-successful-patient-account-issuance-response",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/patients",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/patients",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/9211e1c8-1920-44a8-b887-36600629617c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/9211e1c8-1920-44a8-b887-36600629617c",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 201,
+      "patientId": "9211e1c8-1920-44a8-b887-36600629617c",
+      "accountId": "790e5b34-ccff-42d0-8a65-9132d63bca0a",
+      "idempotencyKeySha256": "99615d77a84b5eb5141ef35fb759e9e45ab5b21441270e4ecfa673cc190ae300",
+      "clientResponseDropped": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/9211e1c8-1920-44a8-b887-36600629617c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/9211e1c8-1920-44a8-b887-36600629617c",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/org/patient-accounts",
+      "status": 200,
+      "patientId": "9211e1c8-1920-44a8-b887-36600629617c",
+      "accountId": "790e5b34-ccff-42d0-8a65-9132d63bca0a",
+      "idempotencyKeySha256": "99615d77a84b5eb5141ef35fb759e9e45ab5b21441270e4ecfa673cc190ae300"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/org/departments",
+      "status": 502
+    }
+  ]
+}

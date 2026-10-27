@@ -5,6 +5,7 @@ import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/session";
 import { CommandIntentError, prepareCommandIntent } from "@/lib/command-intent";
 import { Button } from "@/components/ui/Button";
+import { ReferenceText } from "@/components/references/ReferenceText";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { medicalRecordApi } from "../api";
 import type { CreateFollowUpRecommendationRequest, FollowUpRecommendationDTO } from "../types";
@@ -26,10 +27,11 @@ function toError(cause: unknown, fallback: string): FollowUpError {
     : { message: cause instanceof Error ? cause.message : fallback, correlationId: null };
 }
 
-export function FollowUpRecommendationPanel({ recordId, enabled, canCreate }: {
+export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, patientView = false }: {
   recordId: string;
   enabled: boolean;
   canCreate: boolean;
+  patientView?: boolean;
 }) {
   const [state, setState] = useState<RecommendationState>({ status: enabled ? "loading" : "empty" });
   const [recommendedFrom, setRecommendedFrom] = useState("");
@@ -112,10 +114,14 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate }: {
       <div><h2 className="text-lg font-semibold">Đề xuất tái khám</h2><p className="mt-1 text-sm text-muted-foreground">Đề xuất đã lưu và không thể chỉnh sửa.</p></div>
       <dl className="grid gap-4 sm:grid-cols-2">
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Khoảng ngày đề xuất</dt><dd className="mt-1 text-sm">{formatLocalDate(recommendation.recommendedFrom)} – {formatLocalDate(recommendation.recommendedThrough)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bác sĩ ưu tiên</dt><dd className="mt-1 break-all font-mono text-sm">{recommendation.preferredDoctorId}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Lượt khám nguồn</dt><dd className="mt-1 break-all font-mono text-sm">{recommendation.sourceRegistrationId}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bác sĩ ưu tiên</dt><dd className="mt-1"><ReferenceText kind="doctor" value={recommendation.preferredDoctorId} fallback="Bác sĩ ưu tiên" /></dd></div>
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(recommendation.createdAt)}</dd></div>
       </dl>
+      {patientView ? <p className="text-sm text-muted-foreground">Liên hệ điều dưỡng để chọn buổi khám phù hợp.</p> : null}
+      <details className="rounded-lg border border-border px-4 py-3 text-sm">
+        <summary className="min-h-8 cursor-pointer font-medium underline underline-offset-2">Thông tin đối chiếu</summary>
+        <dl className="mt-3"><div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Lượt khám nguồn</dt><dd className="mt-1 break-all font-mono">{recommendation.sourceRegistrationId}</dd></div></dl>
+      </details>
       <div><h3 className="text-sm font-semibold">Lý do</h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.reason}</p></div>
       {recommendation.preparationInstructions ? <div><h3 className="text-sm font-semibold">Hướng dẫn chuẩn bị</h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.preparationInstructions}</p></div> : null}
     </section>;

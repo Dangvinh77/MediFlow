@@ -1094,3 +1094,13 @@ Nghiệm thu candidate sau rebase master `4851b196`: frontend 1.078 test, Core 3
 Billing 1.175; lint/typecheck/build và 28 signed Gateway checks qua.
 [Phạm vi và ảnh nghiệm thu](evidence/outpatient-usability-2026-10-26/README.md) phân biệt rõ
 booking/payment ngoài giờ với full examination còn cần chạy đúng ca.
+
+## Candidate cho vòng thử ba developer — 2026-10-27
+
+PR #547, code `d496b49e`: fallback tiếng Việt cho lỗi proxy không có envelope; follow-up
+patient hiển thị tên bác sĩ qua shared directory và hướng dẫn liên hệ điều dưỡng;
+source ID trong phần đối chiếu thu gọn. Kết quả khám/Lab có regression loading/empty/error/retry.
+Frontend 121 files / 1.108 tests, typecheck, lint và build đạt.
+[Bằng chứng](../../docs/acceptance/demo-readiness-2026-10-27/README.md);
+[runbook tiếp theo](../../docs/plans/16-three-developer-demo-acceptance-2026-10-27.md).
+Không thay route ownership, backend contract hoặc mặc định activation gates.
