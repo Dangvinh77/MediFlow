@@ -37,7 +37,6 @@ import com.mediflow.lab.infrastructure.persistence.adapter.LabTestPersistenceAda
 import com.mediflow.lab.infrastructure.persistence.adapter.LabClearancePersistenceAdapter;
 import com.mediflow.lab.infrastructure.persistence.adapter.LabEmergencyOverridePersistenceAdapter;
 import com.mediflow.lab.infrastructure.persistence.adapter.LabOutboxPersistenceAdapter;
-import com.mediflow.lab.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapter;
 import com.mediflow.lab.infrastructure.persistence.jpaEntity.LabFinancialClearanceJpaEntity;
 import com.mediflow.lab.infrastructure.persistence.jpaEntity.LabOutboxEventJpaEntity;
 import com.mediflow.common.api.PageQuery;
@@ -59,7 +58,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @DataJpaTest
-@Import({LabTestPersistenceAdapter.class, ProcessedEventPersistenceAdapter.class,
+@Import({LabTestPersistenceAdapter.class,
         LabClearancePersistenceAdapter.class, LabEmergencyOverridePersistenceAdapter.class,
         LabOutboxPersistenceAdapter.class, LabPersistenceAdapterTest.JsonConfiguration.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -71,7 +70,6 @@ class LabPersistenceAdapterTest {
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired LabTestPersistenceAdapter tests;
-    @Autowired ProcessedEventPersistenceAdapter processedEvents;
     @Autowired LabClearancePersistenceAdapter clearances;
     @Autowired LabEmergencyOverridePersistenceAdapter overrides;
     @Autowired LabOutboxPersistenceAdapter outbox;
@@ -206,20 +204,6 @@ class LabPersistenceAdapterTest {
     }
 
     @Test
-    void processedEvent_firstClaim_returnsTrue() {
-        UUID eventId = UUID.randomUUID();
-        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isTrue();
-    }
-
-    @Test
-    void processedEvent_duplicateClaim_returnsFalse() {
-        UUID eventId = UUID.randomUUID();
-        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isTrue();
-
-        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isFalse();
-    }
-
-    @Test
     void queriesFilterByPatientRecordDepartmentAndStatus() {
         UUID patient = UUID.randomUUID();
         UUID record = UUID.randomUUID();
@@ -327,7 +311,7 @@ class LabPersistenceAdapterTest {
         assertThat(clearances.claimAndSave(eventId, targets)).isTrue();
         assertThat(clearances.claimAndSave(eventId, targets)).isFalse();
         assertThat(clearanceRows.count()).isEqualTo(2);
-        assertThat(processedEvents.tryClaim(eventId, "financial.clearance.granted")).isFalse();
+        assertThat(processedEventRows.insertIfAbsent(eventId, "financial.clearance.granted")).isZero();
         assertThat(clearances.findLatestByTestId(first.getTestId()))
                 .get().extracting(LabFinancialClearance::currency).isEqualTo("VND");
         assertThat(clearances.findByTestIdAndClearanceId(first.getTestId(), clearanceId))

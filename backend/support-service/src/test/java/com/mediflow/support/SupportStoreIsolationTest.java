@@ -80,7 +80,7 @@ class SupportStoreIsolationTest {
         assertThat(report.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isPositive();
         assertThat(notification.queryForList(
                 "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank", String.class))
-                .containsExactly("1", "2", "3", "4", "5");
+                .containsExactly("1", "2", "3", "4", "5", "6");
         assertThat(report.queryForObject("SELECT to_regclass('notification')", String.class)).isNull();
         assertThat(notification.queryForObject("SELECT to_regclass('operational_contribution')", String.class)).isNull();
     }

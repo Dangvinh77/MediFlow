@@ -33,7 +33,6 @@ import com.mediflow.lab.application.event.LabResultV2Payload;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.in.CreateLabRequestUseCase;
-import com.mediflow.lab.application.port.in.ReactToClinicalUseCase;
 import com.mediflow.lab.application.port.in.ReactToFinancialClearanceUseCase;
 import com.mediflow.lab.application.port.in.UpdateLabPaymentUseCase;
 import com.mediflow.lab.application.port.out.AuthenticatedStaffContext;
@@ -56,7 +55,7 @@ import com.mediflow.lab.domain.model.LabResult;
 import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
-public class LabApplicationService implements ManageLabTestUseCase, ReactToClinicalUseCase,
+public class LabApplicationService implements ManageLabTestUseCase,
         UpdateLabPaymentUseCase, ReactToFinancialClearanceUseCase {
 
     private final LabTestRepositoryPort tests;
@@ -346,18 +345,6 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         }
         test.changeStatus(status);
         return mapper.toDto(tests.save(test));
-    }
-
-    @Override
-    @Transactional
-    public void autoCreateFromRecord(UUID recordId, UUID patientId, UUID departmentId, String labType) {
-        if (outpatientMvpEnabled) {
-            throw outpatientV1Required();
-        }
-        if (labType == null || labType.isBlank()) {
-            return;
-        }
-        saveNew(recordId, patientId, departmentId, labType, LocalDate.now());
     }
 
     @Override
