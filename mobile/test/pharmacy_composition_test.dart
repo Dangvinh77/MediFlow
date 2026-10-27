@@ -120,7 +120,7 @@ void main() {
       router.go('/pharmacy/prescriptions/new');
       await tester.pumpAndSettle();
       expect(
-        find.text('Kê đơn ngoại trú V1 chưa được cấu hình.'),
+        find.text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
         findsNothing,
       );
       session.replace(

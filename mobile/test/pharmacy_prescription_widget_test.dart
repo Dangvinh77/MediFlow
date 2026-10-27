@@ -142,9 +142,9 @@ Future<void> fillRx(WidgetTester tester) async {
     await pickReference(tester, label: field.key, name: field.value);
   }
   for (final field in {
-    'Mã giá Billing': 'CATALOG-CONFIRMED',
-    'Nguồn đã đối chiếu': 'Public visit receipt + Billing policy',
-    'Ngày kê đơn (YYYY-MM-DD)': '2026-10-20',
+    'Nhóm thu tiền thuốc': 'CATALOG-CONFIRMED',
+    'Nguồn hồ sơ': 'Public visit receipt + Billing policy',
+    'Ngày kê đơn': '2026-10-20',
   }.entries) {
     await enter(tester, field.key, field.value);
   }
@@ -169,9 +169,9 @@ void main() {
       final repository = PharmacyStub();
       await tester.pumpWidget(host(repository, const CreatePrescriptionPage()));
       await tester.pumpAndSettle();
-      expect(find.textContaining('đang chờ client Gateway'), findsOneWidget);
+      expect(find.textContaining('hiện chưa sẵn sàng'), findsOneWidget);
       final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Tạo đơn V1'),
+        find.widgetWithText(FilledButton, 'Tạo đơn thuốc'),
       );
       expect(button.onPressed, isNull);
       expect(repository.creations, isEmpty);
@@ -207,7 +207,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.text('Kê đơn ngoại trú V1 chưa được cấu hình.'),
+        find.text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
         findsOneWidget,
       );
       expect(find.byType(TextField), findsNothing);
@@ -220,7 +220,7 @@ void main() {
       await tester.pumpWidget(
         host(PharmacyStub(), const CreatePrescriptionPage(), writer: writer),
       );
-      await tap(tester, 'Tạo đơn V1');
+      await tap(tester, 'Tạo đơn thuốc');
       expect(writer.intents, isEmpty);
       expect(find.text('Hồ sơ bệnh án'), findsOneWidget);
       expect(find.textContaining('UUID'), findsNothing);
@@ -273,7 +273,7 @@ void main() {
         (ReferenceKind.record, otherDrugId),
         (ReferenceKind.appointment, otherDrugId),
       ]);
-      await tap(tester, 'Tạo đơn V1');
+      await tap(tester, 'Tạo đơn thuốc');
       expect(writer.intents, isEmpty);
       expect(find.text('Hồ sơ: Ho so An'), findsOneWidget);
       expect(find.text('Lượt khám: Lich hen An'), findsOneWidget);
@@ -294,7 +294,7 @@ void main() {
       );
       expect(tester.widget<IconButton>(recordPicker).onPressed, isNull);
       writer.send = null;
-      await tap(tester, 'Thử lại cùng mã và nội dung');
+      await tap(tester, 'Thử gửi lại đơn này');
       await tap(tester, 'Xác nhận kê đơn');
       expect(writer.intents, hasLength(2));
       expect(identical(writer.intents[0], writer.intents[1]), isTrue);
@@ -317,12 +317,12 @@ void main() {
         host(PharmacyStub(), const CreatePrescriptionPage(), writer: writer),
       );
       await fillRx(tester);
-      await tap(tester, 'Tạo đơn V1');
+      await tap(tester, 'Tạo đơn thuốc');
       await tap(tester, 'Xác nhận kê đơn');
       expect(writer.intents, hasLength(1));
       expect(find.text('Mã hỗ trợ: rx-trace'), findsOneWidget);
       expect(
-        find.text('Thử lại cùng mã và nội dung'),
+        find.text('Thử gửi lại đơn này'),
         status == 408 || status == 503 ? findsOneWidget : findsNothing,
       );
       expect(find.text('Đã tạo đơn: $rxId'), findsNothing);
@@ -337,12 +337,12 @@ void main() {
       final page = CreatePrescriptionPage(onCreated: (_) => opened++);
       await tester.pumpWidget(host(PharmacyStub(), page, writer: writer));
       await fillRx(tester);
-      await tap(tester, 'Tạo đơn V1');
+      await tap(tester, 'Tạo đơn thuốc');
       // pumpAndSettle cannot settle the pending request's progress indicator.
-      await tester.tap(find.text('Xác nhận kê đơn'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận kê đơn'));
       await pumpCommand(tester);
       expect(writer.intents, hasLength(1));
-      expect(find.widgetWithText(FilledButton, 'Tạo đơn V1'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Tạo đơn thuốc'), findsNothing);
       await tester.pumpWidget(
         host(PharmacyStub(), page, writer: writer, role: null),
       );
@@ -387,13 +387,13 @@ void main() {
     expect(find.textContaining(otherDrugId), findsNothing);
     expect(find.textContaining(rxId), findsNothing);
 
-    await visible(tester, find.text('Chi tiết kỹ thuật'));
-    await tester.tap(find.text('Chi tiết kỹ thuật'));
+    await visible(tester, find.text('Mã tham chiếu'));
+    await tester.tap(find.text('Mã tham chiếu'));
     await tester.pumpAndSettle();
     expect(find.text('Đơn thuốc: $rxId'), findsOneWidget);
     expect(find.text('Hồ sơ: $otherDrugId'), findsOneWidget);
     expect(find.text('Mã thuốc: $drugId'), findsOneWidget);
-    expect(find.text('Người hủy ID: $rxId'), findsOneWidget);
+    expect(find.text('Mã người hủy: $rxId'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets(
@@ -405,7 +405,7 @@ void main() {
         host(repository, const CreatePrescriptionPage(), writer: writer),
       );
       await fillRx(tester);
-      await tap(tester, 'Tạo đơn V1');
+      await tap(tester, 'Tạo đơn thuốc');
       await tester.pumpWidget(
         host(
           repository,
@@ -447,7 +447,12 @@ void main() {
       expect(repository.cancellations, hasLength(1));
       expect(repository.cancellations.single.$2.reason, 'Đổi chỉ định');
       expect(find.textContaining('Máy chủ đã hủy đơn'), findsOneWidget);
-      expect(find.text('Read unavailable'), findsOneWidget);
+      expect(
+        find.text(
+          'Chưa kết nối được để xác nhận kết quả. Vui lòng kiểm tra lại trước khi thao tác tiếp.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Hủy đơn thuốc'), findsNothing);
     });
   }
@@ -554,8 +559,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining(otherDrugId), findsNothing);
-    await visible(tester, find.text('Chi tiết kỹ thuật'));
-    await tester.tap(find.text('Chi tiết kỹ thuật'));
+    await visible(tester, find.text('Mã tham chiếu'));
+    await tester.tap(find.text('Mã tham chiếu'));
     await tester.pumpAndSettle();
     expect(find.text('Đơn thuốc: $otherDrugId'), findsOneWidget);
     expect(find.textContaining('Máy chủ đã hủy đơn'), findsNothing);

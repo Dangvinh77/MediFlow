@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
-import '../../../core/widgets/request_state.dart';
+import 'pharmacy_request_error.dart';
+import 'pharmacy_date_text.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/pharmacy_identity.dart';
 import 'pharmacy_identity_label.dart';
@@ -45,7 +46,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
     final input = id.text.trim();
     if (!isPharmacyId(input)) {
       setState(() {
-        validation = 'Mã đơn thuốc phải là UUID hợp lệ.';
+        validation = 'Mã đơn thuốc chưa đúng. Vui lòng kiểm tra lại.';
         submitted = null;
         hasLoaded = false;
       });
@@ -77,7 +78,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
           focusNode: focus,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            labelText: 'Mã đơn thuốc (UUID)',
+            labelText: 'Mã đơn thuốc',
             errorText: validation,
             border: const OutlineInputBorder(),
           ),
@@ -218,7 +219,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         title: const Text('Xác nhận hủy đơn thuốc'),
         content: SingleChildScrollView(
           child: Text(
-            'Bạn đang hủy đơn thuốc này.\nLý do: ${command.reason}\nBackend kiểm tra quyền bác sĩ và giải phóng reservation.',
+            'Bạn đang hủy đơn thuốc này.\nLý do: ${command.reason}\nThuốc đã giữ cho đơn sẽ được trả lại kho.',
           ),
         ),
         actions: [
@@ -309,9 +310,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         content: SingleChildScrollView(
           child: Text(
             'Bạn đang xuất thuốc cho đơn này.\n'
-            '${snapshot.lines.length} dòng thuốc. Backend kiểm tra trạng thái, tồn kho và '
-            '${mode == PharmacyMode.outpatient ? 'clearance Billing hiện tại' : 'thanh toán V0'}. '
-            'Chỉ phiếu máy chủ xác nhận mới là kết quả xuất.',
+            '${snapshot.lines.length} thuốc trong đơn. Hệ thống sẽ kiểm tra thanh toán và tồn kho trước khi xuất.',
           ),
         ),
         actions: [
@@ -422,16 +421,23 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                             ),
                             if (dispenseReceipt!.dispensedAt != null)
                               Text(
-                                'Xuất lúc: ${dispenseReceipt!.dispensedAt!.toIso8601String()}',
+                                'Xuất lúc: ${pharmacyDateTime(dispenseReceipt!.dispensedAt!)}',
                               ),
                             if (dispenseReceipt!.dispensedBy != null)
                               if (dispenseReceipt!.dispensedActorType ==
                                   DispenseActorType.staff)
-                                ReferenceLabel(
-                                  kind: ReferenceKind.staff,
-                                  id: dispenseReceipt!.dispensedBy!,
-                                  label: 'Người xuất',
-                                )
+                                ref
+                                            .watch(pharmacyAccessProvider)
+                                            ?.canPrescribe ==
+                                        true
+                                    ? ReferenceLabel(
+                                        kind: ReferenceKind.staff,
+                                        id: dispenseReceipt!.dispensedBy!,
+                                        label: 'Người xuất',
+                                      )
+                                    : const Text(
+                                        'Người xuất: Nhân viên phụ trách',
+                                      )
                               else
                                 Text(
                                   'Người xuất: ${switch (dispenseReceipt!.dispensedActorType) {
@@ -446,7 +452,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                                   DispenseActorType.staff => 'Nhân sự',
                                   DispenseActorType.account => 'Tài khoản',
                                   DispenseActorType.system => 'Hệ thống',
-                                  DispenseActorType.legacyUnknown => 'Legacy chưa xác định',
+                                  DispenseActorType.legacyUnknown => 'Chưa xác định',
                                 }}',
                               ),
                           ],
@@ -460,7 +466,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                         liveRegion: true,
                         child: Column(
                           children: [
-                            RequestError(dispenseError!),
+                            PharmacyRequestError(dispenseError!),
                             const Text(
                               'Chưa xác nhận đã xuất. Làm mới đơn để kiểm tra; không tự gửi lại hoặc đánh dấu đã thanh toán.',
                             ),
@@ -491,7 +497,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                           children: [
                             cancelError is String
                                 ? Text(cancelError as String)
-                                : RequestError(cancelError!),
+                                : PharmacyRequestError(cancelError!),
                             if (cancelLocked)
                               const Text(
                                 'Chưa gửi lại lệnh. Làm mới để kiểm tra kết quả; liên hệ đối soát nếu chưa rõ.',
@@ -527,7 +533,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
           focusNode: errorFocus,
           child: Semantics(
             liveRegion: true,
-            child: RequestError(error!, onRetry: retry ? _load : null),
+            child: PharmacyRequestError(error!, onRetry: retry ? _load : null),
           ),
         ),
       );
@@ -542,37 +548,38 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Chế độ ứng dụng: ${switch (mode) {
-              PharmacyMode.outpatient => 'Ngoại trú V1',
-              PharmacyMode.legacy => 'Tương thích V0',
-              PharmacyMode.unavailable => 'Chưa được cấu hình — thao tác đơn chưa sẵn sàng',
-            }}',
-          ),
-          if (result.recordId != null)
+          if (mode == PharmacyMode.unavailable)
+            const Text('Chức năng đơn thuốc hiện chưa sẵn sàng.'),
+          if (result.recordId != null &&
+              ref.watch(pharmacyAccessProvider)?.canPrescribe == true)
             ReferenceLabel(
               kind: ReferenceKind.record,
               id: result.recordId!,
               label: 'Hồ sơ',
             )
-          else
+          else if (result.recordId == null)
             const Text('Hồ sơ: Chưa cung cấp'),
-          PharmacyIdentityLabel(
-            kind: PharmacyIdentityKind.patient,
-            id: result.patientId,
-            label: 'Bệnh nhân',
-          ),
-          PharmacyIdentityLabel(
-            kind: PharmacyIdentityKind.doctor,
-            id: result.doctorId,
-            label: 'Bác sĩ kê đơn',
-          ),
-          PharmacyIdentityLabel(
-            kind: PharmacyIdentityKind.department,
-            id: result.departmentId,
-            label: 'Khoa',
-          ),
-          Text('Ngày kê đơn: ${result.prescribedDate}'),
+          if (ref.watch(pharmacyAccessProvider)?.canPrescribe == true) ...[
+            PharmacyIdentityLabel(
+              kind: PharmacyIdentityKind.patient,
+              id: result.patientId,
+              label: 'Bệnh nhân',
+            ),
+            PharmacyIdentityLabel(
+              kind: PharmacyIdentityKind.doctor,
+              id: result.doctorId,
+              label: 'Bác sĩ kê đơn',
+            ),
+            PharmacyIdentityLabel(
+              kind: PharmacyIdentityKind.department,
+              id: result.departmentId,
+              label: 'Khoa',
+            ),
+          ] else
+            const Text(
+              'Thông tin người bệnh và bác sĩ được giới hạn theo quyền truy cập.',
+            ),
+          Text('Ngày kê đơn: ${pharmacyDate(result.prescribedDate)}'),
           Text(
             'Trạng thái đơn: ${switch (result.status) {
               PrescriptionStatus.active => 'Đang hoạt động',
@@ -591,14 +598,15 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               DispenseStatus.expired => 'Hết hạn',
             }}',
           ),
-          Text(
-            'Cờ thanh toán legacy: ${result.paymentConfirmed ? 'Đã xác nhận' : 'Chưa xác nhận'}',
-          ),
+          if (mode == PharmacyMode.legacy)
+            Text(
+              'Thanh toán đã ghi nhận: ${result.paymentConfirmed ? 'Có' : 'Chưa'}',
+            ),
           if (mode == PharmacyMode.outpatient)
             const Text(
-              'Quyền xuất V1 và clearance do backend kiểm tra khi thực hiện lệnh. Cờ legacy không xác định quyền xuất.',
+              'Việc xuất thuốc sẽ được kiểm tra theo thanh toán và tồn kho hiện tại.',
             ),
-          Text('Tổng tiền máy chủ: ${result.totalAmount} VND'),
+          Text('Tổng tiền: ${result.totalAmount} VND'),
           for (final line in result.lines)
             Card(
               child: Padding(
@@ -616,8 +624,9 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               ),
             ),
           if (result.cancelledAt != null)
-            Text('Hủy lúc: ${result.cancelledAt!.toIso8601String()}'),
-          if (result.cancelledBy != null)
+            Text('Hủy lúc: ${pharmacyDateTime(result.cancelledAt!)}'),
+          if (result.cancelledBy != null &&
+              ref.watch(pharmacyAccessProvider)?.canPrescribe == true)
             ReferenceLabel(
               kind: ReferenceKind.staff,
               id: result.cancelledBy!,
@@ -625,22 +634,24 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
             ),
           if (result.cancellationReason != null)
             Text('Lý do hủy: ${result.cancellationReason}'),
-          Text('Cập nhật: ${result.updatedAt.toIso8601String()}'),
+          Text('Cập nhật: ${pharmacyDateTime(result.updatedAt)}'),
           ExpansionTile(
-            title: const Text('Chi tiết kỹ thuật'),
+            title: const Text('Mã tham chiếu'),
             children: [
               SelectableText('Đơn thuốc: ${result.id}'),
               if (result.recordId != null)
                 SelectableText('Hồ sơ: ${result.recordId}'),
-              SelectableText('Bệnh nhân ID: ${result.patientId}'),
-              SelectableText('Bác sĩ ID: ${result.doctorId}'),
-              SelectableText('Khoa ID: ${result.departmentId}'),
+              SelectableText('Mã bệnh nhân: ${result.patientId}'),
+              SelectableText('Mã bác sĩ: ${result.doctorId}'),
+              SelectableText('Mã khoa: ${result.departmentId}'),
               for (var i = 0; i < result.lines.length; i++) ...[
-                SelectableText('Dòng ${i + 1} ID: ${result.lines[i].id}'),
+                SelectableText(
+                  'Mã thuốc trong đơn ${i + 1}: ${result.lines[i].id}',
+                ),
                 SelectableText('Mã thuốc: ${result.lines[i].drugId}'),
               ],
               if (result.cancelledBy != null)
-                SelectableText('Người hủy ID: ${result.cancelledBy}'),
+                SelectableText('Mã người hủy: ${result.cancelledBy}'),
               if (dispenseReceipt != null) ...[
                 SelectableText('Phiếu: ${dispenseReceipt!.id}'),
                 SelectableText(
@@ -648,7 +659,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                 ),
                 if (dispenseReceipt!.dispensedBy != null)
                   SelectableText(
-                    'Người xuất ID: ${dispenseReceipt!.dispensedBy}',
+                    'Mã người xuất: ${dispenseReceipt!.dispensedBy}',
                   ),
               ],
               if (receipt != null)
@@ -686,15 +697,13 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
           if (ref.watch(pharmacyAccessProvider)?.canManageDrugs == true &&
               mode != PharmacyMode.unavailable) ...[
             if (mode == PharmacyMode.legacy && !result.paymentConfirmed)
-              const Text(
-                'Tương thích V0 yêu cầu xác nhận thanh toán trước khi xuất.',
-              ),
+              const Text('Cần xác nhận thanh toán trước khi xuất thuốc.'),
             if (canDispensePrescription(result, mode) &&
                 dispenseReceipt == null &&
                 receipt == null) ...[
               if (ref.watch(prescriptionDispenserProvider) == null)
                 const Text(
-                  'Chưa thể xuất: đang chờ client Gateway hỗ trợ PUT không body.',
+                  'Chức năng xuất thuốc hiện chưa sẵn sàng. Vui lòng thử lại sau.',
                 ),
               FilledButton(
                 onPressed:

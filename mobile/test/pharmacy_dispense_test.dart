@@ -130,7 +130,10 @@ void main() {
   ) async {
     await tester.pumpWidget(host(PharmacyStub()));
     await tester.pumpAndSettle();
-    expect(find.textContaining('PUT không body'), findsOneWidget);
+    expect(
+      find.textContaining('xuất thuốc hiện chưa sẵn sàng'),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, 'Xuất thuốc'))
@@ -157,7 +160,10 @@ void main() {
         expect(dispenser.calls, [rxId]);
         expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsOneWidget);
         expect(find.textContaining(otherDrugId), findsNothing);
-        expect(find.textContaining('Refresh unavailable'), findsWidgets);
+        expect(
+          find.textContaining('Chưa kết nối được để xác nhận kết quả'),
+          findsWidgets,
+        );
         expect(find.text('Xuất thuốc'), findsNothing);
         expect(repository.cancellations, isEmpty);
       },
@@ -241,7 +247,13 @@ void main() {
       await tester.pumpWidget(host(PharmacyStub(), dispenser: dispenser));
       await tester.pumpAndSettle();
       await dispense(tester);
-      expect(find.text(reason), findsOneWidget);
+      expect(find.text(reason), findsNothing);
+      expect(
+        find.text(
+          'Đơn chưa có xác nhận thanh toán hợp lệ. Vui lòng kiểm tra thanh toán rồi làm mới đơn.',
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('clearance-trace'), findsOneWidget);
       expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
       expect(dispenser.calls, [rxId]);

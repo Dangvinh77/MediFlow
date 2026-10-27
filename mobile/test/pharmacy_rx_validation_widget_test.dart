@@ -38,7 +38,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         await fillRx(tester);
-        await tap(tester, 'Tạo đơn V1');
+        await tap(tester, 'Tạo đơn thuốc');
         await tap(tester, 'Xác nhận kê đơn');
         await tap(tester, 'Sửa bản nháp bị từ chối');
         final label = field.contains('quantity')
@@ -77,12 +77,12 @@ void main() {
         );
         await tester.pumpAndSettle();
         await fillRx(tester);
-        await tap(tester, 'Tạo đơn V1');
+        await tap(tester, 'Tạo đơn thuốc');
         await tap(tester, 'Xác nhận kê đơn');
-        await tap(tester, 'Thử lại cùng mã và nội dung');
+        await tap(tester, 'Thử gửi lại đơn này');
         await tap(tester, 'Quay lại');
         expect(writer.intents.length, 1);
-        await tap(tester, 'Thử lại cùng mã và nội dung');
+        await tap(tester, 'Thử gửi lại đơn này');
         await tap(tester, 'Xác nhận kê đơn');
         expect(writer.intents.length, 2);
         expect(identical(writer.intents[0], writer.intents[1]), isTrue);

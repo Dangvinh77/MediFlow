@@ -64,7 +64,8 @@ class CreateOutpatientPrescription {
         date == null ||
         date.toIso8601String().substring(0, 10) != prescribedDate ||
         date.isAfter(DateTime(now.year, now.month, now.day))) {
-      result['prescribedDate'] = 'Ngày YYYY-MM-DD hợp lệ, không ở tương lai.';
+      result['prescribedDate'] =
+          'Nhập ngày hợp lệ theo dạng năm-tháng-ngày, không ở tương lai.';
     }
     if (lines.isEmpty) result['lines'] = 'Chọn ít nhất một thuốc từ danh mục.';
     for (var i = 0; i < lines.length; i++) {

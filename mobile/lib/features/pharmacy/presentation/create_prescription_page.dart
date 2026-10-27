@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
-import '../../../core/widgets/request_state.dart';
+import 'pharmacy_request_error.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
+import '../domain/prescribing_source.dart';
 import 'pharmacy_boundary.dart';
 import 'providers.dart';
+import 'prescription_source_fields.dart';
 
 class CreatePrescriptionPage extends ConsumerWidget {
   const CreatePrescriptionPage({super.key, this.onCreated});
@@ -22,7 +24,7 @@ class CreatePrescriptionPage extends ConsumerWidget {
       }
       if (ref.watch(pharmacyModeProvider) != PharmacyMode.outpatient) {
         return const Center(
-          child: Text('Kê đơn ngoại trú V1 chưa được cấu hình.'),
+          child: Text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
         );
       }
       final writer = ref.watch(outpatientPrescriptionWriterProvider);
@@ -30,6 +32,9 @@ class CreatePrescriptionPage extends ConsumerWidget {
         key: ObjectKey(writer),
         repository: repository,
         writer: writer,
+        sourceReader: repository is PrescribingSourceReader
+            ? repository as PrescribingSourceReader
+            : null,
         onCreated: onCreated,
       );
     },
@@ -56,10 +61,12 @@ class _CreatePrescription extends StatefulWidget {
     super.key,
     required this.repository,
     required this.writer,
+    this.sourceReader,
     this.onCreated,
   });
   final PharmacyRepository repository;
   final OutpatientPrescriptionWriter? writer;
+  final PrescribingSourceReader? sourceReader;
   final ValueChanged<Prescription>? onCreated;
   @override
   State<_CreatePrescription> createState() => _CreatePrescriptionState();
@@ -71,10 +78,10 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
     'departmentId': 'Mã khoa',
     'doctorId': 'Mã bác sĩ nhân sự',
     'recordId': 'Mã hồ sơ',
-    'careEpisodeId': 'Mã lượt khám OUTPATIENT_VISIT',
-    'priceCode': 'Mã giá Billing',
-    'sourceReference': 'Nguồn đã đối chiếu',
-    'prescribedDate': 'Ngày kê đơn (YYYY-MM-DD)',
+    'careEpisodeId': 'Lượt khám',
+    'priceCode': 'Nhóm thu tiền thuốc',
+    'sourceReference': 'Nguồn hồ sơ',
+    'prescribedDate': 'Ngày kê đơn',
   };
   final fields = {for (final key in labels.keys) key: TextEditingController()};
   final focuses = {for (final key in labels.keys) key: FocusNode()};
@@ -96,6 +103,38 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
   String? submittedKeyword;
   DialogRoute<bool>? confirmation;
   NavigatorState? dialogNavigator;
+  bool sourceConfirmed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sourceReader != null) {
+      final now = DateTime.now();
+      fields['prescribedDate']!.text =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  void _sourceChanged(OutpatientPrescriptionContext? source) {
+    if (busy || intent != null || created != null) return;
+    setState(() {
+      sourceConfirmed = source != null;
+      final values = {
+        'patientId': source?.patientId,
+        'recordId': source?.recordId,
+        'doctorId': source?.doctorId,
+        'departmentId': source?.departmentId,
+        'careEpisodeId': source?.careEpisodeId,
+        'priceCode': source?.priceCode,
+        'sourceReference': source?.sourceReference,
+      };
+      for (final entry in values.entries) {
+        fields[entry.key]!.text = entry.value ?? '';
+        errors.remove(entry.key);
+      }
+      commandError = null;
+    });
+  }
 
   void _changeReference(String key, String? id) {
     setState(() {
@@ -274,6 +313,15 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
       if (!retryAllowed || intent == null) return;
     } else {
       if (intent != null) return;
+      if (widget.sourceReader != null && !sourceConfirmed) {
+        setState(
+          () => commandError = const FormatException(
+            'Chọn bệnh nhân và chờ xác nhận thông tin hồ sơ khám trước khi kê đơn.',
+          ),
+        );
+        feedbackFocus.requestFocus();
+        return;
+      }
       final command = _command();
       final validation = command.errors();
       setState(() => errors = validation);
@@ -302,7 +350,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
     final route = DialogRoute<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(retry ? 'Gửi lại đúng ý định V1' : 'Xác nhận kê đơn V1'),
+        title: Text(retry ? 'Xác nhận gửi lại đơn' : 'Xác nhận kê đơn'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,13 +376,16 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                 id: current.command.context.departmentId,
                 label: 'Khoa',
               ),
-              ReferenceLabel(
-                kind: ReferenceKind.appointment,
-                id: current.command.context.careEpisodeId,
-                label: 'Lượt khám',
-              ),
+              if (widget.sourceReader != null)
+                const Text('Đã liên kết lượt khám ngoại trú từ hồ sơ.')
+              else
+                ReferenceLabel(
+                  kind: ReferenceKind.appointment,
+                  id: current.command.context.careEpisodeId,
+                  label: 'Lượt khám',
+                ),
               Text(
-                '${current.command.lines.length} dòng thuốc. Backend kiểm tra nguồn, quyền và giá.',
+                '${current.command.lines.length} thuốc trong đơn. Thông tin và giá sẽ được kiểm tra khi tạo đơn.',
               ),
             ],
           ),
@@ -412,18 +463,28 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Kê đơn ngoại trú V1',
+            'Kê đơn ngoại trú',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const Text(
-            'Đối chiếu hồ sơ và nhân sự từ workflow public. Lượt khám phải có loại OUTPATIENT_VISIT. '
-            'Mã giá do Billing xác nhận; không dùng mã tài khoản thay bác sĩ, không đoán ID.',
+          Text(
+            widget.sourceReader != null
+                ? 'Chọn bệnh nhân và hồ sơ khám. Hệ thống tự lấy thông tin kê đơn liên quan.'
+                : 'Chọn bệnh nhân, hồ sơ khám và bác sĩ theo thông tin đã được xác nhận. Kiểm tra đầy đủ lượt khám và nhóm thu trước khi tạo đơn.',
           ),
           if (widget.writer == null)
             const Text(
-              'Chưa thể gửi đơn: đang chờ client Gateway hỗ trợ Idempotency-Key.',
+              'Chức năng tạo đơn hiện chưa sẵn sàng. Vui lòng thử lại sau.',
             ),
-          for (final field in labels.entries)
+          if (widget.sourceReader != null)
+            PrescriptionSourceFields(
+              reader: widget.sourceReader!,
+              locked: locked,
+              onChanged: _sourceChanged,
+            ),
+          for (final field in labels.entries.where(
+            (field) =>
+                widget.sourceReader == null || field.key == 'prescribedDate',
+          ))
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child:
@@ -441,6 +502,9 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                       enabled: !locked,
                       decoration: InputDecoration(
                         labelText: field.value,
+                        helperText: field.key == 'prescribedDate'
+                            ? 'Nhập theo dạng năm-tháng-ngày.'
+                            : null,
                         errorText: errors[field.key],
                       ),
                     ),
@@ -458,7 +522,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           ),
           if (searching)
             const LinearProgressIndicator(semanticsLabel: 'Đang tìm thuốc'),
-          if (searchError != null) RequestError(searchError!),
+          if (searchError != null) PharmacyRequestError(searchError!),
           if (!searching && searchError == null && searched && drugs.isEmpty)
             const Text('Không tìm thấy thuốc.'),
           for (final drug in drugs)
@@ -567,10 +631,11 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                 children: [
                   if (errors['lines'] != null) Text(errors['lines']!),
                   if (commandError != null) ...[
-                    RequestError(commandError!),
-                    const Text(
-                      'Giữ nguyên nội dung và mã ý định. Lỗi kết nối không chứng minh đơn chưa được tạo; kiểm tra kết quả trước ý định khác.',
-                    ),
+                    PharmacyRequestError(commandError!),
+                    if (intent != null)
+                      const Text(
+                        'Chưa rõ đơn đã được tạo hay chưa. Vui lòng kiểm tra đơn trước khi gửi lần nữa.',
+                      ),
                   ],
                   if (created != null)
                     SelectableText('Đã tạo đơn: ${created!.id}'),
@@ -581,12 +646,12 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           if (intent == null)
             FilledButton(
               onPressed: busy || widget.writer == null ? null : () => _submit(),
-              child: const Text('Tạo đơn V1'),
+              child: const Text('Tạo đơn thuốc'),
             ),
           if (intent != null && retryAllowed && created == null)
             FilledButton(
               onPressed: busy ? null : () => _submit(retry: true),
-              child: const Text('Thử lại cùng mã và nội dung'),
+              child: const Text('Thử gửi lại đơn này'),
             ),
           if (intent != null && rejected && created == null)
             OutlinedButton(

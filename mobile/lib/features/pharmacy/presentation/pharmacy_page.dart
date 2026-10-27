@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/widgets/request_state.dart';
+import 'pharmacy_request_error.dart';
+import 'pharmacy_date_text.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
 import 'providers.dart';
@@ -253,7 +254,7 @@ class _DrugCatalogState extends State<_DrugCatalog> {
               )
             : _error != null
             ? SingleChildScrollView(
-                child: RequestError(
+                child: PharmacyRequestError(
                   _error!,
                   onRetry: _canRetry(_error)
                       ? () => _load(_requestedPage)
@@ -303,7 +304,9 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                               const SizedBox(height: 4),
                               Text('${drug.price} VND / ${drug.unit}'),
                               Text('Tồn kho: ${drug.stockQuantity}'),
-                              Text('Hạn dùng: ${drug.expiryDate}'),
+                              Text(
+                                'Hạn dùng: ${pharmacyDate(drug.expiryDate)}',
+                              ),
                               if (drug.stockQuantity == 0)
                                 const Text('Hết hàng'),
                               if (drug.isLowStock) const Text('Tồn thấp'),
@@ -435,7 +438,10 @@ class _DrugDetailState extends State<_DrugDetail> {
     }
     if (_error != null) {
       return SingleChildScrollView(
-        child: RequestError(_error!, onRetry: _canRetry(_error) ? _load : null),
+        child: PharmacyRequestError(
+          _error!,
+          onRetry: _canRetry(_error) ? _load : null,
+        ),
       );
     }
     final drug = _drug!;
@@ -454,11 +460,11 @@ class _DrugDetailState extends State<_DrugDetail> {
           Text('Ngưỡng tồn thấp: ${drug.lowStockThreshold}'),
           if (drug.stockQuantity == 0) const Text('Hết hàng'),
           if (drug.isLowStock) const Text('Tồn thấp'),
-          Text('Hạn dùng: ${drug.expiryDate}'),
+          Text('Hạn dùng: ${pharmacyDate(drug.expiryDate)}'),
           Text('Nhà sản xuất: ${drug.manufacturer ?? 'Chưa cung cấp'}'),
-          Text('Cập nhật: ${drug.updatedAt.toIso8601String()}'),
+          Text('Cập nhật: ${pharmacyDateTime(drug.updatedAt)}'),
           ExpansionTile(
-            title: const Text('Chi tiết kỹ thuật'),
+            title: const Text('Mã tham chiếu'),
             children: [SelectableText('Mã thuốc: ${drug.id}')],
           ),
           const SizedBox(height: 16),

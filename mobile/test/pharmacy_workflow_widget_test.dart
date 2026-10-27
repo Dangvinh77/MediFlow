@@ -199,7 +199,10 @@ void main() {
       expect(repository.creations, hasLength(1));
       expect(find.widgetWithText(TextButton, 'Thử lại'), findsNothing);
       if (status != 403) {
-        expect(find.textContaining('Không gửi lại lệnh cũ'), findsOneWidget);
+        expect(
+          find.textContaining('Chưa rõ thao tác đã hoàn tất'),
+          findsOneWidget,
+        );
       }
     });
   }
@@ -273,12 +276,12 @@ void main() {
       await tester.pumpAndSettle();
       pending.complete(drug(id: drugId, stock: 100));
       await tester.pumpAndSettle();
-      expect(find.text('Tồn kho máy chủ: 100'), findsNothing);
+      expect(find.text('Tồn kho: 100'), findsNothing);
       expect(find.textContaining(otherDrugId), findsNothing);
       expect(find.text('Paracetamol 500 mg'), findsOneWidget);
-      expect(find.text('Chi tiết kỹ thuật'), findsOneWidget);
-      await tester.ensureVisible(find.text('Chi tiết kỹ thuật'));
-      await tester.tap(find.text('Chi tiết kỹ thuật'));
+      expect(find.text('Mã tham chiếu'), findsOneWidget);
+      await tester.ensureVisible(find.text('Mã tham chiếu'));
+      await tester.tap(find.text('Mã tham chiếu'));
       await tester.pumpAndSettle();
       expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
       expect(repository.adjustments, hasLength(1));
@@ -302,10 +305,7 @@ void main() {
         );
         await tap(tester, 'Xác nhận');
         expect(repository.adjustments.single.$2.quantity, int.parse(delta));
-        expect(
-          find.text('Điều chỉnh thành công. Tồn kho máy chủ: 11'),
-          findsOneWidget,
-        );
+        expect(find.text('Điều chỉnh thành công. Tồn kho: 11'), findsOneWidget);
         expect(
           tester
               .widget<FilledButton>(
@@ -357,7 +357,7 @@ void main() {
             .text,
         isEmpty,
       );
-      expect(find.text('Tồn kho máy chủ: 8'), findsOneWidget);
+      expect(find.text('Tồn kho: 8'), findsOneWidget);
     },
   );
   testWidgets(
@@ -378,7 +378,7 @@ void main() {
       await tap(tester, 'Điều chỉnh tồn kho');
       await tap(tester, 'Xác nhận');
       expect(find.text('Tồn kho đã được giữ chỗ'), findsOneWidget);
-      expect(find.text('Tồn kho máy chủ: 6'), findsOneWidget);
+      expect(find.text('Tồn kho: 6'), findsOneWidget);
       expect(repository.adjustments, hasLength(1));
     },
   );
@@ -419,10 +419,10 @@ void main() {
         expect(find.text('Trạng thái đơn: Đang hoạt động'), findsOneWidget);
         expect(find.text('Trạng thái xuất: Chờ xuất'), findsOneWidget);
         expect(
-          find.text('Cờ thanh toán legacy: Chưa xác nhận'),
-          findsOneWidget,
+          find.text('Thanh toán đã ghi nhận: Chưa'),
+          mode == PharmacyMode.legacy ? findsOneWidget : findsNothing,
         );
-        expect(find.text('Tổng tiền máy chủ: 5000.5 VND'), findsOneWidget);
+        expect(find.text('Tổng tiền: 5000.5 VND'), findsOneWidget);
         if (mode == PharmacyMode.outpatient) {
           // V1 ignores the legacy flag; missing transport capability still
           // prevents sending an actual command from this unbound host.
@@ -434,12 +434,15 @@ void main() {
                 .onPressed,
             isNull,
           );
-          expect(find.textContaining('PUT không body'), findsOneWidget);
+          expect(
+            find.textContaining('xuất thuốc hiện chưa sẵn sàng'),
+            findsOneWidget,
+          );
         } else {
           expect(find.widgetWithText(FilledButton, 'Xuất thuốc'), findsNothing);
         }
         if (mode == PharmacyMode.unavailable) {
-          expect(find.textContaining('Chưa được cấu hình'), findsOneWidget);
+          expect(find.textContaining('hiện chưa sẵn sàng'), findsOneWidget);
         }
       },
     );
@@ -484,9 +487,18 @@ void main() {
           host(repository, const PrescriptionDetailPage(prescriptionId: rxId)),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Rx error $status'), findsOneWidget);
+        expect(find.text('Rx error $status'), findsNothing);
+        expect(
+          find.text(switch (status) {
+            401 => 'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.',
+            403 => 'Tài khoản này chưa được phép thực hiện thao tác.',
+            404 => 'Không tìm thấy thông tin cần tra cứu.',
+            _ => 'Chưa kết nối được để xác nhận kết quả. Vui lòng kiểm tra lại trước khi thao tác tiếp.',
+          }),
+          findsOneWidget,
+        );
         expect(find.text('Mã hỗ trợ: rx-trace'), findsOneWidget);
-        expect(find.textContaining('Tổng tiền máy chủ'), findsNothing);
+        expect(find.textContaining('Tổng tiền'), findsNothing);
         expect(
           find.text('Thử lại'),
           status == 503 ? findsOneWidget : findsNothing,
@@ -508,13 +520,13 @@ void main() {
                 }),
               );
       await tester.pumpWidget(host(repository, const PrescriptionLookupPage()));
-      await enter(tester, 'Mã đơn thuốc (UUID)', 'bad');
+      await enter(tester, 'Mã đơn thuốc', 'bad');
       await tap(tester, 'Tra cứu đơn thuốc');
       expect(repository.prescriptions, isEmpty);
-      await enter(tester, 'Mã đơn thuốc (UUID)', rxId);
+      await enter(tester, 'Mã đơn thuốc', rxId);
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
-      await enter(tester, 'Mã đơn thuốc (UUID)', otherDrugId);
+      await enter(tester, 'Mã đơn thuốc', otherDrugId);
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
       pending.completeError(const ApiFailure('Stale failure'));
@@ -536,12 +548,12 @@ void main() {
         matching: find.byType(Scrollable),
       );
       await tester.scrollUntilVisible(
-        find.text('Chi tiết kỹ thuật'),
+        find.text('Mã tham chiếu'),
         200,
         scrollable: prescriptionScrollable.first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Chi tiết kỹ thuật'));
+      await tester.tap(find.text('Mã tham chiếu'));
       await tester.pumpAndSettle();
       expect(find.text('Đơn thuốc: $otherDrugId'), findsOneWidget);
       expect(find.text('Stale failure'), findsNothing);
@@ -570,7 +582,7 @@ void main() {
     );
     pending.complete(PharmacyDto.prescription(prescriptionJson()));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Tổng tiền máy chủ'), findsNothing);
+    expect(find.textContaining('Tổng tiền'), findsNothing);
     expect(tester.takeException(), isNull);
   });
   for (final brightness in Brightness.values) {
