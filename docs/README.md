@@ -1,5 +1,9 @@
 # MediFlow — tài liệu hệ thống thông tin bệnh viện cho ngoại trú
 
+Phân công mới 27/10: Vinh phụ trách toàn bộ backend và frontend Billing/Notification trước đây
+của Lộc; Huy giữ FE Pharmacy/Report, Hoàng Anh giữ FE Organization/Patient.
+[Đánh giá phần đã xong, dependency và nghiệm thu còn thiếu](plans/17-backend-ownership-and-blocker-audit-2026-10-27.md).
+
 Quy tắc nghiệp vụ cập nhật 25/10/2026: đọc [luồng khám, tái khám và BHYT mô phỏng](plans/02-business-flows.md)
 trước khi triển khai hoặc viết kịch bản bảo vệ. [Kế hoạch điều chỉnh](plans/07-outpatient-workflow-implementation.md)
 phân biệt rõ yêu cầu mới với binary/demo hiện tại; BHYT giả định còn hạn, hỗ trợ theo tỷ lệ do dự án chọn.

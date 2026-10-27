@@ -31,15 +31,16 @@ Giảm việc bằng giảm phạm vi nghiệm thu, không chỉ đóng gói 10 
 
 | Service | Nghiệp vụ tối thiểu | Module nguồn | Owner |
 |---|---|---|---|
-| core-service | Khoa, staff, account, phòng tham chiếu, patient identity | Organization + Patient | Hoàng Anh |
+| core-service | Khoa, staff, account, phòng tham chiếu, patient identity | Organization + Patient | Vinh |
 | clinical-service | Appointment, khám, diagnosis, chỉ định và completion ngoại trú | Clinical | Vinh |
 | lab-service | Request, trạng thái, kết quả xét nghiệm | Lab | Vinh |
-| pharmacy-service | Drug, stock reservation, prescription, dispense | Pharmacy | Huy |
+| pharmacy-service | Drug, stock reservation, prescription, dispense | Pharmacy | Vinh |
 | billing-service | Charge, invoice/request, payment, clearance và compensation/refund | Billing | Vinh |
-| support-service | Report read model + in-app notification | Report + Notification | Huy/Report, Vinh/Notification |
+| support-service | Report read model + in-app notification | Report + Notification | Vinh |
 
-Support do Huy điều phối đóng gói; việc đó không chuyển ownership Notification cho Huy.
-Hoàng Anh giữ Gateway; Vinh điều phối shared build/CI và frontend shared scope khi được giao.
+Từ 27/10/2026, người dùng giao Vinh toàn bộ backend, gồm Support và Gateway. Các phân công
+Huy/Hoàng Anh trong checkpoint lịch sử không còn là rào cản sửa backend. Frontend theo
+[ma trận riêng](../ai/15-frontend-ownership.md), Billing/Notification của Lộc do Vinh quản lý.
 Core/Support giữ module riêng trong cùng deployment, không trộn domain/entity hoặc quyền DB.
 
 ## Topology

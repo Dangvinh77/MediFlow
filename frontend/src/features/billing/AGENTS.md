@@ -3,7 +3,7 @@
 Parent `frontend/src/AGENTS.md`, `frontend/src/features/AGENTS.md`,
 `docs/ai/12-frontend.md`, and `docs/ai/15-frontend-ownership.md` remain mandatory.
 
-- Canonical owner: Lộc (`locgit-89`).
+- Canonical owner: Vinh (`Dangvinh77` / `Harori`), taking over Lộc's frontend scope on 2026-10-27.
 - Writable feature scope: `frontend/src/features/billing/**`.
 - Matching route scope: `frontend/src/app/(dashboard)/billing/**`.
 - Service guide: `frontend/docs/services/billing.md`.

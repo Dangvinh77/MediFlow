@@ -2,9 +2,10 @@
 
 Root `AGENTS.md`, canonical MVP design and existing Report/Notification module rules apply.
 
-- This directory is composition infrastructure, coordinated by Huy; Report and Notification
-  retain their original business ownership. Changes to business modules or root
-  POM/Compose/Dockerfile/CI/Gateway require explicit task-scoped assignment.
+- This directory is composition infrastructure, owned by Vinh under the entire-backend
+  assignment on 2026-10-27; Report and Notification retain separate context/data authority.
+  Business module/Gateway changes follow the current backend assignment in root AGENTS;
+  root POM/Compose/Dockerfile/CI changes still require shared task scope.
 - Import only `ReportModuleConfiguration` and `NotificationModuleConfiguration` from their
   plain `lib` artifacts. Never broad-scan standalone launchers or copy business code into the host.
 - Keep separate named datasource/EMF/Flyway/transaction manager/JDBC, credentials and pools.

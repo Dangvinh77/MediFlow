@@ -6,6 +6,10 @@ belong in [`docs/handoffs/README.md`](../../../docs/handoffs/README.md).
 
 ## Current handoffs — 26/10/2026
 
+Phân công 27/10: Vinh xử lý toàn bộ backend; Huy giữ FE Pharmacy/Report, Hoàng Anh giữ FE
+Organization/Patient; FE Billing/Notification của Lộc chuyển Vinh quản lý. Producer names trong
+checkpoint cũ là xuất xứ, không còn là yêu cầu chờ người khác sửa backend.
+
 | Handoff | Status | Producer → consumer | Acceptance còn cần đối chiếu |
 |---|---|---|---|
 | [Reference display names](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md) | NEEDS REVALIDATION | Hoàng Anh/Core contracts + Vinh/shared → owner từng feature | Có implementation/checkpoint mới hơn 22/10; đối chiếu exact role/route, signed browser, session reset và ảnh mới; backend gap theo H-01 |
