@@ -1,0 +1,22 @@
+[
+  {
+    "case": "requires-onboarding",
+    "exitCode": 2,
+    "authAttempted": false
+  },
+  {
+    "case": "rejects-booking-onboarding",
+    "exitCode": 2,
+    "authAttempted": false
+  },
+  {
+    "case": "rejects-two-first-logins",
+    "exitCode": 2,
+    "authAttempted": false
+  },
+  {
+    "case": "rejects-project-gateway",
+    "exitCode": 2,
+    "authAttempted": false
+  }
+]

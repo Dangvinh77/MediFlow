@@ -39,8 +39,10 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 ## Tách việc mới khỏi việc kiểm chứng baseline
 
 H-11 checkpoint 27/10: [87 checks Gateway và UI kết quả](../acceptance/onboarding-2026-10-27/README.md)
-đã đạt theo phạm vi ghi trong biên bản; vẫn NEEDS REVALIDATION cho timeout/concurrency,
-login đầu ở lần đến thứ hai, draft/unavailable/replay và recovery xác minh danh tính.
+đã đạt theo phạm vi ghi trong biên bản. [Checkpoint tiếp theo: 107 + 99 observations](../acceptance/onboarding-recovery-2026-10-27/README.md)
+đã kiểm hai NURSE concurrent, mất phản hồi sau commit/retry, tiếp nhận lần hai cùng ngày trước
+login, API pending results và đọc Lab trong lượt mở. Vẫn NEEDS REVALIDATION cho UI phục hồi/
+unavailable, broker replay, quay lại ngày khác và recovery xác minh danh tính.
 
 WF-01–11 là backlog nghiệp vụ mới: schedule, reception, revisit, hỗ trợ BHYT và UI/Report.
 Chúng không được coi đã hoàn thành bởi acceptance baseline 17–25/10. Source lock trước khi

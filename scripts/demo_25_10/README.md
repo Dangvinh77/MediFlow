@@ -105,6 +105,21 @@ own results, in-app history, linked revisit and existing ADMIN password recovery
 Credentials stay in memory; evidence records statuses, error codes and operation IDs.
 It does not prove real-world identity verification or all UI failure/recovery cases.
 
+Additional ONB-06 variants (each still requires `--onboarding`):
+
+- `--issuance-recovery`: two distinct NURSE actors race to issue one account; a loopback
+  proxy drops a committed Gateway response and the client retries the same command.
+- `--login-before-lab`: first login/password change during the open visit; pending results
+  are hidden and completed Lab is readable before exam completion, keeping the EXAM receipt.
+- `--login-after-return`: second AT_COUNTER NEW_VISIT after the first completed visit,
+  before the first patient login. Synthetic same-day return; initial password change still applies.
+- `--follow-up-session-id <UUID>`: reuse a tomorrow session when repeating onboarding
+  alongside `--session-id <today UUID>`; both must belong to this disposable rehearsal.
+
+Choose at most one of the two login timing variants. Run early-login separately from
+late-login to retain evidence that web use is optional throughout the clinical journey.
+See [107 + 99 Gateway observations and limits](../../docs/acceptance/onboarding-recovery-2026-10-27/README.md).
+
 Use `--session-id <UUID>` only to reuse a session from this disposable stack while
 repeating with a new synthetic patient; a fresh stack avoids overlapping demo sessions.
 Do not use the runner against a project/deployed database. Stop the stack with the

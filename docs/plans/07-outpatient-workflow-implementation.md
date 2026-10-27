@@ -57,9 +57,9 @@ User đã giao triển khai các module/path nêu trong slice này và tạo PR;
 | Slice | Trạng thái source | Phần cần nghiệm thu tiếp |
 |---|---|---|
 | ONB-01 | Đã khóa command/DTO/fixtures cấp PATIENT riêng và patient-existence port | Đối chiếu runtime candidate cuối với 03; không mở endpoint ADMIN tổng quát cho NURSE |
-| ONB-02 | Command idempotent, một account/patient, credential version và Gateway password gate; Gateway replay/quyền/phiên cũ đã kiểm | Timeout sau commit/outcome recovery trên UI và hai NURSE concurrent qua Gateway |
+| ONB-02 | Command idempotent, một account/patient, credential version và Gateway password gate; replay/quyền/phiên cũ, hai NURSE concurrent và mất phản hồi sau commit/retry qua Gateway đã kiểm | Phục hồi gián đoạn trên UI; không suy mất kết nối là đã kiểm mọi timeout nội bộ |
 | ONB-03 | Tìm/tạo patient → cấp account → tiếp nhận; giữ patient/key khi phục hồi; login không chặn khám | Tổng duyệt trình duyệt đa vai trò và phục hồi gián đoạn |
-| ONB-04 | Clinical/Lab own-result APIs và UI; Gateway own-resource và UI kết quả thật sau vòng khám/Lab đã kiểm | Draft/empty/unavailable UI và đọc Lab khi lượt còn mở |
+| ONB-04 | Clinical/Lab own-result APIs và UI; own-resource, API ẩn kết quả chưa hoàn tất và đọc Lab khi lượt còn mở đã kiểm | Draft/empty/unavailable UI; vòng đọc kết quả qua ngày khác |
 | ONB-05 | Ba fact kết quả khám/Lab/lời hẹn → in-app history; trước login và đọc lại sau login muộn đã kiểm | Broker replay effect counts trên packaged candidate; không suy đã đọc hoặc có SMS/email/push |
 
 Bàn giao liên owner vẫn theo [H-11](../handoffs/HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md).
@@ -81,7 +81,10 @@ Checkpoint [Gateway/UI 27/10](../acceptance/onboarding-2026-10-27/README.md): fu
 119 files/1.097 tests, typecheck/lint/build đạt; 87 HTTP checks mới → khám → Lab → login muộn →
 tái khám/recovery và 20 checks khám mới người cũ đạt. Đã sửa Billing source/settled TTL và
 Clinical V2 diagnosis/Lab-order guards bằng regression. Ảnh UI và giới hạn từng ca ở biên bản;
-timeout/concurrency/draft/unavailable/vòng đọc Lab còn mở, không tick toàn ma trận.
+Phạm vi trên là checkpoint lịch sử. [Checkpoint tiếp theo](../acceptance/onboarding-recovery-2026-10-27/README.md)
+đạt 107 observations cho race/mất phản hồi/tiếp nhận lần hai trước login và 99 checks cho Lab
+trong lượt mở. Vẫn chưa tick toàn ma trận: UI gián đoạn/lỗi nguồn, broker replay và xác minh
+danh tính recovery còn mở; ca hai lần tiếp nhận đã chạy cùng ngày trên dữ liệu giả lập.
 
 ## Source lock trước triển khai
 

@@ -10,6 +10,9 @@ Source đã có Core chứa Organization/Patient và Support chứa Report/Notif
 
 ## Đọc gì
 
+Tiếp tục sau merge PR #546: [phục hồi onboarding và đọc Lab trong lượt mở](14-onboarding-recovery-acceptance-2026-10-27.md),
+[bằng chứng 107 + 99 Gateway observations](../acceptance/onboarding-recovery-2026-10-27/README.md).
+
 | Tài liệu | Nội dung |
 |---|---|
 | [Thiết kế hệ thống](01-system-design.md) | 6 service, phạm vi MVP, ownership, CURRENT và TARGET |
