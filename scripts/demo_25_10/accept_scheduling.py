@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from onboarding_acceptance import OnboardingAcceptance
+from issuance_acceptance import verify_issuance
 
 
 def main():
@@ -26,11 +27,23 @@ def main():
                         help='Validate booking/payment for tomorrow without starting an examination')
     parser.add_argument('--onboarding', action='store_true',
                         help='Use a nurse-issued new patient account; log in only after results exist')
+    parser.add_argument('--issuance-recovery', action='store_true',
+                        help='Also exercise two distinct nurses and a lost committed response through Gateway')
+    parser.add_argument('--login-before-lab', action='store_true',
+                        help='Onboarding variant: first login during the open visit, before Lab completes')
+    parser.add_argument('--login-after-return', action='store_true',
+                        help='Onboarding variant: a second at-counter NEW_VISIT before the initial patient login')
     parser.add_argument('--session-id', type=uuid.UUID,
                         help='Use an existing rehearsal session when repeating with a fresh synthetic patient')
+    parser.add_argument('--follow-up-session-id', type=uuid.UUID,
+                        help='Reuse an existing tomorrow session for the onboarding follow-up registration')
     args = parser.parse_args()
     if args.onboarding and args.booking_only:
         parser.error('--onboarding requires the full examination/Lab/follow-up scenario')
+    if (args.issuance_recovery or args.login_before_lab or args.login_after_return or args.follow_up_session_id) and not args.onboarding:
+        parser.error('Issuance recovery, early login and follow-up session reuse require --onboarding')
+    if args.login_before_lab and args.login_after_return:
+        parser.error('Choose only one initial patient login timing')
     root = Path(__file__).resolve().parents[2]
     manifest_path = Path(__file__).resolve().parent / 'evidence/active-rehearsal.local.json'
     if not manifest_path.is_file():
@@ -46,7 +59,8 @@ def main():
     if not args.booking_only and clinic_now.hour >= 17:
         parser.error('Full examination rehearsal requires a session before 17:00 Asia/Ho_Chi_Minh; use --booking-only after hours')
 
-    def call(role, method, path, body=None, expected=(200,), key=None, expected_error=None):
+    def call(role, method, path, body=None, expected=(200,), key=None, expected_error=None,
+             with_envelope=False):
         headers = {'Content-Type': 'application/json', 'X-Correlation-Id': 'accept-opd-' + uuid.uuid4().hex}
         if role in tokens:
             headers['Authorization'] = 'Bearer ' + tokens[role]
@@ -67,6 +81,8 @@ def main():
             raise AssertionError(f'{role} {method} {path}: {status} {envelope.get("error")}')
         if expected_error:
             assert (envelope.get('error') or {}).get('code') == expected_error, path
+        if with_envelope:
+            return status, envelope
         # Gateway authentication returns its own DTO; business APIs use ApiResponse.
         return envelope.get('data') if 'data' in envelope else envelope
 
@@ -87,9 +103,12 @@ def main():
                                       for name in ['core-service', 'clinical-service', 'lab-service', 'billing-service',
                                                    'support-service', 'pharmacy-service', 'gateway', 'eureka-server']},
               'runnerSha256': {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                               for name in ['accept_scheduling.py', 'onboarding_acceptance.py']},
+                               for name in ['accept_scheduling.py', 'onboarding_acceptance.py', 'issuance_acceptance.py']},
               'scope': 'onboarding-exam-lab-follow-up' if args.onboarding else
                        ('booking-payment' if args.booking_only else 'exam-lab-follow-up'),
+              'loginTiming': ('before-lab' if args.login_before_lab else
+                              'after-second-reception' if args.login_after_return else 'after-clinical-completion')
+                             if args.onboarding else 'existing-account',
               'checks': checks, 'passed': False}
     try:
         for role, username in [('admin', 'demo.admin'), ('nurse', 'demo.nurse'), ('doctor', 'demo.doctor'),
@@ -98,6 +117,8 @@ def main():
             if args.onboarding and role == 'patient':
                 continue
             login(role, username)
+        if args.issuance_recovery:
+            verify_issuance(call, login, tokens, claims, result, args.gateway)
         onboarding = OnboardingAcceptance(call, login, tokens, claims, result) if args.onboarding else None
         doctor_id = claims['doctor']['staffId']
         patient_id = onboarding.begin() if onboarding else claims['patient']['patientId']
@@ -187,6 +208,10 @@ def main():
             'careEpisodeId': registration_id}, (201,))
         test_id = test['testId']
         result['testId'] = test_id
+        if args.login_before_lab:
+            result['patientLoginDeferred'] = False
+            onboarding.first_login()
+            onboarding.pending_results(record_id, test_id)
         call('doctor', 'PUT', '/api/v1/records/' + record_id + '/complete',
              {'disposition': 'OUTPATIENT_FOLLOW_UP', 'dispositionNote': 'Pending Lab must block completion'}, (409, 422))
         call('lab', 'PUT', '/api/v1/lab/' + test_id + '/start', {}, (409, 422))
@@ -220,6 +245,8 @@ def main():
         call('lab', 'PUT', '/api/v1/lab/' + test_id + '/results', {
             'results': [{'indicator': 'WBC', 'value': '7.0', 'unit': 'G/L', 'referenceRange': '4-10'}],
             'conclusion': 'Ket qua tong duyet binh thuong', 'performedDate': str(today)})
+        if args.login_before_lab:
+            onboarding.read_lab_during_exam(record_id, test_id, registration_id, request_id, quote, receipt)
         call('doctor', 'PUT', '/api/v1/records/' + record_id + '/complete',
              {'disposition': 'OUTPATIENT_FOLLOW_UP', 'dispositionNote': 'Hen tai kham demo'})
         tomorrow = today + dt.timedelta(days=1)
@@ -227,6 +254,8 @@ def main():
             'recommendedFrom': str(tomorrow), 'recommendedThrough': str(tomorrow + dt.timedelta(days=7)),
             'reason': 'Kiem tra lai sau dieu tri demo', 'preparationInstructions': 'Mang ket qua lan truoc'}, (201,))
         if onboarding:
+            if args.login_after_return:
+                onboarding.return_before_login(registration_id, session, session_date)
             onboarding.release_results(record_id, test_id, recommendation)
         mine = call('patient', 'GET', '/api/v2/outpatient-registrations/mine?page=0&size=100')
         own = next(item for item in mine['content'] if item['registrationId'] == registration_id)
@@ -236,7 +265,7 @@ def main():
         assert any(source['registrationId'] == registration_id for source in sources['content'])
         result.update(recordId=record_id, recommendationId=recommendation['recommendationId'])
         if onboarding:
-            onboarding.revisit(registration_id, session, tomorrow)
+            onboarding.revisit(registration_id, session, tomorrow, args.follow_up_session_id)
         result['passed'] = True
         print('PASS: V2 registration, quote/payment replay, confirmed exam, paid Lab/result, completed record, patient follow-up advice')
     finally:
