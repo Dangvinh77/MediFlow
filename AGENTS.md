@@ -48,15 +48,15 @@ pointers, not additional specs or backlogs.
 
 | Developer | Owned backend modules |
 |---|---|
-| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service`, `billing-service`, `notification-service`, deferred `inpatient-service` |
-| Huy (`LQHuy0210`) | `pharmacy-service`, `report-service`, deferred `surgery-service` |
-| Hoàng Anh (`TranHoangAnh94`) | Organization/Patient packages in `core-service`, `gateway` |
+| Vinh (`Dangvinh77` / `Harori`) | All backend modules, including Core, Gateway, Pharmacy, Report and Support; Inpatient/Surgery remain deferred |
 
-From 2026-10-18, per user assignment, Vinh takes over Billing and Notification from Lộc.
-Vinh owns backend verification across modules, including test-only fixes; production fixes
-outside Vinh's modules require an owner handoff.
+From 2026-10-27, per explicit user assignment, Vinh takes responsibility for the entire backend,
+including production fixes and verification. Earlier Huy/Hoàng Anh backend assignments in dated
+plans and evidence are historical; they do not block Vinh from fixing these modules. Context
+data authority, contract verification and deferred-runtime gates continue to apply.
 
-Frontend ownership mirrors these bounded contexts. The exact feature and route paths are canonical
+Frontend remains divided by service: Huy owns Pharmacy/Report, Hoàng Anh owns Organization/Patient,
+and Vinh owns Clinical/Lab plus Billing/Notification formerly assigned to Lộc. Exact paths are canonical
 in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
 
 - Production changes are limited to the active developer's owned modules unless the user explicitly
@@ -66,10 +66,11 @@ in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
   [`docs/handoffs/README.md`](docs/handoffs/README.md); do not edit its service, infer identifiers,
   query its database, or add temporary cross-service coupling. Delete a handoff after both sides
   pass its acceptance criteria and move any lasting rule into the canonical contract/service docs.
-- `backend/common`, `backend/eureka-server`, root build files, `.github`, and repository scripts are
-  shared. Change them only when the task explicitly assigns that shared work.
-- Vinh may coordinate, review, and merge across the repository; this does not silently expand
-  Harori's production write scope beyond Clinical, Lab, Billing and Notification.
+- `backend/common` and `backend/eureka-server` are included in Vinh's backend assignment;
+  changes still require impact verification across consumers. Root build files, `.github`,
+  Compose and repository scripts remain shared; change them when assigned by the task.
+- Vinh may implement, verify, coordinate, review and merge across backend modules under the
+  explicit assignment above. This does not grant ownership of Huy/Hoàng Anh frontend features.
 - Frontend shared-scope exception: Vinh coordinates and has default write authority for the shared
   frontend paths defined in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
   This exception does not grant default authority over another owner's feature or route.

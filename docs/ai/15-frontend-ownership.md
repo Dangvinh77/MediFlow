@@ -5,10 +5,13 @@ Canonical scope không đổi theo việc gom deployments. Đọc root/frontend/
 
 | Owner | Features | Routes |
 |---|---|---|
-| Vinh | appointment, medical-record, lab; inpatient deferred | /appointments, /records, /lab; /inpatient deferred |
+| Vinh | appointment, medical-record, lab, billing, notification; inpatient deferred | /appointments, /records, /lab, /billing, /notifications; /inpatient deferred |
 | Huy | pharmacy, report; surgery deferred | /pharmacy, /reports; /surgery deferred |
 | Hoàng Anh | organization, patient; Gateway-facing identity liaison | /organization, /patients |
-| Lộc | billing, notification | /billing, /notifications |
+
+Phân công trực tiếp ngày 27/10/2026: Vinh phụ trách toàn bộ backend và quản lý phần frontend
+Billing/Notification trước đây của Lộc. Huy và Hoàng Anh tiếp tục frontend theo service trong
+bảng; việc backend đổi owner không chuyển các feature frontend của hai người cho Vinh.
 
 Matching paths: frontend/src/features/<feature> và frontend/src/app/(dashboard)/<route>.
 Source-local rules có thể thu hẹp, không mở rộng canonical scope. Core/Support co-host không

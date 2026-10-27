@@ -22,6 +22,11 @@ Trạng thái lúc bàn giao: **chưa thực hiện lượt thử chung, chưa d
 
 ## Phân vai
 
+Từ phân công mới 27/10, mọi lỗi backend trong lượt thử do Vinh xử lý, kể cả Core/Gateway/
+Pharmacy/Report/Support. Bảng dưới phân vai thử UX, không giao backend lại cho Huy/Hoàng Anh.
+Frontend Huy giữ Pharmacy/Report, Hoàng Anh giữ Organization/Patient; Vinh giữ các phần của
+mình và Billing/Notification trước đây của Lộc. [Đánh giá dependency hiện hành](17-backend-ownership-and-blocker-audit-2026-10-27.md).
+
 | Người | Vai thao tác chính | Trách nhiệm quan sát |
 |---|---|---|
 | Hoàng Anh | ADMIN/MANAGER chuẩn bị tổ chức; NURSE tiếp nhận; PATIENT dùng web | Tìm trùng, đúng hồ sơ, scope khoa, cấp account, recovery, phiên và quyền |

@@ -4,7 +4,7 @@ Parent `frontend/src/AGENTS.md`, `frontend/src/app/AGENTS.md`,
 `frontend/src/app/(dashboard)/AGENTS.md`, `docs/ai/12-frontend.md`, and
 `docs/ai/15-frontend-ownership.md` remain mandatory.
 
-- Canonical owner: Lộc (`locgit-89`).
+- Canonical owner: Vinh (`Dangvinh77` / `Harori`), taking over Lộc's frontend scope on 2026-10-27.
 - Writable route scope: `frontend/src/app/(dashboard)/notifications/**`.
 - Matching feature: `frontend/src/features/notification/**`.
 - Service guide: `frontend/docs/services/notification.md`.

@@ -1,4 +1,14 @@
-# Registry bàn giao hiện hành — 26/10/2026
+# Registry bàn giao hiện hành — 27/10/2026
+
+## Phân công mới và cách đọc blocker — 27/10
+
+Vinh phụ trách toàn bộ backend theo yêu cầu trực tiếp của người dùng, bao gồm Core/Gateway
+và Pharmacy/Report/Support. Producer/code owner trong bảng dưới giữ xuất xứ bàn giao;
+**resume owner backend hiện tại của H-01–11 là Vinh**, không phải chờ Huy hoặc Hoàng Anh.
+Frontend vẫn theo [ma trận hiện hành](../ai/15-frontend-ownership.md): Huy Pharmacy/Report,
+Hoàng Anh Organization/Patient, Vinh phần còn lại gồm Billing/Notification của Lộc.
+`NEEDS REVALIDATION` là thiếu xác minh, không tự chứng minh có bug hoặc producer chưa code.
+Các tiêu chí và evidence vẫn bắt buộc trước đóng handoff.
 
 Đọc [nghiệp vụ](../plans/02-business-flows.md), [contracts](../plans/03-contracts.md) và
 [kế hoạch WF-01–11](../plans/07-outpatient-workflow-implementation.md) trước khi giao việc.
@@ -49,9 +59,9 @@ Chúng không được coi đã hoàn thành bởi acceptance baseline 17–25/1
 sửa; nếu cần producer khác đổi field/permission thì mở handoff với exact fixture và consumer.
 Không tạo một bản sao toàn bộ WF trong mỗi service.
 
-Backend owners hiện hành: Vinh/Clinical/Lab/Billing/Notification; Huy/Pharmacy/Report;
-Hoàng Anh/Core/Gateway. Support là composition, không gộp ownership. Frontend giữ riêng
-[ma trận ownership](../ai/15-frontend-ownership.md); backend takeover không đổi FE ownership.
+Backend owner hiện hành: Vinh cho toàn bộ module. Support là composition, không gộp contexts.
+Frontend giữ riêng [ma trận ownership](../ai/15-frontend-ownership.md), gồm việc Vinh tiếp quản
+Billing/Notification theo phân công 27/10; Huy/Hoàng Anh vẫn giữ feature frontend của mình.
 User delegation trong từng task vẫn có hiệu lực đúng phạm vi đã giao.
 
 ## Lịch sử, deferred và đường dẫn tương thích

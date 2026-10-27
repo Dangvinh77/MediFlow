@@ -9,10 +9,13 @@ Các entry files/skill cũ có thể trỏ qua tài liệu ngắn trong thư m�
 
 ## Ownership và scope
 
-Vinh owns Clinical/Lab/Billing/Notification; Inpatient deferred. Huy owns Pharmacy/Report; Surgery deferred.
-Hoàng Anh owns Organization/Patient/Gateway. Vinh took over Billing/Notification from Lộc on 2026-10-18.
-Core co-host không chuyển ownership; Support có Huy/Report và Vinh/Notification.
-Root build/common/CI/scripts/Compose là shared, chỉ sửa khi được giao rõ.
+Theo phân công trực tiếp ngày 27/10/2026, Vinh phụ trách toàn bộ backend: Core, Gateway,
+Clinical, Lab, Pharmacy, Billing, Report, Notification và Support; Inpatient/Surgery vẫn deferred.
+Các owner backend Huy/Hoàng Anh trong checkpoint cũ là lịch sử, không chặn Vinh sửa production.
+Frontend chia theo service ở [15](15-frontend-ownership.md); Billing/Notification của Lộc do Vinh quản lý.
+Chung owner không gộp data authority, transaction, persistence hoặc quyền của các context.
+Common/Eureka thuộc backend Vinh; thay đổi phải kiểm ảnh hưởng consumer. Root build/CI/scripts/
+Compose là shared, chỉ sửa khi được giao rõ.
 Branch name/reviewer/coordinator không tự cấp quyền sửa module khác. Subagents cũng vậy.
 
 Frontend ownership và shared scope ở [15](15-frontend-ownership.md); source-local AGENTS phải đọc.

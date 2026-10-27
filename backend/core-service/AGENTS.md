@@ -2,7 +2,7 @@
 
 Root `AGENTS.md` rules continue to apply.
 
-- **Owner:** Hoàng Anh (`TranHoangAnh94`)
+- **Owner:** Vinh (`Dangvinh77` / `Harori`), entire-backend assignment on 2026-10-27
 - **Writable scope:** `backend/core-service/**`
 - **Contexts:** Organization and Patient remain separate bounded contexts under their existing
   `com.mediflow.organization` and `com.mediflow.patient` packages.

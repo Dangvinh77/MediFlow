@@ -1,5 +1,17 @@
 # Frontend Workboard
 
+## Phân công và blocker hiện hành — 2026-10-27
+
+Vinh phụ trách toàn bộ backend; frontend theo [ma trận canonical](../../docs/ai/15-frontend-ownership.md).
+Huy tiếp tục Pharmacy/Report; Hoàng Anh Organization/Patient; Vinh appointment/medical-record/Lab,
+Billing/Notification trước đây của Lộc và shared scope. Các bảng theo ngày bên dưới là lịch sử.
+
+`FE-NOTIFICATION-03` (resend/read-state) là **DEFERRED / ngoài acceptance MVP hiện hành**:
+02/06 yêu cầu nhận/đọc IN_APP, không yêu cầu hai command này. Không mở API chỉ để xóa nhãn
+BLOCKED cũ; không đánh DONE tính năng chưa có. Khi mở rộng phải chốt riêng quyền, DTO và
+idempotency. Report coverage vẫn là điều kiện thật trước công bố báo cáo ngoại trú;
+Vinh lo backend đối soát/approval, Huy kiểm UI bằng coverage đã được chấp nhận.
+
 ## Điều phối tài liệu — 2026-10-26
 
 Nghiệp vụ mới và thứ tự triển khai theo [kế hoạch ngoại trú](../../docs/plans/07-outpatient-workflow-implementation.md).

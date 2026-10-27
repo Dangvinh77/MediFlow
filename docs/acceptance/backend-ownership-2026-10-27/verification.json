@@ -1,0 +1,179 @@
+{
+  "recordedAt": "2026-10-27T12:17:35.616192+00:00",
+  "sourceHead": "5e6f29f02137958a2a88676c8f0ed579289c7958",
+  "command": "mvn -q -pl backend/core-service,backend/gateway,backend/pharmacy-service,backend/report-service,backend/notification-service -am \"-Dtest=CareLabelControllerTest,GetCareLabelServiceTest,PatientDirectoryControllerWebTest,ProvisionPatientAccountServiceTest,JwtAuthFilterTest,RouteRoleContractTest,SchedulingRouteAuthorizationTest,OutpatientCoverageAcceptanceServiceTest,OutpatientCoverageAcceptanceControllerTest,OutpatientCoverageAcceptancePostgresTest,OutpatientCoverageHttpPostgresTest,NotificationControllerTest\" \"-Dsurefire.failIfNoSpecifiedTests=false\" \"-Dapi.version=1.40\" test",
+  "exitCode": 0,
+  "totals": {
+    "tests": 1407,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "core-service": [
+      {
+        "suite": "com.mediflow.organization.application.service.GetCareLabelServiceTest",
+        "report": "backend/core-service/target/surefire-reports/TEST-com.mediflow.organization.application.service.GetCareLabelServiceTest.xml",
+        "sha256": "2a9df978f87a13e04e4358ce535dbf7512c9e8a7fc57e937739daa8769ff166b",
+        "reportModifiedAt": "2026-10-27T12:14:47.154358+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.organization.application.service.ProvisionPatientAccountServiceTest",
+        "report": "backend/core-service/target/surefire-reports/TEST-com.mediflow.organization.application.service.ProvisionPatientAccountServiceTest.xml",
+        "sha256": "305fe967b30c8a9ffa0bf75cfa9734665707cfe4fa7b645356ea541b4af1488a",
+        "reportModifiedAt": "2026-10-27T12:14:47.316082+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.organization.infrastructure.security.JwtAuthFilterTest",
+        "report": "backend/core-service/target/surefire-reports/TEST-com.mediflow.organization.infrastructure.security.JwtAuthFilterTest.xml",
+        "sha256": "dbe3f3c364a59b2662f1743983a83819821e3ed7e9cb974d03eda0bdbb4bd1c7",
+        "reportModifiedAt": "2026-10-27T12:14:47.958151+00:00",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.organization.web.controller.CareLabelControllerTest",
+        "report": "backend/core-service/target/surefire-reports/TEST-com.mediflow.organization.web.controller.CareLabelControllerTest.xml",
+        "sha256": "fe2a7c2d0304671b2cc5e115c877a1529ff07d5aafe18548b78f6e6839b6c2d6",
+        "reportModifiedAt": "2026-10-27T12:14:51.045060+00:00",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.patient.web.PatientDirectoryControllerWebTest",
+        "report": "backend/core-service/target/surefire-reports/TEST-com.mediflow.patient.web.PatientDirectoryControllerWebTest.xml",
+        "sha256": "f22d498f428701e06666167f5159e5f924971734332d3c1b1a5d2f10d0b990f9",
+        "reportModifiedAt": "2026-10-27T12:14:51.683144+00:00",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "gateway": [
+      {
+        "suite": "com.mediflow.gateway.RouteRoleContractTest",
+        "report": "backend/gateway/target/surefire-reports/TEST-com.mediflow.gateway.RouteRoleContractTest.xml",
+        "sha256": "aedbcc2d7ba321a581658b19424c57f735b27bc3e41870202aa38ff4d382020c",
+        "reportModifiedAt": "2026-10-27T12:14:44.368014+00:00",
+        "tests": 1224,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.gateway.SchedulingRouteAuthorizationTest",
+        "report": "backend/gateway/target/surefire-reports/TEST-com.mediflow.gateway.SchedulingRouteAuthorizationTest.xml",
+        "sha256": "996ba96b8e9c3af30246fc421fb3ae82449bf27f3f861bea5191eca6dfa14070",
+        "reportModifiedAt": "2026-10-27T12:14:44.444342+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "pharmacy-service": [
+      {
+        "suite": "com.mediflow.pharmacy.infrastructure.security.JwtAuthFilterTest",
+        "report": "backend/pharmacy-service/target/surefire-reports/TEST-com.mediflow.pharmacy.infrastructure.security.JwtAuthFilterTest.xml",
+        "sha256": "1e6ef1faa166b07f61081eb0dd0c12e242823c4ae1d8da206a350473eded4f4d",
+        "reportModifiedAt": "2026-10-27T12:15:00.618256+00:00",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "report-service": [
+      {
+        "suite": "com.mediflow.report.application.service.OutpatientCoverageAcceptanceServiceTest",
+        "report": "backend/report-service/target/surefire-reports/TEST-com.mediflow.report.application.service.OutpatientCoverageAcceptanceServiceTest.xml",
+        "sha256": "fa276ee7c49ee4d4c776ada935a8e52645b2b8d1cdf6c9d8144f6ad8ca006f2c",
+        "reportModifiedAt": "2026-10-27T12:15:08.604031+00:00",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.report.infrastructure.persistence.OutpatientCoverageAcceptancePostgresTest",
+        "report": "backend/report-service/target/surefire-reports/TEST-com.mediflow.report.infrastructure.persistence.OutpatientCoverageAcceptancePostgresTest.xml",
+        "sha256": "430476d3ffb1ee2e3b712a848f74429be1d69c8e91de061d0885b68103e7e906",
+        "reportModifiedAt": "2026-10-27T12:15:17.477291+00:00",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.report.infrastructure.security.JwtAuthFilterTest",
+        "report": "backend/report-service/target/surefire-reports/TEST-com.mediflow.report.infrastructure.security.JwtAuthFilterTest.xml",
+        "sha256": "644e30abb7ecfaae6c932462bc25ed907911d50c70a3e8e005bcfe53e6543903",
+        "reportModifiedAt": "2026-10-27T12:15:17.697303+00:00",
+        "tests": 76,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.report.integration.OutpatientCoverageHttpPostgresTest",
+        "report": "backend/report-service/target/surefire-reports/TEST-com.mediflow.report.integration.OutpatientCoverageHttpPostgresTest.xml",
+        "sha256": "d82d90ecd322a4b4116b035659930aac793bcfeaf80b11f4e41ae2a850225953",
+        "reportModifiedAt": "2026-10-27T12:15:25.965139+00:00",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.report.web.OutpatientCoverageAcceptanceControllerTest",
+        "report": "backend/report-service/target/surefire-reports/TEST-com.mediflow.report.web.OutpatientCoverageAcceptanceControllerTest.xml",
+        "sha256": "33ab8b40fa1e6894ad789c4e1d4aba102994aead1f89cab50f552cbdeb46292e",
+        "reportModifiedAt": "2026-10-27T12:15:27.260024+00:00",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "notification-service": [
+      {
+        "suite": "com.mediflow.notification.infrastructure.security.JwtAuthFilterTest",
+        "report": "backend/notification-service/target/surefire-reports/TEST-com.mediflow.notification.infrastructure.security.JwtAuthFilterTest.xml",
+        "sha256": "9a426475d85a1d33a91674bcfa66d80a38cf4381e8a2543e3b778c18fd41f452",
+        "reportModifiedAt": "2026-10-27T12:15:02.117734+00:00",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.mediflow.notification.web.NotificationControllerTest",
+        "report": "backend/notification-service/target/surefire-reports/TEST-com.mediflow.notification.web.NotificationControllerTest.xml",
+        "sha256": "c1ee54dab81ebbdcf8f5c715d06994f86f670aafdc866d122daef6c4fa82631c",
+        "reportModifiedAt": "2026-10-27T12:15:06.028142+00:00",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "limitations": [
+    "Targeted suites only; not full reactor or Gateway-to-Support acceptance.",
+    "Report PostgreSQL/HTTP approval uses synthetic source proofs; no demo source coverage approved.",
+    "No production backend/frontend source changed."
+  ]
+}

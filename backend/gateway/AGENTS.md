@@ -2,10 +2,11 @@
 
 Root `AGENTS.md` rules continue to apply.
 
-- **Owner:** Hoàng Anh (`TranHoangAnh94`)
+- **Owner:** Vinh (`Dangvinh77` / `Harori`), entire-backend assignment on 2026-10-27
 - **Writable scope:** `backend/gateway/**`
 - **Task types:** `IMPLEMENT` inside this scope; `HANDOFF` under `docs/` when another owner must change a contract.
-- Other services are read-only unless the user explicitly grants a task-scoped override.
+- Cross-module backend work follows Vinh's current entire-backend assignment in root AGENTS;
+  shared repository paths and other developers' frontend scopes still require explicit delegation.
 - Do not infer cross-service identifiers, query another service's database, or edit its producer.
 - Subagents inherit this boundary and cannot bypass it.
 - **Integration gate:** before changing identity/service tokens or routes, read

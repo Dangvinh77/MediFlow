@@ -1,5 +1,14 @@
 # Frontend Service: Notification
 
+## Phân công và scope hiện hành — 2026-10-27
+
+Vinh (`Dangvinh77` / `Harori`) quản lý frontend Notification thay Lộc và phụ trách toàn bộ
+backend theo phân công mới. Các owner/checkpoint theo ngày bên dưới giữ để tra cứu lịch sử.
+`FE-NOTIFICATION-03` hiện **DEFERRED**, không là blocker MVP: nghiệp vụ 02 và acceptance 06
+chỉ yêu cầu nhận/đọc IN_APP, replay không nhân thông báo; chưa yêu cầu resend/read-state.
+Hai command chưa có và không được đánh DONE. GET refresh chỉ tải lại trạng thái delivery,
+không đánh dấu người bệnh đã đọc. Mọi mở rộng cần thiết kế và acceptance riêng.
+
 > **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
 > mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
 > Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;
@@ -107,7 +116,7 @@ the history/detail views or newly persisted by the form.
 
 - `FE-NOTIFICATION-01` — `DONE`: secured detail mirrors live roles.
 - `FE-NOTIFICATION-02` — `DONE`: manual send includes channel/address validation.
-- `FE-NOTIFICATION-03` — `BLOCKED`: retry/read-state commands do not exist in the live contract.
+- `FE-NOTIFICATION-03` — `DEFERRED`: resend/read-state ngoài acceptance MVP; command chưa có.
 - `FE-NOTIFICATION-04` — `DONE — FE local`: API, validation and component tests cover pagination,
   roles, channel/status display, errors, stale/session/unmount guards, privacy and manual send.
   Signed IN_APP role/browser acceptance is recorded above; remaining provider/HF6-14 scope stays open.

@@ -78,6 +78,9 @@ chưa commit. Tài liệu trong frontend/docs và backend/**/README.md không th
 
 ## Lượt thử chung tiếp theo
 
+[Phân công backend/frontend và đánh giá blocker 27/10](17-backend-ownership-and-blocker-audit-2026-10-27.md)
+thay phân công backend cũ: Vinh phụ trách toàn backend, FE của Lộc chuyển Vinh quản lý.
+
 [Plan 15 đã hoàn tất phần kỹ thuật](15-demo-readiness-closeout-2026-10-27.md),
 [bằng chứng](../acceptance/demo-readiness-2026-10-27/README.md),
 [runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md).

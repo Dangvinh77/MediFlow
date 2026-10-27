@@ -7,9 +7,9 @@
 > [WF-01–11](../../../docs/plans/07-outpatient-workflow-implementation.md), giữ ownership frontend
 > và khóa DTO thật trước đổi UI. Chính sách BHYT/tỷ lệ do dự án chọn, mặc định thẻ còn hạn.
 
-**Frontend owner:** Lộc (`locgit-89`). Vinh's 2026-10-20/21 closeout was a temporary `DELEGATED`
-task; Lộc resumes active `IMPLEMENT` on this feature from 2026-10-22. Backend ownership follows
-the root AGENTS.md.
+**Frontend owner từ 27/10/2026:** Vinh (`Dangvinh77` / `Harori`), quản lý phần của Lộc theo
+phân công trực tiếp. Vinh cũng phụ trách toàn bộ backend. Các delegation/owner ngày trước
+trong evidence giữ làm lịch sử; không tiếp tục giao việc Billing cho Lộc.
 
 **Backend:** `backend/billing-service/**`
 **Contract context:** [`docs/ai/services/billing.md`](../../../docs/ai/services/billing.md)
