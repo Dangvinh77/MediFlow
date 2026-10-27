@@ -19,5 +19,4 @@ public interface ConsultationSessionRepositoryPort {
     void updateCounts(ConsultationSession before, ConsultationSession after, Instant at);
     PageResult<ConsultationSession> search(UUID departmentId, LocalDate fromDate, LocalDate toDate, PageQuery page);
     List<ConsultationSession> findByDoctor(UUID doctorId, LocalDate fromDate, LocalDate toDate);
-    boolean hasActiveRegistrations(UUID sessionId);
 }

@@ -133,9 +133,12 @@ Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../do
 
 `lab.result.created` uses `labId` as its canonical test identifier (sourced from the API's
 `testId`) and includes `labType` and `performedDate` for billing, notification and reporting.
-The current `payment.completed` producer does not provide a lab/test id, so the future consumer
-must not infer one from `invoiceId` or `recordId`; `ReactToClinicalUseCase` and
-`ProcessedEventPort` are declared for that later adapter work.
+`LabQueueConsumer` records delivery evidence through the consumer inbox. In outpatient MVP
+mode it quarantines V0 `payment.completed`; versioned payment envelopes remain quarantined
+until Billing publishes an authorized Lab operation. The retained V0 path requires explicit
+`labTestIds` and never infers a test from `invoiceId` or `recordId`. Exact-target financial
+clearances retain `LabClearancePersistenceAdapter` and its processed-event repository/entity;
+the unused auto-create port and generic processed-event adapter have been removed.
 
 ## Tests
 

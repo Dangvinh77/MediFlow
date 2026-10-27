@@ -150,16 +150,6 @@ public class ConsultationSessionPersistenceAdapter implements ConsultationSessio
                 """, this::mapOne, doctorId, fromDate, toDate);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasActiveRegistrations(UUID sessionId) {
-        Boolean exists = jdbc.queryForObject("""
-                SELECT EXISTS(SELECT 1 FROM outpatient_registration WHERE session_id = ?
-                    AND status IN ('AWAITING_PAYMENT','CONFIRMED','IN_EXAM','RECONCILIATION_REQUIRED'))
-                """, Boolean.class, sessionId);
-        return Boolean.TRUE.equals(exists);
-    }
-
     private void lockResource(UUID id) {
         jdbc.query("SELECT pg_advisory_xact_lock(hashtextextended(?::text, 0))", resultSet -> {
             resultSet.next();

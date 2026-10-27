@@ -121,13 +121,6 @@ class LabApplicationServiceTest {
     }
 
     @Test
-    void autoCreateFromRecord_blankLabType_doesNothing() {
-        service.autoCreateFromRecord(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "  ");
-
-        verifyNoInteractions(tests, publisher, mapper, correlationIds);
-    }
-
-    @Test
     void markPaid_usesExplicitTestIdAndPersists() {
         LabTest test = newTest();
         when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));

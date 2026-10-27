@@ -29,13 +29,12 @@ import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.infrastructure.persistence.adapter.AppointmentPersistenceAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.ExternalResultPersistenceAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.MedicalRecordPersistenceAdapter;
-import com.mediflow.clinical.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapter;
 import com.mediflow.common.api.PageQuery;
 
 /** PostgreSQL-specific persistence semantics; Testcontainers skips this slice when Docker is unavailable. */
 @DataJpaTest
 @Import({AppointmentPersistenceAdapter.class, MedicalRecordPersistenceAdapter.class,
-        ExternalResultPersistenceAdapter.class, ProcessedEventPersistenceAdapter.class})
+        ExternalResultPersistenceAdapter.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
 class ClinicalPersistenceAdapterTest {
@@ -47,7 +46,6 @@ class ClinicalPersistenceAdapterTest {
     @Autowired AppointmentPersistenceAdapter appointments;
     @Autowired MedicalRecordPersistenceAdapter records;
     @Autowired ExternalResultPersistenceAdapter externalResults;
-    @Autowired ProcessedEventPersistenceAdapter processedEvents;
     @Autowired JdbcTemplate jdbc;
 
     @Test
@@ -168,19 +166,6 @@ class ClinicalPersistenceAdapterTest {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM attached_result WHERE record_id = ? AND type = ? AND reference_id = ?",
                 Integer.class, record.getRecordId(), "LAB", labId);
-        assertThat(count).isEqualTo(1);
-    }
-
-    @Test
-    void processedEvent_tryClaimInsertsOnceAndReturnsAffectedRowDecision() {
-        UUID eventId = UUID.randomUUID();
-
-        assertThat(processedEvents.tryClaim(eventId, "lab.result.created")).isTrue();
-        assertThat(processedEvents.tryClaim(eventId, "lab.result.created")).isFalse();
-
-        Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM processed_event WHERE event_id = ?",
-                Integer.class, eventId);
         assertThat(count).isEqualTo(1);
     }
 
