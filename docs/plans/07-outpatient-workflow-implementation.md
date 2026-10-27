@@ -156,3 +156,12 @@ Chưa có command renew quote; GET không gia hạn. Giới hạn này phải đ
 [Bằng chứng 26/10](../acceptance/outpatient-2026-10-26/README.md): module tests,
 frontend sau merge master, JAR topology và API booking/payment đã đạt theo phạm vi ghi trong biên bản.
 UI PATIENT/DOCTOR đã xem trực tiếp; full exam–Lab–follow-up và toàn ma trận WF-11 còn mở.
+
+## Bàn giao vòng thử trực tiếp 27/10
+
+[Plan 15](15-demo-readiness-closeout-2026-10-27.md) đã chốt diff UX và phần kỹ thuật bổ sung:
+frontend 1.108 tests/build/typecheck/lint; UI phục hồi account cùng key; ba fact replay
+trên broker riêng không nhân thông báo. [Bằng chứng có phạm vi và fingerprints](../acceptance/demo-readiness-2026-10-27/README.md).
+[Runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md) là lượt thử
+thực tế tiếp theo. Quay lại ngày khác, xác minh danh tính recovery và tổng duyệt toàn
+ma trận vẫn cần evidence; chưa tự đóng WF-11 hoặc H-11.

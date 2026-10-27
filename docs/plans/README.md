@@ -75,3 +75,11 @@ Chỉ đánh dấu triển khai xong khi code, producer/consumer, database/broke
 khi viết lại. Các báo cáo theo giai đoạn là bằng chứng lịch sử, không là backlog hiện tại.
 Bản sao đầy đủ được lưu ngoài repo và kiểm tra hash từng file trước khi thay thế, kể cả file
 chưa commit. Tài liệu trong frontend/docs và backend/**/README.md không thuộc phạm vi xóa này.
+
+## Lượt thử chung tiếp theo
+
+[Plan 15 đã hoàn tất phần kỹ thuật](15-demo-readiness-closeout-2026-10-27.md),
+[bằng chứng](../acceptance/demo-readiness-2026-10-27/README.md),
+[runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md).
+Checklist baseline 18/72 và các checkpoint 11–14 giữ vai trò lịch sử; không cộng chúng
+thành backlog mới. ONB/WF/SC và handoff chưa có đủ nghiệm thu vẫn giữ trạng thái hiện hành.

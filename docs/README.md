@@ -34,3 +34,7 @@ Compose mặc định có 6 business deployment ngoại trú: Core, Clinical, La
 Inpatient/Surgery và V2 nâng cao tạm hoãn.
 Code, database và các thay đổi FE được giữ nguyên. Các đường dẫn cũ chỉ là chỉ dẫn đọc,
 không một bộ spec/backlog thứ hai hoặc bằng chứng đã triển khai topology mới.
+
+Checkpoint mới: [hoàn thiện trước vòng thử trực tiếp](plans/15-demo-readiness-closeout-2026-10-27.md),
+[bằng chứng broker/UI/frontend](acceptance/demo-readiness-2026-10-27/README.md) và
+[runbook cho Vinh, Huy, Hoàng Anh](plans/16-three-developer-demo-acceptance-2026-10-27.md).

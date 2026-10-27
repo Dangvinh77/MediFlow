@@ -140,3 +140,28 @@ Do not use the runner against a project/deployed database. Stop the stack with t
 Topology health and snapshot restore smoke do not certify every refund, Pharmacy
 dispense or Report coverage workflow. The normal paid Lab acceptance specifically
 exercises Core/Clinical/Lab/Billing with real PostgreSQL/RabbitMQ.
+
+### Result replay and browser recovery acceptance — 27/10
+
+On the disposable scheduling stack, before 17:00 Asia/Ho_Chi_Minh:
+
+```powershell
+# Optional broker tool dependency; use an isolated environment
+python -m venv scripts/demo_25_10/evidence/replay-tools.local
+scripts/demo_25_10/evidence/replay-tools.local/Scripts/python.exe -m pip install pika==1.3.2
+scripts/demo_25_10/evidence/replay-tools.local/Scripts/python.exe scripts/demo_25_10/accept_scheduling.py --onboarding --result-event-replay --output scripts/demo_25_10/evidence/result-replay.local.json
+```
+
+The observer captures real producer bytes/properties, republishes each fact three times,
+checks active Notification queue drain/DLQ and unchanged patient notification IDs before
+the initial patient login. Early-login mode is incompatible. Evidence records source SHA
+and runner/JAR hashes. Never replay against a project broker.
+
+For browser-only response-loss rehearsal, start `gateway_fault_proxy.py --drop-next-issuance-response --stop-with-rehearsal` against the active manifest, then
+point the local Next server at `GATEWAY_URL=http://127.0.0.1:28081`. It drops one successful
+issuance response after upstream commit and writes sanitized metadata inside that rehearsal
+evidence folder. Preserve the browser intent and patient; reload and reconcile the same
+request. Stop the proxy/Next server after testing; do not change deployment defaults.
+
+[Evidence and limits](../../docs/acceptance/demo-readiness-2026-10-27/README.md),
+[three-developer manual runbook](../../docs/plans/16-three-developer-demo-acceptance-2026-10-27.md).

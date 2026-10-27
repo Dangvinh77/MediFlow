@@ -73,3 +73,9 @@ compatibility và resume owner. Không suy quyền sửa module từ handoff.
 Sau khi cả hai phía đạt acceptance: chuyển lasting rules vào 02/03/04 hoặc service runbook;
 ghi evidence tương ứng, xóa handoff và registry entry cùng thay đổi. Evidence gốc được giữ.
 Nếu chỉ có implementation và thiếu acceptance thì giữ NEEDS REVALIDATION; không xóa để làm sạch.
+
+Checkpoint bổ sung H-11: [broker replay, browser recovery và frontend](../acceptance/demo-readiness-2026-10-27/README.md)
+đã có bằng chứng theo phạm vi; [runbook ba developer](../plans/16-three-developer-demo-acceptance-2026-10-27.md)
+gom phần thử trực tiếp còn lại. Các mô tả UI recovery/broker chưa kiểm ở checkpoint trước
+là lịch sử và đã được bổ sung bằng chứng; trạng thái NEEDS REVALIDATION vẫn giữ cho ký
+ma trận đầy đủ, quay lại ngày khác và quy trình xác minh danh tính recovery.

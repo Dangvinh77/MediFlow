@@ -194,3 +194,7 @@ Không dùng source tests để đánh dấu toàn bộ ONB-A01–12 đã đạt
 
 Checkpoint tiếp theo: [ONB closeout 27/10](13-onboarding-closeout-2026-10-27.md)
 phân biệt ca Gateway đã chạy với ma trận ONB-A01–12 còn phải nghiệm thu đầy đủ.
+
+Lượt bổ sung 27/10: [89 HTTP checks + exact-byte broker replay và UI account recovery](../acceptance/demo-readiness-2026-10-27/README.md).
+[Runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md) gom thứ tự thử
+và mẫu ghi nhận; không thay hoặc tự ký các tiêu chí ONB/WF/SC trong tài liệu này.

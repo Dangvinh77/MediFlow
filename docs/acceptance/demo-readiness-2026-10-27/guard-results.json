@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "case": "replay-requires-onboarding",
+      "exitCode": 2,
+      "passed": true
+    },
+    {
+      "case": "replay-rejects-early-login",
+      "exitCode": 2,
+      "passed": true
+    },
+    {
+      "case": "proxy-rejects-external-output",
+      "exitCode": 2,
+      "passed": true
+    },
+    {
+      "case": "proxy-rejects-invalid-port",
+      "exitCode": 2,
+      "passed": true
+    }
+  ],
+  "passed": true
+}
