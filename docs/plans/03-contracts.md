@@ -581,6 +581,11 @@ reservation không bị TTL HELD giải phóng, được giữ cho ngày/buổi 
 arrival và xử lý khoản phát sinh nếu có. Đặt trước để tới ngày khám mới thu là policy khác,
 chưa được mở bằng receptionMode này.
 
+TTL của quote/HELD không là hạn của quyền khám đã thanh toán. Scheduled EXAM cấp clearance
+không có expiry từ quote sau khi payment/zero-liability hoàn tất; khi bắt đầu khám Billing vẫn
+đối chiếu ledger hiện hành, refund/revocation, đúng patient/registration và receipt chống trùng.
+Không suy quyền này từ một payment request còn pending hoặc chỉ từ trạng thái UI CONFIRMED.
+
 Reservation hết hạn tại server now+15 phút khi HELD; past session date hoặc buổi đã kết thúc không nhận mới.
 Chỉ giới hạn reservation bởi buổi/TTL, không chia 15 phút thành thời lượng khám. Tại t==expiresAt hold
 không còn payable, trừ khi payment lease đã chuyển PAYMENT_LOCKED trước thời điểm đó. Bắt đầu thu cũng

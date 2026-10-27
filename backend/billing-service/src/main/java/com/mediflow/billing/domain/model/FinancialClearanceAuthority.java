@@ -33,8 +33,7 @@ public record FinancialClearanceAuthority(UUID clearanceId, UUID invoiceId, UUID
     public boolean matchesSource(String sourceType, UUID sourceId) {
         if (sourceId == null || !java.util.Objects.equals(purpose, sourceType)) return false;
         return switch (sourceType) {
-            case "EXAM" -> sourceId.equals(appointmentId) && recordId == null && labTestIds.isEmpty()
-                    && admissionId == null && surgeryCaseId == null;
+            case "EXAM" -> sourceId.equals(examSourceId());
             case "LAB_TEST" -> labTestIds.equals(List.of(sourceId)) && appointmentId == null
                     && admissionId == null && surgeryCaseId == null;
             default -> false;
@@ -42,11 +41,20 @@ public record FinancialClearanceAuthority(UUID clearanceId, UUID invoiceId, UUID
     }
     public UUID sourceId() {
         return switch (purpose) {
-            case "EXAM" -> appointmentId;
+            case "EXAM" -> examSourceId();
             case "PRESCRIPTION" -> prescriptionId;
             case "LAB_TEST" -> labTestIds.size() == 1 ? labTestIds.getFirst() : null;
             case "SURGERY" -> surgeryCaseId;
             default -> null;
         };
+    }
+    private UUID examSourceId() {
+        if (!labTestIds.isEmpty() || admissionId != null || surgeryCaseId != null || prescriptionId != null) {
+            return null;
+        }
+        if (appointmentId != null) return recordId == null ? appointmentId : null;
+        // Scheduled EXAM clearances bind record_id to the registration, before a medical record exists.
+        return recordId != null && "OUTPATIENT_VISIT".equals(careEpisodeType)
+                && recordId.equals(careEpisodeId) ? recordId : null;
     }
 }

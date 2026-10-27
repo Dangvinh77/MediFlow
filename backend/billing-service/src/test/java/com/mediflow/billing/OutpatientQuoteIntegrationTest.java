@@ -34,7 +34,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class OutpatientQuoteIntegrationTest {
     private static final String SECRET = "billing-quote-integration-secret-at-least-32-bytes";
-    private static final Instant CHANGED_AT = Instant.parse("2026-10-26T01:00:00Z");
+    // Payment completes before the quote TTL; execution is observed after that TTL by PostgreSQL.
+    private static final Instant CHANGED_AT = Instant.now().minusSeconds(3600)
+            .truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
     @Container static final RabbitMQContainer RABBIT = new RabbitMQContainer("rabbitmq:3.13-management-alpine");
@@ -51,6 +53,7 @@ class OutpatientQuoteIntegrationTest {
         registry.add("mediflow.jwt.secret", () -> SECRET);
         registry.add("eureka.client.enabled", () -> false);
         registry.add("mediflow.billing.ledger.enabled", () -> true);
+        registry.add("mediflow.billing.clearance-lookup.enabled", () -> true);
         registry.add("mediflow.billing.scheduled-payments.enabled", () -> true);
         registry.add("mediflow.billing.outpatient-quotes.enabled", () -> true);
         registry.add("mediflow.billing.zero-payable-eligibility.enabled", () -> true);
@@ -80,6 +83,8 @@ class OutpatientQuoteIntegrationTest {
     @MockBean com.mediflow.billing.application.port.out.ClinicalPaymentLockPort clinical;
     @MockBean com.mediflow.billing.application.port.out.ClinicalPaymentContextPort paymentContexts;
     @Autowired com.mediflow.billing.application.service.ScheduledPaymentCoordinator payments;
+    @Autowired com.mediflow.billing.application.port.out.FinancialClearanceAuthorityPort clearanceAuthority;
+    @Autowired com.mediflow.billing.application.port.in.StartOutpatientExecutionUseCase executions;
 
     @BeforeEach void resetState() {
         jdbc.execute("TRUNCATE BILLING_ACCOUNT, BILLING_EVENT_OUTBOX CASCADE");
@@ -159,6 +164,7 @@ class OutpatientQuoteIntegrationTest {
         assertThat(first.operation().quoteId()).isEqualTo(quote.quoteId());
         assertThat(replay.operation().paymentOperationId()).isEqualTo(first.operation().paymentOperationId());
         assertThat(first.payment().amount()).isEqualTo("50000.00");
+        assertExecutable(first.clearanceId(), event);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM payment_transaction WHERE payment_request_id=?", Integer.class, requestId)).isOne();
         var publication = jdbc.queryForMap("""
                 SELECT payload,publication_enabled,scheduling_payment_operation_id
@@ -202,6 +208,7 @@ class OutpatientQuoteIntegrationTest {
         assertThat(first.operation().completedAt()).isEqualTo(CHANGED_AT.plusSeconds(60));
         assertThat(replay.operation().completedAt()).isEqualTo(first.operation().completedAt());
         assertThat(replay.clearanceId()).isEqualTo(first.clearanceId());
+        assertExecutable(first.clearanceId(), event);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM payment_transaction WHERE payment_request_id=?", Integer.class, requestId)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM payment_allocation a JOIN payment_transaction t ON t.transaction_id=a.transaction_id WHERE t.payment_request_id=?", Integer.class, requestId)).isZero();
         assertThat(jdbc.queryForObject("SELECT payment_method FROM financial_clearance WHERE clearance_id=?", String.class, first.clearanceId())).isEqualTo("ZERO_LIABILITY");
@@ -236,11 +243,29 @@ class OutpatientQuoteIntegrationTest {
         verifyNoInteractions(clinical);
     }
 
+    private void assertExecutable(UUID clearanceId, OutpatientRegistrationChangedEvent event) {
+        UUID registrationId = event.payload().registrationId();
+        var authority = clearanceAuthority.find(clearanceId).orElseThrow();
+        assertThat(quoteRepository.findCurrent(jdbc.queryForObject(
+                "SELECT payment_request_id FROM outpatient_registration_source WHERE registration_id=?",
+                UUID.class, registrationId)).orElseThrow().expiresAt()).isBefore(Instant.now());
+        assertThat(authority.expiresAt()).as("A paid registration must outlive the booking/quote TTL").isNull();
+        assertThat(authority.eligible()).as("Current authority: %s", authority).isTrue();
+        assertThat(authority.sourceId()).isEqualTo(registrationId);
+        assertThat(authority.matchesSource("EXAM", registrationId)).isTrue();
+        var command = new com.mediflow.billing.application.dto.command.StartOutpatientExecutionCommand(
+                registrationId, "EXAM", registrationId, event.payload().patientId(),
+                "OUTPATIENT_VISIT", registrationId);
+        var started = executions.start(clearanceId, command, "scheduled-exam-start");
+        assertThat(started.sourceId()).isEqualTo(registrationId);
+        assertThat(executions.start(clearanceId, command, "scheduled-exam-replay")).isEqualTo(started);
+    }
+
     private static OutpatientRegistrationChangedEvent event(UUID registrationId, UUID reservationId, String priceCode) {
         UUID patientId = UUID.randomUUID();
         var fact = new OutpatientRegistrationChangedEvent.RegistrationFact(registrationId, 1, patientId,
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                LocalDate.of(2026, 10, 26), LocalTime.of(9, 0), LocalTime.of(9, 30), "NEW_VISIT",
+                LocalDate.ofInstant(CHANGED_AT, ZoneOffset.UTC), LocalTime.of(9, 0), LocalTime.of(9, 30), "NEW_VISIT",
                 reservationId, "HELD", "AWAITING_PAYMENT", null, null, CHANGED_AT.plusSeconds(20 * 60L),
                 priceCode, "EXAM", registrationId, "OUTPATIENT_VISIT", registrationId, null, CHANGED_AT);
         return new OutpatientRegistrationChangedEvent(UUID.randomUUID(), "outpatient.registration.changed", 1,

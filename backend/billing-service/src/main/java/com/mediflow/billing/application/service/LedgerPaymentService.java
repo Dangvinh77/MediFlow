@@ -316,7 +316,8 @@ public class LedgerPaymentService {
         var clearance = FinancialClearance.grant(account.getAccountId(), request.getPaymentRequestId(), request.getInvoiceId(),
                 account.getPatientId(), ClearancePurpose.EXAM, account.getCareEpisodeType(), account.getCareEpisodeId(),
                 null, operation.registrationId(), java.util.List.of(), null, null, null, operation.amount(),
-                operation.currency(), zero ? "ZERO_LIABILITY" : operation.paymentMethod().name(), false, request.getExpiresAt(), now);
+                // Booking/quote TTL only limits collection, not an already settled registration.
+                operation.currency(), zero ? "ZERO_LIABILITY" : operation.paymentMethod().name(), false, null, now);
         clearance = repository.saveClearance(clearance);
         var eligibility = new OutpatientFinancialEligibilityGrantedEvent(UUID.randomUUID(),
                 "outpatient.financial.eligibility.granted", 1, completedAt, operation.correlationId(), "billing-service",
