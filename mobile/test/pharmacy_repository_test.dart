@@ -21,6 +21,54 @@ void main() {
     repository = GatewayPharmacyRepository(client);
   });
   tearDown(() => client.close());
+  Map<String, dynamic> sourceJson() => {
+    'recordId': drugId,
+    'patientId': otherDrugId,
+    'doctorId': drugId,
+    'departmentId': otherDrugId,
+    'careEpisodeId': rxId,
+    'careEpisodeType': 'OUTPATIENT_VISIT',
+    'priceCodes': ['RX-CONFIRMED'],
+  };
+  test(
+    'prescribing source uses the public Gateway contract and exact source IDs',
+    () async {
+      adapter.data = sourceJson();
+      final result = await repository.prescribingSource(drugId);
+      expect(
+        adapter.requests.single.uri.path,
+        '/api/v1/pharmacy/prescriptions/prescribing/context',
+      );
+      expect(adapter.requests.single.queryParameters, {'recordId': drugId});
+      final context = result.context('RX-CONFIRMED');
+      expect(context.patientId, otherDrugId);
+      expect(context.departmentId, otherDrugId);
+      expect(context.careEpisodeId, rxId);
+      expect(() => result.context('GUESS'), throwsArgumentError);
+    },
+  );
+  test('malformed, mismatched, non-outpatient and unconfigured sources are rejected', () async {
+    for (final patch in [
+      {'recordId': otherDrugId},
+      {'patientId': null},
+      {'departmentId': 'guess'},
+      {'careEpisodeId': null},
+      {'careEpisodeType': 'ADMISSION'},
+      {'priceCodes': <String>[]},
+      {
+        'priceCodes': [null],
+      },
+      {
+        'priceCodes': [''],
+      },
+    ]) {
+      adapter.data = {...sourceJson(), ...patch};
+      await expectLater(
+        repository.prescribingSource(drugId),
+        throwsFormatException,
+      );
+    }
+  });
   test(
     'search crosses shared Gateway transport with exact query and no writes',
     () async {

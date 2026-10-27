@@ -34,11 +34,11 @@ class PharmacyIdentityLabel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$label: ${value == null ? 'Tài khoản chưa được cấp quyền tra cứu tên' : value.when(data: (name) => name, loading: () => 'Đang tra cứu tên…', error: (error, _) => error is ApiFailure && error.status == 403
-                      ? 'Không có quyền tra cứu tên'
+            '$label: ${value == null ? 'Không hiển thị với tài khoản này' : value.when(data: (name) => name, loading: () => 'Đang tải…', error: (error, _) => error is ApiFailure && error.status == 403
+                      ? 'Không hiển thị với tài khoản này'
                       : error is ApiFailure && error.status == 404
-                      ? 'Không tìm thấy thông tin tên'
-                      : 'Chưa tải được tên')}',
+                      ? 'Không tìm thấy thông tin'
+                      : 'Chưa tải được thông tin')}',
           ),
           if (showId)
             SelectableText(id, style: Theme.of(context).textTheme.bodySmall),

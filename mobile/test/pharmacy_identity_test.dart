@@ -145,7 +145,7 @@ void main() {
     await settleNames(tester);
     expect(repository.calls, isEmpty);
     expect(
-      find.text('Bệnh nhân: Tài khoản chưa được cấp quyền tra cứu tên'),
+      find.text('Bệnh nhân: Không hiển thị với tài khoản này'),
       findsNWidgets(2),
     );
     expect(find.text(drugId), findsNWidgets(2));

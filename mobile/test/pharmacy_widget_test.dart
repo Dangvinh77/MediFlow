@@ -269,8 +269,8 @@ void main() {
     expect(find.text('Other drug'), findsOneWidget);
     expect(find.text('Stale drug'), findsNothing);
     expect(find.textContaining(otherDrugId), findsNothing);
-    await tester.ensureVisible(find.text('Chi tiết kỹ thuật'));
-    await tester.tap(find.text('Chi tiết kỹ thuật'));
+    await tester.ensureVisible(find.text('Mã tham chiếu'));
+    await tester.tap(find.text('Mã tham chiếu'));
     await tester.pumpAndSettle();
     expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
     expect(tester.takeException(), isNull);

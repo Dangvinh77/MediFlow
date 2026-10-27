@@ -7,6 +7,7 @@ import '../domain/pharmacy_identity.dart';
 import '../domain/prescription.dart';
 import '../domain/drug_commands.dart';
 import '../domain/prescription_commands.dart';
+import '../domain/prescribing_source.dart';
 import 'pharmacy_dto.dart';
 import 'prescription_request_dto.dart';
 
@@ -14,10 +15,43 @@ class GatewayPharmacyRepository
     implements
         PharmacyRepository,
         PharmacyIdentityReader,
+        PrescribingSourceReader,
         OutpatientPrescriptionWriter,
         PrescriptionDispenser {
   const GatewayPharmacyRepository(this.client);
   final ApiClient client;
+  @override
+  Future<PrescribingSource> prescribingSource(String recordId) async {
+    if (!isPharmacyId(recordId)) throw ArgumentError('Mã hồ sơ không hợp lệ.');
+    final data = PharmacyDto.object(
+      await client.get(
+        '/v1/pharmacy/prescriptions/prescribing/context',
+        query: {'recordId': recordId},
+      ),
+    );
+    final returnedId = PharmacyDto.id(data, 'recordId');
+    final prices = PharmacyDto.field(data, 'priceCodes');
+    if (returnedId.toLowerCase() != recordId.toLowerCase() ||
+        PharmacyDto.text(data, 'careEpisodeType') != 'OUTPATIENT_VISIT' ||
+        prices is! List ||
+        prices.isEmpty ||
+        prices.any(
+          (code) => code is! String || code.trim().isEmpty || code.length > 64,
+        )) {
+      throw const FormatException(
+        'Hồ sơ chưa có nguồn kê đơn ngoại trú hợp lệ.',
+      );
+    }
+    return PrescribingSource(
+      recordId: returnedId,
+      patientId: PharmacyDto.id(data, 'patientId'),
+      doctorId: PharmacyDto.id(data, 'doctorId'),
+      departmentId: PharmacyDto.id(data, 'departmentId'),
+      careEpisodeId: PharmacyDto.id(data, 'careEpisodeId'),
+      priceCodes: prices.cast<String>().toSet().toList(),
+    );
+  }
+
   @override
   Future<String> identityName(PharmacyIdentityKind kind, String id) async {
     if (!isPharmacyId(id)) throw ArgumentError('Mã tra cứu phải là UUID.');

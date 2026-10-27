@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
-import '../../../core/widgets/request_state.dart';
+import 'pharmacy_request_error.dart';
 import '../domain/drug.dart';
 import '../domain/drug_commands.dart';
 import '../domain/pharmacy_repository.dart';
@@ -178,8 +178,8 @@ class _DrugFormState extends State<_DrugForm> {
         ),
         content: Text(
           stock
-              ? '${snapshot!.name}: ${adjust!.quantity > 0 ? 'tăng' : 'giảm'} ${adjust.quantity.abs()} ${snapshot!.unit}. Backend kiểm tra tồn khả dụng và phần đã giữ chỗ.'
-              : 'Thêm ${create!.drugName} vào danh mục? Giá và số lượng sẽ được máy chủ kiểm tra.',
+              ? '${snapshot!.name}: ${adjust!.quantity > 0 ? 'tăng' : 'giảm'} ${adjust.quantity.abs()} ${snapshot!.unit}. Hệ thống sẽ kiểm tra số thuốc còn có thể sử dụng.'
+              : 'Thêm ${create!.drugName} vào danh mục? Hệ thống sẽ kiểm tra giá và số lượng.',
         ),
         actions: [
           TextButton(
@@ -259,10 +259,10 @@ class _DrugFormState extends State<_DrugForm> {
               ),
             if (snapshot != null) ...[
               Text(snapshot!.name),
-              Text('Tồn kho máy chủ: ${snapshot!.stockQuantity}'),
+              Text('Tồn kho: ${snapshot!.stockQuantity}'),
             ],
             ExpansionTile(
-              title: const Text('Chi tiết kỹ thuật'),
+              title: const Text('Mã tham chiếu'),
               children: [SelectableText('Mã thuốc: ${widget.drugId}')],
             ),
           ],
@@ -271,18 +271,21 @@ class _DrugFormState extends State<_DrugForm> {
               liveRegion: true,
               child: Text(
                 stock
-                    ? 'Điều chỉnh thành công. Tồn kho máy chủ: ${success!.stockQuantity}'
+                    ? 'Điều chỉnh thành công. Tồn kho: ${success!.stockQuantity}'
                     : 'Đã tạo thuốc. ${success!.name}',
               ),
             ),
           if (error != null)
             Focus(
               focusNode: errorFocus,
-              child: Semantics(liveRegion: true, child: RequestError(error!)),
+              child: Semantics(
+                liveRegion: true,
+                child: PharmacyRequestError(error!),
+              ),
             ),
           if (uncertain)
             const Text(
-              'Chưa xác định chắc chắn kết quả hoặc có xung đột. Không gửi lại lệnh cũ. Kiểm tra dữ liệu máy chủ trước khi tạo thao tác mới.',
+              'Chưa rõ thao tác đã hoàn tất hay chưa. Vui lòng kiểm tra tồn kho trước khi thực hiện thao tác mới.',
             ),
           if (!stock && uncertain)
             OutlinedButton(

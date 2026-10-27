@@ -4,8 +4,9 @@
 **Baseline:** `8883f49d`, nhánh Huy; FE working diff hiện có giữ nguyên.
 **Tiến độ code:** **11/12 task (91,7%)** — MP-HUY-01–11 hoàn tất implementation.
 Người dùng đã giao thêm shared network/app/config và chọn **hoàn thành code, test thật sau**.
-Task12 còn nghiệm thu Gateway/native; không lấy test mock hoặc build thay nghiệm thu thật.
-Checkpoint hiện hành ở mục13; các mục7–12 là lịch sử trước khi quyền shared được giao.
+Task12 đã PASS happy path Gateway trên mobile web (26/10), còn matrix lỗi/quyền và native;
+không lấy test mock hoặc build thay nghiệm thu thật.
+Checkpoint triển khai mới nhất ở mục14; mục13 ghi shared integration, các mục7–12 là lịch sử.
 
 ## 1. Kết quả cần đạt
 
@@ -145,7 +146,7 @@ cho hai lệnh này. Chưa cần Idempotency-Key/bodyless PUT trong hai task nà
 
 Không có GET danh sách prescriptions: không làm fake history, không suy dữ liệu từ thuốc hoặc DB.
 
-### MP-HUY-07 — Đầu vào kê đơn từ public workflow — LOCAL DONE (nhập nguồn đã xác minh)
+### MP-HUY-07 — Đầu vào kê đơn từ public workflow — LOCAL DONE (tự lấy theo hồ sơ)
 
 - [x] Xác minh recordId/patientId/doctorId/departmentId từ hồ sơ và identity staff thật.
 - [x] Xác minh careEpisodeId từ public workflow có explicit OUTPATIENT_VISIT;
@@ -154,6 +155,14 @@ Không có GET danh sách prescriptions: không làm fake history, không suy d�
 - [x] Context thiếu thì hiển thị thiếu đầu vào và chặn submit. Nếu chưa có mobile Clinical handoff,
   cho nhập giá trị đã đối chiếu từ public workflow trong môi trường test, ghi nguồn evidence;
   không import Clinical repository vào feature Pharmacy hoặc gọi DB/internal authority APIs.
+
+Cập nhật 2026-10-26: adapter thật đọc public GET
+`/api/v1/pharmacy/prescriptions/prescribing/context?recordId=...` đã có trong backend.
+Chọn bệnh nhân tự tải hồ sơ theo patient scope; chỉ tự chọn khi toàn bộ kết quả có đúng một
+hồ sơ, không còn trang sau. Nhiều hồ sơ cho chọn trong danh sách của bệnh nhân và tải thêm.
+Bác sĩ/khoa/episode/nhóm thu lấy cùng một context server; không tự suy appointmentId từ episodeId,
+không cho đổi khoa hoặc bác sĩ riêng. Một nhóm thu tự chọn, nhiều nhóm yêu cầu chọn từ server.
+Lỗi/mismatched patient/đổi bệnh nhân xóa context và chặn tạo; response cũ bị bỏ qua.
 
 Đóng khi có quy trình lấy đầy đủ nguồn thật và test không suy authority; entrypoint mobile tích hợp
 cần Vinh composition. Không bắt Clinical tạo Lab order chỉ để đoán episode cho kê đơn.
@@ -448,3 +457,50 @@ không còn chặn những shared paths đã được giao. Không tạo nhánh/
 Kết quả kiểm tra và source hashes cuối ở [integration evidence](evidence/huy-pharmacy/2026-10-22-integration/README.md).
 Handoff shared network/app được đóng trong đúng handoff chung; chỉ giữ phần nghiệm thu/nguồn
 workflow còn lại. Không mở Report/Notification mobile, Surgery/Inpatient/full V2.
+
+## 14. Tiếp tục MP-HUY-12 và cập nhật nguồn kê đơn — 2026-10-26
+
+Theo yêu cầu tiếp tục plan, rà lại code và chạy kiểm tra mobile trên nhánh Huy, baseline
+`9edf9bcc`. Backend Docker hiện có hoạt động; không đổi gates, dữ liệu khởi tạo,
+network/app/config chung hoặc source của feature khác.
+
+- Bổ sung `PrescribingSource`/reader domain, public Gateway adapter và widget nguồn kê đơn
+  trong đúng Pharmacy. App composition có sẵn tự dùng capability của adapter, không cần sửa shared.
+- Mobile thực tế không còn yêu cầu nhập riêng khoa/bác sĩ/episode/mã giá/nguồn đối chiếu;
+  ngày kê đơn mặc định ngày hiện tại. Reader kiểm UUID, matching record, OUTPATIENT_VISIT và
+  priceCodes không rỗng trước khi nhận context; widget kiểm patient match trước gửi command.
+- Giữ frozen intent, Idempotency-Key, xác nhận trước gửi, retry và session boundary hiện có.
+- Format/analyzer/full tests/default web build đã chạy; kết quả và phần runtime được ghi ở
+  [checkpoint 26/10](evidence/huy-pharmacy/2026-10-26-mobile/README.md).
+- Runtime mobile UI PASS chọn patient → tự liên kết record/doctor/department/episode → tạo đơn;
+  chặn dispense chưa thanh toán; Billing API thanh toán demo → mobile UI xuất thành công.
+  Tồn 70→69; lặp dispense trả cùng phiếu và giữ 69. Chưa thử concurrency/timeout recovery.
+- Đồng bộ priceCode Pharmacy đang chạy DRUG sang RX-DEMO của Billing/overlay demo; giữ
+  datasource cũ bằng override local trong `.git/`, không đổi backend source hay bật thêm gates.
+- PHARMACIST còn hạn chế lookup tên do quyền hiện có; ghi evidence, không sửa quyền/shared.
+- Android thiếu cmdline-tools và trạng thái licenses chưa xác nhận; Windows thiếu C++ workload;
+  iOS cần macOS. Chưa có native acceptance, không đánh dấu toàn bộ MP-HUY-12 DONE.
+
+## 15. Ngôn ngữ giao diện Dược — 2026-10-26
+
+Theo phản hồi khi xem bản mobile, bỏ các thuật ngữ giao thức và phiên bản khỏi màn kê đơn,
+chi tiết đơn, xuất/hủy thuốc, danh mục và điều chỉnh kho. Lỗi Gateway trên các màn Dược được
+diễn đạt thành hướng xử lý bằng tiếng Việt theo mã lỗi/trạng thái; mã hỗ trợ vẫn giữ để tra cứu.
+Quyền xem tên hạn chế hiển thị một thông báo gọn, không lặp thông báo tại từng trường.
+Ngày giờ hiển thị theo định dạng địa phương. Quyền xuất, thanh toán, dữ liệu nguồn và giao thức
+gửi lệnh giữ nguyên; cờ thanh toán cũ chỉ hiện ở chế độ tương ứng, tránh gây hiểu nhầm là đủ
+điều kiện xuất thuốc ngoại trú. [Evidence 26/10](evidence/huy-pharmacy/2026-10-26-mobile/README.md)
+ghi kết quả kiểm tra cuối.
+
+## 16. Đồng bộ master và tiếp tục giao diện Dược — 2026-10-27
+
+Nhánh Huy trên máy đã nhận đủ 29 commit mới từ `origin/master` tới `e4f98f11`; các thay đổi
+Pharmacy mobile đang làm được giữ nguyên, không có xung đột. Master không thay file mobile.
+Sau đồng bộ, `tool/check.ps1` PASS: analyzer sạch, 349 tests PASS, web build PASS.
+Rà thêm danh sách thuốc: hạn dùng hiển thị ngày/tháng/năm như trang chi tiết. Các mã ở phần
+tham chiếu dùng nhãn tiếng Việt thay `ID`; hướng dẫn ngày kê đơn không còn ví dụ ngày cố định.
+Các màn liên quan đã chạy lại 97 tests và analyzer sạch. Bản web cấu hình outpatient đã dựng
+và phục vụ tại `http://localhost:4300`; Docker/Gateway hiện chưa chạy nên chưa thêm bằng chứng
+runtime nghiệp vụ. `flutter doctor` còn thiếu Android cmdline-tools/license và Windows C++ workload;
+không có Android device, vì vậy native acceptance chưa thể chạy ở máy này.
+MP-HUY-12 vẫn PARTIAL với matrix lỗi/quyền và native chưa nghiệm thu.
