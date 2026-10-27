@@ -20,7 +20,7 @@ trong [07](07-outpatient-workflow-implementation.md), không thêm nghiệp vụ
   Đây là ca giả lập hai lần tiếp nhận cùng ngày, không giả đồng hồ/ngày hôm sau.
 - [x] Chạy cả luồng login muộn cũ và luồng login trước Lab trên PostgreSQL/RabbitMQ riêng;
   lưu evidence có source/JAR/runner fingerprints, không lưu credential.
-- [ ] Cập nhật checklist theo bằng chứng mới; giữ ONB-A05 UI/ngày khác, UI lỗi và broker
+- [x] Cập nhật checklist theo bằng chứng mới; giữ ONB-A05 UI/ngày khác, UI lỗi và broker
   replay còn mở nếu chưa chạy. Review và tạo PR tiếp theo, không tự merge.
 
 ## Ranh giới
@@ -35,3 +35,4 @@ Các JAR đang có khớp source production của PR #546; ghi SHA-256 để đ�
 Runner `52c4c07c`: recovery/tiếp nhận lần hai 107 observations, open-Lab 99 checks, cả hai
 exit 0; thêm 4 guard cases từ chối đúng exit 2. [Evidence và giới hạn](../acceptance/onboarding-recovery-2026-10-27/README.md)
 ghi riêng nhánh API, không đóng toàn bộ H-11/WF-11. Review source không phát hiện blocker.
+Đã tạo [PR #547](https://github.com/Dangvinh77/MediFlow/pull/547), chưa merge.
