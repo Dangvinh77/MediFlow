@@ -96,3 +96,14 @@ export interface CreateFollowUpRecommendationRequest {
   reason: string;
   preparationInstructions: string | null;
 }
+export interface PatientExamResultDTO {
+  recordId: string;
+  doctorId: string;
+  departmentId: string;
+  examinationDate: string;
+  symptoms: string | null;
+  diagnoses: DiagnosisDTO[];
+  disposition: RecordDisposition | null;
+  dispositionNote: string | null;
+  completedAt: string;
+}

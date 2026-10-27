@@ -15,6 +15,8 @@ import com.mediflow.clinical.infrastructure.persistence.jpaEntity.MedicalRecordJ
 import jakarta.persistence.LockModeType;
 
 public interface MedicalRecordJpaRepository extends JpaRepository<MedicalRecordJpaEntity, UUID> {
+    org.springframework.data.domain.Page<MedicalRecordJpaEntity> findByPatientIdAndStatusAndCompletedAtIsNotNull(
+            UUID patientId, com.mediflow.clinical.domain.model.MedicalRecordStatus status, org.springframework.data.domain.Pageable page);
     @EntityGraph(attributePaths = "diagnoses")
     @Query("SELECT r FROM MedicalRecordJpaEntity r WHERE r.recordId = :id")
     Optional<MedicalRecordJpaEntity> findAggregateById(@Param("id") UUID id);

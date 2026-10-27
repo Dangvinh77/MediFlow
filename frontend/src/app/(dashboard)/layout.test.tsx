@@ -6,7 +6,7 @@ import { clearSession, storeSession } from "@/lib/session";
 import DashboardLayout from "./layout";
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/notifications" }));
 vi.mock("@/components/layout/DashboardSidebar", () => ({ DashboardSidebar: () => null }));
 vi.mock("@/components/layout/DashboardHeader", () => ({ DashboardHeader: () => null }));
 

@@ -6,6 +6,12 @@ import { DashboardSidebar } from "./DashboardSidebar";
 vi.mock("next/navigation", () => ({ usePathname: () => "/pharmacy/drugs/123" }));
 
 describe("MVP dashboard navigation", () => {
+  it("gives patients their own result pages without staff workspaces", () => {
+    render(<DashboardSidebar role="PATIENT" open={false} onClose={vi.fn()} />);
+    expect(screen.getByRole("link", { name: /Kết quả khám của tôi/ })).toHaveAttribute("href", "/records/mine");
+    expect(screen.getByRole("link", { name: /Kết quả xét nghiệm/ })).toHaveAttribute("href", "/lab/mine");
+    expect(screen.queryByRole("link", { name: /Hồ sơ khám/ })).not.toBeInTheDocument();
+  });
   it("shows the six service groups and preserves the nine logical routes for administrators", () => {
     render(<DashboardSidebar role="ADMIN" open={false} onClose={vi.fn()} />);
     for (const group of ["Tổ chức & bệnh nhân", "Khám ngoại trú", "Báo cáo & thông báo"]) {

@@ -77,8 +77,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             UUID staffId = parseOptionalUuidClaim(claims.get(JwtClaims.STAFF_ID));
+            UUID patientId = parseOptionalUuidClaim(claims.get(JwtClaims.PATIENT_ID));
             var authentication = new UsernamePasswordAuthenticationToken(
-                    new LabAuthenticatedPrincipal(subject, staffId, role),
+                    new LabAuthenticatedPrincipal(subject, staffId, role, patientId),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
@@ -94,7 +95,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return null;
         }
         try {
-            return UUID.fromString(claim.toString());
+            var value = UUID.fromString(claim.toString());
+            return value.toString().equals(claim.toString()) ? value : null;
         } catch (IllegalArgumentException exception) {
             return null;
         }

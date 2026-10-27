@@ -118,3 +118,9 @@ export interface StaffDTO extends StaffProfile {
   createdAt: string | null;
   updatedAt: string | null;
 }
+export interface IssuedPatientAccount {
+  accountId: string;
+  patientId: string;
+  username: string;
+  mustChangePassword: boolean;
+}

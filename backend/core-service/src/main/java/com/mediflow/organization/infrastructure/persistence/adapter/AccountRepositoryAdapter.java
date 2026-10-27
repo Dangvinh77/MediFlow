@@ -13,6 +13,10 @@ import com.mediflow.organization.infrastructure.persistence.repository.AccountJp
 @Component
 public class AccountRepositoryAdapter implements AccountRepository {
 
+    @Override public boolean existsByPatientId(UUID patientId) {
+        return jpaRepository.existsByPatientId(patientId);
+    }
+
     private final AccountJpaRepository jpaRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     @jakarta.persistence.PersistenceContext(unitName = "organization")

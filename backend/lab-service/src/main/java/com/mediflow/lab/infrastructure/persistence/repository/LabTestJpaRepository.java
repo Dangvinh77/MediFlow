@@ -19,6 +19,7 @@ import com.mediflow.lab.infrastructure.persistence.jpaEntity.LabTestJpaEntity;
 import jakarta.persistence.LockModeType;
 
 public interface LabTestJpaRepository extends JpaRepository<LabTestJpaEntity, UUID> {
+    Page<LabTestJpaEntity> findByPatientIdAndStatusAndPerformedDateIsNotNull(UUID patientId, LabTestStatus status, Pageable page);
     @EntityGraph(attributePaths = "results")
     @Query("SELECT t FROM LabTestJpaEntity t WHERE t.testId = :id")
     Optional<LabTestJpaEntity> findAggregateById(@Param("id") UUID id);

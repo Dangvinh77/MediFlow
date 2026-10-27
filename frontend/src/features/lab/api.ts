@@ -20,6 +20,7 @@ export interface LabSearchParams {
 }
 
 export const labApi = {
+  mine: (page = 0) => api.get<PageResult<import("./types").PatientLabResultDTO>>(`/v1/lab/mine?page=${page}&size=20`),
   getById: (testId: string) =>
     api.get<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}`),
   search: (params: LabSearchParams = {}) => {

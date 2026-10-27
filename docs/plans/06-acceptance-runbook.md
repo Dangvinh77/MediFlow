@@ -89,6 +89,33 @@ gap cụ thể; không đánh PASS từ việc chỉ kiểm tra health hoặc t�
 | T23 | Report hai acceptance cùng timestamp, clock thay đổi khi chờ khóa | Latest theo durable acceptance order; receipt cũ và coverage history giữ |
 | T24 | Tạo staff rồi broker lỗi/network retry cùng idempotency key | Commit+outbox atomic; retry cùng staff ID, changed payload conflict, relay retry giữ event ID |
 
+## Nghiệm thu ONB — tiếp nhận và cổng bệnh nhân, bổ sung 27/10/2026
+
+Nghiệp vụ tại [02 mục 4.1](02-business-flows.md), thứ tự triển khai ONB-01–06 tại
+[07](07-outpatient-workflow-implementation.md). Các ca dưới đây **chưa chạy trong lượt tài liệu
+27/10**. Không dùng tests/evidence 26/10 để đóng yêu cầu mới. Khóa route/DTO từ producer rồi
+chạy qua Gateway và UI, không sửa DB để bỏ điều kiện quyền hoặc ép kết quả.
+
+| ID | Thao tác kiểm thử | Kết quả bắt buộc |
+|---|---|---|
+| ONB-A01 | NURSE tiếp nhận phiếu giấy của người lần đầu, tìm trước rồi tạo hồ sơ và cấp tài khoản | Một patientId, PATIENT account liên kết đúng người; actor có audit, không lộ password/token trong log/evidence |
+| ONB-A02 | Người mới không đăng nhập/đổi mật khẩu, NURSE vẫn đăng ký tại quầy; thu ngân thu, bác sĩ khám | Luồng chuyên môn tiếp tục theo quyền/điều kiện tài chính hiện hành; không chờ patient dùng web |
+| ONB-A03 | PATIENT dùng tài khoản mới cấp, gọi trực tiếp API kết quả trước đổi mật khẩu rồi đổi và login lại | Trước đổi bị chặn; đổi thành công dùng credential mới, phiên cũ không còn hợp lệ; đọc dữ liệu của mình sau login lại |
+| ONB-A04 | Bệnh nhân đã đổi mật khẩu quay lại khám mới hoặc tái khám | Giữ patient/account; không cấp mới hoặc bắt đổi lại do có lượt mới; FOLLOW_UP đúng source |
+| ONB-A05 | Người được cấp account lần đầu chưa từng dùng, đến lần hai mới login | Tiếp nhận vẫn bình thường; lần đầu dùng account vẫn phải đổi mật khẩu ban đầu theo trạng thái account |
+| ONB-A06 | Cấp account timeout sau khi hồ sơ đã lưu, retry cùng key/payload; thử key cũ/payload khác | Giữ hồ sơ, tra outcome; cùng command trả cùng account, changed payload conflict; không tạo lại patient |
+| ONB-A07 | Hai NURSE cùng cấp account cho một patient bằng hai command khác nhau | Tối đa một account hoạt động theo policy; command còn lại nhận outcome/conflict xác định, không tự replace account |
+| ONB-A08 | NURSE thử cấp ADMIN/DOCTOR, gắn staffId, dùng patient không tồn tại hoặc thay account hoạt động | Backend/Gateway từ chối đúng contract; quyền quản trị tổng quát vẫn dành cho ADMIN |
+| ONB-A09 | PATIENT A đọc danh sách/chi tiết kết quả khám, Lab và lời hẹn của mình rồi thay ID/query thành bệnh nhân B | Chỉ đọc dữ liệu A; mọi đường list/detail từ chối hoặc không trả dữ liệu B, kể cả truy cập URL trực tiếp |
+| ONB-A10 | Kết quả chưa có/draft, nguồn lỗi, rồi kết quả hoàn tất/phát hành theo contract | UI phân biệt chờ/không có/lỗi/có kết quả; không lộ draft, không giả kết quả hoặc coi HTTP tạo chỉ định là đã có kết quả |
+| ONB-A11 | Phát các fact kết quả khám/Lab/lời hẹn được hỗ trợ khi patient chưa login, replay rồi login muộn | In-app history đúng account, mỗi fact nghiệp vụ đóng góp một lần; không suy bệnh nhân đã đọc; không tuyên bố có SMS/email/push |
+| ONB-A12 | Quay lại đọc Lab trong lượt còn mở và nhánh quên mật khẩu sau lần khám trước | Đọc Lab tiếp tục cùng lượt, không thêm EXAM charge; phục hồi sau xác minh, không tạo hồ sơ/account mới để xử lý quên mật khẩu |
+
+Mỗi case lưu candidate commit/flags, role, correlation/operation ID, outcome và effect counts.
+Concurrency/replay dùng PostgreSQL/RabbitMQ thật ở test environment riêng; snapshot cũ và
+unit mocks không thay bằng chứng race/recovery. Đổi mật khẩu/người chưa dùng web không làm
+thay đổi điều kiện tài chính hoặc tự xác nhận phiếu. Các case này không thay ma trận WF/SC.
+
 ## Demo tối thiểu
 
 1. Đăng nhập theo role, tạo/chọn patient và appointment đúng khoa.
@@ -158,3 +185,6 @@ như chưa gửi. Backup/restore phải có evidence, không chỉ tồn tại Z
 Báo cáo MVP completion theo 18 task/72 subtask, test matrix và runtime 6 apps; không tỷ lệ
 dựa trên backlog deferred. Các phần còn hoãn không là “bug đã fix” hoặc “100% toàn bộ dự án”.
 Không có claim bệnh viện production/legal compliance từ demo học phần.
+
+Cập nhật source ONB 27/10: xem [bằng chứng module/frontend tests và phần còn mở](11-patient-onboarding-source-acceptance-2026-10-27.md).
+Không dùng source tests để đánh dấu toàn bộ ONB-A01–12 đã đạt qua Gateway/UI.

@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 
 public interface MedicalRecordRepositoryPort {
+    com.mediflow.common.api.PageResult<MedicalRecord> findCompletedByPatient(UUID patientId, com.mediflow.common.api.PageQuery page);
     MedicalRecord save(MedicalRecord record);
     Optional<MedicalRecord> findById(UUID id);
     Optional<MedicalRecord> findByIdForUpdate(UUID id);

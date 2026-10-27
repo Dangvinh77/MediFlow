@@ -30,6 +30,13 @@ import lombok.RequiredArgsConstructor;
 public class LabTestPersistenceAdapter implements LabTestRepositoryPort {
     private final LabTestJpaRepository repository;
 
+    @Override public PageResult<LabTest> findCompletedByPatient(UUID patientId, PageQuery query) {
+        var page = repository.findByPatientIdAndStatusAndPerformedDateIsNotNull(patientId, LabTestStatus.COMPLETED,
+                PageRequest.of(query.page(), query.size(), Sort.by("performedDate", "testId").descending()));
+        return PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
+                page.getTotalElements(), page.getNumber(), page.getSize());
+    }
+
     @Override public Optional<LabTest> findBySourceOrderId(UUID sourceOrderId) {
         return repository.findBySourceOrderId(sourceOrderId).map(this::toDomain);
     }

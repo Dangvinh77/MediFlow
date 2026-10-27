@@ -25,6 +25,8 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  provisionPatientAccount: (patientId: string, idempotencyKey: string) =>
+    api.post<import("./types").IssuedPatientAccount>("/v1/org/patient-accounts", { patientId }, { idempotencyKey }),
   updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email: string | null; address: string | null }) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
   careLabel: (kind: "doctor" | "department" | "room", id: string) =>

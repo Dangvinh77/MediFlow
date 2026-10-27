@@ -164,6 +164,46 @@ Người có dấu hiệu cấp cứu phải được hướng dẫn xử trí t
 luồng thông thường không được dùng để tuyên bố cấp cứu phải chờ đóng tiền. Chỉ giữ audited
 emergency override đã có, không mở thêm cấp cứu/nội trú để hoàn thành phạm vi này.
 
+### 4.1. Tiếp nhận lần đầu và tài khoản bệnh nhân — chốt 27/10/2026
+
+NURSE kiêm tiếp nhận, hiển thị là “Tiếp nhận / Điều dưỡng”; MANAGER giữ trách nhiệm quản lý
+lịch theo phạm vi đã cấp. Không thêm role mới cho slice này. Người bệnh đến lần đầu điền
+phiếu giấy; NURSE đối chiếu định danh, tìm hồ sơ trước rồi nhập thông tin vào hệ thống.
+Chỉ tạo hồ sơ mới khi đã xác minh chưa có hồ sơ phù hợp; giữ patientId cho các lần sau.
+
+NURSE cấp tài khoản PATIENT gắn đúng hồ sơ cho người bệnh mới đến lần đầu, giao thông tin
+đăng nhập và hướng dẫn đổi mật khẩu ban đầu. Quyền này là nghiệp vụ cấp tài khoản bệnh nhân
+có giới hạn, không mở API quản trị tài khoản tổng quát cho NURSE. Không được chọn role nhân
+viên, gắn staffId, thay tài khoản đang hoạt động hoặc tự đặt lại mật khẩu của người khác.
+Chính sách mật khẩu tạm và wire cấp tài khoản phải khóa với Core/Gateway trước khi viết code;
+không coi ngoại lệ mật khẩu demo hiện tại là hợp đồng mới đã nghiệm thu.
+
+**Sử dụng web là tùy chọn của bệnh nhân, không là điều kiện tiếp nhận hoặc khám.** NURSE tiếp
+tục đăng ký khám từ phiếu giấy dù người bệnh chưa đăng nhập/đổi mật khẩu. Bệnh nhân chỉ cần
+đăng nhập khi muốn xem kết quả khám, kết quả Lab, lời hẹn tái khám hoặc thông báo cá nhân.
+Khi lần đầu dùng tài khoản mới cấp, phải đổi mật khẩu trước khi vào các chức năng này;
+đổi thành công thì đăng nhập lại theo cơ chế phiên hiện có.
+
+Các lần đến sau dùng lại hồ sơ/tài khoản, không cấp lại tài khoản hoặc bắt đổi mật khẩu chỉ
+vì có lượt khám mới hay tái khám. Trạng thái cần đổi mật khẩu thuộc tài khoản: nếu chưa từng
+đổi mật khẩu ban đầu thì lần đầu dùng web vẫn phải đổi, kể cả đến viện lần hai mới đăng nhập.
+Quên mật khẩu đi qua phục hồi sau xác minh danh tính; không tạo hồ sơ/tài khoản mới để né lỗi.
+Quyết định này mô tả onboarding PATIENT, không thay chính sách tài khoản nhân viên hiện hành.
+
+Tạo hồ sơ, cấp tài khoản và đăng ký khám là các bước có kết quả riêng. Nếu cấp tài khoản lỗi
+hoặc timeout, giữ hồ sơ đã tạo, tra cứu outcome và tiếp tục đăng ký khám bằng patientId đã xác
+minh; không tạo lại hồ sơ hoặc gửi command mới để che trạng thái chưa rõ. Cấp tài khoản cần
+idempotency và bảo vệ tranh chấp cùng bệnh nhân tại backend.
+
+Cổng bệnh nhân chỉ đọc dữ liệu của chính patient được liên kết từ danh tính đã xác thực.
+Kết quả chỉ được hiển thị khi nguồn nghiệp vụ đã hoàn tất/phát hành hợp lệ; không coi draft,
+request xét nghiệm hoặc thông báo “có kết quả” là kết quả chi tiết. Thông báo in-app được lưu
+cho đúng account dù chưa đăng nhập; khi dùng web bệnh nhân xem thông báo đã lưu. Chưa mở
+email/SMS/push hoặc self-booking trong slice này. Lời hẹn tái khám vẫn khác lịch đã giữ suất.
+
+Đây là nghiệp vụ đích đã chốt; checklist ONB trong [07](07-outpatient-workflow-implementation.md)
+và tiêu chí ONB trong [06](06-acceptance-runbook.md) quyết định việc triển khai/nghiệm thu.
+
 ## 5. Tái khám và quay lại đọc kết quả
 
 | Trường hợp | Lượt/hồ sơ | Phí khám | Thông tin chuyên môn |

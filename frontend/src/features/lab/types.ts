@@ -80,3 +80,12 @@ export interface CancelLabTestRequest {
   reason: string;
   cancelledBy: string;
 }
+export interface PatientLabResultDTO {
+  testId: string;
+  recordId: string;
+  labType: string;
+  requestedDate: string;
+  performedDate: string;
+  conclusion: string | null;
+  results: LabResultDTO[];
+}

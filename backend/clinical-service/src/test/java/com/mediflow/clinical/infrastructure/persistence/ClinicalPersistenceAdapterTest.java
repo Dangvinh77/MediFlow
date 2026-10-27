@@ -67,6 +67,34 @@ class ClinicalPersistenceAdapterTest {
     }
 
     @Test
+    void portalPagesOnlyCompletedRecordsOwnedByPatient() {
+        UUID patient = UUID.randomUUID();
+        var diagnosis = Diagnosis.create("Influenza", null, "J10");
+        MedicalRecord first = MedicalRecord.create(patient, UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), "Fever", null, List.of(diagnosis));
+        first.complete(com.mediflow.clinical.domain.model.RecordDisposition.OTHER, "Rest",
+                Instant.parse("2026-10-26T00:00:00Z"));
+        records.save(first);
+        MedicalRecord second = MedicalRecord.create(patient, UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), null, null, List.of(Diagnosis.create("Follow-up", null, null)));
+        second.complete(com.mediflow.clinical.domain.model.RecordDisposition.OTHER, "Normal",
+                Instant.parse("2026-10-27T00:00:00Z"));
+        records.save(second);
+        records.save(MedicalRecord.create(patient, UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), "Draft", null, List.of(Diagnosis.create("Draft", null, null))));
+        MedicalRecord foreign = MedicalRecord.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), null, null, List.of(Diagnosis.create("Private", null, null)));
+        foreign.complete(com.mediflow.clinical.domain.model.RecordDisposition.OTHER, "Private", Instant.now());
+        records.save(foreign);
+        var page = records.findCompletedByPatient(patient, PageQuery.of(0, 1));
+        assertThat(page.totalElements()).isEqualTo(2);
+        assertThat(page.content()).extracting(MedicalRecord::getRecordId).containsExactly(second.getRecordId());
+        assertThat(records.findCompletedByPatient(patient, PageQuery.of(1, 1)).content())
+                .extracting(MedicalRecord::getRecordId).containsExactly(first.getRecordId());
+        assertThat(page.content().get(0).getDiagnoses()).hasSize(1);
+    }
+
+    @Test
     void cancelledCareFinanceAppointmentRoundTrip_preservesAuditEvidence() {
         Instant now = Instant.now();
         Appointment appointment = Appointment.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

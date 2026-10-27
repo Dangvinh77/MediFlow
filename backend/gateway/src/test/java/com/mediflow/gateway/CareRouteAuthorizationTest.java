@@ -30,6 +30,10 @@ class CareRouteAuthorizationTest {
 
     static Stream<Arguments> matrix() {
         List<MatrixRow> rows = List.of(
+                new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/org/accounts", Set.of("ADMIN")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/records/mine", Set.of("PATIENT")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/lab/mine", Set.of("PATIENT")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/drugs", Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/drugs/" + ID, Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/drugs", Set.of("ADMIN", "PHARMACIST")),

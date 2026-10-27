@@ -9,6 +9,8 @@ import com.mediflow.organization.infrastructure.persistence.entity.AccountEntity
 
 public interface AccountJpaRepository extends JpaRepository<AccountEntity, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<AccountEntity> {
 
+    boolean existsByPatientId(UUID patientId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where a.active = true and "
             + "((:staffId is not null and a.staffId = :staffId) or (:patientId is not null and a.patientId = :patientId)) order by a.accountId")

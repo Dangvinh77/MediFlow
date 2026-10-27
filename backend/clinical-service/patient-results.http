@@ -1,0 +1,10 @@
+@gateway = http://localhost:8080
+@patientToken = replace-with-patient-token-after-first-password-change
+
+### Only this authenticated patient's completed examination summaries
+GET {{gateway}}/api/v1/records/mine?page=0&size=20
+Authorization: Bearer {{patientToken}}
+
+### Scope injection must return 400, not a foreign patient's results
+GET {{gateway}}/api/v1/records/mine?patientId=00000000-0000-4000-8000-000000000099
+Authorization: Bearer {{patientToken}}
