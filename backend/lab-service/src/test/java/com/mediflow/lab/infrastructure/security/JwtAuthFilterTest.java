@@ -32,6 +32,35 @@ class JwtAuthFilterTest {
         SecurityContextHolder.clearContext();
     }
 
+    @Test void patientScopeComesOnlyFromCanonicalSignedPatientClaim() throws Exception {
+        UUID patient = UUID.randomUUID();
+        String token = Jwts.builder().subject(UUID.randomUUID().toString())
+                .claim(JwtClaims.ROLE, "PATIENT").claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .claim(JwtClaims.PATIENT_ID, patient.toString())
+                .expiration(Date.from(Instant.now().plusSeconds(300))).signWith(SIGNING_KEY).compact();
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(new CurrentPatientIdentityAdapter().patientId()).isEqualTo(patient);
+    }
+
+    @Test void absentMalformedOrForeignRolePatientMappingNeverFallsBackToSubject() throws Exception {
+        for (String value : java.util.List.of("", "1-1-1-1-1", "invalid")) {
+            SecurityContextHolder.clearContext();
+            String token = Jwts.builder().subject(UUID.randomUUID().toString())
+                    .claim(JwtClaims.ROLE, "PATIENT").claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                    .claim(JwtClaims.PATIENT_ID, value.isEmpty() ? null : value)
+                    .expiration(Date.from(Instant.now().plusSeconds(300))).signWith(SIGNING_KEY).compact();
+            filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+            assertThat(new CurrentPatientIdentityAdapter().patientId()).isNull();
+        }
+        SecurityContextHolder.clearContext();
+        String staff = Jwts.builder().subject(UUID.randomUUID().toString())
+                .claim(JwtClaims.ROLE, "NURSE").claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .claim(JwtClaims.PATIENT_ID, UUID.randomUUID().toString())
+                .expiration(Date.from(Instant.now().plusSeconds(300))).signWith(SIGNING_KEY).compact();
+        filter.doFilter(requestWithToken(staff), new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(new CurrentPatientIdentityAdapter().patientId()).isNull();
+    }
+
     @Test
     void validToken_createsAuthenticationFromSharedClaims() throws Exception {
         String token = createToken("lab-tech-01", "LAB_TECH", SIGNING_KEY,

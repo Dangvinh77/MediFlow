@@ -1,0 +1,20 @@
+@gateway = http://localhost:8080
+@nurseToken = replace-with-nurse-access-token
+@patientId = 00000000-0000-4000-8000-000000000001
+@issuanceKey = patient-onboarding-example-001
+
+### Nurse issues PATIENT only; repeat exact key/body to recover an uncertain response
+POST {{gateway}}/api/v1/org/patient-accounts
+Authorization: Bearer {{nurseToken}}
+Idempotency-Key: {{issuanceKey}}
+Content-Type: application/json
+
+{"patientId":"{{patientId}}"}
+
+### Role injection must return 400
+POST {{gateway}}/api/v1/org/patient-accounts
+Authorization: Bearer {{nurseToken}}
+Idempotency-Key: {{issuanceKey}}
+Content-Type: application/json
+
+{"patientId":"{{patientId}}","role":"ADMIN"}

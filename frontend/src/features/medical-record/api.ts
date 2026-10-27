@@ -1,4 +1,5 @@
 import { api, type MutationOptions } from "@/lib/api";
+import type { PageResult } from "@/lib/types";
 import type {
   AddDiagnosisRequest,
   ClinicalLabOrderDTO,
@@ -13,6 +14,7 @@ import type {
 } from "./types";
 
 export const medicalRecordApi = {
+  mine: (page = 0) => api.get<PageResult<import("./types").PatientExamResultDTO>>(`/v1/records/mine?page=${page}&size=20`),
   // Commands are exposed only by the server-controlled outpatient UI gate.
   complete: (recordId: string, body: CompleteRecordRequest) =>
     api.put<MedicalRecordDTO>(

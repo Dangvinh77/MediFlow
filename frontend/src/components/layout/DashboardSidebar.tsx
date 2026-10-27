@@ -14,6 +14,8 @@ interface NavigationItem {
 }
 
 const navigation: readonly NavigationItem[] = [
+  { group: "Kết quả của tôi", href: "/records/mine", label: "Kết quả khám của tôi", eyebrow: "Chẩn đoán & tái khám", roles: ["PATIENT"] },
+  { group: "Kết quả của tôi", href: "/lab/mine", label: "Kết quả xét nghiệm", eyebrow: "Chỉ số & kết luận", roles: ["PATIENT"] },
   { group: "Tổ chức & bệnh nhân", href: "/organization", label: "Tổ chức", eyebrow: "Nhân sự & khoa", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
   { group: "Tổ chức & bệnh nhân", href: "/patients", label: "Bệnh nhân", eyebrow: "Hồ sơ định danh", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Khám ngoại trú", href: "/appointments", label: "Lịch hẹn", eyebrow: "Tiếp nhận ngoại trú", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },

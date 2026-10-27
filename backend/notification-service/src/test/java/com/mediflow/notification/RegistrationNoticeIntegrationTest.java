@@ -38,6 +38,31 @@ class RegistrationNoticeIntegrationTest {
     @Autowired org.springframework.amqp.rabbit.core.RabbitTemplate rabbit;
     @Autowired org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry listeners;
 
+    @Test void actualBrokerStoresResultsBeforeAnyLoginAndDeduplicatesRedelivery() throws Exception {
+        java.nio.file.Path root = java.nio.file.Path.of("").toAbsolutePath();
+        while (root != null && !java.nio.file.Files.isDirectory(root.resolve("backend/clinical-service"))) root = root.getParent();
+        assertThat(root).isNotNull();
+        var contracts = java.util.List.of(
+                "clinical-service/src/test/resources/contracts/medicalrecord.completed.outpatient.v1.json",
+                "clinical-service/src/test/resources/contracts/followup.recommendation.created.v1.json",
+                "lab-service/src/test/resources/contracts/lab.result.created.v1.json");
+        listeners.getListenerContainers().forEach(c -> c.start());
+        for (String contract : contracts) {
+            byte[] raw = java.nio.file.Files.readAllBytes(root.resolve("backend/" + contract));
+            String routingKey = mapper.readTree(raw).path("eventType").textValue();
+            var properties = new org.springframework.amqp.core.MessageProperties();
+            properties.setContentType("application/json");
+            rabbit.send("mediflow.events", routingKey, new org.springframework.amqp.core.Message(raw, properties));
+            rabbit.send("mediflow.events", routingKey, new org.springframework.amqp.core.Message(raw, properties));
+        }
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(20))
+                .untilAsserted(() -> assertThat(count("NOTIFICATION")).isEqualTo(3));
+        assertThat(count("PROCESSED_EVENT")).isEqualTo(3);
+        assertThat(count("NOTIFICATION_EVENT_OUTBOX")).isEqualTo(3);
+        assertThat(jdbc.queryForList("SELECT channel FROM NOTIFICATION", String.class)).containsOnly("IN_APP");
+        assertThat(jdbc.queryForList("SELECT sensitivity FROM NOTIFICATION", String.class)).containsOnly("PRIVATE_IN_APP_ONLY");
+    }
+
     @BeforeEach void reset() {
         listeners.getListenerContainers().forEach(c -> c.stop());
         admin.purgeQueue("notification.outpatient-registration.q"); admin.purgeQueue("notification.dlq");

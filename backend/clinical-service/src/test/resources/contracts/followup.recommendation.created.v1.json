@@ -1,0 +1,18 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000021",
+  "eventType": "followup.recommendation.created",
+  "version": 1,
+  "occurredAt": "2026-10-27T01:00:00Z",
+  "correlationId": "portal-contract",
+  "producer": "clinical-service",
+  "payload": {
+    "recommendationId": "00000000-0000-4000-8000-000000000022",
+    "sourceRecordId": "00000000-0000-4000-8000-000000000023",
+    "sourceRegistrationId": "00000000-0000-4000-8000-000000000024",
+    "patientId": "00000000-0000-4000-8000-000000000025",
+    "departmentId": "00000000-0000-4000-8000-000000000026",
+    "preferredDoctorId": "00000000-0000-4000-8000-000000000027",
+    "recommendedFrom": "2026-11-01",
+    "recommendedThrough": "2026-11-07"
+  }
+}

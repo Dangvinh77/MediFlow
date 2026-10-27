@@ -5,6 +5,10 @@
 Registry này thay các bảng phân công theo checkpoint cũ; không là bằng chứng vừa chạy test.
 Baseline tài liệu: `dc2b8f2e5c9eb3c373a6feb0b2047ca22adf8317` cùng working-tree docs chưa commit.
 
+Quyết định bổ sung ngày 27/10/2026: NURSE tiếp nhận/cấp tài khoản bệnh nhân mới và việc dùng
+web tùy chọn theo [nghiệp vụ mục 4.1](../plans/02-business-flows.md); bàn giao mới ở H-11.
+Baseline của H-11 là `f28d25b4`, không thay mốc lịch sử của các handoff khác.
+
 ## Quy ước trạng thái
 
 - `ACTIVE CONTRACT GAP`: đã xác định yêu cầu liên owner còn cần source lock/bàn giao.
@@ -20,6 +24,7 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 
 | ID | Trạng thái | Producer/code owner → người nhận | Việc cụ thể còn phải xác minh | Hồ sơ/acceptance |
 |---|---|---|---|---|
+| H-11 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway, Vinh/Clinical/Lab/Notification → consumer FE theo owner + Vinh verification | Đã triển khai command NURSE cấp PATIENT, outcome recovery, own results và in-app trước login; còn nghiệm thu ONB-A01–12 qua Gateway/UI | [Nurse onboarding](HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md); [ONB plan](../plans/07-outpatient-workflow-implementation.md); [ONB acceptance](../plans/06-acceptance-runbook.md) |
 | H-01 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Contract A.13 đã triển khai cho CASHIER/LAB_TECH directory và PATIENT care-labels; đối chiếu consumer/session reset web/mobile trước khi đóng | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
 | H-02 | NEEDS REVALIDATION | Hoàng Anh/Core → Vinh verification | Patient outbox, department-head/race: implementation có checkpoint 21/10; kiểm consumer/replay và packaged trên artifact cuối | [Core audit](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) |
 | H-03 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → Vinh verification | JWT expiration và caller credential verifier đã có bản sửa; đối chiếu merged revision, test và runtime; race chuyển H-02, không mở task thứ hai | [JWT/Core](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |

@@ -12,6 +12,7 @@ import com.mediflow.lab.domain.model.LabTestStatus;
 
 /** Persistence boundary for the lab aggregate. */
 public interface LabTestRepositoryPort {
+    PageResult<LabTest> findCompletedByPatient(UUID patientId, PageQuery page);
 
     LabTest save(LabTest labTest);
 

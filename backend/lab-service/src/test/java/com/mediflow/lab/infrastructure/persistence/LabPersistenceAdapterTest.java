@@ -183,6 +183,29 @@ class LabPersistenceAdapterTest {
     }
 
     @Test
+    void portalPagesOnlyCompletedTestsOwnedByPatient() {
+        UUID patient = UUID.randomUUID();
+        LabTest first = LabTest.create(UUID.randomUUID(), patient, UUID.randomUUID(), "CBC", LocalDate.now().minusDays(1));
+        first.recordResults(List.of(LabResult.create("WBC", "7.5", "10^9/L", "4-10")), "Normal", LocalDate.now().minusDays(1));
+        tests.save(first);
+        LabTest second = LabTest.create(UUID.randomUUID(), patient, UUID.randomUUID(), "CBC", LocalDate.now());
+        second.recordResults(List.of(LabResult.create("WBC", "8", "10^9/L", "4-10")), "Normal", LocalDate.now());
+        tests.save(second);
+        tests.save(LabTest.create(UUID.randomUUID(), patient, UUID.randomUUID(), "Draft", LocalDate.now()));
+        LabTest foreign = LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Private", LocalDate.now());
+        foreign.recordResults(List.of(LabResult.create("WBC", "9", null, null)), "Private", LocalDate.now());
+        tests.save(foreign);
+        entityManager.flush();
+        entityManager.clear();
+        var page = tests.findCompletedByPatient(patient, PageQuery.of(0, 1));
+        assertThat(page.totalElements()).isEqualTo(2);
+        assertThat(page.content()).extracting(LabTest::getTestId).containsExactly(second.getTestId());
+        assertThat(page.content().get(0).getResults()).hasSize(1);
+        assertThat(tests.findCompletedByPatient(patient, PageQuery.of(1, 1)).content())
+                .extracting(LabTest::getTestId).containsExactly(first.getTestId());
+    }
+
+    @Test
     void processedEvent_firstClaim_returnsTrue() {
         UUID eventId = UUID.randomUUID();
         assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isTrue();

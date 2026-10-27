@@ -25,6 +25,16 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
     private final MedicalRecordJpaRepository repository;
     private final AppointmentJpaRepository appointments;
 
+    @Override public com.mediflow.common.api.PageResult<MedicalRecord> findCompletedByPatient(
+            UUID patientId, com.mediflow.common.api.PageQuery query) {
+        var page = repository.findByPatientIdAndStatusAndCompletedAtIsNotNull(patientId,
+                com.mediflow.clinical.domain.model.MedicalRecordStatus.COMPLETED,
+                org.springframework.data.domain.PageRequest.of(query.page(), query.size(),
+                        org.springframework.data.domain.Sort.by("completedAt", "recordId").descending()));
+        return com.mediflow.common.api.PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
+                page.getTotalElements(), page.getNumber(), page.getSize());
+    }
+
     @Override public MedicalRecord save(MedicalRecord value) {
         try {
             return toDomain(repository.saveAndFlush(toEntity(value)));

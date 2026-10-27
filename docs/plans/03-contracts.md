@@ -1,5 +1,57 @@
 # Hợp đồng tích hợp tối thiểu
 
+## Cấp tài khoản tại quầy và cổng kết quả cá nhân (27/10/2026)
+
+Đã triển khai source theo [02 §4.1](02-business-flows.md); packaged/API/UI acceptance vẫn theo
+ONB-A01–12 trong [06](06-acceptance-runbook.md).
+
+| Method/path qua Gateway | Role | Request / response |
+|---|---|---|
+| POST `/api/v1/org/patient-accounts` | ADMIN, NURSE | Header `Idempotency-Key` bắt buộc; body duy nhất `{"patientId":"UUID"}`; response `accountId,patientId,username,mustChangePassword` |
+| GET `/api/v1/records/mine?page=0&size=20` | PATIENT | `PageResult<PatientExamResultDTO>` |
+| GET `/api/v1/lab/mine?page=0&size=20` | PATIENT | `PageResult<PatientLabResultDTO>` |
+
+Mọi response dùng ApiResponse envelope và `Cache-Control: no-store`. Cấp mới trả 201;
+replay cùng actor/key/payload trả 200, `Idempotency-Replayed: true`, dùng username ban đầu
+từ receipt/account kể cả Patient đã sửa CCCD hoặc archive. Khác patient cùng key
+bị từ chối; key khác nhưng patient đã có account (kể cả inactive) trả 409
+`PATIENT_ACCOUNT_ALREADY_ISSUED`. Không thay account, reset mật khẩu hay cấp role nhân viên
+qua command này. ADMIN-only `POST /org/accounts` giữ quyền quản trị riêng.
+Patient không tồn tại trả 404; archived/định danh không hợp lệ trả 422. Thiếu key hoặc thêm
+role/staffId/password vào request trả 400. Account và receipt cùng transaction Organization,
+khóa actor/key trước owner/patient để serialize concurrent issuance; Patient identity chỉ đọc qua
+public use case trong Core composition, không truy vấn store Patient từ Organization.
+
+Username lấy từ `soCmnd` của Patient đã lưu. Tái sử dụng initial credential contract hiện hành:
+mật khẩu ban đầu `1`, `mustChangePassword=true`, thông tin giao trực tiếp cho đúng bệnh nhân.
+Response không chứa mật khẩu/hash. Đổi mật khẩu tại lần đầu sử dụng web, không chặn tiếp nhận,
+đăng ký khám, thu phí hay khám. Replays sau đổi mật khẩu không reset account/credential version.
+Mật khẩu staff theo policy sẵn có; không sửa bằng quyết định onboarding bệnh nhân.
+
+Hai endpoint `mine` lấy patientId từ verified JWT principal; thiếu mapping trả 403,
+không nhận patientId/accountId hay filter scope từ query. Chỉ nhận page/size;
+page chuẩn hóa >=0, size 1..100 (mặc định20). Sắp xếp giảm dần thời điểm hoàn tất rồi UUID;
+paging tại database, hydrate child rows trong transaction. Staff read routes giữ quyền riêng.
+Clinical chỉ trả status COMPLETED và completedAt khác null; Lab chỉ trả COMPLETED và
+performedDate khác null, độc lập thời điểm hoàn tất lượt khám.
+
+- `PatientExamResultDTO`: recordId, doctorId, departmentId, examinationDate, symptoms,
+  diagnoses[{diagnosisId,diagnosisName,description,icdCode}], disposition, dispositionNote, completedAt.
+- `PatientLabResultDTO`: testId, recordId, labType, requestedDate, performedDate, conclusion,
+  results[{resultId,indicator,value,unit,referenceRange}].
+- Không trả account, clearance, giá/paid hay field cho staff command. Lời hẹn dùng GET
+  `/api/v2/records/{id}/follow-up-recommendation` với own-resource check hiện hành;
+  UI chỉ gọi khi `MEDIFLOW_SCHEDULING_UI_ENABLED=true`.
+
+Notification nhận nested envelope version1 hiện có: `medicalrecord.completed` và
+`followup.recommendation.created` từ clinical-service; `lab.result.created` từ lab-service
+với careEpisodeType OUTPATIENT_VISIT. Decoder kiểm producer/type/version, patient UUID,
+source UUID và thời điểm liên quan; malformed/conflict vào DLQ, storage failure retry.
+Dedupe eventId + SHA-256 nguyên bytes, ghi claim/history/notification.sent outbox cùng transaction.
+Chỉ lưu thông báo có kết quả/đề xuất, không chép nội dung khám/Lab vào thông báo.
+Liên kết patientId lấy từ event producer, không phụ thuộc account đã login; không tra DB khác.
+IN_APP duy nhất cho các nested events này; flat Lab compatibility path vẫn giữ nguyên.
+
 ## Một nguồn wire truth
 
 Evidence source audit 26/10 nằm ở [WF-01 source lock](09-outpatient-source-lock-2026-10-26.md)

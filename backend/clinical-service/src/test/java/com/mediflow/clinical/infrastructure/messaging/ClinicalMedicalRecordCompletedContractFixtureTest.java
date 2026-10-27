@@ -17,6 +17,18 @@ import org.junit.jupiter.api.Test;
 class ClinicalMedicalRecordCompletedContractFixtureTest {
 
     private static final String FIXTURE = "/contracts/medicalrecord.completed.v1.json";
+
+    @Test void outpatientResultNoticeFixtureMatchesProducer() throws IOException {
+        Instant at = Instant.parse("2026-09-28T03:00:00Z");
+        var payload = new MedicalRecordCompletedPayload(id(3), id(2), id(4), id(5),
+                RecordDisposition.OTHER, false, at);
+        var event = new DomainEventEnvelope<>(id(31), "medicalrecord.completed", 1, at,
+                id(7).toString(), "clinical-service", payload);
+        try (var input = getClass().getResourceAsStream("/contracts/medicalrecord.completed.outpatient.v1.json")) {
+            assertThat(input).isNotNull();
+            assertThat(objectMapper.readTree(objectMapper.writeValueAsBytes(event))).isEqualTo(objectMapper.readTree(input));
+        }
+    }
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

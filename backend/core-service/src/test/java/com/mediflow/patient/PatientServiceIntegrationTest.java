@@ -42,6 +42,61 @@ import com.mediflow.patient.infrastructure.persistence.PatientJpaRepository;
 @Testcontainers
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class PatientServiceIntegrationTest {
+    @Autowired com.mediflow.organization.application.service.ProvisionPatientAccountService issuance;
+    @Autowired com.mediflow.organization.application.port.in.ManageAccountsUseCase accounts;
+    @Autowired @org.springframework.beans.factory.annotation.Qualifier("organizationDataSource")
+    javax.sql.DataSource organizationSource;
+
+    @Test void concurrentNurseIssuanceReplaysAndNeverReplacesEvenInactiveAccount() throws Exception {
+        var patient = createPatient.create(new CreatePatientRequest("Portal Patient",
+                LocalDate.of(1995, 1, 1), Gender.M,
+                "0" + System.nanoTime(), null, null, null, null));
+        UUID actor = UUID.randomUUID();
+        String firstKey = UUID.randomUUID().toString(), secondKey = UUID.randomUUID().toString();
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var successes = new java.util.concurrent.ConcurrentLinkedQueue<String>();
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var calls = java.util.List.of(firstKey, secondKey).stream().map(key -> executor.submit(() -> {
+                start.await();
+                try { issuance.provision(actor, key, patient.maBenhNhan()); successes.add(key); return true; }
+                catch (com.mediflow.common.exception.DuplicateResourceException conflict) {
+                    assertThat(conflict.getCode()).isEqualTo("PATIENT_ACCOUNT_ALREADY_ISSUED");
+                    return false;
+                }
+            })).toList();
+            start.countDown();
+            assertThat(java.util.List.of(calls.get(0).get(30, java.util.concurrent.TimeUnit.SECONDS),
+                    calls.get(1).get(30, java.util.concurrent.TimeUnit.SECONDS))).containsExactlyInAnyOrder(true, false);
+        }
+        var replay = issuance.provision(actor, successes.element(), patient.maBenhNhan());
+        assertThat(replay.replayed()).isTrue();
+        assertThat(replay.account().getUsername()).isEqualTo(patient.soCmnd());
+        assertThat(replay.account().isMustChangePassword()).isTrue();
+        var jdbc = new org.springframework.jdbc.core.JdbcTemplate(organizationSource);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM account WHERE patient_id=?", Integer.class,
+                patient.maBenhNhan())).isOne();
+        jdbc.update("UPDATE account SET is_active=false WHERE account_id=?", replay.account().getAccountId());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> issuance.provision(actor,
+                UUID.randomUUID().toString(), patient.maBenhNhan()))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "PATIENT_ACCOUNT_ALREADY_ISSUED");
+        jdbc.update("UPDATE account SET is_active=true WHERE account_id=?", replay.account().getAccountId());
+        updatePatient.update(patient.maBenhNhan(), new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                patient.hoTen(), patient.ngaySinh(), patient.gioiTinh(), null, null, null, null,
+                "9" + System.nanoTime(), "Corrected paper identity"));
+        archivePatient.delete(patient.maBenhNhan());
+        var afterArchive = issuance.provision(actor, successes.element(), patient.maBenhNhan());
+        assertThat(afterArchive.account().getAccountId()).isEqualTo(replay.account().getAccountId());
+        assertThat(afterArchive.account().getUsername()).isEqualTo(patient.soCmnd());
+        accounts.changePassword(replay.account().getAccountId(), "1", "patient-private-password");
+        var afterChange = issuance.provision(actor, successes.element(), patient.maBenhNhan());
+        assertThat(afterChange.account().isMustChangePassword()).isFalse();
+        assertThat(jdbc.queryForObject("SELECT credential_version FROM account WHERE account_id=?", Long.class,
+                replay.account().getAccountId())).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> issuance.provision(actor, successes.element(), UUID.randomUUID()))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "ACCOUNT_IDEMPOTENCY_KEY_REUSED");
+    }
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(

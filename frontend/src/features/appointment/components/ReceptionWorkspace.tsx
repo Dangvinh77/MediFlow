@@ -27,7 +27,7 @@ function uncertain(cause: unknown) {
   return !(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500;
 }
 
-export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
+export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled: boolean; initialPatientId?: string }) {
   const [departmentId, setDepartmentId] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -37,7 +37,7 @@ export function ReceptionWorkspace({ enabled }: { enabled: boolean }) {
   const [selectedSession, setSelectedSession] = useState<ConsultationSessionDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<WorkspaceError | null>(null);
-  const [patientId, setPatientId] = useState("");
+  const [patientId, setPatientId] = useState(initialPatientId);
   const [receptionMode, setReceptionMode] = useState<"AT_COUNTER" | "PREBOOKED">("AT_COUNTER");
   const [visitType, setVisitType] = useState<"NEW_VISIT" | "FOLLOW_UP">("NEW_VISIT");
   const [reason, setReason] = useState("");
