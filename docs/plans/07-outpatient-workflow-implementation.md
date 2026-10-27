@@ -57,10 +57,10 @@ User đã giao triển khai các module/path nêu trong slice này và tạo PR;
 | Slice | Trạng thái source | Phần cần nghiệm thu tiếp |
 |---|---|---|
 | ONB-01 | Đã khóa command/DTO/fixtures cấp PATIENT riêng và patient-existence port | Đối chiếu runtime candidate cuối với 03; không mở endpoint ADMIN tổng quát cho NURSE |
-| ONB-02 | Command idempotent, một account/patient, credential version và Gateway password gate; PG concurrency tests đạt | Gateway replay, quyền sai vai trò, phiên cũ và tình huống timeout trên UI |
+| ONB-02 | Command idempotent, một account/patient, credential version và Gateway password gate; Gateway replay/quyền/phiên cũ đã kiểm | Timeout sau commit/outcome recovery trên UI và hai NURSE concurrent qua Gateway |
 | ONB-03 | Tìm/tạo patient → cấp account → tiếp nhận; giữ patient/key khi phục hồi; login không chặn khám | Tổng duyệt trình duyệt đa vai trò và phục hồi gián đoạn |
-| ONB-04 | Clinical/Lab own-result APIs và UI, paging/retry, chỉ completed results | Quyền own-resource, draft/unavailable và kết quả thật sau vòng khám/Lab |
-| ONB-05 | Ba fact kết quả khám/Lab/lời hẹn → in-app history; broker replay tests đạt | Lịch sử trước login, đọc lại sau login muộn; không suy đã đọc hoặc có SMS/email/push |
+| ONB-04 | Clinical/Lab own-result APIs và UI; Gateway own-resource và UI kết quả thật sau vòng khám/Lab đã kiểm | Draft/empty/unavailable UI và đọc Lab khi lượt còn mở |
+| ONB-05 | Ba fact kết quả khám/Lab/lời hẹn → in-app history; trước login và đọc lại sau login muộn đã kiểm | Broker replay effect counts trên packaged candidate; không suy đã đọc hoặc có SMS/email/push |
 
 Bàn giao liên owner vẫn theo [H-11](../handoffs/HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md).
 Chỉ đóng sau nghiệm thu producer/consumer trong 06; có source và test không tự đóng handoff.

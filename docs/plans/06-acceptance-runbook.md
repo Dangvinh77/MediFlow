@@ -92,9 +92,10 @@ gap cụ thể; không đánh PASS từ việc chỉ kiểm tra health hoặc t�
 ## Nghiệm thu ONB — tiếp nhận và cổng bệnh nhân, bổ sung 27/10/2026
 
 Nghiệp vụ tại [02 mục 4.1](02-business-flows.md), thứ tự triển khai ONB-01–06 tại
-[07](07-outpatient-workflow-implementation.md). Các ca dưới đây **chưa chạy trong lượt tài liệu
-27/10**. Không dùng tests/evidence 26/10 để đóng yêu cầu mới. Khóa route/DTO từ producer rồi
-chạy qua Gateway và UI, không sửa DB để bỏ điều kiện quyền hoặc ép kết quả.
+[07](07-outpatient-workflow-implementation.md). [Checkpoint Gateway/UI 27/10](../acceptance/onboarding-2026-10-27/README.md)
+ghi 87 checks onboarding và 20 checks bệnh nhân cũ đã đạt cùng các ca còn mở; chưa đóng toàn bộ
+ma trận dưới đây. Không dùng tests/evidence 26/10 để đóng yêu cầu mới. Khóa route/DTO từ producer
+rồi chạy qua Gateway và UI, không sửa DB để bỏ điều kiện quyền hoặc ép kết quả.
 
 | ID | Thao tác kiểm thử | Kết quả bắt buộc |
 |---|---|---|
