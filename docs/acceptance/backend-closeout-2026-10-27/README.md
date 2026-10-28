@@ -76,6 +76,26 @@ toàn SC-01–20 đã được chạy lại qua trình duyệt hoặc cùng mộ
 
 ## Kết quả
 
+### H-02 — đã đóng
+
+Core regression **395/395** gồm PatientServiceIntegrationTest **10/10** và Organization
+integration **27/27** trên PostgreSQL/Rabbit. Đã kiểm create/update khi broker outage,
+rollback khi outbox lỗi, worker reconstruction, lỗi sau publish confirm trước mark,
+giữ nguyên event ID/body và bounded retry/returns/quarantine. Head/title và hai thứ tự
+deactivate/create, deactivate/transfer giữ bất biến khoa/nhân viên.
+
+Ngày 28/10, lượt `six-service-welcome` bắt nguyên `patient.created` do public Core
+command phát qua Rabbit, xác nhận welcome và processed marker rồi restart Support
+JVM trên store hiện có. Replay nguyên body/properties đã được ACK: vẫn một welcome,
+marker không đổi, không thêm `notification.sent` và không thêm dead letter. Toàn workflow
+paid EXAM/Rx/refund/publication/calendar trong cùng lượt đạt exit 0, không skip.
+[patient-welcome-replay.json](patient-welcome-replay.json) giữ event ID/hash và counts;
+không công bố payload có PII. Handoff/entry được xóa sau khi đủ hai phía.
+
+Producer recovery ở đây dùng lỗi tại DB mark và khởi tạo lại worker; không tuyên bố
+kill Core JVM. Consumer restart là Support JVM thật. Legacy welcome dùng MockEmailSender
+trong môi trường test; không ký gửi SMTP thật hoặc chuyển nó thành outbox Notification.
+
 ### H-03 — đã đóng
 
 Gateway/Core không thay source kể từ base đã merge. Full reactor có Core **395** và
@@ -88,8 +108,8 @@ refund suite **22/22**. Đủ HA-AUDIT-01/02, chuyển lasting rules vào 03 và
 
 HA-AUDIT-03 là cùng race ở H-02, không mở lại task JWT: Organization PG suite **27/27**
 đã chạy hai thứ tự deactivate/create và deactivate/transfer, cùng head/title race.
-H-02 vẫn giữ riêng phần Patient consumer/restart acceptance; việc đóng H-03 không ký
-thay phần còn lại của H-02 hoặc mở quyền sửa frontend Hoàng Anh.
+Patient consumer/restart được kiểm riêng và đóng H-02 ngày 28/10 ở mục trên;
+bằng chứng JWT không thay bằng chứng replay và không mở quyền sửa frontend Hoàng Anh.
 
 ### H-04 — đã đóng
 
@@ -131,7 +151,7 @@ Kết quả profile cuối, không cộng trùng với full reactor:
 
 | Profile | Cases | Failures / errors / skipped |
 |---|---:|---|
-| Six packaged deployments + refund/publication/calendar | 1 workflow | 0 / 0 / 0 |
+| Six packaged deployments + welcome replay/restart + refund/publication/calendar | 1 workflow | 0 / 0 / 0 |
 | Clinical/Lab process recovery, Billing publication, Notification identity CLI | 11 | 0 / 0 / 0 |
 | Pharmacy runtime, lấy kết quả cuối từng suite | 17 | 0 / 0 / 0 |
 | Report actual Clinical source | 1 workflow | 0 / 0 / 0 |
@@ -141,7 +161,7 @@ Kết quả profile cuối, không cộng trùng với full reactor:
 
 Clinical/Lab cuối chạy ngày 28/10; Lab invocation truyền rõ absolute Billing JAR theo
 prerequisite của profile. [verification.json](verification.json) giữ thời điểm, source
-base từng lượt và hash 11 backend files thay đổi. Tất cả packaged JAR vẫn khớp hashes
+base từng lượt và hash các backend files thay đổi. Tất cả packaged JAR vẫn khớp hashes
 của lượt `package-final`; cập nhật master sau đó chỉ thay mobile.
 
 Self-review theo `.agents/skills/review-pr/SKILL.md`: không tìm thấy blocker trong diff.

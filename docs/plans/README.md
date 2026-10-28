@@ -88,3 +88,6 @@ receipt timestamp tìm được ở PostgreSQL; đọc kết quả từng profil
 [runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md).
 Checklist baseline 18/72 và các checkpoint 11–14 giữ vai trò lịch sử; không cộng chúng
 thành backlog mới. ONB/WF/SC và handoff chưa có đủ nghiệm thu vẫn giữ trạng thái hiện hành.
+
+[Patient welcome replay 28/10](19-patient-welcome-replay-closeout-2026-10-28.md) đóng H-02
+sau actual Core producer / Support consumer restart; giữ riêng giới hạn SMTP và UX.

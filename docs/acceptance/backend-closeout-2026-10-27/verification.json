@@ -1,5 +1,5 @@
 {
-  "sourceBase": "c9954c7c77940b9c9bf6d069b4fb1110b10a1210",
+  "sourceBase": "faf12fa575b58135ca8d647933bbc39030ff8178",
   "acceptanceBackendBase": "38f226e17a3d47ae88dacf855d91096f9d5cc782",
   "workingTreeSources": [
     {
@@ -27,6 +27,14 @@
       "sha256": "84d16905552c969ca377ff326fb70711307ab2a41d02e3d79630c611e97c1392"
     },
     {
+      "path": "backend/core-service/docs.md",
+      "sha256": "53d39911920af14c8e6290283efd5eea2ebf2cc4cf53f2b75e9fb5b118e70efc"
+    },
+    {
+      "path": "backend/core-service/README.md",
+      "sha256": "c610263213d1e6dfdc00d34abadbc07441aaa0ab3cdb839eb514557054c3493a"
+    },
+    {
       "path": "backend/lab-service/src/test/java/com/mediflow/lab/acceptance/PackagedOutpatientLabAcceptanceIT.java",
       "sha256": "4ded8c800196636d0b27df133dc3ffe563c4132cce6108f10bd1ec05a03641c5"
     },
@@ -44,17 +52,17 @@
     },
     {
       "path": "backend/support-service/src/test/java/com/mediflow/support/SixServiceOutpatientAcceptanceIT.java",
-      "sha256": "3578c62936b41f75202f1fc2e7cbbb65b486d07811f57e9a324a4e8978c3fcef"
+      "sha256": "753115258b806dbcbecd4c5070f7690a4c833ecf955c139d85ed5a98da8a391d"
     }
   ],
   "environment": {
-    "java": "Azul Zulu 21.0.11",
-    "dockerJavaApiVersion": "1.40",
-    "docker": "29.9.2",
     "postgres": "16-alpine",
-    "os": "Windows 11 amd64",
+    "dockerJavaApiVersion": "1.40",
+    "maven": "3.9.16",
     "rabbitmq": "3.13-alpine / 3.13-management-alpine",
-    "maven": "3.9.16"
+    "os": "Windows 11 amd64",
+    "docker": "29.9.2",
+    "java": "Azul Zulu 21.0.11"
   },
   "scope": "AUTOMATED_BACKEND_ACCEPTANCE_NOT_MANUAL_UX_OR_PRODUCTION_REPORT_COVERAGE",
   "sixServiceEnvironment": {
@@ -8869,6 +8877,29 @@
           "errors": 0,
           "skipped": 0,
           "sha256": "1f83dc8041535f59fc8453709a9132dc99f08a7b91ca35bba544f65a22b6b99a"
+        }
+      ],
+      "resolution": null
+    },
+    {
+      "phase": "six-service-welcome",
+      "command": "mvn -B -q -pl backend/support-service -am -Psix-service-acceptance -Dtest=__NoUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false -Dapi.version=1.40 verify",
+      "exitCode": 0,
+      "observedAt": "2026-10-28T05:34:38.9724321Z",
+      "sourceBase": "faf12fa575b58135ca8d647933bbc39030ff8178",
+      "tests": 1.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "suites": [
+        {
+          "path": "backend/support-service/target/failsafe-reports/TEST-com.mediflow.support.SixServiceOutpatientAcceptanceIT.xml",
+          "suite": "com.mediflow.support.SixServiceOutpatientAcceptanceIT",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "a8ac12fbc0a2819d7f6d151b14cd93c6328dc17acb80a1bed7c38c21976be125"
         }
       ],
       "resolution": null

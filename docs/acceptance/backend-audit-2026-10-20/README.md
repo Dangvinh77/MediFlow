@@ -21,7 +21,7 @@ This change does not claim that an explicitly configured development Compose key
 discovered bypass. No additional concrete Pharmacy/Report/Gateway defect was confirmed in this
 pass. Five confirmed groups do not constitute a proof that every possible backend bug is absent.
 
-See [the Core handoff](../../handoffs/HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) for producer/consumer
+See [the Core handoff](../backend-closeout-2026-10-27/README.md#h-02--đã-đóng) for producer/consumer
 impact, exact paths, acceptance and the [deterministic concurrency patch](HA-AUDIT-03-regression.patch).
 The deliberately failing Core regression remains a patch, not part of the default green suite.
 

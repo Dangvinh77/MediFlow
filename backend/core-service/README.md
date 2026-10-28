@@ -48,8 +48,10 @@ Quy định chức danh/trưởng khoa, xử lý đồng thời và vận hành 
 Audit fixes verified locally on 2026-10-21: `mvn -q -pl backend/core-service -am test`
 passed **205 Core tests** across 38 suites, zero failures/errors/skips, with Docker
 PostgreSQL/RabbitMQ. Includes Patient transactional outbox and Organization head-title/
-department-state concurrency regressions. Final Gateway/Notification/packaged acceptance
-remains with Vinh; see [owner handoff](../../docs/handoffs/HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
+department-state concurrency regressions. This is a historical checkpoint. On 28 October,
+Core regression (395 tests), Gateway/login and actual Core welcome replay after Support
+JVM restart passed; see [H-02 closeout](../../docs/acceptance/backend-closeout-2026-10-27/README.md#h-02--đã-đóng)
+for source/artifact hashes, producer fault-injection boundaries and test email transport.
 
 ## Product scope — 2026-10-17
 

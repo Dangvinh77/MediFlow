@@ -4,6 +4,7 @@ Phân công mới 27/10: Vinh phụ trách toàn bộ backend và frontend Billi
 của Lộc; Huy giữ FE Pharmacy/Report, Hoàng Anh giữ FE Organization/Patient.
 [Đánh giá phần đã xong, dependency và nghiệm thu còn thiếu](plans/17-backend-ownership-and-blocker-audit-2026-10-27.md).
 [Đóng nghiệm thu backend và kiểm tra phục hồi thanh toán](plans/18-backend-closeout-2026-10-27.md).
+[Đóng Patient welcome replay sau Support restart](plans/19-patient-welcome-replay-closeout-2026-10-28.md).
 
 Quy tắc nghiệp vụ cập nhật 25/10/2026: đọc [luồng khám, tái khám và BHYT mô phỏng](plans/02-business-flows.md)
 trước khi triển khai hoặc viết kịch bản bảo vệ. [Kế hoạch điều chỉnh](plans/07-outpatient-workflow-implementation.md)

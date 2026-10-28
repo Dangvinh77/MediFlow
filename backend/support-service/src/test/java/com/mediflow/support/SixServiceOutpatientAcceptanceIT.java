@@ -85,9 +85,11 @@ class SixServiceOutpatientAcceptanceIT {
     }
 
     private record PatientTokens(String own, String other, String manager, String refresh) { }
+    private record WelcomeReceipt(UUID patientId, com.rabbitmq.client.GetResponse original,
+            Map<String, Object> notification, Map<String, Object> marker) { }
 
     private void exercisePrescription(String gateway, String admin, String doctor, String cashier, String nurse,
-            PatientTokens patientTokens,
+            PatientTokens patientTokens, WelcomeReceipt welcome,
             UUID patient, UUID prescriber, UUID department, UUID episode, UUID record, int supportPort, int pharmacyPort, int billingPort,
             String eureka, List<Process> processes) throws Exception {
         JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
@@ -194,6 +196,7 @@ class SixServiceOutpatientAcceptanceIT {
                 "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
                 "--mediflow.notification.outpatient-prescription-consumer.enabled=true"));
         awaitHealthy(supportPort, "support");
+        replayWelcomeAfterSupportRestart(welcome);
         assertThat(request("http://127.0.0.1:" + supportPort, "GET", noticePath, patientToken, null).statusCode()).isEqualTo(200);
         assertThat(request("http://127.0.0.1:" + supportPort, "GET", "/api/v1/notifications/" + rollbackWrite, patientToken, null).statusCode()).isEqualTo(200);
         awaitPrescriptionEffects(rx, record, UUID.fromString(drugId));
@@ -204,6 +207,104 @@ class SixServiceOutpatientAcceptanceIT {
                 Map.of("prescriptionId", rx, "patientId", patient, "recordId", record, "episodeId", episode,
                         "drugId", drugId, "payment", payment, "noticeId", notice, "registeredApplications", names,
                         "supportRollbackOnCurrentStores", true)));
+    }
+
+    private com.rabbitmq.client.Connection brokerConnection() throws Exception {
+        var factory = new com.rabbitmq.client.ConnectionFactory();
+        factory.setHost(RABBIT.getHost());
+        factory.setPort(RABBIT.getAmqpPort());
+        factory.setUsername(RABBIT.getAdminUsername());
+        factory.setPassword(RABBIT.getAdminPassword());
+        return factory.newConnection();
+    }
+
+    private String observe(com.rabbitmq.client.Channel channel, String routingKey) throws IOException {
+        String queue = channel.queueDeclare("", false, true, true, null).getQueue();
+        channel.queueBind(queue, "mediflow.events", routingKey);
+        return queue;
+    }
+
+    private com.rabbitmq.client.GetResponse receiveForPatient(com.rabbitmq.client.Channel channel,
+            String queue, UUID patient) {
+        var received = new java.util.concurrent.atomic.AtomicReference<com.rabbitmq.client.GetResponse>();
+        await().atMost(Duration.ofSeconds(45)).until(() -> {
+            var message = channel.basicGet(queue, true);
+            if (message != null && patient.toString().equals(JSON.readTree(message.getBody()).path("patientId").asText())) {
+                received.set(message);
+                return true;
+            }
+            return false;
+        });
+        return received.get();
+    }
+
+    private WelcomeReceipt createPatientAndObserveWelcome(String gateway, String admin, String unique) throws Exception {
+        try (var connection = brokerConnection(); var channel = connection.createChannel()) {
+            String sourceQueue = observe(channel, "patient.created");
+            String sentQueue = observe(channel, "notification.sent");
+            UUID patient = UUID.fromString(data(post(gateway, "/api/v1/patients", admin,
+                    "hoTen", "Acceptance Patient " + unique,
+                    "ngaySinh", "1988-01-02", "gioiTinh", "M",
+                    "soCmnd", digits(12), "diaChi", "Acceptance address",
+                    "soDienThoai", digits(10), "email", "patient-" + unique + "@example.test",
+                    "bhytSo", null)).path("maBenhNhan").asText());
+            var original = receiveForPatient(channel, sourceQueue, patient);
+            UUID eventId = UUID.fromString(JSON.readTree(original.getBody()).path("eventId").asText());
+            assertThat(original.getProps().getMessageId()).isEqualTo(eventId.toString());
+            var sent = JSON.readTree(receiveForPatient(channel, sentQueue, patient).getBody());
+            assertThat(sent.path("status").asText()).isEqualTo("SENT");
+            UUID notice = UUID.fromString(sent.path("notificationId").asText());
+            var rows = store("notification").queryForList(
+                    "SELECT * FROM notification WHERE patient_id=?", patient);
+            assertThat(rows).hasSize(1);
+            assertThat(rows.getFirst().get("notification_id")).isEqualTo(notice);
+            assertThat(rows.getFirst().get("title")).isEqualTo("Chào mừng đến với MediFlow");
+            var marker = store("notification").queryForMap("SELECT * FROM processed_event WHERE event_id=?", eventId);
+            assertThat(marker.get("routing_key")).isEqualTo("patient.created");
+            return new WelcomeReceipt(patient, original, rows.getFirst(), marker);
+        }
+    }
+
+    private void replayWelcomeAfterSupportRestart(WelcomeReceipt welcome) throws Exception {
+        try (var connection = brokerConnection(); var channel = connection.createChannel()) {
+            String sentQueue = observe(channel, "notification.sent");
+            int deadLettersBefore = channel.queueDeclarePassive("notification.dlq").getMessageCount();
+            assertThat(channel.queueDeclarePassive("notification.q").getConsumerCount()).isPositive();
+            channel.confirmSelect();
+            channel.basicPublish("mediflow.events", "patient.created", welcome.original().getProps(),
+                    welcome.original().getBody());
+            channel.waitForConfirmsOrDie(10_000);
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+                var queues = RABBIT.execInContainer("rabbitmqctl", "list_queues", "name", "messages_ready",
+                        "messages_unacknowledged", "--formatter=json");
+                assertThat(queues.getExitCode()).isZero();
+                JsonNode intake = null;
+                for (var queue : JSON.readTree(queues.getStdout())) {
+                    if ("notification.q".equals(queue.path("name").asText())) intake = queue;
+                }
+                assertThat(intake).isNotNull();
+                assertThat(intake.path("messages_ready").asInt()).isZero();
+                assertThat(intake.path("messages_unacknowledged").asInt()).isZero();
+            });
+            assertThat(channel.queueDeclarePassive("notification.dlq").getMessageCount()).isEqualTo(deadLettersBefore);
+            assertThat(store("notification").queryForMap("SELECT * FROM notification WHERE notification_id=?",
+                    welcome.notification().get("notification_id"))).isEqualTo(welcome.notification());
+            assertThat(count(store("notification"), "SELECT count(*) FROM notification WHERE patient_id=? AND title=?",
+                    welcome.patientId(), welcome.notification().get("title"))).isOne();
+            assertThat(store("notification").queryForMap("SELECT * FROM processed_event WHERE event_id=?",
+                    welcome.marker().get("event_id"))).isEqualTo(welcome.marker());
+            com.rabbitmq.client.GetResponse emitted;
+            while ((emitted = channel.basicGet(sentQueue, true)) != null) {
+                assertThat(JSON.readTree(emitted.getBody()).path("patientId").asText())
+                        .isNotEqualTo(welcome.patientId().toString());
+            }
+            String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(welcome.original().getBody()));
+            Files.writeString(work.resolve("patient-welcome-replay.json"), JSON.writeValueAsString(Map.of(
+                    "eventId", welcome.marker().get("event_id"), "sourceBodySha256", hash,
+                    "actualCoreProducer", true, "supportRestarted", true, "welcomeRows", 1,
+                    "processedMarkers", 1, "duplicateSentFacts", 0, "newDeadLetters", 0)));
+        }
     }
 
     private void awaitPrescriptionEffects(UUID rx, UUID record, UUID drug) {
@@ -408,12 +509,8 @@ class SixServiceOutpatientAcceptanceIT {
             createAccount(gateway, setupAdmin, "nurse-" + unique, "NURSE", nurseId);
             createAccount(gateway, setupAdmin, "cashier-" + unique, "CASHIER", cashierId);
 
-            UUID patientId = UUID.fromString(data(post(gateway, "/api/v1/patients", setupAdmin,
-                    "hoTen", "Acceptance Patient " + unique,
-                    "ngaySinh", "1988-01-02", "gioiTinh", "M",
-                    "soCmnd", digits(12), "diaChi", "Acceptance address",
-                    "soDienThoai", digits(10), "email", "patient-" + unique + "@example.test",
-                    "bhytSo", null)).path("maBenhNhan").asText());
+            WelcomeReceipt welcome = createPatientAndObserveWelcome(gateway, setupAdmin, unique);
+            UUID patientId = welcome.patientId();
 
             UUID otherPatientId = UUID.fromString(data(post(gateway, "/api/v1/patients", setupAdmin,
                     "hoTen", "Other Acceptance Patient " + unique,
@@ -530,7 +627,7 @@ class SixServiceOutpatientAcceptanceIT {
                         appointmentId, doctorToken, supportPort, eurekaUrl, processes);
                 return;
             }
-            exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken, patientTokens,
+            exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken, patientTokens, welcome,
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
             exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken, patientTokens.own(),
                     patientId, doctorId, departmentId, appointmentId, recordId);

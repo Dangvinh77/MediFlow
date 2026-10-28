@@ -23,7 +23,7 @@ Audit xác nhận **5 nhóm lỗi**: JWT fallback Billing/Notification và Lab o
 Vinh; Patient event durability, department-head title và department/staff concurrency thuộc
 Hoàng Anh. Race HA-AUDIT-03 đã có PostgreSQL proof, không còn chỉ là nghi vấn static.
 
-- [Core owner handoff, 3 lỗi và tiêu chí nghiệm thu](../HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
+- [Core owner handoff, 3 lỗi và tiêu chí nghiệm thu](../../acceptance/backend-closeout-2026-10-27/README.md#h-02--đã-đóng).
 - [Evidence và trạng thái kiểm thử lượt này](../../acceptance/backend-audit-2026-10-20/README.md).
 
 Cập nhật owner 21/10: ba lỗi Core đã có implementation trên `codex/core-audit-reliability`;

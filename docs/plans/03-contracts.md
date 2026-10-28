@@ -226,6 +226,10 @@ nhân viên hiện có. Bổ nhiệm/miễn nhiệm không tự thay `jobTitle`;
 mô hình nằm trong [Core docs](../../backend/core-service/docs.md).
 Giữ nguyên hợp đồng này khi đóng gói Core; kiểm tra consumer theo DTO/test nguồn master.
 
+Bổ nhiệm/đổi chức danh và ngừng khoa/tạo hoặc điều chuyển nhân viên phải serialize trên
+cùng authority khoa. Cả hai thứ tự transaction phải giữ bất biến: không có nhân viên
+active trong khoa inactive; kiểm tra trước rồi ghi ở hai transaction riêng là chưa đủ.
+
 Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.
 Pharmacy gọi Clinical prescription-context lookup với exact recordId, patient, prescriber,
 department và visit identity. Gateway OrganizationAuthClient phải đổi upstream discovery về Core.

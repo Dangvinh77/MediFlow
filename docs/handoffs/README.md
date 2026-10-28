@@ -36,7 +36,6 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 |---|---|---|---|---|
 | H-11 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway, Vinh/Clinical/Lab/Notification → consumer FE theo owner + Vinh verification | Đã triển khai command NURSE cấp PATIENT, outcome recovery, own results và in-app trước login; còn nghiệm thu ONB-A01–12 qua Gateway/UI | [Nurse onboarding](HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md); [ONB plan](../plans/07-outpatient-workflow-implementation.md); [ONB acceptance](../plans/06-acceptance-runbook.md) |
 | H-01 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Contract A.13 đã triển khai cho CASHIER/LAB_TECH directory và PATIENT care-labels; đối chiếu consumer/session reset web/mobile trước khi đóng | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
-| H-02 | NEEDS REVALIDATION | Hoàng Anh/Core → Vinh verification | Patient outbox, department-head/race: implementation có checkpoint 21/10; kiểm consumer/replay và packaged trên artifact cuối | [Core audit](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) |
 | H-05 | NEEDS REVALIDATION | Huy/Pharmacy/Report → Vinh verification | Mandatory exp có source fix và PG/Rabbit suite checkpoint; đối chiếu final artifact/Gateway/Support, không yêu cầu sửa parser lại từ báo cáo lỗi cũ | [JWT Pharmacy/Report](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
 | H-06 | NEEDS REVALIDATION | Huy/FE Pharmacy → Vinh review + Huy consumer | V1 dispense có implementation/browser proof; xác định còn thiếu expired/revoked/unavailable/V0 cases nào trên final candidate | [Dispense UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
 | H-07 | NEEDS REVALIDATION | Vinh/Notification → Vinh verification | Raw-byte identity có implementation/upgrade runbook; final packaged acceptance và historical raw-NULL policy cần đối chiếu evidence | [Byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md) |
@@ -46,10 +45,14 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 
 ## Tách việc mới khỏi việc kiểm chứng baseline
 
+H-02 đã đóng ngày 28/10 tại [backend closeout](../acceptance/backend-closeout-2026-10-27/README.md#h-02--đã-đóng):
+Core PG/Rabbit recovery/races và actual Core welcome replay sau Support JVM restart đã qua.
+Handoff/entry được xóa; không gọi producer worker reconstruction là kill Core JVM hoặc ký SMTP thật.
+
 H-03 đã đóng tại [backend closeout](../acceptance/backend-closeout-2026-10-27/README.md#h-03--đã-đóng):
 Core/Gateway full regression, JWT/caller negative cases và packaged login/refund đã qua.
-Race khoa/nhân viên được đối chiếu PG và vẫn thuộc H-02; Patient consumer/restart không
-đóng từ bằng chứng JWT. Handoff/entry H-03 được xóa, lasting rules ở 03.
+Race khoa/nhân viên và Patient consumer/restart được kiểm riêng trong H-02.
+Handoff/entry H-03 được xóa, lasting rules ở 03.
 
 H-04 đã đóng tại [backend closeout 27/10](../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng):
 Gateway explicit 22/22 và actual Gateway/Billing refund race/replay/roles đã qua.
