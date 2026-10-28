@@ -57,7 +57,8 @@ class PharmacyAuthorityRuntimeAcceptanceIT {
                 "abbreviation","T"+UUID.randomUUID().toString().substring(0,8).toUpperCase(Locale.ROOT),"departmentType","CLINICAL"));
         UUID departmentId=UUID.fromString(department.path("departmentId").asText());
         var staff=command(CORE,8089,"/api/v1/org/staff",Map.of("fullName","Isolated authority doctor","departmentId",departmentId,
-                "jobTitle","DOCTOR","specialization","Isolated acceptance","licenseNumber","ISOLATED-TEST"));
+                "jobTitle","DOCTOR","specialization","Isolated acceptance","licenseNumber","ISOLATED-TEST",
+                "identityNumber","999999999902"));
         UUID doctor=UUID.fromString(staff.path("staffId").asText());
         var patient=command(CORE,8089,"/api/v1/patients",Map.of("hoTen","Isolated authority patient","ngaySinh","1990-01-01",
                 "gioiTinh","M","soCmnd",UUID.randomUUID().toString().replace("-","").substring(0,12)));

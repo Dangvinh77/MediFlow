@@ -18,7 +18,7 @@ Toàn bộ kiểm thử do Vinh phụ trách theo phân công người dùng.
 
 | Dev | Việc cần làm tiếp | Bằng chứng / điều kiện bàn giao |
 |---|---|---|
-| **Hoàng Anh** | **HA-CODE-01/02:** sửa đúng hai method/path refund rules tại Gateway và fixture route-role. Bàn giao commit cho Vinh. | [Handoff Gateway](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md); 4 positive cases đỏ, 7 deny controls xanh. Không wildcard/nới role. |
+| **Hoàng Anh** | **HA-CODE-01/02:** sửa đúng hai method/path refund rules tại Gateway và fixture route-role. Bàn giao commit cho Vinh. | [Handoff Gateway](../../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng); 4 positive cases đỏ, 7 deny controls xanh. Không wildcard/nới role. |
 | **Vinh** | **V-TEST-BUG-01/02:** sửa clock assertion Report và publication config của Pharmacy opt-in harness; **V-TEST-03/06:** nhận fixes Gateway, retest filter/token/HTTP/refund thật, full Report/backend regression và tổng hợp acceptance trên revision cuối. Ghi rõ phần chưa chạy. | [Bug test mới](2026-10-19-test-harness-findings.md), [kết quả và queue](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Không giao lại full testing cho dev khác. |
 | **Huy** | Chưa phát hiện production bug mới cần code qua các tests đã chạy. Không giao lại checklist Pharmacy/Report/Support đã đóng. | Vinh sửa lỗi clock test Report và harness Pharmacy V1; nếu tái hiện lỗi nghiệp vụ độc lập sẽ mở handoff production riêng cho Huy. |
 | **Lộc** | Chưa phát hiện production bug mới cần code qua các tests đã chạy. Không giao lại LOC-01–06 đã merge. | Billing 1060, Notification 279 regression pass; Billing packaged publication recovery pass. Refund public gap thuộc Gateway. |

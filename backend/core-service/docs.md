@@ -107,10 +107,11 @@ broker outage lúc tạo/cập nhật, khởi tạo lại worker, gửi lại ng
 mandatory return và quarantine có giới hạn.
 
 Test lỗi sau confirm dùng fault injection tại bước ghi trạng thái outbox, không tuyên bố đã
-kill/restart toàn bộ JVM hay hoàn tất acceptance packaged. Vinh còn phải chạy Gateway/Core/
-Notification trên revision cuối, xác minh consumer dedupe của welcome notification với event
-gửi trùng và nghiệm thu packaged workflow. Handoff vẫn mở đến khi các gate đó đạt.
+kill/restart toàn bộ Core JVM. Ngày 28/10, Core regression 395 tests và packaged workflow
+Gateway/Core/Support đã qua. Actual Core producer bytes được replay sau Support JVM restart:
+một welcome/processed marker, không thêm notification.sent hoặc dead letter. Email sender
+trong fixture là mock; không tuyên bố SMTP thật. Xem artifact/source hashes trong closeout.
 
 Tham chiếu: [hợp đồng](../../docs/plans/03-contracts.md),
 [độ tin cậy](../../docs/plans/04-data-reliability.md),
-[handoff audit](../../docs/handoffs/HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
+[H-02 closeout](../../docs/acceptance/backend-closeout-2026-10-27/README.md#h-02--đã-đóng).

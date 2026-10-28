@@ -6,7 +6,7 @@ Xem [registry hiện hành](../README.md) để biết phần cần xác minh; d
 
 ## Phân công hiện hành — 2026-10-18 sau merge
 
-PR #427 đã merge vào master (source audit 025ef39e); mô tả working patch chưa commit bên dưới là snapshot lúc chạy evidence. LOC-01–06 không còn giao lại Lộc để code. Vinh nhận **toàn bộ kiểm thử backend** và full G1/global integration theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Hai Gateway route gaps giao Hoàng Anh tại [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md); Billing controllers đã có. Lỗi production mới nếu kiểm thử phát hiện sẽ có task tái hiện riêng cho đúng owner.
+PR #427 đã merge vào master (source audit 025ef39e); mô tả working patch chưa commit bên dưới là snapshot lúc chạy evidence. LOC-01–06 không còn giao lại Lộc để code. Vinh nhận **toàn bộ kiểm thử backend** và full G1/global integration theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Hai Gateway route gaps giao Hoàng Anh tại [HA-CODE-01/02](../../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng); Billing controllers đã có. Lỗi production mới nếu kiểm thử phát hiện sẽ có task tái hiện riêng cho đúng owner.
 
 ## Nghiệm thu Vinh/Lộc — 2026-10-18
 

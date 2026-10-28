@@ -86,7 +86,7 @@ chưa là bằng chứng lỗi production. Không ký ca issuer-chain từ fixtu
 
 ## Lỗi mở và giới hạn nghiệm thu
 
-- [Gateway HA-CODE-01/02](../../handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md):
+- [Gateway HA-CODE-01/02](../backend-closeout-2026-10-27/README.md#h-04--đã-đóng):
   bốn ADMIN/CASHIER positive cases bị chặn; bảy deny controls pass. Test filter/mock exchange
   chưa chứng minh JWT/HTTP/actual Billing refund flow. Các bước này cần retest sau code owner.
 - [V-TEST-BUG-01](../../handoffs/history/2026-10-19-test-harness-findings.md): Report DB timestamp

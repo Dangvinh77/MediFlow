@@ -382,7 +382,7 @@ Lộc is now closing the real `FE-BILLING-04` gap: `RevenueReport.tsx` tests fir
 Scope: `frontend/src/features/billing/**` and `frontend/src/app/(dashboard)/billing/**`, per canonical
 ownership in `frontend/docs/services/billing.md`. Closes the `FE-BILLING-07` prescription-adjustment
 half, unblocked by the Gateway allowlist fix merged the night before (`HA-CODE-01/02`,
-`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+`docs/acceptance/backend-closeout-2026-10-27/README.md`).
 
 - New routes `/billing/prescription-adjustments` (lookup by prescription UUID) and
   `/billing/prescription-adjustments/[prescriptionId]` (detail + refund). Detail calls
@@ -1069,7 +1069,7 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
 - Refund, notification read-state/retry and other commands absent from live controllers are not
   represented as UI controls.
 - Billing's prescription-adjustment refund-due view shipped 2026-10-19 (`/billing/prescription-adjustments`)
-  once the Gateway allowlist rule landed (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+  once the Gateway allowlist rule landed (`docs/acceptance/backend-closeout-2026-10-27/README.md`).
   Its Surgery-cancellation counterpart stays unavailable because Surgery itself is deferred.
 
 ## Next tasks tại baseline 2026-10-09 (historical; ưu tiên hiện tại ở trên)

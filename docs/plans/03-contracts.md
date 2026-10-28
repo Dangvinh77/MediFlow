@@ -226,6 +226,10 @@ nhân viên hiện có. Bổ nhiệm/miễn nhiệm không tự thay `jobTitle`;
 mô hình nằm trong [Core docs](../../backend/core-service/docs.md).
 Giữ nguyên hợp đồng này khi đóng gói Core; kiểm tra consumer theo DTO/test nguồn master.
 
+Bổ nhiệm/đổi chức danh và ngừng khoa/tạo hoặc điều chuyển nhân viên phải serialize trên
+cùng authority khoa. Cả hai thứ tự transaction phải giữ bất biến: không có nhân viên
+active trong khoa inactive; kiểm tra trước rồi ghi ở hai transaction riêng là chưa đủ.
+
 Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.
 Pharmacy gọi Clinical prescription-context lookup với exact recordId, patient, prescriber,
 department và visit identity. Gateway OrganizationAuthClient phải đổi upstream discovery về Core.
@@ -256,6 +260,12 @@ không đổi operation ID sau timeout. Lookup hiện tại có thêm `sourceTyp
 
 ADMIN/CASHIER có thể đọc `GET /api/v1/billing/lab-adjustments/{testId}/refunds-due` và
 `GET /api/v1/billing/exam-adjustments/{appointmentId}/refunds-due` để đối soát nghĩa vụ còn lại.
+Prescription dùng `GET /api/v1/billing/prescription-adjustments/{id}/refunds-due`;
+ghi nhận hoàn tiền dùng `POST /api/v1/billing/transactions/{id}/refunds`, cùng quyền
+ADMIN/CASHIER và DTO Billing hiện hành. Gateway chỉ mở đúng method/path, không wildcard
+hay service-token human access. Retry giữ key/actor/input; race không vượt số tiền còn
+được hoàn, pending obligation không là completed refund. Signed actor/correlation phải
+được giữ tới Billing receipt.
 Cancellation fact không phải giao dịch trả tiền. Hợp đồng, snapshot lịch sử và quy trình replay
 nguồn nằm trong [Billing README](../../backend/billing-service/README.md).
 
@@ -263,6 +273,13 @@ Gateway refresh phải đọc current identity từ
 `GET /api/v1/org/accounts/{accountId}/identity`; endpoint chỉ cho SYSTEM subject `gateway`.
 Snapshot gồm `exists`, `active`, `accountId`, `role`, `staffId`, `departmentId`, `patientId`.
 Token thiếu expiration, tài khoản khóa hoặc lookup unavailable không cấp access token mới.
+
+Gateway và cả hai security chains Organization/Patient yêu cầu human access token có
+`exp` và còn hiệu lực, cùng đúng signature/type/subject/role. Riêng credential verifier
+`POST /api/v1/org/accounts/verify` chỉ nhận signed service token `role=SYSTEM`,
+`sub=gateway`, đúng TTL của service token, kiểm tại Gateway và Core. Header
+`X-Service-Id` không cấp quyền; token Pharmacy kể cả giả header Gateway bị từ chối.
+Quy tắc Gateway-only này không mở rộng sang các internal lookup có caller khác.
 
 `POST /api/v1/org/staff` hỗ trợ `Idempotency-Key` theo actor và exact request fields.
 First create trả 201, exact replay trả 200 cùng staff ID/Location và header

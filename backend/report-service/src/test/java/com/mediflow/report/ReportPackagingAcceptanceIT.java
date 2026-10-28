@@ -20,9 +20,16 @@ class ReportPackagingAcceptanceIT {
             try (var files = Files.list(Path.of("src/main/resources/db/migration"))) {
                 migrations = files.map(p -> p.getFileName().toString()).filter(n -> n.endsWith(".sql")).sorted().toList();
             }
-            // Version 28 is the latest version, not a count: released V3–V5 do not exist here.
-            assertThat(migrations).hasSize(25).contains("V1__init.sql", "V27__outpatient_read_coverage.sql",
-                    "V28__outpatient_coverage_acceptance_audit.sql");
+            assertThat(migrations).contains("V1__init.sql", "V27__outpatient_read_coverage.sql",
+                    "V28__outpatient_coverage_acceptance_audit.sql",
+                    "V29__durable_outpatient_coverage_acceptance_order.sql");
+            // Compare both packaged inventories to source; a new migration must not leave a stale count.
+            for (String prefix : java.util.List.of("db/migration/", "mediflow/report/db/migration/")) {
+                assertThat(jar.stream().map(java.util.jar.JarEntry::getName)
+                        .filter(name -> name.startsWith(prefix) && name.endsWith(".sql"))
+                        .map(name -> name.substring(prefix.length())).sorted().toList())
+                        .containsExactlyElementsOf(migrations);
+            }
             for (String migration : migrations) {
                 try (var bytes = jar.getInputStream(jar.getJarEntry("db/migration/" + migration))) {
                     assertThat(bytes.readAllBytes()).isEqualTo(Files.readAllBytes(

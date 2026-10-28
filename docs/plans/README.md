@@ -80,9 +80,14 @@ chưa commit. Tài liệu trong frontend/docs và backend/**/README.md không th
 
 [Phân công backend/frontend và đánh giá blocker 27/10](17-backend-ownership-and-blocker-audit-2026-10-27.md)
 thay phân công backend cũ: Vinh phụ trách toàn backend, FE của Lộc chuyển Vinh quản lý.
+[Lượt đóng backend](18-backend-closeout-2026-10-27.md) ghi kết quả chạy lại và lỗi
+receipt timestamp tìm được ở PostgreSQL; đọc kết quả từng profile, không cộng test lặp.
 
 [Plan 15 đã hoàn tất phần kỹ thuật](15-demo-readiness-closeout-2026-10-27.md),
 [bằng chứng](../acceptance/demo-readiness-2026-10-27/README.md),
 [runbook ba developer](16-three-developer-demo-acceptance-2026-10-27.md).
 Checklist baseline 18/72 và các checkpoint 11–14 giữ vai trò lịch sử; không cộng chúng
 thành backlog mới. ONB/WF/SC và handoff chưa có đủ nghiệm thu vẫn giữ trạng thái hiện hành.
+
+[Patient welcome replay 28/10](19-patient-welcome-replay-closeout-2026-10-28.md) đóng H-02
+sau actual Core producer / Support consumer restart; giữ riêng giới hạn SMTP và UX.
