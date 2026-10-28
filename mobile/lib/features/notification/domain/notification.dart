@@ -65,7 +65,7 @@ class ReadNotification {
   final NotificationRepository repository;
   Future<PatientNotification> call(String id) {
     if (!isNotificationUuid(id)) {
-      throw ArgumentError('Mã thông báo phải là UUID hợp lệ.');
+      throw ArgumentError('Thông báo không hợp lệ.');
     }
     return repository.byId(id);
   }

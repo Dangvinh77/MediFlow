@@ -92,7 +92,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Paracetamol 500 mg'), findsOneWidget);
-      expect(find.text('Tồn thấp'), findsOneWidget);
+      expect(find.text('Sắp hết thuốc'), findsOneWidget);
       await tester.tap(find.text('Xem chi tiết'));
       expect(opened, drugId);
       expect(repository.searches, hasLength(1));
@@ -221,7 +221,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xem chi tiết'));
       await tester.pumpAndSettle();
-      expect(find.text('Giá: 2500.25 VND'), findsOneWidget);
+      expect(find.text('Giá: 2500.25 đồng'), findsOneWidget);
       expect(find.text('Nhà sản xuất: Chưa cung cấp'), findsOneWidget);
       expect(repository.details, [drugId]);
       await tester.pageBack();
@@ -269,8 +269,8 @@ void main() {
     expect(find.text('Other drug'), findsOneWidget);
     expect(find.text('Stale drug'), findsNothing);
     expect(find.textContaining(otherDrugId), findsNothing);
-    await tester.ensureVisible(find.text('Mã tham chiếu'));
-    await tester.tap(find.text('Mã tham chiếu'));
+    await tester.ensureVisible(find.text('Thông tin tra cứu'));
+    await tester.tap(find.text('Thông tin tra cứu'));
     await tester.pumpAndSettle();
     expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
     expect(tester.takeException(), isNull);

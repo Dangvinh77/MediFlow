@@ -215,7 +215,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       await pickReference(tester, label: 'Bệnh nhân', name: 'Nguyen An');
-      expect(find.text('Nguồn chưa sẵn sàng'), findsOneWidget);
+      expect(
+        find.text('Chưa đọc được thông tin. Vui lòng làm mới và thử lại.'),
+        findsOneWidget,
+      );
       await tap(tester, 'Tạo đơn thuốc');
       expect(writer.intents, isEmpty);
       fail = false;

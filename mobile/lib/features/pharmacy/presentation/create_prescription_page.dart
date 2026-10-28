@@ -73,14 +73,32 @@ class _CreatePrescription extends StatefulWidget {
 }
 
 class _CreatePrescriptionState extends State<_CreatePrescription> {
+  static String _fieldMessage(String key) {
+    if (key == 'lines') return 'Vui lòng thêm ít nhất một thuốc vào đơn.';
+    if (key.startsWith('lines.') || key.startsWith('lines[')) {
+      return 'Vui lòng kiểm tra thuốc, số lượng và cách dùng ở dòng này.';
+    }
+    return switch (key) {
+      'patientId' => 'Vui lòng chọn bệnh nhân.',
+      'recordId' => 'Vui lòng chọn hồ sơ khám của bệnh nhân.',
+      'doctorId' => 'Vui lòng kiểm tra bác sĩ kê đơn.',
+      'departmentId' => 'Vui lòng kiểm tra khoa khám.',
+      'careEpisodeId' => 'Vui lòng kiểm tra lượt khám.',
+      'priceCode' => 'Vui lòng chọn nhóm giá thuốc.',
+      'sourceReference' => 'Vui lòng kiểm tra thông tin từ hồ sơ.',
+      'prescribedDate' => 'Vui lòng chọn ngày kê đơn hợp lệ.',
+      _ => 'Vui lòng kiểm tra thông tin này.',
+    };
+  }
+
   static const labels = {
-    'patientId': 'Mã bệnh nhân',
-    'departmentId': 'Mã khoa',
-    'doctorId': 'Mã bác sĩ nhân sự',
-    'recordId': 'Mã hồ sơ',
+    'patientId': 'Bệnh nhân',
+    'departmentId': 'Khoa khám',
+    'doctorId': 'Bác sĩ kê đơn',
+    'recordId': 'Hồ sơ khám',
     'careEpisodeId': 'Lượt khám',
-    'priceCode': 'Nhóm thu tiền thuốc',
-    'sourceReference': 'Nguồn hồ sơ',
+    'priceCode': 'Nhóm giá thuốc',
+    'sourceReference': 'Thông tin từ hồ sơ',
     'prescribedDate': 'Ngày kê đơn',
   };
   final fields = {for (final key in labels.keys) key: TextEditingController()};
@@ -324,7 +342,11 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
       }
       final command = _command();
       final validation = command.errors();
-      setState(() => errors = validation);
+      setState(
+        () => errors = {
+          for (final key in validation.keys) key: _fieldMessage(key),
+        },
+      );
       if (validation.isNotEmpty) {
         final key = labels.keys.where(validation.containsKey).firstOrNull;
         if (key != null) {
@@ -442,7 +464,9 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
               entry.key.replaceAllMapped(
                 RegExp(r'\[(\d+)\]'),
                 (match) => '.${match[1]}',
-              ): entry.value,
+              ): _fieldMessage(
+                entry.key,
+              ),
           };
         }
       });
@@ -530,7 +554,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
               child: ListTile(
                 title: Text(drug.name),
                 subtitle: Text(
-                  '${drug.unit} · Tồn: ${drug.stockQuantity} · Giá tham khảo: ${drug.price} VND',
+                  '${drug.unit} · Còn: ${drug.stockQuantity} · Giá tham khảo: ${drug.price} đồng',
                 ),
                 trailing: IconButton(
                   tooltip: 'Chọn ${drug.name}',
@@ -638,7 +662,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                       ),
                   ],
                   if (created != null)
-                    SelectableText('Đã tạo đơn: ${created!.id}'),
+                    const Text('Đã tạo đơn thuốc thành công.'),
                 ],
               ),
             ),

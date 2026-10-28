@@ -212,12 +212,24 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
         ),
         const Text('Đã liên kết lượt khám ngoại trú từ hồ sơ.'),
         if (value.priceCodes.length > 1)
+          const Text(
+            'Nếu chưa rõ nhóm giá, hãy hỏi bộ phận thu ngân trước khi chọn.',
+          ),
+        if (value.priceCodes.length > 1)
           DropdownButtonFormField<String>(
             initialValue: priceCode,
-            decoration: const InputDecoration(labelText: 'Nhóm thu tiền thuốc'),
-            items: value.priceCodes
-                .map((code) => DropdownMenuItem(value: code, child: Text(code)))
-                .toList(),
+            decoration: const InputDecoration(labelText: 'Nhóm giá thuốc'),
+            items: [
+              for (var index = 0; index < value.priceCodes.length; index++)
+                DropdownMenuItem(
+                  value: value.priceCodes[index],
+                  child: Text(
+                    value.priceCodes[index] == 'RX-DEFAULT'
+                        ? 'Giá thuốc thông thường'
+                        : 'Nhóm giá thuốc ${index + 1}',
+                  ),
+                ),
+            ],
             onChanged: widget.locked
                 ? null
                 : (code) {

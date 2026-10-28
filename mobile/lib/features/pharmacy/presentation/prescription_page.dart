@@ -416,8 +416,8 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                             Text(
                               dispenseReceipt!.status ==
                                       DispenseStatus.dispensed
-                                  ? 'Máy chủ xác nhận đã xuất thuốc.'
-                                  : 'Máy chủ ghi nhận xuất thất bại: ${dispenseReceipt!.failureReason}',
+                                  ? 'Đã xuất thuốc thành công.'
+                                  : 'Chưa xuất được thuốc. Vui lòng kiểm tra đơn và tồn kho.',
                             ),
                             if (dispenseReceipt!.dispensedAt != null)
                               Text(
@@ -472,7 +472,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                             ),
                             if (dispenseLocked)
                               const Text(
-                                'Thao tác đang khóa để đối soát kết quả; tải lại không chứng minh lệnh trước thất bại.',
+                                'Tạm dừng thao tác mới. Hãy kiểm tra lịch sử đơn hoặc liên hệ người phụ trách để xác nhận kết quả.',
                               ),
                           ],
                         ),
@@ -484,7 +484,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                       child: Semantics(
                         liveRegion: true,
                         child: Text(
-                          'Máy chủ đã hủy đơn thuốc. Reservation giải phóng: ${receipt!.releasedReservations}.',
+                          'Đã hủy đơn thuốc. Thuốc đã giữ cho đơn được trả lại kho.',
                         ),
                       ),
                     ),
@@ -500,7 +500,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                                 : PharmacyRequestError(cancelError!),
                             if (cancelLocked)
                               const Text(
-                                'Chưa gửi lại lệnh. Làm mới để kiểm tra kết quả; liên hệ đối soát nếu chưa rõ.',
+                                'Hãy làm mới đơn để kiểm tra kết quả. Nếu vẫn chưa rõ, vui lòng liên hệ người phụ trách.',
                               ),
                           ],
                         ),
@@ -582,7 +582,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
           Text('Ngày kê đơn: ${pharmacyDate(result.prescribedDate)}'),
           Text(
             'Trạng thái đơn: ${switch (result.status) {
-              PrescriptionStatus.active => 'Đang hoạt động',
+              PrescriptionStatus.active => 'Có thể sử dụng',
               PrescriptionStatus.fulfilled => 'Đã hoàn tất',
               PrescriptionStatus.cancelled => 'Đã hủy',
               PrescriptionStatus.expired => 'Hết hạn',
@@ -606,7 +606,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
             const Text(
               'Việc xuất thuốc sẽ được kiểm tra theo thanh toán và tồn kho hiện tại.',
             ),
-          Text('Tổng tiền: ${result.totalAmount} VND'),
+          Text('Tổng tiền: ${result.totalAmount} đồng'),
           for (final line in result.lines)
             Card(
               child: Padding(
@@ -616,9 +616,9 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                   children: [
                     Text(line.drugName ?? 'Thuốc chưa có tên hiển thị'),
                     Text('Số lượng: ${line.quantity}'),
-                    Text('Đơn giá: ${line.unitPrice} VND'),
+                    Text('Đơn giá: ${line.unitPrice} đồng'),
                     Text('Liều dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
-                    Text('Thành tiền: ${line.lineTotal} VND'),
+                    Text('Thành tiền: ${line.lineTotal} đồng'),
                   ],
                 ),
               ),
@@ -636,7 +636,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
             Text('Lý do hủy: ${result.cancellationReason}'),
           Text('Cập nhật: ${pharmacyDateTime(result.updatedAt)}'),
           ExpansionTile(
-            title: const Text('Mã tham chiếu'),
+            title: const Text('Thông tin tra cứu'),
             children: [
               SelectableText('Đơn thuốc: ${result.id}'),
               if (result.recordId != null)
@@ -681,7 +681,9 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                 labelText: 'Lý do hủy đơn',
                 border: const OutlineInputBorder(),
                 errorText: cancelError is ApiFailure
-                    ? (cancelError as ApiFailure).fields['reason']
+                    ? (cancelError as ApiFailure).fields.containsKey('reason')
+                          ? 'Vui lòng nhập lý do hủy đơn, tối đa 500 ký tự.'
+                          : null
                     : cancelError is String
                     ? cancelError as String
                     : null,

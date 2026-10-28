@@ -19,6 +19,7 @@ import '../features/notification/presentation/notification_page.dart';
 import '../features/report/presentation/report_page.dart';
 import 'app_shell.dart';
 import 'modules.dart';
+import 'support_page.dart';
 
 class _RouterRefresh extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -141,6 +142,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(path: '/billing', builder: (_, _) => const BillingPage()),
+          GoRoute(path: '/support', builder: (_, _) => const SupportPage()),
           GoRoute(
             path: '/notifications',
             builder: (_, _) => const NotificationPage(),

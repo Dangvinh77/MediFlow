@@ -15,7 +15,9 @@ class GatewayReportRepository implements ReportRepository {
   num _number(Map<String, dynamic> raw, String key) {
     final value = raw[key];
     if (value is! num || !value.isFinite) {
-      throw FormatException('Số liệu $key không hợp lệ.');
+      throw const FormatException(
+        'Chưa đọc được số liệu báo cáo. Vui lòng thử lại.',
+      );
     }
     return value;
   }
@@ -103,10 +105,23 @@ class GatewayReportRepository implements ReportRepository {
         ..._list(m, 'dailyDetails').map(_daily),
       ], departmentId: m['departmentId'] as String?);
     }
-    if (m['covered'] is! bool ||
+    final coverageId = m['coverageId'];
+    final sourceObservedAt = m['sourceObservedAt'];
+    final reconciledAt = m['reconciledAt'];
+    if (m['covered'] != true ||
+        coverageId is! String ||
+        !isReferenceId(coverageId) ||
+        sourceObservedAt is! String ||
+        DateTime.tryParse(sourceObservedAt) == null ||
+        reconciledAt is! String ||
+        DateTime.tryParse(reconciledAt) == null ||
         m['currency'] is! String ||
-        m['zoneId'] is! String) {
-      throw const FormatException('Độ phủ báo cáo không hợp lệ.');
+        (m['currency'] as String).isEmpty ||
+        m['zoneId'] is! String ||
+        (m['zoneId'] as String).isEmpty) {
+      throw const FormatException(
+        'Báo cáo ngoại trú chưa có đủ số liệu để hiển thị.',
+      );
     }
     return ReportData(
       'Báo cáo ngoại trú',
@@ -126,8 +141,16 @@ class GatewayReportRepository implements ReportRepository {
           ),
       ],
       note:
-          '${m['covered'] == true ? 'Đã đối soát' : 'Chưa đủ độ phủ đối soát'} · ${m['currency']} · ${m['zoneId']}\nĐối soát lúc: ${m['reconciledAt'] ?? 'Chưa có'}',
+          'Đã kiểm tra số liệu · Đơn vị: đồng\n'
+          'Cập nhật: ${_displayTime(reconciledAt)}',
       departmentId: m['departmentId'] as String?,
     );
+  }
+
+  String _displayTime(String raw) {
+    final local = DateTime.parse(raw).toLocal();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${two(local.hour)}:${two(local.minute)} '
+        '${two(local.day)}/${two(local.month)}/${local.year}';
   }
 }

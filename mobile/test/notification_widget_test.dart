@@ -155,12 +155,15 @@ void main() {
     expect(repository.sends.single.patientId, patientId);
     expect(repository.sends.single.channel, 'EMAIL');
     expect(repository.sends.single.recipientAddress, 'patient@example.test');
+    expect(find.textContaining('Kết quả gửi: Đã gửi'), findsOneWidget);
     expect(
-      find.textContaining('Mã thông báo: $notificationId'),
+      find.textContaining('Bạn có thể xem kết quả trong lịch sử thông báo.'),
       findsOneWidget,
     );
     final receipt = find.ancestor(
-      of: find.textContaining('Mã thông báo: $notificationId'),
+      of: find.textContaining(
+        'Bạn có thể xem kết quả trong lịch sử thông báo.',
+      ),
       matching: find.byType(Card),
     );
     expect(
@@ -231,7 +234,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('Kết quả gửi:'), findsNothing);
       expect(
-        find.textContaining('Mã thông báo: $notificationId'),
+        find.textContaining('Bạn có thể xem kết quả trong lịch sử thông báo.'),
         findsNothing,
       );
     },

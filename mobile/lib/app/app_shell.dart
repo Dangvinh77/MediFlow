@@ -12,9 +12,9 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider).asData?.value;
-    final accessible = modules
-        .where((m) => session != null && m.allows(session.role))
-        .toList();
+    final accessible = session == null
+        ? <AppModule>[]
+        : visibleMainModules(session.role);
     final selected = modules.where((m) => m.matches(location)).firstOrNull;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -101,7 +101,10 @@ class _Navigation extends StatelessWidget {
         ListTile(
           leading: Icon(module.icon),
           title: Text(module.title),
-          selected: module.matches(location),
+          selected:
+              module.matches(location) ||
+              (module.path == '/support' &&
+                  (location == '/reports' || location == '/notifications')),
           onTap: () {
             if (closeDrawer) Navigator.pop(context);
             context.go(module.path);
@@ -116,9 +119,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(sessionProvider).asData?.value?.role;
-    final available = modules
-        .where((m) => role != null && m.allows(role))
-        .toList();
+    final available = role == null ? <AppModule>[] : visibleMainModules(role);
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
