@@ -37,8 +37,6 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 | H-11 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway, Vinh/Clinical/Lab/Notification → consumer FE theo owner + Vinh verification | Đã triển khai command NURSE cấp PATIENT, outcome recovery, own results và in-app trước login; còn nghiệm thu ONB-A01–12 qua Gateway/UI | [Nurse onboarding](HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md); [ONB plan](../plans/07-outpatient-workflow-implementation.md); [ONB acceptance](../plans/06-acceptance-runbook.md) |
 | H-01 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Contract A.13 đã triển khai cho CASHIER/LAB_TECH directory và PATIENT care-labels; đối chiếu consumer/session reset web/mobile trước khi đóng | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
 | H-02 | NEEDS REVALIDATION | Hoàng Anh/Core → Vinh verification | Patient outbox, department-head/race: implementation có checkpoint 21/10; kiểm consumer/replay và packaged trên artifact cuối | [Core audit](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) |
-| H-03 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → Vinh verification | JWT expiration và caller credential verifier đã có bản sửa; đối chiếu merged revision, test và runtime; race chuyển H-02, không mở task thứ hai | [JWT/Core](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
-| H-04 | NEEDS REVALIDATION | Hoàng Anh/Gateway + Vinh/Billing → Vinh verification | Hai refund routes đã có code và policy proof; còn xác nhận đúng phạm vi HTTP/Billing/refund race, không giao viết lại routes | [Refund routes](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) |
 | H-05 | NEEDS REVALIDATION | Huy/Pharmacy/Report → Vinh verification | Mandatory exp có source fix và PG/Rabbit suite checkpoint; đối chiếu final artifact/Gateway/Support, không yêu cầu sửa parser lại từ báo cáo lỗi cũ | [JWT Pharmacy/Report](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
 | H-06 | NEEDS REVALIDATION | Huy/FE Pharmacy → Vinh review + Huy consumer | V1 dispense có implementation/browser proof; xác định còn thiếu expired/revoked/unavailable/V0 cases nào trên final candidate | [Dispense UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
 | H-07 | NEEDS REVALIDATION | Vinh/Notification → Vinh verification | Raw-byte identity có implementation/upgrade runbook; final packaged acceptance và historical raw-NULL policy cần đối chiếu evidence | [Byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md) |
@@ -47,6 +45,15 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 | H-10 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway, Vinh/Clinical/Billing/Lab/Notification, Huy/Pharmacy/Report → từng consumer | Đã có source revision 2 trên nhánh PR: lịch/giữ suất, quote/zero, tái khám, consumer và UI; còn acceptance packaged/API/UI và Report coverage trên commit cuối | [WF-01 cross-owner contracts](HANDOFF-WF01-OUTPATIENT-CONTRACT-GAPS-2026-10-26.md); [source audit](../plans/09-outpatient-source-lock-2026-10-26.md); [SC acceptance](../plans/10-scheduling-contract-acceptance.md) |
 
 ## Tách việc mới khỏi việc kiểm chứng baseline
+
+H-03 đã đóng tại [backend closeout](../acceptance/backend-closeout-2026-10-27/README.md#h-03--đã-đóng):
+Core/Gateway full regression, JWT/caller negative cases và packaged login/refund đã qua.
+Race khoa/nhân viên được đối chiếu PG và vẫn thuộc H-02; Patient consumer/restart không
+đóng từ bằng chứng JWT. Handoff/entry H-03 được xóa, lasting rules ở 03.
+
+H-04 đã đóng tại [backend closeout 27/10](../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng):
+Gateway explicit 22/22 và actual Gateway/Billing refund race/replay/roles đã qua.
+Handoff và active entry được xóa; lasting rules ở 03. UX vẫn theo runbook 16.
 
 H-11 checkpoint 27/10: [87 checks Gateway và UI kết quả](../acceptance/onboarding-2026-10-27/README.md)
 đã đạt theo phạm vi ghi trong biên bản. [Checkpoint tiếp theo: 107 + 99 observations](../acceptance/onboarding-recovery-2026-10-27/README.md)
@@ -89,3 +96,10 @@ Checkpoint bổ sung H-11: [broker replay, browser recovery và frontend](../acc
 gom phần thử trực tiếp còn lại. Các mô tả UI recovery/broker chưa kiểm ở checkpoint trước
 là lịch sử và đã được bổ sung bằng chứng; trạng thái NEEDS REVALIDATION vẫn giữ cho ký
 ma trận đầy đủ, quay lại ngày khác và quy trình xác minh danh tính recovery.
+
+Checkpoint backend tiếp theo: [closeout 27/10](../acceptance/backend-closeout-2026-10-27/README.md)
+ghi từng lượt reactor, PG race/crash/replay và packaged acceptance trên candidate mới.
+Lỗi precision của Clinical payment receipt và fixture đăng nhập packaged đã được sửa;
+không còn giao hai lỗi đó cho Huy/Hoàng Anh. Kết quả, giới hạn và hash phải đọc trong
+hồ sơ, không suy mọi tiêu chí consumer từ một suite qua. Các entry vẫn giữ tới khi đủ
+điều kiện lifecycle, đặc biệt Report dataset approval và lượt UX/quay lại ngày khác.

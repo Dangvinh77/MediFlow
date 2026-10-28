@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.UUID;
 
@@ -323,7 +324,8 @@ public class OutpatientRegistrationApplicationService {
         if (reservation.revision() != command.expectedReservationRevision()) {
             throw new DuplicateResourceException("REVISION_CONFLICT", "Reservation revision changed");
         }
-        Instant now = clock.instant();
+        // Match persisted timestamp precision so a replay returns the identical lease.
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         if (before.status() != OutpatientRegistrationStatus.AWAITING_PAYMENT
                 || reservation.status() != OutpatientReservationStatus.HELD
                 || !now.isBefore(reservation.expiresAt()) || sessionHasEnded(session, now)) {
@@ -366,7 +368,7 @@ public class OutpatientRegistrationApplicationService {
             throw new DuplicateResourceException("PAYMENT_OPERATION_CLOSED", "Payment lease is no longer current");
         }
 
-        Instant now = clock.instant();
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         OutpatientRegistration after;
         OutpatientRegistrationRepositoryPort.PaymentOperationReceipt terminal;
         Appointment appointment = lockAppointment(before.registrationId());

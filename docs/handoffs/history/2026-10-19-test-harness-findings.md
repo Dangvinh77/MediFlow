@@ -83,7 +83,7 @@ owned-context evidence đã lọc cho đúng owner. Hiện chưa ký actual issu
 - Pharmacy mặc định bỏ qua `actualV1IssuerGrantSurvivesPharmacyJvmRestartAndDuplicatesNeverAutoDispense`
   vì thiếu `mediflow.acceptance.billing-v1-published=true`. Chỉ opt-in disposable acceptance
   sau producer acceptance; không release HELD rows hoặc đổi cờ môi trường thật.
-- Gateway có phiếu riêng [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md).
+- Gateway có phiếu riêng [HA-CODE-01/02](../../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng).
   Bốn positive cases hiện đỏ, bảy negative controls pass. Vinh không sửa production Gateway.
 
 [Evidence đầy đủ](../../acceptance/backend-2026-10-18/README.md) ·

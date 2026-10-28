@@ -84,7 +84,10 @@ class SixServiceOutpatientAcceptanceIT {
                 POSTGRES.getUsername(), POSTGRES.getPassword()));
     }
 
+    private record PatientTokens(String own, String other, String manager, String refresh) { }
+
     private void exercisePrescription(String gateway, String admin, String doctor, String cashier, String nurse,
+            PatientTokens patientTokens,
             UUID patient, UUID prescriber, UUID department, UUID episode, UUID record, int supportPort, int pharmacyPort, int billingPort,
             String eureka, List<Process> processes) throws Exception {
         JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
@@ -149,12 +152,12 @@ class SixServiceOutpatientAcceptanceIT {
         Files.writeString(work.resolve("prescription-filled-original.json"), filledBytes);
         Files.writeString(work.resolve("prescription-filled-sha256.txt"), filledHash);
         UUID notice = store("notification").queryForObject("SELECT notification_id FROM notification WHERE source_id=? AND template_key='OUTPATIENT_PRESCRIPTION_FILLED'", UUID.class, rx);
-        String patientToken = scopedToken("PATIENT", "access", patient);
+        String patientToken = patientTokens.own();
         String noticePath = "/api/v1/notifications/" + notice;
         assertThat(request(gateway, "GET", noticePath, patientToken, null).statusCode()).isEqualTo(200);
-        assertThat(request(gateway, "GET", noticePath, scopedToken("PATIENT", "access", UUID.randomUUID()), null).statusCode()).isEqualTo(403);
-        assertThat(request(gateway, "GET", noticePath, scopedToken("MANAGER", "access", null), null).statusCode()).isEqualTo(403);
-        assertThat(request(gateway, "GET", noticePath, scopedToken("PATIENT", "refresh", patient), null).statusCode()).isEqualTo(401);
+        assertThat(request(gateway, "GET", noticePath, patientTokens.other(), null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", noticePath, patientTokens.manager(), null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", noticePath, patientTokens.refresh(), null).statusCode()).isEqualTo(401);
         assertThat(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drugId + "/fake/nested", admin, null).statusCode()).isEqualTo(403);
         JsonNode registry = JSON.readTree(HTTP.send(HttpRequest.newBuilder(URI.create(eureka + "apps"))
                 .header("Accept", "application/json").GET().build(), HttpResponse.BodyHandlers.ofString()).body());
@@ -285,6 +288,13 @@ class SixServiceOutpatientAcceptanceIT {
             processes.add(start("core", coreJar, corePort, Map.ofEntries(
                     Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_URL", organizationUrl),
+                    Map.entry("SPRING_PROFILES_ACTIVE", "local"),
+                    Map.entry("MEDIFLOW_DEMO_SEED_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED", "true"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER", "999999999901"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME", "Isolated Acceptance Admin"),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_USER", POSTGRES.getUsername()),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_PASSWORD", POSTGRES.getPassword()),
                     Map.entry("MEDIFLOW_PATIENT_DB_URL", patientUrl),
@@ -382,7 +392,7 @@ class SixServiceOutpatientAcceptanceIT {
             awaitRegistered(eurekaPort, "GATEWAY", "gateway");
 
             String gateway = "http://127.0.0.1:" + gatewayPort;
-            String setupAdmin = setupAdminToken();
+            String setupAdmin = login(gateway, "acceptance.admin");
             String unique = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             UUID departmentId = UUID.fromString(data(post(gateway, "/api/v1/org/departments", setupAdmin,
                     "departmentName", "Acceptance Clinical " + unique,
@@ -404,6 +414,22 @@ class SixServiceOutpatientAcceptanceIT {
                     "soCmnd", digits(12), "diaChi", "Acceptance address",
                     "soDienThoai", digits(10), "email", "patient-" + unique + "@example.test",
                     "bhytSo", null)).path("maBenhNhan").asText());
+
+            UUID otherPatientId = UUID.fromString(data(post(gateway, "/api/v1/patients", setupAdmin,
+                    "hoTen", "Other Acceptance Patient " + unique,
+                    "ngaySinh", "1989-01-02", "gioiTinh", "F",
+                    "soCmnd", digits(12), "diaChi", "Acceptance address",
+                    "soDienThoai", digits(10), "email", "other-patient-" + unique + "@example.test",
+                    "bhytSo", null)).path("maBenhNhan").asText());
+            createPatientAccount(gateway, setupAdmin, "patient-" + unique, patientId);
+            createPatientAccount(gateway, setupAdmin, "other-patient-" + unique, otherPatientId);
+            UUID managerId = createStaff(gateway, setupAdmin, departmentId, unique, "ADMINISTRATIVE", "manager");
+            createAccount(gateway, setupAdmin, "manager-" + unique, "MANAGER", managerId);
+            JsonNode patientSession = loginSession(gateway, "patient-" + unique);
+            var patientTokens = new PatientTokens(patientSession.path("accessToken").asText(),
+                    login(gateway, "other-patient-" + unique), login(gateway, "manager-" + unique),
+                    patientSession.path("refreshToken").asText());
+            assertThat(patientTokens.refresh()).isNotBlank();
 
             String nurseToken = login(gateway, "nurse-" + unique);
             String doctorToken = login(gateway, "doctor-" + unique);
@@ -504,9 +530,9 @@ class SixServiceOutpatientAcceptanceIT {
                         appointmentId, doctorToken, supportPort, eurekaUrl, processes);
                 return;
             }
-            exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken,
+            exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken, patientTokens,
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
-            exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken,
+            exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken, patientTokens.own(),
                     patientId, doctorId, departmentId, appointmentId, recordId);
             if (reportCalendarAcceptance()) {
                 exerciseAcceptedReport(gateway, setupAdmin, doctorToken, departmentId, unique);
@@ -736,7 +762,7 @@ class SixServiceOutpatientAcceptanceIT {
         } finally { pool.shutdownNow(); }
     }
 
-    private void exerciseRefund(String gateway, String admin, String doctor, String cashier,
+    private void exerciseRefund(String gateway, String admin, String doctor, String cashier, String patientToken,
             UUID patient, UUID prescriber, UUID department, UUID episode, UUID record) throws Exception {
         JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
                 "drugName", "Refund acceptance drug", "unit", "tablet", "price", 10000,
@@ -771,7 +797,7 @@ class SixServiceOutpatientAcceptanceIT {
         String refundPath = "/api/v1/billing/transactions/" + original + "/refunds";
         String firstBody = refundBody(UUID.randomUUID().toString(), 20000);
         String secondBody = refundBody(UUID.randomUUID().toString(), 20000);
-        for (String denied : List.of(doctor, scopedToken("PATIENT", "access", patient),
+        for (String denied : List.of(doctor, patientToken,
                 scopedToken("SYSTEM", "service", null))) {
             assertThat(request(gateway, "GET", duePath, denied, null).statusCode()).isEqualTo(403);
             assertThat(request(gateway, "POST", refundPath, denied, firstBody).statusCode()).isEqualTo(403);
@@ -1100,23 +1126,22 @@ class SixServiceOutpatientAcceptanceIT {
     }
 
     private String login(String gateway, String username) throws Exception {
+        return loginSession(gateway, username).path("accessToken").asText();
+    }
+
+    private void createPatientAccount(String gateway, String adminToken, String username, UUID patientId) throws Exception {
+        post(gateway, "/api/v1/org/accounts", adminToken,
+                "username", username, "password", PASSWORD, "staffId", null,
+                "patientId", patientId.toString(), "role", "PATIENT");
+    }
+
+    private JsonNode loginSession(String gateway, String username) throws Exception {
         HttpResponse<String> response = request(gateway, "POST", "/api/v1/auth/login", null,
                 JSON.writeValueAsString(Map.of("username", username, "password", PASSWORD)));
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        return JSON.readTree(response.body()).path("accessToken").asText();
-    }
-
-    private String setupAdminToken() {
-        Instant now = Instant.now();
-        return Jwts.builder()
-                .subject(UUID.randomUUID().toString())
-                .claim(JwtClaims.ROLE, "ADMIN")
-                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
-                .claim(JwtClaims.CORRELATION_ID, UUID.randomUUID().toString())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(600)))
-                .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8)))
-                .compact();
+        JsonNode session = JSON.readTree(response.body());
+        assertThat(session.path("accessToken").asText()).isNotBlank();
+        return session;
     }
 
     private JsonNode post(String base, String path, String token, Object... fields) throws Exception {

@@ -69,7 +69,7 @@ concurrent assignment/title change so both write paths preserve the invariant.
 ## HA-AUDIT-03 — Department deactivation races with staff creation (P2, now reproduced)
 
 This updates the previously unproven item in
-[the 19 October handoff](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md); it is one defect, not two tasks.
+[the 19 October handoff](../acceptance/backend-closeout-2026-10-27/README.md#h-03--đã-đóng); it is one defect, not two tasks.
 `UpdateDepartmentService` checks that no active staff exists, while `CreateStaffService` separately
 checks that the department is active. Neither serializes these decisions around the department.
 

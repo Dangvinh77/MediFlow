@@ -106,6 +106,13 @@ class PackagedOutpatientLabAcceptanceIT {
             processes.add(start("core", coreJar, corePort, Map.ofEntries(
                     Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_URL", databaseUrl("mediflow_organization")),
+                    Map.entry("SPRING_PROFILES_ACTIVE", "local"),
+                    Map.entry("MEDIFLOW_DEMO_SEED_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED", "true"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER", "999999999901"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME", "Isolated Acceptance Admin"),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_USER", POSTGRES.getUsername()),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_PASSWORD", POSTGRES.getPassword()),
                     Map.entry("MEDIFLOW_PATIENT_DB_URL", databaseUrl("mediflow_patient")),
@@ -201,7 +208,7 @@ class PackagedOutpatientLabAcceptanceIT {
                     "--eureka.client.registry-fetch-interval-seconds=1"));
             awaitHealthy(gatewayPort, "gateway");
 
-            String setupAdmin = setupAdminToken();
+            String setupAdmin = login(gatewayUrl, "acceptance.admin");
             awaitGatewayCoreReady(gatewayUrl, setupAdmin);
             String unique = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             UUID departmentId = UUID.fromString(data(post(gatewayUrl, "/api/v1/org/departments", setupAdmin,
@@ -647,19 +654,6 @@ class PackagedOutpatientLabAcceptanceIT {
         String token = JSON.readTree(response.body()).path("accessToken").asText();
         assertThat(token).isNotBlank();
         return token;
-    }
-
-    private String setupAdminToken() {
-        Instant now = Instant.now();
-        return Jwts.builder()
-                .subject(UUID.randomUUID().toString())
-                .claim(JwtClaims.ROLE, "ADMIN")
-                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
-                .claim(JwtClaims.CORRELATION_ID, UUID.randomUUID().toString())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(600)))
-                .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8)))
-                .compact();
     }
 
     private JsonNode post(String base, String path, String token, Object... fields) throws Exception {

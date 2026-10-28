@@ -1,0 +1,49 @@
+{
+  "scenario": "ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE",
+  "systemAndJwtClocksUnchanged": true,
+  "approval": {
+    "requestId": "25e0d64b-92fb-41ed-bb79-7d4f481f27c4",
+    "fromDate": "2026-01-01",
+    "toDate": "2026-12-31",
+    "departmentId": "8b126a8d-916b-4b9f-926b-d5fc6e827e19",
+    "zoneId": "Asia/Bangkok",
+    "currency": "VND",
+    "sources": {
+      "BILLING_CASH": {
+        "reference": "ISOLATED_CALENDAR_TEST:428584d4cf99/BILLING_CASH.json",
+        "exportSha256": "cac7f096c600de5ebb07fb90c2b09fa08ab5bbd65b589f47469e4e1d9180fb82",
+        "rowCount": 3,
+        "localFingerprint": "dedefbf2e8b71913c86ec6fc2c43ecea4b6501e23acd8aef79022954cc6021e2"
+      },
+      "BILLING_REFUND": {
+        "reference": "ISOLATED_CALENDAR_TEST:428584d4cf99/BILLING_REFUND.json",
+        "exportSha256": "9ed42fac90e2f7f66c8845abec3ced65928b72ba0e958600894ba7e33ae09862",
+        "rowCount": 2,
+        "localFingerprint": "b6ab12769ea5bc3c4c5de4ecc2e06f1fed8d35a3f8ea5e24d3290ee4d1eccc82"
+      },
+      "CLINICAL": {
+        "reference": "ISOLATED_CALENDAR_TEST:428584d4cf99/CLINICAL.json",
+        "exportSha256": "fadb42212eb0fae6528c33bedaf68b9bef079c243e4118397d90d1972f93f0b6",
+        "rowCount": 0,
+        "localFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "LAB": {
+        "reference": "ISOLATED_CALENDAR_TEST:428584d4cf99/LAB.json",
+        "exportSha256": "314963d5aadc6ec829617d9187b23952665a9333fa7e072866d1f8bd03266edf",
+        "rowCount": 0,
+        "localFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "PHARMACY": {
+        "reference": "ISOLATED_CALENDAR_TEST:428584d4cf99/PHARMACY.json",
+        "exportSha256": "90993c7a88aeb3cfbf19dc049fd790c896444f8aeb56e9fa240cae482a72c715",
+        "rowCount": 2,
+        "localFingerprint": "acf403a20f032c3a51c160eb3dd372a9e02152cd924fd30a08a652deafec1448"
+      }
+    },
+    "sourceObservedAt": 1798822800.0,
+    "reconciledAt": 1798822800.0,
+    "acceptanceReference": "ISOLATED_CALENDAR_TEST:428584d4cf99:sealed-public-receipts",
+    "expectedFingerprint": "0ce6407a1f35fcb5083d14a8cb5fa1e92a4c81bff030636b6401c243f2d73f18"
+  },
+  "evidenceSha256": "189194ec69ae0f66868873a970458ddf6e7b0f55105cf2e8c0a4a8990ab846fc"
+}

@@ -6,7 +6,7 @@ Xem [registry hiện hành](../README.md) để biết phần cần xác minh; d
 
 ## Phân công hiện hành — 2026-10-18
 
-PR #427 đã merge vào master (source audit 025ef39e). Vinh nhận **toàn bộ kiểm thử backend**, gồm Core/Gateway/Pharmacy/Report/Support và các module Vinh/Lộc, theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Full G1/global regression/integration còn cần chạy chuyển Vinh, không giao lại dev khác. Code Gateway còn thiếu giao Hoàng Anh qua [HA-CODE-01/02](../HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md). Các bảng owner queue phía dưới là lịch sử trước nghiệm thu, không là task implementation mới.
+PR #427 đã merge vào master (source audit 025ef39e). Vinh nhận **toàn bộ kiểm thử backend**, gồm Core/Gateway/Pharmacy/Report/Support và các module Vinh/Lộc, theo [queue V-TEST-01–06](../HANDOFF-VINH-BACKEND-VERIFICATION.md). Full G1/global regression/integration còn cần chạy chuyển Vinh, không giao lại dev khác. Code Gateway còn thiếu giao Hoàng Anh qua [HA-CODE-01/02](../../acceptance/backend-closeout-2026-10-27/README.md#h-04--đã-đóng). Các bảng owner queue phía dưới là lịch sử trước nghiệm thu, không là task implementation mới.
 
 ## Nghiệm thu owned backend — 2026-10-18
 

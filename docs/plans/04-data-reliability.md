@@ -101,7 +101,14 @@ trước khi giải phóng. `reconcileAfter` chỉ đánh thức đối soát. T
 không chứng minh chưa thu; giữ khóa, retry và cảnh báo. `close-if-unpaid` và cash commit
 khóa cùng operation trong Billing để chỉ một kết quả thắng. Không kéo dài transaction DB
 qua lời gọi mạng; outbox và worker cursor phải sống qua restart. Xem
-[SC-08–14 và sơ đồ](10-scheduling-contract-acceptance.md) để nghiệm thu; chưa có runtime evidence.
+[SC-08–14 và sơ đồ](10-scheduling-contract-acceptance.md) để nghiệm thu. Bằng chứng
+[backend 27/10](../acceptance/backend-closeout-2026-10-27/README.md) phân biệt PG/process
+recovery, packaged network và phần UX/dataset còn cần nghiệm thu trực tiếp.
+
+Clinical chuẩn hóa thời điểm tạo payment lease và resolve về microsecond trước khi lưu
+và trả response, cùng độ chính xác PostgreSQL. Acquire/terminal replay phải trả cùng
+receipt, kể cả khi clock Java có nanosecond; không so sánh hai receipt khác độ chính xác
+rồi coi đó là operation mới hoặc lấy thêm suất.
 
 Giữ correlation qua Gateway/REST/event; log eventId/sourceId/operationId và status không PII/token.
 Có health và metrics được bảo vệ. Sau restart, pending outbox/inbox/job/receipt được xử lý tiếp,

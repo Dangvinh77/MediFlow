@@ -5,9 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mediflow.common.security.JwtClaims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -17,14 +14,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,6 +93,13 @@ class ClinicalExamPackagedAcceptanceIT {
             processes.add(start("core", coreJar, corePort, Map.ofEntries(
                     Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_URL", organizationUrl),
+                    Map.entry("SPRING_PROFILES_ACTIVE", "local"),
+                    Map.entry("MEDIFLOW_DEMO_SEED_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED", "true"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER", "999999999901"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME", "Isolated Acceptance Admin"),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_USER", POSTGRES.getUsername()),
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_PASSWORD", POSTGRES.getPassword()),
                     Map.entry("MEDIFLOW_PATIENT_DB_URL", patientUrl),
@@ -153,6 +154,7 @@ class ClinicalExamPackagedAcceptanceIT {
                     "--spring.config.additional-location=" + catalog.toUri(),
                     "--mediflow.features.outpatient-mvp.enabled=true",
                     "--mediflow.billing.ledger.enabled=true",
+                    "--mediflow.billing.clearance-lookup.enabled=true",
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
                     "--mediflow.billing.outpatient-publication.enabled=true",
@@ -163,13 +165,12 @@ class ClinicalExamPackagedAcceptanceIT {
 
             processes.add(start("gateway", gatewayJar, gatewayPort, Map.of(
                     "MEDIFLOW_JWT_SECRET", JWT_SECRET),
-                    "--eureka.client.service-url.defaultZone=" + eurekaUrl,
-                    "--eureka.client.registry-fetch-interval-seconds=1"));
+                    "--eureka.client.service-url.defaultZone=" + eurekaUrl));
             awaitHealthy(gatewayPort, "gateway");
             awaitRegistered(eurekaPort, "GATEWAY", "gateway");
 
             String gateway = "http://127.0.0.1:" + gatewayPort;
-            String setupAdmin = setupAdminToken();
+            String setupAdmin = login(gateway, "acceptance.admin");
             String unique = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             UUID departmentId = UUID.fromString(data(post(gateway, "/api/v1/org/departments", setupAdmin,
                     "departmentName", "Acceptance Clinical " + unique,
@@ -381,7 +382,8 @@ class ClinicalExamPackagedAcceptanceIT {
                 "departmentId", departmentId.toString(), "jobTitle", jobTitle,
                 "specialization", jobTitle.equals("DOCTOR") ? "General medicine" : null,
                 "licenseNumber", jobTitle.equals("DOCTOR") ? "LIC-" + label + "-" + unique : null,
-                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test"));
+                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test",
+                "identityNumber", digits(12)));
         return UUID.fromString(staff.path("staffId").asText());
     }
 
@@ -397,19 +399,6 @@ class ClinicalExamPackagedAcceptanceIT {
                 JSON.writeValueAsString(Map.of("username", username, "password", PASSWORD)));
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         return JSON.readTree(response.body()).path("accessToken").asText();
-    }
-
-    private String setupAdminToken() {
-        Instant now = Instant.now();
-        return Jwts.builder()
-                .subject(UUID.randomUUID().toString())
-                .claim(JwtClaims.ROLE, "ADMIN")
-                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
-                .claim(JwtClaims.CORRELATION_ID, UUID.randomUUID().toString())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(600)))
-                .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8)))
-                .compact();
     }
 
     private JsonNode post(String base, String path, String token, Object... fields) throws Exception {
@@ -521,7 +510,8 @@ class ClinicalExamPackagedAcceptanceIT {
                 "--eureka.instance.hostname=127.0.0.1",
                 "--eureka.instance.prefer-ip-address=true",
                 "--eureka.instance.ip-address=127.0.0.1",
-                "--spring.main.banner-mode=off", "--eureka.client.initial-instance-info-replication-interval-seconds=1"));
+                "--spring.main.banner-mode=off", "--eureka.client.registry-fetch-interval-seconds=1",
+                "--eureka.client.initial-instance-info-replication-interval-seconds=1"));
         command.addAll(List.of(arguments));
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true)
                 .redirectOutput(processLog(name).toFile());

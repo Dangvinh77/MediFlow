@@ -101,7 +101,8 @@ class OutpatientClinicalSourceAcceptanceIT {
         String departmentId = department.path("departmentId").asText();
         var doctor = request(CORE, 8089, "POST", "/api/v1/org/staff", null, Map.of(
                 "fullName", "Report source doctor", "departmentId", departmentId, "jobTitle", "DOCTOR",
-                "specialization", "Acceptance", "licenseNumber", "REPORT-SOURCE-TEST"), 201);
+                "specialization", "Acceptance", "licenseNumber", "REPORT-SOURCE-TEST",
+                "identityNumber", "999999999903"), 201);
         String doctorId = doctor.path("staffId").asText();
         var patient = request(CORE, 8089, "POST", "/api/v1/patients", null, Map.of(
                 "hoTen", "Report source patient", "ngaySinh", "1990-01-01", "gioiTinh", "M",

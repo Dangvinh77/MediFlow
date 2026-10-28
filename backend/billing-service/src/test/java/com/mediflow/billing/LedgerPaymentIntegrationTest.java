@@ -28,6 +28,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -83,6 +86,7 @@ class LedgerPaymentIntegrationTest {
     @org.springframework.boot.test.mock.mockito.MockBean
     com.mediflow.billing.infrastructure.client.ClinicalPaymentLockHttpAdapter clinicalPayment;
     private UUID account, patient, department, request, invoice, episode, source, actor, reservation;
+    @TempDir(cleanup = org.junit.jupiter.api.io.CleanupMode.ON_SUCCESS) java.nio.file.Path processDirectory;
 
     @BeforeEach void setup() {
         org.mockito.Mockito.when(clock.instant()).thenAnswer(ignored -> Instant.now());
@@ -282,6 +286,117 @@ class LedgerPaymentIntegrationTest {
             release.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"BEFORE_ACQUIRE", "AFTER_COMMIT", "CLOSED_BEFORE_RESTART"})
+    void killedPaymentProcess_recoversDurableOutcomeWithoutDuplicateCash(String phase) throws Exception {
+        seedScheduledRegistration();
+        var barrier = processDirectory.resolve("crash-barrier.txt");
+        Process child = paymentProcess("CLOSED_BEFORE_RESTART".equals(phase) ? "BEFORE_ACQUIRE" : phase,
+                barrier, processDirectory.resolve("before-crash.log"));
+        UUID operationId;
+        try {
+            try {
+                org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(120)).until(() ->
+                        java.nio.file.Files.exists(barrier) || !child.isAlive());
+            } catch (org.awaitility.core.ConditionTimeoutException timeout) {
+                throw new AssertionError(processLog(processDirectory.resolve("before-crash.log")), timeout);
+            }
+            assertThat(java.nio.file.Files.exists(barrier))
+                    .withFailMessage("Child exited before crash barrier:\n%s",
+                            processLog(processDirectory.resolve("before-crash.log"))).isTrue();
+            String receipt = java.nio.file.Files.readString(barrier);
+            operationId = UUID.fromString(receipt.split(":")[0]);
+            assertThat(scheduledPayments.findOperation(operationId).status().name())
+                    .isEqualTo("AFTER_COMMIT".equals(phase) ? "COMPLETED" : "PREPARING");
+            assertThat(count("PAYMENT_TRANSACTION")).isEqualTo("AFTER_COMMIT".equals(phase) ? 1 : 0);
+        } finally {
+            child.destroyForcibly();
+            assertThat(child.waitFor(20, TimeUnit.SECONDS)).isTrue();
+        }
+        if ("CLOSED_BEFORE_RESTART".equals(phase)) {
+            scheduledPayments.closeIfUnpaid(operationId, new ScheduledPaymentTransactionsPort.ClosePaymentCommand(
+                    source, reservation, 41, "RESERVATION_RECONCILIATION"), Instant.now());
+        }
+        var delivered = processDirectory.resolve("recovered-receipt.txt");
+        Process restarted = paymentProcess("RECOVER", delivered, processDirectory.resolve("after-restart.log"));
+        try {
+            assertThat(restarted.waitFor(120, TimeUnit.SECONDS))
+                    .withFailMessage("Recovery JVM timed out:\n%s", processLog(processDirectory.resolve("after-restart.log"))).isTrue();
+            assertThat(restarted.exitValue()).withFailMessage("Recovery JVM failed:\n%s",
+                    processLog(processDirectory.resolve("after-restart.log"))).isZero();
+        } finally {
+            if (restarted.isAlive()) {
+                restarted.destroyForcibly();
+                assertThat(restarted.waitFor(20, TimeUnit.SECONDS)).isTrue();
+            }
+        }
+        var recovered = scheduledPayments.findOperation(operationId);
+        if ("CLOSED_BEFORE_RESTART".equals(phase)) {
+            assertThat(recovered.status().name()).isEqualTo("CLOSED_NOT_PAID");
+            assertThat(count("PAYMENT_TRANSACTION")).isZero();
+            assertThat(count("FINANCIAL_CLEARANCE")).isZero();
+            assertThat(java.nio.file.Files.exists(delivered)).isFalse();
+        } else {
+            assertThat(recovered.status().name()).isEqualTo("COMPLETED");
+            assertThat(recovered.resolutionAppliedAt()).isNotNull();
+            assertThat(count("PAYMENT_TRANSACTION")).isOne();
+            assertThat(count("FINANCIAL_CLEARANCE")).isOne();
+            assertThat(java.nio.file.Files.readString(delivered)).isEqualTo(operationId + ":"
+                    + recovered.transactionId() + ":" + recovered.clearanceId());
+            if ("AFTER_COMMIT".equals(phase)) {
+                assertThat(java.nio.file.Files.readString(barrier)).isEqualTo(java.nio.file.Files.readString(delivered));
+            }
+            scheduledPayments.complete(operationId, "process-crash-replay", Instant.now());
+            assertThat(count("PAYMENT_TRANSACTION")).isOne();
+        }
+        int expectedEffects = "CLOSED_BEFORE_RESTART".equals(phase) ? 0 : 1;
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM BILLING_EVENT_OUTBOX "
+                + "WHERE routing_key='outpatient.financial.eligibility.granted'", Integer.class))
+                .isEqualTo(expectedEffects);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM BILLING_EVENT_OUTBOX "
+                + "WHERE routing_key='payment.completed'", Integer.class)).isEqualTo(expectedEffects);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM scheduled_payment_operation", Integer.class)).isOne();
+    }
+
+    private String processLog(java.nio.file.Path log) throws java.io.IOException {
+        var lines = java.nio.file.Files.readAllLines(log);
+        return String.join("\n", lines.subList(Math.max(0, lines.size() - 40), lines.size()));
+    }
+
+    private Process paymentProcess(String phase, java.nio.file.Path receipt, java.nio.file.Path log) throws Exception {
+        var builder = new ProcessBuilder(java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-Xmx256m", "-cp", System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")),
+                "com.mediflow.acceptance.fixture.ScheduledPaymentRecoveryProcess", phase, receipt.toString(),
+                request.toString(), reservation.toString(), actor.toString());
+        builder.environment().putAll(java.util.Map.of(
+                "TEST_DB_URL", PG.getJdbcUrl(), "TEST_DB_USER", PG.getUsername(), "TEST_DB_PASSWORD", PG.getPassword(),
+                "TEST_RABBIT_HOST", RABBIT.getHost(), "TEST_RABBIT_PORT", RABBIT.getAmqpPort().toString(),
+                "TEST_RABBIT_USER", RABBIT.getAdminUsername(), "TEST_RABBIT_PASSWORD", RABBIT.getAdminPassword()));
+        return builder.redirectErrorStream(true).redirectOutput(log.toFile()).start();
+    }
+
+    @Test void persistedLeaseAllowsOneCashCommitAfterOriginalRequestExpiry() {
+        seedScheduledRegistration();
+        Instant acquiredAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var command = new ScheduledPaymentCommand(reservation, 5, new BigDecimal("100"), "VND", PaymentMethod.CASH, null);
+        var operation = scheduledPayments.prepare(request, command, actor, "scheduled-after-expiry",
+                "d".repeat(64), "scheduled-after-expiry-trace", acquiredAt);
+        scheduledPayments.recordLease(operation.paymentOperationId(), new ScheduledPaymentLease(operation.paymentOperationId(),
+                reservation, 6, 51, acquiredAt, acquiredAt.plusSeconds(120)), acquiredAt);
+        Instant expiresAt = jdbc.queryForObject("SELECT expires_at FROM PAYMENT_REQUEST WHERE payment_request_id=?",
+                java.sql.Timestamp.class, request).toInstant();
+        Instant committedAt = expiresAt.plusSeconds(1);
+        var completed = scheduledPayments.complete(operation.paymentOperationId(), "scheduled-after-expiry-trace", committedAt);
+        assertThat(completed.status().name()).isEqualTo("COMPLETED");
+        assertThat(completed.completedAt()).isEqualTo(committedAt);
+        var replay = scheduledPayments.complete(operation.paymentOperationId(), "scheduled-after-expiry-replay", committedAt.plusSeconds(10));
+        assertThat(replay.transactionId()).isEqualTo(completed.transactionId());
+        assertThat(replay.clearanceId()).isEqualTo(completed.clearanceId());
+        assertThat(replay.completedAt()).isEqualTo(committedAt);
+        assertThat(count("PAYMENT_TRANSACTION")).isOne();
+        assertThat(count("FINANCIAL_CLEARANCE")).isOne();
     }
 
     @Test void closeRacingCashCommitProducesOneDurableTerminalOutcome() throws Exception {
