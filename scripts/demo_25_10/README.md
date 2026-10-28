@@ -1,5 +1,49 @@
 # MediFlow demo 25/10/2026
 
+## Khởi động nhanh trên Windows — 28/10/2026
+
+Tại thư mục source chính, mở Docker Desktop và chạy lần lượt:
+
+1. `start-backend.bat`: kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
+   chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch và lượt nguồn tái khám qua API.
+   Chờ `READY` và giữ cửa sổ mở; đọc dòng `UI DATA` / `FOLLOW-UP SOURCE READY` hoặc `PARTIAL`.
+2. `start-frontend.bat`: cài dependencies theo lockfile và chạy web tại
+   `http://127.0.0.1:3000`, nối Gateway `http://127.0.0.1:28080`, bật các UI gates demo.
+3. `clean-docker.bat`: yêu cầu demo backend dừng qua stop file, xóa container MediFlow
+   và các image/tag dự án nhận diện được; image còn được container dự án khác dùng
+   được giữ lại. Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
+
+Chạy `clean-docker.bat -Preview` để xem trước mà không thay đổi Docker hoặc tạo stop file.
+Các file dùng đường dẫn tương đối từ chính file `.bat`, không cần đặt working directory.
+Lỗi trả exit code 1 và giữ cửa sổ để đọc. Có thể đặt `MEDIFLOW_NO_PAUSE=1` khi tự động hóa.
+
+Yêu cầu Java 21, Maven, Python 3, Node/pnpm và Docker Compose v2 trên PATH.
+Backend dùng lại runner hiện có: dữ liệu demo là tạm thời, tự dừng/dọn sau hai giờ;
+lần chạy mới nạp lại snapshot. Launcher bổ sung lịch hôm nay/ngày mai bằng
+`prepare_ui_demo.py`, không sửa snapshot SQL. Ngoài giờ chỉ chuẩn bị lịch chưa kết thúc;
+lượt nguồn tái khám cần chạy trong 07:00–16:45 giờ Việt Nam. Chạy demo trọn luồng
+trong 07:00–17:00, nên bắt đầu trước 16:00.
+
+**Hướng dẫn click từng bước, đủ ba trường hợp và đến nhận thuốc:**
+[DEMO_UI_TUNG_BUOC.md](DEMO_UI_TUNG_BUOC.md). Đọc `DEMO-DATA.local.md` tại đường dẫn
+`UI DATA` của lần chạy để biết đúng tên khoa, CCCD bệnh nhân và ngày có lịch.
+
+Nếu đã có stack `--scheduling --keep` đang chạy, chuẩn bị dữ liệu bằng:
+
+```powershell
+python scripts/demo_25_10/prepare_ui_demo.py
+```
+
+Lượt nền của `demo.patient2` có khoản thu thật trong DB demo để làm nguồn tái khám;
+ba lượt bạn sẽ thao tác không được đăng ký trước. Không xóa journal khi gặp timeout.
+
+Kiểm tra an toàn file dọn (Docker giả lập, không xóa tài nguyên thật):
+
+```powershell
+powershell -NoProfile -File scripts/demo_25_10/tests/Test-DemoLauncher.ps1
+python -m unittest discover -s scripts/demo_25_10/tests -p "test_prepare_ui_demo.py"
+```
+
 **Luồng mới có lịch khám/giữ suất/tái khám/quote:** dùng
 [runbook ngoại trú V2 ngày 26/10](MediFlow_Ngoai_Tru_V2_Test_2026-10-26.md).
 Runbook này có overlay opt-in, cách chạy JAR cách ly, bước Postman/UI theo role và giới hạn nghiệm thu.

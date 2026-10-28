@@ -54,7 +54,11 @@ def main():
     keep.add_argument("--keep", action="store_true")
     keep.add_argument("--scheduling", action="store_true",
                       help="Enable the opt-in outpatient revision 2 rehearsal overlay")
+    keep.add_argument("--prepare-ui-demo", action="store_true",
+                      help="Prepare current schedules and a completed follow-up source through Gateway")
     options = keep.parse_args()
+    if options.prepare_ui_demo and not options.scheduling:
+        keep.error("--prepare-ui-demo requires --scheduling")
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     evidence = HERE / "evidence" / ("snapshot-" + stamp)
     evidence.mkdir(parents=True)
@@ -185,6 +189,10 @@ def main():
                     "scheduling": options.scheduling,
                     "containers": containers, "pids": [p.pid for p in applications], "stopFile": str(evidence / "stop")}
         (HERE / "evidence" / "active-rehearsal.local.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        if options.prepare_ui_demo:
+            from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
+            fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json'), dt.datetime.now(ZONE))
+            write_fixtures(fixtures, evidence)
         (evidence / "result.txt").write_text("PASS: eight database restores, populated-target refusal, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")
         print("READY " + str(evidence), flush=True)
         if options.keep:
