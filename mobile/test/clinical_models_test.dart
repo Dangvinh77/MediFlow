@@ -51,16 +51,37 @@ void main() {
   test('menu allows only each route role and records current owners', () {
     expect(
       modules.where((m) => m.allows(UserRole.cashier)).map((m) => m.path),
-      ['/billing'],
+      ['/billing', '/support'],
     );
     expect(
       modules.where((m) => m.allows(UserRole.labTech)).map((m) => m.path),
-      ['/lab'],
+      ['/lab', '/support'],
     );
     expect(modules.map((m) => m.owner).toSet(), {'Vinh', 'Huy'});
     expect(
       modules.any((m) => m.path == '/inpatient' || m.path == '/surgery'),
       isFalse,
     );
+  });
+  test('Support groups report and notification by account role', () {
+    expect(
+      visibleMainModules(UserRole.admin).map((m) => m.path),
+      contains('/support'),
+    );
+    expect(
+      visibleMainModules(UserRole.admin).map((m) => m.path),
+      isNot(contains('/reports')),
+    );
+    expect(
+      visibleSupportModules(UserRole.admin).map((m) => m.path),
+      containsAll(['/reports', '/notifications']),
+    );
+    expect(visibleSupportModules(UserRole.manager).map((m) => m.path), [
+      '/reports',
+    ]);
+    expect(visibleSupportModules(UserRole.patient).map((m) => m.path), [
+      '/notifications',
+    ]);
+    expect(visibleSupportModules(UserRole.doctor), isEmpty);
   });
 }

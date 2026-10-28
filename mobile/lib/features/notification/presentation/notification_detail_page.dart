@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
-import '../../../core/widgets/request_state.dart';
 import '../domain/notification.dart' as domain;
 import 'providers.dart';
+import 'notification_display.dart';
+import 'notification_request_error.dart';
 
 class NotificationDetailPage extends ConsumerWidget {
   const NotificationDetailPage({super.key, required this.notificationId});
@@ -105,7 +106,10 @@ class _NotificationDetailState extends State<_NotificationDetail> {
       );
     }
     if (_error != null) {
-      return RequestError(_error!, onRetry: _canRetry ? _load : null);
+      return NotificationRequestError(
+        _error!,
+        onRetry: _canRetry ? _load : null,
+      );
     }
     final item = _notification!;
     return RefreshIndicator(
@@ -121,21 +125,19 @@ class _NotificationDetailState extends State<_NotificationDetail> {
             id: item.patientId,
             label: 'Người nhận',
           ),
-          Text('Kênh: ${item.channel}'),
-          Text('Trạng thái: ${item.status}'),
-          Text('Tạo lúc: ${item.createdAt}'),
-          if (item.sentAt != null) Text('Gửi lúc: ${item.sentAt}'),
+          Text('Kênh: ${notificationChannelLabel(item.channel)}'),
+          Text('Trạng thái: ${notificationStatusLabel(item.status)}'),
+          Text('Tạo lúc: ${notificationTimeLabel(item.createdAt)}'),
+          if (item.sentAt != null)
+            Text('Gửi lúc: ${notificationTimeLabel(item.sentAt!)}'),
           if (item.failureReason != null)
-            Text('Lý do thất bại: ${item.failureReason}'),
+            Text(notificationFailureLabel(item.failureReason)),
           const SizedBox(height: 16),
           const Text('Nội dung'),
           SelectableText(item.content),
           const SizedBox(height: 16),
-          const Text(
-            'Địa chỉ nhận và dữ liệu thử lại không được cung cấp bởi API này.',
-          ),
           ExpansionTile(
-            title: const Text('Chi tiết kỹ thuật'),
+            title: const Text('Thông tin tra cứu'),
             children: [SelectableText('Mã thông báo: ${item.id}')],
           ),
           OutlinedButton.icon(

@@ -62,10 +62,10 @@ Future<void> fillCreate(WidgetTester tester) async {
   for (final field in {
     'Tên thuốc': 'Thuốc mới',
     'Đơn vị': 'Viên',
-    'Giá (VND)': '2500.25',
+    'Giá (đồng)': '2500.25',
     'Tồn kho ban đầu': '0',
-    'Hạn dùng (YYYY-MM-DD)': '2099-12-31',
-    'Ngưỡng tồn thấp (tùy chọn)': '10',
+    'Hạn dùng': '2099-12-31',
+    'Báo sắp hết khi còn (tùy chọn)': '10',
   }.entries) {
     await enter(tester, field.key, field.value);
   }
@@ -157,10 +157,10 @@ void main() {
     await fillCreate(tester);
     await tap(tester, 'Tạo thuốc');
     await tap(tester, 'Xác nhận');
-    expect(find.text('Giá không hợp lệ'), findsOneWidget);
+    expect(find.text('Vui lòng kiểm tra giá (đồng).'), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.widgetWithText(TextField, 'Giá (VND)'))
+          .widget<TextField>(find.widgetWithText(TextField, 'Giá (đồng)'))
           .focusNode!
           .hasFocus,
       isTrue,
@@ -279,9 +279,9 @@ void main() {
       expect(find.text('Tồn kho: 100'), findsNothing);
       expect(find.textContaining(otherDrugId), findsNothing);
       expect(find.text('Paracetamol 500 mg'), findsOneWidget);
-      expect(find.text('Mã tham chiếu'), findsOneWidget);
-      await tester.ensureVisible(find.text('Mã tham chiếu'));
-      await tester.tap(find.text('Mã tham chiếu'));
+      expect(find.text('Thông tin tra cứu'), findsOneWidget);
+      await tester.ensureVisible(find.text('Thông tin tra cứu'));
+      await tester.tap(find.text('Thông tin tra cứu'));
       await tester.pumpAndSettle();
       expect(find.text('Mã thuốc: $otherDrugId'), findsOneWidget);
       expect(repository.adjustments, hasLength(1));
@@ -377,7 +377,10 @@ void main() {
       await enter(tester, 'Số lượng điều chỉnh (+/−)', '-6');
       await tap(tester, 'Điều chỉnh tồn kho');
       await tap(tester, 'Xác nhận');
-      expect(find.text('Tồn kho đã được giữ chỗ'), findsOneWidget);
+      expect(
+        find.text('Vui lòng kiểm tra số lượng điều chỉnh (+/−).'),
+        findsOneWidget,
+      );
       expect(find.text('Tồn kho: 6'), findsOneWidget);
       expect(repository.adjustments, hasLength(1));
     },
@@ -416,13 +419,13 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('Hồ sơ: Chưa cung cấp'), findsOneWidget);
-        expect(find.text('Trạng thái đơn: Đang hoạt động'), findsOneWidget);
+        expect(find.text('Trạng thái đơn: Có thể sử dụng'), findsOneWidget);
         expect(find.text('Trạng thái xuất: Chờ xuất'), findsOneWidget);
         expect(
           find.text('Thanh toán đã ghi nhận: Chưa'),
           mode == PharmacyMode.legacy ? findsOneWidget : findsNothing,
         );
-        expect(find.text('Tổng tiền: 5000.5 VND'), findsOneWidget);
+        expect(find.text('Tổng tiền: 5000.5 đồng'), findsOneWidget);
         if (mode == PharmacyMode.outpatient) {
           // V1 ignores the legacy flag; missing transport capability still
           // prevents sending an actual command from this unbound host.
@@ -469,7 +472,7 @@ void main() {
         host(repository, const PrescriptionDetailPage(prescriptionId: rxId)),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Trạng thái đơn: Đang hoạt động'), findsNothing);
+      expect(find.text('Trạng thái đơn: Có thể sử dụng'), findsNothing);
       expect(find.text('Lý do hủy: Lý do từ máy chủ'), findsOneWidget);
     });
   }
@@ -548,12 +551,12 @@ void main() {
         matching: find.byType(Scrollable),
       );
       await tester.scrollUntilVisible(
-        find.text('Mã tham chiếu'),
+        find.text('Thông tin tra cứu'),
         200,
         scrollable: prescriptionScrollable.first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Mã tham chiếu'));
+      await tester.tap(find.text('Thông tin tra cứu'));
       await tester.pumpAndSettle();
       expect(find.text('Đơn thuốc: $otherDrugId'), findsOneWidget);
       expect(find.text('Stale failure'), findsNothing);

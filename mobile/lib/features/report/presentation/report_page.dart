@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/report.dart';
@@ -20,8 +21,44 @@ const reportTitles = {
   ReportKind.outpatientMonthly: 'Ngoại trú theo tháng',
 };
 
+List<ReportKind> availableReportKinds({required bool outpatientEnabled}) => [
+  for (final kind in ReportKind.values)
+    if (outpatientEnabled ||
+        (kind != ReportKind.outpatientDaily &&
+            kind != ReportKind.outpatientMonthly))
+      kind,
+];
+
+Object reportDisplayError(Object error, ReportKind kind) {
+  if (error is! ApiFailure) {
+    return const FormatException(
+      'Chưa đọc được báo cáo. Vui lòng làm mới và thử lại.',
+    );
+  }
+  final message = error.code == 'REPORT_NOT_FOUND' || error.status == 404
+      ? 'Chưa có dữ liệu báo cáo cho khoảng đã chọn.'
+      : switch (error.status) {
+          400 || 422 => 'Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.',
+          401 => 'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.',
+          403 => 'Tài khoản này chưa được phép xem báo cáo.',
+          _ => 'Chưa tải được báo cáo. Vui lòng thử lại sau.',
+        };
+  return ApiFailure(
+    message,
+    status: error.status,
+    code: error.code,
+    correlationId: error.correlationId,
+  );
+}
+
 class ReportPage extends ConsumerWidget {
-  const ReportPage({super.key});
+  const ReportPage({
+    super.key,
+    this.outpatientEnabled = const bool.fromEnvironment(
+      'MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED',
+    ),
+  });
+  final bool outpatientEnabled;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
@@ -31,13 +68,19 @@ class ReportPage extends ConsumerWidget {
     return _ReportWorkspace(
       key: ObjectKey(access.sessionIdentity),
       repository: ref.watch(reportRepositoryProvider),
+      outpatientEnabled: outpatientEnabled,
     );
   }
 }
 
 class _ReportWorkspace extends StatefulWidget {
-  const _ReportWorkspace({super.key, required this.repository});
+  const _ReportWorkspace({
+    super.key,
+    required this.repository,
+    required this.outpatientEnabled,
+  });
   final ReportRepository repository;
+  final bool outpatientEnabled;
   @override
   State<_ReportWorkspace> createState() => _ReportWorkspaceState();
 }
@@ -84,8 +127,10 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       if (mounted && current == generation) {
         setState(
           () => error = e is ArgumentError
-              ? FormatException(e.message.toString())
-              : e,
+              ? const FormatException(
+                  'Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.',
+                )
+              : reportDisplayError(e, kind),
         );
       }
     } finally {
@@ -127,7 +172,9 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       DropdownButtonFormField<ReportKind>(
         initialValue: kind,
         items: [
-          for (final k in ReportKind.values)
+          for (final k in availableReportKinds(
+            outpatientEnabled: widget.outpatientEnabled,
+          ))
             DropdownMenuItem(value: k, child: Text(reportTitles[k]!)),
         ],
         onChanged: loading
@@ -143,9 +190,14 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         controller: from,
         readOnly: true,
         onTap: () => date(from),
-        decoration: const InputDecoration(
-          labelText: 'Ngày bắt đầu / tháng / năm',
-          suffixIcon: Icon(Icons.calendar_month),
+        decoration: InputDecoration(
+          labelText: switch (kind) {
+            ReportKind.daily => 'Ngày báo cáo',
+            ReportKind.monthly => 'Chọn tháng',
+            ReportKind.outpatientMonthly => 'Chọn năm',
+            _ => 'Từ ngày',
+          },
+          suffixIcon: const Icon(Icons.calendar_month),
         ),
       ),
       if (kind == ReportKind.topMedicines ||

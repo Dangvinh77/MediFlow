@@ -53,10 +53,10 @@ class _DrugFormState extends State<_DrugForm> {
       : {
           'drugName': 'Tên thuốc',
           'unit': 'Đơn vị',
-          'price': 'Giá (VND)',
+          'price': 'Giá (đồng)',
           'stockQuantity': 'Tồn kho ban đầu',
-          'expiryDate': 'Hạn dùng (YYYY-MM-DD)',
-          'lowStockThreshold': 'Ngưỡng tồn thấp (tùy chọn)',
+          'expiryDate': 'Hạn dùng',
+          'lowStockThreshold': 'Báo sắp hết khi còn (tùy chọn)',
           'activeIngredient': 'Hoạt chất (tùy chọn)',
           'manufacturer': 'Nhà sản xuất (tùy chọn)',
         };
@@ -219,7 +219,13 @@ class _DrugFormState extends State<_DrugForm> {
       if (!mounted || ticket != generation) return;
       setState(() {
         error = failure;
-        fields = failure is ApiFailure ? failure.fields : {};
+        fields = failure is ApiFailure
+            ? {
+                for (final key in failure.fields.keys)
+                  key:
+                      'Vui lòng kiểm tra ${labels[key]?.toLowerCase() ?? 'thông tin này'}.',
+              }
+            : {};
         forbidden =
             failure is ApiFailure &&
             (failure.status == 401 || failure.status == 403);
@@ -262,7 +268,7 @@ class _DrugFormState extends State<_DrugForm> {
               Text('Tồn kho: ${snapshot!.stockQuantity}'),
             ],
             ExpansionTile(
-              title: const Text('Mã tham chiếu'),
+              title: const Text('Thông tin tra cứu'),
               children: [SelectableText('Mã thuốc: ${widget.drugId}')],
             ),
           ],
@@ -313,6 +319,9 @@ class _DrugFormState extends State<_DrugForm> {
                     : TextInputType.text,
                 decoration: InputDecoration(
                   labelText: entry.value,
+                  hintText: entry.key == 'expiryDate'
+                      ? 'Ví dụ: 2027-12-31'
+                      : null,
                   errorText: fields[entry.key],
                   border: const OutlineInputBorder(),
                 ),

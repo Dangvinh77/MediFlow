@@ -5,9 +5,10 @@ import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
-import '../../../core/widgets/request_state.dart';
 import '../domain/notification.dart' as domain;
 import 'notification_detail_page.dart';
+import 'notification_display.dart';
+import 'notification_request_error.dart';
 import 'providers.dart';
 
 class NotificationPage extends ConsumerWidget {
@@ -117,7 +118,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
       setState(() {
         _submitted = null;
         _page = null;
-        _error = const FormatException('Mã bệnh nhân phải là UUID hợp lệ.');
+        _error = const FormatException('Vui lòng chọn lại bệnh nhân.');
       });
       return;
     }
@@ -215,7 +216,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-              ? RequestError(
+              ? NotificationRequestError(
                   _error!,
                   onRetry: _canRetry(_error)
                       ? () => _search(_requestedPage)
@@ -267,7 +268,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                       child: ListTile(
                         title: Text(item.title),
                         subtitle: Text(
-                          '${item.channel} · ${item.status} · ${item.createdAt}',
+                          '${notificationChannelLabel(item.channel)} · '
+                          '${notificationStatusLabel(item.status)} · '
+                          '${notificationTimeLabel(item.createdAt)}',
                         ),
                         trailing: widget.role == 'NURSE'
                             ? null
@@ -467,25 +470,28 @@ class _NotificationSendPageState extends State<NotificationSendPage>
             ),
           ),
         ],
-        if (_error != null) RequestError(_error!),
+        if (_error != null) NotificationRequestError(_error!),
         if (_receipt != null) ...[
           Card(
             child: ListTile(
               title: Text(
-                'Kết quả gửi: ${_receipt!.status} · ${_receipt!.channel}',
+                'Kết quả gửi: ${notificationStatusLabel(_receipt!.status)} · '
+                '${notificationChannelLabel(_receipt!.channel)}',
               ),
-              subtitle: SelectableText('Mã thông báo: ${_receipt!.id}'),
+              subtitle: const Text(
+                'Bạn có thể xem kết quả trong lịch sử thông báo.',
+              ),
             ),
           ),
           if (_receipt!.failureReason != null)
-            Text('Lý do thất bại: ${_receipt!.failureReason}'),
+            Text(notificationFailureLabel(_receipt!.failureReason)),
           OutlinedButton(
             onPressed: _clearForNew,
             child: const Text('Soạn thông báo khác'),
           ),
         ] else if (_uncertain) ...[
           const Text(
-            'Kết quả gửi chưa xác định. Lệnh POST không có khóa lặp an toàn nên đã khóa form. Hãy kiểm tra lịch sử thông báo của bệnh nhân trước.',
+            'Kết quả gửi chưa xác định. Hãy kiểm tra lịch sử thông báo của bệnh nhân trước khi gửi lại để tránh thông báo trùng.',
           ),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
@@ -502,7 +508,7 @@ class _NotificationSendPageState extends State<NotificationSendPage>
                     _uncertain = false;
                     _error = null;
                   }),
-            child: const Text('Mở khóa sau khi đối soát'),
+            child: const Text('Tiếp tục soạn sau khi kiểm tra'),
           ),
         ] else
           FilledButton(

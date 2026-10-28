@@ -92,6 +92,15 @@ const modules = [
     implemented: true,
   ),
   AppModule(
+    '/support',
+    'Hỗ trợ',
+    'Báo cáo và thông báo',
+    'Huy',
+    Icons.support_agent_outlined,
+    UserRole.values,
+    implemented: true,
+  ),
+  AppModule(
     '/notifications',
     'Thông báo',
     'Lịch sử thông báo',
@@ -110,3 +119,14 @@ const modules = [
     implemented: true,
   ),
 ];
+
+bool isSupportChild(AppModule module) =>
+    module.path == '/reports' || module.path == '/notifications';
+
+List<AppModule> visibleMainModules(UserRole role) => modules
+    .where((module) => !isSupportChild(module) && module.allows(role))
+    .toList();
+
+List<AppModule> visibleSupportModules(UserRole role) => modules
+    .where((module) => isSupportChild(module) && module.allows(role))
+    .toList();

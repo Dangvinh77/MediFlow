@@ -9,6 +9,41 @@ import 'package:mediflow_mobile/features/auth/presentation/session_controller.da
 import 'session_controller_test.dart' show MemoryAuth;
 
 void main() {
+  testWidgets('Support entry opens report and notification choices', (
+    tester,
+  ) async {
+    final auth = MemoryAuth()
+      ..saved = const Session(
+        accessToken: 'a',
+        refreshToken: 'r',
+        role: UserRole.admin,
+      );
+    final container = ProviderContainer(
+      overrides: [authRepositoryProvider.overrideWithValue(auth)],
+    );
+    addTearDown(container.dispose);
+    await container.read(sessionProvider.future);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MediFlowApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Hỗ trợ'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Hỗ trợ'), findsOneWidget);
+    expect(find.text('Báo cáo'), findsNothing);
+    await tester.ensureVisible(find.text('Hỗ trợ'));
+    await tester.tap(find.text('Hỗ trợ'));
+    await tester.pumpAndSettle();
+    expect(find.text('Báo cáo'), findsOneWidget);
+    expect(find.text('Thông báo'), findsOneWidget);
+  });
+
   testWidgets(
     'direct role-denied route is blocked and logout removes workspace',
     (tester) async {

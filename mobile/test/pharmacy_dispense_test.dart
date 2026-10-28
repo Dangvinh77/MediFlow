@@ -158,7 +158,7 @@ void main() {
         await tester.pumpAndSettle();
         await dispense(tester);
         expect(dispenser.calls, [rxId]);
-        expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsOneWidget);
+        expect(find.text('Đã xuất thuốc thành công.'), findsOneWidget);
         expect(find.textContaining(otherDrugId), findsNothing);
         expect(
           find.textContaining('Chưa kết nối được để xác nhận kết quả'),
@@ -218,7 +218,7 @@ void main() {
     await tester.pumpAndSettle();
     await dispense(tester);
     expect(dispenser.calls, [rxId]);
-    expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsOneWidget);
+    expect(find.text('Đã xuất thuốc thành công.'), findsOneWidget);
   });
   for (final state in ['DISPENSED', 'FAILED', 'CANCELLED', 'EXPIRED']) {
     testWidgets('terminal dispense $state blocks active order command', (
@@ -255,7 +255,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('clearance-trace'), findsOneWidget);
-      expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
+      expect(find.text('Đã xuất thuốc thành công.'), findsNothing);
       expect(dispenser.calls, [rxId]);
     });
   }
@@ -284,7 +284,7 @@ void main() {
             .onPressed,
         isNull,
       );
-      expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
+      expect(find.text('Đã xuất thuốc thành công.'), findsNothing);
     });
   }
   testWidgets(
@@ -313,7 +313,7 @@ void main() {
       expect(dispenser.calls, [rxId]);
       await dispense(tester);
       expect(dispenser.calls, [rxId, rxId]);
-      expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
+      expect(find.text('Đã xuất thuốc thành công.'), findsNothing);
     },
   );
   testWidgets('session change closes confirmation without a command', (
@@ -359,7 +359,7 @@ void main() {
       await tester.pumpAndSettle();
       pending.complete(PharmacyDto.dispense(slip()));
       await tester.pumpAndSettle();
-      expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
+      expect(find.text('Đã xuất thuốc thành công.'), findsNothing);
       expect(repository.cancellations, isEmpty);
       expect(tester.takeException(), isNull);
     },
@@ -384,11 +384,8 @@ void main() {
         );
         await tester.pumpAndSettle();
         await dispense(tester);
-        expect(
-          find.textContaining('Máy chủ ghi nhận xuất thất bại'),
-          findsOneWidget,
-        );
-        expect(find.text('Máy chủ xác nhận đã xuất thuốc.'), findsNothing);
+        expect(find.textContaining('Chưa xuất được thuốc'), findsOneWidget);
+        expect(find.text('Đã xuất thuốc thành công.'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

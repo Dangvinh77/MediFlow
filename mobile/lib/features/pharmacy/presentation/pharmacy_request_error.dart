@@ -15,7 +15,15 @@ class PharmacyRequestError extends StatelessWidget {
   Widget build(BuildContext context) {
     final failure = error;
     if (failure is! ApiFailure) {
-      return RequestError(error, onRetry: onRetry);
+      return RequestError(
+        FormatException(
+          failure is FormatException &&
+                  failure.message == 'Hồ sơ không thuộc bệnh nhân đã chọn.'
+              ? 'Hồ sơ không thuộc bệnh nhân đã chọn.'
+              : 'Chưa đọc được thông tin. Vui lòng làm mới và thử lại.',
+        ),
+        onRetry: onRetry,
+      );
     }
     return RequestError(
       ApiFailure(
@@ -23,7 +31,7 @@ class PharmacyRequestError extends StatelessWidget {
         status: failure.status,
         code: failure.code,
         correlationId: failure.correlationId,
-        fields: failure.fields,
+        fields: const {},
       ),
       onRetry: onRetry,
     );

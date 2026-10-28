@@ -42,7 +42,10 @@ void main() {
           'outpatient/daily',
           {'fromDate': '2026-10-01', 'toDate': '2026-10-22'},
           <String, dynamic>{
-            'covered': false,
+            'covered': true,
+            'coverageId': drugId,
+            'sourceObservedAt': '2026-10-23T00:00:00Z',
+            'reconciledAt': '2026-10-23T01:00:00Z',
             'currency': 'VND',
             'zoneId': 'Asia/Ho_Chi_Minh',
             'periods': [],
@@ -54,6 +57,9 @@ void main() {
           {'year': 2026},
           <String, dynamic>{
             'covered': true,
+            'coverageId': drugId,
+            'sourceObservedAt': '2026-10-23T00:00:00Z',
+            'reconciledAt': '2026-10-23T01:00:00Z',
             'currency': 'VND',
             'zoneId': 'Asia/Ho_Chi_Minh',
             'periods': [],
@@ -168,5 +174,32 @@ void main() {
       ).validate(),
       throwsArgumentError,
     );
+  });
+
+  test('outpatient report refuses unaccepted or incomplete coverage', () async {
+    final adapter = PharmacyHttpAdapter();
+    final client = ApiClient(
+      AppConfig('http://localhost:8080/api'),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    addTearDown(client.close);
+    final reader = GatewayReportRepository(client);
+    const query = ReportQuery(
+      kind: ReportKind.outpatientDaily,
+      from: '2026-10-01',
+      to: '2026-10-22',
+    );
+    for (final coverage in [
+      <String, dynamic>{'covered': false},
+      <String, dynamic>{
+        'covered': true,
+        'currency': 'VND',
+        'zoneId': 'Asia/Ho_Chi_Minh',
+        'periods': [],
+      },
+    ]) {
+      adapter.data = coverage;
+      await expectLater(reader.read(query), throwsFormatException);
+    }
   });
 }
