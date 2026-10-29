@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -74,6 +75,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         && !"gateway".equals(claims.getSubject())) {
                     return forbidden(exchange, "Gateway service token is required");
                 }
+                if ("/api/v1/org/accounts/verify".equals(path)
+                        && !hasShortServiceLifetime(claims)) {
+                    return unauthorized(exchange, "Invalid or expired service token lifetime");
+                }
                 if (!isInternalOnly(path) && !Roles.SYSTEM.equals(role)) {
                     return unauthorized(exchange, "Invalid service token role");
                 }
@@ -129,6 +134,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 && !claims.containsKey(JwtClaims.PATIENT_ID)
                 && !claims.containsKey(JwtClaims.STAFF_ID)
                 && !claims.containsKey(JwtClaims.DEPARTMENT_ID);
+    }
+
+    private static boolean hasShortServiceLifetime(Claims claims) {
+        if (claims.getIssuedAt() == null || claims.getExpiration() == null) {
+            return false;
+        }
+        Instant now = Instant.now();
+        Instant issuedAt = claims.getIssuedAt().toInstant();
+        Instant expiresAt = claims.getExpiration().toInstant();
+        return !issuedAt.isAfter(now.plusSeconds(5))
+                && expiresAt.isAfter(now)
+                && expiresAt.isAfter(issuedAt)
+                && !expiresAt.isAfter(issuedAt.plusSeconds(60));
     }
 
     private boolean isUuid(String value) {

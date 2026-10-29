@@ -90,6 +90,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (!StringUtils.hasText(subject)
                         || !Roles.SYSTEM.equals(role)
                         || containsHumanIdentityClaim(claims)
+                        || "/api/v1/org/accounts/verify".equals(request.getRequestURI())
+                                && !hasShortServiceLifetime(claims)
                         || isClinicalAuthorityRequest(request.getRequestURI())
                                 && (!"clinical-service".equals(subject)
                                         || !hasShortServiceLifetime(claims))) {
@@ -173,7 +175,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (claims.getIssuedAt() == null || claims.getExpiration() == null) return false;
         java.time.Instant issuedAt = claims.getIssuedAt().toInstant();
         java.time.Instant expiresAt = claims.getExpiration().toInstant();
-        return !issuedAt.isAfter(java.time.Instant.now().plusSeconds(5))
+        java.time.Instant now = java.time.Instant.now();
+        return !issuedAt.isAfter(now.plusSeconds(5))
+                && expiresAt.isAfter(now)
+                && expiresAt.isAfter(issuedAt)
                 && !expiresAt.isAfter(issuedAt.plusSeconds(60));
     }
 

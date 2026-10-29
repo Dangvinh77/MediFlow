@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -173,6 +175,28 @@ class CoreCompositionSmokeTest {
                     .andExpect(type.equals("service") ? status().isOk() : status().isUnauthorized());
         }
         verify(verifyCredentialsUseCase).execute("admin", "password");
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,null", "0,null", "null,30", "-120,-60", "0,61", "30,60", "3,2", "0,0"}, nullValues = "null")
+    void credentialVerificationRejectsInvalidServiceLifetime(Long issuedOffset, Long expiresOffset) throws Exception {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        var builder = Jwts.builder().subject("gateway").claim("type", "service").claim("role", "SYSTEM");
+        if (issuedOffset != null) builder.issuedAt(Date.from(now.plusSeconds(issuedOffset)));
+        if (expiresOffset != null) builder.expiration(Date.from(now.plusSeconds(expiresOffset)));
+        String token = builder.signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8))).compact();
+
+        mockMvc.perform(post("/api/v1/org/accounts/verify")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Correlation-Id", "c2a7b734-cb8a-4ee1-bcd0-0349f0186925")
+                        .contentType("application/json")
+                        .content("{\"username\":\"admin\",\"password\":\"password\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("X-Correlation-Id", "c2a7b734-cb8a-4ee1-bcd0-0349f0186925"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.error.code").value("UNAUTHORIZED"));
+        verify(verifyCredentialsUseCase, never()).execute(anyString(), anyString());
     }
 
     private String bearer(String type, String role, String subject) {

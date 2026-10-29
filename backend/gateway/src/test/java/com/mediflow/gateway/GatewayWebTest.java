@@ -8,6 +8,8 @@ import com.mediflow.gateway.security.JwtTokenService.UpstreamUnavailableExceptio
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,6 +65,26 @@ class GatewayWebTest {
                     .exchange().expectStatus().isEqualTo(caller.equals("gateway")
                             ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.FORBIDDEN);
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,null", "0,null", "null,30", "-120,-60", "0,61", "30,60", "3,2", "0,0"}, nullValues = "null")
+    void credentialVerificationRejectsInvalidServiceLifetime(Long issuedOffset, Long expiresOffset) {
+        Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        var builder = Jwts.builder().subject("gateway")
+                .claim(JwtClaims.ROLE, Roles.SYSTEM).claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE);
+        if (issuedOffset != null) builder.issuedAt(Date.from(now.plusSeconds(issuedOffset)));
+        if (expiresOffset != null) builder.expiration(Date.from(now.plusSeconds(expiresOffset)));
+        String token = builder.signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
+
+        webTestClient.post().uri("/api/v1/org/accounts/verify")
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .header("X-Correlation-Id", "c2a7b734-cb8a-4ee1-bcd0-0349f0186925")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"username\":\"admin\",\"password\":\"password\"}")
+                .exchange().expectStatus().isUnauthorized()
+                .expectHeader().valueEquals("X-Correlation-Id", "c2a7b734-cb8a-4ee1-bcd0-0349f0186925")
+                .expectBody().jsonPath("$.error.code").isEqualTo("AUTH_UNAUTHORIZED");
     }
 
     @Test
