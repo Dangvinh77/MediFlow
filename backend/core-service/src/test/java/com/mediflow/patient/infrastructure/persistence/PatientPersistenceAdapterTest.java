@@ -4,6 +4,8 @@ import com.mediflow.common.api.PageQuery;
 import com.mediflow.patient.domain.model.Gender;
 import com.mediflow.patient.domain.model.Patient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
@@ -12,6 +14,7 @@ import org.springframework.test.context.TestPropertySource;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,5 +58,31 @@ class PatientPersistenceAdapterTest {
         assertThat(adapter.findById(patient.patientId())).isPresent();
         adapter.deleteById(patient.patientId());
         assertThat(adapter.findById(patient.patientId())).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "  Paging  ", "910"})
+    void searchPagesNewestFirstWithUuidTieBreaker(String keyword) {
+        Instant recent = Instant.parse("2026-10-29T00:00:00Z");
+        // Deliberately insert out of order, including equal timestamps across page boundaries.
+        for (int number : List.of(4, 2, 6, 1, 5, 3)) {
+            repository.save(new PatientJpaEntity(new UUID(0, number), "Paging " + number,
+                    LocalDate.of(1988, 2, 2), Gender.M, "910" + number, null, null, null, null,
+                    number == 5 ? recent.minusSeconds(1) : recent, null).withArchived(number == 6));
+        }
+        repository.flush();
+
+        for (int repeat = 0; repeat < 2; repeat++) {
+            var first = adapter.search(keyword, new PageQuery(0, 2));
+            var second = adapter.search(keyword, new PageQuery(1, 2));
+            var last = adapter.search(keyword, new PageQuery(2, 2));
+            assertThat(first.totalElements()).isEqualTo(5);
+            assertThat(first.content()).extracting(Patient::patientId)
+                    .containsExactly(new UUID(0, 1), new UUID(0, 2));
+            assertThat(second.content()).extracting(Patient::patientId)
+                    .containsExactly(new UUID(0, 3), new UUID(0, 4));
+            assertThat(last.content()).extracting(Patient::patientId).containsExactly(new UUID(0, 5));
+            assertThat(adapter.search(keyword, new PageQuery(3, 2)).content()).isEmpty();
+        }
     }
 }

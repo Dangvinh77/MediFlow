@@ -5,6 +5,7 @@ import com.mediflow.common.api.PageResult;
 import com.mediflow.patient.application.port.out.PatientRepositoryPort;
 import com.mediflow.patient.domain.model.Patient;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -39,7 +40,8 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     @Override
     public PageResult<Patient> search(String keyword, PageQuery query) {
         var page = repository.search(keyword == null || keyword.isBlank() ? "" : keyword.trim(),
-                PageRequest.of(query.page(), query.size()));
+                PageRequest.of(query.page(), query.size(),
+                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("patientId"))));
         return PageResult.of(page.getContent().stream().map(mapper::toDomain).toList(),
                 page.getTotalElements(), page.getNumber(), page.getSize());
     }

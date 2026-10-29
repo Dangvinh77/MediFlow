@@ -24,6 +24,19 @@ patient UUID; changing CCCD or birth date requires an audited reason (maximum 50
 Archived records are read-only and excluded from active search; conflicts preserve the draft for correction. The service-only existence lookup
 remains unavailable to browser code.
 
+ADMIN/NURSE can issue the initial patient account and continue registration from any successfully
+loaded active patient detail, including a plain `/patients/{id}` URL reopened from the list.
+The `notice` query only controls the saved confirmation. Onboarding actions remain hidden while
+loading, after a failed/missing lookup, for archived records, and for roles without patient write
+permission. App route composition supplies the Organization issuance component without feature imports.
+An uncertain issuance retains its existing session-scoped idempotency key when the detail is reopened;
+the backend receipt handles replay, and an existing account under another key is rejected without
+replacing credentials. Registration remains available independently of issuance success.
+
+Patient search uses `createdAt DESC, patientId ASC`, including filtered searches. UUID breaks ties
+between equal creation timestamps. Offset pages are deterministic for an unchanged result set;
+concurrent inserts or archival can still shift page boundaries.
+
 ## Owner queue
 
 - `FE-PATIENT-01` — `DONE`: live controller/DTO verified.
