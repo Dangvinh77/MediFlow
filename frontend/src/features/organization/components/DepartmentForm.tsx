@@ -13,6 +13,8 @@ import { StaffPicker } from "./StaffPicker";
 import { FormSection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
+import { departmentMatchesDraft, isSaveOutcomeUnknown, type DepartmentSaveDraft } from "../save-outcome";
+import { SaveOutcomeRecovery } from "./SaveOutcomeRecovery";
 import type { DepartmentType } from "../types";
 
 interface Props { departmentId?: string }
@@ -34,10 +36,13 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
   const [loadedDepartmentId, setLoadedDepartmentId] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const mounted = useRef(true);
   const submitting = useRef(false);
+  const unresolved = useRef<DepartmentSaveDraft | null>(null);
+  const [unknownSave, setUnknownSave] = useState<DepartmentSaveDraft | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -75,16 +80,28 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
     submitting.current = true;
     setSaving(true); setError(null);
     const profile = { description: description.trim() || null, phoneNumber: phone.trim() || null, email: email.trim() || null };
+    const draft: DepartmentSaveDraft = { departmentName: name.trim(), abbreviation: abbreviation.trim(),
+      departmentType: type, location: location.trim() || null, departmentHeadId: normalizedHead || null, active, profile };
+    let completed = false;
     try {
       const department = departmentId
         ? await organizationApi.updateDepartment(departmentId, { departmentName: name.trim(), departmentType: type, location: location.trim() || null, departmentHeadId: normalizedHead || null, active, profile })
         : await organizationApi.createDepartment({ departmentName: name.trim(), abbreviation: abbreviation.trim(), departmentType: type, location: location.trim() || null, profile });
       if (!mounted.current || getSessionKey() !== sessionToken) return;
+      completed = true;
+      setSaved(true);
       markSaved(); router.push(`/organization/departments/${department.departmentId}?notice=${editing ? "updated" : "created"}`);
     } catch (cause: unknown) {
       if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
-      if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setError(cause instanceof Error ? cause.message : "Không thể lưu khoa/phòng.");
-    } finally { submitting.current = false; if (mounted.current && getSessionKey() === sessionToken) setSaving(false); }
+      if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
+      else {
+        if (isSaveOutcomeUnknown(cause)) { unresolved.current = draft; setUnknownSave(draft); markDirty(); }
+        setError(cause instanceof Error ? cause.message : "Không thể lưu khoa/phòng.");
+      }
+    } finally {
+      submitting.current = completed || unresolved.current !== null;
+      if (mounted.current && getSessionKey() === sessionToken) setSaving(false);
+    }
   }
 
   const currentLoadError = loadError;
@@ -95,8 +112,19 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
   if (loading || (editing && loadedDepartmentId !== departmentId)) return <AsyncState kind="loading" message="Đang tải thông tin khoa/phòng…" />;
   return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
     {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
+    {unknownSave ? <SaveOutcomeRecovery read={async () => {
+      if (departmentId) return organizationApi.department(departmentId);
+      const session = getSessionKey();
+      const all = await organizationApi.departments(false);
+      if (!mounted.current || getSessionKey() !== session) return null;
+      const found = all.find(item => item.abbreviation === unknownSave.abbreviation);
+      return found ? organizationApi.department(found.departmentId) : null;
+    }} matches={department => departmentMatchesDraft(department, unknownSave)}
+      onUnauthorized={() => router.replace("/login")} onVerified={department => {
+        markSaved(); router.push(`/organization/departments/${department.departmentId}?notice=${editing ? "updated" : "created"}`);
+      }} /> : null}
     <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
-    <fieldset disabled={saving} className="min-w-0 space-y-5">
+    <fieldset disabled={saving || Boolean(unknownSave)} className="min-w-0 space-y-5">
       <FormSection title={`Thông tin ${unit}`} description="Tên, mã viết tắt và phân loại đơn vị trong tổ chức.">
         <Field label={`Tên ${unit}`} htmlFor="department-name" required><input id="department-name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className={controlClassName} /></Field>
         <Field label="Viết tắt" htmlFor="department-abbreviation" required hint={editing ? "Mã viết tắt không đổi sau khi tạo." : undefined}><input id="department-abbreviation" required={!editing} disabled={editing} maxLength={20} value={abbreviation} onChange={(event) => setAbbreviation(event.target.value)} className={controlClassName} /></Field>
@@ -113,6 +141,6 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
         <Field label="Trạng thái" htmlFor="department-active"><select id="department-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select></Field>
       </FormSection> : null}
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave) || saved}>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</Button></div>
   </form>;
 }

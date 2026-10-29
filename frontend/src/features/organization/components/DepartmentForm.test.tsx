@@ -4,6 +4,7 @@ import { departmentContractFixture } from "../contract.fixture";
 
 const mocks = vi.hoisted(() => ({
   department: vi.fn(),
+  departments: vi.fn(),
   createDepartment: vi.fn(),
   updateDepartment: vi.fn(),
   getSessionKey: vi.fn<() => string | null>(() => "session-a"),
@@ -14,6 +15,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("../api", () => ({
   organizationApi: {
     department: mocks.department,
+    departments: mocks.departments,
     createDepartment: mocks.createDepartment,
     updateDepartment: mocks.updateDepartment,
   },
@@ -35,7 +37,7 @@ describe("DepartmentForm", () => {
     const form = screen.getByRole("button", { name: "Tạo khoa" }).closest("form")!;
     act(() => { fireEvent.submit(form); fireEvent.submit(form); });
     expect(mocks.createDepartment).toHaveBeenCalledTimes(1);
-    await act(async () => { reject(new Error("Unavailable")); });
+    await act(async () => { reject(new ApiRequestError("Unavailable", 400)); });
     expect(await screen.findByRole("alert")).toHaveTextContent("Unavailable");
     fireEvent.submit(form);
     await waitFor(() => expect(mocks.createDepartment).toHaveBeenCalledTimes(2));
@@ -69,12 +71,66 @@ describe("DepartmentForm", () => {
 
   beforeEach(() => {
     mocks.department.mockReset();
+    mocks.departments.mockReset();
     mocks.createDepartment.mockReset();
     mocks.updateDepartment.mockReset();
     mocks.getSessionKey.mockReturnValue("session-a");
     mocks.router.back.mockReset();
     mocks.router.push.mockReset();
     mocks.router.replace.mockReset();
+  });
+
+  it.each([new Error("Network lost"), new ApiRequestError("Timeout", 408), new ApiRequestError("Server failed", 503)])(
+    "locks an uncertain edit and only accepts a matching authoritative read: %s", async (cause) => {
+      mocks.department.mockResolvedValue(departmentContractFixture);
+      mocks.updateDepartment.mockRejectedValue(cause);
+      render(<DepartmentForm departmentId={departmentContractFixture.departmentId} />);
+      await screen.findByDisplayValue("Clinical");
+      fireEvent.change(screen.getByLabelText(/Tên khoa/), { target: { value: "Updated Clinical" } });
+      const form = screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!;
+      fireEvent.submit(form);
+      await screen.findByRole("region", { name: "Đối soát kết quả lưu" });
+      expect(screen.getByLabelText(/Tên khoa/)).toBeDisabled();
+      expect(screen.getByLabelText(/Tên khoa/)).toHaveValue("Updated Clinical");
+      fireEvent.submit(form);
+      expect(mocks.updateDepartment).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+      await screen.findByText(/Thông tin hiện tại khác bản nháp/);
+      expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+      mocks.department.mockResolvedValue({ ...departmentContractFixture, departmentName: "Updated Clinical", phoneNumber: "1234" });
+      fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+      await waitFor(() => expect(mocks.department).toHaveBeenCalledTimes(3));
+      expect(screen.queryByRole("button", { name: "Xác nhận kết quả đã lưu" })).not.toBeInTheDocument();
+      mocks.department.mockResolvedValue({ ...departmentContractFixture, departmentName: "Updated Clinical" });
+      fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
+      expect(mocks.router.push).toHaveBeenCalledWith(`/organization/departments/${departmentContractFixture.departmentId}?notice=updated`);
+      expect(mocks.updateDepartment).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("reconciles creation by exact abbreviation including inactive units and never retries a missing result", async () => {
+    mocks.createDepartment.mockRejectedValue(new Error("Lost response"));
+    mocks.departments.mockResolvedValue([{ ...departmentContractFixture, abbreviation: "CLN-OTHER" }]);
+    mocks.department.mockResolvedValue(departmentContractFixture);
+    render(<DepartmentForm />);
+    fireEvent.change(screen.getByLabelText(/Tên khoa/), { target: { value: "Clinical" } });
+    fireEvent.change(screen.getByLabelText(/Viết tắt/), { target: { value: "CLN" } });
+    const form = screen.getByRole("button", { name: "Tạo khoa" }).closest("form")!;
+    fireEvent.submit(form);
+    await screen.findByRole("region", { name: "Đối soát kết quả lưu" });
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    await screen.findByText(/Chưa tìm thấy dữ liệu/);
+    expect(mocks.departments).toHaveBeenCalledWith(false);
+    expect(mocks.department).not.toHaveBeenCalled();
+    fireEvent.submit(form);
+    expect(mocks.createDepartment).toHaveBeenCalledTimes(1);
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
+    expect(mocks.department).toHaveBeenCalledWith(departmentContractFixture.departmentId);
+    expect(mocks.router.push).toHaveBeenCalledWith(`/organization/departments/${departmentContractFixture.departmentId}?notice=created`);
+    expect(screen.getByRole("button", { name: "Tạo khoa" })).toBeDisabled();
   });
 
   it("does not allow an edit to submit blank data after the initial load fails, and retries", async () => {

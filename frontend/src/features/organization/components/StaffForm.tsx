@@ -12,6 +12,8 @@ import { FormSection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { CreationIntentError, prepareCreation } from "../creation-intent";
 import { isRequestSessionCurrent } from "../request-session";
+import { isSaveOutcomeUnknown, staffMatchesDraft, type StaffSaveDraft } from "../save-outcome";
+import { SaveOutcomeRecovery } from "./SaveOutcomeRecovery";
 import type { DepartmentDTO, JobTitle, StaffProfile } from "../types";
 
 interface Props { staffId?: string }
@@ -32,6 +34,8 @@ function StaffFormWorkspace({ staffId }: Props) {
   const createAccountAfterSave = useRef(false);
   const savedProfile = useRef<{ fingerprint: string; session: string | null } | null>(null);
   const originalDepartment = useRef<string | null>(null);
+  const unresolved = useRef<StaffSaveDraft | null>(null);
+  const [unknownSave, setUnknownSave] = useState<StaffSaveDraft | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -101,13 +105,15 @@ function StaffFormWorkspace({ staffId }: Props) {
     const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null, profile: { ...profile, address: profile.address?.trim() || null, qualification: profile.qualification?.trim() || null } };
     let creationIntent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     let completed = false;
+    let profileWriteSent = false;
     try {
       if (staffId) {
         const fingerprint = JSON.stringify(shared);
         // Retry a partially completed transfer against a fresh authoritative read.
         // Do not repeat the successful profile command when its fields are unchanged.
-        const updatedStaff = savedProfile.current?.fingerprint === fingerprint && savedProfile.current.session === sessionToken
-          ? await organizationApi.staffMember(staffId)
+        const profileAlreadySaved = savedProfile.current?.fingerprint === fingerprint && savedProfile.current.session === sessionToken;
+        profileWriteSent = !profileAlreadySaved;
+        const updatedStaff = profileAlreadySaved ? await organizationApi.staffMember(staffId)
           : await organizationApi.updateStaff(staffId, shared);
         if (!mounted.current || getSessionKey() !== sessionToken) return;
         savedProfile.current = { fingerprint, session: sessionToken };
@@ -128,23 +134,35 @@ function StaffFormWorkspace({ staffId }: Props) {
               router.replace("/login");
               return;
             }
+            const draft: StaffSaveDraft = { body: shared, departmentId: requestedDepartmentId, transferRequested: true, stage: "transfer" };
+            const uncertain = isSaveOutcomeUnknown(transferCause);
+            if (uncertain) { unresolved.current = draft; setUnknownSave(draft); markDirty(); }
 
             try {
               const currentStaff = await organizationApi.staffMember(staffId);
               if (!mounted.current || getSessionKey() !== sessionToken) return;
-              applyStaff(currentStaff);
-              if (currentStaff.departmentId === requestedDepartmentId) {
+              if (currentStaff.departmentId === requestedDepartmentId && (!uncertain || staffMatchesDraft(currentStaff, draft))) {
+                applyStaff(currentStaff);
                 setDepartmentId(currentStaff.departmentId);
                 markSaved(); router.push(`/organization/staff/${currentStaff.staffId}?notice=updated`);
                 completed = true;
                 return;
               }
+              if (uncertain) {
+                setError("Thông tin nhân sự đã được lưu, nhưng chưa xác định kết quả chuyển khoa. Bản nháp được giữ nguyên; hãy đối soát trước khi gửi lệnh mới.");
+                return;
+              }
+              applyStaff(currentStaff);
               setDepartmentId(requestedDepartmentId);
               setError(`Thông tin nhân sự đã được lưu, nhưng chưa thể xác nhận việc chuyển khoa: ${transferCause instanceof Error ? transferCause.message : "Lỗi không xác định."} Bạn có thể thử lưu lại để hoàn tất chuyển khoa.`);
             } catch (refreshCause: unknown) {
               if (!mounted.current || !isRequestSessionCurrent(sessionToken, refreshCause)) return;
               if (refreshCause instanceof ApiRequestError && refreshCause.status === 401) {
                 router.replace("/login");
+                return;
+              }
+              if (uncertain) {
+                setError(`Chưa xác định kết quả chuyển khoa và chưa đọc được hồ sơ hiện tại. ${refreshCause instanceof Error ? refreshCause.message : "Hãy kiểm tra lại kết nối."}`);
                 return;
               }
               applyStaff(updatedStaff);
@@ -173,6 +191,10 @@ function StaffFormWorkspace({ staffId }: Props) {
       if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
+      } else if (staffId && profileWriteSent && isSaveOutcomeUnknown(cause)) {
+        const draft: StaffSaveDraft = { body: shared, departmentId, transferRequested: wantsTransfer, stage: "profile" };
+        unresolved.current = draft; setUnknownSave(draft); markDirty();
+        setError(`Chưa xác định kết quả lưu thông tin nhân sự. ${cause instanceof Error ? cause.message : "Kết nối bị gián đoạn."}`);
       } else if (cause instanceof ApiRequestError && cause.code === "STAFF_IDENTITY_DUPLICATE") {
         setError("CCCD này đã có hồ sơ nhân sự. Hãy kiểm tra hồ sơ hiện có trước khi tạo mới.");
       } else if (cause instanceof CreationIntentError) {
@@ -186,7 +208,7 @@ function StaffFormWorkspace({ staffId }: Props) {
     }
     finally {
       if (!completed) {
-        submitting.current = false;
+        submitting.current = unresolved.current !== null;
         if (mounted.current && getSessionKey() === sessionToken) setSaving(false);
       }
     }
@@ -201,7 +223,20 @@ function StaffFormWorkspace({ staffId }: Props) {
   return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
     {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
     <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
-    <fieldset disabled={saving} className="min-w-0 space-y-5">
+    {unknownSave && staffId ? <SaveOutcomeRecovery read={() => organizationApi.staffMember(staffId)}
+      matches={staff => staffMatchesDraft(staff, unknownSave)} onUnauthorized={() => router.replace("/login")}
+      onVerified={staff => {
+        savedProfile.current = { fingerprint: JSON.stringify(unknownSave.body), session: getSessionKey() };
+        applyStaff(staff);
+        if (unknownSave.stage === "profile" && unknownSave.transferRequested && staff.departmentId !== unknownSave.departmentId) {
+          setDepartmentId(unknownSave.departmentId);
+          unresolved.current = null; setUnknownSave(null); submitting.current = false;
+          setError("Đã xác nhận thông tin nhân sự được lưu. Lệnh chuyển khoa chưa được gửi; chọn Lưu thay đổi để tiếp tục.");
+        } else {
+          markSaved(); router.push(`/organization/staff/${staff.staffId}?notice=updated`);
+        }
+      }} /> : null}
+    <fieldset disabled={saving || Boolean(unknownSave)} className="min-w-0 space-y-5">
       <FormSection title="Thông tin định danh" description="Họ tên và CCCD dùng để xác định hồ sơ nhân sự.">
         <Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field>
         <Field label="CCCD" htmlFor="staff-identity" required={!editing} hint={editing ? "CCCD được xác lập khi tạo hồ sơ." : "Nhập đủ 12 chữ số."}><input id="staff-identity" required={!editing} readOnly={editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
@@ -224,6 +259,6 @@ function StaffFormWorkspace({ staffId }: Props) {
         <Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" autoComplete="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing ? <Button type="submit" data-create-account="true" disabled={saving}>Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing ? <Button type="submit" data-create-account="true" disabled={saving}>Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
   </form>;
 }
