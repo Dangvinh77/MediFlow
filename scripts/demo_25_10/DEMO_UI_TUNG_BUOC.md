@@ -69,9 +69,9 @@ Sau khi đăng ký, mỗi trường hợp đều đi tiếp từ mục 3 đến 
 6. Bấm **Tiếp tục đăng ký khám**. Bệnh nhân đã được chọn sẵn tại trang tiếp nhận.
 7. Thực hiện mục 3 với loại **Khám mới**.
 
-Khối cấp tài khoản hiện chỉ xuất hiện ngay sau tạo hồ sơ (`?notice=created`). Giữ
-trang này đến khi xong bước 6. Nếu rời trang, vẫn có thể mở **Tiếp nhận ca khám** và
-tìm hồ sơ vừa tạo để đặt lịch; không tạo lại bệnh nhân. Đây là giới hạn UX hiện tại.
+Nếu rời trang sau tạo, nurse có thể tìm và mở lại hồ sơ bệnh nhân còn hoạt động để
+tiếp tục cấp tài khoản/đăng ký khám; không tạo lại hồ sơ. Khi đã có tài khoản, không
+cấp lại hoặc đặt lại mật khẩu chỉ để đăng ký lượt khám mới.
 
 ### B. Bệnh nhân cũ đến khám đợt mới
 

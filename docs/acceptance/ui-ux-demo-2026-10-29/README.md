@@ -63,8 +63,8 @@ Không suy ra p95, khả năng chịu tải hay hiệu năng production từ cá
 
 ## Kiểm tra mã nguồn
 
-- 183 test đạt, 20 file: ReferenceInput; PatientForm/logic; ReceptionWorkspace; các component Billing và Lab; MedicalRecordDetail.
-- TypeScript và ESLint chạy lại trước commit. File route types trong `.next/dev/types` bị hỏng do cache dev; dừng frontend, chuyển cache hỏng ra khỏi đường dẫn types và tạo lại route types. Không sửa source để né lỗi compiler.
+- 205 test đạt, 22 file sau tích hợp master: ReferenceInput; PatientForm/logic, PatientDetail và route chi tiết; ReceptionWorkspace; các component Billing và Lab; MedicalRecordDetail.
+- TypeScript và ESLint đạt sau khi tái tạo cache, rồi đạt lại sau tích hợp master trước khi tạo PR. File route types trong `.next/dev/types` bị hỏng do cache dev; dừng frontend, chuyển cache hỏng ra khỏi đường dẫn types và tạo lại route types. Không sửa source để né lỗi compiler.
 - Có cảnh báo React `act(...)` từ test InvoiceDetail/InvoiceForm hiện hữu, không có test thất bại.
 - Không sửa backend hoặc thay điều kiện giờ khám/tài chính/đổi mật khẩu.
 
@@ -73,7 +73,7 @@ Không suy ra p95, khả năng chịu tải hay hiệu năng production từ cá
 1. Khởi động lại bằng hai BAT trong 07:00–16:00; xác nhận seed báo `FOLLOW-UP SOURCE READY`.
 2. Thử cả ba điểm bắt đầu: bệnh nhân mới, bệnh nhân cũ khám đợt mới, tái khám có lượt nguồn; đi trọn một ca đến nhận thuốc, xác nhận đúng tổng các khoản của cùng ca.
 3. Người dùng tự hoàn tất đổi mật khẩu tài khoản mới; kiểm portal của chính ca đã có kết quả và thông báo trả kết quả/tái khám.
-4. Bàn giao Lab/thuốc vẫn cần sao chép mã; chưa có hàng chờ thu tự động xuyên quầy. Khối cấp tài khoản sau tạo hồ sơ vẫn phụ thuộc `notice=created`; đây là hạn chế UX còn lại, chưa thay đổi trong đợt sửa này.
+4. Bàn giao Lab/thuốc vẫn cần sao chép mã; chưa có hàng chờ thu tự động xuyên quầy. Phiên UI ghi nhận khối cấp tài khoản phụ thuộc `notice=created` trên bản cũ; khi chốt đã tích hợp master `72cf1f02` (PR #554) khôi phục onboarding từ hồ sơ còn hoạt động. Bổ sung kiểm tra hồi quy trang chi tiết; cần click lại phần phục hồi này ở phiên UI kế tiếp.
 5. Cần kiểm thêm màn hình rộng/mobile và dữ liệu nhiều chỉ số/tên dài; ảnh WBC một dòng không chứng minh mọi bảng đều responsive.
 
 ## Kết thúc demo
