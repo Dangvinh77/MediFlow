@@ -94,8 +94,18 @@ workboard entry for the transient parallel-test timeout and exact verification l
 
 Confirm live department, staff, and account controller DTOs and role annotations. Keep the two base
 reads independently recoverable so one failure does not hide the other. Department transfer follows
-staff profile update as a separate command; a transfer refusal is now surfaced as partial success,
-the saved profile is refreshed, and retry safely attempts the transfer again.
+staff profile update as a separate command. A definite transfer refusal is surfaced as partial
+success; the saved profile is refreshed before an explicit transfer retry.
+
+Department create/update, staff profile edits and department transfers preserve and lock the sent
+draft after a network failure, timeout or 5xx response. Read-only reconciliation compares every
+submitted field, including profile enrichment. A missing/different result or a failed read keeps
+the write locked; it never proves the previous command failed. Department creation resolves the
+exact abbreviation using the complete list (`activeOnly=false`), then reloads detail. It has no
+idempotent mutation retry. Existing staff creation keeps its separate idempotency-key recovery.
+When a staff profile is confirmed saved but its requested transfer was never sent, explicit
+confirmation unlocks continuation of that transfer without repeating the profile write. A transfer
+whose own result is unknown remains locked until both profile and target department match.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Organization tests when available.
 Smoke test department/staff partial failure, pagination, empty state, and denied roles.

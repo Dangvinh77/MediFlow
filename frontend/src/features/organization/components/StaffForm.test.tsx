@@ -41,6 +41,78 @@ const targetDepartment: DepartmentDTO = {
 };
 
 describe("StaffForm", () => {
+  it.each([new Error("Network lost"), new ApiRequestError("Timeout", 408), new ApiRequestError("Server failed", 500)])(
+    "keeps the submitted edit locked until its profile is reconciled: %s", async (cause) => {
+      mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+      mocks.staffMember.mockResolvedValue(staffContractFixture);
+      mocks.updateStaff.mockRejectedValue(cause);
+      render(<StaffForm staffId={staffContractFixture.staffId} />);
+      await screen.findByDisplayValue("Nguyen Van A");
+      fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Updated Name" } });
+      fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
+      const form = screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!;
+      fireEvent.submit(form);
+      await screen.findByRole("region", { name: "Đối soát kết quả lưu" });
+      expect(screen.getByLabelText(/Họ tên/)).toBeDisabled();
+      expect(screen.getByLabelText(/Họ tên/)).toHaveValue("Updated Name");
+      fireEvent.submit(form);
+      expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
+      expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+      await screen.findByText(/Thông tin hiện tại khác bản nháp/);
+      expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+      mocks.staffMember.mockResolvedValue({ ...staffContractFixture, fullName: "Updated Name" });
+      fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
+      expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeEnabled();
+      expect(screen.getByLabelText(/Đơn vị công tác/)).toHaveValue(targetDepartment.departmentId);
+      mocks.changeStaffDepartment.mockResolvedValue({ ...staffContractFixture, fullName: "Updated Name", departmentId: targetDepartment.departmentId });
+      fireEvent.submit(form);
+      await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
+      expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
+      expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("keeps an uncertain transfer locked when a read still shows the old department", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockResolvedValue(staffContractFixture);
+    mocks.changeStaffDepartment.mockRejectedValue(new Error("Lost response"));
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
+    const form = screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!;
+    fireEvent.submit(form);
+    await screen.findByRole("region", { name: "Đối soát kết quả lưu" });
+    expect(screen.getByLabelText(/Đơn vị công tác/)).toBeDisabled();
+    fireEvent.submit(form);
+    expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId, qualification: "Changed by another admin" });
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    await screen.findByText(/Thông tin hiện tại khác bản nháp/);
+    expect(screen.queryByRole("button", { name: "Xác nhận kết quả đã lưu" })).not.toBeInTheDocument();
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId });
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
+    expect(mocks.router.push).toHaveBeenCalled();
+    expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not turn profile recovery into a transfer when another user moved the staff", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
+    mocks.staffMember.mockResolvedValue(staffContractFixture);
+    mocks.updateStaff.mockRejectedValue(new Error("Lost response"));
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    await screen.findByDisplayValue("Nguyen Van A");
+    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
+    await screen.findByRole("region", { name: "Đối soát kết quả lưu" });
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, departmentId: targetDepartment.departmentId });
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
+    expect(mocks.router.push).toHaveBeenCalledWith(`/organization/staff/${staffContractFixture.staffId}?notice=updated`);
+    expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
+  });
   it("saves a staff profile before opening account creation with its returned UUID", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.createStaff.mockResolvedValue(staffContractFixture);
@@ -72,7 +144,7 @@ describe("StaffForm", () => {
     mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment, otherDepartment]);
     mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockResolvedValue(reconciled);
     mocks.updateStaff.mockResolvedValue(staffContractFixture);
-    mocks.changeStaffDepartment.mockRejectedValueOnce(new Error("Lost response"))
+    mocks.changeStaffDepartment.mockRejectedValueOnce(new ApiRequestError("Transfer refused", 409))
       .mockResolvedValueOnce(staffContractFixture);
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
@@ -103,12 +175,15 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: targetDepartment.departmentId } });
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("chưa xác minh được khoa hiện tại");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác định kết quả chuyển khoa");
     submit();
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Still unavailable"));
+    expect(mocks.staffMember).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    await screen.findByText(/Still unavailable/);
     expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
     expect(mocks.router.push).not.toHaveBeenCalled();
-    submit();
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra dữ liệu đã lưu" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận kết quả đã lưu" }));
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());
     expect(mocks.changeStaffDepartment).toHaveBeenCalledTimes(1);
     expect(mocks.updateStaff).toHaveBeenCalledTimes(1);
@@ -323,7 +398,7 @@ describe("StaffForm", () => {
     }
     await act(async () => { resolveProfile(staffContractFixture); });
     expect(screen.getByLabelText(/Email/)).toBeDisabled();
-    await act(async () => { rejectTransfer(new Error("Transfer refused")); });
+    await act(async () => { rejectTransfer(new ApiRequestError("Transfer refused", 409)); });
     await screen.findByRole("alert");
     expect(screen.getByLabelText(/Email/)).toBeEnabled();
   });
@@ -388,7 +463,7 @@ describe("StaffForm", () => {
     mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockResolvedValue(currentDepartment);
     mocks.updateStaff.mockResolvedValue(profileSaved);
     mocks.changeStaffDepartment
-      .mockRejectedValueOnce(new Error("DEPARTMENT_HEAD_INVALID: cần gỡ trưởng khoa trước"))
+      .mockRejectedValueOnce(new ApiRequestError("DEPARTMENT_HEAD_INVALID: cần gỡ trưởng khoa trước", 409))
       .mockResolvedValueOnce(movedStaff);
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     await screen.findByDisplayValue("Nguyen Van A");
