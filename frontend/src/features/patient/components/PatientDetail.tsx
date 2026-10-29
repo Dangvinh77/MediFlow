@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { ApiRequestError } from "@/lib/api";
@@ -15,7 +15,7 @@ import { patientPermissions } from "../logic";
 import type { PatientDTO } from "../types";
 import { usePatientMutation } from "../usePatientMutation";
 
-interface PatientDetailProps { patientId: string; notice?: "created" | "updated" }
+interface PatientDetailProps { patientId: string; notice?: "created" | "updated"; onboarding?: ReactNode }
 type State = { key: string; status: "idle" } | { key: string; status: "success"; patient: PatientDTO } | { key: string; status: "not-found" } | { key: string; status: "error"; statusCode?: number; message: string; correlationId: string | null };
 const getServerSession = () => null;
 
@@ -24,7 +24,7 @@ export function PatientDetail(props: PatientDetailProps) {
   return <PatientDetailWorkspace key={`${props.patientId}:${session}`} {...props} />;
 }
 
-function PatientDetailWorkspace({ patientId, notice }: PatientDetailProps) {
+function PatientDetailWorkspace({ patientId, notice, onboarding }: PatientDetailProps) {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSession);
   const permissions = patientPermissions(role);
@@ -83,6 +83,7 @@ function PatientDetailWorkspace({ patientId, notice }: PatientDetailProps) {
         <DetailSection title="Thông tin cá nhân"><Info label="Ngày sinh" value={formatLocalDate(patient.ngaySinh)} /><Info label="Giới tính" value={patient.gioiTinh === "M" ? "Nam" : "Nữ"} /><Info label="CMND/CCCD" value={patient.soCmnd} /><Info label="BHYT" value={patient.bhytSo} /></DetailSection>
         <DetailSection title="Thông tin liên hệ"><Info label="Điện thoại" value={patient.soDienThoai} /><Info label="Email" value={patient.email} /><Info label="Địa chỉ" value={patient.diaChi} /></DetailSection>
       </div>
+      {permissions.write && !patient.daLuuTru ? onboarding : null}
       <div className="flex flex-wrap gap-2">
         {permissions.delete && !patient.daLuuTru ? <button type="button" ref={deleteTrigger} disabled={mutation.blocked} onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-danger/40 bg-surface px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-55">Lưu trữ bệnh nhân</button> : null}
         <Link href="/patients" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold hover:bg-surface-muted">Quay lại danh sách</Link>
