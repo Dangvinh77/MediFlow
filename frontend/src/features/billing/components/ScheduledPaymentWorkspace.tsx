@@ -63,6 +63,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [paymentResult, setPaymentResult] = useState<ScheduledPaymentResult | null>(null);
   const [paidFromRequest, setPaidFromRequest] = useState(false);
+  const [completedRegistrationIds, setCompletedRegistrationIds] = useState<string[]>([]);
   const [checkingOperation, setCheckingOperation] = useState(false);
   const [lastIntent, setLastIntent] = useState<ScheduledIntent | null>(null);
   const [recoveredOperationId, setRecoveredOperationId] = useState<string | null>(null);
@@ -79,6 +80,10 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const [clientNow, setClientNow] = useState(0);
   const uncertain = paymentError?.uncertain === true;
   const pending = paymentResult?.operation.status === "PREPARING" || recoveredOperationId !== null;
+
+  function rememberCompleted(registration: string) {
+    setCompletedRegistrationIds(ids => ids.includes(registration) ? ids : [...ids, registration]);
+  }
 
   useEffect(() => {
     const firstTick = window.setTimeout(() => setClientNow(Date.now()), 0);
@@ -140,6 +145,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
       setRequest(result);
       setRegistrationId(id);
       setPaidFromRequest(result.status === "PAID" && recovery === null);
+      if (result.status === "PAID") rememberCompleted(result.registrationId);
       if (quoteEnabled) void loadQuote(result.paymentRequestId);
       if (recovery) {
         const recoveryKind = recovery.kind ?? "PATIENT_PAYMENT";
@@ -223,6 +229,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
         ? await billingApi.payScheduledRequest(submittedRequest.paymentRequestId, intentToRun.body, options)
         : await billingApi.confirmScheduledZeroLiability(submittedRequest.paymentRequestId, intentToRun.body, options);
       if (isCurrentRequest()) setPaymentResult(result);
+      if (result.operation.status === "COMPLETED") rememberCompleted(submittedRequest.registrationId);
       if (result.operation.status === "PREPARING") {
         if (isCurrentRequest()) setRecoveredOperationId(result.operation.paymentOperationId);
         await saveScheduledPaymentRecovery(submittedRequest.paymentRequestId, getSessionKey(), { kind: intentToRun.kind, command: body, paymentOperationId: result.operation.paymentOperationId });
@@ -333,6 +340,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
     try {
       const result = await billingApi.scheduledPaymentOperation(operationId);
       if (isCurrentRequest()) setPaymentResult(result);
+      if (result.operation.status === "COMPLETED") rememberCompleted(checkedRequest.registrationId);
       if (result.operation.status === "PREPARING" && lastIntent) {
         if (isCurrentRequest()) setRecoveredOperationId(result.operation.paymentOperationId);
         await saveScheduledPaymentRecovery(checkedRequest.paymentRequestId, getSessionKey(), { kind: lastIntent.kind, command: lastIntent.body, paymentOperationId: result.operation.paymentOperationId });
@@ -382,7 +390,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const patientFormVisible = hasDue && !quoteZero && Number.isSafeInteger(request.reservationRevision) && request.reservationRevision > 0 && !lookupBusy && !pending && !completed && !closed;
 
   return <div className="space-y-6">
-    <ScheduledPaymentQueue disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
+    <ScheduledPaymentQueue completedRegistrationIds={completedRegistrationIds} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
     <details open={manualLookupOpen} onToggle={event => setManualLookupOpen(event.currentTarget.open)} className="rounded-xl border border-border bg-surface p-5">
       <summary className="cursor-pointer text-lg font-semibold">Tra cứu phiếu được cung cấp</summary>
       <p className="mt-1 text-sm text-muted-foreground">Có thể chọn phiếu từ danh sách phía trên hoặc dùng mã phiếu được cung cấp khi cần hỗ trợ tra cứu. Số tiền phải thu do hệ thống kiểm tra.</p>

@@ -9,7 +9,7 @@ import { formatInstant } from "@/lib/format";
 import { billingApi } from "../api";
 import type { ScheduledPaymentQueueItem } from "../types";
 
-export function ScheduledPaymentQueue({ disabled, onSelect }: { disabled: boolean; onSelect: (registrationId: string) => void }) {
+export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistrationIds = [] }: { disabled: boolean; onSelect: (registrationId: string) => void; completedRegistrationIds?: string[] }) {
   const [patientId, setPatientId] = useState("");
   const [items, setItems] = useState<ScheduledPaymentQueueItem[] | null>(null);
   const [page, setPage] = useState(0);
@@ -29,6 +29,7 @@ export function ScheduledPaymentQueue({ disabled, onSelect }: { disabled: boolea
       if (current === generation.current) setError({ message: cause instanceof Error ? cause.message : "Không thể tải khoản chờ thu.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
     } finally { if (current === generation.current) setBusy(false); }
   }
+  const waitingItems = items?.filter(item => !completedRegistrationIds.includes(item.registrationId));
   return <section aria-label="Danh sách chờ thu phí" className="space-y-4 rounded-xl border border-border bg-surface p-5">
     <div><h2 className="text-lg font-semibold">Khoản khám đang chờ thu</h2><p className="mt-1 text-sm text-muted-foreground">Chọn bệnh nhân để tìm, hoặc tải toàn bộ khoản còn hạn. Chọn phiếu để kiểm tra số tiền hiện hành trước khi thu.</p></div>
     <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void load(); }}>
@@ -36,7 +37,7 @@ export function ScheduledPaymentQueue({ disabled, onSelect }: { disabled: boolea
       <Button type="submit" disabled={disabled} loading={busy}>Tải khoản chờ thu</Button>
     </form>
     {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void load(page)} /> : null}
-    {items ? items.length ? <ul className="divide-y divide-border">{items.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+    {waitingItems ? waitingItems.length ? <ul className="divide-y divide-border">{waitingItems.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
       <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p><ReferenceText kind="department" value={item.departmentId} fallback="Khoa" /></p><p className="text-xs text-muted-foreground">Đăng ký {formatInstant(item.createdAt)} · Hạn thanh toán {formatInstant(item.expiresAt)}</p></div>
       <Button type="button" disabled={disabled} onClick={() => onSelect(item.registrationId)}>Chọn khoản thu</Button>
     </li>)}</ul> : <p role="status" className="text-sm text-muted-foreground">Không có khoản khám còn hạn đang chờ thu. Nếu vừa đăng ký, tải lại sau khi hệ thống ghi nhận phiếu.</p> : null}

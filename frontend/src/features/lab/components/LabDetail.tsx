@@ -150,11 +150,21 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(test.updatedAt)}</dd></div>
       </dl>
 
+      <details className="rounded-xl border border-border bg-surface p-5">
+        <summary className="cursor-pointer font-semibold">Thông tin bàn giao thu ngân</summary>
+        <p className="mt-2 text-sm text-muted-foreground">Dùng các mã của yêu cầu này khi tra cứu khoản phí xét nghiệm. Nhấp vào ô để chọn và sao chép.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {[["test", "Mã xét nghiệm bàn giao", test.testId], ["patient", "Mã bệnh nhân bàn giao", test.patientId], ["episode", "Mã đợt chăm sóc bàn giao", test.careEpisodeId]].map(([key, label, value]) => <label key={key} htmlFor={`lab-handoff-${key}`} className="space-y-1 text-sm">{label}
+            {value ? <input id={`lab-handoff-${key}`} readOnly value={value} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" /> : <span className="block text-warning">Chưa có mã đợt chăm sóc. Liên hệ bộ phận chỉ định để đối soát.</span>}
+          </label>)}
+        </div>
+      </details>
+
       <section className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold">Kết quả xét nghiệm</h2>
         {results.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có chỉ số kết quả.</p> : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-2xl text-left text-sm">
+            <table className="w-full text-left text-sm">
               <thead className="border-b border-border"><tr><th scope="col" className="px-3 py-2">Chỉ số</th><th scope="col" className="px-3 py-2">Giá trị</th><th scope="col" className="px-3 py-2">Đơn vị</th><th scope="col" className="px-3 py-2">Khoảng tham chiếu</th></tr></thead>
               <tbody>{results.map((result) => <tr key={result.resultId} className="border-b border-border last:border-0"><td className="px-3 py-3 font-medium">{result.indicator}</td><td className="px-3 py-3">{result.value}</td><td className="px-3 py-3">{result.unit ?? "—"}</td><td className="px-3 py-3">{result.referenceRange ?? "—"}</td></tr>)}</tbody>
             </table>

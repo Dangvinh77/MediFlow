@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type InputHTMLAttributes, type Ref } from "react";
 import { useReferenceDirectory, type ReferencePage } from "./ReferenceProvider";
+import { isUuid } from "@/lib/validation";
 export interface ReferenceInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   kind: string; scope?: string; value: string; onValueChange: (value: string) => void;
   ref?: Ref<HTMLInputElement>;
@@ -38,7 +39,16 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
     const current = ++generation.current;
     setBusy(true); setError(null); setResult(null);
     try {
-      const next = await directory.search(kind, query.trim(), nextPage, scope);
+      const text = query.trim();
+      // Exact handed-off IDs still need an authoritative label and an explicit click.
+      // Scoped pickers must use their scoped search; a label alone cannot prove membership.
+      let next: ReferencePage;
+      if (isUuid(text) && !scope) {
+        const label = await directory.resolve(kind, text);
+        next = { items: label ? [{ id: text, label }] : [], hasMore: false };
+      } else {
+        next = await directory.search(kind, text, nextPage, scope);
+      }
       if (generation.current === current) { setResult(next); setPage(nextPage); }
     } catch (cause) {
       if (generation.current === current) setError(cause instanceof Error ? cause.message : "Không thể tải lựa chọn. Hãy thử lại.");

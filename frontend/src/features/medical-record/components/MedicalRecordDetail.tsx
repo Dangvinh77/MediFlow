@@ -201,6 +201,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       /> : null}
 
       <div className="flex flex-wrap gap-3">
+        {outpatientEnabled && record.appointmentId ? <Link href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted">Xem xét nghiệm của lượt khám</Link> : null}
         <Button type="button" onClick={retry}>Cập nhật hồ sơ</Button>
         {canMutate && record.status === "OPEN" ? (
           <Link href={`/records/${record.recordId}/edit`} className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Sửa triệu chứng</Link>

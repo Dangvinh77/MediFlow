@@ -60,6 +60,16 @@ describe("Lab detail read and permission states", () => {
     mocks.getRole.mockReturnValue("LAB_TECH");
   });
 
+  it("provides exact source identities for cashier handoff without making the nurse infer an episode", async () => {
+    mocks.getById.mockResolvedValue(test);
+    render(<LabDetail testId={test.testId} />);
+    await screen.findByText(test.labType);
+    fireEvent.click(screen.getByText("Thông tin bàn giao thu ngân"));
+    expect(screen.getByLabelText("Mã xét nghiệm bàn giao")).toHaveValue(test.testId);
+    expect(screen.getByLabelText("Mã bệnh nhân bàn giao")).toHaveValue(test.patientId);
+    expect(screen.getByLabelText("Mã đợt chăm sóc bàn giao")).toHaveValue(test.careEpisodeId);
+  });
+
   it("shows loading, then keeps payment separate from the care lifecycle", async () => {
     const pending = deferred<LabTestDTO>();
     mocks.getById.mockReturnValue(pending.promise);

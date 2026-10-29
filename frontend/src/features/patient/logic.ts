@@ -44,7 +44,7 @@ export function validatePatientDraft(draft: PatientDraft, today = patientToday()
   if (draft.diaChi.trim().length > 255) errors.diaChi = "Địa chỉ tối đa 255 ký tự.";
   if (draft.soDienThoai.trim() && !/^\d{10,15}$/.test(draft.soDienThoai.trim())) errors.soDienThoai = "Số điện thoại phải gồm 10 đến 15 chữ số.";
   if (draft.email.trim() && (draft.email.trim().length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))) errors.email = "Email không đúng định dạng hoặc vượt quá 100 ký tự.";
-  if (draft.bhytSo.trim() && !/^\d{2}-\d{8}-\d$/.test(draft.bhytSo.trim())) errors.bhytSo = "Số BHYT phải có định dạng 2 số-8 số-1 số.";
+  if (draft.bhytSo.trim() && !/^\d{2}-\d{8}-\d$/.test(draft.bhytSo.trim())) errors.bhytSo = "Số BHYT phải có dạng 01-12345678-9 (2 số-8 số-1 số, có dấu gạch nối). Có thể để trống nếu chưa có.";
   return errors;
 }
 

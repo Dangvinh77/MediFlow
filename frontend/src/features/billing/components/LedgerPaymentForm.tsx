@@ -18,6 +18,7 @@ interface LedgerPaymentFormProps {
   remainingAmount?: number;
   currency?: string;
   onLockChange?: (locked: boolean) => void;
+  onCompleted?: (payment: LedgerPaymentDTO) => void;
 }
 
 export function LedgerPaymentForm(props: LedgerPaymentFormProps) {
@@ -28,7 +29,7 @@ export function LedgerPaymentForm(props: LedgerPaymentFormProps) {
   );
 }
 
-function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLockChange }: LedgerPaymentFormProps) {
+function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLockChange, onCompleted }: LedgerPaymentFormProps) {
   const [amount, setAmount] = useState(remainingAmount === undefined ? "" : String(remainingAmount));
   const [method, setMethod] = useState<LedgerPaymentMethod>("CASH");
   const [providerReference, setProviderReference] = useState("");
@@ -53,6 +54,7 @@ function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLock
       onLockChange?.(payment.status === "PENDING");
       if (payment.status === "COMPLETED") {
         setError(null);
+        onCompleted?.(payment);
       } else if (payment.status === "PENDING") {
         setError({ message: "Giao dịch đang chờ xác nhận. Hãy tra cứu lại khoản phí để kiểm tra trạng thái trước khi thanh toán tiếp.", correlationId: null });
       } else {

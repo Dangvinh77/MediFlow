@@ -89,6 +89,35 @@ describe("PaymentRequestLookupForm", () => {
     expect(mocks.discover).not.toHaveBeenCalled();
   });
 
+  it("refreshes the authoritative balance after payment and preserves the receipt if refresh fails", async () => {
+    mocks.discover.mockResolvedValueOnce(discovery()).mockRejectedValueOnce(new Error("Đọc lại bị gián đoạn"));
+    mocks.complete.mockResolvedValue(payment());
+    render(<PaymentRequestLookupForm />);
+    fillExamIdentifiers();
+    fireEvent.click(screen.getByRole("button", { name: "Tra cứu khoản phí" }));
+    const confirm = await screen.findByRole("button", { name: "Xác nhận thanh toán" });
+    fireEvent.click(confirm);
+    expect(await screen.findByText(/Thanh toán thành công/)).toBeVisible();
+    await waitFor(() => expect(mocks.discover).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Chưa cập nhật được số dư/);
+    expect(screen.queryByRole("button", { name: "Xác nhận thanh toán" })).not.toBeInTheDocument();
+    expect(mocks.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the server's paid balance after a completed payment", async () => {
+    mocks.discover.mockResolvedValueOnce(discovery()).mockResolvedValueOnce({ ...discovery("PAID", 0), paidAmount: 100 });
+    mocks.complete.mockResolvedValue(payment());
+    render(<PaymentRequestLookupForm />);
+    fillExamIdentifiers();
+    fireEvent.click(screen.getByRole("button", { name: "Tra cứu khoản phí" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận thanh toán" }));
+    await waitFor(() => expect(mocks.discover).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Khoản phí đã thanh toán. Không thu thêm cho yêu cầu này.")).toBeVisible();
+    expect(screen.getByText("Còn phải thu").nextElementSibling).toHaveTextContent("0 VND");
+    expect(screen.queryByRole("button", { name: "Xác nhận thanh toán" })).not.toBeInTheDocument();
+    expect(mocks.complete).toHaveBeenCalledTimes(1);
+  });
+
   it("discovers an exact EXAM charge and pays the server-reported remaining amount and currency", async () => {
     mocks.discover.mockResolvedValue(discovery());
     mocks.complete.mockResolvedValue(payment());
@@ -136,7 +165,7 @@ describe("PaymentRequestLookupForm", () => {
 
     expect(await screen.findByRole("region", { name: "Chi tiết khoản phí" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Xác nhận thanh toán" })).not.toBeInTheDocument();
-    expect(screen.getByText(/không còn ở trạng thái có thể thu/i)).toBeVisible();
+    expect(screen.getByText(/không thu thêm cho yêu cầu này/i)).toBeVisible();
   });
 
   it("discards an unresolved discovery result after the signed account changes", async () => {

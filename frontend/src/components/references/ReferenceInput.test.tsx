@@ -11,6 +11,34 @@ function directory(overrides: Partial<ReferenceDirectory> = {}): ReferenceDirect
 }
 
 describe("reference selection", () => {
+  it("resolves a handed-off UUID into a named option and requires explicit selection", async () => {
+    const source = directory();
+    const onValueChange = vi.fn();
+    render(<ReferenceProvider directory={source}><ReferenceInput aria-label="Bệnh nhân" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    const result = await screen.findByRole("button", { name: "Nguyễn An" });
+    expect(source.resolve).toHaveBeenCalledWith("patient", id);
+    expect(source.search).not.toHaveBeenCalled();
+    expect(onValueChange).not.toHaveBeenCalledWith(id);
+    fireEvent.click(result);
+    expect(onValueChange).toHaveBeenLastCalledWith(id);
+  });
+
+  it("does not accept an unresolved handed-off UUID or bypass a scoped search", async () => {
+    const source = directory({ resolve: vi.fn().mockResolvedValue(null) });
+    const onValueChange = vi.fn();
+    const view = render(<ReferenceProvider directory={source}><ReferenceInput aria-label="Bệnh nhân" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    expect(await screen.findByText("Không có kết quả phù hợp.")).toBeVisible();
+    expect(onValueChange).not.toHaveBeenCalledWith(id);
+    view.rerender(<ReferenceProvider directory={source}><ReferenceInput aria-label="Bác sĩ" kind="doctor" scope="department-id" value="" onValueChange={onValueChange} /></ReferenceProvider>);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    await waitFor(() => expect(source.search).toHaveBeenCalledWith("doctor", id, 0, "department-id"));
+    expect(source.resolve).toHaveBeenCalledTimes(1);
+  });
   it("dismisses the dropdown without changing the selection and restores input focus", async () => {
     const onValueChange = vi.fn();
     render(<ReferenceProvider directory={directory()}><ReferenceInput aria-label="Bệnh nhân" placeholder="Tìm bệnh nhân theo tên" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);

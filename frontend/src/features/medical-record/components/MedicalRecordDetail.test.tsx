@@ -106,6 +106,7 @@ describe("Medical record detail identity and permissions", () => {
     await screen.findByText("First record");
 
     expect(screen.getByRole("link", { name: "Chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
+    expect(screen.getByRole("link", { name: "Xem xét nghiệm của lượt khám" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
     expect(screen.getByRole("heading", { name: "Hoàn tất khám" })).toBeVisible();
   });
 

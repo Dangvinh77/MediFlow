@@ -21,6 +21,14 @@ const labTest: LabTestDTO = {
 describe("Lab queue request lifecycle", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.search.mockReset(); mocks.role = "LAB_TECH"; });
 
+  it("loads the outpatient episode provided by a record link on the first request", async () => {
+    const episodeId = "00000000-0000-4000-8000-000000000012";
+    mocks.search.mockResolvedValue(page);
+    render(<LabTable outpatientEnabled initialEpisodeId={episodeId} />);
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledWith({ episodeType: "OUTPATIENT_VISIT", episodeId, page: 0, size: 20 }));
+    expect(screen.getByLabelText("Mã đợt chăm sóc")).toHaveValue(episodeId);
+  });
+
   it("ignores an authentication failure after leaving the queue", async () => {
     let reject!: (cause: unknown) => void;
     mocks.search.mockReturnValue(new Promise((_, fail) => { reject = fail; }));

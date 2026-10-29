@@ -65,7 +65,7 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: boolean }) {
+export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: { outpatientEnabled?: boolean; initialEpisodeId?: string }) {
   const router = useRouter();
   const requestSequence = useRef(0);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
@@ -75,15 +75,17 @@ export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: bo
   const [validationError, setValidationError] = useState<string | null>(null);
   const [departmentId, setDepartmentId] = useState("");
   const [status, setStatus] = useState<LabTestStatus | "">("");
-  const [episodeType, setEpisodeType] = useState<LabCareEpisodeType | "">("");
-  const [episodeId, setEpisodeId] = useState("");
-  const [activeFilters, setActiveFilters] = useState<LabSearchParams>({});
+  const [initialFilters] = useState<LabSearchParams>(() => outpatientEnabled && isUuid(initialEpisodeId)
+    ? { episodeType: "OUTPATIENT_VISIT", episodeId: initialEpisodeId } : {});
+  const [episodeType, setEpisodeType] = useState<LabCareEpisodeType | "">(initialFilters.episodeType ?? "");
+  const [episodeId, setEpisodeId] = useState(initialFilters.episodeId ?? "");
+  const [activeFilters, setActiveFilters] = useState<LabSearchParams>(initialFilters);
   const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [lastRequest, setLastRequest] = useState<LabRequest>({
     page: 0,
-    filters: {},
+    filters: initialFilters,
   });
 
   const loadTests = useCallback(async (page: number, filters: LabSearchParams) => {
@@ -118,14 +120,14 @@ export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: bo
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => {
-      void loadTests(0, {});
+      void loadTests(0, initialFilters);
     }, 0);
 
     return () => {
       window.clearTimeout(initialLoad);
       requestSequence.current += 1;
     };
-  }, [loadTests]);
+  }, [loadTests, initialFilters]);
 
   function onFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

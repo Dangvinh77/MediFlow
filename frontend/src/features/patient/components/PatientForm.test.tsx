@@ -86,6 +86,17 @@ describe("PatientForm", () => {
     expect(screen.getByLabelText(/Họ tên/)).toHaveAttribute("aria-invalid", "false");
   });
 
+  it("shows Vietnamese BHYT guidance on a normal submit instead of the browser pattern popup", async () => {
+    render(<PatientForm />); fill();
+    const insurance = screen.getByLabelText("Số BHYT");
+    expect(insurance).toHaveAccessibleDescription(/01-12345678-9/);
+    fireEvent.change(insurance, { target: { value: "1234567890" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bệnh nhân" }));
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent(/BHYT/);
+    expect(insurance).toHaveAttribute("aria-invalid", "true");
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
   it("creates once with trimmed/null wire fields and navigates by returned patient identity", async () => {
     const response = deferred<typeof patientContractFixture>();
     mocks.create.mockReturnValue(response.promise);
