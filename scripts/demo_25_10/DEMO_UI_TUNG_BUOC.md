@@ -60,6 +60,7 @@ Sau khi đăng ký, mỗi trường hợp đều đi tiếp từ mục 3 đến 
 2. Menu **Bệnh nhân** → **Thêm bệnh nhân** (`/patients/new`).
 3. Nhập ví dụ: họ tên `Demo Nguyễn Lan 01`, ngày sinh `1995-01-01`, giới tính nữ,
    CCCD tổng hợp `990000000001`, điện thoại `0900000001`, địa chỉ `Dữ liệu demo`.
+   BHYT không bắt buộc: để trống nếu chưa có; nếu nhập, dùng mẫu `01-12345678-9` (2 số-8 số-1 số, có dấu gạch nối).
    Nếu CCCD đã tồn tại, tìm lại đúng hồ sơ hoặc dùng CCCD tổng hợp khác; không tạo trùng.
 4. Bấm **Tạo bệnh nhân**. Tại trang chi tiết, xem thông báo đã tạo và khối
    **Tài khoản bệnh nhân và đăng ký khám**.
@@ -108,7 +109,7 @@ Lượt nền là dữ liệu mô phỏng để có nguồn hợp lệ, không p
    đúng kết quả. Chọn **Khám mới** hoặc **Tái khám** theo mục 2.
 5. **Hình thức tiếp nhận**: chọn tại quầy (`AT_COUNTER`); nhập ghi chú nếu cần.
 6. Bấm **Đăng ký và giữ chỗ**. Kỳ vọng **Đang chờ thu tiền**, chưa có số thứ tự.
-7. Ghi lại **mã phiếu đăng ký** cho thu ngân; đó cũng là mã lượt/đợt chăm sóc dùng
+7. Chọn/sao chép ô **Mã phiếu bàn giao thu ngân**; có thể bấm **Mở phiếu khám vừa đăng ký** để kiểm lại. Gửi mã phiếu cho thu ngân; đó cũng là mã lượt/đợt chăm sóc dùng
    để đối chiếu các bước sau. Lưu thêm mã bệnh nhân khi cần tra cứu phí Lab/thuốc.
 
 Tại quầy đã ghi nhận có mặt; không bấm tiếp nhận kiểu lịch cũ. Nếu chọn đăng ký trước
@@ -157,9 +158,11 @@ vào số tiền của bệnh nhân đang demo.
    (`/billing/payment-requests`).
 2. **Loại khoản phí**: xét nghiệm (`LAB_TEST`). Nhập **Mã xét nghiệm**, chọn đúng
    **Mã bệnh nhân**, nhập **Mã đợt điều trị** = mã phiếu đăng ký ở mục 3.
+   Tại chi tiết Lab, mở **Thông tin bàn giao thu ngân** để lấy đúng cả ba mã.
+   Với bệnh nhân, nhập tên/CCCD hoặc dán mã bàn giao → **Tìm** → chọn kết quả có tên; chỉ gõ mã chưa phải đã chọn.
 3. **Tra cứu khoản phí**. Nếu sự kiện chưa tới Billing, chờ vài giây rồi tra cứu lại.
 4. Kiểm báo giá CBC: 120.000, hỗ trợ 84.000, người bệnh trả **36.000 VND**.
-5. Chọn tiền mặt → **Xác nhận thu theo báo giá**. Chờ xác nhận thành công.
+5. Chọn tiền mặt → **Xác nhận thu theo báo giá**. Chờ xác nhận thành công, trạng thái **Đã thanh toán**, còn phải thu **0 VND**. Nếu đọc lại số dư lỗi, giữ mã giao dịch và tra cứu lại, không thu lần hai.
    Không dùng luồng hóa đơn cũ hoặc tự tạo khoản tiền để thay cho khoản Lab này.
 
 Màn hình tra cứu Lab/thuốc còn cần các mã nguồn và mã lượt; đây là thao tác UI hiện
@@ -183,7 +186,7 @@ có, chưa phải trải nghiệm bàn giao tự động giữa các quầy.
 ## 8. DOCTOR — đọc kết quả, kê đơn và hoàn tất khám
 
 1. Đăng nhập `demo.doctor`, mở lại hồ sơ ở mục 5 → **Cập nhật hồ sơ**.
-   Xem kết quả Lab/đính kèm; nếu chưa xuất hiện, đợi sự kiện đồng bộ rồi tải lại.
+   Bấm **Xem xét nghiệm của lượt khám** để mở danh sách đã lọc đúng lượt, chọn CBC rồi đọc bảng kết quả. Nếu chưa hoàn tất, đợi Lab trả kết quả và cập nhật trạng thái.
 2. Vào **Dược** → **Đơn thuốc** → tạo đơn (`/pharmacy/prescriptions/new`).
 3. Chọn đúng bệnh nhân, chọn **Hồ sơ khám** đang dùng ở mục 5.
    Hệ thống tự xác nhận bác sĩ, khoa, lượt khám và mã giá; không tự chế UUID hoặc mã giá.
@@ -247,3 +250,7 @@ Không bắt bệnh nhân đăng nhập để nurse đặt lịch, bác sĩ khá
 
 Ghi lại bước, vai trò, thời điểm, thông báo lỗi và mã theo dõi khi đánh giá UX. Các
 trạng thái đạt từ seed/API không thay cho kiểm thử click trên UI của ba developer.
+
+## 12. Biên bản kiểm thử UI
+
+Xem [báo cáo click UI, ảnh trước/sau và phạm vi chưa nghiệm thu](../../docs/acceptance/ui-ux-demo-2026-10-29/README.md). Phiên ngoài giờ chỉ xác nhận từng đoạn trên các ca mô phỏng riêng; cần chạy trong giờ khám để nghiệm thu trọn ba tình huống.

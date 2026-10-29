@@ -17,7 +17,7 @@ import { LabQuotePaymentAction } from "./LabQuotePaymentAction";
 import { OutpatientQuoteBreakdown } from "./OutpatientQuoteBreakdown";
 import { LabZeroLiabilityAction } from "./LabZeroLiabilityAction";
 import { billingApi } from "../api";
-import type { OutpatientQuoteDTO, PaymentRequestDiscoveryDTO, PaymentRequestSourcePurpose } from "../types";
+import type { LedgerPaymentDTO, OutpatientQuoteDTO, PaymentRequestDiscoveryDTO, PaymentRequestSourcePurpose } from "../types";
 
 const purposes: Record<PaymentRequestSourcePurpose, { label: string; sourceLabel: string }> = {
   EXAM: { label: "Khám", sourceLabel: "Mã lịch khám" },
@@ -68,6 +68,7 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
   const [error, setError] = useState<{ message: string; correlationId: string | null } | null>(null);
   const [loading, setLoading] = useState(false);
   const [paymentLocked, setPaymentLocked] = useState(false);
+  const [completedPayment, setCompletedPayment] = useState<LedgerPaymentDTO | null>(null);
   const searchLock = useRef(false);
   const generation = useRef(0);
   const quoteGeneration = useRef(0);
@@ -108,6 +109,37 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
 
   function quoteIsCurrent(now: number) {
     return quote !== null && Number.isFinite(Date.parse(quote.expiresAt)) && Date.parse(quote.expiresAt) > now;
+  }
+
+  // A failed read must never turn a confirmed payment into an uncertain write.
+  async function refreshAfterPayment(payment: LedgerPaymentDTO) {
+    const previous = discovery;
+    if (!previous || previous.paymentRequestId !== payment.paymentRequestId) return;
+    setCompletedPayment(payment);
+    setDiscovery(null);
+    quoteGeneration.current++;
+    setQuote(null);
+    setQuoteError(null);
+    setQuoteLoading(false);
+    setError(null);
+    setLoading(true);
+    searchLock.current = true;
+    const current = ++generation.current;
+    try {
+      const updated = await billingApi.discoverPaymentRequest({ purpose: previous.purpose, sourceId: previous.sourceId, patientId: previous.patientId, careEpisodeId: previous.careEpisodeId });
+      if (generation.current !== current) return;
+      if (updated.paymentRequestId !== previous.paymentRequestId || updated.patientId !== previous.patientId
+        || updated.sourceId !== previous.sourceId || updated.careEpisodeId !== previous.careEpisodeId
+        || updated.paidAmount <= previous.paidAmount) {
+        throw new Error("Số dư đọc lại chưa phản ánh khoản thu vừa hoàn tất.");
+      }
+      setDiscovery(updated);
+      if (quoteEnabled && updated.status !== "PAID") void loadQuote(updated.paymentRequestId);
+    } catch {
+      if (generation.current === current) setError({ message: "Chưa cập nhật được số dư sau thanh toán. Khoản thu đã được ghi nhận; không thu lại. Bấm Tra cứu khoản phí để đọc lại trạng thái.", correlationId: null });
+    } finally {
+      if (generation.current === current) { setLoading(false); searchLock.current = false; }
+    }
   }
 
   async function lookup() {
@@ -153,6 +185,11 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
     const source = sourceId.trim();
     const patient = patientId.trim();
     const episode = careEpisodeId.trim();
+    if (!patient && isUuid(source) && (!showCareEpisode || isUuid(episode))) {
+      setError({ message: "Bấm Tìm và chọn đúng bệnh nhân từ kết quả. Gõ hoặc dán mã vào ô tìm kiếm chưa phải là đã chọn bệnh nhân.", correlationId: null });
+      setDiscovery(null);
+      return;
+    }
     if (!isUuid(source) || !isUuid(patient) || (showCareEpisode && !isUuid(episode))) {
       setError({ message: "Mã nguồn, mã bệnh nhân và mã đợt điều trị phải là UUID hợp lệ.", correlationId: null });
       setDiscovery(null);
@@ -162,6 +199,7 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
   }
 
   function changePurpose(value: PaymentRequestSourcePurpose) {
+    setCompletedPayment(null);
     setPurpose(value);
     setSourceId("");
     setPatientId("");
@@ -204,14 +242,14 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
           </select>
         </Field>
         <Field label={purposes[purpose].sourceLabel} htmlFor="payment-request-source-id" required>
-          <input id="payment-request-source-id" required value={sourceId} disabled={loading || paymentLocked} onChange={(event) => { setSourceId(event.target.value); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
+          <input id="payment-request-source-id" required value={sourceId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setSourceId(event.target.value); setDiscovery(null); }} placeholder="Mã do quầy phát sinh cung cấp" className={controlClassName} />
         </Field>
-        <Field label="Mã bệnh nhân" htmlFor="payment-request-patient-id" required>
-          <ReferenceInput kind="patient" id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onValueChange={(selectedId) => { setPatientId(selectedId); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
+        <Field label="Mã bệnh nhân" htmlFor="payment-request-patient-id" required hint="Nhập tên, CCCD hoặc mã được bàn giao, bấm Tìm rồi chọn kết quả có tên bệnh nhân.">
+          <ReferenceInput kind="patient" id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onValueChange={(selectedId) => { setCompletedPayment(null); setPatientId(selectedId); setDiscovery(null); }} placeholder="Tìm theo tên hoặc CCCD" className={controlClassName} />
         </Field>
         {showCareEpisode ? (
           <Field label="Mã đợt điều trị" htmlFor="payment-request-care-episode-id" required hint="Nhập mã do màn hình nguồn cung cấp; không suy ra từ mã xét nghiệm hoặc đơn thuốc.">
-            <input id="payment-request-care-episode-id" required value={careEpisodeId} disabled={loading || paymentLocked} onChange={(event) => { setCareEpisodeId(event.target.value); setDiscovery(null); }} placeholder="UUID" className={controlClassName} />
+            <input id="payment-request-care-episode-id" required value={careEpisodeId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setCareEpisodeId(event.target.value); setDiscovery(null); }} placeholder="Mã đợt chăm sóc từ màn hình nguồn" className={controlClassName} />
           </Field>
         ) : (
           <p className="text-xs text-muted-foreground">Đối với khoản phí khám, Billing dùng mã lịch khám làm mã đợt điều trị.</p>
@@ -222,6 +260,7 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
         </div>
       </form>
 
+      {completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Thanh toán thành công. Đã ghi nhận {formatDecimal(completedPayment.amount)} {completedPayment.currency}. Mã giao dịch: {completedPayment.transactionId}</p> : null}
       {loading ? <AsyncState kind="loading" message="Đang tra cứu khoản phí…" /> : null}
       {discovery ? (
         <section aria-label="Chi tiết khoản phí" className="space-y-5 rounded-xl border border-border bg-surface p-6">
@@ -240,7 +279,7 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
             <Info label="Hạn thanh toán" value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
             <Info label="Dữ liệu Billing ghi nhận lúc" value={formatInstant(discovery.observedAt)} />
           </dl>
-          {quoteEnabled ? <div className="space-y-3 border-t border-border pt-4">
+          {quoteEnabled && requestIsOpen ? <div className="space-y-3 border-t border-border pt-4">
             {quote ? <OutpatientQuoteBreakdown quote={quote} /> : null}
             {quoteLoading ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
             {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; {labQuotePayment ? "luồng thanh toán LAB V2 cần báo giá trước khi thu." : "các thao tác hiện có vẫn dựa trên số dư Billing dương."}</p> : null}
@@ -256,11 +295,11 @@ function PaymentRequestLookupSession({ quoteEnabled, zeroLiabilityEnabled }: Pay
             enabled={zeroLiabilityEnabled}
           /> : <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">Báo giá mô phỏng là 0 đồng. Chức năng xác nhận nghĩa vụ 0 chưa được mở; không thu tiền mặt.</p> : null}
           {canPay ? (
-            labQuotePayment && quote ? <LabQuotePaymentAction paymentRequestId={discovery.paymentRequestId} quote={quote} quoteCurrent={quoteIsCurrent(clientNow)} onLockChange={setPaymentLocked} />
-              : <LedgerPaymentForm requestId={discovery.paymentRequestId} remainingAmount={discovery.remainingAmount} currency={discovery.currency} onLockChange={setPaymentLocked} />
+            labQuotePayment && quote ? <LabQuotePaymentAction paymentRequestId={discovery.paymentRequestId} quote={quote} quoteCurrent={quoteIsCurrent(clientNow)} onLockChange={setPaymentLocked} onCompleted={payment => void refreshAfterPayment(payment)} />
+              : <LedgerPaymentForm requestId={discovery.paymentRequestId} remainingAmount={discovery.remainingAmount} currency={discovery.currency} onLockChange={setPaymentLocked} onCompleted={payment => void refreshAfterPayment(payment)} />
           ) : (
             <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-              {quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}
+              {discovery.status === "PAID" ? "Khoản phí đã thanh toán. Không thu thêm cho yêu cầu này." : quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}
             </p>
           )}
         </section>

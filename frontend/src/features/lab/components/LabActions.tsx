@@ -78,7 +78,7 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
   return (
     <section className="rounded-xl border border-border bg-surface p-6">
       <h2 className="text-lg font-semibold">Thao tác xét nghiệm</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Backend kiểm tra lại quyền và chuyển trạng thái; phản hồi 403 vẫn là quyết định cuối cùng.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Chỉ bắt đầu khi đã có xác nhận tài chính. Kiểm tra đúng bệnh nhân và chỉ số trước khi lưu kết quả.</p>
       <fieldset disabled={busy || command.uncertain} className="min-w-0 space-y-4">
       <div className="mt-4 flex flex-wrap gap-2">
         {canStart ? <Button type="button" variant="primary" loading={busy} onClick={() => void start()}>Bắt đầu xét nghiệm</Button> : null}

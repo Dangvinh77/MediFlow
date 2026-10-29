@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
@@ -53,6 +53,33 @@ describe("reception session registration", () => {
     mocks.registrations.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 });
   });
 
+  it("distinguishes a search not yet run from an empty result", async () => {
+    const user = userEvent.setup();
+    mocks.list.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 });
+    render(<ReceptionWorkspace enabled />);
+    expect(screen.queryByText("Chưa có buổi khám trong bộ lọc.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Chọn khoa và khoảng ngày/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(await screen.findByText("Chưa có buổi khám trong bộ lọc.")).toBeInTheDocument();
+  });
+
+  it("cannot select stale sessions while a replacement filter is loading or fails", async () => {
+    let reject!: (cause: unknown) => void;
+    mocks.list.mockResolvedValueOnce({ content: [session], totalPages: 1, number: 0 })
+      .mockReturnValueOnce(new Promise((_, fail) => { reject = fail; }));
+    const user = userEvent.setup();
+    render(<ReceptionWorkspace enabled />);
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    await screen.findByRole("button", { name: "Chọn buổi" });
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(screen.queryByRole("button", { name: "Chọn buổi" })).not.toBeInTheDocument();
+    await act(async () => reject(new Error("Không thể tải buổi mới")));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Không thể tải buổi mới");
+    expect(screen.queryByRole("button", { name: "Chọn buổi" })).not.toBeInTheDocument();
+  });
+
   it("retries an uncertain hold with the same idempotency key and reports awaiting payment", async () => {
     const user = userEvent.setup();
     mocks.create.mockRejectedValueOnce(new TypeError("Connection lost")).mockResolvedValueOnce(registration);
@@ -76,6 +103,10 @@ describe("reception session registration", () => {
     expect(mocks.create.mock.calls[0][1].idempotencyKey).toBeTruthy();
     expect(mocks.create.mock.calls[0][1].correlationId).toBeTruthy();
     expect(screen.getByText("Số thứ tự").nextElementSibling).toHaveTextContent("Chưa cấp trước khi xác nhận");
+    expect(screen.getByLabelText("Mã phiếu bàn giao thu ngân")).toHaveValue("registration-id");
+    expect(screen.getByRole("link", { name: "Mở phiếu khám vừa đăng ký" })).toHaveAttribute("href", "/appointments/registration-id");
+    await user.clear(screen.getByLabelText("Bệnh nhân"));
+    expect(screen.queryByLabelText("Mã phiếu bàn giao thu ngân")).not.toBeInTheDocument();
   });
 
   it("does not call V2 endpoints while the scheduling gate is off", () => {

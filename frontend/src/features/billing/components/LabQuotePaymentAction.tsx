@@ -6,6 +6,7 @@ import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { CommandIntentError, prepareCommandIntent } from "@/lib/command-intent";
 import { getSessionKey } from "@/lib/session";
+import { formatDecimal } from "@/lib/format";
 import { billingApi } from "../api";
 import { clearLabPaymentRecovery, readLabPaymentRecovery, saveLabPaymentRecovery, type LabPaymentRecovery } from "../lab-payment-recovery";
 import type { LedgerPaymentDTO, OutpatientQuoteDTO } from "../types";
@@ -15,6 +16,7 @@ interface LabQuotePaymentActionProps {
   quote: OutpatientQuoteDTO;
   quoteCurrent: boolean;
   onLockChange?: (locked: boolean) => void;
+  onCompleted?: (payment: LedgerPaymentDTO) => void;
 }
 
 interface CommandError {
@@ -41,7 +43,7 @@ export function LabQuotePaymentAction(props: LabQuotePaymentActionProps) {
   return <LabQuotePaymentActionSession key={`${props.paymentRequestId}:${props.quote.quoteId}`} {...props} />;
 }
 
-function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, onLockChange }: LabQuotePaymentActionProps) {
+function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, onLockChange, onCompleted }: LabQuotePaymentActionProps) {
   const [method, setMethod] = useState<"CASH" | "BANK_TRANSFER">("CASH");
   const [recovery, setRecovery] = useState<LabPaymentRecovery | null>(null);
   const [recoveryLoading, setRecoveryLoading] = useState(true);
@@ -111,6 +113,7 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
       setResult(payment);
       if (payment.status === "COMPLETED") {
         onLockChange?.(false);
+        onCompleted?.(payment);
       } else {
         onLockChange?.(false);
         setError({ message: "Giao dịch chưa hoàn tất. Tra cứu lại yêu cầu phí trước khi tạo giao dịch khác.", correlationId: null, uncertain: false });
@@ -177,7 +180,7 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
       <p className="mt-1 text-sm text-muted-foreground">Chỉ thu đúng số tiền người bệnh phải trả trong báo giá hiện hành; không cho phép nhập khoản thu một phần ở luồng LAB V2.</p>
     </div>
     <dl className="grid gap-3 text-sm sm:grid-cols-3">
-      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Số tiền</dt><dd className="mt-1 font-semibold">{activeCommand.amount} {activeCommand.currency}</dd></div>
+      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Số tiền</dt><dd className="mt-1 font-semibold">{formatDecimal(activeCommand.amount)} {activeCommand.currency}</dd></div>
       <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã báo giá</dt><dd className="mt-1 break-all font-mono">{activeCommand.quoteId}</dd></div>
       <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hình thức</dt><dd className="mt-1">{activeCommand.paymentMethod === "CASH" ? "Tiền mặt" : "Chuyển khoản"}</dd></div>
     </dl>

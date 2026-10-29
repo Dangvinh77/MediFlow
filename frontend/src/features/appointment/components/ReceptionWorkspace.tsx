@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/session";
 import { prepareCommandIntent, CommandIntentError } from "@/lib/command-intent";
@@ -32,6 +33,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [sessions, setSessions] = useState<ConsultationSessionDTO[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [sessionPage, setSessionPage] = useState(0);
   const [sessionPages, setSessionPages] = useState(0);
   const [selectedSession, setSelectedSession] = useState<ConsultationSessionDTO | null>(null);
@@ -72,12 +74,12 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       return;
     }
     const generation = ++listGeneration.current;
-    setLoading(true); setLoadError(null); setSelectedSession(null); setRegistrationList(null);
+    setLoading(true); setSessions([]); setSessionPages(0); setCreatedRegistration(null); setSessionsLoaded(false); setLoadError(null); setSelectedSession(null); setRegistrationList(null);
     try {
       const result = await appointmentApi.listConsultationSessions({
         departmentId: departmentId.trim(), fromDate: fromDate || undefined, toDate: toDate || undefined, page, size: 20,
       });
-      if (listGeneration.current === generation) { setSessions(result.content); setSessionPage(result.number); setSessionPages(result.totalPages); }
+      if (listGeneration.current === generation) { setSessions(result.content); setSessionsLoaded(true); setSessionPage(result.number); setSessionPages(result.totalPages); }
     } catch (cause) {
       if (listGeneration.current === generation) setLoadError(errorFrom(cause, "Không thể tải buổi khám."));
     } finally {
@@ -87,6 +89,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
 
   async function loadRegistrations(session: ConsultationSessionDTO, page = 0) {
     if (registrationLoading) return;
+    if (session.sessionId !== selectedSession?.sessionId) setCreatedRegistration(null);
     followUpSourceGeneration.current++;
     setSelectedSession(session); setRegistrationList(null); setRegistrationLoading(true); setRegistrationError(null);
     setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
@@ -232,9 +235,10 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   function onDepartmentChange(value: string) {
+    setCreatedRegistration(null);
     listGeneration.current++;
     followUpSourceGeneration.current++;
-    setDepartmentId(value); setSessions([]); setSessionPage(0); setSessionPages(0); setSelectedSession(null); setRegistrationList(null); setRegistrationPage(0); setRegistrationPages(0); setLoadError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
+    setDepartmentId(value); setSessionsLoaded(false); setLoading(false); setSessions([]); setSessionPage(0); setSessionPages(0); setSelectedSession(null); setRegistrationList(null); setRegistrationPage(0); setRegistrationPages(0); setLoadError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
   }
 
   if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tính năng tiếp nhận theo lịch khám V2 chưa được mở.</p>;
@@ -265,7 +269,8 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         <div className="flex items-end"><Button type="submit" loading={loading}>Tải buổi khám</Button></div>
       </form>
       {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
-      {!loading && !loadError && sessions.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chưa có buổi khám trong bộ lọc.</p> : null}
+      {!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch.</p> : null}
+      {!loading && !loadError && sessionsLoaded && sessions.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chưa có buổi khám trong bộ lọc.</p> : null}
       {sessions.length > 0 ? <><ul className="mt-4 grid gap-3 lg:grid-cols-2">
         {sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4 text-sm">
           <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span>{sessionStatusLabels[session.status]}</span></div>
@@ -286,12 +291,14 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         <label className="space-y-1 text-sm font-medium">Bệnh nhân
           <ReferenceInput kind="patient" value={patientId} onValueChange={value => {
             followUpSourceGeneration.current++;
+            setCreatedRegistration(null);
             setPatientId(value); setCreateError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
           }} aria-label="Bệnh nhân" disabled={creating || Boolean(createError?.uncertain)} />
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-visit-type">Loại lượt khám
           <select id="reception-visit-type" value={visitType} onChange={event => {
             followUpSourceGeneration.current++;
+            setCreatedRegistration(null);
             setVisitType(event.target.value as "NEW_VISIT" | "FOLLOW_UP"); setCreateError(null);
             setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null);
             setUseFollowUpRecommendation(true); setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
@@ -349,6 +356,11 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
 
       {createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
         <p role="status" className="font-semibold">{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : registrationStatusLabels[createdRegistration.status]}</p>
+        <p className="mt-2">Chuyển bệnh nhân sang quầy thu ngân trước hạn giữ chỗ. Có thể bàn giao mã phiếu dưới đây để tra cứu đúng lượt.</p>
+        <label className="mt-3 block space-y-1" htmlFor="reception-handoff-id">Mã phiếu bàn giao thu ngân
+          <input id="reception-handoff-id" readOnly value={createdRegistration.registrationId} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" />
+        </label>
+        <Link href={`/appointments/${encodeURIComponent(createdRegistration.registrationId)}`} className="mt-3 inline-flex min-h-11 items-center text-primary underline">Mở phiếu khám vừa đăng ký</Link>
         <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div></dl>
       </div> : null}
 
