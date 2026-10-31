@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
@@ -51,6 +51,34 @@ describe("reception session registration", () => {
     vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
     mocks.list.mockResolvedValue({ content: [session], totalElements: 1, totalPages: 1, number: 0, size: 20 });
     mocks.registrations.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 });
+  });
+
+  it("offers finding and creating patient profiles before selecting a session", () => {
+    render(<ReceptionWorkspace enabled />);
+    expect(screen.getByRole("link", { name: "Tìm hồ sơ bệnh nhân" })).toHaveAttribute("href", "/patients");
+    expect(screen.getByRole("link", { name: "Tạo hồ sơ bệnh nhân" })).toHaveAttribute("href", "/patients/new");
+  });
+
+  it("blocks missing, inverted and oversized dates with associated errors before requesting", async () => {
+    const user = userEvent.setup();
+    render(<ReceptionWorkspace enabled />);
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    const from = screen.getByLabelText("Từ ngày"); const to = screen.getByLabelText("Đến ngày");
+    expect(from).toHaveValue(to.getAttribute("value"));
+    fireEvent.change(to, { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(to).toHaveAttribute("aria-invalid", "true");
+    expect(to).toHaveAccessibleDescription("Vui lòng chọn ngày bắt buộc.");
+    expect(mocks.list).not.toHaveBeenCalled();
+    fireEvent.change(from, { target: { value: "2026-11-01" } });
+    fireEvent.change(to, { target: { value: "2026-10-31" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(to).toHaveAccessibleDescription("Đến ngày phải bằng hoặc sau Từ ngày.");
+    expect(mocks.list).not.toHaveBeenCalled();
+    fireEvent.change(from, { target: { value: "2026-09-01" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(to).toHaveAccessibleDescription("Khoảng tìm kiếm tối đa 30 ngày giữa hai mốc.");
+    expect(mocks.list).not.toHaveBeenCalled();
   });
 
   it("distinguishes a search not yet run from an empty result", async () => {
@@ -173,6 +201,9 @@ describe("reception session registration", () => {
     await user.click(screen.getByRole("button", { name: "Tìm lượt khám trước" }));
     await user.click(await screen.findByRole("button", { name: "Chọn lượt khám trước" }));
 
+    expect(screen.getByRole("region", { name: "Ngữ cảnh tiếp nhận" })).toHaveTextContent("patient-id");
+    expect(screen.getByText(/Đã chọn lượt nguồn hoàn tất/)).toHaveTextContent("20/10/26");
+    expect(screen.getByText(/Đã chọn lượt nguồn hoàn tất/)).toHaveTextContent("Chưa đăng ký tái khám");
     expect(screen.getByText(/nằm ngoài thời gian bác sĩ khuyến nghị/)).toHaveAttribute("role", "status");
     await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
     await screen.findByText("Đang chờ thu tiền");

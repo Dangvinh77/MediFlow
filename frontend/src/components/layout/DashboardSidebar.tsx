@@ -27,6 +27,7 @@ const navigation: readonly NavigationItem[] = [
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
   { group: "Viện phí", href: "/billing", label: "Viện phí", eyebrow: "Hóa đơn & thanh toán", roles: ["ADMIN", "CASHIER"] },
+  { group: "Viện phí", href: "/billing/payment-requests", label: "Thu phí xét nghiệm & thuốc", eyebrow: "Tra cứu khoản phí", roles: ["ADMIN", "CASHIER"] },
   { group: "Viện phí", href: "/billing/scheduled-payments", label: "Thu phí lịch khám", eyebrow: "Đối soát giữ chỗ", roles: ["ADMIN", "CASHIER"], scheduling: true },
   { group: "Viện phí", href: "/billing/revenue", label: "Doanh thu theo khoa", eyebrow: "Báo cáo cho quản lý", roles: ["MANAGER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
@@ -43,6 +44,8 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ role, open, onClose, schedulingEnabled = false }: DashboardSidebarProps) {
   const pathname = usePathname();
   const visibleNavigation = role ? navigation.filter((item) => item.roles.includes(role) && (!item.scheduling || schedulingEnabled)) : [];
+
+  const activeHref = visibleNavigation.filter(item => pathname === item.href || pathname.startsWith(`${item.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <>
@@ -62,7 +65,7 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
           <span className="grid size-9 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">MF</span>
           <div>
             <p className="font-semibold tracking-tight">MediFlow</p>
-            <p className="text-xs text-muted-foreground">Hospital workspace</p>
+            <p className="text-xs text-muted-foreground">Chăm sóc ngoại trú</p>
           </div>
           <button
             type="button"
@@ -75,10 +78,10 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Nghiệp vụ</p>
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{role === "PATIENT" ? "Dành cho bạn" : "Nghiệp vụ"}</p>
           <ul className="space-y-1">
             {visibleNavigation.map((item, index) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const active = item.href === activeHref;
               return (
                 <li key={item.href}>
                   {index === 0 || visibleNavigation[index - 1].group !== item.group ? (
@@ -88,13 +91,13 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
                   ) : null}
                   <Link
                     href={item.href}
-                    aria-label={`${item.label} — ${item.eyebrow}`}
+                    aria-label={`${item.label} — ${role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}`}
                     aria-current={active ? "page" : undefined}
                     onClick={onClose}
                     className={`block rounded-lg border-l-2 px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-surface-muted hover:text-foreground"}`}
                   >
                     <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-xs">{item.eyebrow}</span>
+                    <span className="mt-0.5 block text-xs">{role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}</span>
                   </Link>
                 </li>
               );

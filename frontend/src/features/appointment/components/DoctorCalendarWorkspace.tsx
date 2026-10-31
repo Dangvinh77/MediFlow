@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { ApiRequestError } from "@/lib/api";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -33,10 +34,15 @@ export function mondayOfWeek(dateValue: string): string {
 }
 
 export function DoctorCalendarWorkspace({ enabled }: { enabled: boolean }) {
+  const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
+  return <DoctorCalendarWorkspaceContent key={session ?? "anonymous"} enabled={enabled} />;
+}
+
+function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
   const [view, setView] = useState<"day" | "week">("day");
   const [date, setDate] = useState(todayInVietnam);
   const [calendar, setCalendar] = useState<DoctorCalendarDTO | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<WorkspaceError | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [registrations, setRegistrations] = useState<RegistrationSummary[] | null>(null);
@@ -47,18 +53,34 @@ export function DoctorCalendarWorkspace({ enabled }: { enabled: boolean }) {
   const [registrationPage, setRegistrationPage] = useState(0);
   const [registrationPages, setRegistrationPages] = useState(0);
 
+  const readGeneration = useRef(0);
+  useEffect(() => {
+    if (!enabled) return;
+    const reads = readGeneration;
+    const generation = ++reads.current;
+    const registrationReads = registrationGeneration;
+    appointmentApi.myCalendar({ date: todayInVietnam() }).then(result => {
+      if (generation !== readGeneration.current) return;
+      setCalendar(result);
+    }).catch(cause => {
+      if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải dữ liệu của bạn."));
+    }).finally(() => { if (generation === readGeneration.current) setLoading(false); });
+    return () => { reads.current++; registrationReads.current++; };
+  }, [enabled]);
+
   async function loadCalendar() {
     if (!enabled || loading || !date) return;
+    const generation = ++readGeneration.current;
     registrationGeneration.current++;
     setRegistrationLoading(false); setRegistrationError(null);
     setLoading(true); setError(null); setCalendar(null); setSelectedSession(null); setRegistrations(null);
     try {
       const result = await appointmentApi.myCalendar(view === "week" ? { weekStart: mondayOfWeek(date) } : { date });
-      setCalendar(result);
+      if (generation === readGeneration.current) setCalendar(result);
     } catch (cause) {
-      setError(errorFrom(cause, "Không thể tải lịch khám của bạn."));
+      if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải lịch khám của bạn."));
     } finally {
-      setLoading(false);
+      if (generation === readGeneration.current) setLoading(false);
     }
   }
 

@@ -21,10 +21,35 @@ function Invoke-Docker([string[]]$Arguments) {
 }
 
 function Read-Containers {
-    $ids = @(Invoke-Docker -Arguments @('container', 'ls', '--all', '--quiet'))
-    if ($ids.Count -eq 0) { return @() }
-    $parsed = Invoke-Docker -Arguments (@('container', 'inspect') + $ids) | Out-String | ConvertFrom-Json
-    return $parsed
+    # Save image references from the listing itself: the runner may remove a
+    # container before inspect, leaving no container metadata to recover later.
+    $rows = @(Invoke-Docker -Arguments @('container', 'ls', '--all', '--no-trunc', '--format', '{{json .}}'))
+    foreach ($row in $rows) {
+        $listed = $row | ConvertFrom-Json
+        $workingDir = @($listed.Labels -split ',' | Where-Object {
+            $_ -like 'com.docker.compose.project.working_dir=*'
+        }) | Select-Object -First 1
+        if ($workingDir) { $workingDir = $workingDir.Substring('com.docker.compose.project.working_dir='.Length) }
+        if ($listed.Names -match '^mediflow-' -or (Test-ProjectPath $workingDir)) {
+            $script:capturedImageReferences += $listed.Image
+        }
+        # Only a missing object is benign; daemon/permission/transport errors
+        # must abort cleanup before any destructive action.
+        $savedPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $output = & docker container inspect $listed.ID 2>&1
+            $code = $LASTEXITCODE
+        } finally { $ErrorActionPreference = $savedPreference }
+        if ($code -ne 0) {
+            $message = (@($output | ForEach-Object { $_.ToString().Trim() } |
+                    Where-Object { $_ -and $_ -ne '[]' }) -join "`n").Trim()
+            if ($message -match ('^Error response from daemon: No such (container|object): ' +
+                    [regex]::Escape($listed.ID) + '$')) { continue }
+            throw "Docker failed: container inspect $($listed.ID)`n$message"
+        }
+        $output | Out-String | ConvertFrom-Json
+    }
 }
 
 function Test-ProjectPath([string]$Path) {
@@ -74,6 +99,7 @@ function Stop-Rehearsal {
 }
 
 function Clean-ProjectDocker {
+    $script:capturedImageReferences = @()
     # Capture image identities before the runner removes its own containers.
     $before = @(Read-Containers)
     $ownedBefore = @($before | Where-Object { Test-OwnedContainer $_ })
@@ -94,6 +120,10 @@ function Clean-ProjectDocker {
         $images = @($parsed)
     }
     foreach ($image in $images) {
+        if ($image.Id -in $script:capturedImageReferences -or
+                @($image.RepoTags | Where-Object { $_ -in $script:capturedImageReferences }).Count -gt 0) {
+            $candidateIds += $image.Id
+        }
         $ownedTags = @($image.RepoTags | Where-Object {
             $_ -in $buildTags -or $_ -match '(^|/)mediflow[-_/:]'
         })
@@ -122,7 +152,8 @@ function Clean-ProjectDocker {
         } else {
             foreach ($tag in $tags) {
                 if ($tag -in $buildTags -or $tag -match '(^|/)mediflow[-_/:]' -or
-                    ($id -in $ownedBefore.Image -and $tag -match '^(postgres|rabbitmq):')) {
+                    (($id -in $ownedBefore.Image -or $id -in $script:capturedImageReferences -or
+                        $tag -in $script:capturedImageReferences) -and $tag -match '^(postgres|rabbitmq):')) {
                     Write-Host "Remove image tag: $tag"
                     if (-not $Preview) { Invoke-Docker -Arguments @('image', 'rm', $tag) | Out-Null }
                 }

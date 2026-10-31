@@ -142,26 +142,12 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
           {notice === "created" ? "Đã tạo hồ sơ khám thành công." : "Đã cập nhật hồ sơ khám thành công."}
         </p>
       ) : null}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Mã hồ sơ</p>
-          <p className="mt-1 break-all font-mono text-sm"><ReferenceText kind="record" value={record.recordId} fallback="Hồ sơ khám" /></p>
-        </div>
-        <StatusBadge tone={record.status === "COMPLETED" ? "success" : "info"}>
-          {record.status === "COMPLETED" ? "Đã hoàn tất" : "Đang khám"}
-        </StatusBadge>
-      </div>
-
-      <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Identifier label="Bệnh nhân" value={record.patientId} />
-        <Identifier label="Bác sĩ" value={record.doctorId} />
-        <Identifier label="Khoa" value={record.departmentId} />
-        <Identifier label="Lịch hẹn" value={record.appointmentId} />
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày khám</dt><dd className="mt-1 text-sm">{formatLocalDate(record.examinationDate)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(record.createdAt)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(record.updatedAt)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hoàn tất</dt><dd className="mt-1 text-sm">{formatInstant(record.completedAt)}</dd></div>
-      </dl>
+      <section aria-label="Ngữ cảnh hồ sơ khám" className="sticky top-18 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm">
+        <div className="min-w-0 text-sm"><p className="font-semibold"><ReferenceText kind="patient" value={record.patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground">{formatLocalDate(record.examinationDate)} · <ReferenceText kind="department" value={record.departmentId} fallback="Khoa" /> · <ReferenceText kind="doctor" value={record.doctorId} fallback="Bác sĩ" /></p></div>
+        <StatusBadge tone={record.status === "COMPLETED" ? "success" : "info"}>{record.status === "COMPLETED" ? "Đã hoàn tất" : "Đang khám"}</StatusBadge>
+        {canMutate && record.status === "OPEN" ? <Link href={`/records/${record.recordId}/edit`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm font-medium">Sửa triệu chứng</Link> : null}
+        {outpatientEnabled && role === "DOCTOR" && record.status === "OPEN" && record.appointmentId ? <Link href={`/pharmacy/prescriptions/new?patientId=${encodeURIComponent(record.patientId)}&recordId=${encodeURIComponent(record.recordId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm font-medium">Kê đơn cho lượt khám</Link> : null}
+      </section>
 
       <section className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold">Nội dung khám</h2>
@@ -185,6 +171,21 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         )}
       </section>
 
+      <details className="rounded-xl border border-border bg-surface p-4"><summary className="cursor-pointer text-sm font-medium">Thông tin hồ sơ và thời điểm</summary>
+        <p className="mt-3 text-sm"><ReferenceText kind="record" value={record.recordId} fallback="Hồ sơ khám" technical /></p>
+      <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Identifier label="Bệnh nhân" value={record.patientId} />
+        <Identifier label="Bác sĩ" value={record.doctorId} />
+        <Identifier label="Khoa" value={record.departmentId} />
+        <Identifier label="Lịch hẹn" value={record.appointmentId} />
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày khám</dt><dd className="mt-1 text-sm">{formatLocalDate(record.examinationDate)}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(record.createdAt)}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(record.updatedAt)}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hoàn tất</dt><dd className="mt-1 text-sm">{formatInstant(record.completedAt)}</dd></div>
+      </dl>
+
+      </details>
+
       {canMutate && record.status === "OPEN" ? (
         <AddDiagnosisForm recordId={record.recordId} onCreated={addCreatedDiagnosis} />
       ) : null}
@@ -203,9 +204,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       <div className="flex flex-wrap gap-3">
         {outpatientEnabled && record.appointmentId ? <Link href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted">Xem xét nghiệm của lượt khám</Link> : null}
         <Button type="button" onClick={retry}>Cập nhật hồ sơ</Button>
-        {canMutate && record.status === "OPEN" ? (
-          <Link href={`/records/${record.recordId}/edit`} className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Sửa triệu chứng</Link>
-        ) : null}
+
         <Link href="/records" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại tra cứu</Link>
       </div>
     </section>

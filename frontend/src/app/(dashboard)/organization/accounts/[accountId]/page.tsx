@@ -8,5 +8,5 @@ import { AccountDetailWorkspace } from "./AccountDetailWorkspace";
 export default async function Page({ params }: { params: Promise<{ accountId: string }> }) {
   const { accountId } = await params;
   if (!isUuid(accountId)) notFound();
-  return <PageShell title="Chi tiết tài khoản" description="Xem thông tin, đổi mật khẩu và quản lý trạng thái truy cập."><RecordBreadcrumb href="/organization/accounts" parent="Danh sách tài khoản" current="Chi tiết tài khoản" /><RoleGate allowed={["ADMIN"]}><AccountDetailWorkspace accountId={accountId} /></RoleGate></PageShell>;
+  return <PageShell title="Chi tiết tài khoản" description="Xem thông tin, đổi mật khẩu và quản lý trạng thái truy cập."><RecordBreadcrumb href="/organization/accounts" parent="Danh sách tài khoản" current="Chi tiết tài khoản" /><RoleGate allowed={["ADMIN"]}><AccountDetailWorkspace accountId={accountId} schedulingEnabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"} /></RoleGate></PageShell>;
 }

@@ -3,14 +3,16 @@
 import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
-import { channelLabels, statusPresentation } from "../presentation";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { PatientNotificationActions } from "./PatientNotificationActions";
+import { channelLabels, notificationText, statusPresentation } from "../presentation";
 import type { NotificationDTO } from "../types";
 import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
 
@@ -28,6 +30,7 @@ function DetailWorkspace(props: Props) {
 
 function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult }: Props & { onRetry: () => void; focusResult: boolean }) {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const isCurrent = useNotificationRequestScope("detail");
   const [notification, setNotification] = useState<NotificationDTO | null>(null);
   const [error, setError] = useState<{ message: string; correlationId: string | null; forbidden: boolean } | null>(null);
@@ -67,7 +70,7 @@ function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult 
             : <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={onRetry} />}
         </div>
       </div>
-      <Link href={backHref ?? "/notifications"} className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
+      <Link href={backHref ?? "/notifications"} className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">{role === "PATIENT" ? "Quay lại thông báo của tôi" : "Quay lại tra cứu"}</Link>
     </>
   );
   if (!notification) return <AsyncState kind="loading" message="Đang tải thông báo…" />;
@@ -76,7 +79,7 @@ function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult 
     <section className="mt-6 space-y-6">
       {notice === "sent" && <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã tiếp nhận yêu cầu gửi thông báo.</p>}
 
-      <section aria-label="Tổng quan" className="rounded-xl border border-border bg-surface p-6">
+      {role !== "PATIENT" && <section aria-label="Tổng quan" className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tổng quan</h2>
         <dl className="mt-3 grid gap-5 sm:grid-cols-2">
           <Info label="Bệnh nhân" value={notification.patientId} />
@@ -84,19 +87,21 @@ function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult 
           <Info label="Tạo lúc" value={formatInstant(notification.createdAt)} />
           <Info label="Gửi lúc" value={formatInstant(notification.sentAt)} />
         </dl>
-      </section>
+      </section>}
 
       <section aria-label="Tiêu đề và nội dung" className="space-y-4 rounded-xl border border-border bg-surface p-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tiêu đề</p>
-          <h2 ref={headingRef} tabIndex={-1} className="mt-1 rounded-sm break-words text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notification.title}</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="mt-1 rounded-sm break-words text-xl font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{notificationText(notification.title)}</h2>
         </div>
+        {role === "PATIENT" && <p className="text-xs text-muted-foreground">{formatInstant(notification.createdAt)}</p>}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nội dung</p>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm">{notification.content}</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm">{notificationText(notification.content)}</p>
         </div>
       </section>
 
+      {role === "PATIENT" ? <PatientNotificationActions /> : <>
       <section aria-label="Thông tin gửi" className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Thông tin gửi</h2>
         <dl className="mt-3 grid gap-5 sm:grid-cols-2">
@@ -110,9 +115,10 @@ function DetailRequest({ notificationId, notice, backHref, onRetry, focusResult 
         <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{notification.notificationId}</p>
       </section>
 
+      </>}
       <div className="flex flex-wrap gap-3">
         <button type="button" onClick={onRetry} className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Tải lại thông báo</button>
-        <Link href={backHref ?? "/notifications"} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">Quay lại tra cứu</Link>
+        <Link href={backHref ?? "/notifications"} className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">{role === "PATIENT" ? "Quay lại thông báo của tôi" : "Quay lại tra cứu"}</Link>
       </div>
     </section>
   );

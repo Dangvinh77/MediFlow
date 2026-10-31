@@ -29,6 +29,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
   const initialDepartment = initialQuery?.departmentId;
   const [date, setDate] = useState(initialDate);
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
+  const [submittedQuery, setSubmittedQuery] = useState({ date: initialDate, departmentId: initialDepartment });
   const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
@@ -48,6 +49,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
       return;
     }
     if (onQuerySubmit?.(query)) return;
+    setSubmittedQuery(query);
     load(() => reportApi.daily(query.date, query.departmentId));
   }
 
@@ -77,7 +79,7 @@ function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: D
         <span>Để trống khoa để xem toàn bệnh viện.</span>
         <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
       </div>
-      <ReportRequestFeedback state={state} idle="Chọn ngày để xem báo cáo hàng ngày." loading="Đang tải báo cáo…" onRetry={retry} />
+      <ReportRequestFeedback submittedScope={<>Ngày {formatLocalDate(submittedQuery.date)} · <ReportDepartmentName id={submittedQuery.departmentId} showId /></>} state={state} idle="Chọn ngày để xem báo cáo hàng ngày." loading="Đang tải báo cáo…" onRetry={retry} />
       {state.status === "success" && (
         <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5">
           <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">

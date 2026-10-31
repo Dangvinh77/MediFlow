@@ -20,7 +20,9 @@ class PatientResultNoticeTest {
             byte[] body = wire(type, eventId, patient, type.startsWith("lab.") ? "lab-service" : "clinical-service");
             decoder.receive(type, body); decoder.receive(type, body);
             verify(history, times(1)).deliverInApp(argThat(n -> n.patientId().equals(patient)
-                    && n.sourceEventId().equals(eventId) && !n.content().contains("diagnosis")));
+                    && n.sourceEventId().equals(eventId) && !n.content().contains("diagnosis")
+                    && (!type.equals("followup.recommendation.created")
+                        || n.content().contains("liên hệ điều dưỡng để đăng ký"))));
         }
     }
     @Test void wrongProducerAndMissingPatientFailBeforeStorage() {

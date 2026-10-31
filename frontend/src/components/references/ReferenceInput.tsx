@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type InputHTMLAttributes, type Ref } from "react";
 import { useReferenceDirectory, type ReferencePage } from "./ReferenceProvider";
+import { controlClassName } from "@/components/ui/Field";
 import { isUuid } from "@/lib/validation";
 export interface ReferenceInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   kind: string; scope?: string; value: string; onValueChange: (value: string) => void;
@@ -60,15 +61,15 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
     <details><summary className="cursor-pointer text-sm text-primary">Nhập mã tham chiếu</summary><input {...props} value={value} onChange={event => onValueChange(event.target.value)} /></details>
   </div>;
 
-  return <div ref={pickerRef} className="relative space-y-2" onKeyDown={event => {
+  return <div ref={pickerRef} className="relative min-w-0 w-full space-y-2" onKeyDown={event => {
     if (event.key === "Escape" && (result || busy)) {
       event.preventDefault(); event.stopPropagation(); generation.current++;
       setResult(null); setError(null); setBusy(false);
       pickerRef.current?.querySelector("input")?.focus();
     }
   }}>
-    <div className="flex gap-2">
-      <input {...props} value={chosen?.id === value ? chosen.label : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
+    <div className="flex min-w-0 w-full gap-2">
+      <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={chosen?.id === value ? chosen.label : undefined} value={chosen?.id === value ? chosen.label : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
         generation.current++; setBusy(false); setChosen(null); setQuery(event.target.value); setResult(null); setError(null); onValueChange("");
       }} />
       <button type="button" aria-label="Tìm lựa chọn" disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 text-sm text-primary disabled:opacity-50">{busy ? "Đang tìm…" : "Tìm"}</button>

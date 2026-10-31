@@ -9,17 +9,17 @@ import Page, { dynamic } from "./page";
 
 describe("prescription server runtime mode", () => {
   afterEach(() => vi.unstubAllEnvs());
-  it.each([undefined, "outpatient"])("renders only V1 when the mode is %s", mode => {
-    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", mode); render(<Page />);
+  it.each([undefined, "outpatient"])("renders only V1 when the mode is %s", async mode => {
+    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", mode); render(await Page({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText("form:outpatient")).toBeVisible(); expect(screen.queryByText("form:legacy")).not.toBeInTheDocument();
     expect(dynamic).toBe("force-dynamic");
   });
-  it("keeps V0 only for an explicit legacy runtime", () => {
-    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", "legacy"); render(<Page />);
+  it("keeps V0 only for an explicit legacy runtime", async () => {
+    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", "legacy"); render(await Page({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText("form:legacy")).toBeVisible();
   });
-  it("fails closed on an invalid runtime setting", () => {
-    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", "unknown"); render(<Page />);
+  it("fails closed on an invalid runtime setting", async () => {
+    vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", "unknown"); render(await Page({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("alert")).toHaveTextContent("chưa sẵn sàng"); expect(screen.queryByText(/^form:/)).not.toBeInTheDocument();
   });
 });

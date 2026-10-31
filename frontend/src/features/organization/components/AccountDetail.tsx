@@ -17,7 +17,7 @@ import { PasswordForm } from "./PasswordForm";
 import { AccountStaffLink } from "./AccountStaffLink";
 
 /** Route composition keys this component by account and signed-in session. */
-export function AccountDetail({ accountId, renderPatientLink }: { accountId: string; renderPatientLink?: (patientId: string) => ReactNode }) {
+export function AccountDetail({ accountId, schedulingEnabled = false, renderPatientLink }: { accountId: string; schedulingEnabled?: boolean; renderPatientLink?: (patientId: string) => ReactNode }) {
   const router = useRouter();
   const mounted = useRef(true);
   const submitting = useRef(false);
@@ -68,6 +68,7 @@ export function AccountDetail({ accountId, renderPatientLink }: { accountId: str
   if (!account) return <div className="mt-6">{error ? <AsyncState kind="error" message={error} onRetry={reload} /> : <AsyncState kind="loading" message="Đang tải chi tiết tài khoản…" />}</div>;
   return <section className="mt-6 space-y-5">
     <RecordIdentity name={account.username} subtitle={accountRoleLabels[account.role]} />
+    {schedulingEnabled && account.role === "MANAGER" ? <Link href={`/appointments/schedule?managerAccountId=${encodeURIComponent(account.accountId)}#manager-scope`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-primary">Quản lý phạm vi khoa</Link> : null}
     <DetailSection title="Chi tiết tài khoản">
       <Info label="Tên đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
       <Info label="Trạng thái" value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />

@@ -67,7 +67,7 @@ describe("Report private session lifecycle", () => {
   it("does not steal focus while editing filters after unavailable coverage", async () => {
     mocks.outpatientDaily.mockRejectedValue(new ApiRequestError("Missing coverage", 404, "REPORT_NOT_FOUND"));
     render(cases[3].element);
-    const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
+    const feedback = await screen.findByRole("group", { name: "Báo cáo chưa sẵn sàng" });
     expect(feedback).toHaveFocus();
     const input = screen.getByLabelText(cases[3].draft);
     input.focus(); fireEvent.change(input, { target: { value: "another-scope" } });

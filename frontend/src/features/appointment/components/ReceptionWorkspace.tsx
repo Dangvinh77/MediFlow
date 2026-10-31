@@ -11,6 +11,7 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatInstant, formatLocalDate } from "@/lib/format";
+import { sessionDateErrors, vietnamToday } from "../session-dates";
 import { appointmentApi } from "../api";
 import type { ConsultationSessionDTO, FollowUpSourceSummary, RegistrationCreate, RegistrationDTO, RegistrationSummary, RevisionCommand } from "../types";
 
@@ -30,8 +31,9 @@ function uncertain(cause: unknown) {
 
 export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled: boolean; initialPatientId?: string }) {
   const [departmentId, setDepartmentId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(vietnamToday);
+  const [toDate, setToDate] = useState(vietnamToday);
+  const [dateErrors, setDateErrors] = useState<Partial<Record<"fromDate" | "toDate", string>>>({});
   const [sessions, setSessions] = useState<ConsultationSessionDTO[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [sessionPage, setSessionPage] = useState(0);
@@ -73,11 +75,14 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       setLoadError({ message: "Chọn khoa để xem các buổi khám.", correlationId: null });
       return;
     }
+    const errors = sessionDateErrors(fromDate, toDate);
+    setDateErrors(errors);
+    if (Object.keys(errors).length) return;
     const generation = ++listGeneration.current;
     setLoading(true); setSessions([]); setSessionPages(0); setCreatedRegistration(null); setSessionsLoaded(false); setLoadError(null); setSelectedSession(null); setRegistrationList(null);
     try {
       const result = await appointmentApi.listConsultationSessions({
-        departmentId: departmentId.trim(), fromDate: fromDate || undefined, toDate: toDate || undefined, page, size: 20,
+        departmentId: departmentId.trim(), fromDate, toDate, page, size: 20,
       });
       if (listGeneration.current === generation) { setSessions(result.content); setSessionsLoaded(true); setSessionPage(result.number); setSessionPages(result.totalPages); }
     } catch (cause) {
@@ -254,17 +259,22 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       || selectedSession!.sessionDate > selectedRecommendation!.recommendedThrough);
 
   return <div className="space-y-6">
+    <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-3">
+      <Link href="/patients" className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium">Tìm hồ sơ bệnh nhân</Link>
+      <Link href="/patients/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">Tạo hồ sơ bệnh nhân</Link>
+    </nav>
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">Chọn buổi khám</h2>
-      <form className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
+      <p className="mt-2 text-sm text-muted-foreground">Khoa và cả hai ngày là bắt buộc. Ngày mặc định là hôm nay theo giờ Việt Nam; định dạng ô ngày theo trình duyệt.</p>
+      <form noValidate className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
         <label className="space-y-1 text-sm font-medium">Khoa
           <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" />
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-from-date">Từ ngày
-          <input id="reception-from-date" type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+          <input id="reception-from-date" type="date" required aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-to-date">Đến ngày
-          <input id="reception-to-date" type="date" value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+          <input id="reception-to-date" type="date" required aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}
         </label>
         <div className="flex items-end"><Button type="submit" loading={loading}>Tải buổi khám</Button></div>
       </form>
@@ -280,6 +290,8 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         </li>)}
       </ul>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
     </section>
+
+    {selectedSession && patientId ? <section aria-label="Ngữ cảnh tiếp nhận" className="sticky top-18 z-20 rounded-xl border border-border bg-surface p-3 text-sm shadow-sm"><p className="font-semibold"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground">{formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}–{selectedSession.endTime} · <ReferenceText kind="department" value={selectedSession.departmentId} fallback="Khoa" /></p></section> : null}
 
     {selectedSession ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -303,7 +315,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
             setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null);
             setUseFollowUpRecommendation(true); setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
           }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
-            <option value="NEW_VISIT">Khám mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
+            <option value="NEW_VISIT">Khám đợt mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
           </select>
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
@@ -330,7 +342,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
           })}</ul> : <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground">Không có lượt khám theo lịch đã hoàn tất trong trang này.</p> : null}
           {followUpSourcePages > 1 ? <nav aria-label="Trang lượt khám trước" className="flex items-center justify-between text-sm"><Button type="button" disabled={followUpSourceLoading || followUpSourcePage === 0} onClick={() => void loadFollowUpSources(followUpSourcePage - 1)}>Trang trước</Button><span>Trang {followUpSourcePage + 1} / {followUpSourcePages}</span><Button type="button" disabled={followUpSourceLoading || followUpSourcePage + 1 >= followUpSourcePages} onClick={() => void loadFollowUpSources(followUpSourcePage + 1)}>Trang sau</Button></nav> : null}
           {selectedFollowUpSource ? <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-            <p role="status">Đã liên kết lượt <ReferenceText kind="doctor" value={selectedFollowUpSource.doctorId} fallback="Bác sĩ lượt trước" />.</p>
+            <p role="status">Đã chọn lượt nguồn hoàn tất {formatInstant(selectedFollowUpSource.completedAt)} · <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /> · <ReferenceText kind="department" value={selectedFollowUpSource.departmentId} fallback="Khoa" /> · <ReferenceText kind="doctor" value={selectedFollowUpSource.doctorId} fallback="Bác sĩ lượt trước" />. Chưa đăng ký tái khám cho đến khi gửi và được xác nhận.</p>
             {selectedFollowUpSource.recommendation ? <>
               <label className="flex items-center gap-2"><input type="checkbox" checked={useFollowUpRecommendation} onChange={event => { setUseFollowUpRecommendation(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} />Dùng đề xuất của bác sĩ</label>
               {selectedRecommendation ? <><p>Thời gian khuyến nghị: {formatLocalDate(selectedRecommendation.recommendedFrom)} – {formatLocalDate(selectedRecommendation.recommendedThrough)}</p><p className="whitespace-pre-wrap">{selectedRecommendation.reason}</p>{selectedRecommendation.preparationInstructions ? <p className="whitespace-pre-wrap text-muted-foreground">Chuẩn bị: {selectedRecommendation.preparationInstructions}</p> : null}</> : null}

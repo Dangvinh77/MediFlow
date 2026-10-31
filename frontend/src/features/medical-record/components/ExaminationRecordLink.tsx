@@ -27,7 +27,7 @@ export function ExaminationRecordLink({ patientId, appointmentId }: { patientId:
     return () => { active = false; };
   }, [appointmentId, key, patientId, router]);
   if (state.key !== key) return <AsyncState kind="loading" message="Đang tìm hồ sơ của lịch hẹn…" />;
-  return <div className="space-y-3 rounded-xl border border-border bg-surface p-6">
+  return <div className="flex flex-wrap items-center gap-2">
     {state.recordId ? <Link className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={`/records/${state.recordId}`}>Mở hồ sơ khám</Link>
       : <AsyncState kind="error" message={state.message ?? "Không thể tìm hồ sơ khám."} correlationId={state.correlationId} onRetry={() => setRetry((value) => value + 1)} />}
     {state.recordId ? <Button type="button" onClick={() => setRetry((value) => value + 1)}>Tìm lại hồ sơ</Button> : null}

@@ -57,3 +57,12 @@ it("retries a failed detail request and ignores a late result from an old sessio
   mocks.session.mockReturnValue("session-b"); await act(async () => resolve(accountContractFixture));
   expect(screen.queryByText(accountContractFixture.username)).not.toBeInTheDocument();
 });
+
+
+it("links a manager to their exact scope workspace only when scheduling is enabled", async () => {
+  mocks.account.mockResolvedValue({ ...accountContractFixture, role: "MANAGER", patientId: null });
+  const view = render(<AccountDetail accountId={accountContractFixture.accountId} schedulingEnabled />);
+  expect(await screen.findByRole("link", { name: "Quản lý phạm vi khoa" })).toHaveAttribute("href", `/appointments/schedule?managerAccountId=${accountContractFixture.accountId}#manager-scope`);
+  view.rerender(<AccountDetail accountId={accountContractFixture.accountId} schedulingEnabled={false} />);
+  expect(screen.queryByRole("link", { name: "Quản lý phạm vi khoa" })).not.toBeInTheDocument();
+});

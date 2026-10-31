@@ -23,6 +23,17 @@ const record: MedicalRecordDTO = {
 describe("Medical record detail identity and permissions", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
+  it("keeps identity visible and puts clinical content before technical metadata", async () => {
+    mocks.getById.mockResolvedValue(record);
+    render(<MedicalRecordDetail recordId="record-a" />);
+    const context = await screen.findByRole("region", { name: "Ngữ cảnh hồ sơ khám" });
+    expect(context).toHaveTextContent("17/10/2026");
+    expect(context).toHaveTextContent("patient-a");
+    const clinical = screen.getByRole("heading", { name: "Nội dung khám" });
+    const metadata = screen.getByText("Thông tin hồ sơ và thời điểm");
+    expect(clinical.compareDocumentPosition(metadata) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("never attaches an old diagnosis response to another record", async () => {
     let resolve!: (value: DiagnosisDTO) => void;
     mocks.addDiagnosis.mockReturnValue(new Promise<DiagnosisDTO>((done) => { resolve = done; }));
@@ -105,6 +116,8 @@ describe("Medical record detail identity and permissions", () => {
     render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
     await screen.findByText("First record");
 
+    if (role === "DOCTOR") expect(screen.getByRole("link", { name: "Kê đơn cho lượt khám" })).toHaveAttribute("href", "/pharmacy/prescriptions/new?patientId=patient-a&recordId=record-a");
+    else expect(screen.queryByRole("link", { name: "Kê đơn cho lượt khám" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
     expect(screen.getByRole("link", { name: "Xem xét nghiệm của lượt khám" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
     expect(screen.getByRole("heading", { name: "Hoàn tất khám" })).toBeVisible();

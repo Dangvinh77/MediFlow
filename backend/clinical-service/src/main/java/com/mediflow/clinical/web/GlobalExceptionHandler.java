@@ -19,6 +19,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -89,6 +90,15 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR",
                 "Dữ liệu không hợp lệ",
                 details);
+        return ResponseEntity.badRequest().body(ApiResponse.fail(
+                error, correlationIds.currentOrCreate().toString()));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> missingParameter(
+            MissingServletRequestParameterException exception) {
+        ApiError error = new ApiError("INVALID_REQUEST", "Request không đúng định dạng",
+                List.of(new ErrorDetail(exception.getParameterName(), "Tham số bắt buộc")));
         return ResponseEntity.badRequest().body(ApiResponse.fail(
                 error, correlationIds.currentOrCreate().toString()));
     }

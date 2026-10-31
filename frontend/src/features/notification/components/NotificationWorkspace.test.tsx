@@ -433,3 +433,29 @@ describe("Notification manual send", () => {
     await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
   });
 });
+
+
+describe("Patient notification presentation", () => {
+  it("shows personal content and safe own-list actions without delivery diagnostics", async () => {
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    mocks.list.mockResolvedValue(page([{ ...notice, content: "Liên hệ nurse để đăng ký.", failureReason: "delivery-internal" }]));
+    render(<NotificationLookup />);
+    expect(await screen.findByText("Liên hệ điều dưỡng để đăng ký.")).toBeVisible();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByText("delivery-internal")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kết quả khám của tôi" })).toHaveAttribute("href", "/records/mine");
+    expect(screen.getByRole("link", { name: "Kết quả xét nghiệm của tôi" })).toHaveAttribute("href", "/lab/mine");
+    expect(screen.getByRole("link", { name: "Phiếu khám của tôi" })).toHaveAttribute("href", "/appointments/my-registration");
+  });
+  it("keeps patient detail focused on the message without a directory lookup or technical identity", async () => {
+    mocks.role = "PATIENT"; mocks.token = patientToken(id);
+    render(<NotificationDetail notificationId={id} />);
+    expect(await screen.findByRole("heading", { name: notice.title })).toBeVisible();
+    expect(screen.queryByText("Thông tin gửi")).not.toBeInTheDocument();
+    expect(screen.queryByText("Thông tin kỹ thuật")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Chưa có quyền xem tên/)).not.toBeInTheDocument();
+    expect(screen.queryByText(id)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kết quả khám của tôi" })).toHaveAttribute("href", "/records/mine");
+    expect(screen.getByRole("link", { name: "Kết quả xét nghiệm của tôi" })).toHaveAttribute("href", "/lab/mine");
+  });
+});

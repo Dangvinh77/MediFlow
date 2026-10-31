@@ -34,6 +34,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
   const [month, setMonth] = useState(Number.isFinite(initial.month) ? String(initial.month) : "");
   const [year, setYear] = useState(Number.isFinite(initial.year) ? String(initial.year) : "");
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
+  const [submittedQuery, setSubmittedQuery] = useState(initial);
   const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
@@ -55,6 +56,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
       return;
     }
     if (onQuerySubmit?.(query)) return;
+    setSubmittedQuery(query);
     load(() => reportApi.monthly(query.month, query.year, query.departmentId));
   }
 
@@ -91,7 +93,7 @@ function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }:
         <span>Để trống khoa để xem toàn bệnh viện.</span>
         <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
       </div>
-      <ReportRequestFeedback state={state} idle="Chọn tháng, năm và khoa để xem báo cáo." loading="Đang tải báo cáo tháng…" onRetry={retry} />
+      <ReportRequestFeedback submittedScope={<>Tháng {submittedQuery.month}/{submittedQuery.year} · <ReportDepartmentName id={submittedQuery.departmentId} showId /></>} state={state} idle="Chọn tháng, năm và khoa để xem báo cáo." loading="Đang tải báo cáo tháng…" onRetry={retry} />
       {state.status === "success" && (
         <div className="mt-6">
           <div className="grid gap-5 xl:grid-cols-[minmax(0,2.2fr)_minmax(220px,1fr)]">

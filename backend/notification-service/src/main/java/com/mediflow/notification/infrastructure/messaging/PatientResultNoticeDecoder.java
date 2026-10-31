@@ -56,7 +56,7 @@ public class PatientResultNoticeDecoder {
                     var through = LocalDate.parse(text(payload, "recommendedThrough"));
                     if (through.isBefore(from)) throw new IllegalArgumentException("Invalid follow-up interval");
                     title = "Có đề xuất tái khám";
-                    content = "Bác sĩ đã có đề xuất tái khám. Xem hướng dẫn trong mục Kết quả khám của tôi và liên hệ nurse để đăng ký.";
+                    content = "Bác sĩ đã có đề xuất tái khám. Xem hướng dẫn trong mục Kết quả khám của tôi và liên hệ điều dưỡng để đăng ký.";
                 }
             }
             command = new PatientResultNoticeCommand(uuid(root, "eventId"), type, source,
