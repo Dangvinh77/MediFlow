@@ -183,6 +183,10 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
 
   return (
     <section className="mt-6 space-y-6">
+      <section aria-label="Ngữ cảnh lượt khám" className="sticky top-18 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm">
+        <div className="min-w-0 text-sm"><p className="font-semibold"><ReferenceText kind="patient" value={appointment.patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground">{formatLocalDate(appointment.appointmentDate)} · {appointment.appointmentTime} · <ReferenceText kind="department" value={appointment.departmentId} fallback="Khoa" /></p></div>
+        {outpatientEnabled && (appointment.status === "IN_EXAM" || appointment.status === "COMPLETED") ? renderRecordLink?.(appointment) : null}
+      </section>
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">Phiếu khám</p>
@@ -235,7 +239,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
       {outpatientEnabled ? <OutpatientExamActions key={requestKey} appointment={appointment} role={role}
         onUpdated={(updated) => setRequestState({ key: requestKey, status: "success", appointment: updated })}
         onRefresh={retry} /> : null}
-      {outpatientEnabled && (appointment.status === "IN_EXAM" || appointment.status === "COMPLETED") ? renderRecordLink?.(appointment) : null}
+
 
       {actionError ? <AppointmentMutationError {...actionError} /> : null}
 

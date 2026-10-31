@@ -32,6 +32,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
   const [toDate, setToDate] = useState(initialTo);
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
   const [limit, setLimit] = useState(Number.isFinite(initialLimit) ? String(initialLimit) : "");
+  const [submittedQuery, setSubmittedQuery] = useState(initial);
   const [scopeReset, setScopeReset] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
@@ -57,6 +58,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
       return;
     }
     if (onQuerySubmit?.(query)) return;
+    setSubmittedQuery(query);
     load(async () => ({ items: await reportApi.topMedicines(query.fromDate, query.toDate, query.limit, query.departmentId), query }));
   }
 
@@ -93,7 +95,7 @@ function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: 
         <span>Để trống khoa để xem toàn bệnh viện.</span>
         <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(v => v + 1); setValidationError(null); }}>Bỏ chọn khoa</Button>
       </div>
-      <ReportRequestFeedback state={state} idle="Chọn khoảng ngày để xem xếp hạng thuốc." loading="Đang tải xếp hạng thuốc…" onRetry={retry} />
+      <ReportRequestFeedback submittedScope={<>Từ {formatLocalDate(submittedQuery.fromDate)} đến {formatLocalDate(submittedQuery.toDate)} · Tối đa {submittedQuery.limit} kết quả · <ReportDepartmentName id={submittedQuery.departmentId} showId /></>} state={state} idle="Chọn khoảng ngày để xem xếp hạng thuốc." loading="Đang tải xếp hạng thuốc…" onRetry={retry} />
       {state.status === "success" && (
         <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5">
           <h2 className="text-lg font-semibold">Thuốc xuất nhiều nhất</h2>

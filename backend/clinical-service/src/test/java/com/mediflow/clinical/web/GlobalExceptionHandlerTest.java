@@ -13,6 +13,10 @@ import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationId
 import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
 import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import com.mediflow.clinical.application.service.ConsultationSessionApplicationService;
+import com.mediflow.clinical.application.service.OutpatientRegistrationApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -34,11 +38,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AppointmentController.class)
+@WebMvcTest({AppointmentController.class, ConsultationSessionController.class})
 @Import({GlobalExceptionHandler.class, SecurityConfig.class,
         ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
-@TestPropertySource(properties =
-        "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
+@TestPropertySource(properties = {
+        "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes",
+        "mediflow.clinical.scheduling.enabled=true"})
 class GlobalExceptionHandlerTest {
 
     private static final String BASE_PATH = "/api/v1/appointments";
@@ -51,6 +56,30 @@ class GlobalExceptionHandlerTest {
 
     @MockBean
     private ManageAppointmentUseCase manageAppointmentUseCase;
+
+    @MockBean
+    private ConsultationSessionApplicationService sessions;
+
+    @MockBean
+    private OutpatientRegistrationApplicationService registrations;
+
+    @ParameterizedTest
+    @CsvSource({"MANAGER,fromDate,false", "MANAGER,toDate,false", "MANAGER,fromDate,true",
+            "NURSE,fromDate,false", "NURSE,toDate,false", "NURSE,fromDate,true"})
+    void missingSessionDate_returns400WithFieldAndCorrelation(String role, String missing, boolean both) throws Exception {
+        var request = get("/api/v2/consultation-sessions")
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("staff").roles(role))
+                .param("departmentId", UUID.randomUUID().toString());
+        if (!both) request.param(missing.equals("fromDate") ? "toDate" : "fromDate", "2026-10-31");
+        mockMvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.error.details[0].field").value(missing))
+                .andExpect(jsonPath("$.error.details[0].message").isNotEmpty())
+                .andDo(this::assertCorrelationIdMatchesHeader);
+        org.mockito.Mockito.verifyNoInteractions(sessions, registrations);
+    }
 
     @Test
     @WithMockUser(roles = "DOCTOR")

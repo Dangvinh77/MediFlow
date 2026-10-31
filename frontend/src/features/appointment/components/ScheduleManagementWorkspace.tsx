@@ -12,6 +12,7 @@ import { sessionStatusLabels } from "../presentation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatLocalDate } from "@/lib/format";
 import { organizationApi } from "@/features/organization/api";
+import { sessionDateErrors, vietnamToday } from "../session-dates";
 import { appointmentApi } from "../api";
 import type {
   ConsultationBreak,
@@ -37,14 +38,8 @@ function outcomeUnknown(cause: unknown): boolean {
     || cause.status < 400 || cause.status === 408 || cause.status >= 500;
 }
 
-function vietnamToday(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts();
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function ScopeAdministration() {
-  const [accountId, setAccountId] = useState("");
+function ScopeAdministration({ initialManagerAccountId = "" }: { initialManagerAccountId?: string }) {
+  const [accountId, setAccountId] = useState(initialManagerAccountId);
   const [scope, setScope] = useState<SchedulingScopeSnapshot | null>(null);
   const [departments, setDepartments] = useState<{ departmentId: string; departmentName: string }[]>([]);
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
@@ -142,10 +137,12 @@ function emptySessionForm(): SessionFormState {
 function SessionAdministration() {
   const [departmentId, setDepartmentId] = useState("");
   const [fromDate, setFromDate] = useState(vietnamToday);
-  const [toDate, setToDate] = useState("");
+  const [toDate, setToDate] = useState(vietnamToday);
+  const [dateErrors, setDateErrors] = useState<Partial<Record<"fromDate" | "toDate", string>>>({});
   const [sessions, setSessions] = useState<ConsultationSessionDTO[]>([]);
   const [sessionPage, setSessionPage] = useState(0);
   const [sessionPages, setSessionPages] = useState(0);
+  const [listLoaded, setListLoaded] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<WorkspaceError | null>(null);
   const [rooms, setRooms] = useState<ConsultationRoomSummary[]>([]);
@@ -168,10 +165,13 @@ function SessionAdministration() {
 
   async function loadSessions(page = 0) {
     if (!departmentId.trim() || listLoading) { if (!departmentId.trim()) setListError({ message: "Chọn khoa để xem các buổi khám.", correlationId: null }); return; }
-    setListLoading(true); setListError(null);
+    const errors = sessionDateErrors(fromDate, toDate);
+    setDateErrors(errors);
+    if (Object.keys(errors).length) return;
+    setListLoading(true); setListError(null); setListLoaded(false); setSessions([]);
     try {
-      const result = await appointmentApi.listConsultationSessions({ departmentId: departmentId.trim(), fromDate: fromDate || undefined, toDate: toDate || undefined, page, size: 20 });
-      setSessions(result.content); setSessionPage(result.number); setSessionPages(result.totalPages);
+      const result = await appointmentApi.listConsultationSessions({ departmentId: departmentId.trim(), fromDate, toDate, page, size: 20 });
+      setListLoaded(true); setSessions(result.content); setSessionPage(result.number); setSessionPages(result.totalPages);
     } catch (cause) { setListError(errorFrom(cause, "Không thể tải buổi khám.")); }
     finally { setListLoading(false); }
   }
@@ -236,23 +236,34 @@ function SessionAdministration() {
   }
 
   function changeDepartment(value: string) {
-    setDepartmentId(value); setRooms([]); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null);
+    setDepartmentId(value); setListLoaded(false); setRooms([]); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null);
   }
 
   const retryMutation = mutationError?.uncertain ? lastMutation : null;
   return <section className="space-y-6 rounded-xl border border-border bg-surface p-5">
     <div><h2 className="text-lg font-semibold">Lập và quản lý buổi khám</h2><p className="mt-1 text-sm text-muted-foreground">Chọn bác sĩ, khoa, phòng tư vấn và thời gian. Giờ khám từ 07:00 đến 17:00. Hệ thống kiểm tra phân công khoa, lịch trùng và số chỗ trước khi lưu.</p></div>
+    <p className="text-sm text-muted-foreground">Để tra cứu, chọn khoa và đủ hai ngày bắt buộc. Định dạng ngày, giờ trong ô nhập theo trình duyệt.</p>
     <div className="grid gap-4 rounded-lg border border-border p-4 sm:grid-cols-2 xl:grid-cols-4">
       <label className="space-y-1 text-sm font-medium">Khoa buổi khám
         <ReferenceInput kind="department" value={departmentId} onValueChange={changeDepartment} aria-label="Khoa buổi khám" disabled={mutating || Boolean(retryMutation)} />
       </label>
-      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-from-date">Từ ngày<input id="schedule-from-date" type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
-      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-to-date">Đến ngày<input id="schedule-to-date" type="date" value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
+      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-from-date">Từ ngày<input id="schedule-from-date" type="date" required aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "schedule-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="schedule-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}</label>
+      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-to-date">Đến ngày<input id="schedule-to-date" type="date" required aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "schedule-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="schedule-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}</label>
       <div className="flex items-end gap-2"><Button type="button" onClick={() => void loadSessions()} loading={listLoading}>Tải buổi đã lập</Button><Button type="button" variant="secondary" onClick={() => void loadRooms()}>Tải phòng tư vấn</Button></div>
     </div>
     {listError ? <AsyncState kind="error" message={listError.message} correlationId={listError.correlationId} onRetry={() => void loadSessions()} /> : null}
     {roomError ? <AsyncState kind="error" message={roomError.message} correlationId={roomError.correlationId} onRetry={() => void loadRooms()} /> : null}
 
+
+    <section className="border-t border-border pt-5">
+      <h3 className="font-semibold">Buổi trong bộ lọc</h3>
+      {sessions.length ? <>
+        <label className="mt-3 block max-w-xl space-y-1 text-sm font-medium" htmlFor="schedule-status-reason">Lý do ngừng hoặc mở lại buổi<input id="schedule-status-reason" maxLength={500} value={statusReason} onChange={event => setStatusReason(event.target.value)} disabled={mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-border"><table className="w-full min-w-[60rem] text-left text-sm"><thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Ngày</th><th className="p-3">Giờ</th><th className="p-3">Bác sĩ</th><th className="p-3">Phòng</th><th className="p-3">Trạng thái</th><th className="p-3">Sức chứa</th><th className="p-3"><span className="sr-only">Thao tác</span></th></tr></thead><tbody>{sessions.map(session => <tr key={session.sessionId} className="border-t border-border"><td className="p-3">{formatLocalDate(session.sessionDate)}</td><td className="p-3">{session.startTime}–{session.endTime}</td><td className="p-3"><ReferenceText kind="doctor" value={session.doctorId} fallback="Bác sĩ" /></td><td className="p-3"><ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></td><td className="p-3">{sessionStatusLabels[session.status]}</td><td className="p-3">{session.capacity} chỗ · {session.availableCount} còn · {session.confirmedCount} xác nhận</td><td className="space-x-2 p-3 text-right">{session.status !== "CANCELLED" ? <><Button type="button" disabled={mutating || Boolean(retryMutation)} onClick={() => beginEdit(session)}>Sửa</Button><Button type="button" disabled={mutating || Boolean(retryMutation)} onClick={() => changeStatus(session, session.status === "OPEN" ? "STOPPED" : "OPEN")}>{session.status === "OPEN" ? "Ngừng nhận" : "Mở lại"}</Button><Button type="button" variant="danger" disabled={mutating || Boolean(retryMutation)} onClick={() => changeStatus(session, "CANCELLED")}>Hủy buổi</Button></> : <span className="text-xs text-muted-foreground">Đã hủy</span>}</td></tr>)}</tbody></table></div>
+        {sessionPages > 1 ? <nav aria-label="Trang buổi khám đã lập" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={listLoading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={listLoading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}
+      </> : <p role="status" className="mt-2 text-sm text-muted-foreground">{listLoading ? "Đang tải buổi khám…" : listLoaded ? "Chưa có buổi khám trong bộ lọc." : "Chọn khoa và khoảng ngày để tải buổi khám đã lập."}</p>}
+    </section>
+    <details open={editing ? true : undefined} className="rounded-lg border border-border p-4"><summary className="cursor-pointer"><h3 className="inline font-semibold">{editing ? "Sửa buổi khám đã chọn" : "Tạo buổi khám"}</h3></summary>
     <form className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2 xl:grid-cols-4" onSubmit={submitSession}>
       <div className="space-y-1 text-sm font-medium">Bác sĩ
         <ReferenceInput kind="doctor" scope={departmentId} value={form.doctorId} onValueChange={value => updateForm("doctorId", value)} aria-label="Bác sĩ" disabled={mutating || Boolean(retryMutation)} />
@@ -269,20 +280,13 @@ function SessionAdministration() {
       {mutationError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2 xl:col-span-4"><p>{mutationError.message}</p>{mutationError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: {mutationError.correlationId}</p> : null}{retryMutation ? <p className="mt-2">Kết quả chưa xác định. Gửi lại đúng nội dung để giữ nguyên khóa idempotency.</p> : null}</div> : null}
       <div className="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4"><Button type="submit" loading={mutating}>{retryMutation ? "Gửi lại cùng yêu cầu" : editing ? "Lưu thay đổi buổi" : "Tạo buổi khám"}</Button>{editing && !retryMutation ? <Button type="button" onClick={() => { setEditing(null); setForm(emptySessionForm()); setMutationError(null); }}>Hủy sửa</Button> : null}</div>
     </form>
+    </details>
 
-    <section className="border-t border-border pt-5">
-      <h3 className="font-semibold">Buổi trong bộ lọc</h3>
-      {sessions.length ? <>
-        <label className="mt-3 block max-w-xl space-y-1 text-sm font-medium" htmlFor="schedule-status-reason">Lý do ngừng hoặc mở lại buổi<input id="schedule-status-reason" maxLength={500} value={statusReason} onChange={event => setStatusReason(event.target.value)} disabled={mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border"><table className="w-full min-w-[60rem] text-left text-sm"><thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Ngày</th><th className="p-3">Giờ</th><th className="p-3">Bác sĩ</th><th className="p-3">Phòng</th><th className="p-3">Trạng thái</th><th className="p-3">Sức chứa</th><th className="p-3"><span className="sr-only">Thao tác</span></th></tr></thead><tbody>{sessions.map(session => <tr key={session.sessionId} className="border-t border-border"><td className="p-3">{formatLocalDate(session.sessionDate)}</td><td className="p-3">{session.startTime}–{session.endTime}</td><td className="p-3"><ReferenceText kind="doctor" value={session.doctorId} fallback="Bác sĩ" /></td><td className="p-3"><ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></td><td className="p-3">{sessionStatusLabels[session.status]}</td><td className="p-3">{session.capacity} chỗ · {session.availableCount} còn · {session.confirmedCount} xác nhận</td><td className="space-x-2 p-3 text-right">{session.status !== "CANCELLED" ? <><Button type="button" disabled={mutating || Boolean(retryMutation)} onClick={() => beginEdit(session)}>Sửa</Button><Button type="button" disabled={mutating || Boolean(retryMutation)} onClick={() => changeStatus(session, session.status === "OPEN" ? "STOPPED" : "OPEN")}>{session.status === "OPEN" ? "Ngừng nhận" : "Mở lại"}</Button><Button type="button" variant="danger" disabled={mutating || Boolean(retryMutation)} onClick={() => changeStatus(session, "CANCELLED")}>Hủy buổi</Button></> : <span className="text-xs text-muted-foreground">Đã hủy</span>}</td></tr>)}</tbody></table></div>
-        {sessionPages > 1 ? <nav aria-label="Trang buổi khám đã lập" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={listLoading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={listLoading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}
-      </> : <p role="status" className="mt-2 text-sm text-muted-foreground">Chưa tải buổi khám hoặc chưa có kết quả.</p>}
-    </section>
   </section>;
 }
 
-export function ScheduleManagementWorkspace({ enabled }: { enabled: boolean }) {
+export function ScheduleManagementWorkspace({ enabled, initialManagerAccountId = "" }: { enabled: boolean; initialManagerAccountId?: string }) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Quản lý lịch khám V2 chưa được mở.</p>;
-  return <div className="space-y-6">{role === "ADMIN" ? <ScopeAdministration /> : null}<SessionAdministration /></div>;
+  return <div className="space-y-6"><SessionAdministration />{role === "ADMIN" ? <details id="manager-scope" open={initialManagerAccountId ? true : undefined} className="scroll-mt-20 rounded-xl border border-border bg-surface p-4"><summary className="cursor-pointer font-medium">Quản trị quyền lập lịch</summary><ScopeAdministration key={initialManagerAccountId} initialManagerAccountId={initialManagerAccountId} /></details> : null}</div>;
 }

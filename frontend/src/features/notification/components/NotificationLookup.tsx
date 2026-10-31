@@ -14,7 +14,8 @@ import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
 import type { NotificationDTO } from "../types";
-import { channelLabels, statusPresentation } from "../presentation";
+import { PatientNotificationActions } from "./PatientNotificationActions";
+import { channelLabels, notificationText, statusPresentation } from "../presentation";
 import { readNotificationPatientId } from "../patient-identity";
 import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
 
@@ -257,7 +258,18 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
         <AsyncState kind="empty" message={role === "PATIENT" ? "Bạn chưa có thông báo." : "Bệnh nhân chưa có thông báo."} />
       ) : null}
 
-      {showTable ? (
+      {role === "PATIENT" && searched && !loading && !error ? <div className="mt-5"><PatientNotificationActions /></div> : null}
+      {showTable && role === "PATIENT" ? <>
+        <ul aria-label="Thông báo của tôi" className="mt-5 divide-y divide-border rounded-xl border border-border">
+          {notifications.map(notification => <li key={notification.notificationId} className="space-y-2 p-4 sm:p-5">
+            <h3 className="break-words font-semibold"><Link className="text-primary underline focus-visible:outline-2 focus-visible:outline-primary" href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}>{notificationText(notification.title)}</Link></h3>
+            <p className="text-xs text-muted-foreground">{formatInstant(notification.createdAt)}</p>
+            <p className="whitespace-pre-wrap break-words text-sm">{notificationText(notification.content)}</p>
+          </li>)}
+        </ul>
+        <Pagination page={pageNumber} totalPages={totalPages} totalElements={totalElements} loading={loading} onPageChange={page => void loadNotifications(activePatientId, page)} />
+      </> : null}
+      {showTable && role !== "PATIENT" ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-[64rem] text-left text-sm">
@@ -302,7 +314,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
                       className="border-b border-border align-top last:border-0"
                     >
                       <td className="max-w-xs whitespace-normal break-words px-4 py-3 font-medium">
-                        {notification.title}
+                        {notificationText(notification.title)}
                       </td>
                       <td className="px-4 py-3">
                         {channelLabels[notification.channel] ?? "Không xác định"}
@@ -317,13 +329,13 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
                         {formatInstant(notification.sentAt)}
                       </td>
                       <td className="max-w-md whitespace-pre-wrap break-words px-4 py-3">
-                        {notification.content}
+                        {notificationText(notification.content)}
                       </td>
                       <td className="max-w-sm whitespace-normal break-words px-4 py-3">
                         {notification.failureReason ?? "—"}
                       </td>
                       <td className="sticky right-0 border-l border-border bg-surface px-4 py-3">
-                        {(role === "ADMIN" || role === "PATIENT") ? (
+                        {role === "ADMIN" ? (
                           <Link
                             href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}
                             className="inline-flex min-h-9 items-center whitespace-nowrap rounded-lg border border-control-border px-3 py-1.5 text-xs font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"

@@ -116,8 +116,8 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockRejectedValueOnce(new ApiRequestError("Report endpoint is unavailable", 404, "REPORT_NOT_FOUND", [], "coverage-check"))
       .mockResolvedValueOnce(zero);
     render(<OutpatientReportWorkspace enabled />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa có báo cáo đã đối soát");
-    expect(screen.getByRole("alert")).toHaveTextContent("coverage-check");
+    expect(await screen.findByRole("group", { name: "Báo cáo chưa sẵn sàng" })).toHaveTextContent("Chưa có báo cáo khả dụng");
+    expect(screen.getByRole("group", { name: "Báo cáo chưa sẵn sàng" })).toHaveTextContent("coverage-check");
     expect(screen.queryByText("Tiền đã thu")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "2024-03-01" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));

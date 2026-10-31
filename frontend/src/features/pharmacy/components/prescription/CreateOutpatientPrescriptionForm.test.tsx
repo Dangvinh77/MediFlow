@@ -40,6 +40,19 @@ describe("outpatient prescription form", () => {
     mocks.search.mockReset().mockResolvedValue({ content: [{ drugId: id, drugName: "Paracetamol", unit: "Viên", price: 2500,
       stockQuantity: 20, activeIngredient: null, manufacturer: null, expiryDate: "2099-01-01", lowStockThreshold: 10 }] });
   });
+  it("prefills the handed-off patient and record but still reads authoritative context", async () => {
+    render(<CreatePrescriptionForm initialPatientId={id} initialRecordId={id} />);
+    await screen.findByText("Đã lấy thông tin kê đơn từ hồ sơ khám.");
+    expect(mocks.context).toHaveBeenCalledWith(id);
+    expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveValue(id);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("does not trust an incomplete or malformed handoff", async () => {
+    render(<CreatePrescriptionForm initialPatientId={id} initialRecordId="not-an-id" />);
+    await screen.findByRole("option", { name: /Paracetamol/ });
+    expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveValue("");
+    expect(mocks.context).not.toHaveBeenCalled();
+  });
   it("takes episode and price from the server without technical inputs", async () => {
     render(<CreatePrescriptionForm />); await validForm();
     expect(mocks.context).toHaveBeenCalledWith(id);

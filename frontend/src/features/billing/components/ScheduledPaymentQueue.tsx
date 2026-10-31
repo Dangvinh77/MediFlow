@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { Button } from "@/components/ui/Button";
@@ -17,7 +17,7 @@ export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistratio
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; correlationId: string | null } | null>(null);
   const generation = useRef(0);
-  async function load(nextPage = 0) {
+  const load = useCallback(async (nextPage = 0) => {
     if (disabled) return;
     const current = ++generation.current;
     setBusy(true); setItems(null); setError(null);
@@ -28,7 +28,12 @@ export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistratio
     } catch (cause) {
       if (current === generation.current) setError({ message: cause instanceof Error ? cause.message : "Không thể tải khoản chờ thu.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
     } finally { if (current === generation.current) setBusy(false); }
-  }
+  }, [disabled, patientId]);
+  const initiallyLoaded = useRef(false);
+  useEffect(() => {
+    if (!disabled && !initiallyLoaded.current) { initiallyLoaded.current = true; void load(); }
+  }, [disabled, load]);
+  useEffect(() => () => { generation.current++; initiallyLoaded.current = false; }, []);
   const waitingItems = items?.filter(item => !completedRegistrationIds.includes(item.registrationId));
   return <section aria-label="Danh sách chờ thu phí" className="space-y-4 rounded-xl border border-border bg-surface p-5">
     <div><h2 className="text-lg font-semibold">Khoản khám đang chờ thu</h2><p className="mt-1 text-sm text-muted-foreground">Chọn bệnh nhân để tìm, hoặc tải toàn bộ khoản còn hạn. Chọn phiếu để kiểm tra số tiền hiện hành trước khi thu.</p></div>
@@ -36,6 +41,7 @@ export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistratio
       <div className="min-w-0 flex-1"><label htmlFor="cashier-queue-patient" className="mb-1 block text-sm font-medium">Tìm bệnh nhân</label><ReferenceInput id="cashier-queue-patient" kind="patient" value={patientId} onValueChange={value => { generation.current++; setPatientId(value); setItems(null); setBusy(false); setError(null); }} disabled={disabled} /></div>
       <Button type="submit" disabled={disabled} loading={busy}>Tải khoản chờ thu</Button>
     </form>
+    {busy ? <AsyncState kind="loading" message="Đang tải khoản chờ thu…" /> : null}
     {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void load(page)} /> : null}
     {waitingItems ? waitingItems.length ? <ul className="divide-y divide-border">{waitingItems.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
       <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p><ReferenceText kind="department" value={item.departmentId} fallback="Khoa" /></p><p className="text-xs text-muted-foreground">Đăng ký {formatInstant(item.createdAt)} · Hạn thanh toán {formatInstant(item.expiresAt)}</p></div>

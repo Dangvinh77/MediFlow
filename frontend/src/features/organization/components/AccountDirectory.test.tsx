@@ -32,3 +32,12 @@ it("ignores the old search result after a new filter is submitted", async () => 
   expect(screen.queryByText(accountContractFixture.username)).not.toBeInTheDocument();
   await waitFor(() => expect(mocks.accounts).toHaveBeenLastCalledWith({ keyword: "other", role: "", active: undefined, page: 0 }));
 });
+
+
+it("shows the linked profile next to the account without using username as identity", async () => {
+  mocks.accounts.mockResolvedValue(page);
+  render(<AccountDirectory />);
+  await screen.findByText(accountContractFixture.username);
+  expect(screen.getByRole("columnheader", { name: "Hồ sơ liên kết" })).toBeVisible();
+  expect(screen.getByRole("link", { name: /Bệnh nhân:/ })).toHaveAttribute("href", `/patients/${accountContractFixture.patientId}`);
+});

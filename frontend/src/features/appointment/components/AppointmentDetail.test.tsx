@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
@@ -29,6 +30,15 @@ function deferred<T>() {
 
 describe("Appointment detail identity and request states", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.changeStatus.mockReset(); mocks.role = "NURSE"; mocks.token = "session-a"; mocks.listeners.clear(); });
+
+  it("keeps patient and visit context with the record action above clinical details", async () => {
+    mocks.getById.mockResolvedValue({ ...appointment, status: "IN_EXAM" });
+    render(<AppointmentDetail appointmentId="appointment-a" outpatientEnabled renderRecordLink={() => <Link href="/records/existing">Mở hồ sơ khám</Link>} />);
+    const context = await screen.findByRole("region", { name: "Ngữ cảnh lượt khám" });
+    expect(context).toHaveTextContent("17/10/2026");
+    expect(context).toHaveTextContent("patient-a");
+    expect(context).toContainElement(screen.getByRole("link", { name: "Mở hồ sơ khám" }));
+  });
 
   it("preserves the current appointment when an old status mutation finishes", async () => {
     const pending = deferred<AppointmentDTO>();

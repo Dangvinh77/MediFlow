@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { ApiRequestError } from "@/lib/api";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -19,22 +20,43 @@ function errorFrom(cause: unknown, fallback: string): WorkspaceError {
 }
 
 export function PatientRegistrationWorkspace({ enabled }: { enabled: boolean }) {
+  const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
+  return <PatientRegistrationWorkspaceContent key={session ?? "anonymous"} enabled={enabled} />;
+}
+
+function PatientRegistrationWorkspaceContent({ enabled }: { enabled: boolean }) {
   const [page, setPage] = useState(0);
   const [registrations, setRegistrations] = useState<RegistrationDTO[] | null>(null);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<WorkspaceError | null>(null);
+
+  const readGeneration = useRef(0);
+  useEffect(() => {
+    if (!enabled) return;
+    const reads = readGeneration;
+    const generation = ++reads.current;
+    appointmentApi.myRegistrations({ page: 0, size: 10 }).then(result => {
+      if (generation !== readGeneration.current) return;
+      setPage(result.number); setTotalPages(result.totalPages); setRegistrations(result.content);
+    }).catch(cause => {
+      if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải dữ liệu của bạn."));
+    }).finally(() => { if (generation === readGeneration.current) setLoading(false); });
+    return () => { reads.current++; };
+  }, [enabled]);
 
   async function load(nextPage = page) {
     if (!enabled || loading) return;
+    const generation = ++readGeneration.current;
     setLoading(true); setError(null);
     try {
       const result = await appointmentApi.myRegistrations({ page: nextPage, size: 10 });
+      if (generation !== readGeneration.current) return;
       setPage(result.number); setTotalPages(result.totalPages); setRegistrations(result.content);
     } catch (cause) {
-      setError(errorFrom(cause, "Không thể tải phiếu khám của bạn."));
+      if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải phiếu khám của bạn."));
     } finally {
-      setLoading(false);
+      if (generation === readGeneration.current) setLoading(false);
     }
   }
 

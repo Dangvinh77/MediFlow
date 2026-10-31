@@ -38,11 +38,45 @@ describe("schedule management", () => {
     mocks.rooms.mockResolvedValue({ content: [{ roomId: "room-id", departmentId: "department-id", roomName: "Phòng khám 1", roomType: "CONSULTATION" }], totalElements: 1, totalPages: 1, number: 0, size: 50 });
   });
 
+  it("prefills a linked manager without writing scope on entry", async () => {
+    render(<ScheduleManagementWorkspace enabled initialManagerAccountId="00000000-0000-4000-8000-000000000123" />);
+    expect(screen.getByLabelText("Tài khoản quản lý")).toHaveValue("00000000-0000-4000-8000-000000000123");
+    expect(mocks.replaceScope).not.toHaveBeenCalled();
+  });
+
+  it("puts schedule browsing before the separate create controls and access administration", () => {
+    render(<ScheduleManagementWorkspace enabled />);
+    expect(screen.getByRole("heading", { name: "Buổi trong bộ lọc" }).compareDocumentPosition(screen.getByRole("heading", { name: "Tạo buổi khám", hidden: true })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("blocks missing, inverted and oversized dates with associated errors before requesting", async () => {
+    const user = userEvent.setup();
+    render(<ScheduleManagementWorkspace enabled />);
+    await user.type(screen.getByLabelText("Khoa buổi khám"), "department-id");
+    const from = screen.getByLabelText("Từ ngày"); const to = screen.getByLabelText("Đến ngày");
+    expect(from).toHaveValue(to.getAttribute("value"));
+    fireEvent.change(to, { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi đã lập" }));
+    expect(to).toHaveAttribute("aria-invalid", "true");
+    expect(to).toHaveAccessibleDescription("Vui lòng chọn ngày bắt buộc.");
+    expect(mocks.listSessions).not.toHaveBeenCalled();
+    fireEvent.change(from, { target: { value: "2026-11-01" } });
+    fireEvent.change(to, { target: { value: "2026-10-31" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi đã lập" }));
+    expect(to).toHaveAccessibleDescription("Đến ngày phải bằng hoặc sau Từ ngày.");
+    expect(mocks.listSessions).not.toHaveBeenCalled();
+    fireEvent.change(from, { target: { value: "2026-09-01" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi đã lập" }));
+    expect(to).toHaveAccessibleDescription("Khoảng tìm kiếm tối đa 30 ngày giữa hai mốc.");
+    expect(mocks.listSessions).not.toHaveBeenCalled();
+  });
+
   it("retries an uncertain create using the same command and idempotency headers", async () => {
     const user = userEvent.setup();
     mocks.createSession.mockRejectedValueOnce(new TypeError("Connection lost")).mockResolvedValueOnce(created);
     render(<ScheduleManagementWorkspace enabled />);
     await user.type(screen.getByLabelText("Khoa buổi khám"), "department-id");
+    await user.click(screen.getByText("Tạo buổi khám", { selector: "h3" }));
     await user.click(screen.getByRole("button", { name: "Tải phòng tư vấn" }));
     await user.type(screen.getByLabelText("Bác sĩ"), "doctor-id");
     await user.selectOptions(await screen.findByLabelText("Phòng tư vấn"), "room-id");
@@ -84,6 +118,7 @@ describe("schedule management", () => {
     mocks.departments.mockResolvedValue([{ departmentId: "department-id", departmentName: "Khoa Ngoại" }]);
     mocks.replaceScope.mockResolvedValue({ accountId: "manager-id", revision: 3, departmentIds: ["department-id"], updatedAt: "2026-10-26T04:00:00Z", updatedByAccountId: "admin-id" });
     render(<ScheduleManagementWorkspace enabled />);
+    await user.click(screen.getByText("Quản trị quyền lập lịch"));
     await user.type(screen.getByLabelText("Tài khoản quản lý"), "manager-id");
     await user.click(screen.getByRole("button", { name: "Tải phạm vi" }));
     await user.click(await screen.findByLabelText("Khoa Ngoại"));

@@ -69,19 +69,19 @@ const outpatientQuote = {
 };
 
 describe("scheduled outpatient cashier workflow", () => {
-  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); mocks.request.mockResolvedValue(paymentRequest); mocks.quote.mockResolvedValue(outpatientQuote); });
+  beforeEach(() => { vi.resetAllMocks(); sessionStorage.clear(); mocks.queue.mockResolvedValue({ content: [], number: 0, totalPages: 0 }); mocks.request.mockResolvedValue(paymentRequest); mocks.quote.mockResolvedValue(outpatientQuote); });
 
   it("removes a completed payment from the waiting queue even when its loaded snapshot is stale", async () => {
     const user = userEvent.setup();
     mocks.queue.mockResolvedValue({ content: [{ registrationId: "registration-id", patientId: "patient-id", departmentId: "department-id", createdAt: "2026-10-26T04:00:00Z", expiresAt: "2026-10-26T04:15:00Z" }], number: 0, totalPages: 1 });
     mocks.pay.mockResolvedValue(result("COMPLETED"));
     render(<ScheduledPaymentWorkspace enabled />);
-    await user.click(screen.getByRole("button", { name: "Tải khoản chờ thu" }));
+    await user.click(await screen.findByRole("button", { name: "Tải khoản chờ thu" }));
     await user.click(await screen.findByRole("button", { name: "Chọn khoản thu" }));
     await user.click(await screen.findByRole("button", { name: "Thu phí lịch khám" }));
     await screen.findByText(/Billing đã xác nhận khoản thu/);
     expect(screen.queryByRole("button", { name: "Chọn khoản thu" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Tải khoản chờ thu" }));
+    await user.click(await screen.findByRole("button", { name: "Tải khoản chờ thu" }));
     expect(screen.queryByRole("button", { name: "Chọn khoản thu" })).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.queue.mockResolvedValue({ content: [{ registrationId: "registration-id", patientId: "patient-id", departmentId: "department-id", createdAt: "2026-10-26T04:00:00Z", expiresAt: "2026-10-26T04:15:00Z" }], number: 0, totalPages: 1 });
     mocks.request.mockRejectedValueOnce(new ApiRequestError("Chưa đọc được phiếu hiện hành", 503, "UNAVAILABLE", [], "queue-retry")).mockResolvedValue(paymentRequest);
     render(<ScheduledPaymentWorkspace enabled />);
-    await user.click(screen.getByRole("button", { name: "Tải khoản chờ thu" }));
+    await user.click(await screen.findByRole("button", { name: "Tải khoản chờ thu" }));
     await user.click(await screen.findByRole("button", { name: "Chọn khoản thu" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("queue-retry");
     expect(screen.getByLabelText("Mã phiếu đăng ký")).not.toBeVisible();

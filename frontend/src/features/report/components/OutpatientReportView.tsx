@@ -12,6 +12,7 @@ import { useReportRequest } from "../useReportRequest";
 import { OutpatientReportResult } from "./OutpatientReportResult";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
 import { ReportSessionBoundary } from "./ReportSessionBoundary";
+import { formatLocalDate } from "@/lib/format";
 import { localReportDate } from "../validation";
 
 interface Props {
@@ -39,9 +40,7 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
     ? reportApi.outpatientDaily(initialFrom, initialTo, initialDepartment)
     : reportApi.outpatientMonthly(initialYear, initialDepartment), [mode, initialFrom, initialTo, initialYear, initialDepartment]);
   const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && Object.keys(validateOutpatientQuery(initialQuery)).length === 0);
-  const feedback = state.status === "error" && state.code === "REPORT_NOT_FOUND"
-    ? { ...state, message: "Chưa có báo cáo đã đối soát cho phạm vi này. Vui lòng thử lại sau hoặc liên hệ quản trị viên." }
-    : state;
+
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,7 +85,7 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
         <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
           Bạn đã đổi bộ lọc. Bấm xem báo cáo để cập nhật; kết quả bên dưới vẫn thuộc kỳ và khoa đã tải trước đó.
         </p>}
-      <ReportRequestFeedback state={feedback} idle="Chọn phạm vi để xem báo cáo ngoại trú đã đối soát." loading="Đang tải báo cáo ngoại trú…" onRetry={retry} />
+      <ReportRequestFeedback submittedScope={<>{submittedQuery.mode === "daily" ? `Từ ${formatLocalDate(submittedQuery.fromDate)} đến ${formatLocalDate(submittedQuery.toDate)}` : `Năm ${submittedQuery.year}`} · <ReportDepartmentName id={submittedQuery.departmentId} showId /></>} state={state} idle="Chọn phạm vi để xem báo cáo ngoại trú đã đối soát." loading="Đang tải báo cáo ngoại trú…" onRetry={retry} />
       {state.status === "success" && <OutpatientReportResult report={state.data} />}
     </section>
   );

@@ -39,7 +39,7 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardH
         </button>
 
         <div className="hidden min-w-0 flex-1 sm:block">
-          <p className="truncate text-sm font-semibold">Không gian vận hành MediFlow</p>
+          <p className="truncate text-sm font-semibold">{role === "PATIENT" ? "Sức khỏe của bạn · MediFlow" : "Không gian vận hành MediFlow"}</p>
           <p className="truncate text-xs text-muted-foreground">
             {role ? roleLabels[role] ?? role : "Phiên làm việc"}
           </p>

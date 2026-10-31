@@ -93,3 +93,22 @@ describe("DailyReportView", () => {
     expect(mocks.daily).not.toHaveBeenCalled();
   });
 });
+
+
+it("treats REPORT_NOT_FOUND as unavailable for the submitted scope without inventing totals", async () => {
+  mocks.daily.mockRejectedValue(new ApiRequestError("Report endpoint is unavailable", 404, "REPORT_NOT_FOUND", [], "readiness-123"));
+  render(<DailyReportView initialQuery={{ date: "2026-10-31" }} autoLoad />);
+  const feedback = await screen.findByRole("group", { name: "Báo cáo chưa sẵn sàng" });
+  expect(feedback).toHaveTextContent("31/10/2026");
+  expect(feedback).toHaveTextContent("Toàn bệnh viện");
+  expect(feedback).toHaveTextContent("readiness-123");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByRole("definition")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Đối chiếu lịch hẹn" })).toHaveAttribute("href", "/appointments");
+  date("2026-11-01");
+  expect(feedback).toHaveTextContent("31/10/2026");
+  expect(feedback).not.toHaveTextContent("01/11/2026");
+  fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+  await waitFor(() => expect(mocks.daily).toHaveBeenCalledTimes(2));
+  expect(mocks.daily).toHaveBeenLastCalledWith("2026-10-31", undefined);
+});

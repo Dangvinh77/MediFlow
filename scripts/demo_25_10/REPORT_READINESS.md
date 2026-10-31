@@ -1,0 +1,19 @@
+# Report readiness after UI demo preparation — 31 October 2026
+
+`prepare_ui_demo.py` sets `historyReady=true` only after the Clinical completed registration appears in the nurse follow-up source picker. It does not reconcile Report sources or accept report coverage. This is not a report-readiness flag.
+
+The rehearsal enables the outpatient consumer and read endpoints. `OutpatientReportReadService` still requires accepted coverage matching the requested department (including hospital-wide `null`), dates, configured Report timezone and VND. Pending/invalid evidence or a changed evidence fingerprint invalidates the read. `REPORT_NOT_FOUND` means unavailable accepted coverage, not zero activity.
+
+The SQL snapshot already contains a finite synthetic demo acceptance for **2025-01-01 through 2025-12-31**, department `9a6dd24a-1c1f-4122-9e31-7cfea345ec45`, timezone `Asia/Bangkok`, coverage `313d5b9a-28c8-4b9a-af17-15e9ec7f39c7`. It does not cover 31 October 2026 or hospital-wide requests. For a read-only historical demo, try daily 15 June 2025 (or monthly year 2025) in that exact department after verifying the current configured timezone and unchanged evidence. This is synthetic historical acceptance, not acceptance of today's workflow.
+
+The acceptance prerequisite is explicit and stronger than one completed visit:
+
+1. Choose a **closed business day**, or a closed date range. `OutpatientCoverageAcceptanceService` and `OutpatientCoverage` require `sourceObservedAt` on or after midnight following the final day in the configured Report timezone. A full report for today cannot be accepted during today. Monthly reads similarly require complete accepted year coverage for their requested range.
+2. Retain and reconcile immutable authoritative exports for all five required sources: `CLINICAL`, `LAB`, `PHARMACY`, `BILLING_CASH`, `BILLING_REFUND`. An empty source needs reviewed export evidence; event silence is insufficient. Confirm local consumer evidence has no pending/invalid rows.
+3. Under an explicitly authorized operator acceptance session, enable the existing `mediflow.report.outpatient-coverage-acceptance.enabled` gate (the other read/care-finance gates and outpatient profile must also be active). Use ADMIN `GET /api/v1/reports/outpatient/coverage/preview` with the exact date/department scope. Compare each source row count/fingerprint with the actual export.
+4. ADMIN `POST /api/v1/reports/outpatient/coverage/acceptances` records the real acceptance reference, immutable export references/SHA-256, local source fingerprints/counts, preview fingerprint, request UUID, scope, timezone, VND and actual observed/reconciled timestamps. The signed account UUID supplies the actor. Never manufacture this attestation or insert coverage directly into the database.
+5. Read the same scope/date range and retain the response coverage ID and observation/reconciliation timestamps. If evidence subsequently changes, reconcile again rather than hiding the readiness state.
+
+Smallest correct UI demo behavior: show “report not ready” with the selected scope and a link to consultation sessions/registrations for operational review. To demonstrate a published report, prepare and reconcile a closed prior-day fixture through the existing process. Auto-accepting today or replacing missing coverage with zero would violate the current report contract. No Report/Support production change is needed for this finding.
+
+Source references: `backend/report-service/src/main/java/com/mediflow/report/application/service/OutpatientReportReadService.java`, `OutpatientCoverageAcceptanceService.java`, `backend/report-service/src/main/java/com/mediflow/report/domain/model/OutpatientCoverage.java`, `backend/report-service/src/main/java/com/mediflow/report/web/OutpatientCoverageAcceptanceController.java`, and `scripts/demo_25_10/prepare_ui_demo.py`.

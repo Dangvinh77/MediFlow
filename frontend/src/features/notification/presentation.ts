@@ -9,3 +9,9 @@ export const statusPresentation: Record<NotificationStatus, { label: string; ton
   SENT: { label: "Đã gửi", tone: "success" },
   FAILED: { label: "Gửi thất bại", tone: "danger" },
 };
+
+
+/** Older stored templates used the English role name. Preserve the message otherwise. */
+export function notificationText(value: string) {
+  return value.replace(/\bnurse\b/gi, "điều dưỡng");
+}

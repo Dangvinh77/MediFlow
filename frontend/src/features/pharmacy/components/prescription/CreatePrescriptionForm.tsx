@@ -85,13 +85,21 @@ function mapPrescriptionValidationDetails(
   return { fields, lines: lineErrors };
 }
 
-export function CreatePrescriptionForm({ mode = "outpatient" }: { mode?: "outpatient" | "legacy" }) {
-  const actorToken = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
-  // A different session or deployment mode starts a fresh draft and command.
-  return <PharmacySessionBoundary><PrescriptionForm key={`${mode}:${actorToken}`} mode={mode} actorToken={actorToken} /></PharmacySessionBoundary>;
+interface CreatePrescriptionFormProps {
+  mode?: "outpatient" | "legacy";
+  initialPatientId?: string;
+  initialRecordId?: string;
 }
 
-function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy"; actorToken: string | null }) {
+export function CreatePrescriptionForm({ mode = "outpatient", initialPatientId, initialRecordId }: CreatePrescriptionFormProps) {
+  const actorToken = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
+  const patientId = mode === "outpatient" && isUuid(initialPatientId ?? "") && isUuid(initialRecordId ?? "") ? initialPatientId! : "";
+  const recordId = patientId ? initialRecordId! : "";
+  // A different session or deployment mode starts a fresh draft and command.
+  return <PharmacySessionBoundary><PrescriptionForm key={`${mode}:${actorToken}:${patientId}:${recordId}`} mode={mode} actorToken={actorToken} initialPatientId={patientId} initialRecordId={recordId} /></PharmacySessionBoundary>;
+}
+
+function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId }: { mode: "outpatient" | "legacy"; actorToken: string | null; initialPatientId: string; initialRecordId: string }) {
   const router = useRouter();
   const directory = useReferenceDirectory();
   const role = useSyncExternalStore(
@@ -100,7 +108,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
     getServerRole,
   );
   const capabilities = getPharmacyCapabilities(role);
-  const [values, setValues] = useState<OutpatientPrescriptionFormValues>(createEmptyOutpatientPrescriptionForm);
+  const [values, setValues] = useState<OutpatientPrescriptionFormValues>(() => ({ ...createEmptyOutpatientPrescriptionForm(), patientId: initialPatientId, recordId: initialRecordId }));
   const [validationErrors, setValidationErrors] = useState<OutpatientPrescriptionValidationErrors>({ fields: {}, lines: {} });
   const intent = useRef<OutpatientPrescriptionIntent | null>(null);
   const [uncertain, setUncertain] = useState(false);
