@@ -8,5 +8,6 @@ it("reports aggregate totals from the server rather than counting one page", asy
  render(<DepartmentOperationsSummary departmentId="d"/>);
  expect(await screen.findByText("620")).toBeInTheDocument();
  expect(screen.getByText("31")).toBeInTheDocument();
- expect(screen.getByText(/2026-11-01T01:00:00Z/)).toBeInTheDocument();
+ expect(screen.getByText(/08:00 01\/11\/2026 \(giờ Việt Nam\)/)).toBeInTheDocument();
+ expect(screen.queryByText(/T01:00:00Z/)).not.toBeInTheDocument();
 });

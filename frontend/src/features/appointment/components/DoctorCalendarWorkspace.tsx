@@ -7,6 +7,7 @@ import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { formatLocalDate } from "@/lib/format";
 import Link from "next/link";
+import { ScheduleDateInput } from "./ScheduleDateInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
@@ -103,7 +104,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
 
   return <div className="space-y-6">
     <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">Lịch khám của tôi</h2>
+      <h2 className="text-lg font-semibold">Bộ lọc lịch khám</h2>
       <p className="mt-1 text-sm text-muted-foreground">Lịch được tải theo tài khoản bác sĩ đang đăng nhập.</p>
       <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void loadCalendar(); }}>
         <label className="space-y-1 text-sm font-medium" htmlFor="doctor-calendar-view">Chế độ lịch
@@ -111,9 +112,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
             <option value="day">Theo ngày</option><option value="week">Theo tuần</option>
           </select>
         </label>
-        <label className="space-y-1 text-sm font-medium" htmlFor="doctor-calendar-date">Ngày tham chiếu
-          <input id="doctor-calendar-date" type="date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
-        </label>
+        <ScheduleDateInput label="Ngày tham chiếu" id="doctor-calendar-date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
         <Button type="submit" loading={loading}>Tải lịch của tôi</Button>
       </form>
       {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadCalendar()} /> : null}

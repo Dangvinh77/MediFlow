@@ -5,6 +5,12 @@ import { appointmentApi } from "../api";
 vi.mock("../api", () => ({ appointmentApi: { listConsultationSessions: vi.fn(), consultationRooms: vi.fn() } }));
 vi.mock("@/features/organization/api", () => ({ organizationApi: {} }));
 vi.mock("@/components/references/ReferenceInput", () => ({ ReferenceInput: () => null }));
+it("opens the newly created session's day without changing the appointed department", async () => {
+ vi.mocked(appointmentApi.listConsultationSessions).mockResolvedValue({content:[],number:0,totalPages:0,totalElements:0,size:20});
+ render(<SessionAdministration fixedDepartmentId="appointed" initialDate="2026-11-04" checking={false}/>);
+ await waitFor(()=>expect(appointmentApi.listConsultationSessions).toHaveBeenCalledWith(expect.objectContaining({departmentId:"appointed",fromDate:"2026-11-04",toDate:"2026-11-04"})));
+ expect(screen.getByLabelText("Từ ngày")).toHaveValue("2026-11-04");
+});
 it("opens today's department sessions in the fixed appointed department without scope controls", async () => {
  vi.mocked(appointmentApi.listConsultationSessions).mockResolvedValue({content:[],number:0,totalPages:0,totalElements:0,size:20});
  render(<SessionAdministration fixedDepartmentId="appointed" checking={false} />);
