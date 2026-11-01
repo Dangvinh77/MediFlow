@@ -1,5 +1,7 @@
 # Nghiệm thu bổ nhiệm và phân ca tuần — 01/11/2026
 
+[PR #559](https://github.com/Dangvinh77/MediFlow/pull/559).
+
 Base master `3f9f5147`. Môi trường demo dùng một lần `snapshot-20261101-182953`,
 Gateway 28080, frontend 3000, trình duyệt IAB kết nối trực tiếp. Không phóng toàn
 màn hình; ảnh viewport ghi cửa sổ khoảng 659 × 653. Dữ liệu đều tổng hợp.
