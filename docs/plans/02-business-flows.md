@@ -489,3 +489,12 @@ email/SMS hay Surgery reminder để đạt MVP. Report rebuild không phát th�
 Giữ state machines của mode được dùng; không free-form status PATCH để bỏ guards. Actor lấy
 từ signed credential, không từ request fields untrusted. UTC Instant cho facts, zone cấu hình
 cho report date; UUID/money precision không đổi. Có history và correlation, không log PII/token.
+
+
+## Trưởng khoa và ca làm việc bác sĩ — 01/11/2026
+
+User đã duyệt một tài khoản DOCTOR giữ nghiệp vụ chuyên môn, được ADMIN bổ nhiệm DEPARTMENT_HEAD cho một khoa CLINICAL thì thêm khu Quản lý khoa; miễn nhiệm chỉ thu hồi quyền quản lý. Một khoa tối đa một trưởng khoa đương nhiệm, một bác sĩ tối đa một khoa trong MVP. Không nâng vai trò chuyên môn bằng chức vụ hoặc đổi DOCTOR thành MANAGER khi chuyển dashboard.
+
+Trưởng khoa phân ca bác sĩ/khoa/phòng/ngày/giờ, sau đó chủ động tạo buổi nhận khám nằm trong ca với số chỗ riêng. Ca làm việc không tự tạo suất đăng ký, không phải chấm công. Sửa/hủy ca liên kết phải xử lý buổi khám theo guards hiện có; không tự đổi người khám hoặc hủy lượt đã có tiền. Chỉ phạm vi 07:00–17:00 ngoại trú; lịch ca điều dưỡng/Lab, payroll, trực đêm và inpatient/surgery chưa mở.
+
+Dashboard bác sĩ mặc định là Khám bệnh, có nút Sang Quản lý khoa khi authority bổ nhiệm hợp lệ, và nút Về Khám bệnh ở khu quản lý. Chuyển khu chỉ đổi điều hướng, không đổi role/session; cảnh báo dữ liệu chưa lưu. Backend kiểm bổ nhiệm/khoa trên mỗi thao tác, không chờ JWT cũ hết hạn sau miễn nhiệm. Dashboard quản lý không tự cấp đọc bệnh án người khác hoặc báo cáo tài chính. [Thiết kế và kiểm chứng](../superpowers/specs/2026-10-31-manager-workforce-proposal.md).

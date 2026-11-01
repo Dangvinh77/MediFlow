@@ -1,5 +1,7 @@
 package com.mediflow.organization;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.organization.application.port.out.AccountRepository;
@@ -13,8 +15,10 @@ import com.mediflow.organization.domain.model.Role;
 import com.mediflow.organization.domain.model.Staff;
 import com.mediflow.organization.infrastructure.persistence.entity.RoomEntity;
 import com.mediflow.organization.infrastructure.persistence.repository.RoomJpaRepository;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,8 +42,6 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest(classes = com.mediflow.core.CoreServiceApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -47,9 +49,16 @@ class ScheduleManagementScopeIntegrationTest {
     private static final String SECRET = "integration-scope-authority-secret-at-least-32-bytes";
     private static final AtomicLong IDENTITIES = new AtomicLong(220000000000L);
 
-    @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
-    @Container static final PostgreSQLContainer<?> PATIENT_PG = new PostgreSQLContainer<>("postgres:16-alpine");
-    @Container static final RabbitMQContainer RABBIT = new RabbitMQContainer("rabbitmq:3.13-management-alpine");
+    @Container
+    static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
+
+    @Container
+    static final PostgreSQLContainer<?> PATIENT_PG =
+            new PostgreSQLContainer<>("postgres:16-alpine");
+
+    @Container
+    static final RabbitMQContainer RABBIT =
+            new RabbitMQContainer("rabbitmq:3.13-management-alpine");
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -88,8 +97,12 @@ class ScheduleManagementScopeIntegrationTest {
 
         String path = "/api/v2/org/accounts/" + fixture.manager().getAccountId()
                 + "/schedule-management-scope";
-        ResponseEntity<String> unassigned = http.exchange(path, HttpMethod.GET,
-                entity(null, fixture.admin(), Role.ADMIN, null, "trace-scope-unassigned"), String.class);
+        ResponseEntity<String> unassigned =
+                http.exchange(
+                        path,
+                        HttpMethod.GET,
+                        entity(null, fixture.admin(), Role.ADMIN, null, "trace-scope-unassigned"),
+                        String.class);
         assertThat(unassigned.getStatusCode().value()).isEqualTo(200);
         JsonNode emptyScope = mapper.readTree(unassigned.getBody()).get("data");
         assertThat(emptyScope.get("revision").asLong()).isZero();
@@ -103,57 +116,126 @@ class ScheduleManagementScopeIntegrationTest {
                 + managed.getDepartmentId() + "\"],\"reason\":\"Clinic schedule ownership\"}";
         ResponseEntity<String> grant = http.exchange(path, HttpMethod.PUT,
                 entity(body, fixture.admin(), Role.ADMIN, key, correlation), String.class);
-        assertThat(grant.getStatusCode().value()).as("grant response: %s", grant.getBody()).isEqualTo(200);
+        assertThat(grant.getStatusCode().value())
+                .as("grant response: %s", grant.getBody())
+                .isEqualTo(200);
         JsonNode grantBody = mapper.readTree(grant.getBody());
         assertThat(grantBody.at("/data/revision").asLong()).isEqualTo(1);
-        assertThat(grantBody.at("/data/departmentIds/0").asText()).isEqualTo(managed.getDepartmentId().toString());
-        assertThat(grantBody.at("/data/updatedByAccountId").asText()).isEqualTo(fixture.admin().getAccountId().toString());
+        assertThat(grantBody.at("/data/departmentIds/0").asText())
+                .isEqualTo(managed.getDepartmentId().toString());
+        assertThat(grantBody.at("/data/updatedByAccountId").asText())
+                .isEqualTo(fixture.admin().getAccountId().toString());
         assertThat(grant.getHeaders().getFirst("X-Correlation-Id")).isEqualTo(correlation);
 
-        assertThat(jdbc.queryForObject("SELECT revision FROM schedule_management_scope WHERE account_id=?",
-                Long.class, fixture.manager().getAccountId())).isEqualTo(1L);
-        assertThat(jdbc.queryForObject("SELECT department_id FROM schedule_management_scope_department WHERE account_id=?",
-                UUID.class, fixture.manager().getAccountId())).isEqualTo(managed.getDepartmentId());
-        assertThat(jdbc.queryForObject("SELECT actor_account_id FROM schedule_management_scope_audit WHERE account_id=?",
-                UUID.class, fixture.manager().getAccountId())).isEqualTo(fixture.admin().getAccountId());
-        assertThat(jdbc.queryForObject("SELECT reason FROM schedule_management_scope_audit WHERE account_id=?",
-                String.class, fixture.manager().getAccountId())).isEqualTo("Clinic schedule ownership");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM schedule_management_scope_command_receipt WHERE actor_account_id=?",
-                Integer.class, fixture.admin().getAccountId())).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM organization_event_outbox WHERE routing_key=? AND correlation_id=?",
-                Integer.class, "organization.schedule-management-scope.changed", correlation)).isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT revision FROM schedule_management_scope WHERE account_id=?",
+                                Long.class,
+                                fixture.manager().getAccountId()))
+                .isEqualTo(1L);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT department_id FROM schedule_management_scope_department"
+                                    + " WHERE account_id=?",
+                                UUID.class,
+                                fixture.manager().getAccountId()))
+                .isEqualTo(managed.getDepartmentId());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT actor_account_id FROM schedule_management_scope_audit WHERE"
+                                    + " account_id=?",
+                                UUID.class,
+                                fixture.manager().getAccountId()))
+                .isEqualTo(fixture.admin().getAccountId());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT reason FROM schedule_management_scope_audit WHERE"
+                                    + " account_id=?",
+                                String.class,
+                                fixture.manager().getAccountId()))
+                .isEqualTo("Clinic schedule ownership");
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM schedule_management_scope_command_receipt"
+                                    + " WHERE actor_account_id=?",
+                                Integer.class,
+                                fixture.admin().getAccountId()))
+                .isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM organization_event_outbox WHERE routing_key=?"
+                                    + " AND correlation_id=?",
+                                Integer.class,
+                                "organization.schedule-management-scope.changed",
+                                correlation))
+                .isEqualTo(1);
 
         ResponseEntity<String> replay = http.exchange(path, HttpMethod.PUT,
                 entity(body, fixture.admin(), Role.ADMIN, key, "trace-scope-replay"), String.class);
         assertThat(replay.getStatusCode().value()).isEqualTo(200);
         assertThat(replay.getHeaders().getFirst("Idempotency-Replayed")).isEqualTo("true");
         assertThat(mapper.readTree(replay.getBody()).get("data")).isEqualTo(grantBody.get("data"));
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM schedule_management_scope_audit WHERE account_id=?",
-                Integer.class, fixture.manager().getAccountId())).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM organization_event_outbox WHERE routing_key=? AND correlation_id=?",
-                Integer.class, "organization.schedule-management-scope.changed", correlation)).isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM schedule_management_scope_audit WHERE"
+                                    + " account_id=?",
+                                Integer.class,
+                                fixture.manager().getAccountId()))
+                .isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM organization_event_outbox WHERE routing_key=?"
+                                    + " AND correlation_id=?",
+                                Integer.class,
+                                "organization.schedule-management-scope.changed",
+                                correlation))
+                .isEqualTo(1);
 
         String changedReason = body.replace("Clinic schedule ownership", "Different decision");
-        ResponseEntity<String> conflict = http.exchange(path, HttpMethod.PUT,
-                entity(changedReason, fixture.admin(), Role.ADMIN, key, "trace-scope-conflict"), String.class);
+        ResponseEntity<String> conflict =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                changedReason,
+                                fixture.admin(),
+                                Role.ADMIN,
+                                key,
+                                "trace-scope-conflict"),
+                        String.class);
         assertThat(conflict.getStatusCode().value()).isEqualTo(409);
         assertThat(mapper.readTree(conflict.getBody()).at("/error/code").asText())
                 .isEqualTo("IDEMPOTENCY_CONFLICT");
 
-        ResponseEntity<String> ownScope = http.exchange(path, HttpMethod.GET,
-                entity(null, fixture.manager(), Role.MANAGER, null, "trace-scope-own"), String.class);
+        ResponseEntity<String> ownScope =
+                http.exchange(
+                        path,
+                        HttpMethod.GET,
+                        entity(null, fixture.manager(), Role.MANAGER, null, "trace-scope-own"),
+                        String.class);
         assertThat(ownScope.getStatusCode().value()).isEqualTo(403);
-        ResponseEntity<String> otherScope = http.exchange(
-                "/api/v2/org/accounts/" + fixture.admin().getAccountId() + "/schedule-management-scope",
-                HttpMethod.GET, entity(null, fixture.manager(), Role.MANAGER, null, "trace-scope-other"), String.class);
+        ResponseEntity<String> otherScope =
+                http.exchange(
+                        "/api/v2/org/accounts/"
+                                + fixture.admin().getAccountId()
+                                + "/schedule-management-scope",
+                        HttpMethod.GET,
+                        entity(null, fixture.manager(), Role.MANAGER, null, "trace-scope-other"),
+                        String.class);
         assertThat(otherScope.getStatusCode().value()).isEqualTo(403);
         assertThat(mapper.readTree(otherScope.getBody()).at("/error/code").asText())
                 .isEqualTo("FORBIDDEN");
 
         String serviceToken = token("service", "SYSTEM", "clinical-service");
-        ResponseEntity<String> current = http.exchange("/api/v2/org/scheduling-authority?actorAccountId="
-                        + fixture.manager().getAccountId() + "&departmentId=" + managed.getDepartmentId(),
-                HttpMethod.GET, serviceEntity(serviceToken, "trace-authority-in-scope"), String.class);
+        ResponseEntity<String> current =
+                http.exchange(
+                        "/api/v2/org/scheduling-authority?actorAccountId="
+                                + fixture.manager().getAccountId()
+                                + "&departmentId="
+                                + managed.getDepartmentId(),
+                        HttpMethod.GET,
+                        serviceEntity(serviceToken, "trace-authority-in-scope"),
+                        String.class);
         assertThat(current.getStatusCode().value()).isEqualTo(200);
         JsonNode authority = mapper.readTree(current.getBody()).get("data");
         assertThat(authority.get("currentRole").asText()).isEqualTo("MANAGER");
@@ -161,37 +243,71 @@ class ScheduleManagementScopeIntegrationTest {
         assertThat(authority.get("canManageSchedules").asBoolean()).isTrue();
         assertThat(authority.get("scopeRevision").asLong()).isEqualTo(1);
 
-        ResponseEntity<String> outsideAuthority = http.exchange("/api/v2/org/scheduling-authority?actorAccountId="
-                        + fixture.manager().getAccountId() + "&departmentId=" + outside.getDepartmentId(),
-                HttpMethod.GET, serviceEntity(serviceToken, "trace-authority-outside"), String.class);
-        assertThat(mapper.readTree(outsideAuthority.getBody()).at("/data/canManageSchedules").asBoolean()).isFalse();
+        ResponseEntity<String> outsideAuthority =
+                http.exchange(
+                        "/api/v2/org/scheduling-authority?actorAccountId="
+                                + fixture.manager().getAccountId()
+                                + "&departmentId="
+                                + outside.getDepartmentId(),
+                        HttpMethod.GET,
+                        serviceEntity(serviceToken, "trace-authority-outside"),
+                        String.class);
+        assertThat(
+                        mapper.readTree(outsideAuthority.getBody())
+                                .at("/data/canManageSchedules")
+                                .asBoolean())
+                .isFalse();
 
-        ResponseEntity<String> directory = http.exchange("/api/v2/org/consultation-rooms?departmentId="
-                        + managed.getDepartmentId() + "&page=0&size=20", HttpMethod.GET,
-                entity(null, fixture.manager(), Role.MANAGER, null, "trace-room-directory"), String.class);
+        ResponseEntity<String> directory =
+                http.exchange(
+                        "/api/v2/org/consultation-rooms?departmentId="
+                                + managed.getDepartmentId()
+                                + "&page=0&size=20",
+                        HttpMethod.GET,
+                        entity(null, fixture.manager(), Role.MANAGER, null, "trace-room-directory"),
+                        String.class);
         assertThat(directory.getStatusCode().value()).isEqualTo(200);
         JsonNode content = mapper.readTree(directory.getBody()).at("/data/content");
         assertThat(content.size()).isEqualTo(1);
         assertThat(content.get(0).get("roomId").asText()).isEqualTo(consultationRoom.toString());
         assertThat(content.get(0).size()).isEqualTo(4);
 
-        ResponseEntity<String> outOfScopeDirectory = http.exchange("/api/v2/org/consultation-rooms?departmentId="
-                        + outside.getDepartmentId(), HttpMethod.GET,
-                entity(null, fixture.manager(), Role.MANAGER, null, "trace-room-outside"), String.class);
+        ResponseEntity<String> outOfScopeDirectory =
+                http.exchange(
+                        "/api/v2/org/consultation-rooms?departmentId=" + outside.getDepartmentId(),
+                        HttpMethod.GET,
+                        entity(null, fixture.manager(), Role.MANAGER, null, "trace-room-outside"),
+                        String.class);
         assertThat(outOfScopeDirectory.getStatusCode().value()).isEqualTo(403);
 
-        ResponseEntity<String> eligibility = http.exchange("/api/v2/org/consultation-eligibility?doctorId="
-                        + doctor.getStaffId() + "&departmentId=" + managed.getDepartmentId()
-                        + "&roomId=" + consultationRoom, HttpMethod.GET,
-                serviceEntity(serviceToken, "trace-consult-eligible"), String.class);
+        ResponseEntity<String> eligibility =
+                http.exchange(
+                        "/api/v2/org/consultation-eligibility?doctorId="
+                                + doctor.getStaffId()
+                                + "&departmentId="
+                                + managed.getDepartmentId()
+                                + "&roomId="
+                                + consultationRoom,
+                        HttpMethod.GET,
+                        serviceEntity(serviceToken, "trace-consult-eligible"),
+                        String.class);
         assertThat(eligibility.getStatusCode().value()).isEqualTo(200);
-        assertThat(mapper.readTree(eligibility.getBody()).at("/data/eligible").asBoolean()).isTrue();
+        assertThat(mapper.readTree(eligibility.getBody()).at("/data/eligible").asBoolean())
+                .isTrue();
 
-        ResponseEntity<String> mismatched = http.exchange("/api/v2/org/consultation-eligibility?doctorId="
-                        + doctor.getStaffId() + "&departmentId=" + outside.getDepartmentId()
-                        + "&roomId=" + consultationRoom, HttpMethod.GET,
-                serviceEntity(serviceToken, "trace-consult-ineligible"), String.class);
-        assertThat(mapper.readTree(mismatched.getBody()).at("/data/eligible").asBoolean()).isFalse();
+        ResponseEntity<String> mismatched =
+                http.exchange(
+                        "/api/v2/org/consultation-eligibility?doctorId="
+                                + doctor.getStaffId()
+                                + "&departmentId="
+                                + outside.getDepartmentId()
+                                + "&roomId="
+                                + consultationRoom,
+                        HttpMethod.GET,
+                        serviceEntity(serviceToken, "trace-consult-ineligible"),
+                        String.class);
+        assertThat(mapper.readTree(mismatched.getBody()).at("/data/eligible").asBoolean())
+                .isFalse();
     }
 
     @Test
@@ -203,16 +319,35 @@ class ScheduleManagementScopeIntegrationTest {
         String path = "/api/v2/org/accounts/" + fixture.manager().getAccountId()
                 + "/schedule-management-scope";
 
-        ResponseEntity<String> grant = http.exchange(path, HttpMethod.PUT,
-                entity("{\"expectedRevision\":0,\"departmentIds\":[\"" + target.getDepartmentId()
-                                + "\"],\"reason\":\"Grant while inactive\"}",
-                        fixture.admin(), Role.ADMIN, "inactive-grant", "trace-inactive-grant"), String.class);
+        ResponseEntity<String> grant =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                "{\"expectedRevision\":0,\"departmentIds\":[\""
+                                        + target.getDepartmentId()
+                                        + "\"],\"reason\":\"Grant while inactive\"}",
+                                fixture.admin(),
+                                Role.ADMIN,
+                                "inactive-grant",
+                                "trace-inactive-grant"),
+                        String.class);
         assertThat(grant.getStatusCode().value()).isEqualTo(422);
-        assertThat(mapper.readTree(grant.getBody()).at("/error/code").asText()).isEqualTo("SCHEDULE_INELIGIBLE");
+        assertThat(mapper.readTree(grant.getBody()).at("/error/code").asText())
+                .isEqualTo("SCHEDULE_INELIGIBLE");
 
-        ResponseEntity<String> revoke = http.exchange(path, HttpMethod.PUT,
-                entity("{\"expectedRevision\":0,\"departmentIds\":[],\"reason\":\"Revoke inactive account\"}",
-                        fixture.admin(), Role.ADMIN, "inactive-revoke", "trace-inactive-revoke"), String.class);
+        ResponseEntity<String> revoke =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                "{\"expectedRevision\":0,\"departmentIds\":[],\"reason\":\"Revoke"
+                                    + " inactive account\"}",
+                                fixture.admin(),
+                                Role.ADMIN,
+                                "inactive-revoke",
+                                "trace-inactive-revoke"),
+                        String.class);
         assertThat(revoke.getStatusCode().value()).isEqualTo(200);
         assertThat(mapper.readTree(revoke.getBody()).at("/data/revision").asLong()).isEqualTo(1);
         assertThat(mapper.readTree(revoke.getBody()).at("/data/departmentIds").isEmpty()).isTrue();
@@ -222,10 +357,18 @@ class ScheduleManagementScopeIntegrationTest {
     void currentDoctorAuthorityReflectsLiveAccountStaffAndDepartmentAndExplicitMissingFlags() throws Exception {
         Department firstDepartment = department("Current doctor first");
         Department secondDepartment = department("Current doctor second");
-        Staff firstDoctor = createStaff("First doctor", firstDepartment, JobTitle.DOCTOR, "LIC-CURRENT-1");
-        Staff secondDoctor = createStaff("Second doctor", secondDepartment, JobTitle.DOCTOR, "LIC-CURRENT-2");
-        Account doctorAccount = accounts.save(Account.create(UUID.randomUUID(), username("current_doctor"),
-                "test-hash", firstDoctor.getStaffId(), Role.DOCTOR));
+        Staff firstDoctor =
+                createStaff("First doctor", firstDepartment, JobTitle.DOCTOR, "LIC-CURRENT-1");
+        Staff secondDoctor =
+                createStaff("Second doctor", secondDepartment, JobTitle.DOCTOR, "LIC-CURRENT-2");
+        Account doctorAccount =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("current_doctor"),
+                                "test-hash",
+                                firstDoctor.getStaffId(),
+                                Role.DOCTOR));
         String serviceToken = token("service", "SYSTEM", "clinical-service");
 
         JsonNode active = currentDoctorAuthority(doctorAccount.getAccountId(), serviceToken,
@@ -235,24 +378,29 @@ class ScheduleManagementScopeIntegrationTest {
         assertThat(active.get("currentRole").asText()).isEqualTo("DOCTOR");
         assertThat(active.get("staffId").asText()).isEqualTo(firstDoctor.getStaffId().toString());
         assertThat(active.get("staffActive").asBoolean()).isTrue();
-        assertThat(active.get("departmentId").asText()).isEqualTo(firstDepartment.getDepartmentId().toString());
+        assertThat(active.get("departmentId").asText())
+                .isEqualTo(firstDepartment.getDepartmentId().toString());
         assertThat(active.get("departmentActive").asBoolean()).isTrue();
 
         firstDoctor.deactivate();
         staff.save(firstDoctor);
         JsonNode inactiveStaff = currentDoctorAuthority(doctorAccount.getAccountId(), serviceToken,
                 "trace-current-doctor-inactive-staff");
-        assertThat(inactiveStaff.get("staffId").asText()).isEqualTo(firstDoctor.getStaffId().toString());
+        assertThat(inactiveStaff.get("staffId").asText())
+                .isEqualTo(firstDoctor.getStaffId().toString());
         assertThat(inactiveStaff.get("staffActive").asBoolean()).isFalse();
-        assertThat(inactiveStaff.get("departmentId").asText()).isEqualTo(firstDepartment.getDepartmentId().toString());
+        assertThat(inactiveStaff.get("departmentId").asText())
+                .isEqualTo(firstDepartment.getDepartmentId().toString());
 
         jdbc.update("UPDATE account SET staff_id=? WHERE account_id=?",
                 secondDoctor.getStaffId(), doctorAccount.getAccountId());
         JsonNode changedStaff = currentDoctorAuthority(doctorAccount.getAccountId(), serviceToken,
                 "trace-current-doctor-changed-staff");
-        assertThat(changedStaff.get("staffId").asText()).isEqualTo(secondDoctor.getStaffId().toString());
+        assertThat(changedStaff.get("staffId").asText())
+                .isEqualTo(secondDoctor.getStaffId().toString());
         assertThat(changedStaff.get("staffActive").asBoolean()).isTrue();
-        assertThat(changedStaff.get("departmentId").asText()).isEqualTo(secondDepartment.getDepartmentId().toString());
+        assertThat(changedStaff.get("departmentId").asText())
+                .isEqualTo(secondDepartment.getDepartmentId().toString());
 
         doctorAccount.deactivate();
         accounts.save(doctorAccount);
@@ -261,7 +409,8 @@ class ScheduleManagementScopeIntegrationTest {
         JsonNode inactiveAccount = currentDoctorAuthority(doctorAccount.getAccountId(), serviceToken,
                 "trace-current-doctor-inactive-account");
         assertThat(inactiveAccount.get("accountActive").asBoolean()).isFalse();
-        assertThat(inactiveAccount.get("staffId").asText()).isEqualTo(secondDoctor.getStaffId().toString());
+        assertThat(inactiveAccount.get("staffId").asText())
+                .isEqualTo(secondDoctor.getStaffId().toString());
 
         JsonNode missing = currentDoctorAuthority(UUID.randomUUID(), serviceToken,
                 "trace-current-doctor-missing");
@@ -278,36 +427,843 @@ class ScheduleManagementScopeIntegrationTest {
     void auditFailureRollsBackScopeReceiptAndOutboxTogether() throws Exception {
         Fixture fixture = fixture();
         Department target = department("Atomicity");
-        jdbc.execute("CREATE FUNCTION reject_scope_audit_test() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'injected audit failure'; END; $$ LANGUAGE plpgsql");
-        jdbc.execute("CREATE TRIGGER reject_scope_audit_test BEFORE INSERT ON schedule_management_scope_audit FOR EACH ROW EXECUTE FUNCTION reject_scope_audit_test()");
+        jdbc.execute(
+                "CREATE FUNCTION reject_scope_audit_test() RETURNS trigger AS $$ BEGIN RAISE"
+                    + " EXCEPTION 'injected audit failure'; END; $$ LANGUAGE plpgsql");
+        jdbc.execute(
+                "CREATE TRIGGER reject_scope_audit_test BEFORE INSERT ON"
+                    + " schedule_management_scope_audit FOR EACH ROW EXECUTE FUNCTION"
+                    + " reject_scope_audit_test()");
         try {
             String path = "/api/v2/org/accounts/" + fixture.manager().getAccountId()
                     + "/schedule-management-scope";
-            ResponseEntity<String> response = http.exchange(path, HttpMethod.PUT,
-                    entity("{\"expectedRevision\":0,\"departmentIds\":[\"" + target.getDepartmentId()
-                                    + "\"],\"reason\":\"Atomic audit decision\"}",
-                            fixture.admin(), Role.ADMIN, "atomic-audit", "trace-atomic-audit"), String.class);
+            ResponseEntity<String> response =
+                    http.exchange(
+                            path,
+                            HttpMethod.PUT,
+                            entity(
+                                    "{\"expectedRevision\":0,\"departmentIds\":[\""
+                                            + target.getDepartmentId()
+                                            + "\"],\"reason\":\"Atomic audit decision\"}",
+                                    fixture.admin(),
+                                    Role.ADMIN,
+                                    "atomic-audit",
+                                    "trace-atomic-audit"),
+                            String.class);
             assertThat(response.getStatusCode().value()).isEqualTo(503);
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM schedule_management_scope WHERE account_id=?",
-                    Integer.class, fixture.manager().getAccountId())).isZero();
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM schedule_management_scope_command_receipt WHERE idempotency_key=?",
-                    Integer.class, "atomic-audit")).isZero();
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM organization_event_outbox WHERE routing_key=? AND correlation_id=?",
-                    Integer.class, "organization.schedule-management-scope.changed", "trace-atomic-audit")).isZero();
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM schedule_management_scope WHERE"
+                                        + " account_id=?",
+                                    Integer.class,
+                                    fixture.manager().getAccountId()))
+                    .isZero();
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM schedule_management_scope_command_receipt"
+                                        + " WHERE idempotency_key=?",
+                                    Integer.class,
+                                    "atomic-audit"))
+                    .isZero();
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM organization_event_outbox WHERE"
+                                        + " routing_key=? AND correlation_id=?",
+                                    Integer.class,
+                                    "organization.schedule-management-scope.changed",
+                                    "trace-atomic-audit"))
+                    .isZero();
         } finally {
             jdbc.execute("DROP TRIGGER reject_scope_audit_test ON schedule_management_scope_audit");
             jdbc.execute("DROP FUNCTION reject_scope_audit_test()");
         }
     }
 
+    @Test
+    void appointedDoctorRetainsRoleAndLosesManagementImmediatelyOnRevocation() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Head");
+        Staff doctor = createStaff("Head Doctor", d, JobTitle.DOCTOR, "HEAD-LICENSE");
+        Account account =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("head"),
+                                "hash",
+                                doctor.getStaffId(),
+                                Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        String body =
+                "{\"expectedRevision\":0,\"staffId\":\""
+                        + doctor.getStaffId()
+                        + "\",\"reason\":\"Appointment\"}";
+        var granted =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(body, f.admin(), Role.ADMIN, "head-grant", "head-trace"),
+                        String.class);
+        assertThat(granted.getStatusCode().value()).as(granted.getBody()).isEqualTo(200);
+        assertThat(mapper.readTree(granted.getBody()).at("/data/revision").asLong()).isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT department_head_id FROM department WHERE department_id=?",
+                                UUID.class,
+                                d.getDepartmentId()))
+                .isEqualTo(doctor.getStaffId());
+        var replay =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(body, f.admin(), Role.ADMIN, "head-grant", "head-replay"),
+                        String.class);
+        assertThat(replay.getHeaders().getFirst("Idempotency-Replayed")).isEqualTo("true");
+        assertThat(mapper.readTree(replay.getBody()).get("data"))
+                .isEqualTo(mapper.readTree(granted.getBody()).get("data"));
+        String authorityPath =
+                "/api/v2/org/scheduling-authority?actorAccountId="
+                        + account.getAccountId()
+                        + "&departmentId="
+                        + d.getDepartmentId();
+        var auth =
+                http.exchange(
+                        authorityPath,
+                        HttpMethod.GET,
+                        serviceEntity(
+                                token("service", "SYSTEM", "clinical-service"), "head-authority"),
+                        String.class);
+        assertThat(mapper.readTree(auth.getBody()).at("/data/currentRole").asText())
+                .isEqualTo("DOCTOR");
+        assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isTrue();
+        var caps =
+                http.exchange(
+                        "/api/v1/org/me/capabilities",
+                        HttpMethod.GET,
+                        entity(null, account, Role.DOCTOR, null, "caps"),
+                        String.class);
+        assertThat(caps.getStatusCode().value()).as(caps.getBody()).isEqualTo(200);
+        assertThat(caps.getHeaders().getFirst("Cache-Control")).isEqualTo("no-store");
+        assertThat(mapper.readTree(caps.getBody()).at("/data/canPracticeAsDoctor").asBoolean())
+                .isTrue();
+        assertThat(mapper.readTree(caps.getBody()).at("/data/managementDepartments").size())
+                .isEqualTo(1);
+        var revoke =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                "{\"expectedRevision\":1,\"staffId\":null,\"reason\":\"End"
+                                        + " appointment\"}",
+                                f.admin(),
+                                Role.ADMIN,
+                                "head-revoke",
+                                "head-revoke"),
+                        String.class);
+        assertThat(revoke.getStatusCode().value()).as(revoke.getBody()).isEqualTo(200);
+        assertThat(mapper.readTree(revoke.getBody()).at("/data/history").size()).isEqualTo(1);
+        auth =
+                http.exchange(
+                        authorityPath,
+                        HttpMethod.GET,
+                        serviceEntity(token("service", "SYSTEM", "clinical-service"), "head-after"),
+                        String.class);
+        assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isFalse();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT department_head_id FROM department WHERE department_id=?",
+                                UUID.class,
+                                d.getDepartmentId()))
+                .isNull();
+    }
+
+    @Test
+    void ordinaryDoctorAndLegacyProjectionDoNotGrantManagementAndCapabilityRolesStayHuman()
+            throws Exception {
+        Fixture f = fixture();
+        Department d = department("Legacy projection");
+        Staff doctor = createStaff("Ordinary doctor", d, JobTitle.DOCTOR, "ORDINARY");
+        Account a =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("ordinary"),
+                                "hash",
+                                doctor.getStaffId(),
+                                Role.DOCTOR));
+        jdbc.update(
+                "UPDATE department SET department_head_id=? WHERE department_id=?",
+                doctor.getStaffId(),
+                d.getDepartmentId());
+        var denied =
+                http.exchange(
+                        "/api/v2/org/consultation-rooms?departmentId=" + d.getDepartmentId(),
+                        HttpMethod.GET,
+                        entity(null, a, Role.DOCTOR, null, "ordinary-rooms"),
+                        String.class);
+        assertThat(denied.getStatusCode().value()).isEqualTo(403);
+        var caps =
+                http.exchange(
+                        "/api/v1/org/me/capabilities",
+                        HttpMethod.GET,
+                        entity(null, a, Role.DOCTOR, null, "ordinary-caps"),
+                        String.class);
+        assertThat(caps.getStatusCode().value()).isEqualTo(200);
+        assertThat(mapper.readTree(caps.getBody()).at("/data/managementDepartments").isEmpty())
+                .isTrue();
+        for (Role role : Role.values()) {
+            jdbc.update(
+                    "UPDATE account SET role=?,staff_id=?,patient_id=? WHERE account_id=?",
+                    role.name(),
+                    role == Role.PATIENT || role == Role.SYSTEM ? null : doctor.getStaffId(),
+                    role == Role.PATIENT ? UUID.randomUUID() : null,
+                    a.getAccountId());
+            var response =
+                    http.exchange(
+                            "/api/v1/org/me/capabilities",
+                            HttpMethod.GET,
+                            role == Role.SYSTEM
+                                    ? serviceEntity(
+                                            token("service", "SYSTEM", "clinical-service"),
+                                            "caps-role")
+                                    : entity(null, a, role, null, "caps-role"),
+                            String.class);
+            assertThat(response.getStatusCode().value())
+                    .as("Capabilities role %s", role)
+                    .isEqualTo(role == Role.PATIENT || role == Role.SYSTEM ? 403 : 200);
+        }
+        jdbc.update(
+                "UPDATE account SET role='DOCTOR',staff_id=?,patient_id=NULL WHERE account_id=?",
+                doctor.getStaffId(),
+                a.getAccountId());
+        var forged =
+                http.exchange(
+                        "/api/v1/org/me/capabilities",
+                        HttpMethod.GET,
+                        entity(null, a, Role.ADMIN, null, "stale-caps-role"),
+                        String.class);
+        assertThat(forged.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void concurrentHeadReplacementHasOneWinnerAndStaleCommandPreservesHistory() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Race");
+        Staff one = createStaff("One", d, JobTitle.DOCTOR, "ONE");
+        Staff two = createStaff("Two", d, JobTitle.DOCTOR, "TWO");
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(), username("one"), "hash", one.getStaffId(), Role.DOCTOR));
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(), username("two"), "hash", two.getStaffId(), Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        var gate = new java.util.concurrent.CountDownLatch(1);
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var a =
+                    executor.submit(
+                            () -> {
+                                gate.await();
+                                return http.exchange(
+                                        path,
+                                        HttpMethod.PUT,
+                                        entity(
+                                                headBody(0, one.getStaffId()),
+                                                f.admin(),
+                                                Role.ADMIN,
+                                                "race-one",
+                                                "race-one"),
+                                        String.class);
+                            });
+            var b =
+                    executor.submit(
+                            () -> {
+                                gate.await();
+                                return http.exchange(
+                                        path,
+                                        HttpMethod.PUT,
+                                        entity(
+                                                headBody(0, two.getStaffId()),
+                                                f.admin(),
+                                                Role.ADMIN,
+                                                "race-two",
+                                                "race-two"),
+                                        String.class);
+                            });
+            gate.countDown();
+            assertThat(
+                            java.util.List.of(
+                                    a.get().getStatusCode().value(),
+                                    b.get().getStatusCode().value()))
+                    .containsExactlyInAnyOrder(200, 409);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_appointment WHERE"
+                                            + " department_id=? AND ended_at IS NULL",
+                                    Integer.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(1);
+            var stale =
+                    http.exchange(
+                            path,
+                            HttpMethod.PUT,
+                            entity(
+                                    headBody(0, one.getStaffId()),
+                                    f.admin(),
+                                    Role.ADMIN,
+                                    "stale",
+                                    "stale"),
+                            String.class);
+            assertThat(stale.getStatusCode().value()).isEqualTo(409);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_appointment WHERE"
+                                            + " department_id=?",
+                                    Integer.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void appointmentRequiresSameClinicalDepartmentAndLiveDoctorIdentity() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Eligibility");
+        Department other = department("Other");
+        Staff doctor = createStaff("Doctor", d, JobTitle.DOCTOR, "ELIG");
+        Account a =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("elig"),
+                                "hash",
+                                doctor.getStaffId(),
+                                Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        var denied =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(headBody(0, doctor.getStaffId()), a, Role.DOCTOR, "self", "self"),
+                        String.class);
+        assertThat(denied.getStatusCode().value()).isEqualTo(403);
+        var wrong =
+                http.exchange(
+                        "/api/v2/org/departments/" + other.getDepartmentId() + "/head-appointments",
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(0, doctor.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                "wrong",
+                                "wrong"),
+                        String.class);
+        assertThat(wrong.getStatusCode().value()).isEqualTo(422);
+        var grant =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(0, doctor.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                "live",
+                                "live"),
+                        String.class);
+        assertThat(grant.getStatusCode().value()).isEqualTo(200);
+        String ap =
+                "/api/v2/org/scheduling-authority?actorAccountId="
+                        + a.getAccountId()
+                        + "&departmentId="
+                        + d.getDepartmentId();
+        for (String mutation :
+                java.util.List.of(
+                        "UPDATE staff SET status='INACTIVE' WHERE staff_id=?",
+                        "UPDATE staff SET department_id='"
+                                + other.getDepartmentId()
+                                + "' WHERE staff_id=?")) {
+            jdbc.update(mutation, doctor.getStaffId());
+            var auth =
+                    http.exchange(
+                            ap,
+                            HttpMethod.GET,
+                            serviceEntity(
+                                    token("service", "SYSTEM", "clinical-service"), "changed"),
+                            String.class);
+            assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                    .isFalse();
+            jdbc.update(
+                    "UPDATE staff SET status='ACTIVE',department_id=? WHERE staff_id=?",
+                    d.getDepartmentId(),
+                    doctor.getStaffId());
+        }
+        jdbc.update("UPDATE account SET is_active=FALSE WHERE account_id=?", a.getAccountId());
+        var auth =
+                http.exchange(
+                        ap,
+                        HttpMethod.GET,
+                        serviceEntity(token("service", "SYSTEM", "clinical-service"), "locked"),
+                        String.class);
+        assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isFalse();
+        jdbc.update(
+                "UPDATE account SET is_active=TRUE,role='NURSE' WHERE account_id=?",
+                a.getAccountId());
+        auth =
+                http.exchange(
+                        ap,
+                        HttpMethod.GET,
+                        serviceEntity(
+                                token("service", "SYSTEM", "clinical-service"), "changed-role"),
+                        String.class);
+        assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isFalse();
+        jdbc.update(
+                "UPDATE account SET role='DOCTOR',staff_id=NULL WHERE account_id=?",
+                a.getAccountId());
+        auth =
+                http.exchange(
+                        ap,
+                        HttpMethod.GET,
+                        serviceEntity(
+                                token("service", "SYSTEM", "clinical-service"),
+                                "changed-association"),
+                        String.class);
+        assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isFalse();
+    }
+
+    @Test
+    void replacementPreservesAuditHistoryAndReceiptAndCannotGiveOneStaffTwoDepartments()
+            throws Exception {
+        Fixture f = fixture();
+        Department d = department("Replacement");
+        Department other = department("Second appointment");
+        Staff one = createStaff("Previous head", d, JobTitle.DOCTOR, "REPLACE-1");
+        Staff two = createStaff("Next head", d, JobTitle.DOCTOR, "REPLACE-2");
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(),
+                        username("previous"),
+                        "hash",
+                        one.getStaffId(),
+                        Role.DOCTOR));
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(),
+                        username("next"),
+                        "hash",
+                        two.getStaffId(),
+                        Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        var initial =
+                http.exchange(
+                        path,
+                        HttpMethod.GET,
+                        entity(null, f.admin(), Role.ADMIN, null, "empty-head"),
+                        String.class);
+        assertThat(mapper.readTree(initial.getBody()).at("/data/revision").asLong()).isZero();
+        assertThat(initial.getHeaders().getFirst("Cache-Control")).isEqualTo("no-store");
+        assertThat(mapper.readTree(initial.getBody()).at("/data/history").isEmpty()).isTrue();
+        assertThat(
+                        http.exchange(
+                                        path,
+                                        HttpMethod.PUT,
+                                        entity(
+                                                headBody(0, one.getStaffId()),
+                                                f.admin(),
+                                                Role.ADMIN,
+                                                "replace-initial",
+                                                "c".repeat(120)),
+                                        String.class)
+                                .getStatusCode()
+                                .value())
+                .isEqualTo(200);
+        var replaced =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(1, two.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                "replace-next",
+                                "replace-next"),
+                        String.class);
+        assertThat(replaced.getStatusCode().value()).as(replaced.getBody()).isEqualTo(200);
+        JsonNode result = mapper.readTree(replaced.getBody()).get("data");
+        assertThat(result.get("revision").asLong()).isEqualTo(2);
+        assertThat(result.get("staffId").asText()).isEqualTo(two.getStaffId().toString());
+        assertThat(result.get("history").size()).isEqualTo(2);
+        assertThat(result.at("/history/0/endedAt").isNull()).isFalse();
+        assertThat(result.at("/history/1/endedAt").isNull()).isTrue();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM department_head_audit WHERE department_id=?",
+                                Integer.class,
+                                d.getDepartmentId()))
+                .isEqualTo(2);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM organization_event_outbox WHERE"
+                                        + " correlation_id=?",
+                                Integer.class,
+                                "replace-next"))
+                .isEqualTo(1);
+        var collision =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(2, one.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                "replace-next",
+                                "replace-collision"),
+                        String.class);
+        assertThat(collision.getStatusCode().value()).isEqualTo(409);
+        assertThat(mapper.readTree(collision.getBody()).at("/error/code").asText())
+                .isEqualTo("IDEMPOTENCY_CONFLICT");
+        // Moving a staff member must deny authority but must not silently close their open term.
+        jdbc.update(
+                "UPDATE staff SET department_id=? WHERE staff_id=?",
+                other.getDepartmentId(),
+                two.getStaffId());
+        var duplicate =
+                http.exchange(
+                        "/api/v2/org/departments/" + other.getDepartmentId() + "/head-appointments",
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(0, two.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                "second-term",
+                                "second-term"),
+                        String.class);
+        assertThat(duplicate.getStatusCode().value()).isEqualTo(422);
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () ->
+                                jdbc.update(
+                                        "INSERT INTO"
+                                            + " department_head_appointment(appointment_id,department_id,staff_id,account_id,started_at)"
+                                            + " SELECT ?,?,staff_id,account_id,CURRENT_TIMESTAMP"
+                                            + " FROM department_head_appointment WHERE staff_id=?"
+                                            + " AND ended_at IS NULL",
+                                        UUID.randomUUID(),
+                                        other.getDepartmentId(),
+                                        two.getStaffId()))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT position_type FROM department_head_appointment WHERE"
+                                    + " staff_id=? AND ended_at IS NULL",
+                                String.class,
+                                two.getStaffId()))
+                .isEqualTo("DEPARTMENT_HEAD");
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () ->
+                                jdbc.update(
+                                        "UPDATE department_head_appointment SET"
+                                            + " position_type='HEAD_NURSE' WHERE staff_id=?",
+                                        two.getStaffId()))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM department_head_appointment WHERE staff_id=?"
+                                        + " AND ended_at IS NULL",
+                                Integer.class,
+                                two.getStaffId()))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void headAuditFailureRollsBackReplacementProjectionAndReceiptTogether() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Head atomicity");
+        Staff one = createStaff("Atomic original", d, JobTitle.DOCTOR, "ATOMIC-1");
+        Staff two = createStaff("Atomic next", d, JobTitle.DOCTOR, "ATOMIC-2");
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(),
+                        username("atomic1"),
+                        "hash",
+                        one.getStaffId(),
+                        Role.DOCTOR));
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(),
+                        username("atomic2"),
+                        "hash",
+                        two.getStaffId(),
+                        Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        assertThat(
+                        http.exchange(
+                                        path,
+                                        HttpMethod.PUT,
+                                        entity(
+                                                headBody(0, one.getStaffId()),
+                                                f.admin(),
+                                                Role.ADMIN,
+                                                "atomic-head-initial",
+                                                "atomic-head-initial"),
+                                        String.class)
+                                .getStatusCode()
+                                .value())
+                .isEqualTo(200);
+        jdbc.execute(
+                "CREATE FUNCTION reject_head_audit_test() RETURNS trigger AS $$ BEGIN RAISE"
+                        + " EXCEPTION 'injected head audit failure'; END; $$ LANGUAGE plpgsql");
+        jdbc.execute(
+                "CREATE TRIGGER reject_head_audit_test BEFORE INSERT ON department_head_audit FOR"
+                        + " EACH ROW EXECUTE FUNCTION reject_head_audit_test()");
+        try {
+            var response =
+                    http.exchange(
+                            path,
+                            HttpMethod.PUT,
+                            entity(
+                                    headBody(1, two.getStaffId()),
+                                    f.admin(),
+                                    Role.ADMIN,
+                                    "atomic-head-failure",
+                                    "atomic-head-failure"),
+                            String.class);
+            assertThat(response.getStatusCode().is5xxServerError()).isTrue();
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT department_head_id FROM department WHERE"
+                                            + " department_id=?",
+                                    UUID.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(one.getStaffId());
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT revision FROM department_head_state WHERE"
+                                            + " department_id=?",
+                                    Long.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(1);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_appointment WHERE"
+                                            + " department_id=? AND ended_at IS NULL",
+                                    Integer.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(1);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_appointment WHERE"
+                                            + " department_id=?",
+                                    Integer.class,
+                                    d.getDepartmentId()))
+                    .isEqualTo(1);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_receipt WHERE"
+                                            + " idempotency_key=?",
+                                    Integer.class,
+                                    "atomic-head-failure"))
+                    .isZero();
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM organization_event_outbox WHERE"
+                                            + " correlation_id=?",
+                                    Integer.class,
+                                    "atomic-head-failure"))
+                    .isZero();
+        } finally {
+            jdbc.execute("DROP TRIGGER reject_head_audit_test ON department_head_audit");
+            jdbc.execute("DROP FUNCTION reject_head_audit_test()");
+        }
+    }
+
+    @Test
+    void headGrantRejectsInactiveNonclinicalAndNonDoctorTargetsWithoutCreatingRecords() {
+        Fixture f = fixture();
+        Department d = department("Invalid targets");
+        Staff doctor = createStaff("Target", d, JobTitle.DOCTOR, "INVALID-TARGET");
+        Account a =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("target"),
+                                "hash",
+                                doctor.getStaffId(),
+                                Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        java.util.List<String> mutations =
+                java.util.List.of(
+                        "UPDATE department SET is_active=FALSE WHERE department_id='"
+                                + d.getDepartmentId()
+                                + "'",
+                        "UPDATE department SET department_type='PARACLINICAL' WHERE department_id='"
+                                + d.getDepartmentId()
+                                + "'",
+                        "UPDATE staff SET status='INACTIVE' WHERE staff_id='"
+                                + doctor.getStaffId()
+                                + "'",
+                        "UPDATE staff SET job_title='NURSE' WHERE staff_id='"
+                                + doctor.getStaffId()
+                                + "'",
+                        "UPDATE account SET is_active=FALSE WHERE account_id='"
+                                + a.getAccountId()
+                                + "'",
+                        "UPDATE account SET role='NURSE' WHERE account_id='"
+                                + a.getAccountId()
+                                + "'",
+                        "UPDATE account SET staff_id=NULL WHERE account_id='"
+                                + a.getAccountId()
+                                + "'");
+        for (int i = 0; i < mutations.size(); i++) {
+            jdbc.update(mutations.get(i));
+            var response =
+                    http.exchange(
+                            path,
+                            HttpMethod.PUT,
+                            entity(
+                                    headBody(0, doctor.getStaffId()),
+                                    f.admin(),
+                                    Role.ADMIN,
+                                    "ineligible-" + i,
+                                    "ineligible-" + i),
+                            String.class);
+            assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(422);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM department_head_appointment WHERE"
+                                            + " department_id=?",
+                                    Integer.class,
+                                    d.getDepartmentId()))
+                    .isZero();
+            jdbc.update(
+                    "UPDATE department SET is_active=TRUE,department_type='CLINICAL' WHERE"
+                            + " department_id=?",
+                    d.getDepartmentId());
+            jdbc.update(
+                    "UPDATE staff SET status='ACTIVE',job_title='DOCTOR' WHERE staff_id=?",
+                    doctor.getStaffId());
+            jdbc.update(
+                    "UPDATE account SET is_active=TRUE,role='DOCTOR',staff_id=? WHERE account_id=?",
+                    doctor.getStaffId(),
+                    a.getAccountId());
+        }
+    }
+
+    @Test
+    void missingHeadTargetAndCommandHeadersAreBadRequestsAndDoNotRevoke() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Required head target");
+        Staff doctor = createStaff("Head target", d, JobTitle.DOCTOR, "REQUIRED-TARGET");
+        accounts.save(
+                Account.create(
+                        UUID.randomUUID(),
+                        username("required"),
+                        "hash",
+                        doctor.getStaffId(),
+                        Role.DOCTOR));
+        String path = "/api/v2/org/departments/" + d.getDepartmentId() + "/head-appointments";
+        assertThat(
+                        http.exchange(
+                                        path,
+                                        HttpMethod.PUT,
+                                        entity(
+                                                headBody(0, doctor.getStaffId()),
+                                                f.admin(),
+                                                Role.ADMIN,
+                                                "required-initial",
+                                                "required-initial"),
+                                        String.class)
+                                .getStatusCode()
+                                .value())
+                .isEqualTo(200);
+        var missingTarget =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                "{\"expectedRevision\":1,\"reason\":\"Missing target\"}",
+                                f.admin(),
+                                Role.ADMIN,
+                                "missing-target",
+                                "missing-target"),
+                        String.class);
+        assertThat(missingTarget.getStatusCode().value()).isEqualTo(400);
+        var missingKey =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        entity(
+                                headBody(1, doctor.getStaffId()),
+                                f.admin(),
+                                Role.ADMIN,
+                                null,
+                                "missing-key"),
+                        String.class);
+        assertThat(missingKey.getStatusCode().value()).isEqualTo(400);
+        var missingCorrelation =
+                entity(
+                        headBody(1, doctor.getStaffId()),
+                        f.admin(),
+                        Role.ADMIN,
+                        "missing-correlation",
+                        "to-remove");
+        HttpHeaders headers = new HttpHeaders();
+        headers.putAll(missingCorrelation.getHeaders());
+        headers.remove("X-Correlation-Id");
+        var response =
+                http.exchange(
+                        path,
+                        HttpMethod.PUT,
+                        new HttpEntity<>(missingCorrelation.getBody(), headers),
+                        String.class);
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT revision FROM department_head_state WHERE department_id=?",
+                                Long.class,
+                                d.getDepartmentId()))
+                .isEqualTo(1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT department_head_id FROM department WHERE department_id=?",
+                                UUID.class,
+                                d.getDepartmentId()))
+                .isEqualTo(doctor.getStaffId());
+    }
+
+    private String headBody(long revision, UUID staffId) {
+        return "{\"expectedRevision\":"
+                + revision
+                + ",\"staffId\":\""
+                + staffId
+                + "\",\"reason\":\"Admin decision\"}";
+    }
+
     private Fixture fixture() {
         Department home = department("Home");
         Staff managerStaff = createStaff("Manager", home, JobTitle.MANAGER, null);
         Staff adminStaff = createStaff("Admin", home, JobTitle.ADMINISTRATIVE, null);
-        Account manager = accounts.save(Account.create(UUID.randomUUID(), username("manager"), "test-hash",
-                managerStaff.getStaffId(), Role.MANAGER));
-        Account admin = accounts.save(Account.create(UUID.randomUUID(), username("admin"), "test-hash",
-                adminStaff.getStaffId(), Role.ADMIN));
+        Account manager =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("manager"),
+                                "test-hash",
+                                managerStaff.getStaffId(),
+                                Role.MANAGER));
+        Account admin =
+                accounts.save(
+                        Account.create(
+                                UUID.randomUUID(),
+                                username("admin"),
+                                "test-hash",
+                                adminStaff.getStaffId(),
+                                Role.ADMIN));
         return new Fixture(manager, admin);
     }
 
@@ -349,17 +1305,22 @@ class ScheduleManagementScopeIntegrationTest {
 
     private JsonNode currentDoctorAuthority(UUID actorAccountId, String serviceToken, String correlationId)
             throws Exception {
-        ResponseEntity<String> response = http.exchange("/api/v2/org/current-doctor-authority?actorAccountId="
-                        + actorAccountId, HttpMethod.GET, serviceEntity(serviceToken, correlationId), String.class);
+        ResponseEntity<String> response =
+                http.exchange(
+                        "/api/v2/org/current-doctor-authority?actorAccountId=" + actorAccountId,
+                        HttpMethod.GET,
+                        serviceEntity(serviceToken, correlationId),
+                        String.class);
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         return mapper.readTree(response.getBody()).get("data");
     }
 
     private static String token(String type, String role, String subject) {
         Instant now = Instant.now();
-        return Jwts.builder().subject(subject)
-                .claim("type", type).claim("role", role)
-                .issuedAt(Date.from(now)).expiration(Date.from(now.plusSeconds(50)))
+        var builder = Jwts.builder().subject(subject)
+                .claim("type", type).claim("role", role);
+        if ("PATIENT".equals(role)) builder.claim("patientId", UUID.randomUUID().toString());
+        return builder.issuedAt(Date.from(now)).expiration(Date.from(now.plusSeconds(50)))
                 .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
     }
 

@@ -23,11 +23,11 @@ class SchedulingRouteAuthorizationTest {
     void humanSchedulingRoutesHaveExactRolesAndMethods() {
         check("GET", "/api/v2/org/accounts/123/schedule-management-scope", "ADMIN");
         check("PUT", "/api/v2/org/accounts/123/schedule-management-scope", "ADMIN");
-        check("GET", "/api/v2/org/consultation-rooms", "ADMIN", "MANAGER");
-        check("POST", "/api/v2/consultation-sessions", "ADMIN", "MANAGER");
-        check("PUT", "/api/v2/consultation-sessions/123", "ADMIN", "MANAGER");
-        check("PUT", "/api/v2/consultation-sessions/123/status", "ADMIN", "MANAGER");
-        check("GET", "/api/v2/consultation-sessions", "ADMIN", "MANAGER", "NURSE");
+        check("GET", "/api/v2/org/consultation-rooms", "ADMIN", "MANAGER", "DOCTOR");
+        check("POST", "/api/v2/consultation-sessions", "ADMIN", "MANAGER", "DOCTOR");
+        check("PUT", "/api/v2/consultation-sessions/123", "ADMIN", "MANAGER", "DOCTOR");
+        check("PUT", "/api/v2/consultation-sessions/123/status", "ADMIN", "MANAGER", "DOCTOR");
+        check("GET", "/api/v2/consultation-sessions", "ADMIN", "MANAGER", "NURSE", "DOCTOR");
         check("GET", "/api/v2/consultation-sessions/mine", "DOCTOR");
         check("GET", "/api/v2/consultation-sessions/123/registrations", "ADMIN", "MANAGER", "NURSE", "DOCTOR");
         check("POST", "/api/v2/outpatient-registrations", "ADMIN", "NURSE");
@@ -46,6 +46,28 @@ class SchedulingRouteAuthorizationTest {
         check("POST", "/api/v2/billing/payment-requests/123/lab-zero-payable-eligibility", "ADMIN", "CASHIER");
         check("POST", "/api/v2/billing/payment-requests/123/lab-payments", "ADMIN", "CASHIER");
         check("GET", "/api/v2/billing/payment-operations/123", "ADMIN", "CASHIER");
+    }
+
+    @Test
+    void departmentHeadAndDoctorShiftRoutesExposeOnlyTheirHumanContracts() {
+        check("GET", "/api/v2/consultation-sessions/summary", "ADMIN", "MANAGER", "DOCTOR");
+        check("PUT", "/api/v2/consultation-sessions/summary");
+        check("PUT", "/api/v2/consultation-sessions/mine");
+        check("GET", "/api/v1/org/me/capabilities", "ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH");
+        check("GET", "/api/v2/org/departments/123/head-appointments", "ADMIN");
+        check("PUT", "/api/v2/org/departments/123/head-appointments", "ADMIN");
+        check("GET", "/api/v2/doctor-work-shifts", "ADMIN", "MANAGER", "DOCTOR");
+        check("POST", "/api/v2/doctor-work-shifts", "ADMIN", "MANAGER", "DOCTOR");
+        check("GET", "/api/v2/doctor-work-shifts/mine", "DOCTOR");
+        check("PUT", "/api/v2/doctor-work-shifts/123", "ADMIN", "MANAGER", "DOCTOR");
+        check("PUT", "/api/v2/doctor-work-shifts/123/cancel", "ADMIN", "MANAGER", "DOCTOR");
+        check("POST", "/api/v2/doctor-work-shifts/123/consultation-sessions", "ADMIN", "MANAGER", "DOCTOR");
+        check("POST", "/api/v1/org/me/capabilities");
+        check("DELETE", "/api/v2/doctor-work-shifts/123");
+        check("GET", "/api/v2/doctor-work-shifts/123/cancel/extra");
+        check("POST", "/api/v2/doctor-work-shifts/mine");
+        check("PUT", "/api/v2/doctor-work-shifts/mine");
+        check("POST", "/api/v2/org/departments/123/head-appointments");
     }
 
     @Test

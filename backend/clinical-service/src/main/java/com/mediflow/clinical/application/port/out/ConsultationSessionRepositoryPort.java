@@ -11,6 +11,10 @@ import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 
 public interface ConsultationSessionRepositoryPort {
+    SummaryCounts summarize(UUID departmentId, LocalDate fromDate, LocalDate toDate);
+    record SummaryCounts(long openSessionCount, long stoppedSessionCount, long cancelledSessionCount,
+            long capacity, long heldCount, long paymentLockedCount, long confirmedCount,
+            long consumedCount, long availableCount) {}
     ConsultationSession insert(ConsultationSession session, UUID actorAccountId, String reason, Instant at);
     Optional<ConsultationSession> findById(UUID sessionId);
     Optional<ConsultationSession> findByIdForUpdate(UUID sessionId);

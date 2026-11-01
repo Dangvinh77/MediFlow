@@ -24,6 +24,7 @@ import com.mediflow.clinical.application.dto.request.ConsultationSessionCreateRe
 import com.mediflow.clinical.application.dto.request.ConsultationSessionStatusRequest;
 import com.mediflow.clinical.application.dto.request.ConsultationSessionUpdateRequest;
 import com.mediflow.clinical.application.dto.response.ConsultationSessionDTO;
+import com.mediflow.clinical.application.dto.response.ConsultationSessionSummary;
 import com.mediflow.clinical.application.dto.response.DoctorCalendar;
 import com.mediflow.clinical.application.dto.response.RegistrationSummary;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
@@ -60,7 +61,7 @@ public class ConsultationSessionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> create(
             @Valid @RequestBody ConsultationSessionCreateRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -74,7 +75,7 @@ public class ConsultationSessionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> update(
             @PathVariable UUID id, @Valid @RequestBody ConsultationSessionUpdateRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -84,7 +85,7 @@ public class ConsultationSessionController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> status(
             @PathVariable UUID id, @Valid @RequestBody ConsultationSessionStatusRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -94,7 +95,7 @@ public class ConsultationSessionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','NURSE','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<ConsultationSessionDTO>>> search(
             @RequestParam UUID departmentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -116,6 +117,15 @@ public class ConsultationSessionController {
         requireOnlyParameters(request, CALENDAR_PARAMETERS);
         return ResponseEntity.ok(ApiResponse.ok(sessions.mine(weekStart, date),
                 correlationIds.currentOrCreate().toString()));
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    public ResponseEntity<ApiResponse<ConsultationSessionSummary>> summary(@RequestParam UUID departmentId,
+            @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate toDate,HttpServletRequest request) {
+        requireOnlyParameters(request,Set.of("departmentId","fromDate","toDate"));
+        return ResponseEntity.ok(ApiResponse.ok(sessions.summary(departmentId,fromDate,toDate),correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/{id}/registrations")

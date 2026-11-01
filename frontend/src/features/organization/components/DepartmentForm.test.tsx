@@ -175,7 +175,7 @@ describe("DepartmentForm", () => {
     );
   });
 
-  it("keeps update fields contract-shaped and validates the department-head UUID", async () => {
+  it("preserves the head projection and exposes no legacy head write", async () => {
     mocks.department.mockResolvedValue({
       ...departmentContractFixture,
       departmentHeadId: "00000000-0000-4000-8000-000000000009",
@@ -183,12 +183,7 @@ describe("DepartmentForm", () => {
     mocks.updateDepartment.mockResolvedValue(departmentContractFixture);
     render(<DepartmentForm departmentId={departmentContractFixture.departmentId} />);
     await screen.findByDisplayValue("Clinical");
-    fireEvent.change(screen.getByLabelText(/Mã trưởng khoa/), { target: { value: "not-a-uuid" } });
-    fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
-    expect(await screen.findByRole("alert")).toHaveTextContent("UUID hợp lệ");
-    expect(mocks.updateDepartment).not.toHaveBeenCalled();
-
-    fireEvent.change(screen.getByLabelText(/Mã trưởng khoa/), { target: { value: "" } });
+    expect(screen.queryByLabelText(/Mã trưởng khoa/)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Địa điểm/), { target: { value: "  West Wing  " } });
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.updateDepartment).toHaveBeenCalledWith(
@@ -197,7 +192,7 @@ describe("DepartmentForm", () => {
         departmentName: "Clinical",
         departmentType: "CLINICAL",
         location: "West Wing", profile: { description: null, phoneNumber: null, email: null },
-        departmentHeadId: null,
+        departmentHeadId: "00000000-0000-4000-8000-000000000009",
         active: true,
       },
     ));

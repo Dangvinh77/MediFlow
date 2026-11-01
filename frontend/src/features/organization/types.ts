@@ -124,3 +124,9 @@ export interface IssuedPatientAccount {
   username: string;
   mustChangePassword: boolean;
 }
+export interface HeadAppointmentSnapshot {
+  departmentId: string; revision: number; appointmentId: string | null; staffId: string | null; accountId: string | null;
+  updatedAt: string | null; updatedByAccountId: string | null;
+  history: { appointmentId: string; staffId: string; accountId: string; startedAt: string; endedAt: string | null }[];
+}
+export interface HeadAppointmentCommand { expectedRevision: number; staffId: string | null; reason: string }
