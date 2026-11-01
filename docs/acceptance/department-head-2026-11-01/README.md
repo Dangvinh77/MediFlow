@@ -1,5 +1,9 @@
 # Nghiệm thu trưởng khoa và hai khu vực làm việc — 01/11/2026
 
+Các lỗi UX đã sửa và kiểm tra lại nằm trong [kết quả sau sửa](UX-FIXES.md), kèm ảnh, tests và giới hạn nghiệm thu.
+
+Cập nhật kiểm tra trực tiếp sau merge: [Edge InPrivate](EDGE-INPRIVATE-RETEST.md) và [trình duyệt kết nối trực tiếp](DIRECT-BROWSER-RETEST.md). Lượt kết nối trực tiếp đã xác nhận lưu/sửa ca, tạo buổi từ ca, lịch cá nhân, thống kê và cả hai lựa chọn của cảnh báo chưa lưu. Các giới hạn bên dưới là trạng thái của lượt nghiệm thu ban đầu; xem báo cáo mới để biết phần đã được kiểm chứng bổ sung.
+
 Phạm vi PR: bác sĩ được bổ nhiệm trưởng khoa CLINICAL giữ tài khoản/role DOCTOR, chuyển giữa Khám bệnh và Quản lý khoa; quản lý ca bác sĩ, tạo buổi khám từ ca và theo dõi số chỗ trong khoa. Không phải nghiệm thu lại toàn bộ hành trình bệnh nhân, thu tiền, xét nghiệm và phát thuốc.
 
 ## Kết quả đã kiểm chứng

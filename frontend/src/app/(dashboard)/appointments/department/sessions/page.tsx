@@ -1,4 +1,7 @@
 import { PageShell } from "@/components/layout/PageShell";
 import { DepartmentManagementWorkspace } from "@/features/appointment/components/DepartmentManagementWorkspace";
 export const dynamic = "force-dynamic";
-export default function Page() { return <PageShell title="Buổi khám & phòng" description="Buổi khám trong khoa được bổ nhiệm."><DepartmentManagementWorkspace sessions enabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"} /></PageShell>; }
+export default async function Page({searchParams}: {searchParams: Promise<{date?: string | string[]}>}) {
+  const query = await searchParams;
+  return <PageShell title="Buổi khám & phòng" description="Buổi khám trong khoa được bổ nhiệm."><DepartmentManagementWorkspace sessions initialDate={typeof query.date === "string" ? query.date : undefined} enabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"} /></PageShell>;
+}

@@ -1,5 +1,7 @@
 import datetime as dt
 import importlib.util
+import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -132,6 +134,82 @@ class PreparationTest(unittest.TestCase):
                 self.assertEqual(reopened.call('admin', 'POST', '/api/session', {'capacity': 40}, stage='session'), {'id': 'one'})
                 with self.assertRaises(ValueError):
                     reopened.call('admin', 'POST', '/api/session', {'capacity': 41}, stage='session')
+
+
+class DemoApiTest(unittest.TestCase):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.api = demo.DemoApi('http://127.0.0.1:28080', Path(folder.name) / 'journal.json')
+
+    def response(self, status, envelope):
+        stream = io.BytesIO(json.dumps(envelope).encode())
+        if status >= 400:
+            return demo.urllib.error.HTTPError(self.api.gateway, status, 'not ready', {}, stream)
+        stream.status = status
+        return stream
+
+    def test_wait_skips_expected_http_errors_before_evaluating_data(self):
+        ready = {'paymentRequestId': 'request', 'reservationId': 'reservation', 'reservationRevision': 3}
+        responses = [self.response(404, {'success': False, 'error': {'code': 'NOT_FOUND'}}),
+                     self.response(503, {'success': False, 'error': {'code': 'UNAVAILABLE'}}),
+                     self.response(200, {'success': True, 'data': ready})]
+        observed = []
+        with patch.object(demo.urllib.request, 'urlopen', side_effect=responses) as send, \
+                patch.object(demo.time, 'sleep') as sleep:
+            result = self.api.wait('cashier', '/payment-requests/by-registration',
+                                   lambda row: observed.append(row) or True, expected=(200, 404, 503))
+        self.assertEqual(result, ready)
+        self.assertEqual(observed, [ready])
+        self.assertEqual(send.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_wait_times_out_when_expected_errors_never_become_data(self):
+        def unavailable(*args, **kwargs):
+            raise self.response(503, {'success': False, 'error': {'code': 'UNAVAILABLE'}})
+
+        with patch.object(demo.urllib.request, 'urlopen', side_effect=unavailable) as send, \
+                patch.object(demo.time, 'sleep'), \
+                self.assertRaisesRegex(RuntimeError, 'Projection did not become ready'):
+            self.api.wait('cashier', '/payment-requests/by-registration', lambda row: True,
+                          expected=(200, 404, 503))
+        self.assertEqual(send.call_count, 45)
+
+    def test_wait_raises_unexpected_status_without_retrying(self):
+        for status in (401, 403, 500):
+            with self.subTest(status=status), \
+                    patch.object(demo.urllib.request, 'urlopen', side_effect=self.response(status, {'error': {}})) as send, \
+                    patch.object(demo.time, 'sleep') as sleep, self.assertRaises(demo.ApiError) as raised:
+                self.api.wait('cashier', '/payment-requests/by-registration', lambda row: True,
+                              expected=(200, 404, 503))
+            self.assertEqual(raised.exception.status, status)
+            send.assert_called_once()
+            sleep.assert_not_called()
+
+    def test_expected_write_error_keeps_identity_without_caching_success(self):
+        body = {'reservationId': 'reservation', 'expectedReservationRevision': 3, 'quoteId': 'quote'}
+        path = '/payment-requests/request/payments'
+        with patch.object(demo.urllib.request, 'urlopen',
+                          side_effect=self.response(503, {'error': {'code': 'UNAVAILABLE'}})) as first_send:
+            self.assertIsNone(self.api.call('cashier', 'POST', path, body, expected=(200, 503), stage='payment'))
+        saved = json.loads(self.api.journal.read_text(encoding='utf-8'))['payment']
+        self.assertNotIn('result', saved)
+        self.assertEqual(saved['body'], body)
+        self.assertEqual(saved['path'], path)
+        reopened = demo.DemoApi(self.api.gateway, self.api.journal)
+        ready = {'operation': {'status': 'COMPLETED'}}
+        with patch.object(demo.urllib.request, 'urlopen', return_value=self.response(200, {'data': ready})) as retry_send:
+            self.assertEqual(reopened.call('cashier', 'POST', path, body, stage='payment'), ready)
+        first_request = first_send.call_args.args[0]
+        retry_request = retry_send.call_args.args[0]
+        self.assertEqual(first_request.get_header('Idempotency-key'), saved['key'])
+        self.assertEqual(retry_request.get_header('Idempotency-key'), saved['key'])
+        self.assertEqual(first_request.data, retry_request.data)
+        self.assertEqual(reopened.state['payment']['result'], ready)
+        with patch.object(demo.urllib.request, 'urlopen', side_effect=AssertionError('must not resend')):
+            self.assertEqual(reopened.call('cashier', 'POST', path, body, stage='payment'), ready)
+            with self.assertRaises(ValueError):
+                reopened.call('cashier', 'POST', path + '/changed', body, stage='payment')
 
 
 if __name__ == '__main__':

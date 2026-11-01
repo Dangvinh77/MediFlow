@@ -84,6 +84,9 @@ class DemoApi:
             status, envelope = error.code, json.load(error)
         if status not in expected:
             raise ApiError(status, f'{method} {path}: HTTP {status}, {envelope.get("error")}')
+        if status >= 400:
+            # Expected polling failures are not data or successful journal results.
+            return None
         result = envelope.get('data') if 'data' in envelope else envelope
         if command is not None:
             command['result'] = result
