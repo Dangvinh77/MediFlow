@@ -33,6 +33,7 @@ def prepare(api, now):
             or not any(row["departmentId"] == department_id for row in capabilities["managementDepartments"])):
         raise RuntimeError("Doctor's current management authority is not ready")
     rooms = api.call("doctor", "GET", "/api/v2/org/consultation-rooms?departmentId=" + department_id)["content"]
+    rooms = [room for room in rooms if room.get("roomName") != "Phong kham lich day demo"]
     if not rooms:
         raise RuntimeError("No eligible consultation room")
     shift_date = str((now.astimezone(ZONE).date() + dt.timedelta(days=2)))

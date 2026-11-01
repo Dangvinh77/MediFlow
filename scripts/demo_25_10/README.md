@@ -20,22 +20,36 @@ Lỗi trả exit code 1 và giữ cửa sổ để đọc. Có thể đặt `MED
 Yêu cầu Java 21, Maven, Python 3, Node/pnpm và Docker Compose v2 trên PATH.
 Backend dùng lại runner hiện có: dữ liệu demo là tạm thời, tự dừng/dọn sau hai giờ;
 lần chạy mới nạp lại snapshot. Launcher bổ sung lịch hôm nay/ngày mai bằng
-`prepare_ui_demo.py`, không sửa snapshot SQL. Ngoài giờ chỉ chuẩn bị lịch chưa kết thúc;
+`prepare_ui_demo.py`, sau đó `prepare_demo_calendar.py` thêm **10 nhân sự/khoa đang hoạt động**
+và lịch mọi ngày **01/11/2026–31/01/2027** cho các khoa lâm sàng.
+Mỗi ngày gồm **07:00–12:00 và 12:00–17:00**, mỗi buổi 40 chỗ, luân phiên sáu bác sĩ
+mẫu mỗi khoa; bốn nhân sự còn lại là điều dưỡng. Khoa ngoài lâm sàng được bổ sung
+nhân sự phù hợp, không có lịch khám bác sĩ giả. Mỗi khoa lâm sàng có phòng lịch riêng,
+không trùng phòng/lịch của `demo.doctor`. Chờ thêm dòng **CALENDAR READY** trước READY.
+Không sửa snapshot SQL; chỉ bootstrap phòng Organization trước khi bật dịch vụ.
+Lịch đã qua giờ vẫn có để tra cứu, không đăng ký hoặc bắt đầu khám trái ngày/giờ thực;
 lượt nguồn tái khám cần chạy trong 07:00–16:45 giờ Việt Nam. Chạy demo trọn luồng
 trong 07:00–17:00, nên bắt đầu trước 16:00.
 
 **Hướng dẫn click từng bước, đủ ba trường hợp và đến nhận thuốc:**
 [DEMO_UI_TUNG_BUOC.md](DEMO_UI_TUNG_BUOC.md). Đọc `DEMO-DATA.local.md` tại đường dẫn
 `UI DATA` của lần chạy để biết đúng tên khoa, CCCD bệnh nhân và ngày có lịch.
+File **DEMO-CALENDAR.local.md** cùng thư mục ghi nhân sự, phòng và **tài khoản từng
+bác sĩ bổ sung**. Khi nurse chọn buổi có bác sĩ bổ sung, phải đăng nhập đúng bác sĩ
+trong file này để khám; `demo.doctor` chỉ xem được lịch của chính mình.
 
 Nếu đã có stack `--scheduling --keep` đang chạy, chuẩn bị dữ liệu bằng:
 
 ```powershell
 python scripts/demo_25_10/prepare_ui_demo.py
+python scripts/demo_25_10/prepare_demo_calendar.py
 ```
 
 Lượt nền của `demo.patient2` có khoản thu thật trong DB demo để làm nguồn tái khám;
 ba lượt bạn sẽ thao tác không được đăng ký trước. Không xóa journal khi gặp timeout.
+Lệnh calendar cần stack mới có bootstrap phòng; nếu báo thiếu phòng, khởi động lại
+bằng `start-backend.bat`. Chạy lại cùng stack không tạo trùng và không đặt lại mật khẩu;
+thay đổi/hủy lịch hoặc tài khoản sau seed phải đối soát, script không tự mở lại.
 
 Kiểm tra an toàn file dọn (Docker giả lập, không xóa tài nguyên thật):
 

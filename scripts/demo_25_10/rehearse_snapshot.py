@@ -193,6 +193,8 @@ def main():
             from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
             fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json'), dt.datetime.now(ZONE))
             write_fixtures(fixtures, evidence)
+            from prepare_demo_calendar import prepare as prepare_calendar, write_fixtures as write_calendar
+            write_calendar(prepare_calendar(DemoApi(manifest['gateway'], evidence / 'calendar-journal.local.json')), evidence)
         (evidence / "result.txt").write_text("PASS: eight database restores, populated-target refusal, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")
         print("READY " + str(evidence), flush=True)
         if options.keep:
