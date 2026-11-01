@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { useCommand } from "@/lib/use-command";
@@ -91,6 +92,9 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
 
       {mode === "results" ? (
         <form onSubmit={submitResults} className="mt-5 space-y-4 border-t border-border pt-5">
+          <PatientContextBanner label="Đối chiếu bệnh nhân trước khi nhập kết quả" patientId={test.patientId} departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu">
+            <p className="text-sm font-medium">{test.labType} · Đối chiếu đúng người và phiếu trước khi lưu</p>
+          </PatientContextBanner>
           <div className="flex items-center justify-between"><h3 className="font-semibold">Kết quả chỉ số</h3><Button type="button" variant="ghost" onClick={() => setResults((current) => [...current, emptyResult()])}>Thêm chỉ số</Button></div>
           {results.map((result, index) => (
             <div key={index} className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-4">

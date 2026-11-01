@@ -22,7 +22,7 @@ it("opens today's department sessions in the fixed appointed department without 
 it("discards the old filter response when the department date changes", async () => {
  let resolve!: (value: Awaited<ReturnType<typeof appointmentApi.listConsultationSessions>>) => void;
  vi.mocked(appointmentApi.listConsultationSessions).mockReturnValueOnce(new Promise(done => { resolve = done; }));
- render(<SessionAdministration fixedDepartmentId="appointed" checking={false} />);
+ render(<SessionAdministration fixedDepartmentId="appointed" initialDate="2026-11-01" checking={false} />);
  await waitFor(() => expect(resolve).toBeDefined());
  fireEvent.change(screen.getByLabelText("Từ ngày"), {target:{value:"2026-11-02"}});
  await act(async () => { resolve({content:[{sessionId:"old",revision:1,doctorId:"d",departmentId:"appointed",roomId:"r",capacity:20,heldCount:0,paymentLockedCount:0,confirmedCount:0,consumedCount:0,availableCount:20,observedAt:"now",sessionDate:"1999-01-01",startTime:"08:00",endTime:"12:00",breaks:[],status:"OPEN"}],number:0,totalPages:1,totalElements:1,size:20}); });

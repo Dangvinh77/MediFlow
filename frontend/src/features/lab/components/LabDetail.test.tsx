@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { ReferenceProvider } from "@/components/references/ReferenceProvider";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { Role } from "@/lib/roles";
@@ -60,6 +61,21 @@ describe("Lab detail read and permission states", () => {
     mocks.getRole.mockReturnValue("LAB_TECH");
   });
 
+  it("keeps patient name and birth date beside result entry while support metadata stays collapsed", async () => {
+    mocks.getById.mockResolvedValue({ ...test, status: "IN_PROGRESS", clearanceId: "clearance" });
+    const directory = { canSearch: () => false, canResolve: () => true,
+      search: vi.fn(), resolve: async (kind: string) => kind === "patient" ? "Nguyễn An · 12/04/1986" : "Khoa Nội" };
+    render(<ReferenceProvider directory={directory}><LabDetail testId={test.testId} /></ReferenceProvider>);
+    const context = await screen.findByRole("region", { name: "Ngữ cảnh xét nghiệm" });
+    expect(await within(context).findByText("Nguyễn An · 12/04/1986")).toBeVisible();
+    expect(within(context).getByText(test.labType)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Nhập kết quả" }));
+    const identityCheck = screen.getByRole("region", { name: "Đối chiếu bệnh nhân trước khi nhập kết quả" });
+    expect(await within(identityCheck).findByText("Nguyễn An · 12/04/1986")).toBeVisible();
+    expect(screen.getByText("Phiên bản dữ liệu")).not.toBeVisible();
+    expect(screen.queryByText("OUTPATIENT_VISIT")).not.toBeInTheDocument();
+  });
+
   it("provides exact source identities for cashier handoff without making the nurse infer an episode", async () => {
     mocks.getById.mockResolvedValue(test);
     render(<LabDetail testId={test.testId} />);
@@ -77,7 +93,7 @@ describe("Lab detail read and permission states", () => {
     expect(screen.getByRole("status", { busy: true })).toBeVisible();
     await act(async () => pending.resolve({ ...test, paid: true }));
     expect(await screen.findByText("Chưa có xác nhận tài chính")).toBeVisible();
-    expect(screen.getByText("Chờ quyền tài chính")).toBeVisible();
+    expect(screen.getByText("Chờ xác nhận thanh toán")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Bắt đầu xét nghiệm" })).not.toBeInTheDocument();
     expect(screen.getByText("Chưa có chỉ số kết quả.")).toBeVisible();
     expect(mocks.start).not.toHaveBeenCalled();

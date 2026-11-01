@@ -1,6 +1,7 @@
 "use client";
 
 import { ReferenceText } from "@/components/references/ReferenceText";
+import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import Link from "next/link";
 import { FinancialStatus } from "./FinancialStatus";
 import { useCallback, useEffect, useState } from "react";
@@ -32,7 +33,7 @@ type DetailState =
 
 const statusPresentation: Record<LabTestStatus, { label: string; tone: StatusTone }> = {
   PENDING: { label: "Chờ xử lý", tone: "warning" },
-  AWAITING_PAYMENT: { label: "Chờ quyền tài chính", tone: "warning" },
+  AWAITING_PAYMENT: { label: "Chờ xác nhận thanh toán", tone: "warning" },
   READY: { label: "Sẵn sàng", tone: "info" },
   IN_PROGRESS: { label: "Đang thực hiện", tone: "info" },
   COMPLETED: { label: "Đã hoàn tất", tone: "success" },
@@ -53,7 +54,7 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-all font-mono text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : label === "Hồ sơ khám" ? "record" : undefined} value={value} fallback={label} /></dd>
+      <dd className="mt-1 break-all font-mono text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : label === "Hồ sơ khám" ? "record" : undefined} value={value} fallback={label} technical /></dd>
     </div>
   );
 }
@@ -123,32 +124,38 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
           Đã tạo yêu cầu xét nghiệm thành công.
         </p>
       ) : null}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{test.labType}</p>
-          <p className="mt-1 break-all font-mono text-sm"><ReferenceText value={test.testId} fallback="Xét nghiệm" /></p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <PatientContextBanner label="Ngữ cảnh xét nghiệm" patientId={test.patientId}
+        departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu" className="sticky top-18 z-20">
+        <div className="space-y-2">
+          <p className="font-semibold">{test.labType}</p>
+          <div className="flex flex-wrap gap-2">
           <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
           <FinancialStatus test={test} />
+          </div>
         </div>
-      </div>
+      </PatientContextBanner>
 
       <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Identifier label="Bệnh nhân" value={test.patientId} />
+        <div><dt className="text-sm text-muted-foreground">Hình thức khám</dt><dd className="mt-1 text-sm">{test.careEpisodeType === "OUTPATIENT_VISIT" ? "Ngoại trú" : test.careEpisodeType === "ADMISSION" ? "Nội trú" : "Chưa có thông tin"}</dd></div>
+        <div><dt className="text-sm text-muted-foreground">Ngày yêu cầu</dt><dd className="mt-1 text-sm">{formatLocalDate(test.requestedDate)}</dd></div>
+        <div><dt className="text-sm text-muted-foreground">Ngày thực hiện</dt><dd className="mt-1 text-sm">{test.performedDate ? formatLocalDate(test.performedDate) : "Chưa thực hiện"}</dd></div>
+      </dl>
+
+      <details className="rounded-xl border border-border bg-surface p-5">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin tham chiếu và hỗ trợ</summary>
+        <dl className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Identifier label="Mã xét nghiệm" value={test.testId} />
         <Identifier label="Hồ sơ khám" value={test.recordId} />
         <Identifier label="Khoa yêu cầu" value={test.requestingDepartmentId} />
         <Identifier label="Nguồn chỉ định" value={test.sourceOrderId} />
         <Identifier label="Đợt chăm sóc" value={test.careEpisodeId} />
         <Identifier label="Xác nhận tài chính" value={test.clearanceId} />
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Loại đợt chăm sóc</dt><dd className="mt-1 text-sm">{test.careEpisodeType ?? "—"}</dd></div>
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã giá</dt><dd className="mt-1 text-sm">{test.priceCode ?? "—"}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phiên bản contract/kết quả</dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày yêu cầu</dt><dd className="mt-1 text-sm">{formatLocalDate(test.requestedDate)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày thực hiện</dt><dd className="mt-1 text-sm">{test.performedDate ? formatLocalDate(test.performedDate) : "—"}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phiên bản dữ liệu</dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(test.createdAt)}</dd></div>
         <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(test.updatedAt)}</dd></div>
-      </dl>
+        </dl>
+      </details>
 
       <details className="rounded-xl border border-border bg-surface p-5">
         <summary className="cursor-pointer font-semibold">Thông tin bàn giao thu ngân</summary>
