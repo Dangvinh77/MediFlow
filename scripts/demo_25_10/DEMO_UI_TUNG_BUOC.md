@@ -137,8 +137,16 @@ Sau khi đăng ký, mỗi trường hợp đều đi tiếp từ mục 3 đến 
    **Tài khoản bệnh nhân và đăng ký khám**.
 5. Bấm **Cấp tài khoản bệnh nhân**. Ghi lại tên đăng nhập trả về (CCCD), mật khẩu
    ban đầu `1`. Không đăng nhập bệnh nhân lúc này: nurse tiếp tục chăm sóc được ngay.
-6. Bấm **Tiếp tục đăng ký khám**. Bệnh nhân đã được chọn sẵn tại trang tiếp nhận.
-7. Thực hiện mục 3 với loại **Khám mới**.
+6. Ngay tại trang **Chi tiết bệnh nhân** (`/patients/<mã bệnh nhân>`), cuộn xuống
+   khối **Tài khoản bệnh nhân và đăng ký khám**. Dưới nút cấp tài khoản/thông báo
+   tài khoản đã cấp có liên kết chữ gạch chân **Tiếp tục đăng ký khám**.
+   Bấm liên kết để sang `/appointments/reception?patientId=<mã bệnh nhân>`;
+   bệnh nhân được truyền sẵn. Liên kết này không nằm trên trang tạo hồ sơ.
+7. Ở trang **Tiếp nhận ca khám**, chọn khoa → ngày → **Tải buổi khám** → **Chọn buổi**.
+   Sau khi chọn buổi, bên dưới mới hiện form **Tiếp nhận vào buổi…**.
+   Trong ô **Loại lượt khám**, chọn **Khám đợt mới** (mặc định).
+   Đây là lựa chọn trong danh sách thả xuống, không có nút riêng tên “Khám mới”.
+   Tiếp tục các bước còn lại của mục 3, kết thúc bằng **Đăng ký và giữ chỗ**.
 
 Nếu rời trang sau tạo, nurse có thể tìm và mở lại hồ sơ bệnh nhân còn hoạt động để
 tiếp tục cấp tài khoản/đăng ký khám; không tạo lại hồ sơ. Khi đã có tài khoản, không
@@ -150,7 +158,7 @@ cấp lại hoặc đặt lại mật khẩu chỉ để đăng ký lượt khá
    `DEMO-DATA.local.md`; kiểm họ tên/ngày sinh để xác nhận đúng người.
 2. Không tạo hồ sơ, không cấp lại tài khoản và không đặt lại mật khẩu.
 3. Menu **Tiếp nhận ca khám** (`/appointments/reception`).
-4. Thực hiện mục 3; chọn người này và loại **Khám mới**. “Khám mới” là một lượt mới,
+4. Thực hiện mục 3; chọn người này và **Loại lượt khám → Khám đợt mới**. Đây là một lượt mới,
    không có nghĩa phải là bệnh nhân lần đầu tới bệnh viện.
 
 ### C. Bệnh nhân tái khám
@@ -160,7 +168,7 @@ cấp lại hoặc đặt lại mật khẩu chỉ để đăng ký lượt khá
    qua API; chưa đăng ký lượt tái khám bạn sẽ thao tác.
 2. Đăng nhập `demo.nurse` → **Tiếp nhận ca khám**.
 3. Chọn khoa và buổi cùng bác sĩ được ghi trong file dữ liệu.
-4. Chọn bệnh nhân của `demo.patient2`, đổi **Loại lượt khám** sang **Tái khám**.
+4. Chọn bệnh nhân của `demo.patient2`, đổi **Loại lượt khám** sang **Tái khám từ lượt đã hoàn tất**.
 5. Bấm nút tải/tìm lượt khám trước; chọn lượt đã hoàn tất có chẩn đoán dữ liệu nền.
    Dùng đề xuất tái khám của bác sĩ. Khoảng khuyến nghị là ngày seed đến bảy ngày sau.
 6. Giữ cùng bác sĩ cho lần demo đầu. Nếu đổi bác sĩ, phải nhập lý do và xác nhận
@@ -172,12 +180,15 @@ Lượt nền là dữ liệu mô phỏng để có nguồn hợp lệ, không p
 
 ## 3. NURSE — chọn buổi và đăng ký tại quầy
 
-1. Ở **Chọn buổi khám**, tại ô **Khoa**, nhập tên khoa trong file dữ liệu → bấm
+1. Mở menu **Tiếp nhận ca khám** (`/appointments/reception`), hoặc dùng liên kết
+   **Tiếp tục đăng ký khám** từ chi tiết bệnh nhân. Ở **Chọn buổi khám**, tại ô **Khoa**, nhập tên khoa trong file dữ liệu → bấm
    **Tìm** → chọn kết quả. Gõ chữ vào ô chưa đồng nghĩa đã chọn khoa.
 2. **Từ ngày**, **Đến ngày**: cùng ngày hôm nay → **Tải buổi khám**.
 3. Chọn thẻ 07:00–17:00 của đúng bác sĩ, trạng thái mở/còn chỗ → **Chọn buổi**.
-4. Nếu chưa có bệnh nhân sẵn: tại **Bệnh nhân**, tìm CCCD/họ tên → **Tìm** → chọn
-   đúng kết quả. Chọn **Khám mới** hoặc **Tái khám** theo mục 2.
+4. Sau **Chọn buổi**, cuộn xuống form **Tiếp nhận vào buổi…** mới xuất hiện.
+   Nếu chưa có bệnh nhân sẵn: tại **Bệnh nhân**, tìm CCCD/họ tên → **Tìm** → chọn
+   đúng kết quả. Tại danh sách thả xuống **Loại lượt khám**, chọn **Khám đợt mới**
+   hoặc **Tái khám từ lượt đã hoàn tất** theo mục 2; không tìm nút “Khám mới”.
 5. **Hình thức tiếp nhận**: chọn tại quầy (`AT_COUNTER`); nhập ghi chú nếu cần.
 6. Bấm **Đăng ký và giữ chỗ**. Kỳ vọng **Đang chờ thu tiền**, chưa có số thứ tự.
 7. Chọn/sao chép ô **Mã phiếu bàn giao thu ngân**; có thể bấm **Mở phiếu khám vừa đăng ký** để kiểm lại. Gửi mã phiếu cho thu ngân; đó cũng là mã lượt/đợt chăm sóc dùng
