@@ -1,6 +1,6 @@
 # Demo UI từng bước: tiếp nhận → khám → xét nghiệm → nhận thuốc
 
-Cập nhật 01/11/2026. Chỉ dùng dữ liệu mẫu. Hướng dẫn này dùng seed tự chạy bởi
+Cập nhật 02/11/2026. Chỉ dùng dữ liệu mẫu. Hướng dẫn này dùng seed tự chạy bởi
 `start-backend.bat`; **không cần chạy thêm SQL, Python hoặc tạo lịch trước khi demo**.
 
 ## 1. Chuẩn bị một lần và chọn đúng ngày
@@ -169,6 +169,12 @@ Trang: **http://127.0.0.1:3000/appointments/reception**.
 7. **Hình thức tiếp nhận → Đang có mặt tại quầy**.
    **Ghi chú tùy chọn**: `Demo A - tiếp nhận khám mới` (đổi A thành B/C tương ứng).
 8. Bấm **Đăng ký và giữ chỗ**. Kỳ vọng **Đang chờ thu tiền**, chưa có số thứ tự.
+   Chờ cập nhật xong: **Phiếu trong buổi** phải có bệnh nhân vừa đăng ký; số chỗ
+   được lấy lại từ backend. Trong lúc tải lại, số chỗ cũ được ẩn và nút đăng ký bị khóa.
+   Nếu hiện **Phiếu đã được tạo; chưa cập nhật được danh sách và số chỗ**, giữ phiếu
+   đã tạo và bấm **Cập nhật danh sách và số chỗ**; nút này chỉ tải lại, không tạo phiếu.
+   Nếu hiện **Chưa xác định phiếu đã được tạo**, dùng **Gửi lại cùng yêu cầu**;
+   hệ thống giữ nguyên mã chống trùng và khóa đổi khoa/buổi trong lúc đối soát.
 9. Sao chép **Mã phiếu bàn giao thu ngân** vào **PHIEU**. Có thể bấm
    **Mở phiếu khám vừa đăng ký** để kiểm đúng tên. Đổi sang cashier ngay.
 
@@ -215,7 +221,9 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
    - Tên chẩn đoán: `Theo dõi sức khỏe - dữ liệu demo`.
    - Mã ICD: `Z00`.
    - Bấm thêm chẩn đoán.
-9. Bấm **Chỉ định xét nghiệm**. Điền:
+9. Bấm **Chỉ định xét nghiệm**. Chờ khối **Ngữ cảnh chỉ định xét nghiệm** tải xong;
+   đối chiếu tên, ngày sinh, ngày khám, bác sĩ và khoa trước khi nhập. Nếu không xác
+   minh được hồ sơ, bấm **Thử lại** để đọc lại; chưa có chỉ định nào được gửi. Điền:
 
    | Ô | Giá trị |
    |---|---|
@@ -256,7 +264,10 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
    Cách nhanh: mở lại URL **/lab/[LAB]** đã lưu ở mục 5.
 3. Tải lại trạng thái để nhận xác nhận đã thu → **Bắt đầu xét nghiệm**.
    Nếu chưa thu thì bước này phải bị chặn; không dùng chế độ cấp cứu để vượt qua.
-4. **Nhập kết quả**. Nhập đúng một dòng:
+4. **Nhập kết quả**. Đối chiếu lại khối **Đối chiếu bệnh nhân trước khi nhập kết quả**:
+   đúng tên/ngày sinh, loại xét nghiệm và khoa yêu cầu. Các mã/phiên bản kỹ thuật đã
+   chuyển vào **Thông tin tham chiếu và hỗ trợ**; chỉ mở khi cần đối soát.
+   Nhập đúng một dòng:
 
    | Chỉ số | Giá trị | Đơn vị | Khoảng tham chiếu |
    |---|---|---|---|

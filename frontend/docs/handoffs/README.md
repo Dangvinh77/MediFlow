@@ -12,6 +12,7 @@ checkpoint cũ là xuất xứ, không còn là yêu cầu chờ người khác 
 
 | Handoff | Status | Producer → consumer | Acceptance còn cần đối chiếu |
 |---|---|---|---|
+| [Outpatient product UX](HANDOFF-OUTPATIENT-PRODUCT-OWNER-UX.md) | ACTIVE | Vinh/shared + backend → Huy/Pharmacy/Report, Hoàng Anh/Patient/Organization | Scoped report selection, identity at dispensing, BHYT limitation, optional portal and empty management scope |
 | [Reference display names](HANDOFF-IDENTITY-CONSUMERS-DISPLAY-NAMES-REVIEW3.md) | NEEDS REVALIDATION | Hoàng Anh/Core contracts + Vinh/shared → owner từng feature | Có implementation/checkpoint mới hơn 22/10; đối chiếu exact role/route, signed browser, session reset và ảnh mới; backend gap theo H-01 |
 
 Không giao viết lại selector chỉ từ mô tả ACTIVE cũ. Frontend Billing/Notification vẫn theo
