@@ -10,6 +10,7 @@ import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { Button } from "@/components/ui/Button";
 import { shiftRange } from "./MyWorkShiftsWorkspace";
+import { DoctorWorkShiftWeekGrid } from "./DoctorWorkShiftWeekGrid";
 import { ScheduleDateInput } from "./ScheduleDateInput";
 import { appointmentApi } from "../api";
 import { sessionDateErrors, vietnamToday } from "../session-dates";
@@ -42,7 +43,7 @@ export function DoctorWorkShiftsWorkspace({ departmentId, checking }: { departme
   const [view, setView] = useState<"day" | "week">("day");
   const reads = useRef(0);
   const [page, setPage] = useState(0); const [pages, setPages] = useState(0); const [loaded, setLoaded] = useState(false);
-  const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false); const [writing, setWriting] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
   const [createdSessionDate, setCreatedSessionDate] = useState<string | null>(null);
   const editor = useRef<HTMLFormElement>(null);
   const errorTarget = useRef<HTMLParagraphElement>(null);
@@ -59,11 +60,25 @@ export function DoctorWorkShiftsWorkspace({ departmentId, checking }: { departme
     errorTarget.current?.focus({ preventScroll: true });
   }, [error]);
   useEffect(() => { mounted.current = true; const currentReads = reads; return () => { mounted.current = false; currentReads.current++; }; }, []);
+  async function readShifts(range: { fromDate: string; toDate: string }, mode: "day" | "week", next: number, generation: number, session: string | null) {
+    const current = () => mounted.current && generation === reads.current && session === getSessionKey();
+    const result = await appointmentApi.workShifts({ departmentId, ...range, page: mode === "week" ? 0 : next, size: mode === "week" ? 100 : 20 });
+    if (!current()) return;
+    const content = [...result.content];
+    if (mode === "week") {
+      for (let nextPage = 1; nextPage < result.totalPages; nextPage++) {
+        const value = await appointmentApi.workShifts({ departmentId, ...range, page: nextPage, size: 100 });
+        if (!current()) return;
+        content.push(...value.content);
+      }
+    }
+    return { ...result, content };
+  }
   async function load(next = 0) {
     if (lock.current) return;
     const errors = sessionDateErrors(fromDate, toDate); if (Object.keys(errors).length) { setError(Object.values(errors).join(" ")); return; }
     const generation = ++reads.current; setBusy(true); setError(""); setLoaded(false); setRows([]); const session = getSessionKey();
-    try { const result = await appointmentApi.workShifts({ departmentId, fromDate, toDate, page: next, size: 20 }); if (!mounted.current || generation !== reads.current || session !== getSessionKey()) return; setRows(result.content); setPages(result.totalPages); setPage(result.number); setLoaded(true); }
+    try { const result = await readShifts({ fromDate, toDate }, view, next, generation, session); if (!result) return; setRows(result.content); setPages(result.totalPages); setPage(result.number); setLoaded(true); }
     catch (cause) { if (mounted.current && generation === reads.current && session === getSessionKey()) setError(shiftError(cause, "Không thể tải giờ làm việc. Vui lòng thử lại.")); }
     finally { if (mounted.current && generation === reads.current && session === getSessionKey()) setBusy(false); }
   }
@@ -77,7 +92,7 @@ export function DoctorWorkShiftsWorkspace({ departmentId, checking }: { departme
   }
   async function execute(command: Command) {
     if (lock.current || checking) return;
-    lock.current = true; reads.current++; setBusy(true); setError(""); setNotice(""); setCreatedSessionDate(null); const session = getSessionKey();
+    lock.current = true; setWriting(true); reads.current++; setBusy(true); setError(""); setNotice(""); setCreatedSessionDate(null); const session = getSessionKey();
     let intent: Awaited<ReturnType<typeof prepareCommandIntent>> | undefined;
     try {
       intent = await prepareCommandIntent(`doctor-work-shift:${command.kind}:${"id" in command ? command.id : departmentId}`, session, command.body);
@@ -93,14 +108,14 @@ export function DoctorWorkShiftsWorkspace({ departmentId, checking }: { departme
       const range = validRange && affectedDate >= fromDate && affectedDate <= toDate ? {fromDate, toDate} : shiftRange(affectedDate, view);
       markSaved(); setPending(null); setCancelling(null); setSource(null); setEditing(null); setForm({...initial(), shiftDate:affectedDate}); setReason("");
       setFromDate(range.fromDate); setToDate(range.toDate);
-      if (range.fromDate !== fromDate || range.toDate !== toDate) setRows([]);
+      setLoaded(false); setRows([]);
       setNotice(command.kind === "session" ? "Đã tạo buổi khám." : "Đã lưu giờ làm việc.");
       if (command.kind === "session") setCreatedSessionDate(affectedDate);
       // A failed follow-up read must never turn a committed write into an uncertain command.
       const generation = ++reads.current;
       try {
-        const result = await appointmentApi.workShifts({departmentId, ...range, page:0, size:20});
-        if (!mounted.current || generation !== reads.current || session !== getSessionKey()) return;
+        const result = await readShifts(range, view, 0, generation, session);
+        if (!result) return;
         setRows(result.content); setPages(result.totalPages); setPage(result.number); setLoaded(true);
       } catch {
         if (mounted.current && generation === reads.current && session === getSessionKey()) {
@@ -113,20 +128,35 @@ export function DoctorWorkShiftsWorkspace({ departmentId, checking }: { departme
       const uncertain = !(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500 || cause.code === "IDEMPOTENCY_CONFLICT";
       if (uncertain) setPending(command);
       setError(shiftError(cause, uncertain ? "Chưa thể xác nhận kết quả lưu. Vui lòng kiểm tra thông báo đối soát bên dưới." : "Không thể lưu thay đổi. Hãy kiểm tra thông tin và tải lại danh sách nếu cần."));
-    } finally { lock.current = false; if (mounted.current && session === getSessionKey()) setBusy(false); }
+    } finally { lock.current = false; if (mounted.current && session === getSessionKey()) { setBusy(false); setWriting(false); } }
   }
   function edit(row: DoctorWorkShiftDTO) { if (!confirmLeave()) return; setError(""); setNotice(""); setCreatedSessionDate(null); setEditing(row); setSource(null); setForm({ doctorId: row.doctorId, departmentId, roomId: row.roomId, shiftDate: row.shiftDate, startTime: row.startTime, endTime: row.endTime }); setReason(""); void loadRooms(); }
   function sessionFrom(row: DoctorWorkShiftDTO) { if (!confirmLeave()) return; setError(""); setNotice(""); setCreatedSessionDate(null); setSource(row); setEditing(null); setSessionStart(row.startTime); setSessionEnd(row.endTime); setCapacity(20); setBreaks([]); }
   function changeDates(from: string, to: string) { reads.current++; setBusy(false); setLoaded(false); setRows([]); setFromDate(from); setToDate(to); }
+  function selectDate(date: string, other: string, start: boolean) {
+    if (view === "week" && !Object.keys(sessionDateErrors(date, date)).length) {
+      const range = shiftRange(date, "week"); changeDates(range.fromDate, range.toDate);
+    } else changeDates(start ? date : other, start ? other : date);
+  }
+  function moveWeek(offset: number) {
+    const date = new Date(`${fromDate}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + offset * 7);
+    const range = shiftRange(date.toISOString().slice(0, 10), "week"); changeDates(range.fromDate, range.toDate);
+  }
+  function cancel(row: DoctorWorkShiftDTO) { if (!confirmLeave()) return; setCancelling(row); setReason(""); }
+  const filterDisabled = Boolean(pending) || checking || writing;
   const disabled = busy || Boolean(pending) || checking;
   const inputClass = "block min-h-11 w-full rounded-lg border border-control-border bg-surface px-3";
   return <div className="space-y-5">
     <section className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 className="text-lg font-semibold">Bộ lọc lịch làm việc</h2><p className="text-sm text-muted-foreground">Phân công bác sĩ, giờ và phòng. Giờ làm việc chưa tạo chỗ đăng ký; cần tạo buổi khám riêng với sức chứa cụ thể.</p>
-      <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={disabled || !fromDate} onClick={() => { const range = shiftRange(fromDate,"day"); setView("day"); changeDates(range.fromDate,range.toDate); }}>Theo ngày</Button><Button variant="secondary" disabled={disabled || !fromDate} onClick={() => { const range = shiftRange(fromDate,"week"); setView("week"); changeDates(range.fromDate,range.toDate); }}>Theo tuần</Button><span className="self-center text-sm text-muted-foreground">{view === "week" ? "Lịch tuần" : "Lịch ngày"}</span></div>
-      <form onSubmit={event => { event.preventDefault(); void load(); }} className="flex flex-wrap items-end gap-3"><ScheduleDateInput label="Từ ngày" required disabled={disabled} value={fromDate} onChange={event => changeDates(event.target.value,toDate)} className={inputClass} /><ScheduleDateInput label="Đến ngày" required disabled={disabled} value={toDate} onChange={event => changeDates(fromDate,event.target.value)} className={inputClass} /><Button type="submit" disabled={disabled}>Tải giờ làm việc</Button></form>
+      <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={filterDisabled || !fromDate} onClick={() => { const range = shiftRange(fromDate,"day"); setView("day"); changeDates(range.fromDate,range.toDate); }}>Theo ngày</Button><Button variant="secondary" disabled={filterDisabled || !fromDate} onClick={() => { const range = shiftRange(fromDate,"week"); setView("week"); changeDates(range.fromDate,range.toDate); }}>Theo tuần</Button><span className="self-center text-sm text-muted-foreground">{view === "week" ? "Lịch tuần" : "Lịch ngày"}</span></div>
+      <form onSubmit={event => { event.preventDefault(); void load(); }} className="flex flex-wrap items-end gap-3"><ScheduleDateInput label="Từ ngày" required disabled={filterDisabled} value={fromDate} onChange={event => selectDate(event.target.value,toDate,true)} className={inputClass} /><ScheduleDateInput label="Đến ngày" required disabled={filterDisabled} value={toDate} onChange={event => selectDate(event.target.value,fromDate,false)} className={inputClass} /><Button type="submit" disabled={disabled}>Tải giờ làm việc</Button></form>
+      {view === "week" ? <div className="flex flex-wrap items-center gap-3"><Button variant="secondary" disabled={filterDisabled || !fromDate} onClick={() => moveWeek(-1)}>Tuần trước</Button><span className="text-sm">{fromDate && toDate ? `${formatLocalDate(fromDate)}–${formatLocalDate(toDate)}` : "Chọn ngày trong tuần"}</span><Button variant="secondary" disabled={filterDisabled || !fromDate} onClick={() => moveWeek(1)}>Tuần sau</Button></div> : null}
+      {busy && !writing ? <p role="status">Đang tải giờ làm việc…</p> : null}
       {loaded && !rows.length ? <p role="status">Không có giờ làm việc trong khoảng đã chọn.</p> : null}
-      <div className="space-y-3">{rows.map(row => <article key={row.shiftId} className="space-y-2 rounded-lg border border-border p-4 text-sm"><p className="font-semibold">{formatLocalDate(row.shiftDate)} · {row.startTime}–{row.endTime}</p><p><ReferenceText kind="doctor" value={row.doctorId} /> · <ReferenceText kind="room" value={row.roomId} /></p><p>{row.status === "ACTIVE" ? "Đang hiệu lực" : "Đã hủy"} · Phiên bản {row.revision}</p>{row.status === "ACTIVE" ? <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={disabled} onClick={() => edit(row)}>Sửa giờ làm việc</Button><Button disabled={disabled} onClick={() => sessionFrom(row)}>Tạo buổi khám từ giờ làm việc</Button><Button variant="danger" disabled={disabled} onClick={() => { if (!confirmLeave()) return; setCancelling(row); setReason(""); }}>Hủy giờ làm việc</Button></div> : null}{cancelling?.shiftId === row.shiftId ? <form className="space-y-3 border-t border-border pt-3" onSubmit={event => { event.preventDefault(); void execute({kind:"cancel",id:row.shiftId,body:{expectedRevision:row.revision,reason:reason.trim()}}); }}><p>Hủy phân công {formatLocalDate(row.shiftDate)} · {row.startTime}–{row.endTime}. Buổi khám còn liên kết sẽ chặn hủy; hệ thống giữ nguyên người bệnh.</p><label className="block text-sm">Lý do hủy giờ làm việc<textarea required maxLength={500} disabled={disabled} value={reason} onChange={event => { markDirty(); setReason(event.target.value); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label><Button variant="danger" type="submit" disabled={disabled || !reason.trim()}>Xác nhận hủy giờ làm việc</Button></form> : null}</article>)}</div>
-      {pages > 1 ? <div className="flex items-center gap-3"><Button disabled={disabled || page === 0} onClick={() => void load(page - 1)}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{pages}</span><Button disabled={disabled || page + 1 >= pages} onClick={() => void load(page + 1)}>Trang sau</Button></div> : null}
+      {view === "week" && loaded ? <DoctorWorkShiftWeekGrid fromDate={fromDate} rows={rows} disabled={disabled} onEdit={edit} onSession={sessionFrom} onCancel={cancel} /> : null}
+      {view === "day" ? <div className="space-y-3">{rows.map(row => <article key={row.shiftId} className="space-y-2 rounded-lg border border-border p-4 text-sm"><p className="font-semibold">{formatLocalDate(row.shiftDate)} · {row.startTime}–{row.endTime}</p><p><ReferenceText kind="doctor" value={row.doctorId} /> · <ReferenceText kind="room" value={row.roomId} /></p><p>{row.status === "ACTIVE" ? "Đang hiệu lực" : "Đã hủy"} · Phiên bản {row.revision}</p>{row.status === "ACTIVE" ? <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={disabled} onClick={() => edit(row)}>Sửa giờ làm việc</Button><Button disabled={disabled} onClick={() => sessionFrom(row)}>Tạo buổi khám từ giờ làm việc</Button><Button variant="danger" disabled={disabled} onClick={() => cancel(row)}>Hủy giờ làm việc</Button></div> : null}{cancelling?.shiftId === row.shiftId ? <form className="space-y-3 border-t border-border pt-3" onSubmit={event => { event.preventDefault(); void execute({kind:"cancel",id:row.shiftId,body:{expectedRevision:row.revision,reason:reason.trim()}}); }}><p>Hủy phân công {formatLocalDate(row.shiftDate)} · {row.startTime}–{row.endTime}. Buổi khám còn liên kết sẽ chặn hủy; hệ thống giữ nguyên người bệnh.</p><label className="block text-sm">Lý do hủy giờ làm việc<textarea required maxLength={500} disabled={disabled} value={reason} onChange={event => { markDirty(); setReason(event.target.value); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label><Button variant="danger" type="submit" disabled={disabled || !reason.trim()}>Xác nhận hủy giờ làm việc</Button></form> : null}</article>)}</div> : null}
+      {view === "week" && cancelling ? <form className="space-y-3 border-t border-border pt-3" onSubmit={event => { event.preventDefault(); void execute({kind:"cancel",id:cancelling.shiftId,body:{expectedRevision:cancelling.revision,reason:reason.trim()}}); }}><p>Hủy phân công {formatLocalDate(cancelling.shiftDate)} · {cancelling.startTime}–{cancelling.endTime}. Buổi khám còn liên kết sẽ chặn hủy; hệ thống giữ nguyên người bệnh.</p><label className="block text-sm">Lý do hủy giờ làm việc<textarea required maxLength={500} disabled={disabled} value={reason} onChange={event => { markDirty(); setReason(event.target.value); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label><Button variant="danger" type="submit" disabled={disabled || !reason.trim()}>Xác nhận hủy giờ làm việc</Button></form> : null}
+      {view === "day" && pages > 1 ? <div className="flex items-center gap-3"><Button disabled={disabled || page === 0} onClick={() => void load(page - 1)}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{pages}</span><Button disabled={disabled || page + 1 >= pages} onClick={() => void load(page + 1)}>Trang sau</Button></div> : null}
     </section>
     {notice ? <p role="status" className="text-sm text-success">{notice}</p> : null}{createdSessionDate ? <Link className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 text-sm font-semibold text-primary" href={`/appointments/department/sessions?date=${encodeURIComponent(createdSessionDate)}`}>Xem buổi khám vừa tạo</Link> : null}{error ? <p ref={errorTarget} tabIndex={-1} role="alert" className="scroll-mt-24 rounded-lg border border-danger/40 p-4 text-sm text-danger">{error}</p> : null}
     {pending ? <section className="space-y-3 rounded-lg border border-border p-4"><p role="status" className="text-sm">Kết quả chưa xác định. Nội dung đã khóa; gửi lại đúng yêu cầu để đối soát.</p><Button loading={busy} disabled={checking} onClick={() => void execute(pending)}>Gửi lại cùng yêu cầu</Button></section> : null}

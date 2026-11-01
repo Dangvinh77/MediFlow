@@ -1,8 +1,13 @@
 # Demo ngoại trú: thao tác UI từ tiếp nhận đến nhận thuốc
 
-Ngày viết: 28/10/2026. Hướng dẫn đối chiếu source tại `e1a12d19` và seed
-`prepare_ui_demo.py`. Đây là kịch bản thao tác, chưa là biên bản mọi bước đã được
-nghiệm thu trên trình duyệt. Chỉ dùng dữ liệu tổng hợp trong môi trường demo cách ly.
+Cập nhật: 01/11/2026, sau master `3f9f5147`. Đối chiếu seed `prepare_ui_demo.py`
+và giao diện phân ca/bổ nhiệm mới. Đây là kịch bản thao tác; trạng thái nghiệm thu
+thực tế nằm ở mục 12. Chỉ dùng dữ liệu tổng hợp trong môi trường demo cách ly.
+
+**Đã chốt giữ giờ thực.** Không dùng đồng hồ demo hoặc đổi giờ Windows. Phiên
+01/11 diễn ra ngoài giờ khám nên chưa nghiệm thu trọn hành trình từ tiếp nhận đến
+nhận thuốc trên cùng một lượt. Chạy phần đó trong 07:00–17:00; nên bắt đầu trước
+16:00 để đủ thời gian chuyển các quầy.
 
 ## 1. Khởi động và đọc dữ liệu mẫu
 
@@ -48,6 +53,72 @@ script báo lỗi; hãy dùng stack demo mới hoặc đối soát lịch, khôn
 Mỗi lần đổi vai trò, bấm đăng xuất rồi đăng nhập lại. Các tab cùng trình duyệt dùng
 chung phiên; không coi mỗi tab là một tài khoản độc lập. Có thể dùng các hồ sơ trình
 duyệt khác nhau để giữ từng vai trò. Hướng dẫn dưới đây cho phép đổi vai trò tuần tự.
+
+### 1A. ADMIN — bổ nhiệm và miễn nhiệm trưởng khoa bằng UI
+
+1. Đăng nhập `demo.admin` → **Tổ chức** → tìm/mở **Khoa Nội tổng quát Demo**.
+   Trên cửa sổ hẹp, bấm nút ba gạch **Mở điều hướng** trước khi chọn menu.
+2. Tại **Bổ nhiệm trưởng khoa**, kiểm người đương nhiệm và **Phiên bản** hiện tại.
+3. Trong **Bác sĩ được đề cử**, chọn **Lê Bác Sĩ Demo · Bác sĩ · Khoa Nội tổng quát Demo**.
+   Nhập **Lý do** → **Xem trước bổ nhiệm**. Đọc đúng người được bổ nhiệm; nếu đang
+   thay người khác, xem cả **Người kết thúc nhiệm kỳ**.
+4. **Xác nhận bổ nhiệm** → chờ **Đã bổ nhiệm trưởng khoa.** Cả khối **Trưởng khoa**
+   của thông tin khoa và khối bổ nhiệm phải hiện cùng người ngay, không cần tải lại trang.
+5. Mở **Lịch sử bổ nhiệm**: ngày giờ hiển thị theo Việt Nam, hệ 24 giờ.
+6. Đăng xuất, đăng nhập `demo.doctor`: vẫn là **Bác sĩ**, có **Sang Quản lý khoa**.
+   Bấm nút này để vào giao diện quản lý; **Về Khám bệnh** đưa về lịch khám cá nhân.
+7. Để thử miễn nhiệm, đăng nhập lại admin, mở đúng khoa, nhập lý do → **Miễn nhiệm**
+   → đọc tên người kết thúc nhiệm kỳ → **Xác nhận miễn nhiệm**.
+   Kỳ vọng **Đã miễn nhiệm trưởng khoa.**, cả hai khối hết người đương nhiệm,
+   lịch sử có thời điểm kết thúc. Đăng nhập lại bác sĩ: còn chức năng khám/lịch cá nhân,
+   không còn nút sang quản lý khoa. Không đổi role DOCTOR thành MANAGER.
+8. Bổ nhiệm lại bằng bước 2–4 nếu cần tiếp tục phần phân ca bên dưới.
+
+Các thao tác trên đã chạy trực tiếp trên dữ liệu demo 01/11. Trường hợp **thay thế
+bằng một bác sĩ khác** vẫn cần nghiệm thu UI riêng với hai bác sĩ đủ điều kiện;
+không coi bổ nhiệm lại cùng bác sĩ là đã kiểm thử thay thế.
+
+### 1B. Trưởng khoa — lưới phân ca tuần và buổi khám
+
+Có thể chuẩn bị một ca mẫu sau khi backend báo READY:
+
+```powershell
+python scripts/demo_25_10/prepare_department_head_demo.py
+```
+
+Script dùng API và journal của stack demo, bổ nhiệm bác sĩ mẫu nếu đang khuyết,
+tạo ca **ngày chạy + 2 ngày, 08:00–12:00**, buổi khám **09:00–11:00, 12 chỗ**.
+Đây là dữ liệu nền, không phải bằng chứng đã click tạo ca hoặc đăng ký bệnh nhân.
+Không xóa journal khi script yêu cầu đối soát nhiệm kỳ đã thay đổi.
+
+1. Đăng nhập `demo.doctor` đang được bổ nhiệm → **Sang Quản lý khoa**.
+2. Menu **Lịch làm việc bác sĩ** → chọn khoa được bổ nhiệm.
+3. **Từ ngày** chọn một ngày thuộc tuần cần xem → **Theo tuần** → **Tải giờ làm việc**.
+   Khoảng được chuẩn hóa từ thứ Hai đến Chủ nhật. **Tuần trước/Tuần sau** đổi khoảng;
+   bấm tải để xem dữ liệu khoảng mới. Ngày trong ô theo trình duyệt; dòng **Đã chọn**
+   bên dưới là ngày/tháng/năm.
+4. Kiểm bác sĩ theo hàng, ngày theo cột, giờ/phòng/trạng thái từng ca và
+   **Tổng giờ hiệu lực**. Tổng chỉ cộng ca đang hiệu lực, lấy đủ các trang dữ liệu.
+   Đây là danh sách bác sĩ **có ca**, không phải toàn bộ biên chế hoặc thống kê đủ người trực.
+   Trên cửa sổ hẹp, cuộn ngang; cột bác sĩ giữ cố định. Có thể chuyển **Theo ngày**.
+5. Tại **Phân công giờ làm việc**, tìm và **chọn** bác sĩ, **Tải phòng của khoa**,
+   chọn phòng, ngày và giờ → **Lưu giờ làm việc**. Sau thành công, lưới tải lại;
+   kiểm tổng giờ và ngày của ca mới. Tránh trùng với ca/buổi đã seed.
+6. Tại ô ca chưa có buổi khám, **Sửa giờ làm việc**, nhập điều chỉnh và
+   **Lý do sửa hoặc hủy giờ làm việc** → **Lưu sửa giờ làm việc**.
+7. **Hủy giờ làm việc** → kiểm ngày/giờ trong form xác nhận, nhập **Lý do hủy giờ làm việc**
+   → **Xác nhận hủy giờ làm việc**. Ca vẫn hiện **Đã hủy**, không cộng vào tổng giờ.
+   Nếu ca còn buổi khám liên kết, phải bị chặn; không bỏ người bệnh hoặc sửa DB để hủy.
+8. Ca chỉ là phân công nhân sự, **chưa có chỗ đăng ký**. Chọn **Tạo buổi khám từ giờ làm việc**,
+   nhập giờ trong ca, sức chứa và giờ nghỉ nếu có → **Xác nhận tạo buổi khám**.
+   Bấm **Xem buổi khám vừa tạo**, kiểm đúng ngày, bác sĩ và phòng trước khi nurse đăng ký.
+9. **Về Khám bệnh** để về lịch của chính bác sĩ; dùng **Sang Quản lý khoa** để quay lại.
+
+Đã kiểm UI: hai ca 4 giờ ở hai ngày khác nhau cho tổng 8 giờ; hủy một ca còn 4 giờ;
+ca đã có buổi khám bị chặn sửa. Tạo ca ngày thứ ba rồi sửa thành 5 giờ cho tổng
+9 giờ; tạo buổi khám 12 chỗ từ ca và mở đúng ngày thành công.
+Bài test nhiều trang là kiểm thử tự động, chưa có
+bộ dữ liệu hơn 100 ca để nghiệm thu trực tiếp trên trình duyệt.
 
 ## 2. Chọn một trong ba điểm bắt đầu
 
@@ -253,4 +324,33 @@ trạng thái đạt từ seed/API không thay cho kiểm thử click trên UI c
 
 ## 12. Biên bản kiểm thử UI
 
-Xem [báo cáo click UI, ảnh trước/sau và phạm vi chưa nghiệm thu](../../docs/acceptance/ui-ux-demo-2026-10-29/README.md). Phiên ngoài giờ chỉ xác nhận từng đoạn trên các ca mô phỏng riêng; cần chạy trong giờ khám để nghiệm thu trọn ba tình huống.
+Xem [biên bản 01/11: bổ nhiệm/miễn nhiệm, lưới tuần và ảnh thực tế](../../docs/acceptance/weekly-roster-2026-11-01/README.md)
+và [biên bản UI trước đó](../../docs/acceptance/ui-ux-demo-2026-10-29/README.md).
+Test tự động/API và dữ liệu seed không thay thế các bước UI còn chờ dưới đây.
+
+### Phiếu nghiệm thu trong giờ khám (chưa đánh dấu đạt)
+
+Chạy lần lượt cả **A: bệnh nhân mới**, **B: bệnh nhân cũ khám đợt mới** và
+**C: tái khám**, mỗi lần dùng một lượt xuyên suốt. Đối chiếu cùng bệnh nhân và
+mã lượt; không ghép ảnh của các lượt khác nhau thành một hành trình đã đạt.
+
+| Bàn giao | Ghi lại để quầy tiếp theo đối chiếu |
+|---|---|
+| Nurse → cashier → doctor | Bệnh nhân, phiếu đăng ký, ngày/buổi, bác sĩ, trạng thái thu |
+| Doctor → lab → cashier | Hồ sơ khám, chỉ định, mã xét nghiệm, bệnh nhân, mã đợt = phiếu đăng ký |
+| Doctor → cashier → pharmacy | Hồ sơ, mã đơn, bệnh nhân, mã đợt, số lượng, số đã thu, phiếu xuất |
+| Patient | Đúng tài khoản, đúng hồ sơ và kết quả hoàn tất; không thấy kết quả người khác |
+
+- [ ] READY và FOLLOW-UP SOURCE READY, dữ liệu ghi đúng ngày; giờ thực 07:00–17:00.
+- [ ] A: tạo hồ sơ/cấp tài khoản → đăng ký, không yêu cầu bệnh nhân đăng nhập trước khám.
+- [ ] B: tìm hồ sơ cũ → khám mới, không cấp lại tài khoản.
+- [ ] C: chọn lượt nguồn hợp lệ → tái khám, giữ liên kết và lý do đổi bác sĩ nếu có.
+- [ ] Mỗi lượt: thu khám → ghi nhận đến → bắt đầu khám → chẩn đoán/chỉ định Lab.
+- [ ] Trước thu Lab bị chặn thực hiện; thu đúng báo giá → thực hiện → trả kết quả.
+- [ ] Bác sĩ đọc đúng kết quả → kê đơn → hoàn tất hồ sơ/đề xuất tái khám.
+- [ ] Thu thuốc đúng đơn → xuất đúng số lượng → kiểm tồn và không cấp phát lặp.
+- [ ] Patient xem kết quả chính chủ; bệnh nhân mới tự thao tác đổi mật khẩu lần đầu.
+- [ ] Ghi ảnh, vai trò, giờ thực, mã bàn giao và lỗi UX từng bước vào biên bản mới.
+
+Kết thúc demo: đóng frontend, rồi chạy `clean-docker.bat` tại thư mục gốc để dừng
+backend demo và dọn container/image thuộc dự án. Không dùng lệnh dọn toàn bộ Docker.

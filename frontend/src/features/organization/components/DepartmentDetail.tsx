@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { PageShell } from "@/components/layout/PageShell";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -13,7 +13,7 @@ import { DepartmentPeople } from "./DepartmentPeople";
 import { HeadAppointments } from "./HeadAppointments";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
-import type { DepartmentDTO, DepartmentType } from "../types";
+import type { DepartmentDTO, DepartmentType, HeadAppointmentSnapshot } from "../types";
 
 const getServerRole = () => null;
 const labels: Record<DepartmentType, string> = { CLINICAL: "Lâm sàng", PARACLINICAL: "Cận lâm sàng", ADMINISTRATIVE: "Hành chính" };
@@ -25,6 +25,15 @@ export function DepartmentDetail({ departmentId, notice, schedulingEnabled = fal
 function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = false }: { departmentId: string; notice?: "created" | "updated"; schedulingEnabled?: boolean }) {
   const router = useRouter(); const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole); const [department, setDepartment] = useState<DepartmentDTO | null>(null); const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const active = useRef({ mounted: false, session: getSessionKey() });
+  useEffect(() => {
+    const context = { mounted: true, session: getSessionKey() }; active.current = context;
+    return () => { context.mounted = false; };
+  }, []);
+  function synchronizeHead(snapshot: HeadAppointmentSnapshot) {
+    if (!active.current.mounted || !isRequestSessionCurrent(active.current.session) || snapshot.departmentId !== departmentId) return;
+    setDepartment(current => current?.departmentId === snapshot.departmentId ? { ...current, departmentHeadId: snapshot.staffId } : current);
+  }
   useEffect(() => { let mounted = true; const sessionToken = getSessionKey(); organizationApi.department(departmentId).then((value) => { if (mounted && isRequestSessionCurrent(sessionToken)) setDepartment(value); }).catch((cause: unknown) => { if (!mounted || !isRequestSessionCurrent(sessionToken, cause)) return; if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setError(cause instanceof Error ? cause.message : "Không thể tải thông tin khoa/phòng."); }); return () => { mounted = false; }; }, [departmentId, router, attempt]);
   const unit = department ? department.departmentType === "ADMINISTRATIVE" ? "phòng" : "khoa" : "khoa/phòng";
   const title = `Chi tiết ${unit}`;
@@ -39,7 +48,7 @@ function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = f
     <div className="flex flex-wrap gap-3"><Link href="/organization" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">Quay lại</Link></div>
     <DetailSection title={`Thông tin ${unit}`}><Info label={`Loại ${unit}`} value={labels[department.departmentType]} /><Info label="Địa điểm" value={department.location} /><Info label="Chức năng, nhiệm vụ" value={department.description} /><Info label="Điện thoại / máy lẻ" value={department.phoneNumber} /><Info label="Email liên hệ" value={department.email} /></DetailSection>
     <DepartmentPeople key={departmentId} department={department} />
-    {schedulingEnabled && role === "ADMIN" && department.departmentType === "CLINICAL" ? <HeadAppointments key={`head:${departmentId}`} departmentId={departmentId} /> : null}
+    {schedulingEnabled && role === "ADMIN" && department.departmentType === "CLINICAL" ? <HeadAppointments key={`head:${departmentId}`} departmentId={departmentId} onSnapshot={synchronizeHead} /> : null}
   </section>);
 }
 
