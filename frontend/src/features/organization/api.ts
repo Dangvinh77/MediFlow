@@ -1,4 +1,5 @@
-import { api } from "@/lib/api";
+import { api, type MutationOptions } from "@/lib/api";
+import type { HeadAppointmentCommand, HeadAppointmentSnapshot } from "./types";
 import type { PageResult } from "@/lib/types";
 import type {
   AccountDTO,
@@ -25,6 +26,8 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  headAppointments: (departmentId: string) => api.get<HeadAppointmentSnapshot>(`/v2/org/departments/${encodeURIComponent(departmentId)}/head-appointments`),
+  replaceHeadAppointment: (departmentId: string, body: HeadAppointmentCommand, options: Required<MutationOptions>) => api.put<HeadAppointmentSnapshot>(`/v2/org/departments/${encodeURIComponent(departmentId)}/head-appointments`, body, options),
   provisionPatientAccount: (patientId: string, idempotencyKey: string) =>
     api.post<import("./types").IssuedPatientAccount>("/v1/org/patient-accounts", { patientId }, { idempotencyKey }),
   updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email: string | null; address: string | null }) =>

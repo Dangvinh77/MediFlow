@@ -65,6 +65,25 @@ public class ConsultationSessionPersistenceAdapter implements ConsultationSessio
 
     @Override
     @Transactional(readOnly = true)
+    public SummaryCounts summarize(UUID departmentId, LocalDate fromDate, LocalDate toDate) {
+        return jdbc.queryForObject("""
+                SELECT count(*) FILTER (WHERE status='OPEN') AS open_count,
+                    count(*) FILTER (WHERE status='STOPPED') AS stopped_count,
+                    count(*) FILTER (WHERE status='CANCELLED') AS cancelled_count,
+                    COALESCE(sum(capacity) FILTER (WHERE status<>'CANCELLED'),0) AS capacity,
+                    COALESCE(sum(held_count) FILTER (WHERE status<>'CANCELLED'),0) AS held_count,
+                    COALESCE(sum(payment_locked_count) FILTER (WHERE status<>'CANCELLED'),0) AS payment_locked_count,
+                    COALESCE(sum(confirmed_count) FILTER (WHERE status<>'CANCELLED'),0) AS confirmed_count,
+                    COALESCE(sum(consumed_count) FILTER (WHERE status<>'CANCELLED'),0) AS consumed_count,
+                    COALESCE(sum(available_count) FILTER (WHERE status<>'CANCELLED'),0) AS available_count
+                FROM consultation_session WHERE department_id=? AND session_date BETWEEN ? AND ?
+                """, (rs,row)->new SummaryCounts(rs.getLong("open_count"),rs.getLong("stopped_count"),rs.getLong("cancelled_count"),
+                        rs.getLong("capacity"),rs.getLong("held_count"),rs.getLong("payment_locked_count"),rs.getLong("confirmed_count"),
+                        rs.getLong("consumed_count"),rs.getLong("available_count")),departmentId,fromDate,toDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ConsultationSession> findById(UUID sessionId) {
         return jdbc.query("SELECT * FROM consultation_session WHERE session_id = ?", this::mapOne, sessionId)
                 .stream().findFirst();
@@ -82,6 +101,9 @@ public class ConsultationSessionPersistenceAdapter implements ConsultationSessio
     public void update(ConsultationSession before, ConsultationSession after, UUID actorAccountId,
             String action, String reason, Instant at) {
         var config = after.configuration();
+        // Match creation's source-row-before-resource order. Otherwise an editor can hold
+        // the doctor lock while waiting for a creator that holds the source shift row.
+        requireSourceShift(before, after);
         lockResources(before.configuration().doctorId(), before.configuration().roomId(),
                 config.doctorId(), config.roomId());
         requireNoOverlap(config, after.sessionId());
@@ -174,6 +196,29 @@ public class ConsultationSessionPersistenceAdapter implements ConsultationSessio
                 config.doctorId(), config.roomId(), config.endTime(), config.startTime(),
                 excludedSessionId, excludedSessionId));
         if (overlaps) throw new DuplicateResourceException("SESSION_OVERLAP", "Doctor or room already has an overlapping session");
+    }
+
+    private void requireSourceShift(ConsultationSession before, ConsultationSession session) {
+        // Cancelling leaves the linked configuration intact. Once cancelled, preserve that
+        // historical configuration even if its source shift is subsequently changed/cancelled.
+        if (session.status() == ConsultationSessionStatus.CANCELLED
+                && before.configuration().equals(session.configuration())) return;
+        var sources = jdbc.query("""
+                SELECT w.* FROM doctor_work_shift w JOIN consultation_session_work_shift l ON l.shift_id=w.shift_id
+                WHERE l.session_id=? FOR SHARE OF w
+                """, (rs,row)->new com.mediflow.clinical.domain.model.DoctorWorkShift(
+                        rs.getObject("shift_id",UUID.class),rs.getInt("revision"),
+                        new com.mediflow.clinical.domain.model.DoctorWorkShift.Configuration(
+                                rs.getObject("doctor_id",UUID.class),rs.getObject("department_id",UUID.class),
+                                rs.getObject("room_id",UUID.class),rs.getObject("shift_date",LocalDate.class),
+                                rs.getObject("start_time",java.time.LocalTime.class),rs.getObject("end_time",java.time.LocalTime.class)),
+                        com.mediflow.clinical.domain.model.DoctorWorkShift.Status.valueOf(rs.getString("status"))),session.sessionId());
+        if (!sources.isEmpty()) {
+            if (session.status() == ConsultationSessionStatus.CANCELLED)
+                throw new DuplicateResourceException("SHIFT_SESSION_MISMATCH", "Cancelled linked session configuration is immutable");
+            try { sources.get(0).requireContains(session.configuration()); }
+            catch (IllegalStateException invalid) { throw new DuplicateResourceException(invalid.getMessage(),invalid.getMessage()); }
+        }
     }
 
     private void appendAudit(ConsultationSession after, ConsultationSession before,

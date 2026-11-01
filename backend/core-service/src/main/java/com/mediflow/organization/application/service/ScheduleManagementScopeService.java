@@ -188,7 +188,10 @@ public class ScheduleManagementScopeService implements ManageScheduleManagementS
             throw new IllegalArgumentException("A department and page size from 1 to 100 are required");
         }
         return withUnavailable(() -> {
-            AccountAuthority actor = currentHumanActor(actorAccountId, signedRole, Role.ADMIN, Role.MANAGER);
+            AccountAuthority actor = currentHumanActor(actorAccountId, signedRole, Role.ADMIN, Role.MANAGER, Role.DOCTOR);
+            if (actor.role() == Role.DOCTOR && !repository.findSchedulingAuthority(actorAccountId,departmentId).canManageSchedules()) {
+                throw new SchedulingScopeDeniedException();
+            }
             if (actor.role() == Role.MANAGER) {
                 requireActiveManagerStaff(actor);
                 if (!repository.findScope(actorAccountId).departmentIds().contains(departmentId)) {

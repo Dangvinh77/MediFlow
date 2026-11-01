@@ -155,12 +155,17 @@ public class JdbcSchedulingAuthorityRepository implements SchedulingAuthorityRep
                        CASE WHEN a.role='ADMIN' THEN COALESCE(a.is_active AND d.is_active,FALSE)
                             WHEN a.role='MANAGER' THEN COALESCE(a.is_active AND s.status='ACTIVE'
                                  AND d.is_active AND sd.department_id IS NOT NULL,FALSE)
+                            WHEN a.role='DOCTOR' THEN COALESCE(a.is_active AND s.status='ACTIVE' AND s.job_title='DOCTOR'
+                                 AND s.department_id=d.department_id AND d.is_active AND d.department_type='CLINICAL'
+                                 AND h.appointment_id IS NOT NULL,FALSE)
                             ELSE FALSE END AS can_manage_schedules,
-                       COALESCE(scope.revision,0) AS scope_revision
+                       CASE WHEN a.role='DOCTOR' THEN COALESCE(hs.revision,0) ELSE COALESCE(scope.revision,0) END AS scope_revision
                 FROM (SELECT 1) seed
                 LEFT JOIN account a ON a.account_id=?
                 LEFT JOIN staff s ON s.staff_id=a.staff_id
                 LEFT JOIN department d ON d.department_id=?
+                LEFT JOIN department_head_appointment h ON h.account_id=a.account_id AND h.staff_id=a.staff_id AND h.department_id=d.department_id AND h.ended_at IS NULL
+                LEFT JOIN department_head_state hs ON hs.department_id=d.department_id
                 LEFT JOIN schedule_management_scope scope ON scope.account_id=a.account_id
                 LEFT JOIN schedule_management_scope_department sd
                        ON sd.account_id=a.account_id AND sd.department_id=d.department_id

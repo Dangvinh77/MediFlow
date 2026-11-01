@@ -19,14 +19,20 @@ class SchedulingRouteConfigurationTest {
 
     @Test
     void enabledIngressTargetsCorrectServicesWithoutPublishingInternalApis() {
-        Map<String, String> cases = Map.of(
-                "/api/v2/org/accounts/123/schedule-management-scope", "lb://core-service",
-                "/api/v2/org/consultation-rooms", "lb://core-service",
-                "/api/v2/consultation-sessions", "lb://clinical-service",
-                "/api/v2/consultation-sessions/mine", "lb://clinical-service",
-                "/api/v2/outpatient-registrations/123", "lb://clinical-service",
-                "/api/v2/billing/payment-requests/by-registration", "lb://billing-service",
-                "/api/v2/billing/payment-operations/123", "lb://billing-service");
+        Map<String, String> cases = Map.ofEntries(
+                Map.entry("/api/v2/org/departments/123/head-appointments", "lb://core-service"),
+                Map.entry("/api/v2/doctor-work-shifts", "lb://clinical-service"),
+                Map.entry("/api/v2/doctor-work-shifts/mine", "lb://clinical-service"),
+                Map.entry("/api/v2/doctor-work-shifts/123/cancel", "lb://clinical-service"),
+                Map.entry("/api/v2/doctor-work-shifts/123/consultation-sessions", "lb://clinical-service"),
+                Map.entry("/api/v2/org/accounts/123/schedule-management-scope", "lb://core-service"),
+                Map.entry("/api/v2/org/consultation-rooms", "lb://core-service"),
+                Map.entry("/api/v2/consultation-sessions", "lb://clinical-service"),
+                Map.entry("/api/v2/consultation-sessions/summary", "lb://clinical-service"),
+                Map.entry("/api/v2/consultation-sessions/mine", "lb://clinical-service"),
+                Map.entry("/api/v2/outpatient-registrations/123", "lb://clinical-service"),
+                Map.entry("/api/v2/billing/payment-requests/by-registration", "lb://billing-service"),
+                Map.entry("/api/v2/billing/payment-operations/123", "lb://billing-service"));
         cases.forEach((path, uri) -> assertThat(matching(path)).containsExactly(uri));
         for (String path : new String[]{"/api/v2/org/scheduling-authority",
                 "/api/v2/org/consultation-eligibility", "/api/v2/clinical/reservations/123/payment-locks",

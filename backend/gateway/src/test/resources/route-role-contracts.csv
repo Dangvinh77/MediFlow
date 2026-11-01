@@ -141,3 +141,15 @@ core-service,PUT,/api/v1/org/accounts/me/password,ADMIN|MANAGER|DOCTOR|NURSE|PHA
 core-service,PUT,/api/v1/org/accounts/{id}/password,ADMIN,true
 core-service,GET,/api/v1/org/care-labels/{kind}/{id},ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH|PATIENT,true
 billing-service,GET,/api/v2/billing/payment-requests,ADMIN|CASHIER,true
+
+# Department head and doctor work shifts — current signed role stays DOCTOR.
+core-service,GET,/api/v1/org/me/capabilities,ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
+core-service,GET,/api/v2/org/departments/{id}/head-appointments,ADMIN,true
+core-service,PUT,/api/v2/org/departments/{id}/head-appointments,ADMIN,true
+clinical-service,GET,/api/v2/doctor-work-shifts,ADMIN|MANAGER|DOCTOR,true
+clinical-service,POST,/api/v2/doctor-work-shifts,ADMIN|MANAGER|DOCTOR,true
+clinical-service,GET,/api/v2/doctor-work-shifts/mine,DOCTOR,true
+clinical-service,PUT,/api/v2/doctor-work-shifts/{id},ADMIN|MANAGER|DOCTOR,true
+clinical-service,PUT,/api/v2/doctor-work-shifts/{id}/cancel,ADMIN|MANAGER|DOCTOR,true
+clinical-service,POST,/api/v2/doctor-work-shifts/{id}/consultation-sessions,ADMIN|MANAGER|DOCTOR,true
+clinical-service,GET,/api/v2/consultation-sessions/summary,ADMIN|MANAGER|DOCTOR,true

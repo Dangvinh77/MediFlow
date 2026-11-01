@@ -245,3 +245,65 @@ Content-Type: application/json
   "priority": "URGENT",
   "emergency": false
 }
+### Doctor work assignments (scheduling feature enabled). ADMIN/legacy MANAGER/live DOCTOR head.
+### The signed role remains DOCTOR. Core authority revalidated on every department management request.
+@shiftId = 00000000-0000-0000-0000-000000000021
+
+### Department assignments, paged; exact required date range at most 31 days
+GET {{host}}/api/v2/doctor-work-shifts?departmentId={{departmentId}}&fromDate=2026-11-02&toDate=2026-11-08&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Own assignments: DOCTOR only; no selectable doctorId
+GET {{host}}/api/v2/doctor-work-shifts/mine?fromDate=2026-11-02&toDate=2026-11-08
+Authorization: Bearer {{token}}
+
+### Create assignment; does not create consultation capacity
+POST {{host}}/api/v2/doctor-work-shifts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: doctor-shift-create-1
+X-Correlation-Id: 00000000-0000-0000-0000-000000000020
+
+{
+  "doctorId": "{{doctorId}}", "departmentId": "{{departmentId}}", "roomId": "{{roomId}}",
+  "shiftDate": "2026-11-02", "startTime": "08:00", "endTime": "11:00"
+}
+
+### Edit assignment (409 SHIFT_HAS_SESSIONS if any linked session is not CANCELLED)
+PUT {{host}}/api/v2/doctor-work-shifts/{{shiftId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: doctor-shift-edit-1
+X-Correlation-Id: 00000000-0000-0000-0000-000000000020
+
+{
+  "doctorId": "{{doctorId}}", "departmentId": "{{departmentId}}", "roomId": "{{roomId}}",
+  "shiftDate": "2026-11-02", "startTime": "08:00", "endTime": "12:00",
+  "expectedRevision": 1, "reason": "Extend available work hours"
+}
+
+### Explicit consultation creation from an ACTIVE assignment; exact existing session request/response
+POST {{host}}/api/v2/doctor-work-shifts/{{shiftId}}/consultation-sessions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: doctor-shift-session-1
+X-Correlation-Id: 00000000-0000-0000-0000-000000000020
+
+{
+  "doctorId": "{{doctorId}}", "departmentId": "{{departmentId}}", "roomId": "{{roomId}}",
+  "sessionDate": "2026-11-02", "startTime": "08:00", "endTime": "11:00",
+  "breaks": [{"startTime": "09:30", "endTime": "09:45"}], "capacity": 12
+}
+
+### Cancel assignment; first cancel linked sessions through existing guarded session workflow
+PUT {{host}}/api/v2/doctor-work-shifts/{{shiftId}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: doctor-shift-cancel-1
+X-Correlation-Id: 00000000-0000-0000-0000-000000000020
+
+{"expectedRevision": 2, "reason": "Assignment withdrawn"}
+
+### Whole department operational totals, independent of pagination; seat totals exclude CANCELLED sessions
+GET {{host}}/api/v2/consultation-sessions/summary?departmentId={{departmentId}}&fromDate=2026-11-02&toDate=2026-11-08
+Authorization: Bearer {{token}}

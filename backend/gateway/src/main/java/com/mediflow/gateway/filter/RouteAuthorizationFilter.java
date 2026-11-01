@@ -23,17 +23,29 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
     private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private static final List<RouteRule> RULES = List.of(
+            // Transport roles only: Core/Clinical recheck the live appointment and department.
+            rule("/api/v1/org/me/capabilities", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER,
+                    Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH),
+            rule("/api/v2/org/departments/{id}/head-appointments", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v2/org/departments/{id}/head-appointments", HttpMethod.PUT, Roles.ADMIN),
+            rule("/api/v2/doctor-work-shifts", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/doctor-work-shifts", HttpMethod.POST, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/doctor-work-shifts/mine", HttpMethod.GET, Roles.DOCTOR),
+            rule("/api/v2/doctor-work-shifts/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/doctor-work-shifts/{id}/cancel", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/doctor-work-shifts/{id}/consultation-sessions", HttpMethod.POST, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
             rule("/api/v1/org/care-labels/{kind}/{id}", HttpMethod.GET,
                     Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE,
                     Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH, Roles.PATIENT),
             rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.GET, Roles.ADMIN),
             rule("/api/v2/org/accounts/{id}/schedule-management-scope", HttpMethod.PUT, Roles.ADMIN),
-            rule("/api/v2/org/consultation-rooms", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
-            rule("/api/v2/consultation-sessions", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.NURSE),
-            rule("/api/v2/consultation-sessions", HttpMethod.POST, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/org/consultation-rooms", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/consultation-sessions", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.NURSE, Roles.DOCTOR),
+            rule("/api/v2/consultation-sessions", HttpMethod.POST, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
             rule("/api/v2/consultation-sessions/mine", HttpMethod.GET, Roles.DOCTOR),
-            rule("/api/v2/consultation-sessions/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER),
-            rule("/api/v2/consultation-sessions/{id}/status", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v2/consultation-sessions/summary", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/consultation-sessions/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
+            rule("/api/v2/consultation-sessions/{id}/status", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
             rule("/api/v2/consultation-sessions/{id}/registrations", HttpMethod.GET,
                     Roles.ADMIN, Roles.MANAGER, Roles.NURSE, Roles.DOCTOR),
             rule("/api/v2/outpatient-registrations", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
@@ -282,6 +294,12 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
     private record RouteRule(String pattern, HttpMethod method, Set<String> roles) {
         private boolean matches(String path) {
+            if (pattern.startsWith("/api/v2/consultation-sessions/{id}")
+                    && (path.equals("/api/v2/consultation-sessions/mine") || path.startsWith("/api/v2/consultation-sessions/mine/")
+                        || path.equals("/api/v2/consultation-sessions/summary") || path.startsWith("/api/v2/consultation-sessions/summary/"))) return false;
+            if (pattern.startsWith("/api/v2/doctor-work-shifts/{id}")
+                    && (path.equals("/api/v2/doctor-work-shifts/mine")
+                        || path.startsWith("/api/v2/doctor-work-shifts/mine/"))) return false;
             if (pattern.equals("/api/v2/outpatient-registrations/{id}")
                     && Set.of("/api/v2/outpatient-registrations/mine", "/api/v2/outpatient-registrations/follow-up-sources").contains(path)) return false;
             return PATH_MATCHER.match(pattern, path);

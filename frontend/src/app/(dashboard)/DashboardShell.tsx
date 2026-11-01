@@ -1,8 +1,9 @@
 "use client";
 
 import { mustChangePassword } from "@/lib/session";
+import { refreshCapabilities, useCapabilities } from "@/lib/capabilities";
 import { usePathname, useRouter } from "next/navigation";
-import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardReferences } from "./_components/DashboardReferences";
@@ -21,6 +22,13 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
   const router = useRouter();
   const pathname = usePathname();
   const passwordChangeRequired = useSyncExternalStore(subscribeToAuthChanges, mustChangePassword, () => false);
+  const professionalDraft = useRef(false);
+  useEffect(() => { professionalDraft.current = false; }, [pathname]);
+  useEffect(() => {
+    const detect = (event: Event) => { if (/^\/(?:records|appointments)\/(?:new|[0-9a-f-]{36}(?:\/(?:edit|lab-order))?)\/?$/i.test(pathname) && event.target instanceof Element && event.target.closest("form")) professionalDraft.current = true; };
+    document.addEventListener("input", detect, true); document.addEventListener("change", detect, true);
+    return () => { document.removeEventListener("input", detect, true); document.removeEventListener("change", detect, true); };
+  }, [pathname]);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const token = useSyncExternalStore(
     subscribeToAuthChanges,
@@ -29,6 +37,18 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
   );
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSnapshot);
   const authorized = token === undefined ? null : Boolean(token?.trim());
+  const capabilities = useCapabilities();
+  const management = pathname.startsWith("/appointments/department");
+  const canManage = role === "DOCTOR" && capabilities.data?.role === "DOCTOR" && capabilities.data.managementDepartments.length > 0;
+  useEffect(() => {
+    if (!authorized || passwordChangeRequired || role !== "DOCTOR" || !schedulingEnabled) return;
+    const refresh = () => { void refreshCapabilities(); };
+    refresh(); window.addEventListener("focus", refresh); window.addEventListener("mediflow:management-denied", refresh);
+    return () => { window.removeEventListener("focus", refresh); window.removeEventListener("mediflow:management-denied", refresh); };
+  }, [authorized, passwordChangeRequired, role, token, management, schedulingEnabled]);
+  useEffect(() => {
+    if (management && role === "DOCTOR" && capabilities.session === token && capabilities.data && !capabilities.error && !capabilities.loading && !canManage) router.replace("/appointments/my-calendar");
+  }, [management, role, capabilities.session, capabilities.data, capabilities.error, capabilities.loading, token, canManage, router]);
 
   useEffect(() => {
     if (authorized === false) {
@@ -62,14 +82,19 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
         open={navigationOpen}
         onClose={() => setNavigationOpen(false)}
         schedulingEnabled={schedulingEnabled}
+        managementWorkspace={management && canManage}
       />
       <div className="min-w-0">
         <DashboardHeader
           role={role}
           onLogout={onLogout}
           onOpenNavigation={() => setNavigationOpen(true)}
+          workspaceHref={schedulingEnabled && canManage ? management ? "/appointments/my-calendar" : "/appointments/department" : undefined}
+          onWorkspaceSwitch={event => { if (!management && professionalDraft.current && !window.confirm("Bạn có dữ liệu chưa lưu. Chuyển sang Quản lý khoa và bỏ các thay đổi?")) event.preventDefault(); }}
+          workspaceTitle={management && canManage ? `Trưởng khoa · ${capabilities.data?.managementDepartments.map(item => item.departmentName).join(", ")}` : undefined}
+          workspaceLabel={management ? "Về Khám bệnh" : "Sang Quản lý khoa"}
         />
-        <Fragment key={`${token}:${role}`}><DashboardReferences role={role}>{children}</DashboardReferences></Fragment>
+        <Fragment key={`${token}:${role}:${management ? capabilities.data?.managementDepartments.map(item => `${item.appointmentId}:${item.revision}`).join() ?? "none" : "professional"}`}><DashboardReferences role={role}>{children}</DashboardReferences></Fragment>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import com.mediflow.clinical.application.dto.request.ConsultationSessionCreateRe
 import com.mediflow.clinical.application.dto.request.ConsultationSessionStatusRequest;
 import com.mediflow.clinical.application.dto.request.ConsultationSessionUpdateRequest;
 import com.mediflow.clinical.application.dto.response.ConsultationSessionDTO;
+import com.mediflow.clinical.application.dto.response.ConsultationSessionSummary;
 import com.mediflow.clinical.application.dto.response.ConsultationSessionDTO.BreakDTO;
 import com.mediflow.clinical.application.dto.response.DoctorCalendar;
 import com.mediflow.clinical.application.port.out.ConsultationSessionRepositoryPort;
@@ -66,7 +67,7 @@ public class ConsultationSessionApplicationService {
 
     public IdempotentCommandPort.Result<ConsultationSessionDTO> create(
             ConsultationSessionCreateRequest request, String idempotencyKey) {
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER");
+        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
         requireScheduleScope(actor, request.departmentId());
         requireEligible(request.doctorId(), request.departmentId(), request.roomId());
         requireIdempotencyKey(idempotencyKey);
@@ -85,7 +86,7 @@ public class ConsultationSessionApplicationService {
     public IdempotentCommandPort.Result<ConsultationSessionDTO> update(
             UUID sessionId, ConsultationSessionUpdateRequest request, String idempotencyKey) {
         ConsultationSession visible = read(sessionId);
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER");
+        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
         requireScheduleScope(actor, visible.configuration().departmentId());
         if (!visible.configuration().departmentId().equals(request.departmentId())) {
             throw new BusinessRuleException("SCHEDULE_INELIGIBLE", "A session cannot move to another department");
@@ -116,7 +117,7 @@ public class ConsultationSessionApplicationService {
     public IdempotentCommandPort.Result<ConsultationSessionDTO> changeStatus(
             UUID sessionId, ConsultationSessionStatusRequest request, String idempotencyKey) {
         ConsultationSession visible = read(sessionId);
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER");
+        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
         requireScheduleScope(actor, visible.configuration().departmentId());
         if (request.status() == ConsultationSessionStatus.OPEN) {
             var config = visible.configuration();
@@ -136,13 +137,24 @@ public class ConsultationSessionApplicationService {
 
     public PageResult<ConsultationSessionDTO> search(UUID departmentId, LocalDate fromDate, LocalDate toDate,
             PageQuery page) {
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "NURSE");
+        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "NURSE", "DOCTOR");
         if (departmentId == null || fromDate == null || toDate == null || fromDate.isAfter(toDate)
                 || ChronoUnit.DAYS.between(fromDate, toDate) > 30) {
             throw new BusinessRuleException("INVALID_REQUEST", "A valid session date range of at most 31 days is required");
         }
-        if ("MANAGER".equals(actor.role())) requireScheduleScope(actor, departmentId);
+        if (!"NURSE".equals(actor.role())) requireScheduleScope(actor, departmentId);
         return sessions.search(departmentId, fromDate, toDate, page).map(this::toDto);
+    }
+
+    public ConsultationSessionSummary summary(UUID departmentId, LocalDate fromDate, LocalDate toDate) {
+        ActorIdentity actor=requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        requireScheduleScope(actor,departmentId);
+        if (fromDate==null || toDate==null || fromDate.isAfter(toDate) || ChronoUnit.DAYS.between(fromDate,toDate)>30)
+            throw new BusinessRuleException("INVALID_REQUEST","A date range of at most 31 days is required");
+        var counts=sessions.summarize(departmentId,fromDate,toDate);
+        return new ConsultationSessionSummary(departmentId,fromDate,toDate,counts.openSessionCount(),counts.stoppedSessionCount(),
+                counts.cancelledSessionCount(),counts.capacity(),counts.heldCount(),counts.paymentLockedCount(),counts.confirmedCount(),
+                counts.consumedCount(),counts.availableCount(),clock.instant());
     }
 
     public DoctorCalendar mine(LocalDate weekStart, LocalDate date) {
@@ -153,21 +165,27 @@ public class ConsultationSessionApplicationService {
         }
         LocalDate fromDate = date == null ? weekStart : date;
         LocalDate toDate = date == null ? weekStart.plusDays(6) : date;
+        UUID doctorId = currentDoctorId();
+        List<ConsultationSessionDTO> calendar = sessions.findByDoctor(doctorId, fromDate, toDate)
+                .stream().map(this::toDto).toList();
+        return new DoctorCalendar(doctorId, fromDate, toDate, CLINIC_ZONE.getId(), calendar);
+    }
+
+    UUID currentDoctorId() {
         ActorIdentity actor = requireHumanActor("DOCTOR");
         if (actor.staffId() == null) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "A verified doctor staff identity is required");
         }
         CurrentDoctorAuthoritySnapshot snapshot = authority.currentDoctorAuthority(actor.accountId(),
                 correlationIds.currentOrCreate().toString());
-        if (!Boolean.TRUE.equals(snapshot.accountExists()) || !Boolean.TRUE.equals(snapshot.accountActive())
+        if (snapshot == null || !actor.accountId().equals(snapshot.actorAccountId())
+                || !Boolean.TRUE.equals(snapshot.accountExists()) || !Boolean.TRUE.equals(snapshot.accountActive())
                 || !"DOCTOR".equals(snapshot.currentRole()) || !actor.staffId().equals(snapshot.staffId())
                 || !Boolean.TRUE.equals(snapshot.staffActive()) || snapshot.departmentId() == null
                 || !Boolean.TRUE.equals(snapshot.departmentActive())) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Doctor has no current active schedule authority");
         }
-        List<ConsultationSessionDTO> calendar = sessions.findByDoctor(actor.staffId(), fromDate, toDate)
-                .stream().map(this::toDto).toList();
-        return new DoctorCalendar(actor.staffId(), fromDate, toDate, CLINIC_ZONE.getId(), calendar);
+        return actor.staffId();
     }
 
     private ConsultationSession lock(UUID sessionId) {
@@ -182,7 +200,7 @@ public class ConsultationSessionApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Session was not found"));
     }
 
-    private ActorIdentity requireHumanActor(String... roles) {
+    ActorIdentity requireHumanActor(String... roles) {
         ActorIdentity actor = actors.current();
         if (actor == null || actor.accountId() == null || actor.role() == null) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "A verified clinical actor is required");
@@ -191,14 +209,15 @@ public class ConsultationSessionApplicationService {
         throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor role cannot use this scheduling command");
     }
 
-    private void requireScheduleScope(ActorIdentity actor, UUID departmentId) {
+    void requireScheduleScope(ActorIdentity actor, UUID departmentId) {
         String correlationId = correlationIds.currentOrCreate().toString();
         SchedulingAuthoritySnapshot snapshot = authority.authority(actor.accountId(), departmentId, correlationId);
-        if (!actor.role().equals(snapshot.currentRole()) || !Boolean.TRUE.equals(snapshot.accountExists())
+        if (snapshot == null || !actor.accountId().equals(snapshot.actorAccountId())
+                || !departmentId.equals(snapshot.departmentId()) || !actor.role().equals(snapshot.currentRole()) || !Boolean.TRUE.equals(snapshot.accountExists())
                 || !Boolean.TRUE.equals(snapshot.accountActive()) || !Boolean.TRUE.equals(snapshot.departmentActive())) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor has no current scheduling scope");
         }
-        if ("MANAGER".equals(actor.role()) && (!Boolean.TRUE.equals(snapshot.staffActive())
+        if (("MANAGER".equals(actor.role()) || "DOCTOR".equals(actor.role())) && (!Boolean.TRUE.equals(snapshot.staffActive())
                 || actor.staffId() == null || !actor.staffId().equals(snapshot.staffId())
                 || !Boolean.TRUE.equals(snapshot.canManageSchedules()))) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Manager is not assigned to this department");
@@ -208,7 +227,7 @@ public class ConsultationSessionApplicationService {
         }
     }
 
-    private void requireEligible(UUID doctorId, UUID departmentId, UUID roomId) {
+    void requireEligible(UUID doctorId, UUID departmentId, UUID roomId) {
         ConsultationEligibilitySnapshot snapshot = authority.consultationEligibility(
                 doctorId, departmentId, roomId, correlationIds.currentOrCreate().toString());
         if (!Boolean.TRUE.equals(snapshot.eligible()) || !Boolean.TRUE.equals(snapshot.doctorActive())
@@ -249,7 +268,7 @@ public class ConsultationSessionApplicationService {
         }
     }
 
-    private ConsultationSessionDTO toDto(ConsultationSession session) {
+    ConsultationSessionDTO toDto(ConsultationSession session) {
         var config = session.configuration();
         return new ConsultationSessionDTO(session.sessionId(), session.revision(), config.doctorId(),
                 config.departmentId(), config.roomId(), config.sessionDate(), config.startTime(), config.endTime(),

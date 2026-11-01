@@ -137,6 +137,7 @@ async function requestJson<T>(
   }
 
   if (!response.ok) {
+    if (typeof window !== "undefined" && response.status === 403 && (path.startsWith("/v2/doctor-work-shifts") || path.startsWith("/v2/consultation-sessions"))) window.dispatchEvent(new Event("mediflow:management-denied"));
     if (response.status === 401 && !retried && token && session && getSessionKey() === session
         && !path.startsWith("/v1/auth/") && getRefreshToken()) {
       await refreshAccess(session, token);

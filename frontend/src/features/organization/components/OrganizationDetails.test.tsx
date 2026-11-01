@@ -116,3 +116,11 @@ it("shows department contacts, real head and members across all pages", async ()
   expect(mocks.staff).toHaveBeenLastCalledWith({ departmentId: departmentContractFixture.departmentId, page: 1, size: 100 });
   mocks.staff.mockResolvedValue({ content: [] as StaffDTO[], totalPages: 0 });
 });
+
+it("does not request or show head appointment commands when scheduling is disabled", async () => {
+ mocks.getRole.mockReturnValue("ADMIN");
+ mocks.department.mockResolvedValue({...departmentContractFixture,departmentType:"CLINICAL"});
+ render(<DepartmentDetail departmentId={departmentContractFixture.departmentId} schedulingEnabled={false}/>);
+ await screen.findByRole("heading",{name:"Chi tiết khoa"});
+ expect(screen.queryByRole("heading",{name:"Bổ nhiệm trưởng khoa"})).not.toBeInTheDocument();
+});

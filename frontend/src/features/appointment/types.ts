@@ -219,3 +219,8 @@ export interface RegistrationSummary {
   queueNumber: number | null;
   readyForExam: boolean;
 }
+export interface DoctorWorkShiftCreate { doctorId: string; departmentId: string; roomId: string; shiftDate: string; startTime: string; endTime: string }
+export interface DoctorWorkShiftDTO extends DoctorWorkShiftCreate { shiftId: string; revision: number; status: "ACTIVE" | "CANCELLED" }
+export interface DoctorWorkShiftUpdate extends DoctorWorkShiftCreate { expectedRevision: number; reason: string }
+
+export interface DepartmentSessionSummary { departmentId: string; fromDate: string; toDate: string; openSessionCount: number; stoppedSessionCount: number; cancelledSessionCount: number; capacity: number; heldCount: number; paymentLockedCount: number; confirmedCount: number; consumedCount: number; availableCount: number; observedAt: string }

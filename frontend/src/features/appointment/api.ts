@@ -1,5 +1,6 @@
 import { api, type MutationOptions } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
+import type { DepartmentSessionSummary, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate } from "./types";
 import type {
   AppointmentDTO,
   ChangeAppointmentStatusRequest,
@@ -56,6 +57,13 @@ export interface FollowUpSourceSearchParams {
 }
 
 export const appointmentApi = {
+  sessionSummary: (departmentId: string, fromDate: string, toDate: string) => api.get<DepartmentSessionSummary>(`/v2/consultation-sessions/summary?${new URLSearchParams({departmentId,fromDate,toDate})}`),
+  workShifts: (params: ConsultationSessionSearchParams) => { const query = new URLSearchParams({ departmentId: params.departmentId, page: String(params.page ?? 0), size: String(params.size ?? 20) }); if (params.fromDate) query.set("fromDate", params.fromDate); if (params.toDate) query.set("toDate", params.toDate); return api.get<PageResult<DoctorWorkShiftDTO>>(`/v2/doctor-work-shifts?${query}`); },
+  myWorkShifts: (fromDate: string, toDate: string) => api.get<DoctorWorkShiftDTO[]>(`/v2/doctor-work-shifts/mine?${new URLSearchParams({ fromDate, toDate })}`),
+  createWorkShift: (body: DoctorWorkShiftCreate, options: SchedulingCommandOptions) => api.post<DoctorWorkShiftDTO>("/v2/doctor-work-shifts", body, options),
+  updateWorkShift: (id: string, body: DoctorWorkShiftUpdate, options: SchedulingCommandOptions) => api.put<DoctorWorkShiftDTO>(`/v2/doctor-work-shifts/${encodeURIComponent(id)}`, body, options),
+  cancelWorkShift: (id: string, body: { expectedRevision: number; reason: string }, options: SchedulingCommandOptions) => api.put<DoctorWorkShiftDTO>(`/v2/doctor-work-shifts/${encodeURIComponent(id)}/cancel`, body, options),
+  createSessionFromShift: (id: string, body: ConsultationSessionCreate, options: SchedulingCommandOptions) => api.post<ConsultationSessionDTO>(`/v2/doctor-work-shifts/${encodeURIComponent(id)}/consultation-sessions`, body, options),
   // Commands are exposed only by the server-controlled outpatient UI gate.
   checkIn: (appointmentId: string) =>
     api.put<AppointmentDTO>(

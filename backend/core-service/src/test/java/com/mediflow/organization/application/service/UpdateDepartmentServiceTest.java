@@ -7,9 +7,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
+import com.mediflow.organization.application.port.out.DepartmentRepository;
+import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
+import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
+import com.mediflow.organization.domain.exception.InvalidDepartmentException;
+import com.mediflow.organization.domain.model.Department;
+import com.mediflow.organization.domain.model.DepartmentType;
+import com.mediflow.organization.domain.model.JobTitle;
+import com.mediflow.organization.domain.model.Staff;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,25 +23,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.mediflow.organization.application.port.out.DepartmentRepository;
-import com.mediflow.organization.application.port.out.StaffRepository;
-import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
-import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
-import com.mediflow.organization.domain.exception.InvalidDepartmentException;
-import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
-import com.mediflow.organization.domain.model.Department;
-import com.mediflow.organization.domain.model.DepartmentType;
-import com.mediflow.organization.domain.model.JobTitle;
-import com.mediflow.organization.domain.model.Staff;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateDepartmentServiceTest {
 
-    @Mock
-    private DepartmentRepository departmentRepository;
+    @Mock private DepartmentRepository departmentRepository;
 
-    @Mock
-    private StaffRepository staffRepository;
+    @Mock private StaffRepository staffRepository;
 
     private UpdateDepartmentService service;
 
@@ -47,14 +44,21 @@ class UpdateDepartmentServiceTest {
     @Test
     void execute_validData_updatesDepartmentWithoutUnsupportedUpdateEvent() {
         UUID departmentId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Old Name", "OLD", DepartmentType.CLINICAL);
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
+        Department department =
+                department(departmentId, "Old Name", "OLD", DepartmentType.CLINICAL);
+        when(departmentRepository.findByIdForUpdate(departmentId))
+                .thenReturn(Optional.of(department));
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Department result = service.execute(
-                departmentId, "New Name", DepartmentType.ADMINISTRATIVE, "Building B", null, null);
+        Department result =
+                service.execute(
+                        departmentId,
+                        "New Name",
+                        DepartmentType.ADMINISTRATIVE,
+                        "Building B",
+                        null,
+                        null);
 
         assertEquals("New Name", result.getDepartmentName());
         assertEquals("OLD", result.getAbbreviation());
@@ -68,110 +72,163 @@ class UpdateDepartmentServiceTest {
         UUID departmentId = UUID.randomUUID();
         when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.empty());
 
-        assertThrows(DepartmentNotFoundException.class, () -> service.execute(
-                departmentId, "New Name", DepartmentType.CLINICAL, "Building B", null, null));
+        assertThrows(
+                DepartmentNotFoundException.class,
+                () ->
+                        service.execute(
+                                departmentId,
+                                "New Name",
+                                DepartmentType.CLINICAL,
+                                "Building B",
+                                null,
+                                null));
     }
 
     @Test
     void execute_blankName_throwsInvalidDepartmentException() {
         UUID departmentId = UUID.randomUUID();
         when(departmentRepository.findByIdForUpdate(departmentId))
-                .thenReturn(Optional.of(department(departmentId, "Old Name", "OLD",
-                        DepartmentType.CLINICAL)));
+                .thenReturn(
+                        Optional.of(
+                                department(
+                                        departmentId, "Old Name", "OLD", DepartmentType.CLINICAL)));
 
-        assertThrows(InvalidDepartmentException.class, () -> service.execute(
-                departmentId, " ", DepartmentType.CLINICAL, "Building B", null, null));
+        assertThrows(
+                InvalidDepartmentException.class,
+                () ->
+                        service.execute(
+                                departmentId,
+                                " ",
+                                DepartmentType.CLINICAL,
+                                "Building B",
+                                null,
+                                null));
     }
 
     @Test
-    void execute_assignsDoctorFromSameDepartmentAsHead() {
-        UUID departmentId = UUID.randomUUID();
-        UUID staffId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        Staff doctor = Staff.reconstitute(
-                staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
-        when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
-        when(departmentRepository.save(any(Department.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void execute_rejectsIndependentAppointmentWrite() {
+        UUID id = UUID.randomUUID();
+        Department d = department(id, "Clinical", "CLN", DepartmentType.CLINICAL);
+        when(departmentRepository.findByIdForUpdate(id)).thenReturn(Optional.of(d));
+        assertThrows(
+                com.mediflow.common.exception.BusinessRuleException.class,
+                () ->
+                        service.execute(
+                                id,
+                                "Clinical",
+                                DepartmentType.CLINICAL,
+                                "A",
+                                UUID.randomUUID(),
+                                null));
+        verify(departmentRepository, never()).save(any());
+    }
 
-        Department result = service.execute(
-                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", staffId, null);
+    @Test
+    void execute_rejectsIndependentRevoke() {
+        UUID id = UUID.randomUUID(), staffId = UUID.randomUUID();
+        Department d = department(id, "Clinical", "CLN", DepartmentType.CLINICAL);
+        d.changeHead(
+                Staff.reconstitute(
+                        staffId,
+                        "Doctor",
+                        id,
+                        JobTitle.DOCTOR,
+                        null,
+                        "LIC",
+                        null,
+                        null,
+                        true,
+                        Instant.now(),
+                        Instant.now(),
+                        "012345678901"));
+        when(departmentRepository.findByIdForUpdate(id)).thenReturn(Optional.of(d));
+        assertThrows(
+                com.mediflow.common.exception.BusinessRuleException.class,
+                () -> service.execute(id, "Clinical", DepartmentType.CLINICAL, "A", null, null));
+        assertEquals(staffId, d.getDepartmentHeadId());
+    }
+
+    @Test
+    void execute_preservesAppointmentProjectionWhileUpdatingDepartmentDetails() {
+        UUID id = UUID.randomUUID(), staffId = UUID.randomUUID();
+        Department d = department(id, "Clinical", "CLN", DepartmentType.CLINICAL);
+        d.changeHead(
+                Staff.reconstitute(
+                        staffId,
+                        "Doctor",
+                        id,
+                        JobTitle.DOCTOR,
+                        null,
+                        "LIC",
+                        null,
+                        null,
+                        true,
+                        Instant.now(),
+                        Instant.now(),
+                        "012345678901"));
+        when(departmentRepository.findByIdForUpdate(id)).thenReturn(Optional.of(d));
+        when(departmentRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Department result =
+                service.execute(
+                        id,
+                        "New clinical name",
+                        DepartmentType.CLINICAL,
+                        "New location",
+                        staffId,
+                        null);
 
         assertEquals(staffId, result.getDepartmentHeadId());
-    }
-
-    @Test
-    void execute_nullDepartmentHeadRemovesExistingHead() {
-        UUID departmentId = UUID.randomUUID();
-        UUID staffId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        Staff doctor = Staff.reconstitute(
-                staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
-        department.changeHead(doctor);
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
-        when(departmentRepository.save(any(Department.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        Department result = service.execute(
-                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", null, null);
-
-        assertEquals(null, result.getDepartmentHeadId());
+        assertEquals("New clinical name", result.getDepartmentName());
         verify(staffRepository, never()).findById(any());
-    }
-
-    @Test
-    void execute_headFromOtherDepartment_throwsBusinessRule() {
-        UUID departmentId = UUID.randomUUID();
-        UUID otherDepartmentId = UUID.randomUUID();
-        UUID staffId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        Staff doctor = Staff.reconstitute(
-                staffId, "Dr. One", otherDepartmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
-        when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
-
-        assertThrows(InvalidDepartmentHeadException.class, () -> service.execute(
-                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", staffId, null));
     }
 
     @Test
     void execute_deactivateWithActiveStaff_throwsBusinessRule() {
         UUID departmentId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
+        Department department =
+                department(departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
+        when(departmentRepository.findByIdForUpdate(departmentId))
+                .thenReturn(Optional.of(department));
         when(staffRepository.existsByDepartmentIdAndActiveTrue(departmentId)).thenReturn(true);
 
-        assertThrows(DepartmentHasActiveStaffException.class, () -> service.execute(
-                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", null, false));
+        assertThrows(
+                DepartmentHasActiveStaffException.class,
+                () ->
+                        service.execute(
+                                departmentId,
+                                "Clinical",
+                                DepartmentType.CLINICAL,
+                                "Building A",
+                                null,
+                                false));
         verify(departmentRepository, never()).save(any());
     }
 
     @Test
     void execute_deactivateWithoutActiveStaff_savesInactiveDepartment() {
         UUID departmentId = UUID.randomUUID();
-        Department department = department(
-                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
+        Department department =
+                department(departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
+        when(departmentRepository.findByIdForUpdate(departmentId))
+                .thenReturn(Optional.of(department));
         when(staffRepository.existsByDepartmentIdAndActiveTrue(departmentId)).thenReturn(false);
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Department result = service.execute(
-                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", null, false);
+        Department result =
+                service.execute(
+                        departmentId,
+                        "Clinical",
+                        DepartmentType.CLINICAL,
+                        "Building A",
+                        null,
+                        false);
 
         assertEquals(false, result.isActive());
     }
 
-    private Department department(
-            UUID id, String name, String abbreviation, DepartmentType type) {
+    private Department department(UUID id, String name, String abbreviation, DepartmentType type) {
         return Department.create(id, name, abbreviation, type, "Building A");
     }
 }

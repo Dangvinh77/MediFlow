@@ -1,9 +1,10 @@
 import { webcrypto } from "node:crypto";
+import Link from "next/link";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
-import { ScheduleManagementWorkspace } from "./ScheduleManagementWorkspace";
+import { ScheduleManagementWorkspace, SessionAdministration } from "./ScheduleManagementWorkspace";
 
 const mocks = vi.hoisted(() => ({
   rooms: vi.fn(), scope: vi.fn(), replaceScope: vi.fn(),
@@ -15,7 +16,7 @@ vi.mock("../api", () => ({ appointmentApi: {
   createSession: mocks.createSession, updateSession: mocks.updateSession, changeSessionStatus: mocks.changeStatus,
   listConsultationSessions: mocks.listSessions,
 } }));
-vi.mock("@/features/organization/api", () => ({ organizationApi: { departments: mocks.departments } }));
+vi.mock("@/lib/api", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/api")>(), api: { get: mocks.departments } }));
 vi.mock("@/lib/session", () => ({ getSessionKey: () => "admin-session" }));
 vi.mock("@/lib/auth", () => ({ getRole: () => "ADMIN", subscribeToAuthChanges: () => () => undefined }));
 vi.mock("@/components/references/ReferenceInput", () => ({
@@ -32,6 +33,20 @@ const created = {
 };
 
 describe("schedule management", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(["add", "remove"])("keeps the draft when leaving after a button-only break %s", async action => {
+    const user = userEvent.setup();
+    mocks.listSessions.mockResolvedValue({ content: [{ ...created, breaks: action === "remove" ? [{ startTime: "10:00", endTime: "10:15" }] : [] }], number: 0, totalPages: 1, totalElements: 1 });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<><Link href="/appointments/my-calendar">Về Khám bệnh</Link><SessionAdministration fixedDepartmentId="department-id" /></>);
+    await user.click(await screen.findByRole("button", { name: "Sửa" }));
+    await user.click(screen.getByRole("button", { name: action === "add" ? "Thêm giờ nghỉ" : "Xóa giờ nghỉ" }));
+    expect(fireEvent.click(screen.getByRole("link", { name: "Về Khám bệnh" }))).toBe(false);
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.getByRole("heading", { name: "Sửa buổi khám đã chọn" })).toBeVisible();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
     mocks.departments.mockResolvedValue([]);

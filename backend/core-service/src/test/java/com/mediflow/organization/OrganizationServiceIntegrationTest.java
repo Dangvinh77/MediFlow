@@ -196,7 +196,7 @@ class OrganizationServiceIntegrationTest {
         var staff = createStaffUseCase.execute("Office Head", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, "0901234567", "head@example.test", nextIdentityNumber(), staffProfile);
         assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile()).isEqualTo(departmentProfile);
         assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile()).isEqualTo(staffProfile);
-        updateDepartment.execute(department.getDepartmentId(), "Renamed", DepartmentType.ADMINISTRATIVE, "Floor 3", staff.getStaffId(), true);
+        updateDepartment.execute(department.getDepartmentId(), "Renamed", DepartmentType.ADMINISTRATIVE, "Floor 3", null, true);
         updateStaff.execute(staff.getStaffId(), "Updated Head", JobTitle.ADMINISTRATIVE, null, null, "0901234567", "head@example.test");
         assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getProfile()).isEqualTo(departmentProfile);
         assertThat(staffStore.findById(staff.getStaffId()).orElseThrow().getProfile()).isEqualTo(staffProfile);
@@ -374,6 +374,8 @@ class OrganizationServiceIntegrationTest {
     @Autowired
     private com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCase transferStaff;
     @Autowired
+    private com.mediflow.organization.application.service.DepartmentHeadService departmentHeads;
+    @Autowired
     @org.springframework.beans.factory.annotation.Qualifier("organizationTransactionManager")
     private org.springframework.transaction.PlatformTransactionManager organizationTransactions;
 
@@ -420,13 +422,13 @@ class OrganizationServiceIntegrationTest {
     }
 
     @Test
-    void unchangedHeadIdIsRevalidatedEvenForLegacyInvalidData() {
+    void appointmentRevalidatesInvalidStaffAndExplicitRevokeRepairsProjection() {
         var department = newDepartment();
         var doctor = newDoctor(department.getDepartmentId());
         changeHead(department, doctor.getStaffId());
         doctor.update("Former Doctor", JobTitle.NURSE, null, null, null, null);
         staffStore.save(doctor); // Deliberately reproduce a row left by the old implementation.
-        assertThrows(com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class,
+        assertThrows(com.mediflow.common.exception.BusinessRuleException.class,
                 () -> changeHead(department, doctor.getStaffId()));
         changeHead(department, null); // Explicit dismissal remains the repair path.
     }
@@ -439,7 +441,7 @@ class OrganizationServiceIntegrationTest {
                 com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class);
         changeHead(department, null);
         race(() -> changeToNurse(doctor.getStaffId()), () -> changeHead(department, doctor.getStaffId()),
-                com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class);
+                com.mediflow.common.exception.BusinessRuleException.class);
         assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getDepartmentHeadId()).isNull();
         assertThat(staffStore.findById(doctor.getStaffId()).orElseThrow().getJobTitle()).isEqualTo(JobTitle.NURSE);
     }
@@ -488,8 +490,17 @@ class OrganizationServiceIntegrationTest {
     }
 
     private void changeHead(com.mediflow.organization.domain.model.Department department, UUID head) {
-        updateDepartment.execute(department.getDepartmentId(), department.getDepartmentName(),
-                department.getDepartmentType(), department.getLocation(), head, true);
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        if (head != null && jdbc.queryForObject("SELECT count(*) FROM account WHERE staff_id=? AND is_active AND role='DOCTOR'", Integer.class, head) == 0) {
+            createAccountUseCase.execute("head." + UUID.randomUUID(), "HeadPassword123!", head, Role.DOCTOR);
+        }
+        var adminStaff = createStaffUseCase.execute("Appointment administrator", department.getDepartmentId(),
+                JobTitle.ADMINISTRATIVE, null, null, null, null, nextIdentityNumber());
+        var admin = createAccountUseCase.execute("head.admin." + UUID.randomUUID(), "HeadAdmin123!", adminStaff.getStaffId(), Role.ADMIN);
+        long revision = departmentHeads.get(admin.getAccountId(), Role.ADMIN, department.getDepartmentId()).revision();
+        departmentHeads.replace(admin.getAccountId(), Role.ADMIN, department.getDepartmentId(),
+                new com.mediflow.organization.application.dto.request.DepartmentHeadCommand(revision, head, "Integration appointment decision"),
+                UUID.randomUUID().toString(), "integration-head-command");
     }
 
     private void deactivate(com.mediflow.organization.domain.model.Department department) {

@@ -479,7 +479,7 @@ Các service không được mở cổng trực tiếp cho UI để vượt Gate
 MVP dùng danh sách khoa quản lý được ADMIN cấp **theo accountId** trong Core, revision và audit riêng.
 Không lấy departmentHeadId hoặc staff.departmentId làm quyền MANAGER. ADMIN toàn phòng khám;
 MANAGER account active + staff active + assignment của khoa active; không assignment thì deny.
-ADMIN grant không tự đổi role: chỉ account role MANAGER mới dùng danh sách quyền này.
+ADMIN grant không tự đổi role: danh sách scope legacy này dành cho account MANAGER. DOCTOR được bổ nhiệm trưởng khoa dùng authority bổ nhiệm riêng, giữ currentRole=DOCTOR; xem phụ lục trưởng khoa bên dưới.
 
 | Method/path TARGET | Caller/role | Request → data |
 |---|---|---|
@@ -1005,3 +1005,41 @@ và các kiểm tra chống thu trùng, uncertain outcome, clearance không đ�
 UUID giữ nguyên trong API/URL; giao diện nghiệp vụ hiển thị nhãn, ngày sinh, ngày/giờ.
 PATIENT có quyền đọc care-label nhưng không được tìm danh sách nhân viên/bệnh nhân.
 `CONFIRMED` thanh toán chưa đồng nghĩa đã đến; `readyForExam` do server xác định.
+
+
+## Trưởng khoa lâm sàng và phân ca bác sĩ — bổ sung 01/11/2026
+
+Phạm vi triển khai và evidence theo [thiết kế đã duyệt](../superpowers/specs/2026-10-31-manager-workforce-proposal.md) và [plan](../superpowers/plans/2026-10-31-department-head-workspaces.md). Đây là hợp đồng bổ sung cho consumer cùng PR, không có nghĩa đã nghiệm thu UI toàn luồng hay được bật trên production.
+
+### Core: bổ nhiệm, capabilities và authority hiện hành
+
+- `GET /api/v1/org/me/capabilities`: staff human roles ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH; không PATIENT/SYSTEM. Data `{accountId,staffId,role,canPracticeAsDoctor,managementDepartments:[{departmentId,departmentName,appointmentId,revision}],observedAt}`. appointmentId nullable chỉ cho legacy MANAGER scope. Một grant ở FE không thay authority của request BE.
+- `GET /api/v2/org/departments/{id}/head-appointments`: ADMIN đọc snapshot/lịch sử.
+- `PUT /api/v2/org/departments/{id}/head-appointments`: ADMIN, Idempotency-Key và X-Correlation-Id. Body `{expectedRevision,staffId,reason}`, staffId=null miễn nhiệm. Snapshot `{departmentId,revision,appointmentId,staffId,accountId,updatedAt,updatedByAccountId,history:[{appointmentId,staffId,accountId,startedAt,endedAt}]}`; current fields nullable, history=[]/revision=0 trước command đầu.
+- Snapshot revision và immutable audit/receipt/outbox commit cùng bổ nhiệm. Exact retry trả receipt ban đầu, Idempotency-Replayed:true; cùng key khác body -> IDEMPOTENCY_CONFLICT. Revision cũ -> HEAD_REVISION_CONFLICT. Eligibility không hợp lệ -> HEAD_INELIGIBLE. Không tự bổ nhiệm từ departmentHeadId cũ; trường đó là projection tương thích, không phải authority độc lập.
+- Mỗi CLINICAL department tối đa một nhiệm kỳ chưa kết thúc, mỗi staff/account tối đa một nhiệm kỳ; database partial unique guards. Thay người kết thúc nhiệm kỳ cũ và tạo mới cùng transaction. Staff/account/khoa active và association DOCTOR cùng khoa được kiểm hiện hành.
+- Existing internal `/api/v2/org/scheduling-authority` giữ wire shape: DOCTOR đang có bổ nhiệm hợp lệ được canManageSchedules=true cho đúng khoa, scopeRevision từ trạng thái bổ nhiệm; currentRole vẫn DOCTOR. MANAGER scope cũ giữ nhánh riêng. Clinical không cache positive grant cho mutation, không sửa signed role để vượt guard.
+- `/api/v2/org/consultation-rooms` cho thêm transport DOCTOR; Core chỉ trả phòng khi live authority của DOCTOR cho đúng khoa. Ordinary DOCTOR không được quyền lập lịch từ việc qua Gateway.
+
+### Clinical: ca làm việc tách khỏi buổi nhận bệnh nhân
+
+Gate scheduling-v2 giữ như hợp đồng hiện tại. Quản lý ca: ADMIN/MANAGER/DOCTOR, trong đó MANAGER/DOCTOR luôn kiểm authority khoa hiện hành. Bác sĩ đọc lịch chính chủ bằng current-doctor-authority.
+
+| Method/path | Data |
+|---|---|
+| `GET /api/v2/doctor-work-shifts?departmentId=&fromDate=&toDate=&page=&size=` | PageResult<DoctorWorkShiftDTO>, quyền quản lý khoa |
+| `GET /api/v2/doctor-work-shifts/mine?fromDate=&toDate=` | list DoctorWorkShiftDTO của signed DOCTOR, không nhận doctorId |
+| `POST /api/v2/doctor-work-shifts` | create, 201 + Location |
+| `PUT /api/v2/doctor-work-shifts/{id}` | update, 200 |
+| `PUT /api/v2/doctor-work-shifts/{id}/cancel` | cancel terminal, 200 |
+| `POST /api/v2/doctor-work-shifts/{id}/consultation-sessions` | explicit SessionCreate theo hợp đồng hiện có, 201 + Location session |
+
+Create `{doctorId,departmentId,roomId,shiftDate,startTime,endTime}`; update thêm `{expectedRevision,reason}`; cancel `{expectedRevision,reason}`. DTO `{shiftId,revision,doctorId,departmentId,roomId,shiftDate,startTime,endTime,status}`; status ACTIVE/CANCELLED. Cả hai mốc ngày bắt buộc, tối đa 31 ngày inclusive. Command dùng Idempotency-Key + X-Correlation-Id, receipt/audit nằm trong transaction Clinical.
+
+Ca giới hạn 07:00–17:00, phút nguyên, không đổi khoa. Phòng CONSULTATION/bác sĩ đủ điều kiện cùng khoa; chống trùng bác sĩ hoặc phòng khám độc quyền cả khi gửi đồng thời. Một ca chưa tạo capacity và chưa nhận bệnh nhân.
+
+Session tạo từ ca phải cùng bác sĩ/khoa/phòng/ngày, nằm trong giờ ca ACTIVE; có breaks và capacity của riêng session. Link nguồn bất biến, session/shift locks giữ transaction để chặn race. Ca có non-CANCELLED session liên kết không được sửa/hủy. Session liên kết khi sửa phải tiếp tục hợp lệ trong ca; các guards occupied/payment/execution hiện có vẫn áp dụng. Không tự đổi lịch/hủy người bệnh/hoàn tiền. Legacy sessions không có link vẫn dùng hợp đồng cũ.
+
+Gateway cho DOCTOR tiếp cận collection management sessions và commands theo exact method/path; Clinical vẫn bắt buộc authority quản lý khoa, own-calendar/registrations vẫn theo phân công thực tế. Bổ nhiệm không cấp đọc/sửa mọi bệnh án hoặc quyền Lab/Pharmacy/Billing/Report.
+
+`GET /api/v2/consultation-sessions/summary?departmentId=&fromDate=&toDate=`: ADMIN/MANAGER/DOCTOR với quyền quản lý khoa hiện hành. Data `{departmentId,fromDate,toDate,openSessionCount,stoppedSessionCount,cancelledSessionCount,capacity,heldCount,paymentLockedCount,confirmedCount,consumedCount,availableCount,observedAt}` tổng hợp server toàn khoa/khoảng đã chọn, không chỉ một trang. Seat totals loại CANCELLED; counts trạng thái giữ riêng. Đây là snapshot vận hành Clinical, không phải báo cáo tài chính đã đối soát.

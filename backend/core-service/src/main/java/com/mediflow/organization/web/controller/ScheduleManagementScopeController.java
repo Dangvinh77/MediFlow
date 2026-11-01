@@ -116,7 +116,7 @@ public class ScheduleManagementScopeController {
     }
 
     @GetMapping("/consultation-rooms")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<RoomSummary>>> listConsultationRooms(
             @RequestParam UUID departmentId,
             @RequestParam(defaultValue = "0") int page,

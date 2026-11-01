@@ -9,7 +9,6 @@ import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/auth";
 import { isUuid } from "@/lib/validation";
-import { StaffPicker } from "./StaffPicker";
 import { FormSection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
@@ -137,7 +136,7 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
         <Field label="Email đơn vị" htmlFor="department-email"><input id="department-email" type="email" maxLength={100} value={email} onChange={event => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
       {editing ? <FormSection title={`Quản lý ${unit}`} description="Phân công người phụ trách và quản lý trạng thái hoạt động.">
-        <StaffPicker id="department-head" label={unit === "phòng" ? "Trưởng phòng" : "Trưởng khoa"} value={headId} onChange={setHeadId} departmentId={departmentId} jobTitle={type === "ADMINISTRATIVE" ? undefined : "DOCTOR"} disabled={saving} />
+        <p className="text-sm text-muted-foreground">Bổ nhiệm hoặc miễn nhiệm trưởng khoa lâm sàng tại trang chi tiết khoa, kèm lý do và lịch sử. Biểu mẫu này giữ nguyên người phụ trách hiện tại.</p>
         <Field label="Trạng thái" htmlFor="department-active"><select id="department-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select></Field>
       </FormSection> : null}
     </fieldset>

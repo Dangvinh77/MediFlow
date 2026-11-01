@@ -1,6 +1,7 @@
 package com.mediflow.clinical.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -98,6 +99,26 @@ class ConsultationSessionCalendarTest {
     private CurrentDoctorAuthoritySnapshot authoritySnapshot() {
         return new CurrentDoctorAuthoritySnapshot(ACCOUNT_ID, true, true, "DOCTOR", DOCTOR_ID,
                 true, DEPARTMENT_ID, true, NOW);
+    }
+
+    @Test
+    void appointedDoctorCanSearchDepartmentSessionsOnlyWithLiveManagementAuthority() {
+        when(actors.current()).thenReturn(new ActorIdentity(ACCOUNT_ID, DOCTOR_ID, null, "DOCTOR"));
+        when(correlations.currentOrCreate()).thenReturn(id(9));
+        when(authority.authority(ACCOUNT_ID, DEPARTMENT_ID, id(9).toString())).thenReturn(
+                new com.mediflow.clinical.application.dto.authority.SchedulingAuthoritySnapshot(
+                        ACCOUNT_ID, true, true, "DOCTOR", DOCTOR_ID, true, DEPARTMENT_ID, true, true, 1L, NOW));
+        when(sessions.search(DEPARTMENT_ID, LocalDate.of(2026, 10, 27), LocalDate.of(2026, 10, 27),
+                com.mediflow.common.api.PageQuery.of(0, 20))).thenReturn(
+                        com.mediflow.common.api.PageResult.of(List.of(), 0, 0, 20));
+        assertThatCode(() -> service.search(DEPARTMENT_ID, LocalDate.of(2026, 10, 27),
+                LocalDate.of(2026, 10, 27), com.mediflow.common.api.PageQuery.of(0, 20))).doesNotThrowAnyException();
+        when(authority.authority(ACCOUNT_ID, DEPARTMENT_ID, id(9).toString())).thenReturn(
+                new com.mediflow.clinical.application.dto.authority.SchedulingAuthoritySnapshot(
+                        ACCOUNT_ID, true, true, "DOCTOR", DOCTOR_ID, true, DEPARTMENT_ID, true, false, 2L, NOW));
+        assertThatThrownBy(() -> service.search(DEPARTMENT_ID, LocalDate.of(2026, 10, 27),
+                LocalDate.of(2026, 10, 27), com.mediflow.common.api.PageQuery.of(0, 20)))
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     private static UUID id(int suffix) {

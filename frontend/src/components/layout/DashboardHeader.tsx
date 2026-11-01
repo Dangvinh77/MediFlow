@@ -19,12 +19,16 @@ interface DashboardHeaderProps {
   role: Role | null;
   onLogout: () => void;
   onOpenNavigation: () => void;
+  workspaceHref?: string;
+  workspaceLabel?: string;
+  workspaceTitle?: string;
+  onWorkspaceSwitch?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
-export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardHeaderProps) {
+export function DashboardHeader({ role, onLogout, onOpenNavigation, workspaceHref, workspaceLabel, workspaceTitle, onWorkspaceSwitch }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-      <div className="flex min-h-[4.5rem] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-[4.5rem] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <button
           type="button"
           aria-label="Mở điều hướng"
@@ -38,14 +42,15 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardH
           </span>
         </button>
 
-        <div className="hidden min-w-0 flex-1 sm:block">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{role === "PATIENT" ? "Sức khỏe của bạn · MediFlow" : "Không gian vận hành MediFlow"}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {role ? roleLabels[role] ?? role : "Phiên làm việc"}
+            {workspaceTitle ?? (role ? roleLabels[role] ?? role : "Phiên làm việc")}
           </p>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 text-sm">
+        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 text-sm sm:w-auto">
+          {workspaceHref ? <Link href={workspaceHref} onClick={onWorkspaceSwitch} className="inline-flex min-h-11 items-center rounded-lg border border-primary px-3 py-2 font-medium text-primary">{workspaceLabel}</Link> : null}
           {role && role !== "SYSTEM" ? <Link href="/organization/profile" className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-2 font-medium transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Hồ sơ cá nhân</Link> : null}
           <ThemeToggle />
           <button
