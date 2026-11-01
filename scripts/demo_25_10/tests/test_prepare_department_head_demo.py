@@ -31,6 +31,19 @@ class Api:
 
 
 class DepartmentHeadDemoTest(unittest.TestCase):
+    def test_calendar_room_is_excluded_even_when_listed_first(self):
+        api = Api()
+        original = api.call
+        def call(role, method, path, *args, **kwargs):
+            if path.startswith('/api/v2/org/consultation-rooms?'):
+                return {'content': [{'roomId': 'busy-calendar', 'roomName': 'Phong kham lich day demo'},
+                                    {'roomId': 'room-id', 'roomName': 'Original room'}]}
+            return original(role, method, path, *args, **kwargs)
+        api.call = call
+        result = module.prepare(api, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))
+        self.assertEqual(result['shift']['roomId'], 'room-id')
+        self.assertEqual(result['session']['roomId'], 'room-id')
+
     def test_uses_public_admin_appointment_and_doctor_shift_then_explicit_session(self):
         api = Api()
         result = module.prepare(api, dt.datetime(2026, 10, 31, 18, tzinfo=dt.timezone(dt.timedelta(hours=7))))

@@ -61,11 +61,13 @@ class DemoApi:
         temporary.write_text(json.dumps(self.state, ensure_ascii=False, indent=2), encoding='utf-8')
         temporary.replace(self.journal)
 
-    def call(self, role, method, path, body=None, expected=(200,), stage=None):
+    def call(self, role, method, path, body=None, expected=(200,), stage=None, journal_omit=()):
         command = None
         if stage:
-            command = self.state.setdefault(stage, {'key': uuid.uuid4().hex, 'body': body, 'path': path})
-            if command['body'] != body or command['path'] != path:
+            # Fixed public demo credentials are supplied in memory on each retry, never saved.
+            stored_body = {k: v for k, v in body.items() if k not in journal_omit} if journal_omit else body
+            command = self.state.setdefault(stage, {'key': uuid.uuid4().hex, 'body': stored_body, 'path': path})
+            if command['body'] != stored_body or command['path'] != path:
                 raise ValueError('Prepared command changed; reconcile the journal: ' + stage)
             if 'result' in command:
                 return command['result']
@@ -128,6 +130,8 @@ def prepare(api, now, schedule_only=False):
     department = api.call('admin', 'GET', '/api/v1/org/departments/' + department_id)
     query = urllib.parse.urlencode({'departmentId': department_id, 'page': 0, 'size': 100})
     rooms = api.call('admin', 'GET', '/api/v2/org/consultation-rooms?' + query)['content']
+    # Keep the all-day demo.doctor fixture out of the supplemental rotating calendar room.
+    rooms = [room for room in rooms if room['roomName'] != 'Phong kham lich day demo']
     if not rooms:
         raise RuntimeError('Scheduling room fixture missing; restart with --scheduling')
     report = {'date': str(today), 'historyReady': False, 'department': department,

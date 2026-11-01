@@ -75,6 +75,19 @@ class FakeApi:
 
 
 class PreparationTest(unittest.TestCase):
+    def test_primary_doctor_never_occupies_the_rotating_calendar_room(self):
+        api = FakeApi()
+        original = api.call
+        def call(role, method, path, *args, **kwargs):
+            if path.startswith('/api/v2/org/consultation-rooms?'):
+                return {'content': [{'roomId': 'calendar-room', 'roomName': 'Phong kham lich day demo'},
+                                    {'roomId': 'room', 'roomName': 'Original demo room'}]}
+            return original(role, method, path, *args, **kwargs)
+        api.call = call
+        result = demo.prepare(api, dt.datetime(2026, 11, 1, 18, tzinfo=demo.ZONE))
+        self.assertEqual(result['room']['roomId'], 'room')
+        self.assertTrue(all(row['roomId'] == 'room' for row in api.sessions))
+
     def test_day_is_vietnam_day_at_utc_midnight_boundary(self):
         today, tomorrow = demo.demo_dates(dt.datetime(2026, 10, 28, 18, tzinfo=dt.timezone.utc))
         self.assertEqual(str(today), '2026-10-29')
@@ -148,6 +161,20 @@ class DemoApiTest(unittest.TestCase):
             return demo.urllib.error.HTTPError(self.api.gateway, status, 'not ready', {}, stream)
         stream.status = status
         return stream
+
+    def test_account_retry_keeps_key_and_runtime_password_out_of_journal(self):
+        body = {'username': 'demo.roster.example.bs01', 'password': 'public-demo-password', 'role': 'DOCTOR'}
+        path = '/api/v1/org/accounts'
+        with patch.object(demo.urllib.request, 'urlopen', side_effect=TimeoutError('uncertain')) as first:
+            with self.assertRaises(TimeoutError):
+                self.api.call('admin', 'POST', path, body, stage='account', journal_omit=('password',))
+        self.assertNotIn('public-demo-password', self.api.journal.read_text())
+        reopened = demo.DemoApi(self.api.gateway, self.api.journal)
+        with patch.object(demo.urllib.request, 'urlopen', return_value=self.response(201, {'data': {'accountId': 'one'}})) as retry:
+            reopened.call('admin', 'POST', path, body, expected=(201,), stage='account', journal_omit=('password',))
+        self.assertEqual(first.call_args.args[0].data, retry.call_args.args[0].data)
+        self.assertEqual(first.call_args.args[0].get_header('Idempotency-key'), retry.call_args.args[0].get_header('Idempotency-key'))
+        self.assertNotIn('password', json.loads(reopened.journal.read_text())['account']['body'])
 
     def test_wait_skips_expected_http_errors_before_evaluating_data(self):
         ready = {'paymentRequestId': 'request', 'reservationId': 'reservation', 'reservationRevision': 3}

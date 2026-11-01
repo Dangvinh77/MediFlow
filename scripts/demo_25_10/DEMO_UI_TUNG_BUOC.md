@@ -1,7 +1,7 @@
 # Demo ngoại trú: thao tác UI từ tiếp nhận đến nhận thuốc
 
-Cập nhật: 01/11/2026, sau master `3f9f5147`. Đối chiếu seed `prepare_ui_demo.py`
-và giao diện phân ca/bổ nhiệm mới. Đây là kịch bản thao tác; trạng thái nghiệm thu
+Cập nhật: 01/11/2026. Đối chiếu `prepare_ui_demo.py`, `prepare_demo_calendar.py`
+và giao diện phân ca/bổ nhiệm. Đây là kịch bản thao tác; trạng thái nghiệm thu
 thực tế nằm ở mục 12. Chỉ dùng dữ liệu tổng hợp trong môi trường demo cách ly.
 
 **Đã chốt giữ giờ thực.** Không dùng đồng hồ demo hoặc đổi giờ Windows. Phiên
@@ -19,8 +19,33 @@ nhận thuốc trên cùng một lượt. Chạy phần đó trong 07:00–17:00
    Không cần tự điền UUID để tạo buổi khám.
 4. Nhấp đúp `start-frontend.bat`, mở <http://127.0.0.1:3000/login>.
 
-Seed tạo một buổi 07:00–17:00, 40 chỗ mỗi ngày cho hôm nay và ngày mai, cùng bác sĩ
-`demo.doctor`. Sau 17:00 chỉ tạo lịch ngày mai. Có thể đăng ký trước cho ngày mai,
+**Lịch nhiều khoa từ 01/11/2026 đến hết 31/01/2027:** khởi động backend cũng bổ sung
+10 nhân sự vào mỗi khoa đang hoạt động. Khoa lâm sàng có sáu bác sĩ/bốn điều dưỡng
+mẫu mới, lịch mỗi ngày kể cả cuối tuần, **07:00–12:00 và 12:00–17:00, 40 chỗ/buổi**.
+Đọc dòng **CALENDAR READY** và file **DEMO-CALENDAR.local.md** cùng thư mục dữ liệu
+để lấy danh sách khoa, phòng, tài khoản bác sĩ. Chọn ngày hoặc tuần khi tra cứu UI,
+không nhập cả ba tháng vào một bộ lọc (API chỉ cho tối đa 31 ngày mỗi lần).
+Đây là lịch có sẵn chỗ để đăng ký, không phải đã đặt bệnh nhân đầy buổi.
+
+Nurse có thể chọn buổi của các bác sĩ bổ sung. **Khi sang bước khám phải đăng nhập
+đúng tài khoản bác sĩ của buổi đó trong DEMO-CALENDAR.local.md**, mật khẩu ban đầu
+`MediFlowDemo@2026`; không mặc định đăng nhập `demo.doctor` cho mọi buổi.
+`demo.doctor` vẫn giữ lịch 07:00–17:00 hôm nay/ngày mai riêng để chạy kịch bản cũ.
+Tái khám cùng bác sĩ của lượt nguồn cần chọn đúng bác sĩ đó; nếu chọn bác sĩ khác,
+thực hiện bước lý do/xác nhận đổi bác sĩ, không bỏ liên kết lượt nguồn.
+
+Sau 17:00 có thể chọn lịch **ngày sau** để đăng ký trước; chờ đúng ngày/giờ mới khám.
+Các ngày đã qua trong khoảng lịch chỉ để tra cứu. Khoa xét nghiệm/dược/hành chính
+chỉ bổ sung nhân sự, không tạo buổi khám sai chức năng. Ngày ngoài khoảng trên chưa
+được bảo đảm lịch. Nếu cần chạy lại calendar trên cùng stack đã bootstrap phòng:
+
+```powershell
+python scripts/demo_25_10/prepare_demo_calendar.py
+```
+
+Riêng seed kịch bản ba tình huống tạo buổi 07:00–17:00, 40 chỗ hôm nay/ngày mai cho
+`demo.doctor`; sau 17:00 chỉ tạo lịch ngày mai **cho bác sĩ này**. Lịch ba tháng của
+các bác sĩ bổ sung vẫn được tạo đủ như mô tả ở trên. Có thể đăng ký trước cho ngày mai,
 nhưng phải chờ đúng ngày/giờ mới bắt đầu khám được. Không đổi đồng hồ máy để lách điều kiện.
 
 **Muốn demo trọn luồng, bắt đầu trong khoảng 07:00–16:00 giờ Việt Nam.** Seed chuẩn bị
