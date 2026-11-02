@@ -15,6 +15,8 @@ interface LabZeroLiabilityActionProps {
   quoteExpiresAt: string;
   quoteCurrent: boolean;
   enabled: boolean;
+  onLockChange?: (locked: boolean) => void;
+  onCompleted?: (result: LabZeroPayableEligibilityDTO) => void;
 }
 
 function uncertain(cause: unknown) {
@@ -22,55 +24,83 @@ function uncertain(cause: unknown) {
     || cause.code?.includes("IDEMPOTENCY_CONFLICT") === true || cause.code?.endsWith("IDEMPOTENCY_KEY_REUSED") === true;
 }
 
-export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpiresAt, quoteCurrent, enabled }: LabZeroLiabilityActionProps) {
+export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpiresAt, quoteCurrent, enabled, onLockChange, onCompleted }: LabZeroLiabilityActionProps) {
   const [retryQuoteId, setRetryQuoteId] = useState<string | null>(null);
   const [result, setResult] = useState<LabZeroPayableEligibilityDTO | null>(null);
   const [error, setError] = useState<{ message: string; correlationId: string | null; uncertain?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(true);
   const submitLock = useRef(false);
+  const mounted = useRef(true);
+  const originatingSession = useRef(getSessionKey());
 
   useEffect(() => {
     let active = true;
-    void readLabZeroRecovery(paymentRequestId, getSessionKey()).then(recovery => {
-      if (active && recovery) setRetryQuoteId(recovery.quoteId);
+    mounted.current = true;
+    onLockChange?.(true);
+    void readLabZeroRecovery(paymentRequestId, originatingSession.current).then(recovery => {
+      if (!active) return;
+      if (recovery) setRetryQuoteId(recovery.quoteId);
+      setRecoveryLoading(false);
+      onLockChange?.(Boolean(recovery));
     }).catch(cause => {
-      if (active) setError({ message: cause instanceof Error ? cause.message : "Không thể đọc yêu cầu đang chờ.", correlationId: null, uncertain: true });
+      if (active) {
+        setError({ message: cause instanceof Error ? cause.message : "Không thể đọc yêu cầu đang chờ.", correlationId: null, uncertain: true });
+        setRecoveryLoading(false); onLockChange?.(true);
+      }
     });
-    return () => { active = false; };
-  }, [paymentRequestId]);
+    return () => { active = false; mounted.current = false; };
+  }, [paymentRequestId, onLockChange]);
 
   async function confirm(selectedQuoteId: string) {
-    if (submitLock.current || !enabled) return;
+    if (submitLock.current || !enabled || recoveryLoading) return;
+    const actorSession = originatingSession.current;
+    const current = () => mounted.current && actorSession === getSessionKey();
+    if (!current()) return;
     if (!retryQuoteId && (!Number.isFinite(Date.parse(quoteExpiresAt)) || Date.parse(quoteExpiresAt) <= Date.now())) {
       setError({ message: "Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi xác nhận nghĩa vụ 0.", correlationId: null });
       return;
     }
     submitLock.current = true;
     setBusy(true);
+    onLockChange?.(true);
     setError(null);
     let intent: Awaited<ReturnType<typeof prepareCommandIntent>> | null = null;
     const body = { quoteId: selectedQuoteId };
     try {
-      intent = await prepareCommandIntent(`lab-zero-liability:${paymentRequestId}`, getSessionKey(), body);
+      intent = await prepareCommandIntent(`lab-zero-liability:${paymentRequestId}`, actorSession, body);
+      if (!current()) { intent.cancelUnsent(); return; }
       try {
-        await saveLabZeroRecovery(paymentRequestId, getSessionKey(), { quoteId: selectedQuoteId });
+        await saveLabZeroRecovery(paymentRequestId, actorSession, { quoteId: selectedQuoteId });
       } catch (cause) {
         intent.cancelUnsent();
         throw new CommandIntentError(cause instanceof Error ? cause.message : "Không thể lưu yêu cầu xác nhận đang chờ.");
+      }
+      if (!current()) {
+        // Keep an earlier uncertain command even if this replay was never sent.
+        if (!retryQuoteId) await clearLabZeroRecovery(paymentRequestId, actorSession);
+        intent.cancelUnsent(); return;
       }
       const confirmed = await billingApi.confirmLabZeroLiability(paymentRequestId, body, {
         idempotencyKey: intent.key,
         correlationId: intent.correlationId,
       });
-      await clearLabZeroRecovery(paymentRequestId, getSessionKey());
+      await clearLabZeroRecovery(paymentRequestId, actorSession);
       intent.settle();
+      if (!current()) return;
       setResult(confirmed);
       setRetryQuoteId(null);
+      onLockChange?.(false);
+      onCompleted?.(confirmed);
     } catch (cause) {
       let remainsUncertain = cause instanceof CommandIntentError || uncertain(cause);
+      if (!current()) {
+        if (intent) intent.settle(remainsUncertain ? cause instanceof Error ? cause : new Error("Uncertain zero-liability outcome") : cause);
+        return;
+      }
       if (!remainsUncertain) {
         try {
-          await clearLabZeroRecovery(paymentRequestId, getSessionKey());
+          await clearLabZeroRecovery(paymentRequestId, actorSession);
           setRetryQuoteId(null);
         } catch {
           remainsUncertain = true;
@@ -85,6 +115,7 @@ export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpires
         correlationId: cause instanceof ApiRequestError ? cause.correlationId : null,
         uncertain: remainsUncertain,
       });
+      onLockChange?.(remainsUncertain);
     } finally {
       submitLock.current = false;
       setBusy(false);
@@ -105,7 +136,7 @@ export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpires
     {retryQuoteId ? <>
       <p role="status" className="text-sm text-warning">Có yêu cầu xác nhận chưa rõ kết quả. Báo giá ban đầu được giữ nguyên; không tạo yêu cầu khác.</p>
       <Button type="button" variant="primary" loading={busy} onClick={() => void confirm(retryQuoteId)}>Gửi lại cùng yêu cầu xác nhận 0 đồng</Button>
-    </> : <Button type="button" variant="primary" loading={busy} disabled={!enabled || !quoteCurrent || busy || error?.uncertain === true} onClick={() => void confirm(quoteId)}>
+    </> : <Button type="button" variant="primary" loading={busy} disabled={!enabled || !quoteCurrent || busy || recoveryLoading || error?.uncertain === true} onClick={() => void confirm(quoteId)}>
       Xác nhận nghĩa vụ 0 đồng
     </Button>}
     {!enabled ? <p className="text-xs text-muted-foreground">Xác nhận nghĩa vụ 0 chưa được mở.</p> : null}

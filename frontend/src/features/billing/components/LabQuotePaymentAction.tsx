@@ -51,10 +51,13 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
   const [error, setError] = useState<CommandError | null>(null);
   const [busy, setBusy] = useState(false);
   const submitLock = useRef(false);
+  const mounted = useRef(true);
+  const originatingSession = useRef(getSessionKey());
 
   useEffect(() => {
     let active = true;
-    void readLabPaymentRecovery(paymentRequestId, getSessionKey()).then((pending) => {
+    mounted.current = true;
+    void readLabPaymentRecovery(paymentRequestId, originatingSession.current).then((pending) => {
       if (!active) return;
       setRecovery(pending);
       setRecoveryLoading(false);
@@ -65,11 +68,14 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
       setRecoveryLoading(false);
       onLockChange?.(true);
     });
-    return () => { active = false; };
+    return () => { active = false; mounted.current = false; };
   }, [onLockChange, paymentRequestId]);
 
   async function submit(selected: LabPaymentRecovery) {
     if (submitLock.current || recoveryLoading) return;
+    const actorSession = originatingSession.current;
+    const current = () => mounted.current && actorSession === getSessionKey();
+    if (!current()) return;
     if (!recovery && !quoteCurrent) {
       setError({ message: "Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.", correlationId: null, uncertain: false });
       return;
@@ -87,13 +93,19 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
     let requestSent = false;
     let recoveryWriteFailed = false;
     try {
-      intent = await prepareCommandIntent(`lab-payment:${paymentRequestId}`, getSessionKey(), selected);
+      intent = await prepareCommandIntent(`lab-payment:${paymentRequestId}`, actorSession, selected);
+      if (!current()) { intent.cancelUnsent(); return; }
       try {
-        await saveLabPaymentRecovery(paymentRequestId, getSessionKey(), selected);
+        await saveLabPaymentRecovery(paymentRequestId, actorSession, selected);
       } catch (cause) {
         intent.cancelUnsent();
         recoveryWriteFailed = true;
         throw cause;
+      }
+      if (!current()) {
+        // An aborted replay says nothing about the original command's outcome.
+        if (!recovery) await clearLabPaymentRecovery(paymentRequestId, actorSession);
+        intent.cancelUnsent(); return;
       }
       requestSent = true;
       const payment = await billingApi.createLabPayment(paymentRequestId, selected, {
@@ -101,14 +113,16 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
         correlationId: intent.correlationId,
       });
       if (payment.status === "PENDING") {
+        if (!current()) return;
         setRecovery(selected);
         setResult(payment);
         setError({ message: "Giao dịch đang chờ xác nhận. Gửi lại cùng yêu cầu để kiểm tra trạng thái; không tạo giao dịch mới.", correlationId: null, uncertain: true });
         onLockChange?.(true);
         return;
       }
-      await clearLabPaymentRecovery(paymentRequestId, getSessionKey());
+      await clearLabPaymentRecovery(paymentRequestId, actorSession);
       intent.settle();
+      if (!current()) return;
       setRecovery(null);
       setResult(payment);
       if (payment.status === "COMPLETED") {
@@ -119,17 +133,18 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
         setError({ message: "Giao dịch chưa hoàn tất. Tra cứu lại yêu cầu phí trước khi tạo giao dịch khác.", correlationId: null, uncertain: false });
       }
     } catch (cause: unknown) {
-      const unresolved = recoveryWriteFailed ? false : hasUnknownOutcome(cause);
-      if (intent) intent.settle(unresolved ? cause instanceof Error ? cause : new Error("Unknown Lab payment outcome") : cause);
+      const unresolved = recoveryWriteFailed ? Boolean(recovery) : hasUnknownOutcome(cause);
+      if (intent) intent.settle(unresolved ? new Error("Unknown Lab payment outcome", { cause }) : cause);
+      if (!current()) return;
       if (recoveryWriteFailed) {
-        setRecovery(null);
-        onLockChange?.(false);
+        setRecovery(recovery);
+        onLockChange?.(Boolean(recovery));
       } else if (unresolved && requestSent) {
         setRecovery(selected);
         onLockChange?.(true);
       } else if (!unresolved) {
         try {
-          await clearLabPaymentRecovery(paymentRequestId, getSessionKey());
+          await clearLabPaymentRecovery(paymentRequestId, actorSession);
           setRecovery(null);
           onLockChange?.(false);
         } catch {

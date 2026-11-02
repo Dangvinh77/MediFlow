@@ -234,7 +234,9 @@ describe("PaymentRequestLookupForm", () => {
     fireEvent.change(screen.getByLabelText("Mã đợt điều trị", { exact: false }), { target: { value: episodeId } });
     fireEvent.click(screen.getByRole("button", { name: "Tra cứu khoản phí" }));
     await screen.findByRole("region", { name: "Báo giá ngoại trú" });
-    fireEvent.click(screen.getByRole("button", { name: "Xác nhận nghĩa vụ 0 đồng" }));
+    const confirmZero = screen.getByRole("button", { name: "Xác nhận nghĩa vụ 0 đồng" });
+    await waitFor(() => expect(confirmZero).toBeEnabled());
+    fireEvent.click(confirmZero);
 
     expect(await screen.findByText(/lab-clearance-id/)).toBeVisible();
     expect(mocks.labZero).toHaveBeenCalledWith(requestId, { quoteId: "lab-quote-id" }, expect.objectContaining({ idempotencyKey: expect.any(String), correlationId: expect.any(String) }));

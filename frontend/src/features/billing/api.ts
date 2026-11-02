@@ -17,6 +17,8 @@ import type {
   PayInvoiceRequest,
   PaymentRequestDiscoveryDTO,
   PaymentRequestSourceQuery,
+  PaymentRequestQueueItem,
+  PaymentRequestQueueQuery,
   RegistrationPaymentRequestDTO,
   RevenueByDeptDTO,
   ScheduledPaymentCommand,
@@ -28,6 +30,13 @@ import type {
 export type ScheduledPaymentCommandOptions = Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>;
 
 export const billingApi = {
+  paymentRequestQueue: (filters: PaymentRequestQueueQuery) => {
+    const query = new URLSearchParams({ page: String(filters.page ?? 0), size: "20" });
+    if (filters.patientId) query.set("patientId", filters.patientId);
+    if (filters.careEpisodeId) query.set("careEpisodeId", filters.careEpisodeId);
+    if (filters.purpose) query.set("purpose", filters.purpose);
+    return api.get<PageResult<PaymentRequestQueueItem>>(`/v1/billing/payment-requests/queue?${query}`);
+  },
   scheduledPaymentQueue: (patientId: string, page = 0) => {
     const query = new URLSearchParams({ page: String(page), size: "10" });
     if (patientId) query.set("patientId", patientId);
