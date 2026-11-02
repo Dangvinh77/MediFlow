@@ -18,6 +18,12 @@ Cập nhật 02/11/2026. Chỉ dùng dữ liệu mẫu. Hướng dẫn này dùn
 Không chạy lại backend giữa các quầy: một lần khởi động mới phục hồi lại dữ liệu,
 làm mất lượt bạn vừa thao tác. Phiên demo tự dừng sau hai giờ.
 
+Nếu một trang vừa build được nhưng phiên dev cũ trả **404**, dừng riêng frontend,
+chuyển thư mục `frontend/.next/dev` sang một thư mục lưu tạm dưới `target/` ở gốc
+dự án, rồi chạy lại **start-frontend.bat** và tải lại trang. Không khởi động lại
+backend để xử lý cache frontend, vì sẽ mất lượt đang demo. Đây là tình huống cache
+đã quan sát khi nghiệm thu 02/11, không phải cách bỏ qua lỗi quyền hoặc lỗi nghiệp vụ.
+
 ### 1.2. Ngày và lịch dùng cho luồng chính
 
 **Lịch minh họa chốt: ngày 02/11/2026, bắt đầu demo khoảng 08:00, hoàn tất trước 16:00.**

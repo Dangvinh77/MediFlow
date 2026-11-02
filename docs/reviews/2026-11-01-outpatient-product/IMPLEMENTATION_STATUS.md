@@ -15,7 +15,7 @@ lại bằng chứng lịch sử thành kết quả nghiệm thu mới. Nhánh t
 149 kiểm thử giao diện liên quan đã đạt; đã có kiểm thử tái hiện lỗi trước khi sửa.
 Kiểm tra kiểu, lint và build sạch đã qua tại thời điểm kiểm tra. Rà soát độc lập theo
 yêu cầu rồi theo chất lượng mã đã qua. Kết quả backend và UI thực tế cuối đợt được
-ghi riêng trong biên bản nghiệm thu, không suy ra từ kiểm thử giả lập.
+ghi riêng trong [biên bản nghiệm thu](../../acceptance/outpatient-ux-foundation-2026-11-02/README.md), không suy ra từ kiểm thử giả lập.
 
 ## Việc còn lại
 
