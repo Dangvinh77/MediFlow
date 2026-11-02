@@ -94,11 +94,12 @@ class OutpatientCoverageHttpPostgresTest {
         assertThat(approved.getBody().at("/data/acceptedBy").asText()).isEqualTo(actor.toString());
         var retry=call(HttpMethod.POST,root+"/coverage/acceptances","ADMIN",request);
         assertThat(retry.getBody().get("data")).isEqualTo(approved.getBody().get("data"));
-        for(String role:List.of("ADMIN","MANAGER")) {
+        for(String role:List.of("ADMIN")) {
             var report=call(HttpMethod.GET,root+"/daily"+query,role,null);
             assertThat(report.getStatusCode().value()).isEqualTo(200);
             assertThat(report.getBody().at("/data/covered").asBoolean()).isTrue();
         }
+        assertThat(call(HttpMethod.GET,root+"/daily"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isOne();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage_acceptance",Integer.class)).isOne();

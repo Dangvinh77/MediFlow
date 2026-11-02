@@ -94,21 +94,11 @@ class ReportControllerTest {
 
     @Test
     @WithMockUser(roles = "MANAGER")
-    void monthly_manager_allowsHospitalScope() throws Exception {
-        MonthlyReportDTO response = new MonthlyReportDTO(2, 2028, null,
-                BigDecimal.ZERO, 0, List.of());
-        when(readReportUseCase.monthly(2, 2028, null)).thenReturn(response);
-
-        mockMvc.perform(get(BASE_PATH + "/monthly")
-                        .param("month", "2")
-                        .param("year", "2028"))
-                .andExpect(status().isOk())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.month").value(2))
-                .andExpect(jsonPath("$.data.departmentId").doesNotExist());
+    void monthly_manager_deniesHospitalScope() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/monthly").param("month", "2").param("year", "2028"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(readReportUseCase);
     }
-
     @Test
     @WithMockUser(roles = "ADMIN")
     void topMedicines_usesDefaultLimitTen() throws Exception {
@@ -174,8 +164,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void everyLegacyQuery_acceptsAdminAndManager_butRejectsDoctor() throws Exception {
-        for (String role : List.of("ADMIN", "MANAGER")) {
+    void everyLegacyQuery_acceptsAdmin_butRejectsDoctor() throws Exception {
+        for (String role : List.of("ADMIN")) {
             for (MockHttpServletRequestBuilder request : reportRequests()) {
                 mockMvc.perform(request.with(user("report-reader").roles(role)))
                         .andExpect(status().isOk())
@@ -191,7 +181,7 @@ class ReportControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "ADMIN")
     void dailyResponse_exposesOnlyAggregateFields_notClinicalPayload() throws Exception {
         LocalDate date = LocalDate.of(2026, 9, 15);
         when(readReportUseCase.daily(date, null)).thenReturn(

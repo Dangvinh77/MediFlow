@@ -34,7 +34,7 @@ const labStatusPresentation: Record<
   { label: string; tone: StatusTone }
 > = {
   PENDING: { label: "Chờ xử lý", tone: "warning" },
-  AWAITING_PAYMENT: { label: "Chờ quyền tài chính", tone: "warning" },
+  AWAITING_PAYMENT: { label: "Chờ xác nhận thanh toán", tone: "warning" },
   READY: { label: "Sẵn sàng", tone: "info" },
   IN_PROGRESS: { label: "Đang thực hiện", tone: "info" },
   COMPLETED: { label: "Đã hoàn tất", tone: "success" },

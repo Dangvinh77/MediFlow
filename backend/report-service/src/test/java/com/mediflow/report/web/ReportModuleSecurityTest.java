@@ -58,9 +58,9 @@ class ReportModuleSecurityTest {
         verifyNoInteractions(reader);
     }
 
-    @Test void reportManagerCanReachItsOwnControllerOnly() throws Exception {
+    @Test void reportManagerWithoutDepartmentCannotReadHospitalScope() throws Exception {
         mvc.perform(get("/api/v1/reports/outpatient/monthly").param("year", "2025")
-                        .with(user("manager").roles("MANAGER"))).andExpect(status().isOk());
+                        .with(user("manager").roles("MANAGER"))).andExpect(status().isForbidden());
     }
 
     /** Local host boundary probe, not Notification implementation/acceptance. */

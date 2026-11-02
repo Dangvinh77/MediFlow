@@ -208,7 +208,7 @@ class ReportCrossLayerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "ADMIN")
     void topMedicines_queryIsInclusiveScopedDeterministicAndUsesLatestName() throws Exception {
         UUID firstDrugId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         UUID secondDrugId = UUID.fromString("00000000-0000-0000-0000-000000000002");

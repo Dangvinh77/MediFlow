@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/session";
@@ -68,9 +68,21 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   const [lastArrival, setLastArrival] = useState<PendingArrival | null>(null);
   const listGeneration = useRef(0);
   const followUpSourceGeneration = useRef(0);
+  const registrationReads = useRef(0);
+  const selectionGeneration = useRef(0);
+  const alive = useRef(true);
+  const writeLock = useRef(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
+  useEffect(() => {
+    const generations = [listGeneration, registrationReads, selectionGeneration];
+    alive.current = true;
+    return () => { alive.current = false; generations.forEach(generation => generation.current++); };
+  }, []);
 
   async function loadSessions(page = 0) {
-    if (!enabled || loading) return;
+    if (!enabled || loading || writeLock.current || createError?.uncertain) return;
     if (!departmentId.trim()) {
       setLoadError({ message: "Chọn khoa để xem các buổi khám.", correlationId: null });
       return;
@@ -79,6 +91,8 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
     setDateErrors(errors);
     if (Object.keys(errors).length) return;
     const generation = ++listGeneration.current;
+    selectionGeneration.current++; registrationReads.current++;
+    setNeedsRefresh(false); setRefreshing(false); setRefreshError(false); setRegistrationLoading(false);
     setLoading(true); setSessions([]); setSessionPages(0); setCreatedRegistration(null); setSessionsLoaded(false); setLoadError(null); setSelectedSession(null); setRegistrationList(null);
     try {
       const result = await appointmentApi.listConsultationSessions({
@@ -93,18 +107,51 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   async function loadRegistrations(session: ConsultationSessionDTO, page = 0) {
-    if (registrationLoading) return;
+    if (creating || needsRefresh || createError?.uncertain) return;
+    const generation = ++registrationReads.current;
+    const auth = getSessionKey();
+    selectionGeneration.current++;
     if (session.sessionId !== selectedSession?.sessionId) setCreatedRegistration(null);
     followUpSourceGeneration.current++;
     setSelectedSession(session); setRegistrationList(null); setRegistrationLoading(true); setRegistrationError(null);
     setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
     try {
       const result = await appointmentApi.registrationsBySession(session.sessionId, page, 20);
-      setRegistrationList(result.content); setRegistrationPage(result.number); setRegistrationPages(result.totalPages);
+      if (generation === registrationReads.current && auth === getSessionKey()) {
+        setRegistrationList(result.content); setRegistrationPage(result.number); setRegistrationPages(result.totalPages);
+      }
     } catch (cause) {
-      setRegistrationError(errorFrom(cause, "Không thể tải danh sách phiếu."));
+      if (generation === registrationReads.current && auth === getSessionKey()) setRegistrationError(errorFrom(cause, "Không thể tải danh sách phiếu."));
     } finally {
-      setRegistrationLoading(false);
+      if (generation === registrationReads.current && auth === getSessionKey()) setRegistrationLoading(false);
+    }
+  }
+
+  async function refreshAfterRegistration(session: ConsultationSessionDTO) {
+    const scope = listGeneration.current;
+    const selection = selectionGeneration.current;
+    const read = ++registrationReads.current;
+    const auth = getSessionKey();
+    const current = () => alive.current && scope === listGeneration.current && selection === selectionGeneration.current
+      && read === registrationReads.current && auth === getSessionKey();
+    setNeedsRefresh(true); setRefreshing(true); setRefreshError(false); setRegistrationList(null); setRegistrationError(null); setRegistrationLoading(false);
+    try {
+      const [page, queue] = await Promise.all([
+        appointmentApi.listConsultationSessions({ departmentId: session.departmentId, fromDate, toDate, page: sessionPage, size: 20 }),
+        appointmentApi.registrationsBySession(session.sessionId, 0, 20),
+      ]);
+      if (!current()) return;
+      const updated = page.content.find(item => item.sessionId === session.sessionId);
+      if (!updated || updated.departmentId !== session.departmentId || updated.sessionDate !== session.sessionDate) {
+        throw new Error("Buổi khám không còn trong trang lịch hiện tại.");
+      }
+      setSessions(page.content); setSessionPage(page.number); setSessionPages(page.totalPages); setSelectedSession(updated);
+      setRegistrationList(queue.content); setRegistrationPage(queue.number); setRegistrationPages(queue.totalPages);
+      setNeedsRefresh(false);
+    } catch {
+      if (current()) setRefreshError(true);
+    } finally {
+      if (current()) setRefreshing(false);
     }
   }
 
@@ -130,24 +177,33 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   async function submitRegistration(body: RegistrationCreate) {
-    if (!enabled || !selectedSession || creating) return;
+    if (!enabled || !selectedSession || body.sessionId !== selectedSession.sessionId || writeLock.current || needsRefresh) return;
+    writeLock.current = true;
+    const scope = listGeneration.current;
+    const selection = selectionGeneration.current;
+    const auth = getSessionKey();
+    const current = () => alive.current && scope === listGeneration.current && selection === selectionGeneration.current && auth === getSessionKey();
     setCreating(true); setCreateError(null);
     try {
-      const intent = await prepareCommandIntent(`outpatient-registration:${selectedSession.sessionId}`, getSessionKey(), body);
+      const intent = await prepareCommandIntent(`outpatient-registration:${body.sessionId}`, auth, body);
+      if (!current()) return;
       setLastCreateBody(body);
       const result = await appointmentApi.createRegistration(body, { idempotencyKey: intent.key, correlationId: intent.correlationId });
       intent.settle();
+      if (!current()) return;
       setCreatedRegistration(result);
+      void refreshAfterRegistration(selectedSession);
     } catch (cause) {
       if (!(cause instanceof CommandIntentError)) {
         try {
-          const intent = await prepareCommandIntent(`outpatient-registration:${selectedSession.sessionId}`, getSessionKey(), body);
+          const intent = await prepareCommandIntent(`outpatient-registration:${body.sessionId}`, auth, body);
           intent.settle(cause);
         } catch { /* Retain the pending intent and its fingerprint. */ }
       }
-      setCreateError({ ...errorFrom(cause, "Không thể đăng ký giữ chỗ."), uncertain: uncertain(cause) || cause instanceof CommandIntentError });
+      if (current()) setCreateError({ ...errorFrom(cause, "Không thể đăng ký giữ chỗ."), uncertain: uncertain(cause) || cause instanceof CommandIntentError });
     } finally {
-      setCreating(false);
+      writeLock.current = false;
+      if (alive.current) setCreating(false);
     }
   }
 
@@ -240,8 +296,11 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   function onDepartmentChange(value: string) {
+    if (writeLock.current || createError?.uncertain) return;
     setCreatedRegistration(null);
     listGeneration.current++;
+    selectionGeneration.current++; registrationReads.current++;
+    setNeedsRefresh(false); setRefreshing(false); setRefreshError(false); setRegistrationLoading(false);
     followUpSourceGeneration.current++;
     setDepartmentId(value); setSessionsLoaded(false); setLoading(false); setSessions([]); setSessionPage(0); setSessionPages(0); setSelectedSession(null); setRegistrationList(null); setRegistrationPage(0); setRegistrationPages(0); setLoadError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
   }
@@ -268,15 +327,15 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       <p className="mt-2 text-sm text-muted-foreground">Khoa và cả hai ngày là bắt buộc. Ngày mặc định là hôm nay theo giờ Việt Nam; định dạng ô ngày theo trình duyệt.</p>
       <form noValidate className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
         <label className="space-y-1 text-sm font-medium">Khoa
-          <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" />
+          <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" disabled={creating || Boolean(createError?.uncertain)} />
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-from-date">Từ ngày
-          <input id="reception-from-date" type="date" required aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}
+          <input id="reception-from-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-to-date">Đến ngày
-          <input id="reception-to-date" type="date" required aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}
+          <input id="reception-to-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}
         </label>
-        <div className="flex items-end"><Button type="submit" loading={loading}>Tải buổi khám</Button></div>
+        <div className="flex items-end"><Button type="submit" loading={loading} disabled={creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
       </form>
       {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
       {!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch.</p> : null}
@@ -286,17 +345,17 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
           <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span>{sessionStatusLabels[session.status]}</span></div>
           <p><ReferenceText kind="doctor" value={session.doctorId} fallback="Bác sĩ" /></p>
           <p><ReferenceText kind="department" value={session.departmentId} fallback="Khoa" /> · <ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></p>
-          <div className="flex flex-wrap items-center justify-between gap-3"><span>Còn {session.availableCount} / {session.capacity} chỗ</span><Button type="button" disabled={session.status !== "OPEN" || session.availableCount < 1} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}>Chọn buổi</Button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><span>{needsRefresh ? "Số chỗ đang chờ cập nhật" : `Còn ${session.availableCount} / ${session.capacity} chỗ`}</span><Button type="button" disabled={creating || needsRefresh || Boolean(createError?.uncertain) || session.status !== "OPEN" || session.availableCount < 1} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}>Chọn buổi</Button></div>
         </li>)}
-      </ul>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
+      </ul>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
     </section>
 
     {selectedSession && patientId ? <section aria-label="Ngữ cảnh tiếp nhận" className="sticky top-18 z-20 rounded-xl border border-border bg-surface p-3 text-sm shadow-sm"><p className="font-semibold"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground">{formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}–{selectedSession.endTime} · <ReferenceText kind="department" value={selectedSession.departmentId} fallback="Khoa" /></p></section> : null}
 
     {selectedSession ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Tiếp nhận vào buổi {formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground">Còn {selectedSession.availableCount} chỗ. Tiếp nhận tại quầy ghi nhận bệnh nhân có mặt. Phiếu được xác nhận sau khi hoàn tất thanh toán.</p></div>
-        <Button type="button" variant="secondary" loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải phiếu trong buổi</Button>
+        <div><h2 className="text-lg font-semibold">Tiếp nhận vào buổi {formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground">{needsRefresh ? "Đang cập nhật số chỗ." : `Còn ${selectedSession.availableCount} chỗ.`} Tiếp nhận tại quầy ghi nhận bệnh nhân có mặt. Phiếu được xác nhận sau khi hoàn tất thanh toán.</p></div>
+        <Button type="button" variant="secondary" disabled={creating || needsRefresh || Boolean(createError?.uncertain)} loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải phiếu trong buổi</Button>
       </div>
 
       <form className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); if (submitBody) void submitRegistration(submitBody); else register(); }}>
@@ -363,7 +422,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
           <p>{createError.message}</p>{createError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{createError.correlationId}</span></p> : null}
           {createError.uncertain ? <p className="mt-2">Chưa xác định phiếu đã được tạo hay chưa. Hãy gửi lại đúng yêu cầu để dùng cùng khóa idempotency.</p> : null}
         </div> : null}
-        <div className="sm:col-span-2"><Button type="submit" loading={creating}>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</Button><p className="mt-2 text-xs text-muted-foreground">Tái khám liên kết lượt V2 đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối.</p></div>
+        <div className="sm:col-span-2"><Button type="submit" loading={creating} disabled={needsRefresh}>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</Button><p className="mt-2 text-xs text-muted-foreground">Tái khám liên kết lượt đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối.</p></div>
       </form>
 
       {createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
@@ -376,8 +435,12 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div></dl>
       </div> : null}
 
+      {needsRefresh ? <div role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        <p>{refreshError ? "Phiếu đã được tạo; chưa cập nhật được danh sách và số chỗ. Không đăng ký lại phiếu vừa tạo." : "Phiếu đã được tạo. Đang cập nhật danh sách và số chỗ…"}</p>
+        {refreshError ? <Button type="button" loading={refreshing} onClick={() => void refreshAfterRegistration(selectedSession)}>Cập nhật danh sách và số chỗ</Button> : null}
+      </div> : null}
       {registrationError ? <AsyncState kind="error" message={registrationError.message} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession, registrationPage)} /> : null}
-      {registrationList ? <section className="border-t border-border pt-4"><h3 className="font-semibold">Phiếu trong buổi</h3>
+      {registrationList ? <section aria-label="Phiếu trong buổi" className="border-t border-border pt-4"><h3 className="font-semibold">Phiếu trong buổi</h3>
         {registrationList.length ? <ul className="mt-3 divide-y divide-border">{registrationList.map(item => <li key={item.registrationId} className="py-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2"><span><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></span><span>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</span><span>{registrationStatusLabels[item.status]}</span><span>{item.queueNumber === null ? "Chưa có số" : `Số ${item.queueNumber}`}</span>{item.readyForExam ? <span>Sẵn sàng khám</span> : null}
             {item.checkedInAt ? <span role="status">Đã ghi nhận khách đến</span> : item.status === "CONFIRMED" ? <Button type="button" loading={arrivalBusyId === item.registrationId} disabled={Boolean(arrivalBusyId)} onClick={() => void recordArrival(item)}>{arrivalError?.registrationId === item.registrationId && arrivalError.uncertain ? "Gửi lại cùng lệnh đến" : "Ghi nhận đã đến"}</Button> : null}

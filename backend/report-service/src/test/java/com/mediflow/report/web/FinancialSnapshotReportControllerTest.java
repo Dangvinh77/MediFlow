@@ -29,6 +29,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @TestPropertySource(properties={"mediflow.features.care-finance-v2=true","mediflow.report.financial-read.enabled=true",
         "mediflow.jwt.secret=financial-test-secret-at-least-32-bytes"})
 class FinancialSnapshotReportControllerTest {
+    @MockBean com.mediflow.report.application.port.out.CurrentReportAuthorityPort authority;
+    @org.junit.jupiter.api.BeforeEach void currentScope() {
+        when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(true);
+    }
     @Autowired MockMvc mvc;
     @MockBean ReadFinancialSnapshotUseCase reader;
     private final LocalDate date=LocalDate.of(2026,10,10);
@@ -46,7 +50,7 @@ class FinancialSnapshotReportControllerTest {
         UUID department=UUID.randomUUID(); var result=response(department);
         when(reader.daily(date,date,department)).thenReturn(result); when(reader.monthly(2026,department)).thenReturn(result);
         for(String route:List.of("daily","monthly")) {
-            mvc.perform(request(route).param("departmentId",department.toString()).with(user("reader").roles(role)).header("X-Correlation-Id","finance-check"))
+            mvc.perform(request(route).param("departmentId",department.toString()).header("Authorization",ReportScopeTestSupport.bearer(role,"financial-test-secret-at-least-32-bytes")).header("X-Correlation-Id","finance-check"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.currency").value("VND"))
                     .andExpect(jsonPath("$.data.snapshotOnly").value(true)).andExpect(jsonPath("$.correlationId").value("finance-check"))
                     .andExpect(jsonPath("$.data.periods[0].cashReceived").value(60))
@@ -56,7 +60,7 @@ class FinancialSnapshotReportControllerTest {
     }
     @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","CASHIER","LAB_TECH","PATIENT","SYSTEM"})
     void financial_otherRoles_bothRoutesDeniedBeforeReader(String role) throws Exception {
-        for(String route:List.of("daily","monthly")) mvc.perform(request(route).with(user("reader").roles(role))).andExpect(status().isForbidden());
+        for(String route:List.of("daily","monthly")) mvc.perform(request(route).header("Authorization",ReportScopeTestSupport.bearer(role,"financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
         verifyNoInteractions(reader);
     }
     @ParameterizedTest @ValueSource(strings={"daily","monthly"})
@@ -74,7 +78,7 @@ class FinancialSnapshotReportControllerTest {
     void financial_invalidPeriod_returns400StableCode(String route) throws Exception {
         when(reader.daily(date,date,null)).thenThrow(new ReportPeriodValidationException());
         when(reader.monthly(2026,null)).thenThrow(new ReportPeriodValidationException());
-        mvc.perform(request(route).with(user("reader").roles("MANAGER"))).andExpect(status().isBadRequest())
+        mvc.perform(request(route).with(user("reader").roles("ADMIN"))).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("REPORT_VALIDATION_ERROR"));
     }
     @ParameterizedTest @ValueSource(strings={"bad-date","bad-year","bad-department","missing-year","missing-from"})
@@ -104,5 +108,15 @@ class FinancialSnapshotReportControllerTest {
         when(reader.daily(date,date,null)).thenReturn(response(null));
         mvc.perform(request("daily").header("Authorization","Bearer "+token("valid"))).andExpect(status().isOk());
         verify(reader).daily(date,date,null);
+    }
+
+    @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
+        UUID department=UUID.randomUUID();
+        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
+        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        verifyNoInteractions(reader);
     }
 }

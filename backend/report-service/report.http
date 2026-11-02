@@ -14,7 +14,10 @@
 ###  - GET /monthly?month&year&departmentId
 ###  - GET /top-medicines?fromDate&toDate&departmentId&limit  (limit mặc định 10, tối đa 50)
 ###
-### departmentId là tùy chọn ở cả ba: bỏ trống → số liệu toàn viện, truyền vào → của một khoa.
+### ADMIN có thể bỏ departmentId để đọc toàn viện.
+### MANAGER bắt buộc truyền departmentId thuộc managementDepartments hiện hành của Core.
+### Cùng token sau khi thu hồi phân công phải nhận 403; Core không khả dụng cũng nhận 403.
+### Kiểm tra phân công qua GET /api/v1/org/me/capabilities bằng cùng access token.
 ### Report là READ MODEL: ngày không có dữ liệu trả báo cáo toàn 0, KHÔNG trả 404 (BR-R5).
 ### Dữ liệu tổng hợp đến bất đồng bộ qua event: số 0 không chứng minh producer đã chạy,
 ### và 3 endpoint legacy chưa trả freshness/as-of. Không dùng số liệu này như quyết định điều trị.

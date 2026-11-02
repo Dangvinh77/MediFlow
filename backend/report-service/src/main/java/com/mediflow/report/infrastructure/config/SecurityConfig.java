@@ -28,7 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /** Stateless JWT verification and default-deny authorization for report HTTP endpoints. */
 @Configuration("reportSecurityConfig")
-@org.springframework.context.annotation.Import(ReportWebConfiguration.class)
+@org.springframework.context.annotation.Import({ReportWebConfiguration.class, ReportAuthorityConfiguration.class})
 @EnableMethodSecurity
 @EnableConfigurationProperties({JwtProperties.class, CareFinanceFeatureProperties.class})
 public class SecurityConfig {
@@ -70,10 +70,10 @@ public class SecurityConfig {
                     authorize.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
                     authorize.requestMatchers("/actuator/health").permitAll();
                     // Metrics remain unexposed by default. An explicit management-plane opt-in
-                    // must not make aggregate operational diagnostics visible to patient tokens.
+                    // has no department-scoped projection, so only ADMIN can inspect global counters.
                     if (telemetryEnabled) {
                         authorize.requestMatchers("/actuator/metrics", "/actuator/metrics/**")
-                                .hasAnyRole("ADMIN", "MANAGER");
+                                .hasRole("ADMIN");
                     } else {
                         authorize.requestMatchers("/actuator/metrics", "/actuator/metrics/**").denyAll();
                     }

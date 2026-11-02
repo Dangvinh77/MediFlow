@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSession, storeSession } from "@/lib/session";
 import type { ClinicalLabOrderDTO } from "@/features/medical-record/types";
 
-const mocks = vi.hoisted(() => ({ createLabOrder: vi.fn(), createLabRequest: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getRecord: vi.fn(), createLabOrder: vi.fn(), createLabRequest: vi.fn() }));
 
 vi.mock("@/features/medical-record/api", () => ({
-  medicalRecordApi: { createLabOrder: mocks.createLabOrder },
+  medicalRecordApi: { getById: mocks.getRecord, createLabOrder: mocks.createLabOrder },
 }));
 vi.mock("@/features/lab/api", () => ({
   labApi: { create: mocks.createLabRequest },
@@ -36,10 +36,13 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-function startClinicalOrder() {
+async function startClinicalOrder() {
+  await screen.findByRole("heading", { name: "1. Lập chỉ định xét nghiệm" });
   fireEvent.change(screen.getByLabelText("Loại xét nghiệm", { exact: false }), { target: { value: "CBC" } });
   fireEvent.change(screen.getByLabelText("Mã giá", { exact: false }), { target: { value: "CBC-APPROVED" } });
-  fireEvent.submit(screen.getByRole("button", { name: "Lập chỉ định" }).closest("form")!);
+  await act(async () => {
+    fireEvent.submit(screen.getByRole("button", { name: "Lập chỉ định" }).closest("form")!);
+  });
 }
 
 describe("Clinical and Lab order workspace composition", () => {
@@ -49,6 +52,27 @@ describe("Clinical and Lab order workspace composition", () => {
     vi.clearAllMocks();
     mocks.createLabOrder.mockReset();
     mocks.createLabRequest.mockReset();
+    mocks.getRecord.mockReset();
+    mocks.getRecord.mockImplementation(async (recordId: string) => ({
+      recordId, patientId: sourceOrder.patientId, doctorId: sourceOrder.requestingDoctorId,
+      departmentId: sourceOrder.requestingDepartmentId, examinationDate: "2026-10-20", status: "OPEN",
+      symptoms: "Demo", diagnoses: [], appointmentId: sourceOrder.careEpisodeId,
+      createdAt: sourceOrder.orderedAt, updatedAt: null, completedAt: null, disposition: null, dispositionNote: null,
+    }));
+  });
+
+  it("loads the authoritative record context before allowing an order", async () => {
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+    expect(await screen.findByRole("region", { name: "Ngữ cảnh chỉ định xét nghiệm" })).toHaveTextContent("20/10/2026");
+    expect(mocks.getRecord).toHaveBeenCalledWith(sourceOrder.recordId);
+  });
+
+  it("does not offer an order when the record response belongs to another resource", async () => {
+    mocks.getRecord.mockResolvedValue({ recordId: "another-record", status: "OPEN" });
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+    expect(await screen.findByText(/Không xác minh được hồ sơ/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Lập chỉ định" })).not.toBeInTheDocument();
+    expect(mocks.createLabOrder).not.toHaveBeenCalled();
   });
 
   it("passes the exact source-order identifiers and episode fields returned by Clinical to Lab", async () => {
@@ -56,7 +80,7 @@ describe("Clinical and Lab order workspace composition", () => {
     mocks.createLabRequest.mockResolvedValue({ testId: "lab-test-a" });
     render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
 
-    await act(async () => startClinicalOrder());
+    await startClinicalOrder();
     fireEvent.click(await screen.findByRole("button", { name: "Tạo yêu cầu từ chỉ định" }));
     await waitFor(() => expect(mocks.createLabRequest).toHaveBeenCalledWith({
       recordId: sourceOrder.recordId,
@@ -71,11 +95,30 @@ describe("Clinical and Lab order workspace composition", () => {
     }));
   });
 
+  it("does not transmit a source order for a different patient", async () => {
+    mocks.createLabOrder.mockResolvedValue({ ...sourceOrder, patientId: "another-patient" });
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+    await startClinicalOrder();
+    expect(await screen.findByRole("alert")).toHaveTextContent("không khớp hồ sơ đang mở");
+    expect(screen.queryByRole("button", { name: "Tạo yêu cầu từ chỉ định" })).not.toBeInTheDocument();
+    expect(mocks.createLabRequest).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed context read without creating an order", async () => {
+    mocks.getRecord.mockRejectedValueOnce(new Error("unavailable"));
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+    expect(await screen.findByText(/Không xác minh được hồ sơ/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Thử lại/ }));
+    expect(await screen.findByRole("heading", { name: "1. Lập chỉ định xét nghiệm" })).toBeVisible();
+    expect(mocks.getRecord).toHaveBeenCalledTimes(2);
+    expect(mocks.createLabOrder).not.toHaveBeenCalled();
+  });
+
   it("drops a pending Clinical response when the record route changes", async () => {
     const pending = deferred<ClinicalLabOrderDTO>();
     mocks.createLabOrder.mockReturnValue(pending.promise);
     const view = render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
-    startClinicalOrder();
+    await startClinicalOrder();
     await waitFor(() => expect(mocks.createLabOrder).toHaveBeenCalledTimes(1));
 
     view.rerender(<LabOrderWorkspace recordId="77777777-7777-4777-8777-777777777777" />);
@@ -89,12 +132,15 @@ describe("Clinical and Lab order workspace composition", () => {
   it("clears the mounted source order when the signed-in session changes", async () => {
     mocks.createLabOrder.mockResolvedValue(sourceOrder);
     const view = render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
-    await act(async () => startClinicalOrder());
+    await startClinicalOrder();
     expect(await screen.findByText(sourceOrder.sourceOrderId)).not.toBeVisible();
 
-    act(() => storeSession({ accessToken: "session-b", refreshToken: "refresh-b", role: "DOCTOR" }));
+    const nextRecord = await mocks.getRecord(sourceOrder.recordId);
+    mocks.getRecord.mockResolvedValue({ ...nextRecord, patientId: "new-session-patient" });
+    await act(async () => storeSession({ accessToken: "session-b", refreshToken: "refresh-b", role: "DOCTOR" }));
     expect(await screen.findByRole("heading", { name: "1. Lập chỉ định xét nghiệm" })).toBeVisible();
     expect(screen.queryByText(sourceOrder.sourceOrderId)).not.toBeInTheDocument();
     expect(view.container).not.toHaveTextContent(sourceOrder.patientId);
+    expect(view.container).toHaveTextContent("new-session-patient");
   });
 });

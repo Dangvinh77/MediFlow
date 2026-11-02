@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
@@ -48,9 +48,68 @@ const confirmedPrebooked = {
 
 describe("reception session registration", () => {
   beforeEach(() => {
-    vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
+    Object.values(mocks).forEach(mock => mock.mockReset()); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
     mocks.list.mockResolvedValue({ content: [session], totalElements: 1, totalPages: 1, number: 0, size: 20 });
     mocks.registrations.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 });
+  });
+
+  async function registerPatient() {
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    await user.click(await screen.findByRole("button", { name: /Chọn buổi/ }));
+    await user.type(screen.getByLabelText("Bệnh nhân"), "patient-id");
+    await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+    return user;
+  }
+
+  it("refreshes authoritative capacity and the queue after a successful registration", async () => {
+    mocks.create.mockResolvedValue(registration);
+    mocks.list.mockResolvedValueOnce({ content: [session], totalPages: 1, number: 0 })
+      .mockResolvedValue({ content: [{ ...session, revision: 8, availableCount: 6 }], totalPages: 1, number: 0 });
+    mocks.registrations.mockResolvedValueOnce({ content: [], totalPages: 0, number: 0 })
+      .mockResolvedValue({ content: [registration], totalPages: 1, number: 0 });
+    render(<ReceptionWorkspace enabled />);
+    await registerPatient();
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Còn 6 / 10 chỗ")).toBeVisible();
+    const queue = screen.getByRole("region", { name: "Phiếu trong buổi" });
+    expect(within(queue).getByText("patient-id")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa có phiếu nào trong buổi này.")).not.toBeInTheDocument();
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the confirmed receipt when a refresh fails and retries reads without creating again", async () => {
+    mocks.create.mockResolvedValue(registration);
+    mocks.list.mockResolvedValueOnce({ content: [session], totalPages: 1, number: 0 })
+      .mockRejectedValueOnce(new Error("Read unavailable"))
+      .mockResolvedValue({ content: [{ ...session, revision: 8, availableCount: 6 }], totalPages: 1, number: 0 });
+    mocks.registrations.mockResolvedValue({ content: [registration], totalPages: 1, number: 0 });
+    render(<ReceptionWorkspace enabled />);
+    const user = await registerPatient();
+    expect(await screen.findByLabelText("Mã phiếu bàn giao thu ngân")).toHaveValue("registration-id");
+    expect(await screen.findByText(/Phiếu đã được tạo.*chưa cập nhật được/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Gửi lại cùng yêu cầu" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cập nhật danh sách và số chỗ" }));
+    expect(await screen.findByText("Còn 6 / 10 chỗ")).toBeVisible();
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replace another department with a late post-registration refresh", async () => {
+    let resolve!: (value: unknown) => void;
+    mocks.create.mockResolvedValue(registration);
+    mocks.list.mockResolvedValueOnce({ content: [session], totalPages: 1, number: 0 })
+      .mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    render(<ReceptionWorkspace enabled />);
+    const user = await registerPatient();
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(2));
+    await user.clear(screen.getByLabelText("Khoa"));
+    await user.type(screen.getByLabelText("Khoa"), "another-department");
+    await act(async () => resolve({ content: [{ ...session, revision: 8, availableCount: 6 }], totalPages: 1, number: 0 }));
+    expect(screen.queryByLabelText("Mã phiếu bàn giao thu ngân")).not.toBeInTheDocument();
+    expect(screen.queryByText("Còn 6 / 10 chỗ")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Tiếp nhận vào buổi/ })).not.toBeInTheDocument();
   });
 
   it("offers finding and creating patient profiles before selecting a session", () => {
@@ -118,6 +177,14 @@ describe("reception session registration", () => {
     await user.type(screen.getByLabelText("Bệnh nhân"), "patient-id");
     await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
     expect(await screen.findByText(/Chưa xác định phiếu đã được tạo/)).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Chọn buổi" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tải buổi khám" })).toBeDisabled();
+    const listCalls = mocks.list.mock.calls.length;
+    fireEvent.submit(screen.getByRole("button", { name: "Tải buổi khám" }).closest("form")!);
+    expect(mocks.list).toHaveBeenCalledTimes(listCalls);
+    fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "another-department" } });
+    expect(screen.getByLabelText("Khoa")).toHaveValue("department-id");
 
     await user.click(screen.getByRole("button", { name: "Gửi lại cùng yêu cầu" }));
     expect(await screen.findByText("Đang chờ thu tiền")).toBeInTheDocument();
