@@ -26,11 +26,15 @@ import com.mediflow.report.infrastructure.config.SecurityConfig;
 @TestPropertySource(properties = {"mediflow.features.care-finance-v2=true",
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes", "mediflow.security.swagger-permit=false"})
 class OperationalSnapshotReportControllerTest {
+    @MockBean com.mediflow.report.application.port.out.CurrentReportAuthorityPort authority;
+    @org.junit.jupiter.api.BeforeEach void currentScope() {
+        when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(true);
+    }
     @Autowired MockMvc mvc;
     @MockBean ReadOperationalSnapshotUseCase reader;
     private final LocalDate date = LocalDate.of(2026, 10, 2);
-    @Test @WithMockUser(roles = "DOCTOR")
-    void daily_doctor_getsAggregateSnapshotAndCorrelationOnly() throws Exception {
+    @Test @WithMockUser(roles = "ADMIN")
+    void daily_admin_getsAggregateSnapshotAndCorrelationOnly() throws Exception {
         when(reader.daily(date, date, null)).thenReturn(new OperationalSnapshotReportDTO(date, date, null,
                 UUID.randomUUID(), Instant.parse("2026-10-02T00:00:00Z"), true, List.of()));
         mvc.perform(get("/api/v1/reports/operations/daily").param("from", date.toString()).param("to", date.toString())
@@ -39,7 +43,7 @@ class OperationalSnapshotReportControllerTest {
                 .andExpect(jsonPath("$.correlationId").value("report-snapshot"))
                 .andExpect(jsonPath("$.data.patientId").doesNotExist());
     }
-    @Test @WithMockUser(roles = "MANAGER")
+    @Test @WithMockUser(roles = "ADMIN")
     void surgery_missingAcceptedCoverage_returns404NotSuccessfulZero() throws Exception {
         when(reader.surgery(date, date, null)).thenThrow(new ReportProjectionUnavailableException());
         mvc.perform(get("/api/v1/reports/operations/surgery").param("from", date.toString()).param("to", date.toString()))
@@ -62,7 +66,7 @@ class OperationalSnapshotReportControllerTest {
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(reader);
     }
-    @Test @WithMockUser(roles = "DOCTOR")
+    @Test @WithMockUser(roles = "ADMIN")
     void daily_badDateFormat_validatesBeforeReader() throws Exception {
         mvc.perform(get("/api/v1/reports/operations/daily").param("from", "invalid").param("to", date.toString()))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("REPORT_VALIDATION_ERROR"));
@@ -91,7 +95,7 @@ class OperationalSnapshotReportControllerTest {
         for (String route : List.of("daily", "surgery")) {
             mvc.perform(get("/api/v1/reports/operations/" + route).param("from", date.toString())
                             .param("to", date.toString()).param("departmentId", department.toString())
-                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("reader").roles(role)))
+                            .header("Authorization",ReportScopeTestSupport.bearer(role,"test-secret-must-have-at-least-32-bytes")))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.departmentId").value(department.toString()))
                     .andExpect(jsonPath("$.data.days[0].metrics.admissions").value(2))
                     .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("patientId"))))
@@ -111,11 +115,25 @@ class OperationalSnapshotReportControllerTest {
         verifyNoInteractions(reader);
     }
 
-    @Test @WithMockUser(roles = "DOCTOR")
+    @Test @WithMockUser(roles = "ADMIN")
     void operations_invalidDepartmentRejectsBeforeReader() throws Exception {
         mvc.perform(get("/api/v1/reports/operations/daily").param("from", date.toString()).param("to", date.toString())
                         .param("departmentId", "not-a-uuid"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("REPORT_VALIDATION_ERROR"));
+        verifyNoInteractions(reader);
+    }
+
+    @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
+        UUID department=UUID.randomUUID();
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         verifyNoInteractions(reader);
     }
 }

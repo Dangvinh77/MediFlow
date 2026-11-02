@@ -13,6 +13,26 @@ Nội dung kỹ thuật, flags, lệnh chạy và kết quả bên dưới giữ
 Không dùng test counts cũ để ký revision mới; lịch ca, tái khám và BHYT đích chưa tự có từ tài liệu.
 Standalone launcher của Report/Notification là compatibility/rollback; mặc định chạy Support.
 
+## Current report authorization — 2026-11-02
+
+Human report reads keep their existing endpoint roles. ADMIN retains hospital scope;
+MANAGER must name a department currently assigned by Core. Existing deferred operational
+DOCTOR reads also require a current department head appointment. Feature/profile gates remain unchanged.
+Report forwards the locally verified access bearer to Core's public
+`GET /api/v1/org/me/capabilities`, validates the account/role/staff/envelope and current scope,
+and never caches grants. Revocation therefore applies to the next read with the same token.
+Missing scope, invalid evidence or unavailable Core returns `403 FORBIDDEN` before querying reports.
+
+The adapter discovers `core-service` through Eureka; an explicit
+`mediflow.report.core-base-url` overrides discovery for controlled environments.
+Connections time out after one second and each lookup after two seconds, without retries or redirects.
+A circuit breaker opens after at least five calls at a 50% failure rate and waits ten seconds.
+Ordinary Core 4xx actor denials do not count as outages; 429, server and transport failures do.
+Core `observedAt` must be within thirty seconds of the local clock; keep service clocks synchronized.
+Correlation is forwarded, and bearer values are never included in credential diagnostics.
+Global financial coverage and opt-in aggregate telemetry have no department-scoped source;
+MANAGER cannot read them. ADMIN capability/coverage/telemetry behavior is retained.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Report covers outpatient read models and source-evidenced reporting. The [Support host](../support-service/README.md) now composes its plain library with Notification; the standalone launcher remains for rollback.

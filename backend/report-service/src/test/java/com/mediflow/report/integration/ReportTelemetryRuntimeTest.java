@@ -62,10 +62,10 @@ class ReportTelemetryRuntimeTest {
     }
 
     @Test
-    void actualMetricsEndpoint_deniesPatientAndAnonymousAndAllowsManager() throws Exception {
+    void actualMetricsEndpoint_deniesPatientManagerAndAnonymous() throws Exception {
         mvc.perform(get("/actuator/metrics").with(user("patient").roles("PATIENT"))).andExpect(status().isForbidden());
         mvc.perform(get("/actuator/metrics")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/actuator/metrics").with(user("manager").roles("MANAGER"))).andExpect(status().isOk());
+        mvc.perform(get("/actuator/metrics").with(user("manager").roles("MANAGER"))).andExpect(status().isForbidden());
     }
 
     @Test

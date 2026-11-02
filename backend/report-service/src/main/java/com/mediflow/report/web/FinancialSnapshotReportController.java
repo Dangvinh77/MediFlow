@@ -19,14 +19,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public class FinancialSnapshotReportController {
     private final ReadFinancialSnapshotUseCase reader;
     public FinancialSnapshotReportController(ReadFinancialSnapshotUseCase reader) { this.reader=reader; }
-    @GetMapping("/daily") @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @GetMapping("/daily") @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<FinancialSnapshotReportDTO> daily(
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required=false) UUID departmentId,HttpServletRequest request) {
         return ApiResponse.ok(reader.daily(from,to,departmentId),request.getHeader(JwtClaims.HEADER_CORRELATION_ID));
     }
-    @GetMapping("/monthly") @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @GetMapping("/monthly") @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<FinancialSnapshotReportDTO> monthly(@RequestParam int year,
             @RequestParam(required=false) UUID departmentId,HttpServletRequest request) {
         return ApiResponse.ok(reader.monthly(year,departmentId),request.getHeader(JwtClaims.HEADER_CORRELATION_ID));

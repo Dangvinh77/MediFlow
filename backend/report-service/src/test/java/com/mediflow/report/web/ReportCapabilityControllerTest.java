@@ -64,7 +64,7 @@ class ReportCapabilityControllerTest {
     }
 
     @Test
-    void coverage_manager_returnsExplicitAvailableSnapshot() throws Exception {
+    void coverage_admin_returnsExplicitAvailableSnapshot() throws Exception {
         when(capabilities.coverage(LocalDate.of(2026, 10, 3), LocalDate.of(2026, 10, 5),
                 "VND", "Asia/Bangkok")).thenReturn(new ReportCoverageDTO(
                 LocalDate.of(2026, 10, 3), LocalDate.of(2026, 10, 5), ReportCoverageDTO.Status.AVAILABLE_SNAPSHOT,
@@ -74,7 +74,7 @@ class ReportCapabilityControllerTest {
         mvc.perform(get(PATH + "/coverage")
                         .param("from", "2026-10-03")
                         .param("to", "2026-10-05")
-                        .with(user("00000000-0000-4000-8000-000000000001").roles("MANAGER")))
+                        .with(user("00000000-0000-4000-8000-000000000001").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("AVAILABLE_SNAPSHOT"))
                 .andExpect(jsonPath("$.data.snapshotOnly").value(true))
@@ -85,7 +85,7 @@ class ReportCapabilityControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
     void capabilityEndpoints_nonFinanceRole_returns403(String role) throws Exception {
         mvc.perform(get(PATH + "/capabilities")
                         .with(user("00000000-0000-4000-8000-000000000001").roles(role)))

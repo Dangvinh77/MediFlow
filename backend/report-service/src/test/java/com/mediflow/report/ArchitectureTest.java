@@ -19,14 +19,43 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 @AnalyzeClasses(packages = "com.mediflow.report", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
-    /** BR-R4: no Feign / external client anywhere in report. */
+    /** Projection data must never acquire a synchronous producer dependency. */
     @ArchTest
-    static final ArchRule no_feign_or_external_client = noClasses()
+    static final ArchRule no_feign = noClasses()
             .that().resideInAPackage("..report..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                    "..openfeign..",
-                    "..client..")
-            .as("report must not depend on OpenFeign or any client package (BR-R4)");
+            .should().dependOnClassesThat().resideInAPackage("..openfeign..")
+            .as("report must not depend on OpenFeign (BR-R4)");
+
+    /**
+     * Live authority must fail closed on revoke/outage, rather than query Core tables or cache grants.
+     * Exact security-only wiring edges cannot permit a new report-data client; layer rules below remain.
+     */
+    @ArchTest
+    static final ArchRule no_external_client_except_current_authority =
+            com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes()
+            .that().resideInAPackage("..report..")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaClass>(
+                    "limit client dependencies to the exact current-authority configuration edges") {
+                @Override public void check(com.tngtech.archunit.core.domain.JavaClass source,
+                        com.tngtech.archunit.lang.ConditionEvents events) {
+                    var permittedTargets = java.util.Set.of(
+                            "com.mediflow.report.infrastructure.client.CoreReportAuthorityAdapter",
+                            "org.springframework.cloud.client.discovery.DiscoveryClient",
+                            "org.springframework.cloud.client.ServiceInstance");
+                    for (var dependency : source.getDirectDependenciesFromSelf()) {
+                        var target = dependency.getTargetClass();
+                        String packageName = target.getPackageName();
+                        boolean client = packageName.endsWith(".client") || packageName.contains(".client.");
+                        boolean securityWiring = source.getName().equals(
+                                "com.mediflow.report.infrastructure.config.ReportAuthorityConfiguration")
+                                && permittedTargets.contains(target.getName());
+                        if (client && !securityWiring) {
+                            events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(
+                                    source, dependency.getDescription()));
+                        }
+                    }
+                }
+            });
 
     /** domain/ imports nothing from Spring or Jakarta Persistence/Validation — pure Java. */
     @ArchTest

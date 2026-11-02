@@ -82,7 +82,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
             var authentication = new UsernamePasswordAuthenticationToken(
-                    subject, null, List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
+                    subject, new VerifiedReportBearer(authorization), List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {

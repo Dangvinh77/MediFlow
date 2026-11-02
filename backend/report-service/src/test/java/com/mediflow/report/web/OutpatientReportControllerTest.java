@@ -27,9 +27,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(properties={"mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes",
         "mediflow.features.care-finance-v2=true","mediflow.report.outpatient-read.enabled=true"})
 class OutpatientReportControllerTest {
+    @MockBean com.mediflow.report.application.port.out.CurrentReportAuthorityPort authority;
     @Autowired private MockMvc mvc;@MockBean private ReadOutpatientReportUseCase reader;
     private final LocalDate date=LocalDate.of(2026,10,1);
-    @ParameterizedTest @ValueSource(strings={"ADMIN","MANAGER"})
+    @ParameterizedTest @ValueSource(strings={"ADMIN"})
     void permittedRoleGetsCashNotEarnedOrLiability(String role)throws Exception{
         var period=new OutpatientReportDTO.Period(date,date,1,2,3,4,new BigDecimal("100.00"),new BigDecimal("20.00"),new BigDecimal("80.00"));
         when(reader.daily(date,date,null)).thenReturn(new OutpatientReportDTO(date,date,null,"VND","Asia/Bangkok",
@@ -50,16 +51,35 @@ class OutpatientReportControllerTest {
     @Test void missingCoverageDoesNotExposeZeroReport()throws Exception{
         when(reader.daily(date,date,null)).thenThrow(new ReportProjectionUnavailableException());
         mvc.perform(get("/api/v1/reports/outpatient/daily").param("fromDate",date.toString()).param("toDate",date.toString())
-                        .with(user("test").roles("MANAGER")))
+                        .with(user("test").roles("ADMIN")))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.error.code").value("REPORT_NOT_FOUND"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
     @Test void invalidYearFailsBeforeQuery()throws Exception{
-        mvc.perform(get("/api/v1/reports/outpatient/monthly").param("year","1999").with(user("test").roles("MANAGER")))
+        mvc.perform(get("/api/v1/reports/outpatient/monthly").param("year","1999").with(user("test").roles("ADMIN")))
                 .andExpect(status().isBadRequest());verifyNoInteractions(reader);
     }
     @Test void absentAuthenticationIsDenied()throws Exception{
         mvc.perform(get("/api/v1/reports/outpatient/monthly").param("year","2026")).andExpect(status().isUnauthorized());
         verifyNoInteractions(reader);
+    }
+
+    @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
+        UUID department=UUID.randomUUID();
+        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
+        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        verifyNoInteractions(reader);
+    }
+
+    @Test void managerWithCurrentAssignedDepartmentCanReadBothRoutes() throws Exception {
+        UUID department=UUID.randomUUID();
+        when(authority.permits(eq(ReportScopeTestSupport.ACCOUNT),eq("MANAGER"),eq(department),anyString(),any())).thenReturn(true);
+        String token=ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes");
+        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
+        verify(reader).daily(date,date,department);verify(reader).monthly(2026,department);
     }
 }

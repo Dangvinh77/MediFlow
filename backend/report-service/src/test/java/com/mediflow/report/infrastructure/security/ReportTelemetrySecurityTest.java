@@ -32,14 +32,14 @@ class ReportTelemetrySecurityTest {
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
     @Autowired MockMvc mvc;
 
-    @ParameterizedTest @ValueSource(strings = {"ADMIN", "MANAGER"})
+    @ParameterizedTest @ValueSource(strings = {"ADMIN"})
     void optIn_onlyOperationsRolesCanReadMetrics(String role) throws Exception {
         mvc.perform(get("/actuator/metrics").with(user("staff").roles(role))).andExpect(status().isOk());
         mvc.perform(get("/actuator/metrics/report.admission.pending").with(user("staff").roles(role)))
                 .andExpect(status().isOk());
     }
 
-    @ParameterizedTest @ValueSource(strings = {"DOCTOR", "PATIENT", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"MANAGER", "DOCTOR", "PATIENT", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "SYSTEM"})
     void optIn_otherRolesRemainDeniedForListAndDetail(String role) throws Exception {
         mvc.perform(get("/actuator/metrics").with(user("user").roles(role))).andExpect(status().isForbidden());
         mvc.perform(get("/actuator/metrics/report.admission.pending").with(user("user").roles(role)))

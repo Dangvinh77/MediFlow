@@ -39,16 +39,45 @@ class SupportSecurityTest {
     static final UUID PATIENT = UUID.fromString("10000000-0000-4000-8000-000000000002");
     @Autowired MockMvc mvc;
     @MockBean ReadReportUseCase reports;
+    @MockBean com.mediflow.report.application.port.out.CurrentReportAuthorityPort authority;
     @MockBean ReadNotificationUseCase notifications;
     @MockBean SendNotificationUseCase sender;
 
-    @Test void managerReachesReportButCannotBorrowNotificationRoles() throws Exception {
-        mvc.perform(get("/api/v1/reports/daily?date=2026-10-17").header("Authorization", token("MANAGER", "access")))
-                .andExpect(status().isOk());
-        mvc.perform(get("/api/v1/notifications/" + UUID.randomUUID()).header("Authorization", token("MANAGER", "access")))
+    @Test void managerRequiresCurrentDepartmentScopeAndCannotBorrowNotificationRoles() throws Exception {
+        UUID actor = UUID.randomUUID(), department = UUID.randomUUID();
+        String bearer = "Bearer " + Jwts.builder().subject(actor.toString()).claim("role", "MANAGER")
+                .claim("type", "access").expiration(Date.from(Instant.now().plusSeconds(120)))
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
+        mvc.perform(get("/api/v1/reports/daily?date=2026-10-17").header("Authorization", bearer))
                 .andExpect(status().isForbidden());
-        verify(reports).daily(java.time.LocalDate.of(2026, 10, 17), null);
+        verifyNoInteractions(reports, authority);
+        when(authority.permits(eq(actor), eq("MANAGER"), eq(department), eq(bearer), nullable(String.class)))
+                .thenReturn(true, false);
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(get("/api/v1/reports/daily?date=2026-10-17&departmentId=" + department)
+                            .header("Authorization", bearer))
+                    .andExpect(attempt == 0 ? status().isOk() : status().isForbidden());
+        }
+        mvc.perform(get("/api/v1/notifications/" + UUID.randomUUID()).header("Authorization", bearer))
+                .andExpect(status().isForbidden());
+        verify(reports).daily(java.time.LocalDate.of(2026, 10, 17), department);
+        verifyNoMoreInteractions(reports);
         verifyNoInteractions(notifications);
+    }
+
+    @Test void unavailableAuthorityCannotBroadenRolesAndAdminRetainsHospitalRead() throws Exception {
+        when(authority.permits(any(), anyString(), any(), anyString(), nullable(String.class)))
+                .thenThrow(new IllegalStateException("Core unavailable"));
+        for (String role : new String[]{"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"}) {
+            mvc.perform(get("/api/v1/reports/daily?date=2026-10-17&departmentId=" + UUID.randomUUID())
+                            .header("Authorization", token(role, "access"))).andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(reports);
+        verify(authority).permits(any(), eq("MANAGER"), any(), anyString(), nullable(String.class));
+        verifyNoMoreInteractions(authority);
+        mvc.perform(get("/api/v1/reports/daily?date=2026-10-17").header("Authorization", token("ADMIN", "access")))
+                .andExpect(status().isOk());
+        verify(reports).daily(java.time.LocalDate.of(2026, 10, 17), null);
     }
 
     @Test void patientIdentitySurvivesNotificationFilterAndCannotReadReports() throws Exception {

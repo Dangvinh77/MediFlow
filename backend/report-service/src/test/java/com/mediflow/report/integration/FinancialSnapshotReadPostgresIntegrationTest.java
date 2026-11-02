@@ -82,7 +82,7 @@ class FinancialSnapshotReadPostgresIntegrationTest {
         row(id,day,null,"100","40","60","15","25"); row(id,day,department,"60","20","36","9","15");
         verifyAndTestPublish(id,"VND","Asia/Bangkok");
         mvc.perform(get("/api/v1/reports/financial/daily").param("from",day.toString()).param("to",day.toString())
-                        .with(user("reader").roles("MANAGER")))
+                        .with(user("reader").roles("ADMIN")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.periods[0].cashReceived").value(100))
                 .andExpect(jsonPath("$.data.periods[0].earnedRevenue").value(60))
                 .andExpect(jsonPath("$.data.periods[0].depositLiability").value(40))
