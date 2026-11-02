@@ -264,4 +264,141 @@ class PaymentRequestDiscoveryPostgresTest {
         assertThatThrownBy(() -> discover(new PaymentRequestSourceQuery(PaymentRequestSourcePurpose.LAB_TEST, labId, patient, episode)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    private com.mediflow.common.api.PageResult<com.mediflow.billing.application.dto.response.PaymentRequestQueueItem> queue(
+            UUID patientFilter, UUID episodeFilter, PaymentRequestSourcePurpose purpose, int page, int size) {
+        var tx = new TransactionTemplate(new DataSourceTransactionManager(source));
+        tx.setReadOnly(true); tx.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+        return tx.execute(status -> new PaymentRequestDiscoveryAdapter(jdbc).findQueue(patientFilter, episodeFilter, purpose,
+                com.mediflow.common.api.PageQuery.of(page, size)));
+    }
+
+    @Test void queue_issuedLabAndPrescription_keepCanonicalDiscoveryAndBillingCreationTime() {
+        UUID lab = UUID.randomUUID(), prescription = UUID.randomUUID();
+        UUID labRequest = issueLabTest(lab), rxRequest = issuePrescription(prescription, "OUTPATIENT");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET created_at='2026-10-16T08:00:00Z' WHERE payment_request_id=?", labRequest);
+        jdbc.update("UPDATE PAYMENT_REQUEST SET created_at='2026-10-16T09:00:00Z' WHERE payment_request_id=?", rxRequest);
+        issueExam(UUID.randomUUID()); issuePrescription(UUID.randomUUID(), "ADMISSION");
+        var result = queue(null,null,null,0,20);
+        assertThat(result.totalElements()).isEqualTo(2);
+        assertThat(result.content()).extracting(item -> item.request().paymentRequestId()).containsExactly(labRequest,rxRequest);
+        var first = result.content().getFirst();
+        assertThat(first.createdAt()).isEqualTo(java.time.Instant.parse("2026-10-16T08:00:00Z"));
+        assertThat(first.request()).usingRecursiveComparison().ignoringFields("observedAt").isEqualTo(
+                discover(new PaymentRequestSourceQuery(PaymentRequestSourcePurpose.LAB_TEST,lab,patient,episode)).orElseThrow());
+        assertThat(result.content().get(1).request().prescriptionId()).isEqualTo(prescription);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM BILLING_EVENT_OUTBOX",Long.class)).isZero();
+    }
+
+    @Test void queue_filtersAreOptionalAndCombinedBeforeCountAndPaging() {
+        UUID lab = issueLabTest(UUID.randomUUID()); issuePrescription(UUID.randomUUID(),"OUTPATIENT");
+        assertThat(queue(patient,episode,PaymentRequestSourcePurpose.LAB_TEST,0,1).totalElements()).isEqualTo(1);
+        assertThat(queue(patient,episode,PaymentRequestSourcePurpose.LAB_TEST,0,1).content().getFirst().request().paymentRequestId()).isEqualTo(lab);
+        assertThat(queue(patient,null,PaymentRequestSourcePurpose.PRESCRIPTION,0,20).totalElements()).isEqualTo(1);
+        assertThat(queue(UUID.randomUUID(),null,null,0,20).content()).isEmpty();
+        assertThat(queue(null,UUID.randomUUID(),null,0,20).content()).isEmpty();
+    }
+
+    @Test void queue_excludesTerminalExpiredFullyPaidAndInpatientRequests() {
+        for (String status : java.util.List.of("PAID","CANCELLED","EXPIRED")) {
+            UUID id = issueLabTest(UUID.randomUUID());
+            jdbc.update("UPDATE PAYMENT_REQUEST SET status=? WHERE payment_request_id=?",status,id);
+        }
+        UUID expired = issuePrescription(UUID.randomUUID(),"OUTPATIENT");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET expires_at=now()-interval '1 second' WHERE payment_request_id=?",expired);
+        UUID full = issueLabTest(UUID.randomUUID()); pay(full,"80000");
+        assertThat(queue(null,null,null,0,20).content()).isEmpty();
+        UUID pending = issueLabTest(UUID.randomUUID());
+        jdbc.update("UPDATE BILLING_ACCOUNT SET care_episode_type='ADMISSION' WHERE account_id=?",account);
+        assertThat(queue(null,null,null,0,20).content()).isEmpty();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"CLOSED","SETTLED"})
+    void queue_excludesClosedAndSettledAccounts(String status) {
+        issueLabTest(UUID.randomUUID());
+        jdbc.update("UPDATE BILLING_ACCOUNT SET status=?,closed_at=now() WHERE account_id=?",status,account);
+        assertThat(queue(null,null,null,0,20).totalElements()).isZero();
+    }
+
+    @Test void queue_partialAndLabZeroRemainButPrescriptionZeroDoesNot() {
+        UUID partial = issueLabTest(UUID.randomUUID()); pay(partial,"30000");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET status='PARTIALLY_PAID',expires_at=now()+interval '1 hour' WHERE payment_request_id=?",partial);
+        UUID zero = issueLabTest(UUID.randomUUID());
+        UUID rxZero = issuePrescription(UUID.randomUUID(),"OUTPATIENT");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET requested_amount=0 WHERE payment_request_id IN (?,?)",zero,rxZero);
+        var result = queue(null,null,null,0,20);
+        assertThat(result.totalElements()).isEqualTo(2);
+        var partialDto = result.content().stream().map(item -> item.request()).filter(item -> item.paymentRequestId().equals(partial)).findFirst().orElseThrow();
+        assertThat(partialDto.paidAmount()).isEqualByComparingTo("30000");
+        assertThat(partialDto.remainingAmount()).isEqualByComparingTo("50000");
+        assertThat(result.content()).anySatisfy(item -> {
+            assertThat(item.request().paymentRequestId()).isEqualTo(zero);
+            assertThat(item.request().remainingAmount()).isEqualByComparingTo("0");
+        });
+    }
+
+    @Test void queue_refundNeverReopensPaidAndNonCompletedPaymentsDoNotReduceBalance() {
+        UUID paid = issueLabTest(UUID.randomUUID()); pay(paid,"80000");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET status='PAID' WHERE payment_request_id=?",paid);
+        jdbc.update("""
+            INSERT INTO PAYMENT_TRANSACTION(transaction_id,account_id,payment_request_id,transaction_type,classification,status,amount,currency,payment_method,idempotency_key,original_transaction_id,completed_at)
+            SELECT gen_random_uuid(),?,?,'REFUND','SERVICE_PAYMENT','COMPLETED',80000,'VND','CASH',?,transaction_id,now()
+            FROM PAYMENT_TRANSACTION WHERE payment_request_id=? LIMIT 1
+            """, account,paid,UUID.randomUUID().toString(),paid);
+        UUID pending = issueLabTest(UUID.randomUUID()); pay(pending,"30000");
+        jdbc.update("UPDATE PAYMENT_TRANSACTION SET status='FAILED' WHERE payment_request_id=?",pending);
+        var result = queue(null,null,null,0,20);
+        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.content().getFirst().request().paymentRequestId()).isEqualTo(pending);
+        assertThat(result.content().getFirst().request().remainingAmount()).isEqualByComparingTo("80000");
+    }
+
+    @Test void queue_stableCreatedAtThenRequestIdPagingAndEmptyBeyondEnd() {
+        UUID first = issueLabTest(UUID.randomUUID()), second = issuePrescription(UUID.randomUUID(),"OUTPATIENT");
+        jdbc.update("UPDATE PAYMENT_REQUEST SET created_at='2026-10-16T08:00:00Z'");
+        UUID lower = first.toString().compareTo(second.toString()) < 0 ? first : second;
+        var p0 = queue(null,null,null,0,1); var p1 = queue(null,null,null,1,1);
+        assertThat(p0.totalElements()).isEqualTo(2); assertThat(p0.totalPages()).isEqualTo(2);
+        assertThat(p0.content().getFirst().request().paymentRequestId()).isEqualTo(lower);
+        assertThat(p1.content().getFirst().request().paymentRequestId()).isNotEqualTo(lower);
+        assertThat(queue(null,null,null,0,1).content().getFirst().request().paymentRequestId()).isEqualTo(lower);
+        assertThat(queue(null,null,null,2,1).content()).isEmpty();
+        assertThat(queue(null,null,null,2,1).totalElements()).isEqualTo(2);
+    }
+
+    @Test void queue_corruptTargetFailsClosedInsteadOfInventingMapping() {
+        UUID request = issueLabTest(UUID.randomUUID());
+        jdbc.update("DELETE FROM PAYMENT_REQUEST_TARGET WHERE payment_request_id=?",request);
+        assertThatThrownBy(() -> queue(null,null,null,0,20)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test void queue_corruptPurposeFailsClosed() {
+        UUID request = issueLabTest(UUID.randomUUID());
+        jdbc.update("UPDATE PAYMENT_REQUEST SET purpose='EXAM' WHERE payment_request_id=?",request);
+        assertThatThrownBy(() -> queue(null,null,null,0,20)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test void queue_productionTransactionKeepsCountAndPageOnSameSnapshotDuringConcurrentPayment() {
+        UUID changed = issueLabTest(UUID.randomUUID());
+        issuePrescription(UUID.randomUUID(), "OUTPATIENT");
+        JdbcTemplate racing = new JdbcTemplate(source) {
+            @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
+                T count = super.queryForObject(sql, requiredType, args);
+                // A different datasource identity means a separate connection/transaction, like a real cashier.
+                var writer = new JdbcTemplate(new DriverManagerDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword()));
+                writer.update("UPDATE PAYMENT_REQUEST SET status='PAID' WHERE payment_request_id=?", changed);
+                return count;
+            }
+        };
+        var proxy = new org.springframework.aop.framework.ProxyFactory(new PaymentRequestDiscoveryAdapter(racing));
+        proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(
+                new DataSourceTransactionManager(source),
+                new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+        var port = (com.mediflow.billing.application.port.out.PaymentRequestQueuePort) proxy.getProxy();
+        var result = port.findQueue(null, null, null, com.mediflow.common.api.PageQuery.of(0, 20));
+        assertThat(result.totalElements()).isEqualTo(2);
+        assertThat(result.content()).hasSize(2);
+        assertThat(queue(null,null,null,0,20).totalElements()).isEqualTo(1);
+    }
 }

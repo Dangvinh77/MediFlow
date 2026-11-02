@@ -79,6 +79,22 @@ export interface PaymentRequestSourceQuery {
   careEpisodeId: string;
 }
 
+export interface PaymentRequestQueueQuery {
+  patientId?: string;
+  careEpisodeId?: string;
+  purpose?: "LAB_TEST" | "PRESCRIPTION";
+  page?: number;
+}
+
+export interface PaymentRequestQueueItem {
+  request: PaymentRequestDiscoveryDTO;
+  createdAt: string;
+}
+
+export interface PaymentRequestSelection extends PaymentRequestSourceQuery {
+  paymentRequestId: string;
+}
+
 /** Exact Billing response for GET /payment-requests/by-source. Amounts and state come from Billing. */
 export interface PaymentRequestDiscoveryDTO {
   paymentRequestId: string;

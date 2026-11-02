@@ -29,3 +29,11 @@ X-Correlation-Id: discovery-prescription-example
 GET {{host}}/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=01b75190-2efb-472c-bbaa-dbc41d049db9&patientId=00000000-0000-0000-0000-000000000000&careEpisodeId=00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 X-Correlation-Id: discovery-not-found-example
+
+
+### MF-03 Lab/prescription work queue; same two flags, ADMIN/CASHIER human access JWT
+# Optional: patientId, careEpisodeId, purpose=LAB_TEST|PRESCRIPTION, page, size.
+# createdAt is Billing issuance time. Re-read by-source before quote/payment.
+GET {{host}}/api/v1/billing/payment-requests/queue?purpose=LAB_TEST&page=0&size=20
+Authorization: Bearer {{token}}
+X-Correlation-Id: mf03-lab-queue

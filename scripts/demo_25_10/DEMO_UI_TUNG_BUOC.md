@@ -79,8 +79,9 @@ riêng. Không chạy cả ba đăng ký trước rồi để phiếu chờ thu 
 
 ### 1.5. Các mã cần giữ trong lúc đổi quầy
 
-Mở một ghi chú, ghi một dòng riêng cho A/B/C. **Các mã này do UI sinh trong phiên,
-không dùng UUID trong ảnh cũ hoặc tự gõ một mã mẫu.**
+Hàng khoản thu mới tự giữ mã nguồn và lượt: **không cần chép BN/PHIEU/LAB/DON để thu
+Lab hoặc thuốc**. Giữ URL hồ sơ, xét nghiệm và đơn để mở lại khi đổi quầy. Bảng mã
+dưới phục vụ đối soát/hỗ trợ; các mã do UI sinh trong phiên, không dùng UUID trong ảnh cũ.
 
 | Ghi chú của bạn | Lấy ở đâu | Dùng ở đâu |
 |---|---|---|
@@ -239,8 +240,9 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
 
 10. **Lập chỉ định** → tại khối tiếp theo, **Tạo yêu cầu từ chỉ định → Mở xét nghiệm**.
     Không bỏ qua bước tạo yêu cầu thứ hai.
-11. Ghi **LAB**. Mở **Thông tin bàn giao thu ngân**, ghi/đối chiếu mã bệnh nhân,
-    mã xét nghiệm, mã đợt điều trị. Mã đợt là **PHIEU**, không phải **HOSO**.
+11. Lưu URL xét nghiệm để mở lại khi cần. Thu ngân chọn khoản trong hàng chờ theo
+    bệnh nhân, không cần chép mã. Chỉ khi cần hỗ trợ mới mở **Thông tin bàn giao thu ngân**
+    để lấy LAB và mã đợt PHIEU; không dùng HOSO thay cho PHIEU.
 12. **Chưa hoàn tất hồ sơ khám**. Chuyển cashier thu xét nghiệm.
 
 ## 6. CASHIER — thu phí CBC
@@ -248,20 +250,25 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
 1. **Đăng xuất → demo.cashier / MediFlowDemo@2026**.
 2. Menu **Thu phí xét nghiệm & thuốc**:
    **http://127.0.0.1:3000/billing/payment-requests**.
-3. Điền:
-
-   | Ô trên UI | Giá trị |
-   |---|---|
-   | Loại khoản phí | **Xét nghiệm** |
-   | Mã xét nghiệm | Dán **LAB** vừa ghi ở mục 5 |
-   | Mã bệnh nhân | Nhập CCCD của A/B/C → **Tìm** → chọn đúng tên |
-   | Mã đợt điều trị | Dán **PHIEU** từ mục 3, không dán HOSO/LAB |
-
-4. **Tra cứu khoản phí**. Nếu khoản phí chưa tới, chờ vài giây rồi tra cứu lại cùng mã.
-5. Kiểm CBC: giá mẫu **120.000**, hỗ trợ **84.000**, phải trả **36.000 VND**.
+3. Ở **Khoản cần xử lý**, ô **Tìm bệnh nhân chờ thu** nhập CCCD của A/B/C →
+   **Tìm → chọn đúng tên/ngày sinh**. **Loại khoản cần xử lý → Xét nghiệm**.
+4. Chọn dòng đúng bệnh nhân, khoa Nội và **thời điểm phát sinh chỉ định vừa làm** →
+   **Chọn khoản**. Hệ thống giữ toàn bộ mã nguồn/lượt và đọc lại số dư hiện hành;
+   không nhập LAB/BN/PHIEU. Chưa thấy khoản thì **Cập nhật hàng chờ**, không lập lại chỉ định.
+   Nếu bệnh nhân có nhiều lượt, **Chỉ khoản cùng lượt đã chọn** giới hạn danh sách theo
+   lượt của dòng đã đối chiếu. Thời điểm phát sinh phí không phải ngày hẹn khám.
+5. Tại chi tiết bên phải, kiểm đúng người/khoa, còn phải thu **36.000 VND**.
+   Mở **Chi tiết giá và hỗ trợ mô phỏng**: giá mẫu **120.000**, hỗ trợ **84.000**.
 6. Chọn **Tiền mặt → Xác nhận thu theo báo giá**.
 7. Chờ **Đã thanh toán**, số còn phải thu **0 VND**, rồi chuyển Lab.
    Nếu kết quả giao dịch chưa rõ, kiểm trạng thái; không thu lại.
+
+**Khi cần hỗ trợ bằng mã:** mở **Tra cứu bằng mã được bàn giao (hỗ trợ)**,
+chọn Xét nghiệm, điền LAB và PHIEU, tìm đúng bệnh nhân rồi **Tra cứu khoản phí**.
+Đường này dùng khi đã có mã chính xác; không phải bước thường lệ. Nếu đọc lại khoản
+đang đối chiếu lỗi, dùng **Đọc lại khoản đang đối chiếu**. Giữ biên nhận thành công;
+không tạo lại giao dịch vì lỗi tải dữ liệu. Pending/không rõ kết quả khóa đổi khoản;
+gửi lại giữ nguyên yêu cầu, kể cả khi báo giá mới đã hết hạn.
 
 ## 7. LAB_TECH — làm xét nghiệm và trả kết quả
 
@@ -304,7 +311,9 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
    | Số lượng | `2` |
    | Cách dùng | `Thuốc mô phỏng phục vụ demo, không dùng điều trị` |
 
-5. Kiểm còn tồn, hạn dùng 2030, đơn giá mẫu **10.000/viên**, tổng **20.000 VND** →
+5. Từ khóa **DEMO-HIST-2025** có nhiều kết quả: chọn đúng tên **Thuốc minh họa A**,
+   không chọn **Thuốc cảnh báo tồn thấp**, **Thuốc hết tồn** hoặc **Thuốc kiểm kê**.
+   Kiểm còn tồn, hạn dùng 2030, đơn giá mẫu **10.000/viên**, tổng **20.000 VND** →
    **Tạo đơn thuốc**. Ghi **DON** và lưu URL chi tiết.
 6. Quay lại URL **/records/[HOSO]**. Tại **Hoàn tất khám**:
    - **Hướng xử trí → Theo dõi ngoại trú**.
@@ -326,10 +335,11 @@ Không chọn hồ sơ lịch sử của bệnh nhân để thay cho HOSO hiện
 
 1. **Đăng xuất → demo.cashier / MediFlowDemo@2026**.
 2. Mở **http://127.0.0.1:3000/billing/payment-requests**.
-3. **Loại khoản phí → Đơn thuốc**.
-   **Mã đơn thuốc → DON**. **Mã bệnh nhân → CCCD A/B/C → tìm → chọn đúng tên**.
-   **Mã đợt điều trị → PHIEU**.
-4. **Tra cứu khoản phí**. Kiểm đúng DON, bệnh nhân và PHIEU; còn phải thu **20.000 VND**.
+3. **Tìm bệnh nhân chờ thu → CCCD A/B/C → Tìm → chọn đúng tên/ngày sinh**.
+   **Loại khoản cần xử lý → Đơn thuốc**.
+4. Chọn khoản đúng khoa và thời điểm tạo đơn vừa làm → **Chọn khoản**.
+   Đối chiếu người/lượt và còn phải thu **20.000 VND**. Không cần nhập DON/PHIEU.
+   Chỉ khi cần đối soát mới mở **Thông tin đối soát khoản đã chọn** để xem mã.
 5. Trong form thu tiền: **Số tiền → 20000**, **Mã tiền → VND** (giữ mặc định),
    **Hình thức → Tiền mặt** → **Xác nhận thanh toán**.
 6. Kỳ vọng giao dịch thành công và còn phải thu **0 VND**.

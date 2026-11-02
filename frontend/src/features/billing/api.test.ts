@@ -8,6 +8,13 @@ import { billingApi } from "./api";
 describe("billingApi discovery", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("reads the cashier queue using only actual optional filters and paging", async () => {
+    await billingApi.paymentRequestQueue({ patientId: "patient", careEpisodeId: "visit", purpose: "LAB_TEST", page: 2 });
+    expect(mocks.get).toHaveBeenCalledWith("/v1/billing/payment-requests/queue?page=2&size=20&patientId=patient&careEpisodeId=visit&purpose=LAB_TEST");
+    await billingApi.paymentRequestQueue({});
+    expect(mocks.get).toHaveBeenLastCalledWith("/v1/billing/payment-requests/queue?page=0&size=20");
+  });
+
   it("uses only the exact public adjustment and refund paths", async () => {
     await billingApi.refundsDue("rx/id");
     expect(mocks.get).toHaveBeenCalledWith("/v1/billing/prescription-adjustments/rx%2Fid/refunds-due");

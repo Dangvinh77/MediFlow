@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
-import { PaymentRequestLookupForm } from "@/features/billing/components/PaymentRequestLookupForm";
+import { PaymentRequestWorkspace } from "@/features/billing/components/PaymentRequestWorkspace";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,9 @@ export default function BillingPaymentRequestsPage() {
   const quoteEnabled = process.env.MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED === "true";
   const zeroLiabilityEnabled = quoteEnabled && process.env.MEDIFLOW_ZERO_PAYABLE_UI_ENABLED === "true";
   return (
-    <PageShell title="Thanh toán khoản phí đã chọn" description="Hoàn tất thanh toán một khoản phí khám/xét nghiệm/thuốc theo mã do bên phát sinh cung cấp.">
+    <PageShell title="Thu phí xét nghiệm và thuốc" description="Chọn bệnh nhân, đối chiếu khoản cần xử lý và thanh toán theo báo giá.">
       <RoleGate allowed={["ADMIN", "CASHIER"]}>
-        <PaymentRequestLookupForm quoteEnabled={quoteEnabled} zeroLiabilityEnabled={zeroLiabilityEnabled} />
+        <PaymentRequestWorkspace quoteEnabled={quoteEnabled} zeroLiabilityEnabled={zeroLiabilityEnabled} />
       </RoleGate>
     </PageShell>
   );
