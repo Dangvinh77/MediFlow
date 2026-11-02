@@ -41,4 +41,4 @@ Paths: shared feature-agnostic patient context component if useful; `frontend/sr
 - [x] Independent specification review, then code-quality review; resolve important findings and rerun affected checks.
 - [x] Start isolated demo, verify nurse success/list/counter and Lab/context on real UI with screenshots; keep real clock and state clinical-hours limits. Verify Report no-scope failure through Gateway and source authorization tests. Do not claim full patient journey.
 - [x] Update acceptance, review progress and DEMO_UI_TUNG_BUOC.md for changed behavior. Stop owned frontend, run `clean-docker.bat`, verify ports/containers stopped.
-- [ ] Commit/push a focused feature branch and create PR. Do not merge automatically.
+- [x] Commit/push a focused feature branch and create PR. Do not merge automatically. PR: https://github.com/Dangvinh77/MediFlow/pull/562
