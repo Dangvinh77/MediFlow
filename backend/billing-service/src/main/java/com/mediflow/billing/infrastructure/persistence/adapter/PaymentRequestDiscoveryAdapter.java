@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -13,21 +14,27 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mediflow.billing.application.dto.command.PaymentRequestSourcePurpose;
 import com.mediflow.billing.application.dto.command.PaymentRequestSourceQuery;
 import com.mediflow.billing.application.dto.response.PaymentRequestDiscoveryDTO;
+import com.mediflow.billing.application.dto.response.PaymentRequestQueueItem;
 import com.mediflow.billing.application.port.out.PaymentRequestDiscoveryPort;
+import com.mediflow.billing.application.port.out.PaymentRequestQueuePort;
+import com.mediflow.common.api.PageQuery;
+import com.mediflow.common.api.PageResult;
 
 /**
- * Exact-match discovery for L1 (HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md §3). Every query
+ * Exact-match discovery for L1 (HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md §3). Every exact lookup query
  * joins from the exact owning source table (one row per sourceId, PK-enforced) out to
  * PAYMENT_REQUEST/BILLING_ACCOUNT/PAYMENT_REQUEST_TARGET with LEFT JOIN, so the SQL itself can
  * never fan out to more than one row; a broken downstream link surfaces as NULL columns instead,
  * which {@link #resolve} turns into a 503 rather than silently picking an arbitrary row.
  */
 @Repository
-public class PaymentRequestDiscoveryAdapter implements PaymentRequestDiscoveryPort {
+public class PaymentRequestDiscoveryAdapter implements PaymentRequestDiscoveryPort, PaymentRequestQueuePort {
 
     private static final String COMMON_SELECT = """
             SELECT pr.payment_request_id, pr.invoice_id, pr.account_id, pr.purpose AS request_purpose,
@@ -78,6 +85,61 @@ public class PaymentRequestDiscoveryAdapter implements PaymentRequestDiscoveryPo
                     WHERE s.prescription_id = ?
                     """, ROW_MAPPER, query.sourceId()), query, "PRESCRIPTION");
         };
+    }
+
+    /** Count and page share a repeatable snapshot and transaction clock; no per-item lookups. */
+    @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ, timeout = 3)
+    public PageResult<PaymentRequestQueueItem> findQueue(UUID patientId, UUID careEpisodeId,
+            PaymentRequestSourcePurpose purpose, PageQuery requestedPage) {
+        PageQuery page = PageQuery.of(requestedPage.page(), requestedPage.size());
+        if (purpose == PaymentRequestSourcePurpose.EXAM) {
+            throw new IllegalArgumentException("EXAM is not part of the outpatient Lab/prescription queue");
+        }
+        String snapshot = COMMON_SELECT + """
+                TRUE AS source_issued, pr.created_at, s.source_id, s.source_purpose
+                FROM (
+                    SELECT lab_id AS source_id, payment_request_id, 'LAB_TEST' AS source_purpose
+                    FROM lab_test_charge_source
+                    UNION ALL
+                    SELECT prescription_id AS source_id, payment_request_id, 'PRESCRIPTION' AS source_purpose
+                    FROM prescription_charge_source
+                    WHERE care_context = 'OUTPATIENT' AND payment_request_id IS NOT NULL
+                ) s
+                LEFT JOIN PAYMENT_REQUEST pr ON pr.payment_request_id = s.payment_request_id
+                LEFT JOIN BILLING_ACCOUNT ba ON ba.account_id = pr.account_id
+                LEFT JOIN PAYMENT_REQUEST_TARGET t ON t.payment_request_id = pr.payment_request_id
+                WHERE ba.care_episode_type = 'OUTPATIENT_VISIT'
+                  AND ba.status NOT IN ('SETTLED', 'CLOSED')
+                  AND pr.status IN ('PENDING', 'PARTIALLY_PAID')
+                  AND (pr.expires_at IS NULL OR pr.expires_at > transaction_timestamp())
+                """;
+        List<Object> args = new ArrayList<>();
+        if (patientId != null) { snapshot += " AND ba.patient_id = ?"; args.add(patientId); }
+        if (careEpisodeId != null) { snapshot += " AND ba.care_episode_id = ?"; args.add(careEpisodeId); }
+        if (purpose != null) { snapshot += " AND s.source_purpose = ?"; args.add(purpose.name()); }
+        String eligible = " FROM (" + snapshot + """
+                ) snapshot WHERE requested_amount > paid_amount
+                OR (source_purpose = 'LAB_TEST' AND requested_amount = 0)
+                """;
+        Long total = jdbc.queryForObject("SELECT count(*)" + eligible, Long.class, args.toArray());
+        args.add(page.size()); args.add((long) page.page() * page.size());
+        var content = jdbc.query("SELECT *" + eligible + " ORDER BY created_at ASC, payment_request_id ASC LIMIT ? OFFSET ?",
+                (rs, index) -> {
+                    Row row = ROW_MAPPER.mapRow(rs, index);
+                    UUID sourceId = uuid(rs, "source_id");
+                    String sourcePurpose = rs.getString("source_purpose");
+                    var query = new PaymentRequestSourceQuery(PaymentRequestSourcePurpose.valueOf(sourcePurpose),
+                            sourceId, row.patientId(), row.careEpisodeId());
+                    PaymentRequestDiscoveryDTO request = resolve(List.of(row), query, sourcePurpose).orElseThrow(
+                            () -> new DataIntegrityViolationException("Invalid queue source mapping"));
+                    if (("LAB_TEST".equals(sourcePurpose) && !request.labTestIds().equals(List.of(sourceId)))
+                            || ("PRESCRIPTION".equals(sourcePurpose) && !sourceId.equals(request.prescriptionId()))) {
+                        throw new DataIntegrityViolationException("Invalid queue source target");
+                    }
+                    return new PaymentRequestQueueItem(request, rs.getTimestamp("created_at").toInstant());
+                }, args.toArray());
+        return PageResult.of(content, total, page.page(), page.size());
     }
 
     private Optional<PaymentRequestDiscoveryDTO> resolve(List<Row> rows, PaymentRequestSourceQuery query, String purposeName) {

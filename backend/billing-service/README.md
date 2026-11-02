@@ -196,3 +196,24 @@ Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../do
 mvn -pl backend/billing-service test        # unit (domain + application, no Spring)
 mvn -pl backend/billing-service verify      # + integration (Testcontainers, needs Docker)
 ```
+
+
+### Lab / prescription cashier work queue (MF-03)
+
+`GET /api/v1/billing/payment-requests/queue` requires a verified human ADMIN/CASHIER access JWT
+and both existing `mediflow.billing.ledger.enabled` and
+`mediflow.billing.payment-request-discovery.enabled` flags (default false).
+Optional `patientId`, `careEpisodeId`, `purpose=LAB_TEST|PRESCRIPTION`, `page`, `size` filters
+return `ApiResponse<PageResult<PaymentRequestQueueItem>>`; each item contains the exact existing
+`request: PaymentRequestDiscoveryDTO` and `createdAt` from `PAYMENT_REQUEST.created_at`.
+This timestamp is Billing issuance time, never a visit date. Responses are `Cache-Control: no-store`
+and preserve/generate correlation headers and envelope IDs.
+
+The read uses only Billing-issued outpatient Lab/Rx sources, pending/partially-paid unexpired
+requests, accounts other than SETTLED/CLOSED, positive remaining completed-PAYMENT balance,
+and Lab requested-amount-zero acknowledgments. PAID/refunded, cancelled, expired, inpatient,
+EXAM and Surgery requests do not appear. Repeatable-read count/page share a snapshot and server
+transaction clock, ordered by `createdAt ASC, paymentRequestId ASC`. Broken source/target mapping
+fails closed. No migration, external-store join or per-item HTTP/database lookup is introduced.
+Selection must re-read by-source discovery and the existing quote/payment guards; list membership
+is not payment authority. Examples: [payment-request-discovery.http](payment-request-discovery.http).
