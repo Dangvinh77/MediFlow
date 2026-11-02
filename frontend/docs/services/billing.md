@@ -1,5 +1,22 @@
 # Frontend Service: Billing
 
+## Cashier work queue — 2026-11-02
+
+`/billing/payment-requests` now starts with the Billing-owned Lab/Rx queue, filtered by
+patient/purpose and optionally the exact episode of a selected row. Amounts, source references,
+eligibility and creation time come from `GET /v1/billing/payment-requests/queue`; creation time
+is not a clinical appointment date. Selection re-reads `/by-source` and checks all identities
+before mounting payment. Manual identifiers remain in collapsed support lookup, not the main task.
+
+Positive Lab payments and zero acknowledgments lock queue/context changes until their outcome
+is known. Quote expiry preserves an existing same-intent retry. Captured-session storage and
+pre-send guards prevent cross-session dispatch/deletion; aborting a replay retains the older
+unknown recovery. Completed receipts survive refresh failure; stale balance cannot reopen the
+same payment. Existing command routes, gates and scheduled exam-fee queue remain authoritative.
+
+Scope/design: [MF-03 specification](../../../docs/superpowers/specs/2026-11-02-outpatient-billing-work-queue.md).
+The older checkpoints below describe their dated baseline, not new queue acceptance evidence.
+
 > **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
 > mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
 > Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;

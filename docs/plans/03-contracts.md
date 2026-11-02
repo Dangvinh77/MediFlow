@@ -1,5 +1,31 @@
 # Hợp đồng tích hợp tối thiểu
 
+## Hàng khoản thu Lab/thuốc — 02/11/2026
+
+GET `/api/v1/billing/payment-requests/queue`, chỉ human access JWT ADMIN/CASHIER.
+Hai cờ `mediflow.billing.ledger.enabled` và
+`mediflow.billing.payment-request-discovery.enabled` phải cùng true; giữ mặc định tắt.
+Gateway có exact GET rule; response `Cache-Control: no-store`, correlation header/envelope.
+
+Query tùy chọn `patientId,careEpisodeId,purpose,page,size`, mỗi khóa chỉ một giá trị;
+khóa lạ, rỗng hoặc purpose ngoài LAB_TEST/PRESCRIPTION bị từ chối 400.
+UUID phải đủ dạng chuẩn; PageQuery chuẩn hóa page>=0, size1..100, mặc định20.
+Response `ApiResponse<PageResult<PaymentRequestQueueItem>>`; item gồm
+`request: PaymentRequestDiscoveryDTO` đúng wire `/by-source` hiện có và
+`createdAt: Instant` do Billing tạo PAYMENT_REQUEST, không phải ngày khám.
+
+Chỉ request Lab/Rx đã phát hành cho OUTPATIENT_VISIT, còn hạn (hoặc null expiry),
+PENDING/PARTIALLY_PAID, account chưa SETTLED/CLOSED, còn phải thu dương. Giữ Lab
+requestedAmount=0 để xác nhận nghĩa vụ 0 riêng; không ghi nhận tiền giả. Không trả
+EXAM/Surgery/Admission. SUM chỉ PAYMENT COMPLETED, refund không mở lại request PAID.
+Count/page cùng snapshot, dùng clock transaction; createdAt rồi requestId tăng dần.
+Không gọi DB context khác và không truy vấn từng source theo từng dòng. Mapping hỏng
+bị lỗi/unavailable, không sửa ID hoặc biến thành số dư0.
+
+Queue là snapshot tìm việc, không cấp quyền thu. Chọn khoản đọc lại exact `/by-source`;
+các command, quote binding, expiry, idempotency, zero eligibility và recovery hiện có
+vẫn quyết định thanh toán. Không gộp nhiều khoản thành một giao dịch trong contract này.
+
 ## Cấp tài khoản tại quầy và cổng kết quả cá nhân (27/10/2026)
 
 Đã triển khai source theo [02 §4.1](02-business-flows.md); packaged/API/UI acceptance vẫn theo

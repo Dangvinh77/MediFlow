@@ -17,6 +17,30 @@ Kiểm tra kiểu, lint và build sạch đã qua tại thời điểm kiểm tr
 yêu cầu rồi theo chất lượng mã đã qua. Kết quả backend và UI thực tế cuối đợt được
 ghi riêng trong [biên bản nghiệm thu](../../acceptance/outpatient-ux-foundation-2026-11-02/README.md), không suy ra từ kiểm thử giả lập.
 
+## Đợt tiếp theo — hàng khoản thu Lab/thuốc (MF-03)
+
+Nền `c94044b9`, nhánh `codex/outpatient-billing-work-queue`. Thu ngân tìm theo bệnh
+nhân, chọn khoản Lab hoặc đơn thuốc, lọc các khoản cùng lượt; không phải chép mã
+patient/source/episode trong thao tác thông thường. Hàng chờ có tên/ngày sinh,
+khoa, loại phí, thời điểm phát sinh và số dư do Billing xác nhận. Khi chọn, giao
+diện đọc lại nguồn và kiểm tra đầy đủ định danh trước khi cho thu.
+
+API chỉ đọc dùng dữ liệu của Billing, chỉ ADMIN/CASHIER với access JWT người dùng,
+giữ cờ bật chức năng mặc định tắt. Không mở quyền nghiệp vụ bác sĩ/dược sĩ. Giữ
+các lệnh thu, báo giá, nghĩa vụ 0 và cơ chế chống trùng hiện có. Bổ sung khóa đổi
+khoản khi kết quả chưa rõ, bảo vệ recovery giữa các phiên và giữ biên nhận khi
+tải lại lỗi. Tra cứu UUID được chuyển vào phần hỗ trợ thu gọn.
+
+109 kiểm thử FE Billing đạt; kiểm tra kiểu/lint/build đạt. Billing đầy đủ 1.221
+kiểm thử, lượt tập trung cuối 55; Gateway 1.792, không lỗi/bỏ qua. Chi tiết UI,
+ảnh và giới hạn nằm trong [biên bản đợt thu ngân](../../acceptance/outpatient-billing-work-queue-2026-11-02/README.md).
+Đã cập nhật [hướng dẫn demo](../../../scripts/demo_25_10/DEMO_UI_TUNG_BUOC.md)
+cho thao tác chọn Lab/thuốc trong hàng chờ.
+
+**Chưa đóng toàn bộ MF-03:** phí khám còn hàng chờ V2 riêng, chưa thu gộp hoặc
+sổ cuối ca; chưa nghiệm thu lại ba hành trình trọn vẹn chỉ bằng UI trong đợt này.
+FE Pharmacy/Report của Huy và Patient/Organization của Hoàng Anh vẫn theo bàn giao.
+
 ## Việc còn lại
 
 - Giữ backlog 30 vấn đề và thứ tự ưu tiên trong [review gốc](REVIEW_UI_UX_NGOAI_TRU.md).
