@@ -32,4 +32,6 @@ Owned `frontend/src/features/billing/**`, Billing route and matching tests only.
 - [x] Fresh independent spec review then quality/security review; fix important findings and rerun affected checks.
 - [x] Real UI: create Lab from a new outpatient visit, cashier selects queue item without IDs and pays exact quote; same for Rx if fixture available, otherwise record untested scope. Verify zero/uncertainty through tests without faking browser evidence. Save screenshots and exact source/limits.
 - [x] Stop owned frontend and run clean-docker.bat; verify ports and project containers stopped.
-- [ ] Update review progress and demo, commit/push feature branch and create PR; no auto merge. Preserve Surgery/Inpatient and frontend ownership handoffs.
+- [x] Update review progress and demo, commit/push feature branch and create PR; no auto merge. Preserve Surgery/Inpatient and frontend ownership handoffs.
+
+Integration: [PR #563](https://github.com/Dangvinh77/MediFlow/pull/563), open for review; not merged. Runtime/screenshots and verification details: [acceptance record](../../acceptance/outpatient-billing-work-queue-2026-11-02/README.md).
