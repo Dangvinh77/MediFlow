@@ -23,15 +23,64 @@ const record: MedicalRecordDTO = {
 describe("Medical record detail identity and permissions", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
+  it("blocks refreshing while a diagnosis is being saved", async () => {
+    let resolve!: (value: DiagnosisDTO) => void;
+    mocks.getById.mockResolvedValue(record);
+    mocks.addDiagnosis.mockReturnValue(new Promise<DiagnosisDTO>(done => { resolve = done; }));
+    render(<MedicalRecordDetail recordId="record-a" />);
+    await screen.findByText("First record");
+    fireEvent.click(screen.getByText("Thêm chẩn đoán", { selector: "summary" }));
+    fireEvent.change(screen.getByLabelText(/Tên chẩn đoán/), { target: { value: "Chẩn đoán mới" } });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm chẩn đoán" }));
+    expect(screen.getByRole("button", { name: "Cập nhật hồ sơ" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật hồ sơ" }));
+    expect(mocks.getById).toHaveBeenCalledTimes(1);
+    await act(async () => resolve({ diagnosisId: "new", diagnosisName: "Chẩn đoán mới", description: null, icdCode: null }));
+    expect(screen.getByText("Chẩn đoán mới")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cập nhật hồ sơ" })).toBeEnabled();
+  });
+
   it("keeps identity visible and puts clinical content before technical metadata", async () => {
     mocks.getById.mockResolvedValue(record);
     render(<MedicalRecordDetail recordId="record-a" />);
-    const context = await screen.findByRole("region", { name: "Ngữ cảnh hồ sơ khám" });
+    const context = await screen.findByLabelText("Ngữ cảnh hồ sơ khám");
     expect(context).toHaveTextContent("17/10/2026");
     expect(context).toHaveTextContent("patient-a");
     const clinical = screen.getByRole("heading", { name: "Nội dung khám" });
-    const metadata = screen.getByText("Thông tin hồ sơ và thời điểm");
+    const metadata = screen.getByText("Thông tin đối chiếu và thời điểm");
     expect(clinical.compareDocumentPosition(metadata) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("preserves a diagnosis draft after refreshing and asks before applying a closed record", async () => {
+    mocks.getById.mockResolvedValueOnce(record).mockResolvedValueOnce({ ...record, status: "COMPLETED" });
+    render(<MedicalRecordDetail recordId="record-a" />);
+    await screen.findByText("First record");
+    fireEvent.click(screen.getByText("Thêm chẩn đoán", { selector: "summary" }));
+    fireEvent.change(screen.getByLabelText(/Tên chẩn đoán/), { target: { value: "Bản nháp" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật hồ sơ" }));
+    expect(await screen.findByText(/Hồ sơ đã thay đổi trạng thái/)).toBeVisible();
+    expect(screen.getByLabelText(/Tên chẩn đoán/)).toHaveValue("Bản nháp");
+    expect(screen.getByRole("button", { name: "Thêm chẩn đoán" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Xem dữ liệu mới" }));
+    expect(screen.getByText("Đã hoàn tất")).toBeVisible();
+    expect(screen.queryByLabelText(/Tên chẩn đoán/)).not.toBeInTheDocument();
+  });
+
+  it("blocks refreshing during completion and keeps the authoritative completed state", async () => {
+    const current = { ...record, appointmentId: "appointment-a", diagnoses: [{ diagnosisId: "dx", diagnosisName: "Theo dõi", description: null, icdCode: null }] };
+    let resolve!: (value: MedicalRecordDTO) => void;
+    mocks.getById.mockResolvedValue(current);
+    mocks.complete.mockReturnValue(new Promise<MedicalRecordDTO>(done => { resolve = done; }));
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+    await screen.findByText("First record");
+    fireEvent.click(screen.getByText("Hoàn tất lần khám"));
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tất hồ sơ khám" }));
+    expect(screen.getByRole("button", { name: "Cập nhật hồ sơ" })).toBeDisabled();
+    expect(mocks.getById).toHaveBeenCalledTimes(1);
+    await act(async () => resolve({ ...current, status: "COMPLETED" }));
+    expect(screen.getByText("Đã hoàn tất")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Hoàn tất hồ sơ khám" })).not.toBeInTheDocument();
   });
 
   it("never attaches an old diagnosis response to another record", async () => {
@@ -116,11 +165,14 @@ describe("Medical record detail identity and permissions", () => {
     render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
     await screen.findByText("First record");
 
+    fireEvent.click(screen.getByText("Tác vụ khác"));
     if (role === "DOCTOR") expect(screen.getByRole("link", { name: "Kê đơn cho lượt khám" })).toHaveAttribute("href", "/pharmacy/prescriptions/new?patientId=patient-a&recordId=record-a");
     else expect(screen.queryByRole("link", { name: "Kê đơn cho lượt khám" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
-    expect(screen.getByRole("link", { name: "Xem xét nghiệm của lượt khám" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
-    expect(screen.getByRole("heading", { name: "Hoàn tất khám" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Lập chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
+    expect(screen.getByRole("link", { name: "Xem phiếu xét nghiệm" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
+    expect(screen.getByLabelText("Ghi chú xử trí")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Hoàn tất lần khám"));
+    expect(screen.getByLabelText("Ghi chú xử trí")).toBeVisible();
   });
 
   it("does not expose outpatient commands to nurses or to a record without an appointment", async () => {

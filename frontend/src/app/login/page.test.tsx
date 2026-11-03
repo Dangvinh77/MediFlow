@@ -22,7 +22,7 @@ describe("role-aware login landing", () => {
     expect(screen.getByLabelText("Tài khoản")).toHaveValue("");
     expect(screen.getByLabelText("Mật khẩu")).toHaveValue("");
   });
-  it.each([ ["PATIENT", "/notifications"], ["CASHIER", "/billing"], ["LAB_TECH", "/lab"] ] as const)("opens an accessible landing page for %s", async (role, destination) => {
+  it.each([ ["PATIENT", "/notifications"], ["CASHIER", "/billing/payment-requests"], ["LAB_TECH", "/lab"] ] as const)("opens an accessible landing page for %s", async (role, destination) => {
     act(() => storeSession({ accessToken: "test", refreshToken: "r", role }));
     render(<LoginPage />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith(destination));

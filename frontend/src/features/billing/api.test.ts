@@ -18,6 +18,8 @@ describe("billingApi discovery", () => {
   it("uses only the exact public adjustment and refund paths", async () => {
     await billingApi.refundsDue("rx/id");
     expect(mocks.get).toHaveBeenCalledWith("/v1/billing/prescription-adjustments/rx%2Fid/refunds-due");
+    await billingApi.labRefundsDue("lab/id");
+    expect(mocks.get).toHaveBeenCalledWith("/v1/billing/lab-adjustments/lab%2Fid/refunds-due");
     const body = { idempotencyKey: "intent", amount: 25, reason: "cancelled", paymentMethod: "CASH" as const };
     await billingApi.recordRefund("tx/id", body);
     expect(mocks.post).toHaveBeenCalledWith("/v1/billing/transactions/tx%2Fid/refunds", body);

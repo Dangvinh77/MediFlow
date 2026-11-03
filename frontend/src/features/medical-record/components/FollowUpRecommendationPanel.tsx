@@ -107,7 +107,7 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
 
   if (!enabled) return null;
   if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><p role="status" className="text-sm text-muted-foreground">Đang tải đề xuất tái khám…</p></section>;
-  if (state.status === "error") return <section className="rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger"><p role="alert">{state.error.message}</p>{state.error.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{state.error.correlationId}</span></p> : null}<Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}>Tải lại đề xuất</Button></section>;
+  if (state.status === "error") return <section className="border-t border-border py-5 text-sm text-danger"><p role="alert">{state.error.message}</p>{state.error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.error.correlationId}</p></details> : null}<Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}>Tải lại đề xuất</Button></section>;
   if (state.status === "loaded") {
     const recommendation = state.recommendation;
     return <section className="space-y-4 rounded-xl border border-border bg-surface p-6">
@@ -143,7 +143,7 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
       <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="follow-up-preparation">Hướng dẫn chuẩn bị (không bắt buộc)
         <textarea id="follow-up-preparation" value={preparationInstructions} maxLength={2000} onChange={event => { setPreparationInstructions(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
       </label>
-      {error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2"><p>{error.message}</p>{error.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></p> : null}{error.uncertain ? <p className="mt-2">Chưa xác định đã lưu đề xuất hay chưa. Gửi lại đúng lệnh để dùng cùng khóa idempotency.</p> : null}</div> : null}
+      {error ? <div role="alert" className="border-l-2 border-danger px-4 py-3 text-sm text-danger sm:col-span-2"><p>{error.message}</p>{error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {error.correlationId}</p></details> : null}{error.uncertain ? <p className="mt-2">Chưa xác định đã lưu đề xuất hay chưa. Gửi lại đúng lệnh để dùng cùng khóa idempotency.</p> : null}</div> : null}
       <div className="sm:col-span-2"><Button type="submit" loading={saving}>{error?.uncertain ? "Gửi lại cùng đề xuất" : "Tạo đề xuất tái khám"}</Button></div>
     </form> : <p className="text-sm text-muted-foreground">Chưa có đề xuất tái khám cho hồ sơ này.</p>}
   </section>;

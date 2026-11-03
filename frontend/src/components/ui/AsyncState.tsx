@@ -27,23 +27,24 @@ export function AsyncState(props: AsyncStateProps) {
     return (
       <div
         role="alert"
-        className="mt-4 flex flex-col gap-3 rounded-xl border border-danger/40 bg-surface p-4 text-sm text-danger sm:flex-row sm:items-center sm:justify-between"
+        className="mt-4 space-y-3 rounded-xl border border-danger/40 bg-surface p-4 text-sm text-danger"
       >
-        <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p>{props.message}</p>
-          {props.correlationId ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Mã theo dõi: <span className="font-mono">{props.correlationId}</span>
-            </p>
-          ) : null}
+          <button
+            type="button"
+            onClick={props.onRetry}
+            className="min-h-12 rounded-lg border border-danger/40 px-4 py-2 font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger sm:min-h-10"
+          >
+            Thử lại
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={props.onRetry}
-          className="min-h-12 rounded-lg border border-danger/40 px-4 py-2 font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger sm:min-h-10"
-        >
-          Thử lại
-        </button>
+        {props.correlationId ? (
+          <details className="text-xs text-muted-foreground">
+            <summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary>
+            <p className="mt-1 break-all">Mã theo dõi: <span className="font-mono">{props.correlationId}</span></p>
+          </details>
+        ) : null}
       </div>
     );
   }

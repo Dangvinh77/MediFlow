@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, it, expect, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { storeSession, clearSession, getSessionKey } from "@/lib/session";
@@ -7,6 +7,7 @@ import * as labRecovery from "../lab-payment-recovery";
 import * as zeroRecovery from "../lab-zero-recovery";
 import { ReferenceProvider } from "@/components/references/ReferenceProvider";
 import type { PaymentRequestDiscoveryDTO } from "../types";
+import { LabQuotePaymentAction } from "./LabQuotePaymentAction";
 
 const mocks = vi.hoisted(() => ({ queue: vi.fn(), discover: vi.fn(), quote: vi.fn(), pay: vi.fn(), zero: vi.fn() }));
 vi.mock("../api", () => ({ billingApi: {
@@ -62,6 +63,45 @@ it("selects a Lab item without entering source or episode codes and revalidates 
   expect(mocks.pay).not.toHaveBeenCalled();
 });
 
+it("replaces the selected-item action with a status and removes same-episode filtering when already active", async () => {
+  renderWorkspace();
+  await selectLab();
+
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "Chỉ khoản cùng lượt đã chọn" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Chỉ khoản cùng lượt đã chọn" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Chỉ khoản cùng lượt đã chọn" })).not.toBeInTheDocument());
+  expect(screen.getByRole("button", { name: "Xác nhận thu theo báo giá" })).toBeVisible();
+});
+
+it("shows the original quote identity on a completed receipt after recovering an older command", async () => {
+  const currentQuote = { ...(await mocks.quote()), quoteId: "new-current-quote" };
+  const saved = { quoteId: "old-submitted-quote", amount: "36000.00", currency: "VND", paymentMethod: "CASH" as const };
+  await labRecovery.saveLabPaymentRecovery(lab.paymentRequestId, getSessionKey(), saved);
+  mocks.pay.mockResolvedValue({ transactionId: "recovered-receipt", accountId: lab.accountId,
+    paymentRequestId: lab.paymentRequestId, status: "COMPLETED", amount: 36000, currency: "VND",
+    paymentMethod: "CASH", completedAt: lab.observedAt });
+
+  render(<LabQuotePaymentAction paymentRequestId={lab.paymentRequestId} quote={currentQuote} quoteCurrent />);
+  fireEvent.click(await screen.findByRole("button", { name: "Gửi lại cùng yêu cầu thu" }));
+  await waitFor(() => expect(mocks.pay).toHaveBeenCalledTimes(1));
+  expect(await screen.findByText(/Thanh toán thành công/)).toBeVisible();
+
+  const summary = await screen.findByText("Thông tin đối soát giao dịch");
+  const disclosure = summary.closest("details") as HTMLDetailsElement;
+  fireEvent.click(summary);
+  expect(disclosure).toHaveAttribute("open");
+  expect(within(disclosure).getByText("old-submitted-quote")).toBeVisible();
+  expect(within(disclosure).queryByText("new-current-quote")).not.toBeInTheDocument();
+});
+
+it("keeps the manual source lookup collapsed when queue selection is the normal path", async () => {
+  renderWorkspace();
+  await screen.findAllByText("Nguyễn An · 12/04/1986");
+  const summary = screen.getByText("Tra cứu bằng mã được bàn giao (hỗ trợ)");
+  expect(summary.closest("details")).not.toHaveAttribute("open");
+});
+
 it("blocks payment when fresh discovery no longer matches the selected queue request", async () => {
   mocks.discover.mockResolvedValue({ ...lab, paymentRequestId: rx.paymentRequestId });
   renderWorkspace(); fireEvent.click((await screen.findAllByRole("button", { name: "Chọn khoản" }))[0]);
@@ -98,11 +138,11 @@ it("keeps the selected payment mounted and locks the queue during pending and un
   const pending = deferred<never>(); mocks.pay.mockReturnValue(pending.promise);
   renderWorkspace(); fireEvent.click(await selectLab());
   await waitFor(() => expect(mocks.pay).toHaveBeenCalledTimes(1));
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
   expect(screen.getByLabelText("Tìm bệnh nhân chờ thu")).toBeDisabled();
   await act(async () => pending.reject(new TypeError("Connection lost")));
   expect(await screen.findByRole("button", { name: /Gửi lại cùng yêu cầu/ })).toBeVisible();
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
   expect(mocks.discover).toHaveBeenCalledTimes(1);
 });
 
@@ -135,8 +175,12 @@ it("keeps the confirmed receipt and refreshes the queue even if the detail balan
   mocks.pay.mockResolvedValue({ transactionId: "receipt", accountId: lab.accountId, paymentRequestId: lab.paymentRequestId,
     classification: "SERVICE_PAYMENT", status: "COMPLETED", amount: 36000, currency: "VND", paymentMethod: "CASH", completedAt: lab.observedAt });
   renderWorkspace(); fireEvent.click(await selectLab());
-  expect(await screen.findByText(/Thanh toán thành công.*receipt/)).toBeVisible();
+  expect(await screen.findByText(/Thanh toán thành công/)).toBeVisible();
   expect(await screen.findByText(/Chưa cập nhật được số dư sau thanh toán/)).toBeVisible();
+  const supportSummary = await screen.findByText("Thông tin đối soát khoản đã chọn");
+  const support = supportSummary.closest("details") as HTMLDetailsElement;
+  fireEvent.click(supportSummary);
+  expect(within(support).getByText("receipt")).toBeVisible();
   await waitFor(() => expect(mocks.queue).toHaveBeenCalledTimes(2));
   expect(screen.getAllByRole("button", { name: "Chọn khoản" })).toHaveLength(1);
   expect(mocks.pay).toHaveBeenCalledTimes(1);
@@ -144,7 +188,7 @@ it("keeps the confirmed receipt and refreshes the queue even if the detail balan
   fireEvent.click(screen.getByRole("button", { name: "Đọc lại khoản đang đối chiếu" }));
   expect(await screen.findByText(/Số dư đọc lại chưa phản ánh khoản thu/)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Xác nhận thu theo báo giá" })).not.toBeInTheDocument();
-  expect(screen.getByText(/Thanh toán thành công.*receipt/)).toBeVisible();
+  expect(screen.getByText(/Thanh toán thành công/)).toBeVisible();
 });
 
 it("locks queue selection during an uncertain zero-liability acknowledgment", async () => {
@@ -156,10 +200,10 @@ it("locks queue selection during an uncertain zero-liability acknowledgment", as
   const confirm = await screen.findByRole("button", { name: "Xác nhận nghĩa vụ 0 đồng" });
   await waitFor(() => expect(confirm).toBeEnabled()); fireEvent.click(confirm);
   await waitFor(() => expect(mocks.zero).toHaveBeenCalledTimes(1));
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
   await act(async () => pending.reject(new TypeError("Connection lost")));
   expect(await screen.findByRole("button", { name: "Gửi lại cùng yêu cầu xác nhận 0 đồng" })).toBeVisible();
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
   expect(mocks.pay).not.toHaveBeenCalled();
 });
 
@@ -188,7 +232,7 @@ it("keeps the same-payment retry visible after its quote expires during uncertai
   expect(await screen.findByRole("button", { name: /Gửi lại cùng yêu cầu/ })).toBeVisible();
   await act(async () => { await vi.advanceTimersByTimeAsync(16000); });
   expect(screen.getByRole("button", { name: /Gửi lại cùng yêu cầu/ })).toBeVisible();
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
 });
 
 it.each([false, true])("never sends a %s zero-liability command after the actor changes during preparation", async (zero) => {
@@ -279,7 +323,7 @@ it("keeps the original uncertain payment locked when saving its replay fails", a
   renderWorkspace(); fireEvent.click((await screen.findAllByRole("button", { name: "Chọn khoản" }))[0]);
   fireEvent.click(await screen.findByRole("button", { name: /Gửi lại cùng yêu cầu/ }));
   expect(await screen.findByText("storage unavailable")).toBeVisible();
-  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[1]).toBeDisabled();
+  expect(screen.getAllByRole("button", { name: "Chọn khoản" })[0]).toBeDisabled();
   expect(screen.getByRole("button", { name: /Gửi lại cùng yêu cầu/ })).toBeVisible();
   expect(mocks.pay).not.toHaveBeenCalled();
   expect(await labRecovery.readLabPaymentRecovery(lab.paymentRequestId, actor)).toEqual(saved);

@@ -97,7 +97,12 @@ describe("PaymentRequestLookupForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tra cứu khoản phí" }));
     const confirm = await screen.findByRole("button", { name: "Xác nhận thanh toán" });
     fireEvent.click(confirm);
-    expect(await screen.findByText(/Thanh toán thành công/)).toBeVisible();
+    const success = await screen.findByText(/Thanh toán thành công/);
+    expect(success).toBeVisible();
+    expect(success.closest("[role=status]")).not.toHaveTextContent(payment().transactionId);
+    const reconciliation = screen.getByText("Thông tin đối soát khoản đã chọn");
+    fireEvent.click(reconciliation);
+    expect(screen.getByText(payment().transactionId)).toBeVisible();
     await waitFor(() => expect(mocks.discover).toHaveBeenCalledTimes(2));
     expect(await screen.findByRole("alert")).toHaveTextContent(/Chưa cập nhật được số dư/);
     expect(screen.queryByRole("button", { name: "Xác nhận thanh toán" })).not.toBeInTheDocument();
@@ -129,7 +134,9 @@ describe("PaymentRequestLookupForm", () => {
     expect(await screen.findByRole("region", { name: "Chi tiết khoản phí" })).toBeVisible();
     expect(screen.getByText("Còn phải thu")).toBeVisible();
     expect(within(screen.getByRole("region", { name: "Chi tiết khoản phí" })).getAllByText(/75.*VND/).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Mã tiền", { exact: false })).toHaveValue("VND");
+    expect(screen.getByText("Mã tiền")).toBeVisible();
+    expect(screen.getByText("VND")).toBeVisible();
+    expect(screen.queryByLabelText(/Mã tiền/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Số tiền", { exact: false })).toHaveValue("75");
 
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận thanh toán" }));
@@ -238,7 +245,12 @@ describe("PaymentRequestLookupForm", () => {
     await waitFor(() => expect(confirmZero).toBeEnabled());
     fireEvent.click(confirmZero);
 
-    expect(await screen.findByText(/lab-clearance-id/)).toBeVisible();
+    await waitFor(() => expect(screen.getAllByRole("status").some(status => status.textContent?.includes("Đã xác nhận nghĩa vụ 0 đồng"))).toBe(true));
+    const zeroStatuses = screen.getAllByRole("status").filter(status => status.textContent?.includes("Đã xác nhận nghĩa vụ 0 đồng"));
+    expect(zeroStatuses.length).toBeGreaterThan(0);
+    zeroStatuses.forEach(status => expect(status).not.toHaveTextContent("lab-clearance-id"));
+    fireEvent.click(screen.getByText("Thông tin đối soát khoản đã chọn"));
+    expect(screen.getByText("lab-clearance-id")).toBeVisible();
     expect(mocks.labZero).toHaveBeenCalledWith(requestId, { quoteId: "lab-quote-id" }, expect.objectContaining({ idempotencyKey: expect.any(String), correlationId: expect.any(String) }));
     expect(mocks.complete).not.toHaveBeenCalled();
   });
@@ -268,7 +280,11 @@ describe("PaymentRequestLookupForm", () => {
     await waitFor(() => expect(confirm).toBeEnabled());
     fireEvent.click(confirm);
 
-    expect(await screen.findByText(/thanh toán thành công/i)).toBeVisible();
+    const success = await screen.findByText(/thanh toán thành công/i);
+    expect(success).toBeVisible();
+    expect(success.closest("[role=status]")).not.toHaveTextContent(payment().transactionId);
+    fireEvent.click(screen.getByText("Thông tin đối soát khoản đã chọn"));
+    expect(screen.getByText(payment().transactionId)).toBeVisible();
     expect(mocks.labPayment).toHaveBeenCalledWith(requestId, {
       quoteId: "lab-positive-quote", amount: "80.00", currency: "VND", paymentMethod: "BANK_TRANSFER",
     }, { idempotencyKey: expect.any(String), correlationId: expect.any(String) });

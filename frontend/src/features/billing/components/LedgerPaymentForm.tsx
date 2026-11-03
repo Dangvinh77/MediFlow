@@ -1,6 +1,5 @@
 "use client";
 
-import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -94,7 +93,7 @@ function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLock
       amount: cents / 100,
       currency: currency as string,
       paymentMethod: method,
-      providerReference: reference || null,
+      providerReference: method === "TRANSFER" ? reference || null : null,
     });
   }
 
@@ -118,14 +117,15 @@ function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLock
       ) : null}
       {result?.status === "COMPLETED" ? (
         <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          Thanh toán thành công. Mã giao dịch: <span className="font-mono"><ReferenceText value={result.transactionId} fallback="Giao dịch" /></span>
+          Thanh toán thành công. Đã ghi nhận {formatDecimal(result.amount)} {result.currency}.
         </p>
       ) : null}
       {result?.status === "PENDING" ? (
         <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-          Giao dịch đang chờ xác nhận. Mã giao dịch: <span className="font-mono"><ReferenceText value={result.transactionId} fallback="Giao dịch" /></span>
+          Giao dịch đang chờ xác nhận.
         </p>
       ) : null}
+      {result ? <details className="text-sm text-muted-foreground"><summary className="min-h-8 cursor-pointer">Thông tin biên nhận</summary><dl className="mt-2 space-y-1 break-all"><dt>Mã giao dịch</dt><dd className="font-mono">{result.transactionId}</dd></dl></details> : null}
       {result && result.status !== "COMPLETED" ? (
         <p className="text-sm text-muted-foreground"><Link className="font-semibold underline" href="/billing/payment-requests">Tra cứu lại trạng thái khoản phí</Link> trước khi gửi giao dịch khác.</p>
       ) : null}
@@ -133,17 +133,15 @@ function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLock
         <Field label="Số tiền" htmlFor="ledger-payment-amount" required hint={`Tối đa ${formatDecimal(remainingAmount)} ${currency}`}>
           <input id="ledger-payment-amount" inputMode="decimal" value={amount} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setAmount(event.target.value); setError(null); setResult(null); }} className={controlClassName} />
         </Field>
-        <Field label="Mã tiền (ISO 4217)" htmlFor="ledger-payment-currency" required>
-          <input id="ledger-payment-currency" value={currency} readOnly disabled={submitting || lockedToRetry || result !== null} className={controlClassName} />
-        </Field>
+        <dl className="space-y-1 text-sm"><dt className="font-medium">Mã tiền</dt><dd className="min-h-11 rounded-lg border border-border bg-surface-muted px-3 py-2.5 font-semibold tabular-nums">{currency}</dd></dl>
         <Field label="Hình thức" htmlFor="ledger-payment-method" required>
           <select id="ledger-payment-method" value={method} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setMethod(event.target.value as LedgerPaymentMethod); setError(null); setResult(null); }} className={controlClassName}>
             {Object.entries(methodLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </Field>
-        <Field label="Mã tham chiếu" htmlFor="ledger-payment-reference" hint="Dùng cho chuyển khoản nếu có.">
+        {method === "TRANSFER" ? <Field label="Mã tham chiếu" htmlFor="ledger-payment-reference" hint="Nhập mã trên biên nhận chuyển khoản.">
           <input id="ledger-payment-reference" value={providerReference} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setProviderReference(event.target.value); setError(null); setResult(null); }} className={controlClassName} />
-        </Field>
+        </Field> : null}
       </div>
       {pendingRetry ? (
         <Button type="button" variant="primary" loading={submitting} onClick={() => void runPayment(pendingRetry)}>Thử lại cùng giao dịch</Button>

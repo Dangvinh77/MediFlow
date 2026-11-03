@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-03",
+  "baseline": "2e3fa734c162d29340c12c2b48b557ae43ef992b",
+  "scope": "Doctor, Lab, cashier and shared UI polish working tree",
+  "command": "pnpm test --maxWorkers=4 --testTimeout=20000 --reporter=json",
+  "files": 145,
+  "total": 1299,
+  "passed": 1299,
+  "failed": 0,
+  "skipped": 0,
+  "typecheck": "passed",
+  "lint": "passed",
+  "productionBuild": "passed",
+  "independentReview": "Go; no actionable findings",
+  "browser": "Local API fixtures, synthetic patient; desktop 1440 and mobile 390; not real backend acceptance",
+  "note": "Earlier broad failures from changed support visibility and keyboard order were resolved; final run is the result recorded here."
+}

@@ -4,7 +4,7 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import Link from "next/link";
 import { FinancialStatus } from "./FinancialStatus";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
@@ -14,10 +14,13 @@ import { formatInstant, formatLocalDate } from "@/lib/format";
 import { labApi } from "../api";
 import type { LabTestDTO, LabTestStatus } from "../types";
 import { LabActions } from "./LabActions";
+import { safeLabReturn } from "../navigation";
+import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 
 interface LabDetailProps {
   testId: string;
   notice?: "created";
+  returnTo?: string;
 }
 
 interface RequestError {
@@ -59,15 +62,19 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function LabDetail({ testId, notice }: LabDetailProps) {
+export function LabDetail({ testId, notice, returnTo }: LabDetailProps) {
+  const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   // Keep pending reads and mutation callbacks scoped to the selected lab test.
-  return <LabDetailContent key={testId} testId={testId} notice={notice} />;
+  return <LabDetailContent key={`${testId}:${session}`} testId={testId} notice={notice} returnTo={returnTo} />;
 }
 
-function LabDetailContent({ testId, notice }: LabDetailProps) {
+function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
+  const backHref = safeLabReturn(returnTo);
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
+  const [refreshBlocked, setRefreshBlocked] = useState(false);
+  const [refreshError, setRefreshError] = useState<RequestError | null>(null);
   const requestKey = `${testId}\u0000${retryToken}`;
   const loading = state.key !== requestKey;
   const retry = useCallback(() => setRetryToken((value) => value + 1), []);
@@ -76,7 +83,10 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
     let active = true;
     labApi.getById(testId)
       .then((test) => {
-        if (active) setState({ key: requestKey, status: "success", test });
+        if (active) {
+          setRefreshError(null);
+          setState({ key: requestKey, status: "success", test });
+        }
       })
       .catch((cause: unknown) => {
         if (!active) return;
@@ -88,21 +98,25 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
           setState({ key: requestKey, status: "not-found" });
           return;
         }
-        setState({ key: requestKey, status: "error", error: getRequestError(cause) });
+        const error = getRequestError(cause);
+        setRefreshError(error);
+        setState(current => current.status === "success"
+          ? { ...current, key: requestKey }
+          : { key: requestKey, status: "error", error });
       });
     return () => {
       active = false;
     };
   }, [requestKey, router, testId]);
 
-  if (loading) return <AsyncState kind="loading" message="Đang tải chi tiết xét nghiệm…" />;
+  if (loading && state.status !== "success") return <AsyncState kind="loading" message="Đang tải chi tiết xét nghiệm…" />;
 
   if (state.status === "not-found") {
     return (
       <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold">Không tìm thấy xét nghiệm</h2>
         <p className="mt-2 text-sm text-muted-foreground">Yêu cầu có thể đã bị xóa hoặc mã truy cập không còn hợp lệ.</p>
-        <Link href="/lab" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
+        <Link href={backHref} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
       </section>
     );
   }
@@ -135,39 +149,20 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
         </div>
       </PatientContextBanner>
 
-      <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
+      <LabActions
+        test={test}
+        refreshing={loading || Boolean(refreshError)}
+        onRefreshBlockedChange={setRefreshBlocked}
+        onUpdated={(updated) => setState({ key: requestKey, status: "success", test: updated })}
+      />
+
+      <dl className="grid gap-5 border-b border-border py-4 sm:grid-cols-2 lg:grid-cols-3">
         <div><dt className="text-sm text-muted-foreground">Hình thức khám</dt><dd className="mt-1 text-sm">{test.careEpisodeType === "OUTPATIENT_VISIT" ? "Ngoại trú" : test.careEpisodeType === "ADMISSION" ? "Nội trú" : "Chưa có thông tin"}</dd></div>
         <div><dt className="text-sm text-muted-foreground">Ngày yêu cầu</dt><dd className="mt-1 text-sm">{formatLocalDate(test.requestedDate)}</dd></div>
         <div><dt className="text-sm text-muted-foreground">Ngày thực hiện</dt><dd className="mt-1 text-sm">{test.performedDate ? formatLocalDate(test.performedDate) : "Chưa thực hiện"}</dd></div>
       </dl>
 
-      <details className="rounded-xl border border-border bg-surface p-5">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin tham chiếu và hỗ trợ</summary>
-        <dl className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <Identifier label="Mã xét nghiệm" value={test.testId} />
-        <Identifier label="Hồ sơ khám" value={test.recordId} />
-        <Identifier label="Khoa yêu cầu" value={test.requestingDepartmentId} />
-        <Identifier label="Nguồn chỉ định" value={test.sourceOrderId} />
-        <Identifier label="Đợt chăm sóc" value={test.careEpisodeId} />
-        <Identifier label="Xác nhận tài chính" value={test.clearanceId} />
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã giá</dt><dd className="mt-1 text-sm">{test.priceCode ?? "—"}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phiên bản dữ liệu</dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(test.createdAt)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(test.updatedAt)}</dd></div>
-        </dl>
-      </details>
-
-      <details className="rounded-xl border border-border bg-surface p-5">
-        <summary className="cursor-pointer font-semibold">Thông tin bàn giao thu ngân</summary>
-        <p className="mt-2 text-sm text-muted-foreground">Dùng các mã của yêu cầu này khi tra cứu khoản phí xét nghiệm. Nhấp vào ô để chọn và sao chép.</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {[["test", "Mã xét nghiệm bàn giao", test.testId], ["patient", "Mã bệnh nhân bàn giao", test.patientId], ["episode", "Mã đợt chăm sóc bàn giao", test.careEpisodeId]].map(([key, label, value]) => <label key={key} htmlFor={`lab-handoff-${key}`} className="space-y-1 text-sm">{label}
-            {value ? <input id={`lab-handoff-${key}`} readOnly value={value} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" /> : <span className="block text-warning">Chưa có mã đợt chăm sóc. Liên hệ bộ phận chỉ định để đối soát.</span>}
-          </label>)}
-        </div>
-      </details>
-
-      <section className="rounded-xl border border-border bg-surface p-6">
+      <section className="border-b border-border py-5">
         <h2 className="text-lg font-semibold">Kết quả xét nghiệm</h2>
         {results.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có chỉ số kết quả.</p> : (
           <div className="mt-4 overflow-x-auto">
@@ -180,15 +175,34 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
         <div className="mt-5 border-t border-border pt-4"><h3 className="text-sm font-semibold">Kết luận</h3><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{test.conclusion ?? "Chưa có kết luận."}</p></div>
       </section>
 
-      <LabActions
-        key={requestKey}
-        test={test}
-        onUpdated={(updated) => setState({ key: requestKey, status: "success", test: updated })}
-      />
-      <Button type="button" onClick={retry}>Cập nhật trạng thái xét nghiệm</Button>
+      {refreshError ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger"><p>{refreshError.message}</p>{refreshError.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã hỗ trợ: {refreshError.correlationId}</p></details> : null}<p className="mt-1 text-xs">Đang hiển thị thông tin đã tải trước đó. Cập nhật lại trước khi tiếp tục xử lý.</p></div> : null}
+      <div className="flex flex-wrap items-center gap-3"><Button type="button" variant="ghost" disabled={refreshBlocked || loading} onClick={retry}>Cập nhật trạng thái xét nghiệm</Button>{refreshBlocked ? <p className="text-xs text-muted-foreground">Lưu hoặc đóng biểu mẫu trước khi cập nhật.</p> : null}{loading ? <p role="status" className="text-sm text-muted-foreground">Đang cập nhật…</p> : null}</div>
+
+      <details className="border-t border-border py-3">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin bàn giao thu ngân và hỗ trợ</summary>
+        <dl className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Identifier label="Mã xét nghiệm" value={test.testId} />
+        <Identifier label="Hồ sơ khám" value={test.recordId} />
+        <Identifier label="Khoa yêu cầu" value={test.requestingDepartmentId} />
+        <Identifier label="Nguồn chỉ định" value={test.sourceOrderId} />
+        <Identifier label="Đợt chăm sóc" value={test.careEpisodeId} />
+        <Identifier label="Xác nhận tài chính" value={test.clearanceId} />
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã giá</dt><dd className="mt-1 text-sm">{test.priceCode ?? "—"}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phiên bản dữ liệu</dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(test.createdAt)}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(test.updatedAt)}</dd></div>
+        </dl>
+        <p className="mt-2 text-sm text-muted-foreground">Thu ngân mở “Thu phí xét nghiệm &amp; thuốc”, tìm bệnh nhân và cập nhật hàng chờ. Các mã dưới đây dùng khi cần hỗ trợ đối soát; nhấp vào ô để chọn và sao chép.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {[["test", "Mã xét nghiệm bàn giao", test.testId], ["patient", "Mã bệnh nhân bàn giao", test.patientId], ["episode", "Mã đợt chăm sóc bàn giao", test.careEpisodeId]].map(([key, label, value]) => <label key={key} htmlFor={`lab-handoff-${key}`} className="space-y-1 text-sm">{label}
+            {value ? <input id={`lab-handoff-${key}`} readOnly value={value} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" /> : <span className="block text-warning">Chưa có mã đợt chăm sóc. Liên hệ bộ phận chỉ định để đối soát.</span>}
+          </label>)}
+        </div>
+      </details>
+
 
       {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs"><ReferenceText value={test.emergencyOverrideId} fallback="Phê duyệt ngoại lệ" /></p></section> : null}
-      <Link href="/lab" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
+      <Link href={backHref} className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
     </section>
   );
 }

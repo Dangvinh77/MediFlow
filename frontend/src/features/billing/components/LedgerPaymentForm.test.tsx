@@ -29,7 +29,6 @@ function payment(paymentRequestId: string, status: LedgerPaymentDTO["status"] = 
 
 function enterValidPayment(amount = "125.50") {
   fireEvent.change(screen.getByLabelText("Số tiền", { exact: false }), { target: { value: amount } });
-  fireEvent.change(screen.getByLabelText("Mã tiền (ISO 4217)", { exact: false }), { target: { value: "VND" } });
 }
 
 describe("LedgerPaymentForm", () => {
@@ -48,7 +47,9 @@ describe("LedgerPaymentForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/thử lại đúng giao dịch/i);
     expect(screen.getByLabelText("Số tiền", { exact: false })).toBeDisabled();
-    expect(screen.getByLabelText("Mã tiền (ISO 4217)", { exact: false })).toBeDisabled();
+    expect(screen.getByText("Mã tiền")).toBeVisible();
+    expect(screen.getByText("VND")).toBeVisible();
+    expect(screen.queryByLabelText(/Mã tiền/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thử lại cùng giao dịch" })).toBeEnabled();
     const submitted = mocks.complete.mock.calls[0][1];
 
@@ -97,7 +98,28 @@ describe("LedgerPaymentForm", () => {
 
     expect(screen.queryByText(payment(firstId).transactionId)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Số tiền", { exact: false })).toHaveValue("300");
-    expect(screen.getByLabelText("Mã tiền", { exact: false })).toHaveValue("USD");
+    expect(screen.getByText("USD")).toBeVisible();
+    expect(screen.queryByLabelText(/Mã tiền/)).not.toBeInTheDocument();
+  });
+
+  it("keeps currency read-only, hides cash transfer reference and allows a partial payment", async () => {
+    mocks.complete.mockResolvedValue(payment(firstId));
+    render(<LedgerPaymentForm requestId={firstId} remainingAmount={200} currency="VND" />);
+
+    expect(screen.getByText("VND")).toBeVisible();
+    expect(screen.queryByLabelText(/Mã tiền/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Mã tham chiếu")).not.toBeInTheDocument();
+    enterValidPayment("25.00");
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận thanh toán" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/thanh toán thành công/i);
+    expect(mocks.complete).toHaveBeenCalledWith(firstId, expect.objectContaining({ amount: 25, currency: "VND", paymentMethod: "CASH", providerReference: null }));
+  });
+
+  it("asks for a provider reference only for bank transfer", () => {
+    render(<LedgerPaymentForm requestId={firstId} remainingAmount={200} currency="VND" />);
+    fireEvent.change(screen.getByLabelText("Hình thức", { exact: false }), { target: { value: "TRANSFER" } });
+    expect(screen.getByLabelText("Mã tham chiếu")).toBeVisible();
   });
 
   it("rejects decimal amounts with more than two places before calling the API", async () => {

@@ -123,7 +123,7 @@ export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpires
   }
 
   if (result) return <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm">
-    Đã xác nhận nghĩa vụ 0 đồng. Mã xác nhận: <span className="font-mono">{result.clearanceId}</span>
+    Đã xác nhận nghĩa vụ 0 đồng.
   </p>;
 
   return <div className="space-y-3 rounded-lg border border-border p-4">

@@ -78,7 +78,7 @@ export interface AddLabResultsRequest {
 
 export interface CancelLabTestRequest {
   reason: string;
-  cancelledBy: string;
+  cancelledBy?: string | null;
 }
 export interface PatientLabResultDTO {
   testId: string;

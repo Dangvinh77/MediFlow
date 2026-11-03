@@ -15,7 +15,7 @@ function landingPage(schedulingEnabled: boolean) {
   if (mustChangePassword()) return "/organization/security";
   switch (getRole()) {
     case "PATIENT": return schedulingEnabled ? "/appointments/my-registration" : "/notifications";
-    case "CASHIER": return schedulingEnabled ? "/billing/scheduled-payments" : "/billing";
+    case "CASHIER": return schedulingEnabled ? "/billing/scheduled-payments" : "/billing/payment-requests";
     case "LAB_TECH": return "/lab";
     case "PHARMACIST": return "/pharmacy";
     case "MANAGER": return schedulingEnabled ? "/appointments/schedule" : "/reports";

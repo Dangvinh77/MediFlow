@@ -68,6 +68,8 @@ describe("InvoiceForm", () => {
     fillPatientId(patientId);
     submit();
 
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
+
     expect(await screen.findByText("trace-create", { exact: false })).toBeVisible();
     expect(screen.getByText("Bệnh nhân không tồn tại.")).toBeVisible();
     expect(mocks.push).not.toHaveBeenCalled();

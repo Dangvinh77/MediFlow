@@ -5,9 +5,8 @@ export function CommandFeedback({ error, uncertain = false }: { error: CommandEr
   return (
     <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p>{error.message}</p>
-      {error.code ? <p className="mt-1 break-all font-mono text-xs">{error.code}</p> : null}
       {error.details.length ? <ul className="mt-2 list-inside list-disc">{error.details.map((detail, index) => <li key={`${detail.field}-${index}`}>{detail.field}: {detail.message}</li>)}</ul> : null}
-      {error.correlationId ? <p className="mt-2 break-all text-xs">Mã theo dõi: {error.correlationId}</p> : null}
+      {error.code || error.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary>{error.code ? <p className="mt-1 break-all font-mono">{error.code}</p> : null}{error.correlationId ? <p className="mt-1 break-all font-mono">Mã theo dõi: {error.correlationId}</p> : null}</details> : null}
       {uncertain ? <p className="mt-2">Chưa xác định thao tác đã được lưu hay chưa. Kiểm tra trạng thái hiện tại trước khi gửi lại.</p> : null}
     </div>
   );

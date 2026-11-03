@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -46,9 +45,9 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
     return () => { active = false; };
   }, [filters, attempt]);
 
-  function changeFilters(next: PaymentRequestQueueQuery) {
+  function changeFilters(next: PaymentRequestQueueQuery, preserveSelection = false) {
     if (lock.current) return;
-    if (next.patientId !== filters.patientId || next.purpose !== filters.purpose) setSelection(null);
+    if (!preserveSelection && (next.patientId !== filters.patientId || next.purpose !== filters.purpose)) setSelection(null);
     setFilters(next); setLoading(true); setResult(null); setError(null);
   }
 
@@ -60,11 +59,10 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
       patientId: request.patientId, careEpisodeId: request.careEpisodeId });
   }
 
+  const needsEpisodeScope = Boolean(selection && (filters.patientId !== selection.patientId || filters.careEpisodeId !== selection.careEpisodeId));
+
   return <div className="space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-      <p className="text-muted-foreground">Chọn khoản đã phát sinh, đối chiếu bệnh nhân rồi thu theo số dư hiện hành.</p>
-      <Link href="/billing/scheduled-payments" className="min-h-11 rounded-lg border border-border px-4 py-3 font-medium hover:bg-surface-muted">Thu phí khám</Link>
-    </div>
+    <p className="text-sm text-muted-foreground">Chọn khoản đã phát sinh, đối chiếu bệnh nhân rồi thu theo số dư hiện hành.</p>
     {locked ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Đang đối soát khoản đã chọn. Chưa đổi bệnh nhân hoặc khoản thu khi kết quả giao dịch chưa rõ.</p> : null}
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
       <section aria-label="Hàng khoản thu" className="min-w-0 rounded-xl border border-border bg-surface p-5">
@@ -85,7 +83,7 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
               <option value="">Xét nghiệm và thuốc</option><option value="LAB_TEST">Xét nghiệm</option><option value="PRESCRIPTION">Đơn thuốc</option>
             </select>
           </label>
-          {selection ? <Button type="button" variant="secondary" disabled={locked} onClick={() => changeFilters({ ...filters, patientId: selection.patientId, careEpisodeId: selection.careEpisodeId, page: 0 })}>Chỉ khoản cùng lượt đã chọn</Button> : null}
+          {needsEpisodeScope && selection ? <Button type="button" variant="secondary" disabled={locked} onClick={() => changeFilters({ ...filters, patientId: selection.patientId, careEpisodeId: selection.careEpisodeId, page: 0 }, true)}>Chỉ khoản cùng lượt đã chọn</Button> : null}
           {filters.patientId || filters.purpose || filters.careEpisodeId ? <Button type="button" variant="secondary" disabled={locked} onClick={() => changeFilters({ page: 0 })}>Bỏ bộ lọc</Button> : null}
           {filters.careEpisodeId ? <p className="text-sm text-primary">Đang xem các khoản cùng lượt đã chọn.</p> : null}
         </div>
@@ -104,7 +102,8 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
                 <p className="text-sm text-muted-foreground"><ReferenceText kind="department" value={request.departmentId} fallback="Khoa" /> · Phát sinh {formatInstant(item.createdAt)}</p>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="font-semibold">{request.remainingAmount === 0 ? "Xác nhận nghĩa vụ 0 đồng" : `${formatDecimal(request.remainingAmount)} ${request.currency}`}</p>
-                  <Button type="button" variant={selected ? "primary" : "secondary"} disabled={locked} onClick={() => choose(item)}>Chọn khoản</Button>
+                  {selected ? <span role="status" className="text-sm font-medium text-primary">Đang đối chiếu</span>
+                    : <Button type="button" variant="secondary" disabled={locked} onClick={() => choose(item)}>Chọn khoản</Button>}
                 </div>
                 {request.expiresAt ? <p className="text-xs text-muted-foreground">Hạn xử lý: {formatInstant(request.expiresAt)}</p> : null}
               </li>;

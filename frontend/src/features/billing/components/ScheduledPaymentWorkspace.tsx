@@ -53,7 +53,7 @@ function terminalResult(result: ScheduledPaymentResult | null) {
 
 export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroLiabilityEnabled = false }: ScheduledPaymentWorkspaceProps) {
   const [registrationId, setRegistrationId] = useState("");
-  const [manualLookupOpen, setManualLookupOpen] = useState(true);
+  const [manualLookupOpen, setManualLookupOpen] = useState(false);
   const [request, setRequest] = useState<RegistrationPaymentRequestDTO | null>(null);
   const [lookupError, setLookupError] = useState<WorkspaceError | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -432,19 +432,34 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
       </div> : null}
 
       {completed ? zeroConfirmed && paymentResult?.clearanceId
-        ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Đã xác nhận nghĩa vụ 0 đồng. <ReferenceText value={paymentResult.clearanceId} fallback="Xác nhận đã lưu" technical /></p>
+        ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Đã xác nhận nghĩa vụ 0 đồng.</p>
         : <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Billing đã xác nhận khoản thu hoặc nghĩa vụ của yêu cầu này.</p> : null}
       {pending ? <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
         <p>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu để tránh thu trùng." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu để tránh thu trùng."}</p>
         <Button className="mt-3" loading={checkingOperation} onClick={() => void checkOperation()}>Kiểm tra trạng thái giao dịch</Button>
       </div> : null}
       {closed ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm">Billing đã xác nhận giao dịch này được đóng mà chưa thu tiền. Tra cứu lại khoản thu trước khi thao tác tiếp.</p> : null}
-      {paymentResult?.operation.status === "COMPLETED" && paymentResult.payment ? <p className="break-all text-sm text-muted-foreground">Biên nhận: <ReferenceText value={paymentResult.payment.transactionId} fallback="Biên nhận đã lưu" technical /> · {formatDecimal(paymentResult.payment.amount)} {paymentResult.payment.currency}</p> : null}
+      {paymentResult?.operation.status === "COMPLETED" && paymentResult.payment ? <p className="text-sm text-muted-foreground">Đã ghi nhận {formatDecimal(paymentResult.payment.amount)} {paymentResult.payment.currency}.</p> : null}
       {paymentError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
         <p>{paymentError.message}</p>
         {paymentError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{paymentError.correlationId}</span></p> : null}
         {uncertain ? <p className="mt-2">Chưa xác định kết quả thu tiền. Không tạo yêu cầu mới; hãy gửi lại chính yêu cầu này hoặc kiểm tra trạng thái.</p> : null}
       </div> : null}
+
+      <details className="text-sm text-muted-foreground">
+        <summary className="min-h-8 cursor-pointer">Thông tin đối soát khoản thu</summary>
+        <dl className="mt-2 grid gap-2 break-all sm:grid-cols-2">
+          <SupportInfo label="Mã đăng ký" value={request.registrationId} />
+          <SupportInfo label="Mã yêu cầu" value={request.paymentRequestId} />
+          <SupportInfo label="Mã hóa đơn" value={request.invoiceId} />
+          <SupportInfo label="Mã tài khoản" value={request.accountId} />
+          <SupportInfo label="Mã giữ chỗ" value={request.reservationId} />
+          <SupportInfo label="Mã báo giá" value={paymentResult?.operation.quoteId ?? quote?.quoteId ?? null} />
+          <SupportInfo label="Mã thao tác" value={paymentResult?.operation.paymentOperationId ?? recoveredOperationId} />
+          <SupportInfo label="Mã giao dịch" value={paymentResult?.payment?.transactionId ?? paymentResult?.operation.transactionId ?? null} />
+          <SupportInfo label="Mã xác nhận 0 đồng" value={paymentResult?.clearanceId ?? null} />
+        </dl>
+      </details>
 
       {patientFormVisible ? <form className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); if (uncertain && lastIntent?.kind === "PATIENT_PAYMENT") void submit(lastIntent); else startPayment(); }}>
         <label className="space-y-1 text-sm font-medium" htmlFor="scheduled-payment-method">
@@ -474,4 +489,8 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
       {!hasDue && !quoteZero && !completed && !pending && !closed ? <p role="status" className="border-t border-border pt-4 text-sm text-muted-foreground">Khoản này chưa sẵn sàng để thu hoặc không còn số dư dương.</p> : null}
     </section> : null}
   </div>;
+}
+
+function SupportInfo({ label, value }: { label: string; value: string | null }) {
+  return value ? <div><dt className="text-xs">{label}</dt><dd className="font-mono">{value}</dd></div> : null;
 }

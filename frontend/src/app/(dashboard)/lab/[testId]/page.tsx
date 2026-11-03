@@ -8,12 +8,12 @@ export const metadata: Metadata = { title: "Chi tiết xét nghiệm | MediFlow"
 
 interface LabDetailPageProps {
   params: Promise<{ testId: string }>;
-  searchParams: Promise<{ notice?: string }>;
+  searchParams: Promise<{ notice?: string; returnTo?: string }>;
 }
 
 export default async function LabDetailPage({ params, searchParams }: LabDetailPageProps) {
   const { testId } = await params;
-  const { notice } = await searchParams;
+  const { notice, returnTo } = await searchParams;
   const id = testId.trim();
 
   return (
@@ -25,7 +25,7 @@ export default async function LabDetailPage({ params, searchParams }: LabDetailP
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"]}>
-          <LabDetail testId={id} notice={notice === "created" ? "created" : undefined} />
+          <LabDetail testId={id} notice={notice === "created" ? "created" : undefined} returnTo={returnTo} />
         </RoleGate>
       )}
     </PageShell>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Role } from "@/lib/roles";
 import { DashboardHeader } from "./DashboardHeader";
@@ -13,6 +13,8 @@ describe("Personal profile navigation", () => {
   });
   it.each<Role>(["ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"])("offers the profile for %s", (role) => {
     render(<DashboardHeader role={role} onLogout={vi.fn()} onOpenNavigation={vi.fn()} />);
+    expect(screen.getByText("Hồ sơ cá nhân")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Tài khoản"));
     expect(screen.getByRole("link", { name: "Hồ sơ cá nhân" })).toHaveAttribute("href", "/organization/profile");
   });
   it.each([null, "SYSTEM"] as const)("does not offer a human profile for %s", (role) => {

@@ -1,23 +1,26 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent } from "react";
-import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { useCommand } from "@/lib/use-command";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
-import { isUuid } from "@/lib/validation";
 import { labApi } from "../api";
 import type { LabResultInput, LabTestDTO } from "../types";
 
 
-interface LabActionsProps { test: LabTestDTO; onUpdated: (test: LabTestDTO) => void }
+interface LabActionsProps {
+  test: LabTestDTO;
+  onUpdated: (test: LabTestDTO) => void;
+  onRefreshBlockedChange?: (blocked: boolean) => void;
+  refreshing?: boolean;
+}
 const getServerRole = () => null;
 const emptyResult = (): LabResultInput => ({ indicator: "", value: "", unit: null, referenceRange: null });
 
-export function LabActions({ test, onUpdated }: LabActionsProps) {
+export function LabActions({ test, onUpdated, onRefreshBlockedChange, refreshing = false }: LabActionsProps) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const command = useCommand();
   const busy = command.busy;
@@ -25,7 +28,6 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
   const [results, setResults] = useState<LabResultInput[]>([emptyResult()]);
   const [conclusion, setConclusion] = useState("");
   const [performedDate, setPerformedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [cancelledBy, setCancelledBy] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -36,17 +38,19 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
     : test.status === "PENDING" || test.status === "READY");
   const canEnterResults = canWork && test.status === "IN_PROGRESS";
   const canCancelCurrent = canCancel && !["COMPLETED", "CANCELLED"].includes(test.status);
+  const refreshBlocked = busy || (mode !== null && !command.uncertain);
+  useEffect(() => { onRefreshBlockedChange?.(refreshBlocked); }, [onRefreshBlockedChange, refreshBlocked]);
   if (!canStart && !canEnterResults && !canCancelCurrent) return null;
 
   async function start() {
-    if (!canStart || busy || command.uncertain) return;
+    if (!canStart || busy || command.uncertain || refreshing) return;
     setValidationError(null);
     void command.run(() => labApi.start(test.testId), onUpdated);
   }
 
   async function submitResults(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canEnterResults || busy || command.uncertain) return;
+    if (!canEnterResults || busy || command.uncertain || refreshing) return;
     const normalized = results.map((item) => ({
       indicator: item.indicator.trim(), value: item.value.trim(),
       unit: item.unit?.trim() || null, referenceRange: item.referenceRange?.trim() || null,
@@ -63,13 +67,11 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
 
   async function submitCancel(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canCancelCurrent || busy || command.uncertain) return;
-    const staffId = cancelledBy.trim();
+    if (!canCancelCurrent || busy || command.uncertain || refreshing) return;
     const reason = cancelReason.trim();
-    if (!isUuid(staffId)) { setValidationError("Mã nhân viên hủy phải là UUID hợp lệ."); return; }
     if (!reason) { setValidationError("Lý do hủy là bắt buộc."); return; }
     setValidationError(null);
-    void command.run(() => labApi.cancel(test.testId, { cancelledBy: staffId, reason }), (updated) => { setMode(null); onUpdated(updated); });
+    void command.run(() => labApi.cancel(test.testId, { reason }), (updated) => { setMode(null); onUpdated(updated); });
   }
 
   function updateResult(index: number, field: keyof LabResultInput, value: string) {
@@ -77,14 +79,14 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6">
+    <section className="border-b border-border py-5">
       <h2 className="text-lg font-semibold">Thao tác xét nghiệm</h2>
       <p className="mt-1 text-sm text-muted-foreground">Chỉ bắt đầu khi đã có xác nhận tài chính. Kiểm tra đúng bệnh nhân và chỉ số trước khi lưu kết quả.</p>
-      <fieldset disabled={busy || command.uncertain} className="min-w-0 space-y-4">
+      <fieldset disabled={busy || command.uncertain || refreshing} className="min-w-0 space-y-4">
       <div className="mt-4 flex flex-wrap gap-2">
         {canStart ? <Button type="button" variant="primary" loading={busy} onClick={() => void start()}>Bắt đầu xét nghiệm</Button> : null}
-        {canEnterResults ? <Button type="button" variant="primary" disabled={busy} onClick={() => { setMode("results"); setValidationError(null); }}>Nhập kết quả</Button> : null}
-        {canCancelCurrent ? <Button type="button" variant="danger" disabled={busy} onClick={() => { setMode("cancel"); setValidationError(null); }}>Hủy xét nghiệm</Button> : null}
+        {canEnterResults && mode === null ? <Button type="button" variant="primary" disabled={busy} onClick={() => { setMode("results"); setValidationError(null); }}>Nhập kết quả</Button> : null}
+        {canCancelCurrent && mode === null ? <details className="self-center"><summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Thao tác khác</summary><div className="py-2"><Button type="button" variant="ghost" disabled={busy} onClick={() => { setMode("cancel"); setValidationError(null); }}>Hủy xét nghiệm</Button></div></details> : null}
       </div>
 
       <CommandFeedback error={command.error} uncertain={command.uncertain} />
@@ -115,8 +117,9 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
 
       {mode === "cancel" ? (
         <form onSubmit={submitCancel} className="mt-5 grid gap-4 border-t border-border pt-5 md:grid-cols-2">
-          <Field label="Mã nhân viên hủy" htmlFor="lab-cancelled-by" required hint="Chọn nhân viên đang thực hiện thao tác."><ReferenceInput kind="staff" id="lab-cancelled-by" value={cancelledBy} onValueChange={setCancelledBy} className={controlClassName} /></Field>
-          <Field label="Lý do hủy" htmlFor="lab-cancel-reason" required><textarea id="lab-cancel-reason" maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} className={controlClassName} /></Field>
+          <p className="text-sm text-muted-foreground md:col-span-2">Người hủy được ghi nhận theo tài khoản đang đăng nhập. Hủy xét nghiệm sẽ dừng xử lý chỉ định; thao tác này không tự hoàn tiền. Nếu đã thu tiền, thu ngân đối soát và xử lý khoản hoàn riêng.</p>
+          {test.status === "IN_PROGRESS" ? <p className="text-sm text-warning md:col-span-2">Xét nghiệm đang thực hiện. Hãy trao đổi với bộ phận xét nghiệm trước khi xác nhận hủy.</p> : null}
+          <Field label="Lý do hủy" htmlFor="lab-cancel-reason" required><textarea id="lab-cancel-reason" required maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} className={controlClassName} /></Field>
           <div className="flex gap-2 md:col-span-2"><Button type="submit" variant="danger" loading={busy}>Xác nhận hủy</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
         </form>
       ) : null}

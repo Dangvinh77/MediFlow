@@ -64,6 +64,7 @@ describe("Appointment list filters and request lifecycle", () => {
     fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Tạm thời không tải được");
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
     expect(screen.getByText("appointment-correlation")).toBeVisible();
     fireEvent.change(screen.getByLabelText("Khoa"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));

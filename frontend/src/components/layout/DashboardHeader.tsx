@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Role } from "@/lib/roles";
+import { useEffect, useRef } from "react";
 
 const roleLabels: Partial<Record<Role, string>> = {
   ADMIN: "Quản trị viên",
@@ -26,6 +27,14 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ role, onLogout, onOpenNavigation, workspaceHref, workspaceLabel, workspaceTitle, onWorkspaceSwitch }: DashboardHeaderProps) {
+  const accountMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && accountMenu.current && !accountMenu.current.contains(event.target)) accountMenu.current.open = false;
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, []);
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
       <div className="flex min-h-[4.5rem] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
@@ -43,16 +52,21 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation, workspaceHre
         </button>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{role === "PATIENT" ? "Sức khỏe của bạn · MediFlow" : "Không gian vận hành MediFlow"}</p>
+          <p className="truncate text-sm font-semibold">{role === "PATIENT" ? "Sức khỏe của bạn · MediFlow" : "MediFlow"}</p>
           <p className="truncate text-xs text-muted-foreground">
             {workspaceTitle ?? (role ? roleLabels[role] ?? role : "Phiên làm việc")}
           </p>
         </div>
 
-        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 text-sm sm:w-auto">
-          {workspaceHref ? <Link href={workspaceHref} onClick={onWorkspaceSwitch} className="inline-flex min-h-11 items-center rounded-lg border border-primary px-3 py-2 font-medium text-primary">{workspaceLabel}</Link> : null}
-          {role && role !== "SYSTEM" ? <Link href="/organization/profile" className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-2 font-medium transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Hồ sơ cá nhân</Link> : null}
-          <ThemeToggle />
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-sm">
+          {workspaceHref ? <Link href={workspaceHref} onClick={onWorkspaceSwitch} title={workspaceLabel} className="inline-flex min-h-11 max-w-32 items-center rounded-lg border border-primary px-3 py-2 font-medium text-primary sm:max-w-none"><span className="truncate">{workspaceLabel}</span></Link> : null}
+          <details ref={accountMenu} className="relative" onKeyDown={event => {
+            if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); }
+          }}>
+          <summary className="min-h-11 cursor-pointer select-none rounded-lg border border-border px-3 py-3 font-medium hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Tài khoản</summary>
+          <div className="absolute right-0 top-full z-40 mt-2 grid min-w-60 gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg">
+          {role && role !== "SYSTEM" ? <Link href="/organization/profile" onClick={() => { if (accountMenu.current) accountMenu.current.open = false; }} className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Hồ sơ cá nhân</Link> : null}
+          <div className="flex items-center justify-between gap-3"><span className="text-xs text-muted-foreground">Giao diện</span><ThemeToggle /></div>
           <button
             type="button"
             onClick={onLogout}
@@ -60,6 +74,8 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation, workspaceHre
           >
             Đăng xuất
           </button>
+          </div>
+          </details>
         </div>
       </div>
     </header>
