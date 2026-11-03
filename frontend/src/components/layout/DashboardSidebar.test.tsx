@@ -18,7 +18,7 @@ describe("MVP dashboard navigation", () => {
     for (const group of ["Tổ chức & bệnh nhân", "Khám ngoại trú", "Báo cáo & thông báo"]) {
       expect(screen.getByText(group)).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(10);
+    expect(screen.getAllByRole("link")).toHaveLength(9);
     expect(screen.getByRole("link", { name: /Dược.*Thuốc/ })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: /Nội trú|Phẫu thuật/ })).not.toBeInTheDocument();
   });
@@ -55,12 +55,21 @@ describe("MVP dashboard navigation", () => {
 it.each([
   ["NURSE", "/appointments/reception", "Tiếp nhận ca khám"],
   ["DOCTOR", "/appointments/my-calendar", "Lịch khám của tôi"],
-  ["CASHIER", "/billing/scheduled-payments", "Thu phí lịch khám"],
+  ["CASHIER", "/billing/scheduled-payments", "Thu ngân"],
 ] as const)("marks only the current workspace for %s", (role, pathname, name) => {
   route.pathname = pathname;
   render(<DashboardSidebar role={role} open={false} onClose={vi.fn()} schedulingEnabled />);
   const current = screen.getAllByRole("link").filter(link => link.getAttribute("aria-current") === "page");
   expect(current).toHaveLength(1);
   expect(current[0]).toHaveAccessibleName(new RegExp(name));
+  route.pathname = "/pharmacy/drugs/123";
+});
+
+it.each([false, true])("gives cashiers one work entry with scheduling gate %s", (schedulingEnabled) => {
+  route.pathname = "/billing";
+  render(<DashboardSidebar role="CASHIER" open={false} onClose={vi.fn()} schedulingEnabled={schedulingEnabled} />);
+  expect(screen.getAllByRole("link")).toHaveLength(1);
+  expect(screen.getByRole("link", { name: /Thu ngân/ })).toHaveAttribute("href", "/billing/payment-requests");
+  expect(screen.getByRole("link", { name: /Thu ngân/ })).toHaveAttribute("aria-current", "page");
   route.pathname = "/pharmacy/drugs/123";
 });

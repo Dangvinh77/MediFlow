@@ -100,6 +100,7 @@ describe("Appointment detail identity and request states", () => {
     mocks.getById.mockResolvedValueOnce(appointment);
     render(<AppointmentDetail appointmentId="appointment-a" />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Read denied or unavailable");
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
     expect(screen.getByText("appointment-correlation")).toBeVisible();
     expect(mocks.getById).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));

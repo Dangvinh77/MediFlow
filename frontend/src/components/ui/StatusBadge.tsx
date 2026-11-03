@@ -10,6 +10,14 @@ const toneClasses: Record<StatusTone, string> = {
   danger: "bg-danger/15 text-danger",
 };
 
+const markerClasses: Record<StatusTone, string> = {
+  neutral: "bg-foreground/50",
+  info: "bg-info",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+};
+
 interface StatusBadgeProps {
   tone: StatusTone;
   children: ReactNode;
@@ -17,7 +25,8 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ tone, children }: StatusBadgeProps) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone]}`}>
+      <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${markerClasses[tone]}`} />
       {children}
     </span>
   );

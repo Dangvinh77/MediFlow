@@ -21,12 +21,36 @@ const labTest: LabTestDTO = {
 describe("Lab queue request lifecycle", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.search.mockReset(); mocks.role = "LAB_TECH"; });
 
+  it("defaults technicians to ready work and keeps episode IDs in a closed support filter", async () => {
+    mocks.search.mockResolvedValue(page);
+    render(<LabTable />);
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledWith({ status: "READY", page: 0, size: 20 }));
+    expect(screen.getByLabelText("Mã đợt chăm sóc")).not.toBeVisible();
+  });
+
+  it("retains the record episode when clearing queue filters", async () => {
+    const episodeId = "00000000-0000-4000-8000-000000000012";
+    mocks.search.mockResolvedValue(page);
+    render(<LabTable outpatientEnabled initialEpisodeId={episodeId} />);
+    await screen.findByText("Chưa có yêu cầu xét nghiệm phù hợp.");
+    fireEvent.click(screen.getByRole("button", { name: "Tất cả" }));
+    await waitFor(() => expect(mocks.search).toHaveBeenLastCalledWith({ episodeType: "OUTPATIENT_VISIT", episodeId, page: 0, size: 20 }));
+  });
+
   it("loads the outpatient episode provided by a record link on the first request", async () => {
     const episodeId = "00000000-0000-4000-8000-000000000012";
     mocks.search.mockResolvedValue(page);
     render(<LabTable outpatientEnabled initialEpisodeId={episodeId} />);
     await waitFor(() => expect(mocks.search).toHaveBeenCalledWith({ episodeType: "OUTPATIENT_VISIT", episodeId, page: 0, size: 20 }));
     expect(screen.getByLabelText("Mã đợt chăm sóc")).toHaveValue(episodeId);
+  });
+
+  it("does not reinterpret an admission filter restored from the queue URL", async () => {
+    const episodeId = "00000000-0000-4000-8000-000000000012";
+    mocks.search.mockResolvedValue(page);
+    render(<LabTable outpatientEnabled initialEpisodeId={episodeId} initialEpisodeType="ADMISSION" initialStatus="" initialPage={2} />);
+    await waitFor(() => expect(mocks.search).toHaveBeenCalledWith({ episodeType: "ADMISSION", episodeId, page: 2, size: 20 }));
+    expect(screen.getByLabelText("Loại đợt")).toHaveValue("ADMISSION");
   });
 
   it("ignores an authentication failure after leaving the queue", async () => {
@@ -77,6 +101,7 @@ describe("Lab queue request lifecycle", () => {
     fireEvent.change(screen.getByLabelText("Trạng thái"), { target: { value: "READY" } });
     fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Temporarily unavailable");
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
     expect(screen.getByText("queue-correlation")).toBeVisible();
     fireEvent.change(screen.getByLabelText("Trạng thái"), { target: { value: "COMPLETED" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));

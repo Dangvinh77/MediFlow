@@ -1,0 +1,8 @@
+{
+  "sourceId" : "ad8a6790-c3a8-44da-a03d-de2f07d9f0bc",
+  "sourceType" : "LAB_TEST",
+  "eventType" : "lab.request.cancelled",
+  "status" : "APPLIED",
+  "rejectionCode" : null,
+  "refundsDue" : [ ]
+}

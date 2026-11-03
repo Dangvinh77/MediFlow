@@ -111,7 +111,7 @@ export function InvoiceLookup() {
     const normalizedPatientId = patientId.trim();
 
     if (!isUuid(normalizedPatientId)) {
-      setValidationError("Mã bệnh nhân phải là UUID hợp lệ.");
+      setValidationError("Chọn một bệnh nhân hợp lệ.");
       return;
     }
 
@@ -126,7 +126,6 @@ export function InvoiceLookup() {
   return (
     <section className="mt-6">
       <div className="mb-4 flex flex-wrap justify-end gap-2">
-        <Link href="/billing/payment-requests" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Thanh toán khoản phí đã chọn</Link>
         {role === "ADMIN" ? (
           <>
             <Link href="/billing/revenue" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Doanh thu theo khoa</Link>
@@ -142,7 +141,7 @@ export function InvoiceLookup() {
       >
         <div className="min-w-0 flex-1">
           <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium">
-            Mã bệnh nhân
+            Bệnh nhân
           </label>
           <ReferenceInput kind="patient"
             id="billing-patient-id"
@@ -151,7 +150,7 @@ export function InvoiceLookup() {
               setPatientId(selectedId);
               setValidationError(null);
             }}
-            placeholder="Nhập UUID bệnh nhân"
+            placeholder="Nhập tên hoặc thông tin bệnh nhân"
             aria-invalid={validationError ? true : undefined}
             aria-describedby={validationError ? "billing-patient-id-error" : undefined}
             className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
@@ -173,7 +172,7 @@ export function InvoiceLookup() {
       ) : null}
 
       {!searched && !validationError ? (
-        <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem hóa đơn." />
+        <AsyncState kind="idle" message="Chọn bệnh nhân để xem hóa đơn." />
       ) : null}
 
       {loading ? <AsyncState kind="loading" message="Đang tải hóa đơn…" /> : null}

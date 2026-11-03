@@ -651,6 +651,20 @@ class LabCareFinanceV2ApplicationServiceTest {
     }
 
     @Test
+    void cancel_reasonOnlyStillRequiresVerifiedStaff() {
+        LabTest test = v2Test();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancel(test.getTestId(), new CancelLabTestRequest("declined", null)))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_ACTOR_MISMATCH");
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.AWAITING_PAYMENT);
+        verifyNoInteractions(outbox);
+        verify(tests, never()).save(any());
+    }
+
+    @Test
     void cancel_rejectsBodyActorThatDoesNotMatchVerifiedStaff() {
         LabTest test = v2Test();
         UUID authenticatedStaffId = UUID.randomUUID();

@@ -3,6 +3,7 @@ interface MedicalRecordMutationErrorProps {
   message: string;
   correlationId: string | null;
   onRetry?: () => void;
+  disabled?: boolean;
 }
 
 const headings: Record<number, string> = {
@@ -18,21 +19,24 @@ export function MedicalRecordMutationError({
   message,
   correlationId,
   onRetry,
+  disabled = false,
 }: MedicalRecordMutationErrorProps) {
   return (
     <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p className="font-semibold">{status ? headings[status] ?? "Không thể xử lý yêu cầu" : "Không thể kết nối"}</p>
       <p className="mt-1">{message}</p>
       {correlationId ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Mã theo dõi: <span className="font-mono">{correlationId}</span>
-        </p>
+        <details className="mt-2 text-xs text-muted-foreground">
+          <summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary>
+          <p className="mt-1 break-all font-mono">Mã theo dõi: {correlationId}</p>
+        </details>
       ) : null}
       {onRetry ? (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-3 min-h-10 rounded-lg border border-danger/40 px-4 py-2 font-medium hover:bg-danger/10"
+          disabled={disabled}
+          className="mt-3 min-h-10 rounded-lg border border-danger/40 px-4 py-2 font-medium hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Thử lại
         </button>

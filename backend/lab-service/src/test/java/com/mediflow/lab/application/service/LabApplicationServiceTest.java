@@ -48,7 +48,7 @@ class LabApplicationServiceTest {
         when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
         when(tests.save(test)).thenReturn(test);
         when(correlationIds.currentOrCreate()).thenReturn(UUID.randomUUID());
-        app.cancel(test.getTestId(), new CancelLabTestRequest("Declined", actor));
+        app.cancel(test.getTestId(), new CancelLabTestRequest("Declined", null));
         assertThat(events).singleElement().satisfies(event -> {
             assertThat(event.eventType()).isEqualTo("lab.request.cancelled");
             assertThat(event.occurredAt()).isEqualTo(now);
@@ -57,6 +57,7 @@ class LabApplicationServiceTest {
         });
         app.cancel(test.getTestId(), new CancelLabTestRequest("Declined", actor));
         assertThat(events).hasSize(1);
+        assertThat(test.getCancelledBy()).isEqualTo(actor);
     }
 
     private final LabTestRepositoryPort tests = mock(LabTestRepositoryPort.class);

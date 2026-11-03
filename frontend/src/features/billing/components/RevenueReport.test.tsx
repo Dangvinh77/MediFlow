@@ -90,6 +90,8 @@ describe("RevenueReport", () => {
     render(<RevenueReport />);
     submit();
 
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
+
     expect(await screen.findByText("trace-revenue")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
 

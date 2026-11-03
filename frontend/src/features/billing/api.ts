@@ -2,6 +2,7 @@ import { api, type MutationOptions } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
   PrescriptionAdjustmentDTO,
+  OutpatientAdjustmentDTO,
   RefundLedgerPaymentRequest,
   LedgerRefundDTO,
   CompleteLedgerPaymentRequest,
@@ -43,6 +44,7 @@ export const billingApi = {
     return api.get<PageResult<ScheduledPaymentQueueItem>>(`/v2/billing/payment-requests?${query}`);
   },
   refundsDue: (prescriptionId: string) => api.get<PrescriptionAdjustmentDTO>(`/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`),
+  labRefundsDue: (labSourceId: string) => api.get<OutpatientAdjustmentDTO>(`/v1/billing/lab-adjustments/${encodeURIComponent(labSourceId)}/refunds-due`),
   recordRefund: (transactionId: string, body: RefundLedgerPaymentRequest) => api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(transactionId)}/refunds`, body),
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),
   byPatient: (patientId: string, page = 0, size = 20) =>

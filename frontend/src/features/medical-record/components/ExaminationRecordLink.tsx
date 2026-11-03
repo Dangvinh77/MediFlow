@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
-import { Button } from "@/components/ui/Button";
 import { ApiRequestError } from "@/lib/api";
 import { medicalRecordApi } from "../api";
 
@@ -29,7 +28,6 @@ export function ExaminationRecordLink({ patientId, appointmentId }: { patientId:
   if (state.key !== key) return <AsyncState kind="loading" message="Đang tìm hồ sơ của lịch hẹn…" />;
   return <div className="flex flex-wrap items-center gap-2">
     {state.recordId ? <Link className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={`/records/${state.recordId}`}>Mở hồ sơ khám</Link>
-      : <AsyncState kind="error" message={state.message ?? "Không thể tìm hồ sơ khám."} correlationId={state.correlationId} onRetry={() => setRetry((value) => value + 1)} />}
-    {state.recordId ? <Button type="button" onClick={() => setRetry((value) => value + 1)}>Tìm lại hồ sơ</Button> : null}
+      : <div><AsyncState kind="error" message={state.message ?? "Không thể tìm hồ sơ khám."} onRetry={() => setRetry((value) => value + 1)} />{state.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.correlationId}</p></details> : null}</div>}
   </div>;
 }

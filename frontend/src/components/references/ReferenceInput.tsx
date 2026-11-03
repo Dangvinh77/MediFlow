@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type InputHTMLAttributes, type Ref } from 
 import { useReferenceDirectory, type ReferencePage } from "./ReferenceProvider";
 import { controlClassName } from "@/components/ui/Field";
 import { isUuid } from "@/lib/validation";
+import { containsUuid } from "./referenceLabels";
+const referenceNames: Record<string, string> = { patient: "bệnh nhân", doctor: "bác sĩ", department: "khoa", appointment: "lịch khám", record: "hồ sơ khám", room: "phòng" };
 export interface ReferenceInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   kind: string; scope?: string; value: string; onValueChange: (value: string) => void;
   ref?: Ref<HTMLInputElement>;
@@ -69,7 +71,7 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
     }
   }}>
     <div className="flex min-w-0 w-full gap-2">
-      <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={chosen?.id === value ? chosen.label : undefined} value={chosen?.id === value ? chosen.label : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
+      <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={chosen?.id === value && !containsUuid(chosen.label) ? chosen.label : undefined} value={chosen?.id === value ? (containsUuid(chosen.label) ? `Đã chọn ${referenceNames[kind] ?? "tham chiếu"}` : chosen.label) : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
         generation.current++; setBusy(false); setChosen(null); setQuery(event.target.value); setResult(null); setError(null); onValueChange("");
       }} />
       <button type="button" aria-label="Tìm lựa chọn" disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 text-sm text-primary disabled:opacity-50">{busy ? "Đang tìm…" : "Tìm"}</button>
@@ -80,7 +82,7 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
       {result.hint ? <p className="mb-2 text-xs text-muted-foreground">{result.hint}</p> : null}
       {!result.items.length ? <p className="text-sm text-muted-foreground">Không có kết quả phù hợp.</p> : <ul className="max-h-60 overflow-y-auto">{result.items.map(option => <li key={option.id}><button type="button" disabled={props.disabled} onClick={() => {
         generation.current++; setChosen(option); setQuery(""); setResult(null); onValueChange(option.id); pickerRef.current?.querySelector("input")?.focus();
-      }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">{option.label}</button></li>)}</ul>}
+      }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">{containsUuid(option.label) ? `Thông tin ${referenceNames[kind] ?? "tham chiếu"} (chưa có tên)` : option.label}</button></li>)}</ul>}
       <div className="flex gap-3">{page > 0 ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page - 1)} className="min-h-11 text-sm text-primary">Trang trước</button> : null}{result.hasMore ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page + 1)} className="min-h-11 text-sm text-primary">Trang sau</button> : null}</div>
     </div> : null}
   </div>;

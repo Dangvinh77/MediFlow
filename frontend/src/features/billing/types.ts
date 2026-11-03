@@ -135,6 +135,16 @@ export interface PrescriptionAdjustmentDTO {
   refundsDue: RefundDueDTO[];
 }
 
+/** Exact response for GET /v1/billing/lab-adjustments/{id}/refunds-due. */
+export interface OutpatientAdjustmentDTO {
+  sourceId: string;
+  sourceType: string;
+  eventType: string;
+  status: string;
+  rejectionCode: string | null;
+  refundsDue: RefundDueDTO[];
+}
+
 export interface RefundLedgerPaymentRequest {
   idempotencyKey: string;
   amount: number;

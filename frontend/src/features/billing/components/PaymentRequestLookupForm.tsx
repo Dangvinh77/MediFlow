@@ -342,13 +342,13 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
       {initialSelection || completedPayment || zeroReceipt ? <Button type="button" variant="secondary" disabled={loading || paymentLocked}
         onClick={() => void lookup()}>Đọc lại khoản đang đối chiếu</Button> : null}
 
-      {completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Thanh toán thành công. Đã ghi nhận {formatDecimal(completedPayment.amount)} {completedPayment.currency}. Mã giao dịch: {completedPayment.transactionId}</p> : null}
-      {zeroReceipt ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xác nhận nghĩa vụ 0 đồng. Mã xác nhận: {zeroReceipt.clearanceId}</p> : null}
+      {completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Thanh toán thành công. Đã ghi nhận {formatDecimal(completedPayment.amount)} {completedPayment.currency}.</p> : null}
+      {zeroReceipt ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xác nhận nghĩa vụ 0 đồng.</p> : null}
       {loading ? <AsyncState kind="loading" message="Đang tra cứu khoản phí…" /> : null}
       {discovery ? (
         <section aria-label="Chi tiết khoản phí" className="space-y-5 rounded-xl border border-border bg-surface p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div><h2 className="text-lg font-semibold">Khoản phí được xác nhận</h2><p className="mt-1 break-all font-mono text-xs text-muted-foreground"><ReferenceText value={discovery.paymentRequestId} fallback="Yêu cầu thanh toán" /></p></div>
+            <h2 className="text-lg font-semibold">Khoản phí được xác nhận</h2>
             <StatusBadge tone={canPay ? "warning" : discovery.status === "PAID" ? "success" : "neutral"}>{requestStatusLabels[discovery.status]}</StatusBadge>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -387,16 +387,20 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
               {discovery.status === "PAID" ? "Khoản phí đã thanh toán. Không thu thêm cho yêu cầu này." : quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}
             </p>
           )}
-          <details className="rounded-lg border border-border p-3">
-            <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin đối soát khoản đã chọn</summary>
-            <dl className="mt-2 grid gap-3 text-sm">
-              <Info label="Mã yêu cầu" value={discovery.paymentRequestId} mono />
-              <Info label="Mã nguồn" value={discovery.sourceId} mono />
-              <Info label="Mã đợt điều trị" value={discovery.careEpisodeId} mono />
-            </dl>
-          </details>
         </section>
       ) : null}
+      {discovery || completedPayment || zeroReceipt ? <details className="rounded-lg border border-border p-4">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin đối soát khoản đã chọn</summary>
+        <dl className="mt-2 grid gap-3 text-sm">
+          <Info label="Mã yêu cầu" value={completedPayment?.paymentRequestId ?? zeroReceipt?.paymentRequestId ?? discovery?.paymentRequestId ?? ""} mono />
+          {discovery ? <>
+            <Info label="Mã nguồn" value={discovery.sourceId} mono />
+            <Info label="Mã đợt điều trị" value={discovery.careEpisodeId} mono />
+          </> : null}
+          {completedPayment ? <Info label="Mã giao dịch" value={completedPayment.transactionId} mono /> : null}
+          {zeroReceipt ? <Info label="Mã xác nhận 0 đồng" value={zeroReceipt.clearanceId} mono /> : null}
+        </dl>
+      </details> : null}
     </div>
   );
 }

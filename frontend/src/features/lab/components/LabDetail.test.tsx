@@ -8,6 +8,8 @@ import type { LabTestDTO } from "../types";
 const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
   start: vi.fn(),
+  addResults: vi.fn(),
+  cancel: vi.fn(),
   getRole: vi.fn<() => Role | null>(() => "LAB_TECH"),
   router: { replace: vi.fn() },
 }));
@@ -17,7 +19,7 @@ vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ labApi: { getById: mocks.getById, start: mocks.start } }));
+vi.mock("../api", () => ({ labApi: { getById: mocks.getById, start: mocks.start, cancel: mocks.cancel, addResults: mocks.addResults } }));
 
 import { LabDetail } from "./LabDetail";
 
@@ -54,11 +56,48 @@ function deferred<T>() {
 }
 
 describe("Lab detail read and permission states", () => {
+  it("keeps result entry and disables refresh while a draft is open", async () => {
+    mocks.getById.mockResolvedValue({ ...test, status: "IN_PROGRESS", clearanceId: "clearance" });
+    render(<LabDetail testId={test.testId} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
+    fireEvent.change(screen.getByLabelText(/Chỉ số/), { target: { value: "Hb" } });
+    expect(screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" })).toBeDisabled();
+    expect(screen.getByLabelText(/Chỉ số/)).toHaveValue("Hb");
+  });
+
+  it("keeps actions mounted when a background refresh fails", async () => {
+    mocks.getById.mockResolvedValueOnce({ ...test, status: "IN_PROGRESS" })
+      .mockRejectedValueOnce(new ApiRequestError("Gián đoạn kết nối", 503, "UNAVAILABLE"));
+    render(<LabDetail testId={test.testId} />);
+    await screen.findByRole("button", { name: "Nhập kết quả" });
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Gián đoạn kết nối");
+    expect(screen.getByRole("button", { name: "Nhập kết quả" })).toBeVisible();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getById.mockReset();
     mocks.start.mockReset();
+    mocks.addResults.mockReset();
+    mocks.cancel.mockReset();
     mocks.getRole.mockReturnValue("LAB_TECH");
+  });
+
+  it("does not unlock an uncertain result submission after a read-only refresh", async () => {
+    mocks.getById.mockResolvedValue({ ...test, status: "IN_PROGRESS" });
+    mocks.addResults.mockRejectedValue(new ApiRequestError("Chưa rõ kết quả lưu", 503, "UNAVAILABLE"));
+    render(<LabDetail testId={test.testId} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
+    fireEvent.change(screen.getByLabelText(/Chỉ số/), { target: { value: "Hb" } });
+    fireEvent.change(screen.getByLabelText(/Giá trị/), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu kết quả" }));
+    await screen.findByText("Chưa rõ kết quả lưu");
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" }));
+    await waitFor(() => expect(mocks.getById).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("button", { name: "Lưu kết quả" })).toBeDisabled();
+    expect(screen.getByLabelText(/Chỉ số/)).toHaveValue("Hb");
+    expect(mocks.addResults).toHaveBeenCalledTimes(1);
   });
 
   it("keeps patient name and birth date beside result entry while support metadata stays collapsed", async () => {
@@ -80,7 +119,7 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockResolvedValue(test);
     render(<LabDetail testId={test.testId} />);
     await screen.findByText(test.labType);
-    fireEvent.click(screen.getByText("Thông tin bàn giao thu ngân"));
+    fireEvent.click(screen.getByText("Thông tin bàn giao thu ngân và hỗ trợ"));
     expect(screen.getByLabelText("Mã xét nghiệm bàn giao")).toHaveValue(test.testId);
     expect(screen.getByLabelText("Mã bệnh nhân bàn giao")).toHaveValue(test.patientId);
     expect(screen.getByLabelText("Mã đợt chăm sóc bàn giao")).toHaveValue(test.careEpisodeId);
@@ -111,6 +150,7 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockRejectedValue(new ApiRequestError("Không có quyền xem", 403, "AUTH_FORBIDDEN", [], "lab-denied"));
     render(<LabDetail testId={test.testId} />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Không có quyền xem");
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
     expect(screen.getByText("lab-denied")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Thao tác xét nghiệm" })).not.toBeInTheDocument();
     expect(mocks.getById).toHaveBeenCalledTimes(1);
@@ -174,9 +214,27 @@ describe("Lab detail read and permission states", () => {
     mocks.getRole.mockReturnValue("DOCTOR");
     mocks.getById.mockResolvedValue({ ...test, status: "READY" });
     render(<LabDetail testId={test.testId} />);
-    expect(await screen.findByRole("button", { name: "Hủy xét nghiệm" })).toBeVisible();
+    await screen.findByText(test.labType);
+    expect(screen.getByText("Hủy xét nghiệm")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Thao tác khác"));
+    expect(screen.getByRole("button", { name: "Hủy xét nghiệm" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Bắt đầu xét nghiệm" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Nhập kết quả" })).not.toBeInTheDocument();
+  });
+
+  it("lets the signed-in doctor cancel with a reason without choosing another staff identity", async () => {
+    mocks.getRole.mockReturnValue("DOCTOR");
+    mocks.getById.mockResolvedValue(test);
+    mocks.cancel.mockResolvedValue({ ...test, status: "CANCELLED" });
+    render(<LabDetail testId={test.testId} />);
+    fireEvent.click(await screen.findByText("Thao tác khác"));
+    fireEvent.click(screen.getByRole("button", { name: "Hủy xét nghiệm" }));
+    expect(screen.queryByLabelText(/Mã nhân viên hủy/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Lý do hủy/), { target: { value: "  Người bệnh từ chối  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
+    await waitFor(() => expect(mocks.cancel).toHaveBeenCalledWith(test.testId, { reason: "Người bệnh từ chối" }));
+    expect(await screen.findByText("Đã hủy")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Hủy xét nghiệm" })).not.toBeInTheDocument();
   });
 
   it.each(["COMPLETED", "CANCELLED"] as const)("keeps %s immutable even for ADMIN", async (status) => {
@@ -202,11 +260,13 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockResolvedValueOnce({ ...test, status: "READY" })
       .mockResolvedValueOnce({ ...test, testId: "next-test", labType: "Xét nghiệm tiếp theo", status: "READY" });
     const view = render(<LabDetail testId={test.testId} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Hủy xét nghiệm" }));
+    fireEvent.click(await screen.findByText("Thao tác khác"));
+    fireEvent.click(screen.getByRole("button", { name: "Hủy xét nghiệm" }));
     fireEvent.change(screen.getByLabelText(/Lý do hủy/), { target: { value: "Lý do của yêu cầu trước" } });
     view.rerender(<LabDetail testId="next-test" />);
     expect(await screen.findByText("Xét nghiệm tiếp theo")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Xác nhận hủy" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Thao tác khác"));
     fireEvent.click(screen.getByRole("button", { name: "Hủy xét nghiệm" }));
     expect(screen.getByLabelText(/Lý do hủy/)).toHaveValue("");
   });

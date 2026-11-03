@@ -20,6 +20,10 @@ import { MedicalRecordMutationError } from "./MedicalRecordMutationError";
 interface AddDiagnosisFormProps {
   recordId: string;
   onCreated: (diagnosis: DiagnosisDTO) => void;
+  disabled?: boolean;
+  isInteractionBlocked?: () => boolean;
+  onActivityChange?: (active: boolean) => void;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 interface RequestError {
@@ -28,7 +32,7 @@ interface RequestError {
   correlationId: string | null;
 }
 
-export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps) {
+export function AddDiagnosisForm({ recordId, onCreated, disabled = false, isInteractionBlocked, onActivityChange, onBusyChange }: AddDiagnosisFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const active = useRef(false);
@@ -42,10 +46,13 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
   const [requestError, setRequestError] = useState<RequestError | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const draft = useRef(false);
 
   function updateField(field: MedicalRecordFormField, value: string) {
     if (field !== "diagnosisName" && field !== "description" && field !== "icdCode") return;
     setValues((current) => ({ ...current, [field]: value }));
+    draft.current = true;
+    onActivityChange?.(true);
     setErrors((current) => ({ ...current, [field]: undefined }));
     setRequestError(null);
     setSuccess(false);
@@ -60,7 +67,7 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting || submissionLocked.current) return;
+    if (disabled || isInteractionBlocked?.() || submitting || submissionLocked.current) return;
     const nextErrors = validateDiagnosis(values);
     setErrors(nextErrors);
     setRequestError(null);
@@ -72,11 +79,15 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
 
     submissionLocked.current = true;
     setSubmitting(true);
+    onBusyChange?.(true);
+    onActivityChange?.(true);
     try {
       const diagnosis = await medicalRecordApi.addDiagnosis(recordId, toDiagnosisRequest(values));
       if (!active.current) return;
       onCreated(diagnosis);
       setValues(EMPTY_DIAGNOSIS_FORM);
+      draft.current = false;
+      onActivityChange?.(false);
       setSuccess(true);
     } catch (cause: unknown) {
       if (!active.current) return;
@@ -97,30 +108,32 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
         });
       }
     } finally {
+      onBusyChange?.(false);
       if (active.current) {
         submissionLocked.current = false;
         setSubmitting(false);
+        if (!draft.current) onActivityChange?.(false);
       }
     }
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} noValidate className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-6">
+    <form ref={formRef} onSubmit={submit} noValidate className="mt-4 space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Thêm chẩn đoán</h2>
         <p className="mt-1 text-sm text-muted-foreground">Chẩn đoán được ghi trực tiếp vào hồ sơ đang mở.</p>
       </div>
       {success ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã thêm chẩn đoán thành công.</p> : null}
       {requestError ? (
         <MedicalRecordMutationError
           {...requestError}
+          disabled={disabled || submitting}
           onRetry={requestError.status === null || requestError.status >= 500
             ? () => formRef.current?.requestSubmit()
             : undefined}
         />
       ) : null}
-      <DiagnosisFormFields values={values} errors={errors} disabled={submitting} onChange={updateField} />
-      <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+      <DiagnosisFormFields values={values} errors={errors} disabled={submitting || disabled} onChange={updateField} />
+      <button type="submit" disabled={submitting || disabled} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
         {submitting ? "Đang thêm…" : "Thêm chẩn đoán"}
       </button>
     </form>

@@ -11,6 +11,7 @@ interface NavigationItem {
   eyebrow: string;
   roles: readonly Role[];
   scheduling?: boolean;
+  activePath?: string;
 }
 
 const navigation: readonly NavigationItem[] = [
@@ -27,9 +28,7 @@ const navigation: readonly NavigationItem[] = [
   { group: "Khám ngoại trú", href: "/records", label: "Hồ sơ khám", eyebrow: "Chẩn đoán & kết luận", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
-  { group: "Viện phí", href: "/billing", label: "Viện phí", eyebrow: "Hóa đơn & thanh toán", roles: ["ADMIN", "CASHIER"] },
-  { group: "Viện phí", href: "/billing/payment-requests", label: "Thu phí xét nghiệm & thuốc", eyebrow: "Tra cứu khoản phí", roles: ["ADMIN", "CASHIER"] },
-  { group: "Viện phí", href: "/billing/scheduled-payments", label: "Thu phí lịch khám", eyebrow: "Đối soát giữ chỗ", roles: ["ADMIN", "CASHIER"], scheduling: true },
+  { group: "Viện phí", href: "/billing/payment-requests", activePath: "/billing", label: "Thu ngân", eyebrow: "Khoản thu, hóa đơn & hoàn tiền", roles: ["ADMIN", "CASHIER"] },
   { group: "Viện phí", href: "/billing/revenue", label: "Doanh thu theo khoa", eyebrow: "Báo cáo cho quản lý", roles: ["MANAGER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
   { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
@@ -52,7 +51,7 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
     { group: "Quản lý khoa", href: "/appointments/department/shifts", label: "Lịch làm việc bác sĩ", eyebrow: "Phân công giờ & phòng", roles: ["DOCTOR"] },
   ] : role ? navigation.filter((item) => item.roles.includes(role) && (!item.scheduling || schedulingEnabled)) : [];
 
-  const activeHref = visibleNavigation.filter(item => pathname === item.href || pathname.startsWith(`${item.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const activeHref = visibleNavigation.filter(item => pathname === (item.activePath ?? item.href) || pathname.startsWith(`${item.activePath ?? item.href}/`)).sort((a, b) => (b.activePath ?? b.href).length - (a.activePath ?? a.href).length)[0]?.href;
 
   return (
     <>
@@ -66,7 +65,7 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
       ) : null}
       <aside
         aria-label="Điều hướng nghiệp vụ"
-        className={`${open ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:w-60 lg:translate-x-0`}
+        className={`${open ? "visible translate-x-0" : "invisible -translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 lg:visible lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:w-60 lg:translate-x-0`}
       >
         <div className="flex min-h-[4.5rem] items-center gap-3 border-b border-border px-5">
           <span className="grid size-9 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">MF</span>
@@ -104,7 +103,6 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
                     className={`block rounded-lg border-l-2 px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-surface-muted hover:text-foreground"}`}
                   >
                     <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-xs">{role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}</span>
                   </Link>
                 </li>
               );

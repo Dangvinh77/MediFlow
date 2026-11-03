@@ -82,7 +82,8 @@ describe("Medical record forms", () => {
     fillCreateRecord();
     fireEvent.click(screen.getByRole("button", { name: "Tạo hồ sơ khám" }));
     expect(await screen.findByText("Bệnh nhân không tồn tại")).toBeVisible();
-    expect(screen.getByText("record-form-correlation")).toBeVisible();
+    fireEvent.click(screen.getByText("Thông tin hỗ trợ"));
+    expect(screen.getByText(/Mã theo dõi: record-form-correlation/)).toBeVisible();
   });
 
   it("rejects an invalid diagnosis code before creating a record", () => {

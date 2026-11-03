@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { billingApi } from "../api";
@@ -58,6 +58,12 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+async function openRegistrationLookup(user: UserEvent) {
+  const summary = screen.getByText("Tra cứu phiếu được cung cấp");
+  if (!summary.closest("details")?.open) await user.click(summary);
+  return screen.getByLabelText("Mã phiếu đăng ký");
+}
+
 const outpatientQuote = {
   quoteId: "quote-id", paymentRequestId: "request-id", patientId: "patient-id",
   careEpisodeType: "OUTPATIENT_VISIT", careEpisodeId: "registration-id", currency: "VND",
@@ -71,6 +77,13 @@ const outpatientQuote = {
 describe("scheduled outpatient cashier workflow", () => {
   beforeEach(() => { vi.resetAllMocks(); sessionStorage.clear(); mocks.queue.mockResolvedValue({ content: [], number: 0, totalPages: 0 }); mocks.request.mockResolvedValue(paymentRequest); mocks.quote.mockResolvedValue(outpatientQuote); });
 
+  it("keeps the registration-code lookup collapsed until support needs it", async () => {
+    render(<ScheduledPaymentWorkspace enabled />);
+    await screen.findByText(/Không có khoản khám còn hạn đang chờ thu/);
+    const summary = screen.getByText("Tra cứu phiếu được cung cấp");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+  });
+
   it("removes a completed payment from the waiting queue even when its loaded snapshot is stale", async () => {
     const user = userEvent.setup();
     mocks.queue.mockResolvedValue({ content: [{ registrationId: "registration-id", patientId: "patient-id", departmentId: "department-id", createdAt: "2026-10-26T04:00:00Z", expiresAt: "2026-10-26T04:15:00Z" }], number: 0, totalPages: 1 });
@@ -80,6 +93,10 @@ describe("scheduled outpatient cashier workflow", () => {
     await user.click(await screen.findByRole("button", { name: "Chọn khoản thu" }));
     await user.click(await screen.findByRole("button", { name: "Thu phí lịch khám" }));
     await screen.findByText(/Billing đã xác nhận khoản thu/);
+    expect(screen.getByText("transaction-id")).not.toBeVisible();
+    const support = screen.getByText("Thông tin đối soát khoản thu");
+    await user.click(support);
+    expect(screen.getByText("transaction-id")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Chọn khoản thu" })).not.toBeInTheDocument();
     await user.click(await screen.findByRole("button", { name: "Tải khoản chờ thu" }));
     expect(screen.queryByRole("button", { name: "Chọn khoản thu" })).not.toBeInTheDocument();
@@ -105,7 +122,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.operation.mockResolvedValue(result("COMPLETED"));
     render(<ScheduledPaymentWorkspace enabled />);
 
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByText("120.000 VND")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Thu phí lịch khám" }));
@@ -139,7 +156,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.request.mockResolvedValue({ ...paymentRequest, status: "PARTIALLY_PAID", paidAmount: "20000.00", remainingAmount: "100000.00" });
     mocks.pay.mockResolvedValue(result("PREPARING"));
     render(<ScheduledPaymentWorkspace enabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByText("100.000 VND")).toBeInTheDocument();
     expect(screen.queryByText("Đã thu, đang chờ xác nhận lịch khám.")).not.toBeInTheDocument();
@@ -157,7 +174,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.pay.mockReturnValue(payment.promise);
     render(<ScheduledPaymentWorkspace enabled />);
 
-    const registration = screen.getByLabelText("Mã phiếu đăng ký");
+    const registration = await openRegistrationLookup(user);
     await user.type(registration, "registration-a");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByText("Còn phải thu")).toBeInTheDocument();
@@ -182,7 +199,7 @@ describe("scheduled outpatient cashier workflow", () => {
   it("rejects a payment callback rendered for the old registration after the input changes", async () => {
     const user = userEvent.setup();
     render(<ScheduledPaymentWorkspace enabled />);
-    const registration = screen.getByLabelText("Mã phiếu đăng ký");
+    const registration = await openRegistrationLookup(user);
     await user.type(registration, "registration-a");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     const stalePayButton = await screen.findByRole("button", { name: "Thu phí lịch khám" });
@@ -201,7 +218,7 @@ describe("scheduled outpatient cashier workflow", () => {
     const user = userEvent.setup();
     mocks.pay.mockResolvedValue(result("PREPARING"));
     render(<ScheduledPaymentWorkspace enabled quoteEnabled zeroLiabilityEnabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByRole("region", { name: "Báo giá ngoại trú" })).toHaveTextContent("Hỗ trợ BHYT mô phỏng");
     await user.click(screen.getByRole("button", { name: "Thu phí lịch khám" }));
@@ -215,7 +232,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.quote.mockRejectedValue(new ApiRequestError("No quote", 404, "BILLING_QUOTE_NOT_FOUND"));
     mocks.pay.mockResolvedValue(result("PREPARING"));
     render(<ScheduledPaymentWorkspace enabled quoteEnabled zeroLiabilityEnabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByText(/Không xem đây là khoản miễn phí/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Xác nhận nghĩa vụ 0 đồng" })).not.toBeInTheDocument();
@@ -228,7 +245,7 @@ describe("scheduled outpatient cashier workflow", () => {
     const user = userEvent.setup();
     mocks.quote.mockRejectedValue(new ApiRequestError("Billing unavailable", 503, "BILLING_UNAVAILABLE"));
     render(<ScheduledPaymentWorkspace enabled quoteEnabled zeroLiabilityEnabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Billing unavailable");
     expect(screen.getByRole("button", { name: "Thu phí lịch khám" })).toBeDisabled();
@@ -247,7 +264,7 @@ describe("scheduled outpatient cashier workflow", () => {
     };
     mocks.zero.mockRejectedValueOnce(new TypeError("Connection lost")).mockResolvedValueOnce(zeroResult);
     render(<ScheduledPaymentWorkspace enabled quoteEnabled zeroLiabilityEnabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     await screen.findByRole("region", { name: "Báo giá ngoại trú" });
     expect(screen.queryByRole("button", { name: "Thu phí lịch khám" })).not.toBeInTheDocument();
@@ -257,7 +274,10 @@ describe("scheduled outpatient cashier workflow", () => {
     const firstOptions = mocks.zero.mock.calls[0][2];
     expect(mocks.zero.mock.calls[0][1]).toEqual({ reservationId: "reservation-id", expectedReservationRevision: 4, quoteId: "quote-id" });
     await user.click(screen.getByRole("button", { name: "Gửi lại cùng lệnh xác nhận nghĩa vụ 0" }));
-    expect(await screen.findByText(/Đã xác nhận nghĩa vụ 0 đồng/)).toHaveTextContent("Xác nhận đã lưu");
+    const zeroStatus = await screen.findByText(/Đã xác nhận nghĩa vụ 0 đồng/);
+    expect(zeroStatus.closest("[role=status]")).not.toHaveTextContent("zero-clearance-id");
+    await user.click(screen.getByText("Thông tin đối soát khoản thu"));
+    expect(screen.getByText("zero-clearance-id")).toBeVisible();
     expect(mocks.zero).toHaveBeenCalledTimes(2);
     expect(mocks.zero.mock.calls[1][2]).toEqual(firstOptions);
     expect(mocks.pay).not.toHaveBeenCalled();
@@ -268,7 +288,7 @@ describe("scheduled outpatient cashier workflow", () => {
     mocks.pay.mockResolvedValue(result("PREPARING"));
     mocks.operation.mockResolvedValue(result("COMPLETED"));
     const firstRender = render(<ScheduledPaymentWorkspace enabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     await screen.findByText("120.000 VND");
     await user.click(screen.getByRole("button", { name: "Thu phí lịch khám" }));
@@ -276,7 +296,7 @@ describe("scheduled outpatient cashier workflow", () => {
     firstRender.unmount();
 
     render(<ScheduledPaymentWorkspace enabled />);
-    await user.type(screen.getByLabelText("Mã phiếu đăng ký"), "registration-id");
+    await user.type(await openRegistrationLookup(user), "registration-id");
     await user.click(screen.getByRole("button", { name: "Tra cứu khoản thu" }));
     expect(await screen.findByText(/Đang chờ Billing hoàn tất giao dịch/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Kiểm tra trạng thái giao dịch" }));

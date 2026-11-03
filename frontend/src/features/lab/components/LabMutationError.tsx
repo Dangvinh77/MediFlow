@@ -18,7 +18,7 @@ export function LabMutationError({ status, message, correlationId, onRetry }: La
     <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p className="font-semibold">{status ? headings[status] ?? "Không thể xử lý yêu cầu" : "Không thể kết nối"}</p>
       <p className="mt-1">{message}</p>
-      {correlationId ? <p className="mt-2 text-xs text-muted-foreground">Mã theo dõi: <span className="font-mono">{correlationId}</span></p> : null}
+      {correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all">Mã theo dõi: <span className="font-mono">{correlationId}</span></p></details> : null}
       {onRetry ? <button type="button" onClick={onRetry} className="mt-3 min-h-10 rounded-lg border border-danger/40 px-4 py-2 font-medium hover:bg-danger/10">Thử lại</button> : null}
     </div>
   );

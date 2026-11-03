@@ -11,6 +11,21 @@ function directory(overrides: Partial<ReferenceDirectory> = {}): ReferenceDirect
 }
 
 describe("reference selection", () => {
+  it("masks an embedded UUID label while retaining the deliberate exact-ID query and selected wire value", async () => {
+    const source = directory({ resolve: vi.fn().mockResolvedValue(`Hồ sơ ${id}`) });
+    const onValueChange = vi.fn();
+    const view = render(<ReferenceProvider directory={source}><ReferenceInput aria-label="Bệnh nhân" kind="patient" value="" onValueChange={onValueChange} /></ReferenceProvider>);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: "Tìm lựa chọn" }));
+    const choice = await screen.findByRole("button", { name: "Thông tin bệnh nhân (chưa có tên)" });
+    expect(source.resolve).toHaveBeenCalledWith("patient", id);
+    expect(screen.getByRole("textbox")).toHaveValue(id);
+    fireEvent.click(choice);
+    expect(onValueChange).toHaveBeenLastCalledWith(id);
+    view.rerender(<ReferenceProvider directory={source}><ReferenceInput aria-label="Bệnh nhân" kind="patient" value={id} onValueChange={onValueChange} /></ReferenceProvider>);
+    expect(screen.getByRole("textbox")).toHaveValue("Đã chọn bệnh nhân");
+    expect(screen.getByRole("textbox")).not.toHaveAttribute("title");
+  });
   it("resolves a handed-off UUID into a named option and requires explicit selection", async () => {
     const source = directory();
     const onValueChange = vi.fn();

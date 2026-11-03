@@ -4,7 +4,7 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
 import { FinancialStatus } from "./FinancialStatus";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -16,6 +16,7 @@ import type { Role } from "@/lib/roles";
 import { isUuid } from "@/lib/validation";
 import { labApi, type LabSearchParams } from "../api";
 import type { LabCareEpisodeType, LabTestDTO, LabTestStatus } from "../types";
+import { labQueueHref } from "../navigation";
 
 const LAB_PAGE_SIZE = 20;
 const detailRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"];
@@ -65,18 +66,23 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: { outpatientEnabled?: boolean; initialEpisodeId?: string }) {
+export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", initialEpisodeType = "OUTPATIENT_VISIT", initialStatus, initialDepartmentId = "", initialPage = 0 }: { outpatientEnabled?: boolean; initialEpisodeId?: string; initialEpisodeType?: LabCareEpisodeType; initialStatus?: LabTestStatus | ""; initialDepartmentId?: string; initialPage?: number }) {
   const router = useRouter();
   const requestSequence = useRef(0);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
+  const clinicalReader = role === "ADMIN" || role === "DOCTOR" || role === "NURSE";
   const [tests, setTests] = useState<LabTestDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [departmentId, setDepartmentId] = useState("");
-  const [status, setStatus] = useState<LabTestStatus | "">("");
-  const [initialFilters] = useState<LabSearchParams>(() => outpatientEnabled && isUuid(initialEpisodeId)
-    ? { episodeType: "OUTPATIENT_VISIT", episodeId: initialEpisodeId } : {});
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId);
+  const [status, setStatus] = useState<LabTestStatus | "">(initialStatus ?? "");
+  const episodeScoped = outpatientEnabled && isUuid(initialEpisodeId);
+  const initialFilters = useMemo<LabSearchParams>(() => ({
+    ...(episodeScoped ? { episodeType: initialEpisodeType, episodeId: initialEpisodeId } : {}),
+    ...(initialDepartmentId ? { departmentId: initialDepartmentId } : {}),
+    ...(initialStatus ? { status: initialStatus } : initialStatus === undefined && role === "LAB_TECH" && !episodeScoped ? { status: "READY" as const } : {}),
+  }), [episodeScoped, initialEpisodeId, initialEpisodeType, initialDepartmentId, initialStatus, role]);
   const [episodeType, setEpisodeType] = useState<LabCareEpisodeType | "">(initialFilters.episodeType ?? "");
   const [episodeId, setEpisodeId] = useState(initialFilters.episodeId ?? "");
   const [activeFilters, setActiveFilters] = useState<LabSearchParams>(initialFilters);
@@ -105,6 +111,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
+      window.history.replaceState(null, "", labQueueHref(filters, result.number));
     } catch (cause: unknown) {
       if (sequence !== requestSequence.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
@@ -120,14 +127,16 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => {
-      void loadTests(0, initialFilters);
+      setStatus(initialFilters.status ?? "");
+      setActiveFilters(initialFilters);
+      void loadTests(initialPage, initialFilters);
     }, 0);
 
     return () => {
       window.clearTimeout(initialLoad);
       requestSequence.current += 1;
     };
-  }, [loadTests, initialFilters]);
+  }, [loadTests, initialFilters, initialPage]);
 
   function onFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -161,11 +170,12 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
   function onReset() {
     setDepartmentId("");
     setStatus("");
-    setEpisodeType("");
-    setEpisodeId("");
+    setEpisodeType(episodeScoped ? initialEpisodeType : "");
+    setEpisodeId(episodeScoped ? initialEpisodeId : "");
     setValidationError(null);
-    setActiveFilters({});
-    void loadTests(0, {});
+    const filters: LabSearchParams = episodeScoped ? { episodeType: initialEpisodeType, episodeId: initialEpisodeId } : {};
+    setActiveFilters(filters);
+    void loadTests(0, filters);
   }
 
   return (
@@ -177,21 +187,22 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
           </Link>
         </div>
       ) : null}
-      <form onSubmit={onFilter} className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        <div className="min-w-0 flex-1">
+      {episodeScoped ? <p className="mb-4 border-l-2 border-primary pl-3 text-sm text-muted-foreground">Xét nghiệm thuộc đợt chăm sóc đang xem. Bộ lọc giữ nguyên đợt chăm sóc khi chọn tất cả trạng thái.</p> : null}
+      <form onSubmit={onFilter} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4">
+        {clinicalReader ? <div className="min-w-0 flex-1">
           <label htmlFor="lab-department" className="mb-1 block text-sm font-medium">
-            Mã khoa
+            Khoa yêu cầu
           </label>
           <ReferenceInput kind="department"
             id="lab-department"
             value={departmentId}
             onValueChange={(selectedId) => setDepartmentId(selectedId)}
-            placeholder="UUID khoa"
+            placeholder="Chọn khoa yêu cầu"
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
             className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
           />
-        </div>
+        </div> : null}
         <div>
           <label htmlFor="lab-status" className="mb-1 block text-sm font-medium">
             Trạng thái
@@ -210,10 +221,15 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
             ))}
           </select>
         </div>
+        <details className="order-last w-full border-t border-border pt-2">
+        <summary className="cursor-pointer py-2 text-sm text-muted-foreground">Tra cứu nâng cao và hỗ trợ</summary>
+        <div className="grid gap-3 py-3 sm:grid-cols-2">
+        {!clinicalReader ? <div><label htmlFor="lab-department-support" className="mb-1 block text-sm font-medium">Mã khoa</label><ReferenceInput kind="department" id="lab-department-support" value={departmentId} onValueChange={setDepartmentId} /></div> : null}
         <div>
           <label htmlFor="lab-episode-type" className="mb-1 block text-sm font-medium">Loại đợt</label>
           <select
             id="lab-episode-type"
+            disabled={episodeScoped}
             value={episodeType}
             onChange={(event) => setEpisodeType(event.target.value as LabCareEpisodeType | "")}
             className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
@@ -227,6 +243,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
           <label htmlFor="lab-episode-id" className="mb-1 block text-sm font-medium">Mã đợt chăm sóc</label>
           <input
             id="lab-episode-id"
+            readOnly={episodeScoped}
             value={episodeId}
             onChange={(event) => setEpisodeId(event.target.value)}
             placeholder="UUID đợt chăm sóc"
@@ -235,6 +252,8 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
             className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
           />
         </div>
+        </div>
+        </details>
         <button
           type="submit"
           disabled={loading}
@@ -278,13 +297,13 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
       {!error && tests.length > 0 ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-4xl text-left text-sm">
+            <table className={`w-full text-left text-sm ${clinicalReader ? "min-w-4xl" : "min-w-2xl"}`}>
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3">Ngày yêu cầu</th>
                   <th scope="col" className="px-4 py-3">Loại</th>
                   <th scope="col" className="px-4 py-3">Bệnh nhân</th>
-                  <th scope="col" className="px-4 py-3">Hồ sơ</th>
+                  {clinicalReader ? <th scope="col" className="px-4 py-3">Hồ sơ</th> : null}
                   <th scope="col" className="px-4 py-3">Trạng thái</th>
                   <th scope="col" className="px-4 py-3">Thanh toán</th>
                   <th scope="col" className="px-4 py-3">Kết luận</th>
@@ -306,15 +325,15 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "" }: {
                       <td className="px-4 py-3 font-medium">
                         {role !== null && detailRoles.includes(role) ? (
                           <Link
-                            href={`/lab/${test.testId}`}
+                            href={`/lab/${test.testId}?returnTo=${encodeURIComponent(labQueueHref(lastRequest.filters, lastRequest.page))}`}
                             className="text-primary underline-offset-4 hover:underline"
                           >
                             {test.labType}
                           </Link>
                         ) : test.labType}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="patient" value={test.patientId} fallback="Bệnh nhân" /></td>
-                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="record" value={test.recordId} fallback="Hồ sơ khám" /></td>
+                      <td className="px-4 py-3"><ReferenceText kind="patient" value={test.patientId} fallback="Bệnh nhân" /></td>
+                      {clinicalReader ? <td className="px-4 py-3 text-muted-foreground"><ReferenceText kind="record" value={test.recordId} fallback="Hồ sơ khám" /></td> : null}
                       <td className="px-4 py-3">
                         <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
                       </td>

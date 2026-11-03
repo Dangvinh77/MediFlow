@@ -27,9 +27,9 @@ describe("Medical record patient lookup", () => {
 
   it("rejects malformed patient IDs before calling the record API", async () => {
     render(<MedicalRecordTable />);
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "not-a-uuid" } });
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "not-a-uuid" } });
     fireEvent.click(screen.getByRole("button", { name: "Tìm hồ sơ" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Mã bệnh nhân phải là UUID hợp lệ.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Chọn bệnh nhân từ danh sách kết quả tìm kiếm.");
     expect(mocks.byPatient).not.toHaveBeenCalled();
   });
 
@@ -37,11 +37,12 @@ describe("Medical record patient lookup", () => {
     mocks.byPatient.mockRejectedValueOnce(new ApiRequestError("Không thể tải", 503, "UNAVAILABLE", [], "record-lookup-correlation"))
       .mockResolvedValueOnce([record]);
     render(<MedicalRecordTable />);
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.click(screen.getByRole("button", { name: "Tìm hồ sơ" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Không thể tải");
-    expect(screen.getByText("record-lookup-correlation")).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
+    fireEvent.click(screen.getByText("Thông tin hỗ trợ"));
+    expect(screen.getByText(/Mã theo dõi: record-lookup-correlation/)).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     expect(await screen.findByText("First patient record")).toBeVisible();
     expect(mocks.byPatient).toHaveBeenLastCalledWith("123e4567-e89b-42d3-a456-426614174000");
@@ -52,9 +53,9 @@ describe("Medical record patient lookup", () => {
     mocks.byPatient.mockReturnValueOnce(older.promise).mockResolvedValueOnce([{ ...record, symptoms: "Latest patient record" }]);
     render(<MedicalRecordTable />);
     const form = screen.getByRole("button", { name: "Tìm hồ sơ" }).closest("form")!;
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.submit(form);
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174001" } });
     fireEvent.submit(form);
     expect(await screen.findByText("Latest patient record")).toBeVisible();
     await act(async () => older.reject(new ApiRequestError("Older patient search failed", 503, "UNAVAILABLE")));
@@ -66,7 +67,7 @@ describe("Medical record patient lookup", () => {
     let reject!: (cause: unknown) => void;
     mocks.byPatient.mockReturnValue(new Promise((_, fail) => { reject = fail; }));
     const view = render(<MedicalRecordTable />);
-    fireEvent.change(screen.getByLabelText("Mã bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "123e4567-e89b-42d3-a456-426614174000" } });
     fireEvent.click(screen.getByRole("button", { name: "Tìm hồ sơ" }));
     await waitFor(() => expect(mocks.byPatient).toHaveBeenCalledTimes(1));
     view.unmount();

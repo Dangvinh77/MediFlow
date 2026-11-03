@@ -89,6 +89,7 @@ describe("Create lab request form", () => {
     fillLabRequest();
     fireEvent.click(screen.getByRole("button", { name: "Tạo yêu cầu xét nghiệm" }));
     expect(await screen.findByText("Loại xét nghiệm chưa được hỗ trợ")).toBeVisible();
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
     expect(screen.getByText("lab-form-correlation")).toBeVisible();
     expect(mocks.create).toHaveBeenCalledWith({
       recordId: "123e4567-e89b-42d3-a456-426614174000",

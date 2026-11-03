@@ -61,6 +61,8 @@ describe("OutboxReplayForm", () => {
     fillEventId(eventId);
     submit();
 
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
+
     expect(await screen.findByText("trace-replay", { exact: false })).toBeVisible();
     expect(screen.getByText("Event không tồn tại.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Phát lại event" })).not.toBeDisabled();
