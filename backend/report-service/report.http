@@ -241,3 +241,11 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {"commandId":"00000000-0000-4000-8000-000000000104","generationId":"{{operationalGenerationId}}","acceptanceReference":"rollback/operational-v1","expectedCurrentGenerationId":"00000000-0000-4000-8000-000000000004"}
+
+### Discover accepted scopes (same default-OFF outpatient gates; MANAGER requires authorized departmentId)
+GET {{host}}/api/v1/reports/outpatient/available-periods
+Authorization: Bearer {{token}}
+
+### Discover one department; choose an actual authorized UUID before running
+GET {{host}}/api/v1/reports/outpatient/available-periods?departmentId={{departmentId}}
+Authorization: Bearer {{token}}

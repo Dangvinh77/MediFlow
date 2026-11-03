@@ -27,6 +27,18 @@ public class OutpatientReportReadPersistenceAdapter implements OutpatientReportR
     private final JdbcTemplate jdbc;private final ObjectMapper mapper;
     public OutpatientReportReadPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc,ObjectMapper mapper){this.jdbc=jdbc;this.mapper=mapper;}
     @Override
+    public List<Candidate> recentCandidates(UUID department, String zone, String currency) {
+        return jdbc.query("""
+                SELECT covered_from, covered_to, department_id
+                FROM report_outpatient_coverage
+                WHERE (?::uuid IS NULL OR department_id=?::uuid) AND zone_id=? AND currency=?
+                GROUP BY covered_from, covered_to, department_id
+                ORDER BY MAX(acceptance_order) DESC LIMIT 20
+                """, (rs, n) -> new Candidate(rs.getDate("covered_from").toLocalDate(),
+                        rs.getDate("covered_to").toLocalDate(), rs.getObject("department_id", UUID.class)),
+                department, department, zone, currency);
+    }
+    @Override
     public Optional<Evidence> load(LocalDate from,LocalDate to,UUID department,String zone,String currency){
         var proofs=jdbc.query("""
                 SELECT * FROM report_outpatient_coverage

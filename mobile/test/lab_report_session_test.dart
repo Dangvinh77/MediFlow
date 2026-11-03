@@ -56,6 +56,11 @@ class Workflow implements LabWorkflow {
 }
 
 class Reports implements ReportRepository {
+  @override
+  Future<List<AvailableReportPeriod>> availablePeriods({
+    String? departmentId,
+  }) async => [];
+
   final pending = Completer<ReportData>();
   @override
   Future<ReportData> read(ReportQuery query) => pending.future;

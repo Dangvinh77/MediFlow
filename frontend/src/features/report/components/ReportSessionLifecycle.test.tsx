@@ -68,7 +68,7 @@ describe("Report private session lifecycle", () => {
     mocks.outpatientDaily.mockRejectedValue(new ApiRequestError("Missing coverage", 404, "REPORT_NOT_FOUND"));
     render(cases[3].element);
     const feedback = await screen.findByRole("group", { name: "Báo cáo chưa sẵn sàng" });
-    expect(feedback).toHaveFocus();
+    await waitFor(() => expect(feedback).toHaveFocus());
     const input = screen.getByLabelText(cases[3].draft);
     input.focus(); fireEvent.change(input, { target: { value: "another-scope" } });
     expect(input).toHaveFocus(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);

@@ -30,6 +30,18 @@ class OutpatientReportControllerTest {
     @MockBean com.mediflow.report.application.port.out.CurrentReportAuthorityPort authority;
     @Autowired private MockMvc mvc;@MockBean private ReadOutpatientReportUseCase reader;
     private final LocalDate date=LocalDate.of(2026,10,1);
+    @Test void adminCanDiscoverAcceptedPeriods() throws Exception {
+        mvc.perform(get("/api/v1/reports/outpatient/available-periods").with(user("test").roles("ADMIN")))
+                .andExpect(status().isOk());
+        verify(reader).availablePeriods(null);
+    }
+    @Test void discoveryRejectsUnscopedManagerAndCashier() throws Exception {
+        for (String role : List.of("MANAGER", "CASHIER", "PATIENT")) {
+            mvc.perform(get("/api/v1/reports/outpatient/available-periods").with(user("test").roles(role)))
+                    .andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(reader);
+    }
     @ParameterizedTest @ValueSource(strings={"ADMIN"})
     void permittedRoleGetsCashNotEarnedOrLiability(String role)throws Exception{
         var period=new OutpatientReportDTO.Period(date,date,1,2,3,4,new BigDecimal("100.00"),new BigDecimal("20.00"),new BigDecimal("80.00"));
@@ -80,6 +92,8 @@ class OutpatientReportControllerTest {
         String token=ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes");
         mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/reports/outpatient/available-periods?departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
+        verify(reader).availablePeriods(department);
         verify(reader).daily(date,date,department);verify(reader).monthly(2026,department);
     }
 }

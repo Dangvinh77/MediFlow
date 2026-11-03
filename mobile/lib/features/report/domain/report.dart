@@ -41,12 +41,44 @@ class ReportRow {
 }
 
 class ReportData {
-  const ReportData(this.title, this.rows, {this.note, this.departmentId});
+  const ReportData(
+    this.title,
+    this.rows, {
+    this.note,
+    this.departmentId,
+    this.currency,
+  });
   final String title;
   final List<ReportRow> rows;
-  final String? note, departmentId;
+  final String? note, departmentId, currency;
+}
+
+class AvailableReportPeriod {
+  const AvailableReportPeriod({
+    required this.coverageId,
+    required this.from,
+    required this.to,
+    required this.currency,
+    required this.zoneId,
+    required this.sourceObservedAt,
+    required this.reconciledAt,
+    required this.syntheticData,
+    this.departmentId,
+  });
+  final String coverageId,
+      from,
+      to,
+      currency,
+      zoneId,
+      sourceObservedAt,
+      reconciledAt;
+  final String? departmentId;
+  final bool syntheticData;
+  bool get isFullYear =>
+      from.endsWith('-01-01') && to == '${from.substring(0, 4)}-12-31';
 }
 
 abstract interface class ReportRepository {
+  Future<List<AvailableReportPeriod>> availablePeriods({String? departmentId});
   Future<ReportData> read(ReportQuery query);
 }

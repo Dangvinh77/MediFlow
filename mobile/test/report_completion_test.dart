@@ -9,6 +9,81 @@ import 'pharmacy_fixtures.dart';
 
 void main() {
   test(
+    'discovery uses gateway scope and rejects malformed acceptance metadata',
+    () async {
+      final item = <String, dynamic>{
+        'coverageId': drugId,
+        'fromDate': '2025-01-01',
+        'toDate': '2025-12-31',
+        'departmentId': otherDrugId,
+        'currency': 'VND',
+        'zoneId': 'Asia/Bangkok',
+        'sourceObservedAt': '2026-01-01T00:00:00Z',
+        'reconciledAt': '2026-01-01T01:00:00Z',
+        'syntheticData': true,
+      };
+      final adapter = PharmacyHttpAdapter()..data = [item];
+      final client = ApiClient(
+        AppConfig('http://localhost:8080/api'),
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      addTearDown(client.close);
+      final reader = GatewayReportRepository(client);
+      final result = await reader.availablePeriods(departmentId: otherDrugId);
+      expect(
+        adapter.requests.single.path,
+        'v1/reports/outpatient/available-periods',
+      );
+      expect(adapter.requests.single.queryParameters, {
+        'departmentId': otherDrugId,
+      });
+      expect(result.single.isFullYear, isTrue);
+      expect(result.single.syntheticData, isTrue);
+      adapter.data = [
+        {...item, 'coverageId': 'invalid'},
+      ];
+      await expectLater(reader.availablePeriods(), throwsFormatException);
+      adapter.data = [
+        {...item, 'toDate': '2025-02-30'},
+      ];
+      await expectLater(reader.availablePeriods(), throwsArgumentError);
+    },
+  );
+
+  test(
+    'outpatient provenance preserves zone currency and both observation times',
+    () async {
+      final adapter = PharmacyHttpAdapter()
+        ..data = <String, dynamic>{
+          'covered': true,
+          'coverageId': drugId,
+          'sourceObservedAt': '2025-01-02T00:00:00Z',
+          'reconciledAt': '2025-01-02T01:00:00Z',
+          'currency': 'VND',
+          'zoneId': 'Asia/Bangkok',
+          'syntheticData': true,
+          'periods': <dynamic>[],
+        };
+      final client = ApiClient(
+        AppConfig('http://localhost:8080/api'),
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      addTearDown(client.close);
+      final result = await GatewayReportRepository(client).read(
+        const ReportQuery(
+          kind: ReportKind.outpatientDaily,
+          from: '2025-01-01',
+          to: '2025-01-01',
+        ),
+      );
+      expect(result.note, contains('Asia/Bangkok'));
+      expect(result.note, contains('VND'));
+      expect(result.note, contains('2025-01-02T00:00:00Z'));
+      expect(result.note, contains('Dữ liệu mô phỏng'));
+    },
+  );
+
+  test(
     'all remaining report readers serialize their exact parameters',
     () async {
       final adapter = PharmacyHttpAdapter();

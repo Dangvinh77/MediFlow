@@ -1,5 +1,7 @@
 "use client";
 
+import { OutpatientAvailablePeriods } from "./OutpatientAvailablePeriods";
+
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 
@@ -80,6 +82,10 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
         <span>Để trống khoa để xem toàn bệnh viện.</span>
         <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(value => value + 1); setErrors({}); }}>Bỏ chọn khoa</Button>
       </div>
+      <OutpatientAvailablePeriods key={`${mode}:${departmentId}`} mode={mode} departmentId={departmentId.trim() || undefined} onSelect={period => {
+        clear(); setFromDate(period.fromDate); setToDate(period.toDate); setYear(period.fromDate.slice(0,4));
+        setDepartmentId(period.departmentId ?? ""); setScopeReset(value => value+1); setErrors({});
+      }} />
       {state.status === "success" && ((departmentId.trim() || undefined) !== submittedQuery.departmentId
         || (mode === "daily" ? fromDate !== submittedQuery.fromDate || toDate !== submittedQuery.toDate : Number(year) !== submittedQuery.year)) &&
         <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">

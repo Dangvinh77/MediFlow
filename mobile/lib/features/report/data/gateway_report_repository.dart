@@ -47,6 +47,59 @@ class GatewayReportRepository implements ReportRepository {
   }
 
   @override
+  Future<List<AvailableReportPeriod>> availablePeriods({
+    String? departmentId,
+  }) async {
+    if (departmentId != null && !isReferenceId(departmentId)) {
+      throw ArgumentError('Khoa phòng không hợp lệ.');
+    }
+    final raw = await client.get(
+      '/v1/reports/outpatient/available-periods',
+      query: {'departmentId': ?departmentId},
+    );
+    if (raw is! List) throw const FormatException('Kỳ báo cáo không hợp lệ.');
+    return raw.map((item) {
+      final m = _map(item);
+      String field(String key) {
+        final value = m[key];
+        if (value is! String || value.isEmpty) {
+          throw const FormatException('Kỳ báo cáo không hợp lệ.');
+        }
+        return value;
+      }
+
+      final from = field('fromDate'), to = field('toDate');
+      final id = field('coverageId'),
+          source = field('sourceObservedAt'),
+          reconciled = field('reconciledAt');
+      final dept = m['departmentId'];
+      ReportQuery(
+        kind: ReportKind.outpatientDaily,
+        from: from,
+        to: to,
+      ).validate();
+      if (!isReferenceId(id) ||
+          (dept != null && (dept is! String || !isReferenceId(dept))) ||
+          DateTime.tryParse(source) == null ||
+          DateTime.tryParse(reconciled) == null ||
+          m['syntheticData'] is! bool) {
+        throw const FormatException('Kỳ báo cáo không hợp lệ.');
+      }
+      return AvailableReportPeriod(
+        coverageId: id,
+        from: from,
+        to: to,
+        departmentId: dept as String?,
+        currency: field('currency'),
+        zoneId: field('zoneId'),
+        sourceObservedAt: source,
+        reconciledAt: reconciled,
+        syntheticData: m['syntheticData'] as bool,
+      );
+    }).toList();
+  }
+
+  @override
   Future<ReportData> read(ReportQuery q) async {
     q.validate();
     if (q.departmentId != null && !isReferenceId(q.departmentId!)) {
@@ -140,17 +193,13 @@ class GatewayReportRepository implements ReportRepository {
             }),
           ),
       ],
+      currency: m['currency'] as String,
       note:
-          'Đã kiểm tra số liệu · Đơn vị: đồng\n'
-          'Cập nhật: ${_displayTime(reconciledAt)}',
+          '${m['syntheticData'] == true ? 'Dữ liệu mô phỏng\n' : ''}'
+          'Đã đối soát · ${m['currency']} · ${m['zoneId']}\n'
+          'Nguồn cập nhật: $sourceObservedAt\n'
+          'Đối soát: $reconciledAt',
       departmentId: m['departmentId'] as String?,
     );
-  }
-
-  String _displayTime(String raw) {
-    final local = DateTime.parse(raw).toLocal();
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${two(local.hour)}:${two(local.minute)} '
-        '${two(local.day)}/${two(local.month)}/${local.year}';
   }
 }

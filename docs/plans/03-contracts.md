@@ -1124,3 +1124,25 @@ Session tạo từ ca phải cùng bác sĩ/khoa/phòng/ngày, nằm trong giờ
 Gateway cho DOCTOR tiếp cận collection management sessions và commands theo exact method/path; Clinical vẫn bắt buộc authority quản lý khoa, own-calendar/registrations vẫn theo phân công thực tế. Bổ nhiệm không cấp đọc/sửa mọi bệnh án hoặc quyền Lab/Pharmacy/Billing/Report.
 
 `GET /api/v2/consultation-sessions/summary?departmentId=&fromDate=&toDate=`: ADMIN/MANAGER/DOCTOR với quyền quản lý khoa hiện hành. Data `{departmentId,fromDate,toDate,openSessionCount,stoppedSessionCount,cancelledSessionCount,capacity,heldCount,paymentLockedCount,confirmedCount,consumedCount,availableCount,observedAt}` tổng hợp server toàn khoa/khoảng đã chọn, không chỉ một trang. Seat totals loại CANCELLED; counts trạng thái giữ riêng. Đây là snapshot vận hành Clinical, không phải báo cáo tài chính đã đối soát.
+
+
+## Accepted outpatient period discovery (2026-11-03)
+
+`GET /api/v1/reports/outpatient/available-periods?departmentId=<UUID>` returns the usual
+ApiResponse envelope containing a list of `coverageId`, `fromDate`, `toDate`, `departmentId`
+(nullable hospital scope), `currency`, `zoneId`, `sourceObservedAt`, `reconciledAt`, and
+`syntheticData`. ADMIN may omit the department to discover recent scopes. MANAGER must
+supply a currently authorized department, with the same live scope guard as daily/monthly.
+Both outpatient read gates and the outpatient profile still apply; defaults stay OFF.
+
+The reader considers at most 20 recent distinct accepted ranges in the configured Report
+zone and VND, then revalidates each with the existing daily reader in one repeatable local
+snapshot. Wrong scope, future acceptance, stale fingerprint, pending/invalid evidence or
+invalid amounts cannot become available reports. A later read revalidates again. An empty
+list is neither zero activity nor a complete inventory of historical ranges.
+
+Daily/monthly responses additionally carry `syntheticData` (boolean). It is true only when
+the acceptance reference and all five source references explicitly start `SYNTHETIC-DEMO-`.
+Older responses without this additive field remain readable by the clients. No source
+references or accepting actor are exposed. A compatible historical seed is discoverable
+only if its approval remains valid; discovery never accepts or restores seed data.

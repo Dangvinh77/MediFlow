@@ -111,3 +111,16 @@ behavior. Treat zero metrics as valid data.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Report tests when available. Smoke test
 date/department validation, zero metrics, permission denial, and the changed report route.
+
+## Outpatient statistics continuation — 2026-11-03
+
+The gated outpatient workspace now offers explicit discovery of recently accepted periods.
+Choosing a period visibly fills dates and department; users still submit the report. Full-year
+monthly reports only offer Jan 1–Dec 31 candidates. No historical year/department is hard-coded.
+Discovery uses the same session lifecycle and authorized scope as existing reads.
+
+Accepted results show separate cash and activity trend charts, retain exact period details,
+currency, timezone and provenance, and label explicitly synthetic evidence. Refunds can make
+net cash negative; zero only describes accepted coverage. Units dispensed remain separate.
+UI/backend gates remain OFF by default; this implementation does not establish live source
+acceptance or enable the runtime after pull.

@@ -7,6 +7,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/report.dart';
+import 'outpatient_statistics.dart';
 
 final reportRepositoryProvider = Provider<ReportRepository>(
   (ref) => throw StateError(
@@ -36,7 +37,10 @@ Object reportDisplayError(Object error, ReportKind kind) {
     );
   }
   final message = error.code == 'REPORT_NOT_FOUND' || error.status == 404
-      ? 'Chưa có dữ liệu báo cáo cho khoảng đã chọn.'
+      ? (kind == ReportKind.outpatientDaily ||
+                kind == ReportKind.outpatientMonthly
+            ? 'Chưa có dữ liệu đã đối soát phù hợp hoặc báo cáo chưa được bật. Đây không phải số hoạt động bằng 0.'
+            : 'Chưa có dữ liệu báo cáo cho khoảng đã chọn.')
       : switch (error.status) {
           400 || 422 => 'Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.',
           401 => 'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.',
@@ -69,6 +73,7 @@ class ReportPage extends ConsumerWidget {
       key: ObjectKey(access.sessionIdentity),
       repository: ref.watch(reportRepositoryProvider),
       outpatientEnabled: outpatientEnabled,
+      needsDepartment: access.role == 'MANAGER',
     );
   }
 }
@@ -78,9 +83,10 @@ class _ReportWorkspace extends StatefulWidget {
     super.key,
     required this.repository,
     required this.outpatientEnabled,
+    required this.needsDepartment,
   });
   final ReportRepository repository;
-  final bool outpatientEnabled;
+  final bool outpatientEnabled, needsDepartment;
   @override
   State<_ReportWorkspace> createState() => _ReportWorkspaceState();
 }
@@ -225,6 +231,21 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
               },
       ),
       const SizedBox(height: 12),
+      if (kind == ReportKind.outpatientDaily ||
+          kind == ReportKind.outpatientMonthly)
+        AvailableReportPeriods(
+          key: ValueKey('$kind:$department'),
+          repository: widget.repository,
+          departmentId: department,
+          monthly: kind == ReportKind.outpatientMonthly,
+          needsDepartment: widget.needsDepartment && department == null,
+          onSelect: (period) {
+            from.text = period.from;
+            to.text = period.to;
+            department = period.departmentId;
+            changed();
+          },
+        ),
       FilledButton.icon(
         onPressed: loading ? null : load,
         icon: const Icon(Icons.bar_chart),
@@ -250,6 +271,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(data!.note!),
           ),
+        if (data!.currency != null && data!.rows.isNotEmpty)
+          OutpatientStatistics(data!),
         if (data!.rows.isEmpty)
           const Padding(
             padding: EdgeInsets.all(24),
