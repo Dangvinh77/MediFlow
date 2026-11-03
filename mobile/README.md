@@ -100,6 +100,8 @@ Checkpoint186 tests trước đây là [lịch sử task04–06](docs/evidence/h
 | Huy | pharmacy, report | Thuốc, đơn thuốc, báo cáo MVP |
 | Vinh (tiếp nhận Lộc) | billing, notification | Đã bổ sung hóa đơn/thanh toán/hoàn tiền, báo cáo và thông báo theo API hiện có; cần nghiệm thu Gateway thật |
 
+Phân công hiện hành (11/2026) giữa Hoàng Anh và Huy: [mobile work split](docs/mobile-work-split-2026-11.md).
+
 Plan Pharmacy riêng của Huy: [12 task triển khai mobile Pharmacy](docs/huy-pharmacy-mobile-plan.md)
 (2026-10-20). Bắt đầu từ danh mục/chi tiết/tra cứu đơn, sau đó các command ngoại trú V1;
 phân biệt feature implementation, shared integration và nghiệm thu thật. Bảng ownership bên trên
