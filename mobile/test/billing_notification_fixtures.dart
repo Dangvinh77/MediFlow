@@ -234,7 +234,7 @@ PaymentDiscovery paymentDiscovery({int remainingMinor = 7525}) =>
       prescriptionId: null,
       labTestIds: const [],
       requestedAmount: const Money(10000),
-      paidAmount: const Money(2475),
+      paidAmount: Money(10000 - remainingMinor),
       remainingAmount: Money(remainingMinor),
       currency: 'VND',
       status: 'PARTIALLY_PAID',

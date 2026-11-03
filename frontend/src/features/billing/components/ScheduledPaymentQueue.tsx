@@ -36,7 +36,7 @@ export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistratio
   useEffect(() => () => { generation.current++; initiallyLoaded.current = false; }, []);
   const waitingItems = items?.filter(item => !completedRegistrationIds.includes(item.registrationId));
   return <section aria-label="Danh sách chờ thu phí" className="space-y-4 rounded-xl border border-border bg-surface p-5">
-    <div><h2 className="text-lg font-semibold">Khoản khám đang chờ thu</h2><p className="mt-1 text-sm text-muted-foreground">Chọn bệnh nhân để tìm, hoặc tải toàn bộ khoản còn hạn. Chọn phiếu để kiểm tra số tiền hiện hành trước khi thu.</p></div>
+    <h2 className="text-lg font-semibold">Khoản khám đang chờ thu</h2>
     <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void load(); }}>
       <div className="min-w-0 flex-1"><label htmlFor="cashier-queue-patient" className="mb-1 block text-sm font-medium">Tìm bệnh nhân</label><ReferenceInput id="cashier-queue-patient" kind="patient" value={patientId} onValueChange={value => { generation.current++; setPatientId(value); setItems(null); setBusy(false); setError(null); }} disabled={disabled} /></div>
       <Button type="submit" disabled={disabled} loading={busy}>Tải khoản chờ thu</Button>

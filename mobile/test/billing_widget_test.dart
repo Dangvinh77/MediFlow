@@ -115,7 +115,7 @@ Future<void> openLedger(WidgetTester tester, BillingStub repository) async {
   await tester.tap(find.text('Tra cứu từ Billing'));
   await tester.pumpAndSettle();
   expect(repository.paymentDiscoveries, hasLength(1));
-  expect(find.text('Khoản thu do Billing cung cấp'), findsOneWidget);
+  expect(find.textContaining('Còn lại:'), findsOneWidget);
 }
 
 void main() {
@@ -207,10 +207,7 @@ void main() {
     await tester.tap(firstTile);
     await tester.pumpAndSettle();
 
-    final firstCard = find.ancestor(
-      of: find.text('Mã hóa đơn: $invoiceId'),
-      matching: find.byType(Card),
-    );
+    final firstCard = firstTile;
     await tester.tap(
       find.descendant(
         of: firstCard,
@@ -283,6 +280,97 @@ void main() {
     },
   );
 
+  testWidgets(
+    'paid refresh keeps the receipt visible outside the collection form',
+    (tester) async {
+      useTallViewport(tester);
+      final repository = BillingStub();
+      var reads = 0;
+      repository.onDiscoverPayment = (_, _, _, _) async => ++reads == 1
+          ? paymentDiscovery()
+          : BillingDto.paymentDiscovery({
+              ...paymentDiscoveryJson(),
+              'status': 'PAID',
+              'paidAmount': 100.0,
+              'remainingAmount': 0.0,
+            });
+      await openLedger(tester, repository);
+      final confirmation = find.byType(CheckboxListTile).last;
+      await ensureFinderVisible(tester, confirmation);
+      await tester.tap(confirmation);
+      await tester.pump();
+      await ensureFinderVisible(tester, find.text('Ghi nhận khoản thu'));
+      await tester.tap(find.text('Ghi nhận khoản thu'));
+      await tester.pumpAndSettle();
+      expect(find.text('Đã thu thành công'), findsOneWidget);
+      expect(find.text('Ghi nhận khoản thu'), findsNothing);
+      expect(repository.completedPayments, hasLength(1));
+    },
+  );
+
+  testWidgets('stale refresh keeps payment locked and retries only the read', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final repository = BillingStub();
+    var reads = 0;
+    repository.onDiscoverPayment = (_, _, _, _) async {
+      reads++;
+      return reads < 3
+          ? paymentDiscovery()
+          : BillingDto.paymentDiscovery({
+              ...paymentDiscoveryJson(),
+              'status': 'PAID',
+              'remainingAmount': 0.0,
+              'paidAmount': 100.0,
+            });
+    };
+    await openLedger(tester, repository);
+    final confirmation = find.byType(CheckboxListTile).last;
+    await ensureFinderVisible(tester, confirmation);
+    await tester.tap(confirmation);
+    await tester.pump();
+    await ensureFinderVisible(tester, find.text('Ghi nhận khoản thu'));
+    await tester.tap(find.text('Ghi nhận khoản thu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ghi nhận khoản thu'), findsNothing);
+    final retry = find.text('Thử kiểm tra lại');
+    await ensureFinderVisible(tester, retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+    expect(reads, 3);
+    expect(repository.completedPayments, hasLength(1));
+    expect(find.text('Đã thu thành công'), findsOneWidget);
+  });
+
+  testWidgets('intermediate stale balance cannot unlock a completed payment', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final repository = BillingStub();
+    var reads = 0;
+    repository.onDiscoverPayment = (_, _, _, _) async => ++reads == 1
+        ? paymentDiscovery()
+        : BillingDto.paymentDiscovery({
+            ...paymentDiscoveryJson(),
+            'status': 'PARTIALLY_PAID',
+            'paidAmount': 30.0,
+            'remainingAmount': 70.0,
+          });
+    await openLedger(tester, repository);
+    await enterField(tester, 'Số tiền thực nhận (VND)', '25.25');
+    final confirmation = find.byType(CheckboxListTile).last;
+    await ensureFinderVisible(tester, confirmation);
+    await tester.tap(confirmation);
+    await tester.pump();
+    await ensureFinderVisible(tester, find.text('Ghi nhận khoản thu'));
+    await tester.tap(find.text('Ghi nhận khoản thu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ghi nhận khoản thu'), findsNothing);
+    expect(find.text('Thử kiểm tra lại'), findsOneWidget);
+    expect(repository.completedPayments, hasLength(1));
+  });
+
   testWidgets('ledger freezes and retries the same payment after tab changes', (
     tester,
   ) async {
@@ -295,7 +383,7 @@ void main() {
       return Future.value(ledgerPayment());
     };
     repository.onDiscoverPayment = (_, _, _, _) => Future.value(
-      paymentDiscovery(remainingMinor: attempts == 0 ? 7525 : 5025),
+      paymentDiscovery(remainingMinor: attempts == 0 ? 7525 : 5000),
     );
     await openLedger(tester, repository);
     await enterField(tester, 'Số tiền thực nhận (VND)', '25.25');
@@ -326,6 +414,9 @@ void main() {
       repository.completedPayments.last.body['idempotencyKey'],
       matches(RegExp(r'^[0-9a-f-]{36}$')),
     );
+    await ensureFinderVisible(tester, find.text('Thông tin biên nhận'));
+    await tester.tap(find.text('Thông tin biên nhận'));
+    await tester.pumpAndSettle();
     expect(find.text('Mã giao dịch: $transactionId'), findsOneWidget);
   });
 
@@ -341,7 +432,7 @@ void main() {
         discoveryCalls++;
         if (discoveryCalls == 2) return pendingRefresh.future;
         return Future.value(
-          paymentDiscovery(remainingMinor: discoveryCalls == 1 ? 7525 : 5025),
+          paymentDiscovery(remainingMinor: discoveryCalls == 1 ? 7525 : 5000),
         );
       };
       repository.onCompletePayment = (_, _) {
@@ -352,7 +443,7 @@ void main() {
       };
 
       await openLedger(tester, repository);
-      await enterField(tester, 'Số tiền thực nhận (VND)', '25.00');
+      await enterField(tester, 'Số tiền thực nhận (VND)', '25.25');
       final confirmation = find.byType(CheckboxListTile).last;
       await ensureFinderVisible(tester, confirmation);
       await tester.tap(confirmation);
@@ -364,15 +455,15 @@ void main() {
 
       expect(repository.completedPayments, hasLength(1));
       expect(discoveryCalls, 2);
-      final reconciling = find.text('Đang đối soát…');
+      final reconciling = find.text('Đang cập nhật trạng thái khoản thu…');
       await ensureFinderVisible(tester, reconciling);
       expect(reconciling, findsOneWidget);
       expect(repository.paymentDiscoveries, hasLength(2));
 
-      pendingRefresh.complete(paymentDiscovery(remainingMinor: 5025));
+      pendingRefresh.complete(paymentDiscovery(remainingMinor: 5000));
       await tester.pumpAndSettle();
       expect(reconciling, findsNothing);
-      expect(find.text('Đối soát số dư mới từ Billing'), findsNothing);
+      expect(find.text('Thử kiểm tra lại'), findsNothing);
       expect(find.text('Ghi nhận khoản thu'), findsOneWidget);
       tester
           .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
@@ -420,7 +511,7 @@ void main() {
     expect(repository.completedPayments, hasLength(1));
     expect(reads, 2);
     expect(find.text('Ghi nhận khoản thu'), findsNothing);
-    expect(find.text('Đối soát số dư mới từ Billing'), findsOneWidget);
+    expect(find.text('Thử kiểm tra lại'), findsOneWidget);
   });
 
   testWidgets(
@@ -435,10 +526,10 @@ void main() {
         return Future.error(const ApiFailure('Timeout'));
       };
       repository.onDiscoverPayment = (_, _, _, _) => Future.value(
-        paymentDiscovery(remainingMinor: attempts == 0 ? 7525 : 5025),
+        paymentDiscovery(remainingMinor: attempts == 0 ? 7525 : 5000),
       );
       await openLedger(tester, repository);
-      await enterField(tester, 'Số tiền thực nhận (VND)', '25.00');
+      await enterField(tester, 'Số tiền thực nhận (VND)', '25.25');
       final confirmation = find.byType(CheckboxListTile).last;
       await ensureFinderVisible(tester, confirmation);
       await tester.tap(confirmation);
@@ -464,7 +555,7 @@ void main() {
       final retry = find.text('Gửi lại đúng lệnh đã khóa');
       await ensureFinderVisible(tester, retry);
       expect(retry, findsOneWidget);
-      expect(find.text('Đối soát số dư mới từ Billing'), findsNothing);
+      expect(find.text('Thử kiểm tra lại'), findsNothing);
     },
   );
 

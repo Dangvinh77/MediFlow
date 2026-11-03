@@ -62,7 +62,6 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
   const needsEpisodeScope = Boolean(selection && (filters.patientId !== selection.patientId || filters.careEpisodeId !== selection.careEpisodeId));
 
   return <div className="space-y-5">
-    <p className="text-sm text-muted-foreground">Chọn khoản đã phát sinh, đối chiếu bệnh nhân rồi thu theo số dư hiện hành.</p>
     {locked ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Đang đối soát khoản đã chọn. Chưa đổi bệnh nhân hoặc khoản thu khi kết quả giao dịch chưa rõ.</p> : null}
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
       <section aria-label="Hàng khoản thu" className="min-w-0 rounded-xl border border-border bg-surface p-5">
@@ -70,7 +69,6 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
           <h2 className="text-lg font-semibold">Khoản cần xử lý</h2>
           <Button type="button" variant="secondary" disabled={locked || loading} onClick={() => { setLoading(true); setResult(null); refresh(); }}>Cập nhật hàng chờ</Button>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">Xét nghiệm và thuốc còn hạn. Khoản 0 đồng cần xác nhận nghĩa vụ riêng, không thu tiền mặt.</p>
         <div className="mt-4 space-y-3">
           <label className="block space-y-1 text-sm font-medium">Tìm bệnh nhân chờ thu
             <ReferenceInput kind="patient" aria-label="Tìm bệnh nhân chờ thu" value={filters.patientId ?? ""} disabled={locked}
@@ -117,7 +115,7 @@ function PaymentRequestWorkspaceSession({ quoteEnabled, zeroLiabilityEnabled }: 
         {!selection ? <p role="status" className="mb-4 rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Chọn một khoản từ hàng chờ để đối chiếu và thanh toán. Không cần chép mã xét nghiệm, đơn thuốc hay lượt khám.</p> : null}
         <PaymentRequestLookupForm key={selection?.paymentRequestId ?? "manual"} initialSelection={selection ?? undefined}
           collapsedLookup defaultPurpose="LAB_TEST" quoteEnabled={quoteEnabled} zeroLiabilityEnabled={zeroLiabilityEnabled}
-          onLockChange={onLockChange} onCompleted={refresh} />
+          onLockChange={onLockChange} onCompleted={refresh} onNext={() => { if (!lock.current) { setSelection(null); refresh(); } }} />
       </div>
     </div>
   </div>;

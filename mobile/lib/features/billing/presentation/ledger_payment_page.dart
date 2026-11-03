@@ -222,7 +222,10 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
     }
     final old = _discovery;
     if (old == null) return;
-    setState(() => _reconciling = true);
+    setState(() {
+      _reconciling = true;
+      _commandError = null;
+    });
     try {
       final fresh = await widget.repository.discoverPaymentRequest(
         purpose: old.purpose,
@@ -230,9 +233,21 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
         patientId: old.patientId,
         careEpisodeId: old.careEpisodeId,
       );
-      if (fresh.paymentRequestId != old.paymentRequestId) {
+      if (fresh.paymentRequestId != old.paymentRequestId ||
+          fresh.patientId != old.patientId ||
+          fresh.sourceId != old.sourceId ||
+          fresh.careEpisodeId != old.careEpisodeId ||
+          fresh.accountId != old.accountId ||
+          fresh.currency != old.currency) {
         throw const FormatException(
           'Khoản thu đã thay đổi sau giao dịch. Cần đối soát biên nhận trước khi thu tiếp.',
+        );
+      }
+      if (fresh.remainingAmount.minorUnits >= old.remainingAmount.minorUnits ||
+          fresh.paidAmount.minorUnits <
+              old.paidAmount.minorUnits + _receipt!.amount.minorUnits) {
+        throw const FormatException(
+          'Trạng thái chưa phản ánh khoản đã thu. Đã giữ biên nhận; không thu lại.',
         );
       }
       if (!mounted ||
@@ -259,6 +274,28 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
 
   void _showMessage(String value) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+  }
+
+  void _nextCollection() {
+    if (_busy || _reconciling || _receipt?.status != 'COMPLETED') return;
+    if (widget.source != null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _discovery = null;
+      _receipt = null;
+      _commandError = null;
+      _error = null;
+      _locked = false;
+      _confirmed = false;
+      _frozen = null;
+      _sourceId.clear();
+      _patientId.clear();
+      _episodeId.clear();
+      _amount.clear();
+      _reference.clear();
+    });
   }
 
   void _invalidateDiscovery(String _) {
@@ -288,12 +325,15 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
   Widget build(BuildContext context) {
     super.build(context);
     return PopScope(
-      canPop: !_locked && !_busy && !_reconciling,
+      canPop:
+          (!_locked || _receipt?.status == 'COMPLETED') &&
+          !_busy &&
+          !_reconciling,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Tra cứu khoản thu',
+            widget.source == null ? 'Tra cứu khoản thu' : 'Khoản đang thu',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
@@ -359,25 +399,52 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
               id: item.departmentId,
               label: 'Khoa',
             ),
-            Text(
-              'Khoản thu do Billing cung cấp',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
             ExpansionTile(
-              title: const Text('Chi tiết tham chiếu'),
+              title: const Text('Thông tin đối soát'),
               children: [
                 SelectableText('Mã yêu cầu: ${item.paymentRequestId}'),
+                Text('Trạng thái tài khoản viện phí: ${item.accountStatus}'),
+                Text('Dữ liệu cập nhật lúc: ${item.observedAt}'),
               ],
             ),
             Text(
-              'Trạng thái: ${item.status} · Tài khoản: ${item.accountStatus}',
+              'Trạng thái: ${switch (item.status) {
+                'PENDING' => 'Chờ thanh toán',
+                'PARTIALLY_PAID' => 'Đã thanh toán một phần',
+                'PAID' => 'Đã thanh toán',
+                'EXPIRED' => 'Hết hạn',
+                'CANCELLED' => 'Đã hủy',
+                _ => 'Cần kiểm tra',
+              }}',
             ),
-            Text('Đề nghị: ${item.requestedAmount.format()} ${item.currency}'),
-            Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
-            Text('Còn lại: ${item.remainingAmount.format()} ${item.currency}'),
-            Text('Quan sát lúc: ${item.observedAt}'),
-            if (item.status == 'PENDING' ||
-                item.status == 'PARTIALLY_PAID') ...[
+            if (!(_locked && _receipt?.status == 'COMPLETED')) ...[
+              Text(
+                'Đề nghị: ${item.requestedAmount.format()} ${item.currency}',
+              ),
+              Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
+              Text(
+                'Còn lại: ${item.remainingAmount.format()} ${item.currency}',
+              ),
+            ],
+            if (_receipt != null) _receiptCard(_receipt!),
+            if (_commandError != null) RequestError(_commandError!),
+            if (_reconciling) const Text('Đang cập nhật trạng thái khoản thu…'),
+            if (_locked &&
+                _receipt?.status == 'COMPLETED' &&
+                !_reconciling &&
+                _commandError != null)
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _refreshAfterPayment,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử kiểm tra lại'),
+              ),
+            if (_receipt?.status == 'COMPLETED')
+              FilledButton(
+                onPressed: _busy || _reconciling ? null : _nextCollection,
+                child: const Text('Thu khoản tiếp theo'),
+              ),
+            if ((item.status == 'PENDING' || item.status == 'PARTIALLY_PAID') &&
+                !(_locked && _receipt?.status == 'COMPLETED')) ...[
               const SizedBox(height: 16),
               TextField(
                 controller: _amount,
@@ -424,8 +491,6 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                     : (value) => setState(() => _confirmed = value ?? false),
                 title: const Text('Tôi đã thực nhận/đối soát khoản tiền này.'),
               ),
-              if (_receipt != null) _receiptCard(_receipt!),
-              if (_commandError != null) RequestError(_commandError!),
               if (_locked)
                 const Text(
                   'Thao tác đang chờ đối soát. Không gửi khoản thu khác cho đến khi kết quả được kiểm tra.',
@@ -436,18 +501,6 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                       ? null
                       : () => _submit(retry: _frozen),
                   child: const Text('Gửi lại đúng lệnh đã khóa'),
-                ),
-              if (_locked && _receipt?.status == 'COMPLETED')
-                OutlinedButton.icon(
-                  onPressed: _busy || _reconciling
-                      ? null
-                      : _refreshAfterPayment,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(
-                    _reconciling
-                        ? 'Đang đối soát…'
-                        : 'Đối soát số dư mới từ Billing',
-                  ),
                 ),
               if (!_locked)
                 FilledButton(
@@ -478,10 +531,25 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
   );
 
   Widget _receiptCard(LedgerPayment result) => Card(
-    child: ListTile(
-      title: Text('Trạng thái giao dịch: ${result.status}'),
-      subtitle: SelectableText('Mã giao dịch: ${result.transactionId}'),
-      trailing: Text('${result.amount.format()} ${result.currency}'),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            result.status == 'COMPLETED'
+                ? 'Đã thu thành công'
+                : 'Giao dịch đang chờ xác nhận',
+          ),
+          Text(
+            '${result.amount.format()} ${result.currency} · ${result.paymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}',
+          ),
+          ExpansionTile(
+            title: const Text('Thông tin biên nhận'),
+            children: [SelectableText('Mã giao dịch: ${result.transactionId}')],
+          ),
+        ],
+      ),
     ),
   );
 }

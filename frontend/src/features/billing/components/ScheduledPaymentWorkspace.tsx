@@ -12,6 +12,7 @@ import { clearScheduledPaymentRecovery, readScheduledPaymentRecovery, saveSchedu
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ScheduledPaymentQueue } from "./ScheduledPaymentQueue";
 import { OutpatientQuoteBreakdown } from "./OutpatientQuoteBreakdown";
+import { BillingSessionBoundary } from "./BillingSessionBoundary";
 import type { OutpatientQuoteDTO, RegistrationPaymentRequestDTO, ScheduledPaymentCommand, ScheduledPaymentResult, ZeroPayableEligibilityRequest } from "../types";
 
 interface WorkspaceError {
@@ -51,7 +52,11 @@ function terminalResult(result: ScheduledPaymentResult | null) {
   return result?.operation.status === "COMPLETED" || result?.operation.status === "CLOSED_NOT_PAID";
 }
 
-export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroLiabilityEnabled = false }: ScheduledPaymentWorkspaceProps) {
+export function ScheduledPaymentWorkspace(props: ScheduledPaymentWorkspaceProps) {
+  return <BillingSessionBoundary identity="scheduled-payments"><ScheduledPaymentSession {...props} /></BillingSessionBoundary>;
+}
+
+function ScheduledPaymentSession({ enabled, quoteEnabled = false, zeroLiabilityEnabled = false }: ScheduledPaymentWorkspaceProps) {
   const [registrationId, setRegistrationId] = useState("");
   const [manualLookupOpen, setManualLookupOpen] = useState(false);
   const [request, setRequest] = useState<RegistrationPaymentRequestDTO | null>(null);
@@ -71,6 +76,10 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const [quoteError, setQuoteError] = useState<WorkspaceError | null>(null);
   const [quoteUnavailable, setQuoteUnavailable] = useState(false);
   const [quoteBusy, setQuoteBusy] = useState(false);
+  const [refreshBusy, setRefreshBusy] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [queueRevision, setQueueRevision] = useState(0);
+  const refreshLock = useRef(false);
   const quoteGeneration = useRef(0);
   const lookupGeneration = useRef(0);
   const lookupLock = useRef(false);
@@ -88,7 +97,12 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   useEffect(() => {
     const firstTick = window.setTimeout(() => setClientNow(Date.now()), 0);
     const interval = window.setInterval(() => setClientNow(Date.now()), 15_000);
-    return () => { window.clearTimeout(firstTick); window.clearInterval(interval); };
+    return () => {
+      window.clearTimeout(firstTick); window.clearInterval(interval);
+      lookupGeneration.current++;
+      quoteGeneration.current++;
+      requestRef.current = null;
+    };
   }, []);
 
   async function loadQuote(paymentRequestId: string) {
@@ -117,13 +131,54 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
     return quote !== null && Number.isFinite(Date.parse(quote.expiresAt)) && Date.parse(quote.expiresAt) > now;
   }
 
+  async function refreshCompleted(completedRequest: RegistrationPaymentRequestDTO) {
+    if (refreshLock.current) return;
+    refreshLock.current = true;
+    const generation = lookupGeneration.current;
+    const session = getSessionKey();
+    const isCurrent = () => generation === lookupGeneration.current && session === getSessionKey()
+      && requestRef.current?.paymentRequestId === completedRequest.paymentRequestId;
+    setRefreshBusy(true);
+    setRefreshError(null);
+    try {
+      const updated = await billingApi.scheduledPaymentRequestByRegistration(completedRequest.registrationId);
+      if (!isCurrent()) return;
+      if (updated.paymentRequestId !== completedRequest.paymentRequestId || updated.registrationId !== completedRequest.registrationId
+        || updated.patientId !== completedRequest.patientId || updated.reservationId !== completedRequest.reservationId
+        || updated.currency !== completedRequest.currency || updated.status !== "PAID" || !isZeroAmount(updated.remainingAmount)) {
+        setRefreshError("Trạng thái đọc lại chưa phản ánh khoản đã xử lý. Đã giữ biên nhận; không thu lại.");
+        return;
+      }
+      requestRef.current = updated;
+      setRequest(updated);
+    } catch {
+      if (isCurrent()) setRefreshError("Khoản thu đã được ghi nhận; chưa tải được trạng thái mới. Đã giữ biên nhận; không thu lại.");
+    } finally {
+      refreshLock.current = false;
+      if (isCurrent()) setRefreshBusy(false);
+    }
+  }
+
+  function nextCollection() {
+    if (lookupLock.current || paymentLock.current || operationCheckLock.current || refreshLock.current || pending || uncertain) return;
+    changeRegistrationId("");
+    setManualLookupOpen(false);
+    setRefreshError(null);
+    setQueueRevision(value => value + 1);
+  }
+
   async function lookup(selectedRegistrationId?: string) {
     const id = (selectedRegistrationId ?? registrationId).trim();
-    if (!id || lookupBusy || lookupLock.current || paymentBusy || paymentLock.current || checkingOperation || operationCheckLock.current || pending || uncertain) return;
+    if (!id || lookupBusy || lookupLock.current || paymentBusy || paymentLock.current || checkingOperation || operationCheckLock.current || refreshLock.current || pending || uncertain) return;
+    if (requestRef.current?.registrationId === id && (paymentResult?.operation.status === "COMPLETED" || paidFromRequest)) {
+      await refreshCompleted(requestRef.current);
+      return;
+    }
     lookupLock.current = true;
     const generation = ++lookupGeneration.current;
     setLookupBusy(true);
     setLookupError(null);
+    setRefreshError(null);
     setPaymentError(null);
     setPaymentResult(null);
     setLastIntent(null);
@@ -144,7 +199,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
       requestRef.current = result;
       setRequest(result);
       setRegistrationId(id);
-      setPaidFromRequest(result.status === "PAID" && recovery === null);
+      setPaidFromRequest((result.status === "PAID" || completedRegistrationIds.includes(result.registrationId)) && recovery === null);
       if (result.status === "PAID") rememberCompleted(result.registrationId);
       if (quoteEnabled) void loadQuote(result.paymentRequestId);
       if (recovery) {
@@ -179,6 +234,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   }
 
   function changeRegistrationId(value: string) {
+    if (lookupLock.current || paymentLock.current || operationCheckLock.current || refreshLock.current || pending || uncertain) return;
     setRegistrationId(value);
     if (requestRef.current && value.trim() !== requestRef.current.registrationId) {
       lookupGeneration.current += 1;
@@ -241,6 +297,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
           setRecoveredOperationId(null);
           setPaidFromRequest(result.operation.status === "COMPLETED");
         }
+        if (result.operation.status === "COMPLETED" && isCurrentRequest()) await refreshCompleted(submittedRequest);
       }
     } catch (cause) {
       if (!(cause instanceof CommandIntentError)) {
@@ -361,6 +418,7 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
           );
           intent.settle();
         }
+        if (result.operation.status === "COMPLETED" && isCurrentRequest()) await refreshCompleted(checkedRequest);
       }
     } catch (cause) {
       if (isCurrentRequest()) setPaymentError(errorFrom(cause, "Chưa đọc được trạng thái giao dịch."));
@@ -389,15 +447,14 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
   const zeroConfirmed = paymentResult?.operation.status === "COMPLETED" && paymentResult.operation.basis === "ZERO_LIABILITY";
   const patientFormVisible = hasDue && !quoteZero && Number.isSafeInteger(request.reservationRevision) && request.reservationRevision > 0 && !lookupBusy && !pending && !completed && !closed;
 
-  return <div className="space-y-6">
-    <ScheduledPaymentQueue completedRegistrationIds={completedRegistrationIds} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
-    <details open={manualLookupOpen} onToggle={event => setManualLookupOpen(event.currentTarget.open)} className="rounded-xl border border-border bg-surface p-5">
-      <summary className="cursor-pointer text-lg font-semibold">Tra cứu phiếu được cung cấp</summary>
-      <p className="mt-1 text-sm text-muted-foreground">Có thể chọn phiếu từ danh sách phía trên hoặc dùng mã phiếu được cung cấp khi cần hỗ trợ tra cứu. Số tiền phải thu do hệ thống kiểm tra.</p>
+  return <div className="flex flex-col gap-6">
+    <ScheduledPaymentQueue key={queueRevision} completedRegistrationIds={completedRegistrationIds} disabled={lookupBusy || paymentBusy || checkingOperation || refreshBusy || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
+    <details open={manualLookupOpen} onToggle={event => setManualLookupOpen(event.currentTarget.open)} className="order-last rounded-xl border border-border bg-surface p-4">
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Tra cứu phiếu được cung cấp</summary>
       <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void lookup(); }}>
         <label className="flex-1 space-y-1 text-sm font-medium" htmlFor="scheduled-registration-id">
           <span>Mã phiếu đăng ký</span>
-          <input id="scheduled-registration-id" value={registrationId} onChange={event => changeRegistrationId(event.target.value)} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" autoComplete="off" />
+          <input id="scheduled-registration-id" value={registrationId} onChange={event => changeRegistrationId(event.target.value)} disabled={lookupBusy || paymentBusy || checkingOperation || refreshBusy || pending || uncertain} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" autoComplete="off" />
         </label>
         <Button type="submit" loading={lookupBusy} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain}>Tra cứu khoản thu</Button>
       </form>
@@ -416,30 +473,35 @@ export function ScheduledPaymentWorkspace({ enabled, quoteEnabled = false, zeroL
           <div><dt className="text-muted-foreground">Còn phải thu</dt><dd className="font-semibold">{formatDecimal(request.remainingAmount)} {request.currency}</dd></div>
           <div><dt className="text-muted-foreground">Đã thu</dt><dd>{formatDecimal(request.paidAmount)} {request.currency}</dd></div>
           <div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(request.expiresAt)}</dd></div>
-          <div><dt className="text-muted-foreground">Trạng thái Billing</dt><dd>{{ PENDING: "Chờ thanh toán", PARTIALLY_PAID: "Đã thanh toán một phần", PAID: "Đã thanh toán", EXPIRED: "Hết hạn", CANCELLED: "Đã hủy" }[request.status] ?? "Cần kiểm tra"}</dd></div>
+          <div><dt className="text-muted-foreground">Trạng thái</dt><dd>{{ PENDING: "Chờ thanh toán", PARTIALLY_PAID: "Đã thanh toán một phần", PAID: "Đã thanh toán", EXPIRED: "Hết hạn", CANCELLED: "Đã hủy" }[request.status] ?? "Cần kiểm tra"}</dd></div>
           </> : null}
         </dl>
-        {completed ? <Button className="mt-3" type="button" loading={lookupBusy} onClick={() => void lookup()}>Cập nhật số dư</Button> : null}
       </div>
 
       {quoteEnabled && !completed ? <div className="space-y-3 border-t border-border pt-4">
-        {quote ? <OutpatientQuoteBreakdown quote={quote} /> : null}
+        {quote ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Chi tiết giá và hỗ trợ mô phỏng</summary><OutpatientQuoteBreakdown quote={quote} /></details> : null}
         {quoteBusy ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
         {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; chỉ có thể tiếp tục thu số dư dương do Billing xác nhận.</p> : null}
         {quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{quoteError.message}{quoteError.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{quoteError.correlationId}</span></span> : null}</p> : null}
         {quoteExpired ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.</p> : null}
-        <Button type="button" variant="secondary" loading={quoteBusy} disabled={quoteBusy || paymentBusy || pending} onClick={() => void loadQuote(request.paymentRequestId)}>Kiểm tra báo giá hiện hành</Button>
+        {quoteError ? <Button type="button" variant="secondary" loading={quoteBusy} disabled={quoteBusy || paymentBusy || pending} onClick={() => void loadQuote(request.paymentRequestId)}>Thử tải lại báo giá</Button> : null}
       </div> : null}
 
-      {completed ? zeroConfirmed && paymentResult?.clearanceId
-        ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Đã xác nhận nghĩa vụ 0 đồng.</p>
-        : <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">Billing đã xác nhận khoản thu hoặc nghĩa vụ của yêu cầu này.</p> : null}
+      {completed ? <div className="space-y-3">
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">
+          {zeroConfirmed ? "Đã xác nhận nghĩa vụ 0 đồng." : paymentResult?.payment
+            ? `Đã thu ${formatDecimal(paymentResult.payment.amount)} ${paymentResult.payment.currency} · ${paymentResult.payment.paymentMethod === "CASH" ? "Tiền mặt" : "Chuyển khoản"}.`
+            : "Khoản phí đã được thanh toán."}
+        </p>
+        {refreshBusy ? <p className="text-sm text-muted-foreground">Đang cập nhật trạng thái khoản thu…</p> : null}
+        {refreshError ? <div className="space-y-2"><p role="alert" className="text-sm text-warning">{refreshError}</p><Button type="button" disabled={refreshBusy} onClick={() => void refreshCompleted(request)}>Thử kiểm tra lại</Button></div> : null}
+        <Button type="button" variant="primary" disabled={refreshBusy || paymentBusy || checkingOperation} onClick={nextCollection}>Thu khoản tiếp theo</Button>
+      </div> : null}
       {pending ? <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
         <p>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu để tránh thu trùng." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu để tránh thu trùng."}</p>
         <Button className="mt-3" loading={checkingOperation} onClick={() => void checkOperation()}>Kiểm tra trạng thái giao dịch</Button>
       </div> : null}
       {closed ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm">Billing đã xác nhận giao dịch này được đóng mà chưa thu tiền. Tra cứu lại khoản thu trước khi thao tác tiếp.</p> : null}
-      {paymentResult?.operation.status === "COMPLETED" && paymentResult.payment ? <p className="text-sm text-muted-foreground">Đã ghi nhận {formatDecimal(paymentResult.payment.amount)} {paymentResult.payment.currency}.</p> : null}
       {paymentError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
         <p>{paymentError.message}</p>
         {paymentError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{paymentError.correlationId}</span></p> : null}

@@ -10,7 +10,8 @@ interface BillingNavigationProps {
 const routes = {
   queue: { href: "/billing/payment-requests", label: "Xét nghiệm và thuốc" },
   scheduled: { href: "/billing/scheduled-payments", label: "Phí khám" },
-  history: { href: "/billing", label: "Lịch sử hóa đơn và hoàn tiền" },
+  history: { href: "/billing", label: "Lịch sử thu" },
+  refunds: { href: "/billing/refunds", label: "Hoàn tiền" },
 } as const;
 
 export function BillingNavigation({ schedulingEnabled }: BillingNavigationProps) {
@@ -19,8 +20,8 @@ export function BillingNavigation({ schedulingEnabled }: BillingNavigationProps)
     ? routes.queue.href
     : pathname.startsWith(routes.scheduled.href)
       ? routes.scheduled.href
-      : routes.history.href;
-  const items = [routes.queue, ...(schedulingEnabled ? [routes.scheduled] : []), routes.history];
+      : pathname.startsWith(routes.refunds.href) ? routes.refunds.href : routes.history.href;
+  const items = [routes.queue, ...(schedulingEnabled ? [routes.scheduled] : []), routes.history, routes.refunds];
 
   return (
     <nav aria-label="Khu vực thu ngân" className="mb-6 -mx-1 overflow-x-auto px-1">

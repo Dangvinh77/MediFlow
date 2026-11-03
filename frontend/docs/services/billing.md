@@ -121,3 +121,13 @@ Luồng chính dùng ScheduledPaymentQueue: tìm bệnh nhân theo tên/ngày si
 rồi tải request/quote hiện hành. Mã đối soát thu gọn khi chọn từ danh sách; số tiền định dạng
 chỉ phục vụ hiển thị, command giữ decimal string server. Queue không cấp quyền thu và không
 thay reservation lock/idempotency/uncertain recovery. Contract A.13 trong docs/plans/03-contracts.md.
+
+## Dọn giao diện thu ngân — 04/11/2026
+
+- `/billing` là Lịch sử thu; hoàn tiền chuyển sang `/billing/refunds`. Phí khám và Xét nghiệm/thuốc vẫn là hai hàng chờ riêng theo hợp đồng hiện hành.
+- Tra cứu bằng mã là mục hỗ trợ thu gọn dưới nội dung chính. Trạng thái saga, tài khoản và thời điểm đọc nằm trong thông tin đối soát; không bỏ dữ liệu nghiệp vụ khỏi chi tiết.
+- Sau khi phí khám được xác nhận hoàn tất, tự đọc lại trạng thái bằng GET. Không còn nút Cập nhật số dư. Chỉ hiện Thử kiểm tra lại khi lần đọc lỗi hoặc chưa phản ánh kết quả; giữ biên nhận và không gửi lại lệnh thu.
+- Tra cứu lại phiếu đã hoàn tất trong cùng phiên không được mở lại thu tiền khi phản hồi cũ vẫn báo chưa thanh toán. Thu khoản tiếp theo chỉ xóa lựa chọn sau khi kết quả đã rõ và không còn yêu cầu đang xử lý.
+- Flutter giữ biên nhận ngoài form thu, thu gọn mã đối soát, dịch trạng thái và chỉ mở lại thu một phần khi số đã thu mới phản ánh ít nhất số tiền của biên nhận vừa nhận.
+
+Bằng chứng: [kế hoạch và kết quả kiểm tra](../../../docs/superpowers/plans/2026-11-04-cashier-ui-cleanup.md). Kiểm tra trình duyệt dùng Gateway mô phỏng cục bộ, không phải nghiệm thu với backend thật hoặc nhà cung cấp thanh toán. Không đổi API/backend hay bật cờ tính năng trong cấu hình triển khai.

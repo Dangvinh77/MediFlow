@@ -113,7 +113,7 @@ it("retries a failed selected-item read without opening support codes or creatin
   mocks.discover.mockRejectedValueOnce(new Error("read unavailable")).mockResolvedValue(lab);
   renderWorkspace(); fireEvent.click((await screen.findAllByRole("button", { name: "Chọn khoản" }))[0]);
   expect(await screen.findByText("read unavailable")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Đọc lại khoản đang đối chiếu" }));
+  fireEvent.click(screen.getByRole("button", { name: "Thử kiểm tra lại" }));
   expect(await screen.findByRole("button", { name: "Xác nhận thu theo báo giá" })).toBeVisible();
   expect(screen.getByLabelText(/Mã xét nghiệm/)).not.toBeVisible();
   expect(mocks.pay).not.toHaveBeenCalled();
@@ -185,7 +185,7 @@ it("keeps the confirmed receipt and refreshes the queue even if the detail balan
   expect(screen.getAllByRole("button", { name: "Chọn khoản" })).toHaveLength(1);
   expect(mocks.pay).toHaveBeenCalledTimes(1);
   mocks.discover.mockResolvedValue(lab);
-  fireEvent.click(screen.getByRole("button", { name: "Đọc lại khoản đang đối chiếu" }));
+  fireEvent.click(screen.getByRole("button", { name: "Thử kiểm tra lại" }));
   expect(await screen.findByText(/Số dư đọc lại chưa phản ánh khoản thu/)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Xác nhận thu theo báo giá" })).not.toBeInTheDocument();
   expect(screen.getByText(/Thanh toán thành công/)).toBeVisible();
