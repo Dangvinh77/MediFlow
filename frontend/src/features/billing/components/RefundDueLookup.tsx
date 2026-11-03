@@ -110,8 +110,7 @@ function RefundDueLookupSession() {
     }
   }
 
-  return <section className="mt-8 space-y-4 border-t border-border pt-6">
-    <h2 className="text-lg font-semibold">Hoàn tiền</h2>
+  return <section aria-label="Nghĩa vụ hoàn tiền" className="space-y-4">
     <p className="text-sm text-muted-foreground">Tra cứu nghĩa vụ do Billing xác nhận sau khi hủy hoặc điều chỉnh xét nghiệm, đơn thuốc. Chỉ ghi nhận khoản đã thực tế hoàn cho người bệnh.</p>
     <details open={lookupOpen} onToggle={(event) => setLookupOpen(event.currentTarget.open)} className="max-w-xl rounded-lg border border-border p-3">
       <summary className="min-h-9 cursor-pointer text-sm font-medium">Tra cứu khoản cần hoàn (hỗ trợ)</summary>

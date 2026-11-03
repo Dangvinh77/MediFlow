@@ -394,8 +394,23 @@ class _InvoicePageState extends State<InvoicePage>
       ),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
-        SelectableText('Mã hóa đơn: ${invoice.id}'),
-        Text('Trạng thái saga: ${invoice.sagaStatus}'),
+        ExpansionTile(
+          title: const Text('Thông tin đối soát hóa đơn'),
+          children: [
+            SelectableText('Mã hóa đơn: ${invoice.id}'),
+            Text(
+              'Trạng thái xử lý: ${switch (invoice.sagaStatus) {
+                'NONE' => 'Không áp dụng',
+                'AWAITING_PAYMENT' => 'Chờ thanh toán',
+                'PAID' => 'Đã thanh toán',
+                'AWAITING_DISPENSE' => 'Chờ xuất thuốc',
+                'COMPLETED' => 'Hoàn tất',
+                'REFUNDED' => 'Đã hoàn tiền',
+                _ => 'Cần kiểm tra',
+              }}',
+            ),
+          ],
+        ),
         for (final fee in invoice.fees)
           ListTile(
             dense: true,

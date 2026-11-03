@@ -3,7 +3,6 @@
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -50,6 +49,7 @@ interface PaymentRequestLookupFormProps {
   defaultPurpose?: PaymentRequestSourcePurpose;
   onLockChange?: (locked: boolean) => void;
   onCompleted?: () => void;
+  onNext?: () => void;
 }
 
 export function PaymentRequestLookupForm(props: PaymentRequestLookupFormProps) {
@@ -65,8 +65,8 @@ function isZeroAmount(value: string): boolean {
 }
 
 function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnabled = false, initialSelection,
-  collapsedLookup = false, defaultPurpose = "EXAM", onLockChange, onCompleted }: PaymentRequestLookupFormProps) {
-  const router = useRouter();
+  collapsedLookup = false, defaultPurpose = "EXAM", onLockChange, onCompleted, onNext }: PaymentRequestLookupFormProps) {
+  const [lookupOpen, setLookupOpen] = useState(!collapsedLookup);
   const [purpose, setPurpose] = useState<PaymentRequestSourcePurpose>(initialSelection?.purpose ?? defaultPurpose);
   const [sourceId, setSourceId] = useState(initialSelection?.sourceId ?? "");
   const [patientId, setPatientId] = useState(initialSelection?.patientId ?? "");
@@ -177,7 +177,7 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
       setDiscovery(updated);
       if (quoteEnabled && updated.status !== "PAID") void loadQuote(updated.paymentRequestId);
     } catch {
-      if (generation.current === current) setError({ message: "Chưa cập nhật được số dư sau thanh toán. Khoản thu đã được ghi nhận; không thu lại. Bấm Tra cứu khoản phí để đọc lại trạng thái.", correlationId: null });
+      if (generation.current === current) setError({ message: "Chưa cập nhật được số dư sau thanh toán. Khoản thu đã được ghi nhận; không thu lại. Bấm Thử kiểm tra lại để đọc trạng thái.", correlationId: null });
     } finally {
       if (generation.current === current) { setLoading(false); searchLock.current = false; }
     }
@@ -304,15 +304,15 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
     && positivePayable);
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
         {error.message}{error.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span> : null}
       </p> : null}
-      <details open={!collapsedLookup} className="rounded-xl border border-border bg-surface p-4">
+      <details open={lookupOpen} onToggle={event => setLookupOpen(event.currentTarget.open)} className="order-last rounded-xl border border-border bg-surface p-4">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Tra cứu bằng mã được bàn giao (hỗ trợ)</summary>
-      <form onSubmit={submit} noValidate className="space-y-5 rounded-xl border border-border bg-surface p-6">
+      <form onSubmit={submit} noValidate className="space-y-4 pt-3">
         <p className="text-sm text-muted-foreground">
-          Tra cứu chính xác bằng mã nguồn, bệnh nhân và đợt điều trị. Billing sẽ trả về số tiền còn phải thu và mã tiền; không nhập hoặc ước tính các giá trị này thủ công.
+          Dùng thông tin được bàn giao khi không tìm thấy khoản trong hàng chờ.
         </p>
         <Field label="Loại khoản phí" htmlFor="payment-request-purpose" required>
           <select id="payment-request-purpose" value={purpose} disabled={loading || paymentLocked} onChange={(event) => changePurpose(event.target.value as PaymentRequestSourcePurpose)} className={controlClassName}>
@@ -334,16 +334,17 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
         )}
         <div className="flex gap-2">
           <Button type="submit" variant="primary" loading={loading} disabled={paymentLocked}>Tra cứu khoản phí</Button>
-          <Button type="button" disabled={paymentLocked} onClick={() => router.back()}>Quay lại</Button>
+          <Button type="button" disabled={paymentLocked} onClick={() => setLookupOpen(false)}>Đóng tra cứu</Button>
         </div>
       </form>
       </details>
 
-      {initialSelection || completedPayment || zeroReceipt ? <Button type="button" variant="secondary" disabled={loading || paymentLocked}
-        onClick={() => void lookup()}>Đọc lại khoản đang đối chiếu</Button> : null}
+      {error && (initialSelection || completedPayment || zeroReceipt) ? <Button type="button" variant="secondary" disabled={loading || paymentLocked}
+        onClick={() => void lookup()}>Thử kiểm tra lại</Button> : null}
 
       {completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Thanh toán thành công. Đã ghi nhận {formatDecimal(completedPayment.amount)} {completedPayment.currency}.</p> : null}
       {zeroReceipt ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xác nhận nghĩa vụ 0 đồng.</p> : null}
+      {(completedPayment || zeroReceipt) && onNext ? <Button type="button" variant="primary" disabled={loading || paymentLocked} onClick={onNext}>Thu khoản tiếp theo</Button> : null}
       {loading ? <AsyncState kind="loading" message="Đang tra cứu khoản phí…" /> : null}
       {discovery ? (
         <section aria-label="Chi tiết khoản phí" className="space-y-5 rounded-xl border border-border bg-surface p-6">
@@ -355,12 +356,10 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
             <Amount label="Số tiền yêu cầu thu" amount={discovery.requestedAmount} currency={discovery.currency} />
             <Amount label="Đã thanh toán" amount={discovery.paidAmount} currency={discovery.currency} />
             <Amount label="Còn phải thu" amount={discovery.remainingAmount} currency={discovery.currency} />
-            <Info label="Trạng thái tài khoản" value={accountStatusLabels[discovery.accountStatus]} />
             <Info label="Nguồn phí" value={purposes[discovery.purpose].label} />
             <Info label="Bệnh nhân" value={<ReferenceText kind="patient" value={discovery.patientId} fallback="Bệnh nhân" />} />
             <Info label="Khoa" value={<ReferenceText kind="department" value={discovery.departmentId} fallback="Khoa" />} />
             <Info label="Hạn thanh toán" value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
-            <Info label="Dữ liệu Billing ghi nhận lúc" value={formatInstant(discovery.observedAt)} />
           </dl>
           {quoteEnabled && requestIsOpen ? <div className="space-y-3 border-t border-border pt-4">
             {quote ? collapsedLookup ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Chi tiết giá và hỗ trợ mô phỏng</summary><OutpatientQuoteBreakdown quote={quote} /></details> : <OutpatientQuoteBreakdown quote={quote} /> : null}
@@ -368,7 +367,7 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
             {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; {labQuotePayment ? "luồng thanh toán LAB V2 cần báo giá trước khi thu." : "các thao tác hiện có vẫn dựa trên số dư Billing dương."}</p> : null}
             {quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{quoteError.message}{quoteError.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{quoteError.correlationId}</span></span> : null}</p> : null}
             {quoteExpired ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.</p> : null}
-            <Button type="button" variant="secondary" loading={quoteLoading} disabled={quoteLoading || paymentLocked} onClick={() => void loadQuote(discovery.paymentRequestId)}>Kiểm tra báo giá hiện hành</Button>
+            {quoteError ? <Button type="button" variant="secondary" loading={quoteLoading} disabled={quoteLoading || paymentLocked} onClick={() => void loadQuote(discovery.paymentRequestId)}>Thử tải lại báo giá</Button> : null}
           </div> : null}
           {purpose === "LAB_TEST" && quoteZero && requestIsOpen && accountAcceptsPayment && notExpired ? quoteEnabled && zeroLiabilityEnabled ? <LabZeroLiabilityAction
             paymentRequestId={discovery.paymentRequestId}
@@ -394,6 +393,8 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
         <dl className="mt-2 grid gap-3 text-sm">
           <Info label="Mã yêu cầu" value={completedPayment?.paymentRequestId ?? zeroReceipt?.paymentRequestId ?? discovery?.paymentRequestId ?? ""} mono />
           {discovery ? <>
+            <Info label="Trạng thái tài khoản viện phí" value={accountStatusLabels[discovery.accountStatus]} />
+            <Info label="Dữ liệu cập nhật lúc" value={formatInstant(discovery.observedAt)} />
             <Info label="Mã nguồn" value={discovery.sourceId} mono />
             <Info label="Mã đợt điều trị" value={discovery.careEpisodeId} mono />
           </> : null}

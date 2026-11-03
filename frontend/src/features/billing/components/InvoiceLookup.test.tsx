@@ -23,7 +23,8 @@ describe("InvoiceLookup", () => {
    render(<InvoiceLookup />); search();
    expect(screen.queryByRole("link", { name: "Thanh toán khoản phí đã chọn" })).not.toBeInTheDocument();
    expect(await screen.findByText(formatDecimal(125.75))).toBeVisible();
-   expect(screen.getByText("Hoàn tất")).toBeVisible();
+   expect(screen.getByText("Đã thanh toán")).toBeVisible();
+   expect(screen.queryByRole("columnheader", { name: "Trạng thái saga" })).not.toBeInTheDocument();
    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "unsubmitted-draft" } });
    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
    expect(await screen.findByRole("link", { name: /Hóa đơn/ })).toHaveAttribute("href", "/billing/invoice-2");

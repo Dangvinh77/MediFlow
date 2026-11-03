@@ -7,13 +7,13 @@ import { useCallback, useState, useSyncExternalStore, type FormEvent } from "rea
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatDecimal, formatLocalDate } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { billingApi } from "../api";
-import type { InvoiceDTO, PaymentMethod, SagaStatus } from "../types";
+import type { InvoiceDTO, PaymentMethod } from "../types";
 
 const BILLING_PAGE_SIZE = 20;
 
@@ -21,18 +21,6 @@ const paymentMethodLabels: Record<PaymentMethod, string> = {
   CASH: "Tiền mặt",
   TRANSFER: "Chuyển khoản",
   INSURANCE: "Bảo hiểm",
-};
-
-const sagaStatusPresentation: Record<
-  SagaStatus,
-  { label: string; tone: StatusTone }
-> = {
-  NONE: { label: "Không áp dụng", tone: "neutral" },
-  AWAITING_PAYMENT: { label: "Chờ thanh toán", tone: "warning" },
-  PAID: { label: "Đã thanh toán", tone: "success" },
-  AWAITING_DISPENSE: { label: "Chờ xuất thuốc", tone: "info" },
-  COMPLETED: { label: "Hoàn tất", tone: "success" },
-  REFUNDED: { label: "Đã hoàn tiền", tone: "neutral" },
 };
 
 interface RequestError {
@@ -193,7 +181,7 @@ export function InvoiceLookup() {
       {showTable ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-[52rem] text-left text-sm">
+            <table className="w-full min-w-[38rem] text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3">Ngày lập</th>
@@ -201,16 +189,10 @@ export function InvoiceLookup() {
                   <th scope="col" className="px-4 py-3">Tổng tiền</th>
                   <th scope="col" className="px-4 py-3">Thanh toán</th>
                   <th scope="col" className="px-4 py-3">Hình thức</th>
-                  <th scope="col" className="px-4 py-3">Trạng thái saga</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((invoice) => {
-                  const sagaStatus = sagaStatusPresentation[invoice.sagaStatus] ?? {
-                    label: "Không xác định",
-                    tone: "neutral" as const,
-                  };
-
                   return (
                     <tr key={invoice.invoiceId} className="border-b border-border align-top last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(invoice.createdDate)}</td>
@@ -222,9 +204,6 @@ export function InvoiceLookup() {
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-3">{getPaymentMethodLabel(invoice.paymentMethod)}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge tone={sagaStatus.tone}>{sagaStatus.label}</StatusBadge>
-                      </td>
                     </tr>
                   );
                 })}

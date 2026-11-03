@@ -82,10 +82,11 @@ describe("PaymentRequestLookupForm", () => {
 
   afterEach(() => act(() => clearSession()));
 
-  it("lets the cashier leave the screen without looking up a charge", () => {
+  it("closes the support lookup without navigating away or looking up a charge", () => {
     render(<PaymentRequestLookupForm />);
-    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
-    expect(mocks.back).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng tra cứu" }));
+    expect(screen.getByText("Tra cứu bằng mã được bàn giao (hỗ trợ)").closest("details")).not.toHaveAttribute("open");
+    expect(mocks.back).not.toHaveBeenCalled();
     expect(mocks.discover).not.toHaveBeenCalled();
   });
 

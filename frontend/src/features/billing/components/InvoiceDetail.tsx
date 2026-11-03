@@ -151,9 +151,12 @@ function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice
         <Info label="Ngày lập" value={formatLocalDate(invoice.createdDate)} />
         <Info label="Hình thức" value={invoice.paymentMethod ? paymentLabels[invoice.paymentMethod] : null} />
         <Info label="Thanh toán lúc" value={formatInstant(invoice.paidAt)} />
-        <Info label="Saga" value={invoice.sagaStatus} />
         <Info label="Đơn thuốc" value={invoice.prescriptionId} mono />
       </dl>
+      <details className="rounded-xl border border-border bg-surface p-4">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin đối soát hóa đơn</summary>
+        <Info label="Trạng thái xử lý" value={{ NONE: "Không áp dụng", AWAITING_PAYMENT: "Chờ thanh toán", PAID: "Đã thanh toán", AWAITING_DISPENSE: "Chờ xuất thuốc", COMPLETED: "Hoàn tất", REFUNDED: "Đã hoàn tiền" }[invoice.sagaStatus] ?? "Cần kiểm tra"} />
+      </details>
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full min-w-3xl text-left text-sm">
           <thead className="bg-surface-muted"><tr><th className="px-4 py-3">Loại phí</th><th className="px-4 py-3">Khoa</th><th className="px-4 py-3">Ngày phát sinh</th><th className="px-4 py-3">Số tiền</th><th className="px-4 py-3">Trạng thái</th></tr></thead>
