@@ -8,6 +8,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OutpatientReportReadPort {
+    /** Null department discovers all scopes; load(null) still means hospital-wide only. */
+    List<Candidate> recentCandidates(UUID departmentId, String zone, String currency);
+    record Candidate(LocalDate from, LocalDate to, UUID departmentId) { }
     Optional<Evidence> load(LocalDate from,LocalDate to,UUID departmentId,String zone,String currency);
     record Day(LocalDate date,long completedVisits,long labTests,long dispensedPrescriptions,long dispensedUnits,
             BigDecimal cashReceived,BigDecimal refunds){ }

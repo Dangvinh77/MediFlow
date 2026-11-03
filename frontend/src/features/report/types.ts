@@ -33,6 +33,8 @@ export interface OutpatientReportDTO {
   sourceObservedAt: string;
   reconciledAt: string;
   covered: boolean;
+  /** Absent on older Report deployments. */
+  syntheticData?: boolean;
   periods: OutpatientReportPeriod[];
 }
 
@@ -46,4 +48,17 @@ export interface OutpatientReportPeriod {
   cashReceived: number;
   refunds: number;
   netCash: number;
+}
+
+/** GET outpatient/available-periods; each entry is revalidated by Report. */
+export interface OutpatientAvailablePeriodDTO {
+  coverageId: string;
+  fromDate: string;
+  toDate: string;
+  departmentId: string | null;
+  currency: string;
+  zoneId: string;
+  sourceObservedAt: string;
+  reconciledAt: string;
+  syntheticData: boolean;
 }

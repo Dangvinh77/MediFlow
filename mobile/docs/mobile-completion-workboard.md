@@ -121,3 +121,12 @@ Session identity đổi sẽ hủy cây hiển thị cũ, bỏ phản hồi cũ.
   trên cùng máy tại Gateway 28080, UI 4300; Gateway smoke PASS và các ca UI một phần PASS.
   Kết quả, screenshots, giới hạn và bước handoff ở
   [web acceptance](evidence/2026-11-03-web/README.md). Không coi smoke là hoàn thành toàn bộ mobile.
+
+## Report continuation — 2026-11-03
+
+Gated outpatient reports now include explicit accepted-period discovery through the Gateway,
+visible date/department selection, separate cash/activity charts and exact detail values.
+Synthetic data is labelled; VND/zone and source/reconciliation timestamps are preserved.
+Manager discovery requires department selection. Session/scope replacement discards late reads.
+No accepted range is not a zero-activity report. Runtime gates stay OFF by default;
+real Gateway/Support/source reconciliation and Android/iOS acceptance remain separate.

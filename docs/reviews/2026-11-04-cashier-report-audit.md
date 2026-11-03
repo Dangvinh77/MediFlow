@@ -54,3 +54,18 @@ Date: 2026-11-04. Requested by user: audit and improve Billing/Cashier and Repor
 ## Inspection limits
 
 The findings above are from live repository source and checked-in seed/readiness evidence. No restored database, authenticated live API response, browser session or money operation has been inspected or modified. The working tree initially contained untracked `scripts/demo_video/`; it is outside this task and remains untouched.
+
+## Implementation continuation — 2026-11-04
+
+Cashier cleanup and matching mobile payment behavior shipped in PR #570 (merged into master).
+The follow-up branch `codex/report-available-periods-charts` implements accepted-period discovery,
+explicit synthetic labels and separate cash/activity charts in Report web and mobile. The new
+Gateway GET rule mirrors Report ADMIN/MANAGER guards. Scope selection remains explicit;
+backend coverage is revalidated on discovery and report reads. The seed department/year is
+never substituted as a default. No gates or accepted coverage records are modified.
+
+Verification uses isolated PostgreSQL/RabbitMQ integration fixtures and a temporary local UI
+Gateway fixture. The browser check confirms choosing 2025 updates the filter before submission,
+negative net cash and separate activity lines render, and a 390px viewport has no page overflow.
+This is not a claim of restored seed or packaged live Gateway/Support acceptance. Cashier shift
+management and official receipt numbering remain future persisted contract work.

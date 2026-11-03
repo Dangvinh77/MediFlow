@@ -78,6 +78,7 @@ class OutpatientCoverageHttpPostgresTest {
     @Test void signedHttpApprovalEnablesDailyReadAndRetryIsOneEffect() throws Exception {
         String root="/api/v1/reports/outpatient";
         String query="?fromDate=2026-10-01&toDate=2026-10-01";
+        assertThat(call(HttpMethod.GET,root+"/available-periods","ADMIN",null).getBody().get("data").size()).isZero();
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"ADMIN",null).getStatusCode().value()).isEqualTo(404);
         assertThat(call(HttpMethod.GET,root+"/coverage/preview"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
         var response=call(HttpMethod.GET,root+"/coverage/preview"+query,"ADMIN",null);
@@ -101,6 +102,14 @@ class OutpatientCoverageHttpPostgresTest {
         }
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
+        var available=call(HttpMethod.GET,root+"/available-periods","ADMIN",null);
+        assertThat(available.getStatusCode().value()).isEqualTo(200);
+        assertThat(available.getBody().at("/data/0/coverageId").asText()).isEqualTo(approved.getBody().at("/data/coverageId").asText());
+        assertThat(available.getBody().at("/data/0/fromDate").asText()).isEqualTo("2026-10-01");
+        assertThat(available.getBody().at("/data/0/syntheticData").asBoolean()).isFalse();
+        assertThat(call(HttpMethod.GET,root+"/available-periods","MANAGER",null).getStatusCode().value()).isEqualTo(403);
+        jdbc.update("UPDATE report_outpatient_coverage SET local_evidence_fingerprint=?", "f".repeat(64));
+        assertThat(call(HttpMethod.GET,root+"/available-periods","ADMIN",null).getBody().get("data").size()).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isOne();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage_acceptance",Integer.class)).isOne();
     }

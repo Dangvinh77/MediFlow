@@ -322,3 +322,13 @@ Legacy daily, monthly and top-medicines responses use `Cache-Control: no-store`.
 Readers request the current server projection again on refresh; projection ingestion can still
 lag source events. This changes neither aggregation nor authorization, currency semantics,
 zero-fill behavior, or the default-closed outpatient report acceptance gate.
+
+
+## Accepted outpatient period discovery (2026-11-03)
+
+`GET /api/v1/reports/outpatient/available-periods` discovers up to 20 recently accepted ranges
+in the configured zone/VND and revalidates them through the current reader. ADMIN may discover
+recent scopes; MANAGER must supply an authorized department. An empty list is not zero activity.
+Daily/monthly results now expose explicit `syntheticData` provenance. All read gates stay OFF by
+default. See the [exact additive contract](../../docs/plans/03-contracts.md#accepted-outpatient-period-discovery-2026-11-03)
+and the requests in `report.http`. No coverage acceptance, seed restore or producer write occurs.

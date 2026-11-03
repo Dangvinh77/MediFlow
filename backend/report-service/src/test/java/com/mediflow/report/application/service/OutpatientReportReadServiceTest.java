@@ -17,6 +17,41 @@ class OutpatientReportReadServiceTest {
     private final ZoneId zone=ZoneId.of("Asia/Bangkok");
     private final Clock clock=Clock.fixed(Instant.parse("2026-10-14T01:00:00Z"),zone);
     private final OutpatientReportReadService service=new OutpatientReportReadService(store,zone,clock);
+    @Test void discoveryIncludesOnlyCurrentlyReadableRangesAndKeepsExactScope() {
+        UUID department = UUID.randomUUID();
+        var good = proof(date,date,department);
+        var stale = proof(date.minusDays(1),date.minusDays(1),department);
+        when(store.recentCandidates(department,zone.getId(),"VND")).thenReturn(List.of(
+                new OutpatientReportReadPort.Candidate(date,date,department),
+                new OutpatientReportReadPort.Candidate(date.minusDays(1),date.minusDays(1),department),
+                new OutpatientReportReadPort.Candidate(date,date,UUID.randomUUID())));
+        when(store.load(date,date,department,zone.getId(),"VND")).thenReturn(Optional.of(
+                new OutpatientReportReadPort.Evidence(good,"a".repeat(64),false,List.of())));
+        when(store.load(date.minusDays(1),date.minusDays(1),department,zone.getId(),"VND")).thenReturn(Optional.of(
+                new OutpatientReportReadPort.Evidence(stale,"b".repeat(64),false,List.of())));
+        var ranges=service.availablePeriods(department);
+        assertThat(ranges).hasSize(1);
+        assertThat(ranges.getFirst().departmentId()).isEqualTo(department);
+        assertThat(ranges.getFirst().coverageId()).isEqualTo(good.coverageId());
+        assertThat(ranges.getFirst().syntheticData()).isFalse();
+        verify(store,never()).load(date,date,null,zone.getId(),"VND");
+    }
+    @Test void discoveryLabelsExplicitSyntheticProvenanceAndRejectsPendingOrFutureEvidence() {
+        var p=proof(date,date,null);
+        var refs=new HashMap<String,String>();
+        OutpatientCoverage.REQUIRED_SOURCES.forEach(source -> refs.put(source,"SYNTHETIC-DEMO-2025/"+source));
+        var demo=new OutpatientCoverage(p.coverageId(),date,date,null,p.zoneId(),p.currency(),refs,
+                p.sourceObservedAt(),p.reconciledAt(),p.acceptedAt(),p.acceptedBy(),"SYNTHETIC-DEMO-2025:fixture",p.evidenceFingerprint());
+        when(store.recentCandidates(null,zone.getId(),"VND")).thenReturn(List.of(new OutpatientReportReadPort.Candidate(date,date,null)));
+        stub(demo,"a".repeat(64),false,List.of());
+        assertThat(service.availablePeriods(null).getFirst().syntheticData()).isTrue();
+        stub(demo,"a".repeat(64),true,List.of());
+        assertThat(service.availablePeriods(null)).isEmpty();
+        var future=new OutpatientCoverage(p.coverageId(),date,date,null,p.zoneId(),p.currency(),refs,
+                p.sourceObservedAt(),p.reconciledAt(),clock.instant().plusSeconds(60),p.acceptedBy(),"SYNTHETIC-DEMO-2025:fixture",p.evidenceFingerprint());
+        stub(future,"a".repeat(64),false,List.of());
+        assertThat(service.availablePeriods(null)).isEmpty();
+    }
     @Test void missingCoverageIsUnavailableNotZero(){
         when(store.load(date,date,null,zone.getId(),"VND")).thenReturn(Optional.empty());
         assertThatThrownBy(()->service.daily(date,date,null)).isInstanceOf(ReportProjectionUnavailableException.class);

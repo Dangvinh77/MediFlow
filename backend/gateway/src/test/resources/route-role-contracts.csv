@@ -153,3 +153,4 @@ clinical-service,PUT,/api/v2/doctor-work-shifts/{id},ADMIN|MANAGER|DOCTOR,true
 clinical-service,PUT,/api/v2/doctor-work-shifts/{id}/cancel,ADMIN|MANAGER|DOCTOR,true
 clinical-service,POST,/api/v2/doctor-work-shifts/{id}/consultation-sessions,ADMIN|MANAGER|DOCTOR,true
 clinical-service,GET,/api/v2/consultation-sessions/summary,ADMIN|MANAGER|DOCTOR,true
+report-service,GET,/api/v1/reports/outpatient/available-periods,ADMIN|MANAGER,true

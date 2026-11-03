@@ -1,3 +1,4 @@
+import { OutpatientTrendChart } from "./OutpatientTrendChart";
 import { ReportDepartmentName } from "./ReportDepartmentName";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDecimal, formatLocalDate } from "@/lib/format";
@@ -25,11 +26,19 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
         </div>
         <StatusBadge tone="success">Đã đối soát</StatusBadge>
       </div>
+      {report.syntheticData === true && <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Dữ liệu mô phỏng phục vụ minh họa; không phải hồ sơ hoặc giao dịch thực tế.</p>}
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="text-muted-foreground">Dữ liệu nguồn cập nhật</dt><dd className="mt-1">{reportInstant(report.sourceObservedAt, report.zoneId)}</dd></div>
         <div><dt className="text-muted-foreground">Đối soát lúc</dt><dd className="mt-1">{reportInstant(report.reconciledAt, report.zoneId)}</dd></div>
       </dl>
       <details className="mt-3 text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer py-3 focus-visible:outline-2 focus-visible:outline-primary">Mã đối soát</summary><p className="break-all">{report.coverageId}</p></details>
+      {report.periods.length > 0 && <>
+        <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
+          <OutpatientTrendChart periods={report.periods} kind="cash" currency={report.currency} />
+          <OutpatientTrendChart periods={report.periods} kind="activity" currency={report.currency} />
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">Tiền thu ròng không phải doanh thu ghi nhận. Số lượng thuốc đã xuất được xem riêng trong chi tiết từng kỳ.</p>
+      </>}
       {report.periods.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Báo cáo chưa có kỳ dữ liệu.</p> : (
         <ul aria-label="Các kỳ báo cáo" className="mt-4 space-y-4">
           {report.periods.map((period) => (

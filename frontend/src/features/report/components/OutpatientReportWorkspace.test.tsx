@@ -4,9 +4,9 @@ import { ApiRequestError } from "@/lib/api";
 import { storeSession } from "@/lib/session";
 beforeEach(() => storeSession({ accessToken: "report-test", refreshToken: "test", role: "ADMIN" }));
 import type { OutpatientReportDTO } from "../types";
-const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily: vi.fn(), monthly: vi.fn() }));
+const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily: vi.fn(), monthly: vi.fn(), available: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => "/reports/outpatient", useSearchParams: () => new URLSearchParams(mocks.query) }));
-vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.daily, outpatientMonthly: mocks.monthly } }));
+vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.daily, outpatientMonthly: mocks.monthly, availablePeriods: mocks.available } }));
 import { OutpatientReportWorkspace } from "./OutpatientReportWorkspace";
 
 const department = "00000000-0000-4000-8000-000000000001";
@@ -25,9 +25,25 @@ function deferred<T>() {
 
 describe("Outpatient report workspace", () => {
   beforeEach(() => {
+    mocks.available.mockReset();
     mocks.query = "view=daily&fromDate=2024-02-29&toDate=2024-02-29";
     mocks.daily.mockReset(); mocks.monthly.mockReset(); mocks.router.replace.mockReset();
     vi.spyOn(window.history, "pushState").mockImplementation(() => {});
+  });
+  it("discovery fills year visibly and waits for explicit report submission", async () => {
+    mocks.query = "view=monthly";
+    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    mocks.monthly.mockReturnValue(new Promise(() => {}));
+    const view = render(<OutpatientReportWorkspace enabled />);
+    fireEvent.click(screen.getByRole("button", {name:"Tìm kỳ có dữ liệu"}));
+    fireEvent.click(await screen.findByRole("button", {name:"Dùng kỳ này"}));
+    expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
+    expect(mocks.monthly).not.toHaveBeenCalled();
+    submit();
+    expect(window.history.pushState).toHaveBeenCalledWith(null,"","/reports/outpatient?view=monthly&year=2025");
+    mocks.query = "view=monthly&year=2025";
+    view.rerender(<OutpatientReportWorkspace enabled />);
+    await waitFor(() => expect(mocks.monthly).toHaveBeenCalledWith(2025,undefined));
   });
   it("defaults closed even for a valid direct URL and makes no request", () => {
     render(<OutpatientReportWorkspace />);

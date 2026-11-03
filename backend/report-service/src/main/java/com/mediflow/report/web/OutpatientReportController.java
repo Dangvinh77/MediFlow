@@ -21,6 +21,12 @@ import org.springframework.validation.annotation.Validated;
 public class OutpatientReportController {
     private final ReadOutpatientReportUseCase reader;
     public OutpatientReportController(ReadOutpatientReportUseCase reader){this.reader=reader;}
+    @GetMapping("/available-periods")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    public ApiResponse<java.util.List<com.mediflow.report.application.dto.response.OutpatientAvailablePeriodDTO>> availablePeriods(
+            @RequestParam(required=false) UUID departmentId, HttpServletRequest request) {
+        return ApiResponse.ok(reader.availablePeriods(departmentId), correlation(request));
+    }
     @GetMapping("/daily") @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OutpatientReportDTO> daily(@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate toDate,@RequestParam(required=false)UUID departmentId,
