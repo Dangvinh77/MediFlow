@@ -81,13 +81,13 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
     return () => { alive.current = false; generations.forEach(generation => generation.current++); };
   }, []);
 
-  async function loadSessions(page = 0) {
+  async function loadSessions(page = 0, dates = { fromDate, toDate }) {
     if (!enabled || loading || writeLock.current || createError?.uncertain) return;
     if (!departmentId.trim()) {
       setLoadError({ message: "Chọn khoa để xem các buổi khám.", correlationId: null });
       return;
     }
-    const errors = sessionDateErrors(fromDate, toDate);
+    const errors = sessionDateErrors(dates.fromDate, dates.toDate);
     setDateErrors(errors);
     if (Object.keys(errors).length) return;
     const generation = ++listGeneration.current;
@@ -96,7 +96,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
     setLoading(true); setSessions([]); setSessionPages(0); setCreatedRegistration(null); setSessionsLoaded(false); setLoadError(null); setSelectedSession(null); setRegistrationList(null);
     try {
       const result = await appointmentApi.listConsultationSessions({
-        departmentId: departmentId.trim(), fromDate, toDate, page, size: 20,
+        departmentId: departmentId.trim(), fromDate: dates.fromDate, toDate: dates.toDate, page, size: 20,
       });
       if (listGeneration.current === generation) { setSessions(result.content); setSessionsLoaded(true); setSessionPage(result.number); setSessionPages(result.totalPages); }
     } catch (cause) {
@@ -324,6 +324,10 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
     </nav>
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">Chọn buổi khám</h2>
+      <Button type="button" variant="secondary" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
+        const today = vietnamToday(); setFromDate(today); setToDate(today);
+        void loadSessions(0, { fromDate: today, toDate: today });
+      }}>Tiếp nhận hôm nay</Button>
       <p className="mt-2 text-sm text-muted-foreground">Khoa và cả hai ngày là bắt buộc. Ngày mặc định là hôm nay theo giờ Việt Nam; định dạng ô ngày theo trình duyệt.</p>
       <form noValidate className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
         <label className="space-y-1 text-sm font-medium">Khoa

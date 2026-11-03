@@ -51,11 +51,11 @@ void main() {
   test('menu allows only each route role and records current owners', () {
     expect(
       modules.where((m) => m.allows(UserRole.cashier)).map((m) => m.path),
-      ['/billing', '/support'],
+      ['/billing'],
     );
     expect(
       modules.where((m) => m.allows(UserRole.labTech)).map((m) => m.path),
-      ['/lab', '/support'],
+      ['/lab'],
     );
     expect(modules.map((m) => m.owner).toSet(), {'Vinh'});
     expect(

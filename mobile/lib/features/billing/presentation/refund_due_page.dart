@@ -6,6 +6,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/billing_commands.dart';
 import '../domain/billing_models.dart';
+import '../domain/payment_queue.dart';
 
 String _refundKey() {
   final random = Random.secure();
@@ -30,8 +31,9 @@ int? _refundMinor(String raw) {
 }
 
 class RefundDuePage extends StatefulWidget {
-  const RefundDuePage({super.key, required this.repository});
+  const RefundDuePage({super.key, required this.repository, this.outpatient});
   final BillingRepository repository;
+  final OutpatientRefundRepository? outpatient;
   @override
   State<RefundDuePage> createState() => _RefundDuePageState();
 }
@@ -39,7 +41,8 @@ class RefundDuePage extends StatefulWidget {
 class _RefundDuePageState extends State<RefundDuePage>
     with AutomaticKeepAliveClientMixin<RefundDuePage> {
   final _prescriptionId = TextEditingController();
-  PrescriptionAdjustment? _result;
+  OutpatientRefundDue? _result;
+  String _sourceType = 'PRESCRIPTION';
   Object? _error, _refreshError;
   bool _loading = false, _locked = false;
   bool _completionAwaitingRefresh = false;
@@ -79,7 +82,19 @@ class _RefundDuePageState extends State<RefundDuePage>
       }
     });
     try {
-      final result = await widget.repository.refundsDue(id);
+      final OutpatientRefundDue result;
+      if (_sourceType == 'LAB_TEST') {
+        result = await widget.outpatient!.labRefundsDue(id);
+      } else {
+        final value = await widget.repository.refundsDue(id);
+        result = OutpatientRefundDue(
+          sourceId: value.prescriptionId,
+          sourceType: 'PRESCRIPTION',
+          status: value.status,
+          rejectionCode: value.rejectionCode,
+          refundsDue: value.refundsDue,
+        );
+      }
       if (mounted && generation == _generation) {
         setState(() {
           _result = result;
@@ -152,110 +167,139 @@ class _RefundDuePageState extends State<RefundDuePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Hoàn tiền đơn thuốc',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Tra cứu nghĩa vụ do Billing trả về. Chỉ ghi nhận tiền đã thực tế hoàn; thao tác này không chuyển tiền qua ngân hàng.',
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _prescriptionId,
-          enabled: !_locked && !_loading && _result == null,
-          decoration: const InputDecoration(
-            labelText: 'Mã đơn thuốc (UUID)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        FilledButton.icon(
-          onPressed: _loading || _locked || _result != null
-              ? null
-              : () => _lookup(),
-          icon: const Icon(Icons.search),
-          label: Text(_loading ? 'Đang tra cứu…' : 'Tra cứu nghĩa vụ'),
-        ),
-        if (_error != null)
-          RequestError(
-            _error!,
-            onRetry:
-                _error is ApiFailure &&
-                    ((_error as ApiFailure).status == null ||
-                        (_error as ApiFailure).status! >= 500 ||
-                        (_error as ApiFailure).status == 429)
-                ? () => _lookup()
-                : null,
-          ),
-        for (final receipt in _receipts)
-          Card(
-            child: ListTile(
-              title: Text('Biên nhận hoàn tiền · ${receipt.status}'),
-              subtitle: SelectableText(
-                'Mã giao dịch: ${receipt.refundTransactionId}',
-              ),
-              trailing: Text('${receipt.amount.format()} ${receipt.currency}'),
-            ),
-          ),
-        if (_result case final result?) ...[
-          const Divider(height: 28),
+    return PopScope(
+      canPop: !_locked && !_writePending,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           Text(
-            'Điều chỉnh: ${result.status}${result.rejectionCode == null ? '' : ' · ${result.rejectionCode}'}',
+            widget.outpatient == null
+                ? 'Hoàn tiền đơn thuốc'
+                : 'Hoàn tiền xét nghiệm và thuốc',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-          if (_refreshError != null) ...[
-            RequestError(_refreshError!),
-            OutlinedButton.icon(
-              onPressed: _loading ? null : () => _lookup(refreshing: true),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tải lại nghĩa vụ'),
+          const SizedBox(height: 8),
+          const Text(
+            'Tra cứu nghĩa vụ do Billing trả về. Chỉ ghi nhận tiền đã thực tế hoàn; thao tác này không chuyển tiền qua ngân hàng.',
+          ),
+          const SizedBox(height: 12),
+          if (widget.outpatient != null)
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _sourceType,
+              decoration: const InputDecoration(labelText: 'Khoản cần hoàn'),
+              items: const [
+                DropdownMenuItem(
+                  value: 'PRESCRIPTION',
+                  child: Text('Đơn thuốc'),
+                ),
+                DropdownMenuItem(value: 'LAB_TEST', child: Text('Xét nghiệm')),
+              ],
+              onChanged: _locked || _loading || _result != null
+                  ? null
+                  : (value) => setState(() {
+                      _sourceType = value!;
+                      _prescriptionId.clear();
+                      _error = null;
+                    }),
             ),
-          ],
-          if (_loading) const LinearProgressIndicator(),
-          if (_locked && !_writePending && !_loading && _refreshError == null)
-            OutlinedButton.icon(
-              onPressed: () => _lookup(refreshing: true),
-              icon: const Icon(Icons.refresh),
-              label: Text(
-                _completionAwaitingRefresh
-                    ? 'Đối soát nghĩa vụ sau hoàn tiền'
-                    : 'Tải lại để kiểm tra trạng thái',
+          TextField(
+            controller: _prescriptionId,
+            enabled: !_locked && !_loading && _result == null,
+            decoration: InputDecoration(
+              labelText: _sourceType == 'LAB_TEST'
+                  ? 'Mã xét nghiệm được bàn giao'
+                  : 'Mã đơn thuốc (UUID)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: _loading || _locked || _result != null
+                ? null
+                : () => _lookup(),
+            icon: const Icon(Icons.search),
+            label: Text(_loading ? 'Đang tra cứu…' : 'Tra cứu nghĩa vụ'),
+          ),
+          if (_error != null)
+            RequestError(
+              _error!,
+              onRetry:
+                  _error is ApiFailure &&
+                      ((_error as ApiFailure).status == null ||
+                          (_error as ApiFailure).status! >= 500 ||
+                          (_error as ApiFailure).status == 429)
+                  ? () => _lookup()
+                  : null,
+            ),
+          for (final receipt in _receipts)
+            Card(
+              child: ListTile(
+                title: Text('Biên nhận hoàn tiền · ${receipt.status}'),
+                subtitle: SelectableText(
+                  'Mã giao dịch: ${receipt.refundTransactionId}',
+                ),
+                trailing: Text(
+                  '${receipt.amount.format()} ${receipt.currency}',
+                ),
               ),
             ),
-          if (result.refundsDue.isEmpty)
-            const Text('Không có nghĩa vụ hoàn tiền trong kết quả này.'),
-          for (final due in result.refundsDue)
-            RefundDueForm(
-              key: ValueKey('$_revision:${due.originalTransactionId}'),
-              due: due,
-              repository: widget.repository,
-              blocked: _locked || _loading || _refreshError != null,
-              onStart: () {
-                if (_locked ||
-                    _writePending ||
-                    _loading ||
-                    _refreshError != null) {
-                  return false;
-                }
-                _refundStarted();
-                return true;
-              },
-              onRejected: _refundRejected,
-              onRefunded: _refunded,
+          if (_result case final result?) ...[
+            const Divider(height: 28),
+            Text(
+              'Điều chỉnh: ${result.status}${result.rejectionCode == null ? '' : ' · ${result.rejectionCode}'}',
             ),
-          OutlinedButton(
-            onPressed: _loading || _locked ? null : _another,
-            child: const Text('Tra cứu đơn khác'),
-          ),
-          if (_locked)
-            const Text(
-              'Hoàn tất đối soát trước khi bắt đầu thao tác hoàn tiền khác.',
+            if (_refreshError != null) ...[
+              RequestError(_refreshError!),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : () => _lookup(refreshing: true),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tải lại nghĩa vụ'),
+              ),
+            ],
+            if (_loading) const LinearProgressIndicator(),
+            if (_locked && !_writePending && !_loading && _refreshError == null)
+              OutlinedButton.icon(
+                onPressed: () => _lookup(refreshing: true),
+                icon: const Icon(Icons.refresh),
+                label: Text(
+                  _completionAwaitingRefresh
+                      ? 'Đối soát nghĩa vụ sau hoàn tiền'
+                      : 'Tải lại để kiểm tra trạng thái',
+                ),
+              ),
+            if (result.refundsDue.isEmpty)
+              const Text('Không có nghĩa vụ hoàn tiền trong kết quả này.'),
+            for (final due in result.refundsDue)
+              RefundDueForm(
+                key: ValueKey('$_revision:${due.originalTransactionId}'),
+                due: due,
+                repository: widget.repository,
+                blocked: _locked || _loading || _refreshError != null,
+                onStart: () {
+                  if (_locked ||
+                      _writePending ||
+                      _loading ||
+                      _refreshError != null) {
+                    return false;
+                  }
+                  _refundStarted();
+                  return true;
+                },
+                onRejected: _refundRejected,
+                onRefunded: _refunded,
+              ),
+            OutlinedButton(
+              onPressed: _loading || _locked ? null : _another,
+              child: const Text('Tra cứu khoản khác'),
             ),
+            if (_locked)
+              const Text(
+                'Hoàn tất đối soát trước khi bắt đầu thao tác hoàn tiền khác.',
+              ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -419,6 +463,7 @@ class _RefundDueFormState extends State<RefundDueForm> {
             decoration: const InputDecoration(labelText: 'Lý do'),
           ),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _method,
             decoration: const InputDecoration(labelText: 'Hình thức hoàn'),
             items: const [

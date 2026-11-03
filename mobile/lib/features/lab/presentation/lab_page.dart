@@ -5,6 +5,7 @@ import '../../../core/widgets/paged_list.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import 'lab_detail_page.dart';
+import 'lab_labels.dart';
 import '../domain/lab_test.dart';
 
 final labRepositoryProvider = Provider<LabRepository>(
@@ -23,10 +24,15 @@ class LabPage extends ConsumerStatefulWidget {
 
 class _LabPageState extends ConsumerState<LabPage> {
   String? _status;
+  Object? _identity;
   @override
   Widget build(BuildContext context) {
     final find = ref.watch(findLabTestsProvider);
     final access = ref.watch(workspaceAccessProvider);
+    if (_identity != access?.sessionIdentity) {
+      _identity = access?.sessionIdentity;
+      _status = access?.role == 'LAB_TECH' ? 'READY' : null;
+    }
     return Column(
       children: [
         Padding(
@@ -37,7 +43,10 @@ class _LabPageState extends ConsumerState<LabPage> {
             items: [
               const DropdownMenuItem(value: '', child: Text('Tất cả')),
               for (final status in FindLabTests.statuses)
-                DropdownMenuItem(value: status, child: Text(status)),
+                DropdownMenuItem(
+                  value: status,
+                  child: Text(labStatusLabel(status)),
+                ),
             ],
             onChanged: (status) =>
                 setState(() => _status = status == '' ? null : status),
@@ -57,8 +66,8 @@ class _LabPageState extends ConsumerState<LabPage> {
                       item.type,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    Text('Ngày yêu cầu: ${item.requestedDate}'),
-                    Text('Trạng thái: ${item.status}'),
+                    Text('Ngày yêu cầu: ${labDateLabel(item.requestedDate)}'),
+                    Text('Trạng thái: ${labStatusLabel(item.status)}'),
                     const Text('Xem chi tiết để kiểm tra đối soát viện phí'),
                     ReferenceLabel(
                       kind: ReferenceKind.patient,

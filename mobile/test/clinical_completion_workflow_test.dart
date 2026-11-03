@@ -377,7 +377,7 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(0), 'CBC');
       await tester.enterText(find.byType(TextField).at(1), 'CBC-APPROVED');
-      await tester.tap(find.text('1. Lập chỉ định'));
+      await tester.tap(find.text('Gửi chỉ định xét nghiệm'));
       await tester.pumpAndSettle();
       expect(records.sources, hasLength(1));
       expect(
@@ -385,11 +385,9 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('2. Gửi yêu cầu xét nghiệm'));
-      await tester.pumpAndSettle();
       expect(find.text('Lab validation rejected request'), findsOneWidget);
-      expect(find.text('2. Gửi yêu cầu xét nghiệm'), findsOneWidget);
-      await tester.tap(find.text('2. Gửi yêu cầu xét nghiệm'));
+      expect(find.text('Tiếp tục chuyển sang Lab'), findsOneWidget);
+      await tester.tap(find.text('Tiếp tục chuyển sang Lab'));
       await tester.pumpAndSettle();
 
       expect(records.sources, hasLength(1));
@@ -424,13 +422,11 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(0), 'CBC');
       await tester.enterText(find.byType(TextField).at(1), 'CBC-APPROVED');
-      await tester.tap(find.text('1. Lập chỉ định'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('2. Gửi yêu cầu xét nghiệm'));
+      await tester.tap(find.text('Gửi chỉ định xét nghiệm'));
       await tester.pumpAndSettle();
       final submitButton = tester.widget<FilledButton>(
         find.ancestor(
-          of: find.text('2. Gửi yêu cầu xét nghiệm'),
+          of: find.text('Tiếp tục chuyển sang Lab'),
           matching: find.byType(FilledButton),
         ),
       );

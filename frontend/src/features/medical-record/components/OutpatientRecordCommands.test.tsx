@@ -4,11 +4,13 @@ import { ApiRequestError } from "@/lib/api";
 import type { ClinicalLabOrderDTO, MedicalRecordDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
+  session: "initial-session",
   complete: vi.fn(),
   createLabOrder: vi.fn(),
   byPatient: vi.fn(),
   router: { replace: vi.fn() },
 }));
+vi.mock("@/lib/session", () => ({ getSessionKey: () => mocks.session }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("../api", () => ({
@@ -61,6 +63,7 @@ function fillLabOrder() {
 
 describe("outpatient record commands", () => {
   beforeEach(() => {
+    mocks.session = crypto.randomUUID();
     vi.clearAllMocks();
     mocks.complete.mockReset();
     mocks.createLabOrder.mockReset();
@@ -119,7 +122,7 @@ describe("outpatient record commands", () => {
     render(<ClinicalLabOrderForm recordId="record-a" onCreated={onCreated} />);
     fillLabOrder();
 
-    const form = screen.getByRole("button", { name: "Lập chỉ định" }).closest("form")!;
+    const form = screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" }).closest("form")!;
     await act(async () => { fireEvent.submit(form); fireEvent.submit(form); });
     expect(mocks.createLabOrder).toHaveBeenCalledTimes(1);
     expect(mocks.createLabOrder).toHaveBeenCalledWith("record-a", {
@@ -145,16 +148,20 @@ describe("outpatient record commands", () => {
 
   it("blocks a retry after a Clinical lab create has an unknown outcome", async () => {
     mocks.createLabOrder.mockRejectedValue(new ApiRequestError("Kết quả chưa rõ", 503, "TEMPORARY_FAILURE"));
-    render(<ClinicalLabOrderForm recordId="record-a" onCreated={vi.fn()} />);
+    const view = render(<ClinicalLabOrderForm recordId="record-a" onCreated={vi.fn()} />);
     fillLabOrder();
 
-    const form = screen.getByRole("button", { name: "Lập chỉ định" }).closest("form")!;
+    const form = screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" }).closest("form")!;
     await act(async () => fireEvent.submit(form));
-    expect(await screen.findByText(/Không gửi lại chỉ định khi chưa đối soát kết quả/)).toBeVisible();
-    expect(screen.getByText(/Hãy liên hệ bộ phận xét nghiệm để xác nhận tình trạng chỉ định/)).toBeVisible();
+    expect(await screen.findByText(/Chưa xác định kết quả lập chỉ định trong hồ sơ/)).toBeVisible();
+    expect(screen.getByText(/Lab có thể chưa nhận được yêu cầu/)).toBeVisible();
     expect(screen.queryByText(/Giữ mã theo dõi ở trên/)).not.toBeInTheDocument();
     await act(async () => fireEvent.submit(form));
     expect(mocks.createLabOrder).toHaveBeenCalledTimes(1);
+    view.unmount();
+    render(<ClinicalLabOrderForm recordId="record-a" onCreated={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" })).toBeDisabled();
+    expect(screen.getByText(/Chưa xác định kết quả lập chỉ định trong hồ sơ/)).toBeVisible();
   });
 
   it("does not redirect or invoke a late Clinical callback after the order form unmounts", async () => {
@@ -163,7 +170,7 @@ describe("outpatient record commands", () => {
     const onCreated = vi.fn();
     const view = render(<ClinicalLabOrderForm recordId="record-a" onCreated={onCreated} />);
     fillLabOrder();
-    fireEvent.click(screen.getByRole("button", { name: "Lập chỉ định" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" }));
     await waitFor(() => expect(mocks.createLabOrder).toHaveBeenCalledTimes(1));
     view.unmount();
 

@@ -25,6 +25,84 @@ class MedicalRecordPage extends ConsumerStatefulWidget {
   ConsumerState<MedicalRecordPage> createState() => _MedicalRecordPageState();
 }
 
+/// Resolves the exact visit through Clinical; a patient name never selects a record.
+class MedicalRecordForVisitPage extends ConsumerWidget {
+  const MedicalRecordForVisitPage({
+    super.key,
+    required this.patientId,
+    required this.visitId,
+  });
+  final String patientId, visitId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(workspaceAccessProvider);
+    if (access == null ||
+        !const ['ADMIN', 'DOCTOR', 'NURSE'].contains(access.role)) {
+      return const Scaffold(
+        body: Center(child: Text('Bạn không có quyền xem hồ sơ khám.')),
+      );
+    }
+    return _VisitRecordResolver(
+      key: ValueKey((access.sessionIdentity, patientId, visitId)),
+      patientId: patientId,
+      visitId: visitId,
+      repository: ref.watch(medicalRecordRepositoryProvider),
+    );
+  }
+}
+
+class _VisitRecordResolver extends StatefulWidget {
+  const _VisitRecordResolver({
+    super.key,
+    required this.patientId,
+    required this.visitId,
+    required this.repository,
+  });
+  final String patientId, visitId;
+  final MedicalRecordRepository repository;
+  @override
+  State<_VisitRecordResolver> createState() => _VisitRecordResolverState();
+}
+
+class _VisitRecordResolverState extends State<_VisitRecordResolver> {
+  late Future<MedicalRecord> _record = _resolve();
+  Future<MedicalRecord> _resolve() async {
+    final records = await widget.repository.byPatient(widget.patientId);
+    final matches = records
+        .where(
+          (record) =>
+              record.patientId == widget.patientId &&
+              record.appointmentId == widget.visitId,
+        )
+        .toList();
+    if (matches.length != 1) {
+      throw const ApiFailure(
+        'Chưa xác minh được một hồ sơ duy nhất của lượt khám. Hãy tải lại; không tạo hồ sơ mới.',
+      );
+    }
+    return matches.single;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<MedicalRecord>(
+    future: _record,
+    builder: (context, snapshot) {
+      if (snapshot.hasData) {
+        return MedicalRecordDetailPage(recordId: snapshot.data!.id);
+      }
+      return Scaffold(
+        appBar: AppBar(title: const Text('Hồ sơ của lượt khám')),
+        body: snapshot.hasError
+            ? _RetryMessage(
+                error: snapshot.error!,
+                onRetry: () => setState(() => _record = _resolve()),
+              )
+            : const Center(child: CircularProgressIndicator()),
+      );
+    },
+  );
+}
+
 class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
   String? _patientId;
   List<MedicalRecord>? _records;
@@ -1052,6 +1130,24 @@ class _ClinicalLabWorkflowPanel extends ConsumerStatefulWidget {
       _ClinicalLabWorkflowPanelState();
 }
 
+class _PendingLabProgress {
+  const _PendingLabProgress(
+    this.order,
+    this.sourceUncertain,
+    this.labUncertain,
+    this.labConflict,
+    this.error,
+  );
+  final ClinicalLabOrder? order;
+  final bool sourceUncertain, labUncertain, labConflict;
+  final Object? error;
+}
+
+final _pendingLabProgressProvider = Provider((ref) {
+  ref.watch(workspaceAccessProvider);
+  return <String, _PendingLabProgress>{};
+});
+
 class _ClinicalLabWorkflowPanelState
     extends ConsumerState<_ClinicalLabWorkflowPanel> {
   final _labType = TextEditingController();
@@ -1065,14 +1161,35 @@ class _ClinicalLabWorkflowPanelState
       _labUncertain = false,
       _labConflict = false;
   Object? _identity;
+  late Map<String, _PendingLabProgress> _progress;
   @override
   void initState() {
     super.initState();
     _identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    _progress = ref.read(_pendingLabProgressProvider);
+    final pending = _progress[widget.record.id];
+    if (pending != null) {
+      _sourceOrder = pending.order;
+      _sourceUncertain = pending.sourceUncertain;
+      _labUncertain = pending.labUncertain;
+      _labConflict = pending.labConflict;
+      _error = pending.error;
+    }
   }
 
   @override
   void dispose() {
+    if (_receipt == null && (_sourceOrder != null || _sourceUncertain)) {
+      _progress[widget.record.id] = _PendingLabProgress(
+        _sourceOrder,
+        _sourceUncertain,
+        _labUncertain,
+        _labConflict,
+        _error,
+      );
+    } else {
+      _progress.remove(widget.record.id);
+    }
     _labType.dispose();
     _priceCode.dispose();
     super.dispose();
@@ -1103,6 +1220,8 @@ class _ClinicalLabWorkflowPanelState
       if (mounted &&
           ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
         setState(() => _sourceOrder = order);
+        setState(() => _busy = false);
+        await _submitLabRequest();
       }
     } catch (error) {
       if (mounted &&
@@ -1170,89 +1289,92 @@ class _ClinicalLabWorkflowPanelState
         ),
       );
     }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Chỉ định xét nghiệm',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const Text(
-              'Chỉ định được gắn với hồ sơ và lịch khám. Dùng mã giá do cơ sở phê duyệt.',
-            ),
-            if (_sourceOrder == null) ...[
-              TextField(
-                controller: _labType,
-                maxLength: 50,
-                decoration: const InputDecoration(
-                  labelText: 'Loại xét nghiệm *',
-                ),
-              ),
-              TextField(
-                controller: _priceCode,
-                maxLength: 64,
-                decoration: const InputDecoration(labelText: 'Mã giá *'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _busy || _sourceUncertain
-                    ? null
-                    : () async {
-                        final selected = await showDatePicker(
-                          context: context,
-                          initialDate: _requestedDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime.now(),
-                        );
-                        if (selected != null && mounted) {
-                          setState(() => _requestedDate = selected);
-                        }
-                      },
-                icon: const Icon(Icons.calendar_month),
-                label: Text('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
-              ),
-              FilledButton(
-                onPressed: _busy || _sourceUncertain
-                    ? null
-                    : _createSourceOrder,
-                child: const Text('1. Lập chỉ định'),
-              ),
-              if (_sourceUncertain)
-                const Text(
-                  'Kết quả tạo chỉ định chưa rõ. Không gửi lại; xác nhận trạng thái với nhân viên xét nghiệm trước khi tiếp tục.',
-                  style: TextStyle(color: Colors.deepOrange),
-                ),
-            ] else ...[
+    return PopScope(
+      canPop: !_busy,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Đã nhận chỉ định ${_sourceOrder!.labType} · ${_sourceOrder!.requestedDate}. Thông tin nguồn được giữ nguyên cho bước tiếp theo.',
+                'Chỉ định xét nghiệm',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              if (_receipt == null) ...[
-                FilledButton(
-                  onPressed: _busy || _labUncertain || _labConflict
-                      ? null
-                      : _submitLabRequest,
-                  child: Text(
-                    _busy ? 'Đang gửi…' : '2. Gửi yêu cầu xét nghiệm',
+              const Text(
+                'Chỉ định được gắn với hồ sơ và lịch khám. Dùng mã giá do cơ sở phê duyệt.',
+              ),
+              if (_sourceOrder == null) ...[
+                TextField(
+                  controller: _labType,
+                  maxLength: 50,
+                  decoration: const InputDecoration(
+                    labelText: 'Loại xét nghiệm *',
                   ),
                 ),
-                if (_labUncertain || _labConflict)
+                TextField(
+                  controller: _priceCode,
+                  maxLength: 64,
+                  decoration: const InputDecoration(labelText: 'Mã giá *'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _busy || _sourceUncertain
+                      ? null
+                      : () async {
+                          final selected = await showDatePicker(
+                            context: context,
+                            initialDate: _requestedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (selected != null && mounted) {
+                            setState(() => _requestedDate = selected);
+                          }
+                        },
+                  icon: const Icon(Icons.calendar_month),
+                  label: Text('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
+                ),
+                FilledButton(
+                  onPressed: _busy || _sourceUncertain
+                      ? null
+                      : _createSourceOrder,
+                  child: const Text('Gửi chỉ định xét nghiệm'),
+                ),
+                if (_sourceUncertain)
                   const Text(
-                    'Chưa rõ trạng thái yêu cầu hoặc mã nguồn đã tồn tại. Đối soát trong hàng đợi xét nghiệm trước khi thao tác lại. Không lập chỉ định thay thế.',
+                    'Chưa rõ kết quả lập chỉ định trong hồ sơ. Không lập lại; cần bộ phận hỗ trợ đối soát hồ sơ. Lab có thể chưa nhận được yêu cầu.',
                     style: TextStyle(color: Colors.deepOrange),
                   ),
-              ] else
-                const ListTile(
-                  leading: Icon(Icons.check_circle_outline),
-                  title: Text('Đã gửi yêu cầu xét nghiệm'),
-                  subtitle: Text(
-                    'Thanh toán và điều kiện thực hiện do hệ thống cập nhật riêng.',
-                  ),
+              ] else ...[
+                Text(
+                  'Đã nhận chỉ định ${_sourceOrder!.labType} · ${_sourceOrder!.requestedDate}. Thông tin nguồn được giữ nguyên cho bước tiếp theo.',
                 ),
+                if (_receipt == null) ...[
+                  FilledButton(
+                    onPressed: _busy || _labUncertain || _labConflict
+                        ? null
+                        : _submitLabRequest,
+                    child: Text(
+                      _busy ? 'Đang gửi…' : 'Tiếp tục chuyển sang Lab',
+                    ),
+                  ),
+                  if (_labUncertain || _labConflict)
+                    const Text(
+                      'Chưa rõ trạng thái yêu cầu hoặc mã nguồn đã tồn tại. Đối soát trong hàng đợi xét nghiệm trước khi thao tác lại. Không lập chỉ định thay thế.',
+                      style: TextStyle(color: Colors.deepOrange),
+                    ),
+                ] else
+                  const ListTile(
+                    leading: Icon(Icons.check_circle_outline),
+                    title: Text('Đã gửi yêu cầu xét nghiệm'),
+                    subtitle: Text(
+                      'Thanh toán và điều kiện thực hiện do hệ thống cập nhật riêng.',
+                    ),
+                  ),
+              ],
+              if (_error != null) _RetryMessage(error: _error!),
             ],
-            if (_error != null) _RetryMessage(error: _error!),
-          ],
+          ),
         ),
       ),
     );

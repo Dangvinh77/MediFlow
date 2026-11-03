@@ -40,6 +40,12 @@ final _pharmacyAdapterProvider = Provider(
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  outpatientRefundRepositoryProvider.overrideWith(
+    (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
+  ),
+  paymentQueueRepositoryProvider.overrideWith(
+    (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
+  ),
   accountRecoveryProvider.overrideWith(
     (ref) => GatewayAccountRecovery(ref.watch(apiClientProvider)),
   ),

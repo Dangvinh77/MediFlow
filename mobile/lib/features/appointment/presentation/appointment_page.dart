@@ -23,14 +23,17 @@ final outpatientUiEnabledProvider = Provider<bool>(
 );
 
 class AppointmentPage extends ConsumerStatefulWidget {
-  const AppointmentPage({super.key});
+  const AppointmentPage({super.key, this.onOpenRecord});
+  final void Function(String patientId, String visitId)? onOpenRecord;
   @override
   ConsumerState<AppointmentPage> createState() => _AppointmentPageState();
 }
 
 class _AppointmentPageState extends ConsumerState<AppointmentPage> {
   int _revision = 0;
-  String? _date;
+  String? _date = _dateString(
+    DateTime.now().toUtc().add(const Duration(hours: 7)),
+  );
   String? _departmentId;
 
   @override
@@ -125,6 +128,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                       MaterialPageRoute(
                         builder: (_) => AppointmentDetailPage(
                           appointmentId: appointment.id,
+                          onOpenRecord: widget.onOpenRecord,
                         ),
                       ),
                     )
@@ -200,8 +204,13 @@ class _AppointmentCard extends StatelessWidget {
 }
 
 class AppointmentDetailPage extends ConsumerStatefulWidget {
-  const AppointmentDetailPage({super.key, required this.appointmentId});
+  const AppointmentDetailPage({
+    super.key,
+    required this.appointmentId,
+    this.onOpenRecord,
+  });
   final String appointmentId;
+  final void Function(String patientId, String visitId)? onOpenRecord;
 
   @override
   ConsumerState<AppointmentDetailPage> createState() =>
@@ -289,6 +298,9 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
         return;
       }
       setState(() => _appointment = updated);
+      if (updated.status == 'IN_EXAM') {
+        widget.onOpenRecord?.call(updated.patientId, updated.id);
+      }
     } catch (error) {
       if (!mounted ||
           ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
@@ -409,6 +421,17 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
               padding: EdgeInsets.all(16),
               child: Text('Đang khám. Hồ sơ khám được gắn với lịch hẹn này.'),
             ),
+          ),
+        if (appointment.status == 'IN_EXAM' && widget.onOpenRecord != null)
+          FilledButton.icon(
+            onPressed: _busy || _uncertain
+                ? null
+                : () => widget.onOpenRecord!(
+                    appointment.patientId,
+                    appointment.id,
+                  ),
+            icon: const Icon(Icons.description),
+            label: const Text('Tiếp tục khám'),
           ),
         Wrap(
           spacing: 8,

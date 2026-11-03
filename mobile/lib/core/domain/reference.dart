@@ -27,7 +27,34 @@ bool isReferenceId(String id) => RegExp(
 ).hasMatch(id);
 
 bool canReadReference(String? role, ReferenceKind kind) => switch (kind) {
-  ReferenceKind.patient ||
+  ReferenceKind.patient => const [
+    'ADMIN',
+    'DOCTOR',
+    'NURSE',
+    'LAB_TECH',
+    'CASHIER',
+    'PHARMACIST',
+  ].contains(role),
+  ReferenceKind.department || ReferenceKind.doctor => const [
+    'ADMIN',
+    'MANAGER',
+    'DOCTOR',
+    'NURSE',
+    'LAB_TECH',
+    'CASHIER',
+    'PHARMACIST',
+    'PATIENT',
+  ].contains(role),
   ReferenceKind.record => const ['ADMIN', 'DOCTOR', 'NURSE'].contains(role),
   _ => const ['ADMIN', 'MANAGER', 'DOCTOR', 'NURSE'].contains(role),
+};
+
+bool canSearchReference(String? role, ReferenceKind kind) => switch (kind) {
+  ReferenceKind.department || ReferenceKind.doctor => const [
+    'ADMIN',
+    'MANAGER',
+    'DOCTOR',
+    'NURSE',
+  ].contains(role),
+  _ => canReadReference(role, kind),
 };

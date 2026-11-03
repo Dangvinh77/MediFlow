@@ -7,8 +7,18 @@ import '../network/api_failure.dart';
 import '../providers.dart';
 export '../domain/reference.dart';
 
+String keyDate(ReferenceOption item, ReferenceKind kind) {
+  if (kind != ReferenceKind.patient || item.detail == null) return '';
+  final date = DateTime.tryParse(item.detail!);
+  if (date == null) return '';
+  return ' · ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+}
+
 final referenceReaderProvider = Provider<ReferenceReader>(
-  (ref) => GatewayReferenceReader(ref.watch(apiClientProvider)),
+  (ref) => GatewayReferenceReader(
+    ref.watch(apiClientProvider),
+    role: ref.watch(workspaceAccessProvider)?.role,
+  ),
 );
 final referenceNameProvider = FutureProvider.autoDispose
     .family<ReferenceOption, (ReferenceKind, String)>((ref, key) {
@@ -43,7 +53,7 @@ class ReferenceLabel extends ConsumerWidget {
     }
     final result = ref.watch(referenceNameProvider((kind, id)));
     return result.when(
-      data: (item) => Text('$label: ${item.name}'),
+      data: (item) => Text('$label: ${item.name}${keyDate(item, kind)}'),
       loading: () => Text('$label: Đang tải…'),
       error: (error, _) => Row(
         children: [
@@ -80,7 +90,7 @@ class ReferencePicker extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
-    final allowed = canReadReference(access?.role, kind);
+    final allowed = canSearchReference(access?.role, kind);
     final name = value != null && allowed
         ? ref.watch(referenceNameProvider((kind, value!)))
         : null;

@@ -4,10 +4,85 @@ import '../../../core/network/page_decoder.dart';
 import '../domain/billing_commands.dart';
 import '../domain/billing_models.dart';
 import 'billing_dto.dart';
+import '../domain/payment_queue.dart';
 
-class GatewayBillingRepository implements BillingRepository {
+class GatewayBillingRepository
+    implements
+        BillingRepository,
+        PaymentQueueRepository,
+        OutpatientRefundRepository {
   const GatewayBillingRepository(this.client);
   final ApiClient client;
+
+  @override
+  Future<OutpatientRefundDue> labRefundsDue(String sourceId) async {
+    _requireUuid(sourceId);
+    final json = BillingDto.object(
+      await client.get('/v1/billing/lab-adjustments/$sourceId/refunds-due'),
+    );
+    if (BillingDto.uuid(json, 'sourceId') != sourceId ||
+        json['sourceType'] != 'LAB_TEST' ||
+        json['refundsDue'] is! List) {
+      throw const FormatException('Nghĩa vụ hoàn tiền không khớp xét nghiệm.');
+    }
+    return OutpatientRefundDue(
+      sourceId: sourceId,
+      sourceType: 'LAB_TEST',
+      status: json['status'] as String,
+      rejectionCode: json['rejectionCode'] as String?,
+      refundsDue: (json['refundsDue'] as List)
+          .map((value) {
+            final row = BillingDto.object(value);
+            return RefundDue(
+              originalTransactionId: BillingDto.uuid(
+                row,
+                'originalTransactionId',
+              ),
+              amount: BillingDto.money(row, 'amount'),
+              currency: BillingDto.currency(row, 'currency'),
+            );
+          })
+          .toList(growable: false),
+    );
+  }
+
+  @override
+  Future<PageResult<PaymentQueueItem>> paymentQueue({
+    String? patientId,
+    String? purpose,
+    int page = 0,
+  }) async {
+    if (patientId != null) _requireUuid(patientId);
+    if (page < 0 ||
+        purpose != null &&
+            !const ['LAB_TEST', 'PRESCRIPTION'].contains(purpose)) {
+      throw ArgumentError('Bộ lọc khoản thu không hợp lệ.');
+    }
+    return decodePage(
+      await client.get(
+        '/v1/billing/payment-requests/queue',
+        query: {
+          'page': page,
+          'size': 20,
+          'patientId': ?patientId,
+          'purpose': ?purpose,
+        },
+      ),
+      (row) {
+        final request = BillingDto.paymentDiscovery(row['request']);
+        if (!const ['LAB_TEST', 'PRESCRIPTION'].contains(request.purpose) ||
+            purpose != null && request.purpose != purpose ||
+            patientId != null &&
+                request.patientId.toLowerCase() != patientId.toLowerCase()) {
+          throw const FormatException('Khoản thu không khớp bộ lọc hàng chờ.');
+        }
+        return PaymentQueueItem(
+          request: request,
+          createdAt: BillingDto.instant(row, 'createdAt'),
+        );
+      },
+    );
+  }
 
   @override
   Future<PageResult<Invoice>> invoicesForPatient(

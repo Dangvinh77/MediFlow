@@ -1,5 +1,21 @@
 # Hoàn thiện toàn bộ mobile — 03/11/2026
 
+## Sửa tương tác theo vai trò bệnh xá
+
+Đợt sửa trên baseline `3e28d96e`: tên và ngày sinh bệnh nhân qua minimal directory
+cho Lab/thu ngân/dược; care labels đúng quyền; chọn hàng khoản thu Lab/thuốc rồi
+discovery lại trước thu; tra cứu hoàn tiền Lab; mở đúng hồ sơ sau bắt đầu khám;
+gửi chỉ định nguồn rồi chuyển Lab tự động, giữ tiến trình trong phiên khi quay lại;
+trạng thái Lab tiếng Việt, chọn ngày, xác nhận hủy và cảnh báo rời bản nháp.
+Các mục này không hoàn tất lịch/đăng ký/phí khám V2 mobile.
+Khoảng trống hợp đồng và acceptance còn lại:
+[H-12](../../docs/handoffs/HANDOFF-H12-CLINIC-UI-CONTRACT-GAPS.md).
+Cache chỉ định trong phiên không thay thế recovery sau đóng app/reload.
+Kiểm tra source sau sửa: analyzer không có lỗi; 385 mobile/loader tests PASS,
+gồm chọn khoản thu ở 320 px, identity mismatch và chặn thao tác trùng/không rõ kết quả.
+Flutter web build và Android debug APK build PASS sau các thay đổi trên.
+Không có Gateway đang lắng nghe trong phiên; chưa ký nghiệm thu liên thông theo vai trò.
+
 ## Cập nhật 04/11/2026
 
 Đã fast-forward lên `1ce0968e` và giữ local work 03/11. Mobile cập nhật email login,
@@ -31,7 +47,7 @@ Không có lời gọi V2 trong mobile production ở baseline.
 | Clinical | Lịch hẹn V1, tiếp nhận, hồ sơ, chẩn đoán/kết luận/chỉ định Lab | Lịch V2, ca bác sĩ, session/capacity, đăng ký/giữ suất, thu phí khám, có mặt/bắt đầu khám, tái khám, patient mine |
 | Lab | Hàng đợi, chi tiết, bắt đầu/trả kết quả/hủy | Patient mine; đối chiếu current clearance/lifecycle và pending Lab khi hoàn tất lượt khám; nghiệm thu thật |
 | Pharmacy | Danh mục/tồn kho, kê đơn qua source context, hủy/cấp thuốc | Đối chiếu contract hiện hành và chạy lại đủ luồng DOCTOR/PHARMACIST, unpaid/paid/zero/replay; giữ mode gate |
-| Billing | Hóa đơn V1, discovery theo source, payment/refund ledger, doanh thu | Hàng khoản thu Lab/Rx, queue phí khám V2, quote hỗ trợ/zero payable, uncertain payment và reconciliation |
+| Billing | Hóa đơn V1, queue Lab/Rx, discovery theo source, payment/refund ledger gồm Lab, doanh thu | Queue phí khám V2, quote hỗ trợ/zero payable và nghiệm thu uncertain payment/reconciliation qua Gateway |
 | Report | Daily/monthly/top medicines, outpatient daily/monthly | Đối chiếu DTO hiện hành, scope khoa và gross/support/payable/refund; dữ liệu chưa tới khác 0 |
 | Notification | Danh sách/chi tiết, patient scope, send/replay theo role | Nối thông báo kết quả đến trang patient mine; sự kiện lịch/xác nhận/tái khám và bảo mật phiên |
 | Platform | Android/iOS/Windows hosts, web proxy và check script | Android SDK/licenses, build APK và chạy máy/emulator; iOS trên macOS; signing/release nếu thuộc bàn giao |
@@ -51,7 +67,7 @@ thiết kế có contract TARGET. Không tự đổi backend flags, đoán UUID/
 | MOB-05 | Shared V2 transport + capability/department authority + reference labels | Chưa triển khai |
 | MOB-06 | Lịch bác sĩ/ca/buổi khám và quản lý khoa theo capability | Chưa triển khai |
 | MOB-07 | Đăng ký khám/tái khám, giữ suất, hàng chờ, arrival | Chưa triển khai V2 |
-| MOB-08 | Thu phí khám/Lab/thuốc theo queue, quote/zero/refund/recovery | Có V1 từng phần; thiếu queue và scheduled V2 |
+| MOB-08 | Thu phí khám/Lab/thuốc theo queue, quote/zero/refund/recovery | Đã thêm queue Lab/thuốc và Lab refunds-due; còn scheduled V2/quote/zero và nghiệm thu Gateway |
 | MOB-09 | Hồ sơ khám/chỉ định/Lab/kê đơn/cấp thuốc theo luồng mới | Có code từng phần; cần đối chiếu/hoàn thiện và test liên thông |
 | MOB-10 | Report/Notification theo flow mới và patient navigation | Có code từng phần; cần đối chiếu/hoàn thiện |
 | MOB-11 | Kiểm thử role, lỗi mạng, phiên, accessibility và màn hình nhỏ toàn app | Có regression nền và web/Android smoke một phần; còn offline/expiry/accessibility/tổng thể |

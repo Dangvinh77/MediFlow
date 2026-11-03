@@ -8,6 +8,7 @@ import 'package:mediflow_mobile/core/domain/page_result.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/features/billing/domain/billing_models.dart';
+import 'package:mediflow_mobile/features/billing/data/billing_dto.dart';
 import 'package:mediflow_mobile/features/billing/presentation/billing_page.dart';
 import 'package:mediflow_mobile/features/billing/presentation/invoice_page.dart';
 import 'package:mediflow_mobile/features/billing/presentation/providers.dart';
@@ -394,6 +395,33 @@ void main() {
       expect(find.textContaining('Mã giao dịch:'), findsNothing);
     },
   );
+
+  testWidgets('reconciliation never unlocks a replacement payment request', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final repository = BillingStub();
+    var reads = 0;
+    repository.onDiscoverPayment = (_, _, _, _) async => ++reads == 1
+        ? paymentDiscovery()
+        : BillingDto.paymentDiscovery({
+            ...paymentDiscoveryJson(),
+            'paymentRequestId': sourceId,
+          });
+    await openLedger(tester, repository);
+    final confirmation = find.byType(CheckboxListTile).last;
+    await ensureFinderVisible(tester, confirmation);
+    await tester.tap(confirmation);
+    await tester.pump();
+    final submit = find.text('Ghi nhận khoản thu');
+    await ensureFinderVisible(tester, submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(repository.completedPayments, hasLength(1));
+    expect(reads, 2);
+    expect(find.text('Ghi nhận khoản thu'), findsNothing);
+    expect(find.text('Đối soát số dư mới từ Billing'), findsOneWidget);
+  });
 
   testWidgets(
     'new partial payment does not expose the prior receipt to unlock uncertainty',
