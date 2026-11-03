@@ -15,7 +15,7 @@ class RequestError extends StatelessWidget {
             ? (error as FormatException).message
             : 'Không thể tải dữ liệu. Vui lòng thử lại.');
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,

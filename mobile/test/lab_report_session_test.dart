@@ -50,7 +50,7 @@ class Workflow implements LabWorkflow {
     String date,
   ) async => throw UnimplementedError();
   @override
-  Future<LabDetail> cancel(String id, String reason, String actorId) async =>
+  Future<LabDetail> cancel(String id, String reason) async =>
       throw UnimplementedError();
 }
 

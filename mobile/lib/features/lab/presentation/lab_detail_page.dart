@@ -23,7 +23,6 @@ class LabDetailPage extends ConsumerWidget {
       key: ObjectKey(access.sessionIdentity),
       id: id,
       role: access.role,
-      actorId: access.staffId,
       workflow: ref.watch(labWorkflowProvider),
     );
   }
@@ -35,11 +34,9 @@ class _LabDetail extends StatefulWidget {
     required this.id,
     required this.role,
     required this.workflow,
-    this.actorId,
   });
   final String id, role;
   final LabWorkflow workflow;
-  final String? actorId;
   @override
   State<_LabDetail> createState() => _LabDetailState();
 }
@@ -184,9 +181,9 @@ class _LabDetailState extends State<_LabDetail> {
                     child: ListTile(
                       title: Text(row.indicator),
                       subtitle: Text(
+                        'Kết quả: ${row.value} ${row.unit ?? ''}\n'
                         'Tham chiếu: ${row.referenceRange ?? 'Chưa cung cấp'}',
                       ),
-                      trailing: Text('${row.value} ${row.unit ?? ''}'),
                     ),
                   ),
                 if (commandError != null) RequestError(commandError!),
@@ -282,19 +279,11 @@ class _LabDetailState extends State<_LabDetail> {
                   _field(reason, 'Lý do hủy'),
                   const Text('Người thực hiện được lấy từ phiên đăng nhập.'),
                   OutlinedButton(
-                    onPressed:
-                        busy ||
-                            uncertain ||
-                            widget.actorId == null ||
-                            reason.text.trim().isEmpty
+                    onPressed: busy || uncertain || reason.text.trim().isEmpty
                         ? null
                         : () => command(
                             'Hủy xét nghiệm',
-                            () => widget.workflow.cancel(
-                              v.id,
-                              reason.text,
-                              widget.actorId!,
-                            ),
+                            () => widget.workflow.cancel(v.id, reason.text),
                           ),
                     child: const Text('Hủy xét nghiệm'),
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/request_state.dart';
 import 'session_controller.dart';
@@ -115,6 +116,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                       ),
                       if (session.hasError) RequestError(session.error!),
+                      TextButton(
+                        onPressed: session.isLoading
+                            ? null
+                            : () => context.go('/forgot-password'),
+                        child: const Text('Quên mật khẩu?'),
+                      ),
+                      TextButton(
+                        onPressed: session.isLoading
+                            ? null
+                            : () => context.go('/reset-password'),
+                        child: const Text('Tôi đã có liên kết khôi phục'),
+                      ),
                     ],
                   ),
                 ),

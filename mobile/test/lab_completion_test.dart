@@ -66,21 +66,15 @@ void main() {
           'referenceRange': null,
         },
       ]);
-      await workflow.cancel(drugId, ' Nhầm chỉ định ', otherDrugId);
+      await workflow.cancel(drugId, ' Nhầm chỉ định ');
       expect(adapter.requests.last.uri.path, '/api/v1/lab/$drugId/cancel');
-      expect(adapter.requests.last.data, {
-        'reason': 'Nhầm chỉ định',
-        'cancelledBy': otherDrugId,
-      });
+      expect(adapter.requests.last.data, {'reason': 'Nhầm chỉ định'});
       final before = adapter.requests.length;
       await expectLater(
         workflow.results(drugId, [], null, '2026-10-22'),
         throwsArgumentError,
       );
-      await expectLater(
-        workflow.cancel(drugId, '', 'bad'),
-        throwsArgumentError,
-      );
+      await expectLater(workflow.cancel(drugId, ''), throwsArgumentError);
       expect(adapter.requests.length, before);
       adapter.data = {...labJson(), 'testId': rxId};
       await expectLater(workflow.detail(drugId), throwsFormatException);

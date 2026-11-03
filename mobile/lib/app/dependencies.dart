@@ -4,12 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers.dart';
 import '../core/domain/workspace_access.dart';
 import '../features/auth/data/gateway_auth_repository.dart';
+import '../features/auth/data/gateway_account_recovery.dart';
+import '../features/auth/presentation/account_recovery_page.dart';
+import '../features/auth/data/gateway_password_repository.dart';
+import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/medical_record/data/gateway_medical_record_repository.dart';
 import '../features/medical_record/presentation/medical_record_page.dart';
 import '../features/appointment/data/gateway_appointment_repository.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/lab/data/gateway_lab_repository.dart';
+import '../features/lab/data/gateway_patient_lab_results.dart';
+import '../features/lab/presentation/my_lab_results_page.dart';
+import '../features/medical_record/data/gateway_patient_exam_results.dart';
+import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/lab/presentation/lab_page.dart';
 import '../features/lab/presentation/lab_detail_page.dart';
 import '../features/lab/data/gateway_lab_workflow.dart';
@@ -32,6 +40,18 @@ final _pharmacyAdapterProvider = Provider(
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  accountRecoveryProvider.overrideWith(
+    (ref) => GatewayAccountRecovery(ref.watch(apiClientProvider)),
+  ),
+  passwordRepositoryProvider.overrideWith(
+    (ref) => GatewayPasswordRepository(ref.watch(apiClientProvider)),
+  ),
+  patientExamResultsProvider.overrideWith(
+    (ref) => GatewayPatientExamResults(ref.watch(apiClientProvider)),
+  ),
+  patientLabResultsProvider.overrideWith(
+    (ref) => GatewayPatientLabResults(ref.watch(apiClientProvider)),
+  ),
   medicalRecordRepositoryProvider.overrideWith(
     (ref) => GatewayMedicalRecordRepository(ref.watch(apiClientProvider)),
   ),

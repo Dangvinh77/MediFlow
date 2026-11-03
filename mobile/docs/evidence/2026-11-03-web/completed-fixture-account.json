@@ -1,0 +1,11 @@
+{
+  "fixtureKind": "Historical EMERGENCY_DEMO read-only summary; not a fresh normal paid journey",
+  "disposable": true,
+  "mustChangePassword": true,
+  "accountId": "9b7c8a47-127d-4f0e-aa9f-322e505ca332",
+  "passwordChangeSubmitted": false,
+  "username": "999882000022",
+  "completedExams": 1,
+  "completedLabs": 1,
+  "patientId": "d1b4b5f4-6570-4c4f-9185-1c8056f6f008"
+}

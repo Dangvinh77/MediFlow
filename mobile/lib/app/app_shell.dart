@@ -21,8 +21,19 @@ class AppShell extends ConsumerWidget {
         final wide = constraints.maxWidth >= 900;
         return Scaffold(
           appBar: AppBar(
-            title: Text(selected?.title ?? 'MediFlow'),
+            title: Text(
+              location == '/account/password'
+                  ? 'Đổi mật khẩu'
+                  : selected?.title ?? 'MediFlow',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             actions: [
+              IconButton(
+                tooltip: 'Đổi mật khẩu',
+                onPressed: () => context.go('/account/password'),
+                icon: const Icon(Icons.lock_outline),
+              ),
               IconButton(
                 tooltip: 'Đăng xuất',
                 onPressed: () => ref.read(sessionProvider.notifier).signOut(),
@@ -56,7 +67,7 @@ class AppShell extends ConsumerWidget {
                   ),
                 ),
               if (wide) const VerticalDivider(width: 1),
-              Expanded(child: child),
+              Expanded(child: SafeArea(top: false, child: child)),
             ],
           ),
         );

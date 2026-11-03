@@ -105,7 +105,6 @@ abstract final class OrganizationDto {
 
   static Map<String, Object?> createAccountBody(AccountDraft draft) => {
     'username': draft.username.trim(),
-    'password': draft.password,
     'staffId': draft.role == 'PATIENT' ? null : draft.ownerId.trim(),
     'patientId': draft.role == 'PATIENT' ? draft.ownerId.trim() : null,
     'role': draft.role,

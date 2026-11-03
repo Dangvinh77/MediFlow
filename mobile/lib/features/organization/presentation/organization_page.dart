@@ -464,7 +464,6 @@ class _AccountPanel extends StatefulWidget {
 class _AccountPanelState extends State<_AccountPanel> {
   final _createForm = GlobalKey<FormState>();
   final _username = TextEditingController();
-  final _password = TextEditingController();
   final _ownerId = TextEditingController();
   String _role = 'DOCTOR';
   bool _active = true, _saving = false, _uncertainCreate = false;
@@ -476,7 +475,6 @@ class _AccountPanelState extends State<_AccountPanel> {
   @override
   void dispose() {
     _username.dispose();
-    _password.dispose();
     _ownerId.dispose();
     super.dispose();
   }
@@ -521,22 +519,21 @@ class _AccountPanelState extends State<_AccountPanel> {
                 ),
                 TextFormField(
                   controller: _username,
-                  decoration: const InputDecoration(labelText: 'Tên đăng nhập'),
+                  keyboardType: TextInputType.emailAddress,
+                  maxLength: 254,
+                  decoration: const InputDecoration(
+                    labelText: 'Email đăng nhập',
+                  ),
                   validator: (value) =>
                       value == null ||
-                          !RegExp(r'^[a-zA-Z0-9._-]{3,50}$')
+                          value.trim().length > 254 ||
+                          !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
                               .hasMatch(value.trim())
-                      ? 'Dùng 3 đến 50 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.'
+                      ? 'Nhập email đăng nhập hợp lệ.'
                       : null,
                 ),
-                TextFormField(
-                  controller: _password,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Mật khẩu'),
-                  validator: (value) =>
-                      value == null || value.length < 8 || value.length > 72
-                      ? 'Mật khẩu phải có từ 8 đến 72 ký tự.'
-                      : null,
+                const Text(
+                  'Hệ thống tạo mật khẩu tạm và gửi hướng dẫn qua email. Không nhập hoặc chia sẻ mật khẩu tại đây.',
                 ),
                 DropdownButtonFormField<String>(
                   key: const ValueKey('account-create-role'),
@@ -641,7 +638,6 @@ class _AccountPanelState extends State<_AccountPanel> {
       final account = await SaveAccount(widget.repository).create(
         AccountDraft(
           username: _username.text.trim(),
-          password: _password.text,
           ownerId: _ownerId.text.trim(),
           role: _role,
         ),
@@ -653,7 +649,6 @@ class _AccountPanelState extends State<_AccountPanel> {
           _active = account.active;
           _accountRevision++;
         });
-        _password.clear();
       }
     } catch (error) {
       if (mounted) {
@@ -831,7 +826,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
             maxLength: 100,
             enabled: !_loading && !widget.disabled,
             decoration: const InputDecoration(
-              labelText: 'Tên đăng nhập',
+              labelText: 'Email đăng nhập',
               border: OutlineInputBorder(),
             ),
           ),
