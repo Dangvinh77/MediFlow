@@ -9,6 +9,7 @@ class ApiClient {
     Dio? dio,
     String? Function()? token,
     void Function(String token)? onUnauthorized,
+    void Function(String token)? onPasswordChangeRequired,
   }) : _dio = dio ?? Dio() {
     _dio.options = BaseOptions(
       baseUrl: config.baseUrl,
@@ -33,11 +34,22 @@ class ApiClient {
               auth.startsWith('Bearer ')) {
             onUnauthorized?.call(auth.substring(7));
           }
+          final body = error.response?.data;
+          final failure = body is Map ? body['error'] : null;
+          if (error.response?.statusCode == 403 &&
+              failure is Map &&
+              failure['code'] == passwordChangeRequiredCode &&
+              auth is String &&
+              auth.startsWith('Bearer ')) {
+            onPasswordChangeRequired?.call(auth.substring(7));
+          }
           handler.next(error);
         },
       ),
     );
   }
+
+  static const passwordChangeRequiredCode = 'AUTH_PASSWORD_CHANGE_REQUIRED';
 
   final Dio _dio;
 

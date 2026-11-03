@@ -180,7 +180,7 @@ try {
             if (-not (Test-Path -LiteralPath (Join-Path $repoRoot 'smtp.local.env'))) {
                 throw 'Copy smtp.env.example to smtp.local.env and fill the SMTP configuration before starting the backend.'
             }
-            . (Join-Path $repoRoot 'scripts\load-smtp-local.ps1')
+            . (Join-Path $repoRoot 'scripts\load-smtp-local.ps1') -ConfigPath (Join-Path $repoRoot 'smtp.local.env')
             $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$LocalOnly
             if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
             if ($env:MEDIFLOW_PUBLIC_WEB_URL -match '^http://(localhost|127\.0\.0\.1)(:3000)?/?$') {
@@ -196,7 +196,7 @@ try {
             Write-Host 'Gateway: http://127.0.0.1:28080. This disposable demo stops after two hours.'
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
-            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true"
+            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
             & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep @networkArguments

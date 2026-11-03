@@ -19,13 +19,27 @@ class Session {
     required this.accessToken,
     required this.refreshToken,
     required this.role,
+    this.passwordChangeRequired = false,
   });
   final String accessToken;
   final String refreshToken;
   final UserRole role;
 
+  /// Set when Gateway rejects this session with AUTH_PASSWORD_CHANGE_REQUIRED
+  /// after login (e.g. an admin reset). Not persisted: a restored session hits
+  /// the same Gateway rejection again.
+  final bool passwordChangeRequired;
+
+  Session requirePasswordChange() => Session(
+    accessToken: accessToken,
+    refreshToken: refreshToken,
+    role: role,
+    passwordChangeRequired: true,
+  );
+
   // Routing hint only; Gateway enforces the current account requirement.
   bool get mustChangePassword {
+    if (passwordChangeRequired) return true;
     try {
       final claims = jsonDecode(
         utf8.decode(

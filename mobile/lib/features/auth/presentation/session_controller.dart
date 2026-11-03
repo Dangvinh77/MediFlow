@@ -19,12 +19,14 @@ class SessionController extends AsyncNotifier<Session?> {
   Future<Session?> build() {
     final bridge = ref.read(apiSessionProvider);
     bridge.onUnauthorized = invalidateToken;
+    bridge.onPasswordChangeRequired = requirePasswordChange;
     listenSelf(
       (_, next) => bridge.accessToken = next.asData?.value?.accessToken,
     );
     ref.onDispose(() {
       bridge.accessToken = null;
       bridge.onUnauthorized = null;
+      bridge.onPasswordChangeRequired = null;
     });
     return ref.watch(authRepositoryProvider).restore();
   }
@@ -61,5 +63,18 @@ class SessionController extends AsyncNotifier<Session?> {
 
   void invalidateToken(String token) {
     if (state.asData?.value?.accessToken == token) unawaited(signOut());
+  }
+
+  /// Gateway rejected [token] until the initial/reset password is changed.
+  /// Keep the session (the change endpoint accepts it) and let the router
+  /// force the password page. A stale token never affects a newer session.
+  void requirePasswordChange(String token) {
+    final current = state.asData?.value;
+    if (current == null ||
+        current.accessToken != token ||
+        current.passwordChangeRequired) {
+      return;
+    }
+    state = AsyncData(current.requirePasswordChange());
   }
 }

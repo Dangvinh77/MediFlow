@@ -21,7 +21,12 @@ Từ thư mục mobile, chạy:
 ./tool/run_web.ps1
 # Đổi địa chỉ khi cần:
 ./tool/run_web.ps1 -Port 4301 -Gateway http://127.0.0.1:8080
+# Demo với backend start-backend.bat: bật UI lệnh ngoại trú + Pharmacy V1
+./tool/run_web.ps1 -Demo -Gateway http://127.0.0.1:28080
 ```
+
+Không có `-Demo` (hoặc `-OutpatientUi`, `-PharmacyMode outpatient`) thì app vẫn đọc dữ liệu
+nhưng các thao tác tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.
 
 Mở `http://localhost:4300` (hoặc port đã chọn). Script lấy dependencies, build web rồi chạy static host cùng proxy `/api/*` sang Gateway thật, tránh cần sửa CORS backend. Proxy bind loopback, chỉ dùng phát triển. Ctrl+C để dừng; sau khi sửa code chạy lại script để build. Không đưa mật khẩu/token vào lệnh hoặc Git.
 
@@ -53,7 +58,7 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ```powershell
 cd mobile
-flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true
+flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
 ```
 
 Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
