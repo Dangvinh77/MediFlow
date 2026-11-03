@@ -296,6 +296,9 @@ class PackagedOutpatientLabAcceptanceIT {
             assertThat(clinicalOrder.path("patientId").asText()).isEqualTo(patientId.toString());
             assertThat(count(clinicalDb, "SELECT count(*) FROM clinical_lab_order WHERE source_order_id=? AND record_id=?",
                     sourceOrderId, recordId)).isOne();
+            assertThat(data(get(gatewayUrl, "/api/v1/billing/payment-requests/queue?purpose=LAB_TEST&patientId="
+                    + patientId, cashierToken)).path("content").isEmpty())
+                    .as("A Clinical order alone does not create a Lab payment request").isTrue();
 
             String labBase = gatewayUrl;
             ObjectNode validRequest = (ObjectNode) JSON.valueToTree(object(
@@ -411,6 +414,13 @@ class PackagedOutpatientLabAcceptanceIT {
             assertThat(clearance.path("payload").path("accountId")).isEqualTo(labPayment.path("accountId"));
             assertThat(clearance.path("payload").path("recordId").asText()).isEqualTo(recordId.toString());
             assertThat(clearance.path("payload").path("patientId").asText()).isEqualTo(patientId.toString());
+            assertThat(gatewayRequest(gatewayUrl, "PUT", "/api/v1/lab/" + labTestId + "/cancel",
+                    doctorToken, "{\"reason\":\"Attempt to cancel completed test\"}").statusCode())
+                    .as("Completed Lab remains immutable").isEqualTo(422);
+            verifyDoctorCancellation(gatewayUrl, doctorToken, nurseToken, labTechToken, cashierToken,
+                    doctorStaffId, orderPath, orderBody, validRequest, patientId, appointmentId, false);
+            verifyDoctorCancellation(gatewayUrl, doctorToken, nurseToken, labTechToken, cashierToken,
+                    doctorStaffId, orderPath, orderBody, validRequest, patientId, appointmentId, true);
             String recordPath = "/api/v1/records/" + recordId;
             String completion = JSON.writeValueAsString(object("disposition", "OUTPATIENT_FOLLOW_UP",
                     "dispositionNote", "Follow up after reviewed CBC"));
@@ -471,6 +481,10 @@ class PackagedOutpatientLabAcceptanceIT {
         assertThat(discovered.path("patientId").asText()).isEqualTo(patientId.toString());
         assertThat(discovered.path("careEpisodeId").asText()).isEqualTo(episodeId.toString());
         assertThat(discovered.path("remainingAmount").decimalValue()).isEqualByComparingTo(expectedAmount);
+        if ("LAB_TEST".equals(purpose)) {
+            assertThat(labQueueContains(gateway, cashierToken, patientId, sourceId))
+                    .as("Cashier must see the issued Lab request in the work queue before paying").isTrue();
+        }
         String paymentPath = "/api/v1/billing/payment-requests/" + discovered.path("paymentRequestId").asText() + "/payments";
         String body = JSON.writeValueAsString(object("idempotencyKey", "paid-" + purpose + "-" + sourceId,
                 "amount", discovered.path("remainingAmount").decimalValue(),
@@ -484,6 +498,65 @@ class PackagedOutpatientLabAcceptanceIT {
         assertThat(paid.path("remainingAmount").decimalValue()).isZero();
         assertThat(paid.path("paidAmount").decimalValue()).isEqualByComparingTo(expectedAmount);
         return payment;
+    }
+
+    private boolean labQueueContains(String gateway, String cashier, UUID patient, UUID labId) throws Exception {
+        JsonNode content = data(get(gateway, "/api/v1/billing/payment-requests/queue?purpose=LAB_TEST&patientId="
+                + patient + "&size=100", cashier)).path("content");
+        assertThat(content.isArray()).isTrue();
+        return java.util.stream.StreamSupport.stream(content.spliterator(), false)
+                .anyMatch(item -> labId.toString().equals(item.path("request").path("sourceId").asText()));
+    }
+
+    private void verifyDoctorCancellation(String gateway, String doctor, String nurse, String technician,
+            String cashier, UUID doctorId, String orderPath, String orderBody, ObjectNode template,
+            UUID patientId, UUID episodeId, boolean paid) throws Exception {
+        JsonNode order = data(gatewayRequest(gateway, "POST", orderPath, doctor, orderBody));
+        ObjectNode body = template.deepCopy().put("sourceOrderId", order.path("sourceOrderId").asText());
+        UUID labId = UUID.fromString(data(gatewayRequest(gateway, "POST", "/api/v1/lab", doctor,
+                JSON.writeValueAsString(body))).path("testId").asText());
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(() ->
+                assertThat(labQueueContains(gateway, cashier, patientId, labId)).isTrue());
+        JsonNode payment = paid ? payActualSource(gateway, "LAB_TEST", labId, patientId, episodeId,
+                cashier, "150000.00") : null;
+        if (paid) {
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                    assertThat(data(get(gateway, "/api/v1/lab/" + labId, technician))
+                            .path("status").asText()).isEqualTo("READY"));
+            assertThat(gatewayRequest(gateway, "PUT", "/api/v1/lab/" + labId + "/start", technician,
+                    "{}").statusCode()).isEqualTo(200);
+        }
+        String cancelPath = "/api/v1/lab/" + labId + "/cancel";
+        String reasonOnly = "{\"reason\":\"Patient declined further testing\"}";
+        assertThat(gatewayRequest(gateway, "PUT", cancelPath, nurse, reasonOnly).statusCode()).isEqualTo(403);
+        assertThat(gatewayRequest(gateway, "PUT", cancelPath, doctor,
+                JSON.writeValueAsString(object("reason", "Spoofed actor", "cancelledBy", UUID.randomUUID())))
+                .body()).contains("LAB_ACTOR_MISMATCH");
+        JsonNode cancelled = data(gatewayRequest(gateway, "PUT", cancelPath, doctor, reasonOnly));
+        assertThat(cancelled.path("status").asText()).isEqualTo("CANCELLED");
+        assertThat(data(gatewayRequest(gateway, "PUT", cancelPath, doctor, reasonOnly)).path("status").asText())
+                .as("Exact cancellation retry is idempotent").isEqualTo("CANCELLED");
+        assertThat(database("mediflow_lab").queryForObject(
+                "SELECT cancelled_by FROM lab_test WHERE test_id=?", UUID.class, labId)).isEqualTo(doctorId);
+        assertThat(count(database("mediflow_lab"), "SELECT count(*) FROM lab_outbox_event WHERE aggregate_id=? "
+                + "AND event_type='lab.request.cancelled'", labId)).isOne();
+        JsonNode[] adjustment = new JsonNode[1];
+        await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+            adjustment[0] = data(get(gateway, "/api/v1/billing/lab-adjustments/" + labId + "/refunds-due", cashier));
+            assertThat(adjustment[0].path("status").asText()).isEqualTo("APPLIED");
+            assertThat(labQueueContains(gateway, cashier, patientId, labId)).isFalse();
+        });
+        if (paid) {
+            assertThat(adjustment[0].path("refundsDue").size()).isOne();
+            assertThat(adjustment[0].path("refundsDue").get(0).path("amount").decimalValue())
+                    .isEqualByComparingTo("150000.00");
+            assertThat(adjustment[0].path("refundsDue").get(0).path("originalTransactionId"))
+                    .isEqualTo(payment.path("transactionId"));
+        } else {
+            assertThat(adjustment[0].path("refundsDue").size()).isZero();
+        }
+        Files.writeString(Path.of("target", paid ? "lab-paid-cancellation-evidence.json" : "lab-unpaid-cancellation-evidence.json"),
+                JSON.writerWithDefaultPrettyPrinter().writeValueAsString(adjustment[0]));
     }
 
     private JsonNode replayActualLabClearance(UUID labTestId) throws Exception {

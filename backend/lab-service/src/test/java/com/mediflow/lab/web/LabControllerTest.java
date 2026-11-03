@@ -239,6 +239,22 @@ class LabControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "DOCTOR")
+    void cancel_acceptsReasonOnlySoApplicationCanUseVerifiedActor() throws Exception {
+        UUID testId = UUID.randomUUID();
+        CancelLabTestRequest request = new CancelLabTestRequest("Duplicate order", null);
+        when(manageLabTestUseCase.cancel(testId, request)).thenReturn(labTest(testId));
+
+        mockMvc.perform(put(BASE_PATH + "/{id}/cancel", testId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Duplicate order\"}"))
+                .andExpect(status().isOk());
+
+        verify(manageLabTestUseCase).cancel(testId, request);
+    }
+
+    @Test
     @WithMockUser(roles = "NURSE")
     void create_forbiddenRole_returns403() throws Exception {
         mockMvc.perform(post(BASE_PATH)

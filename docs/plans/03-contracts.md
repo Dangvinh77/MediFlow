@@ -1,5 +1,15 @@
 # Hợp đồng tích hợp tối thiểu
 
+## Hủy xét nghiệm theo người đăng nhập — 03/11/2026
+
+PUT `/api/v1/lab/{id}/cancel`, ADMIN/DOCTOR/LAB_TECH, body `{"reason":"..."}`.
+Reason bắt buộc, tối đa1000 ký tự. Lab lấy cancelledBy từ verified staff principal;
+thiếu staff/role hợp lệ bị từ chối. Body cũ có cancelledBy vẫn được nhận nhưng phải
+khớp principal, khác trả LAB_ACTOR_MISMATCH. Không nhận actor thay người đăng nhập.
+Audit và `lab.request.cancelled` vẫn có cancelledBy UUID thực, reason/cancelledAt,
+exact source/episode; giữ transaction/outbox và terminal/idempotency guards.
+Hủy không tự hoàn tiền; Billing xử lý void/nghĩa vụ hoàn và cashier ghi khoản hoàn riêng.
+
 ## Hàng khoản thu Lab/thuốc — 02/11/2026
 
 GET `/api/v1/billing/payment-requests/queue`, chỉ human access JWT ADMIN/CASHIER.

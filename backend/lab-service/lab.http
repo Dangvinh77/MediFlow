@@ -168,6 +168,5 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "reason": "Bác sĩ hủy chỉ định",
-  "cancelledBy": "00000000-0000-0000-0000-000000000012"
+  "reason": "Bác sĩ hủy chỉ định"
 }

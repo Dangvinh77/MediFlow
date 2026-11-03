@@ -276,12 +276,12 @@ public class LabApplicationService implements ManageLabTestUseCase,
         if (test.getCareContractVersion() == 1) {
             requireV2Enabled();
             requireOutpatientV1Mutation(test);
-            requireCancellationActor(request);
         } else {
             requireOutpatientV1Mutation(test);
         }
+        AuthenticatedStaffContext actor = requireCancellationActor(request);
         boolean alreadyCancelled = test.getStatus() == LabTestStatus.CANCELLED;
-        test.cancel(request.reason(), request.cancelledBy(), clock.instant());
+        test.cancel(request.reason(), actor.staffId(), clock.instant());
         LabTest saved = tests.save(test);
         if (!alreadyCancelled && saved.getCareContractVersion() == 1) {
             var payload = new LabRequestCancelledPayload(saved.getTestId(), saved.getPatientId(),
@@ -495,10 +495,10 @@ public class LabApplicationService implements ManageLabTestUseCase,
                 "Version-0 Lab mutations are disabled in outpatient MVP mode");
     }
 
-    private void requireCancellationActor(CancelLabTestRequest request) {
-        AuthenticatedStaffContext actor = authenticatedStaff.currentStaff()
+    private AuthenticatedStaffContext requireCancellationActor(CancelLabTestRequest request) {
+        return authenticatedStaff.currentStaff()
                 .filter(staff -> request != null && staff.staffId() != null
-                        && staff.staffId().equals(request.cancelledBy()))
+                        && (request.cancelledBy() == null || staff.staffId().equals(request.cancelledBy())))
                 .filter(staff -> List.of("ADMIN", "DOCTOR", "LAB_TECH").contains(staff.role()))
                 .orElseThrow(() -> new LabRuleException("LAB_ACTOR_MISMATCH",
                         "The authenticated Lab actor must match the cancellation audit identity"));

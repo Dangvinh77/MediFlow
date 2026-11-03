@@ -1,0 +1,12 @@
+{
+  "sourceId" : "716314e1-7cd5-48f1-8790-64520fe4f28e",
+  "sourceType" : "LAB_TEST",
+  "eventType" : "lab.request.cancelled",
+  "status" : "APPLIED",
+  "rejectionCode" : null,
+  "refundsDue" : [ {
+    "originalTransactionId" : "436c582d-072f-46eb-9d60-2e35bba4dc1c",
+    "amount" : 150000.0,
+    "currency" : "VND"
+  } ]
+}
