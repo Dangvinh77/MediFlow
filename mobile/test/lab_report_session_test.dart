@@ -25,6 +25,7 @@ LabDetail labDetail(String status) => LabDetail(
   status: status,
   paid: false,
   version: 1,
+  clearanceId: rxId,
 );
 
 class Workflow implements LabWorkflow {
@@ -106,7 +107,7 @@ void main() {
       await tester.ensureVisible(find.text('Tải lại trạng thái'));
       await tester.tap(find.text('Tải lại trạng thái'));
       await tester.pumpAndSettle();
-      expect(find.text('COMPLETED'), findsOneWidget);
+      expect(find.text('Đã có kết quả'), findsOneWidget);
       expect(find.text('Bắt đầu thực hiện'), findsNothing);
     },
   );

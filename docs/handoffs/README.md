@@ -34,6 +34,7 @@ regression backend, không xác nhận bug còn tồn tại trên binary đang c
 
 | ID | Trạng thái | Producer/code owner → người nhận | Việc cụ thể còn phải xác minh | Hồ sơ/acceptance |
 |---|---|---|---|---|
+| H-12 | ACTIVE CONTRACT GAP | Vinh/Clinical/Lab/Billing → web/mobile consumers | Catalog xét nghiệm/giá, Lab patient/date search, mô tả khoản thu, recovery chỉ định sau restart | [Clinic UI contract gaps](HANDOFF-H12-CLINIC-UI-CONTRACT-GAPS.md) |
 | H-11 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway, Vinh/Clinical/Lab/Notification → consumer FE theo owner + Vinh verification | Đã triển khai command NURSE cấp PATIENT, outcome recovery, own results và in-app trước login; còn nghiệm thu ONB-A01–12 qua Gateway/UI | [Nurse onboarding](HANDOFF-NURSE-PATIENT-ONBOARDING-2026-10-27.md); [ONB plan](../plans/07-outpatient-workflow-implementation.md); [ONB acceptance](../plans/06-acceptance-runbook.md) |
 | H-01 | NEEDS REVALIDATION | Hoàng Anh/Core/Gateway → các consumer FE theo owner | Contract A.13 đã triển khai cho CASHIER/LAB_TECH directory và PATIENT care-labels; đối chiếu consumer/session reset web/mobile trước khi đóng | [Reference directory](HANDOFF-HA-FRONTEND-REFERENCE-DIRECTORY-2026-10-22.md); [Core README](../../backend/core-service/README.md) |
 | H-05 | NEEDS REVALIDATION | Huy/Pharmacy/Report → Vinh verification | Mandatory exp có source fix và PG/Rabbit suite checkpoint; đối chiếu final artifact/Gateway/Support, không yêu cầu sửa parser lại từ báo cáo lỗi cũ | [JWT Pharmacy/Report](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |

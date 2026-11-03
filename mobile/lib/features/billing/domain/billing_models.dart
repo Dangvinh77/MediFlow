@@ -234,8 +234,10 @@ class PaymentRequestSource {
     required this.sourceId,
     required this.patientId,
     required this.careEpisodeId,
+    this.paymentRequestId,
   });
   final String purpose, sourceId, patientId, careEpisodeId;
+  final String? paymentRequestId;
 }
 
 bool isValidDate(String value) {

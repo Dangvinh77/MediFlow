@@ -115,7 +115,7 @@ const modules = [
     'Báo cáo và thông báo',
     'Vinh',
     Icons.support_agent_outlined,
-    UserRole.values,
+    [UserRole.admin, UserRole.manager, UserRole.nurse, UserRole.patient],
     implemented: true,
   ),
   AppModule(

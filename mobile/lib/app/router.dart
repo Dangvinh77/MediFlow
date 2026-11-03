@@ -97,7 +97,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/appointments',
-            builder: (_, _) => const AppointmentPage(),
+            builder: (context, _) => AppointmentPage(
+              onOpenRecord: (patientId, visitId) {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => MedicalRecordForVisitPage(
+                      patientId: patientId,
+                      visitId: visitId,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           GoRoute(path: '/lab', builder: (_, _) => const LabPage()),
           GoRoute(

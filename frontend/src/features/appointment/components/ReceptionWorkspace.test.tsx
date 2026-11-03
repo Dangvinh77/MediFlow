@@ -63,6 +63,19 @@ describe("reception session registration", () => {
     return user;
   }
 
+  it("loads today's sessions directly even after another date range was entered", async () => {
+    render(<ReceptionWorkspace enabled />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    const dates = document.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    fireEvent.change(dates[0], { target: { value: "2025-01-01" } });
+    fireEvent.change(dates[1], { target: { value: "2025-01-02" } });
+    await user.click(screen.getByRole("button", { name: "Tiếp nhận hôm nay" }));
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(1));
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    expect(mocks.list.mock.calls[0][0]).toMatchObject({ departmentId: "department-id", fromDate: today, toDate: today });
+  });
+
   it("refreshes authoritative capacity and the queue after a successful registration", async () => {
     mocks.create.mockResolvedValue(registration);
     mocks.list.mockResolvedValueOnce({ content: [session], totalPages: 1, number: 0 })

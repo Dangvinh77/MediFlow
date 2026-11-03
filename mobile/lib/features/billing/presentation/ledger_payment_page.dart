@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/billing_commands.dart';
 import '../domain/billing_models.dart';
@@ -30,8 +31,9 @@ int? _minorUnits(String raw) {
 }
 
 class LedgerPaymentPage extends StatefulWidget {
-  const LedgerPaymentPage({super.key, required this.repository});
+  const LedgerPaymentPage({super.key, required this.repository, this.source});
   final BillingRepository repository;
+  final PaymentRequestSource? source;
   @override
   State<LedgerPaymentPage> createState() => _LedgerPaymentPageState();
 }
@@ -58,6 +60,19 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    final source = widget.source;
+    if (source != null) {
+      _purpose = source.purpose;
+      _sourceId.text = source.sourceId;
+      _patientId.text = source.patientId;
+      _episodeId.text = source.careEpisodeId;
+      _discover();
+    }
+  }
 
   @override
   void dispose() {
@@ -99,6 +114,12 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
         patientId: patient,
         careEpisodeId: episode,
       );
+      if (widget.source?.paymentRequestId != null &&
+          widget.source!.paymentRequestId != result.paymentRequestId) {
+        throw const FormatException(
+          'Khoản thu đã thay đổi. Quay lại hàng chờ và chọn lại trước khi thu tiền.',
+        );
+      }
       if (mounted && generation == _generation) {
         _amount.text = result.remainingAmount.format();
         setState(() => _discovery = result);
@@ -209,6 +230,11 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
         patientId: old.patientId,
         careEpisodeId: old.careEpisodeId,
       );
+      if (fresh.paymentRequestId != old.paymentRequestId) {
+        throw const FormatException(
+          'Khoản thu đã thay đổi sau giao dịch. Cần đối soát biên nhận trước khi thu tiếp.',
+        );
+      }
       if (!mounted ||
           paymentRevision != _paymentRevision ||
           _receipt?.status != 'COMPLETED') {
@@ -261,152 +287,180 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Tra cứu khoản thu',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _purpose,
-          decoration: const InputDecoration(labelText: 'Loại khoản thu'),
-          items: const [
-            DropdownMenuItem(value: 'EXAM', child: Text('Khám')),
-            DropdownMenuItem(value: 'LAB_TEST', child: Text('Xét nghiệm')),
-            DropdownMenuItem(value: 'PRESCRIPTION', child: Text('Đơn thuốc')),
-          ],
-          onChanged: _locked || _loading || _busy ? null : _changePurpose,
-        ),
-        const SizedBox(height: 8),
-        ExpansionTile(
-          title: const Text('Tham chiếu khoản thu từ tiếp nhận'),
-          children: [
-            _uuidField(_sourceId, 'Mã nguồn (sourceId)'),
-            _uuidField(_patientId, 'Mã bệnh nhân (patientId)'),
-            _uuidField(_episodeId, 'Mã đợt khám (careEpisodeId)'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        FilledButton.icon(
-          onPressed: _loading || _busy || _locked || _reconciling
-              ? null
-              : _discover,
-          icon: const Icon(Icons.search),
-          label: Text(_loading ? 'Đang tra cứu…' : 'Tra cứu từ Billing'),
-        ),
-        if (_loading)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        if (_error != null)
-          RequestError(
-            _error!,
-            onRetry:
-                _error is ApiFailure &&
-                    ((_error as ApiFailure).status == null ||
-                        (_error as ApiFailure).status! >= 500 ||
-                        (_error as ApiFailure).status == 429)
-                ? _discover
-                : null,
-          ),
-        if (_discovery case final item?) ...[
-          const Divider(height: 32),
+    return PopScope(
+      canPop: !_locked && !_busy && !_reconciling,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           Text(
-            'Khoản thu do Billing cung cấp',
-            style: Theme.of(context).textTheme.titleMedium,
+            'Tra cứu khoản thu',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-          ExpansionTile(
-            title: const Text('Chi tiết tham chiếu'),
-            children: [SelectableText('Mã yêu cầu: ${item.paymentRequestId}')],
-          ),
-          Text('Trạng thái: ${item.status} · Tài khoản: ${item.accountStatus}'),
-          Text('Đề nghị: ${item.requestedAmount.format()} ${item.currency}'),
-          Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
-          Text('Còn lại: ${item.remainingAmount.format()} ${item.currency}'),
-          Text('Quan sát lúc: ${item.observedAt}'),
-          if (item.status == 'PENDING' || item.status == 'PARTIALLY_PAID') ...[
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amount,
-              enabled: !_busy && !_locked,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Số tiền thực nhận (${item.currency})',
-              ),
-            ),
-            const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          if (widget.source == null)
             DropdownButtonFormField<String>(
-              initialValue: _method,
-              decoration: const InputDecoration(
-                labelText: 'Hình thức nhận tiền',
-              ),
+              isExpanded: true,
+              initialValue: _purpose,
+              decoration: const InputDecoration(labelText: 'Loại khoản thu'),
               items: const [
-                DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
+                DropdownMenuItem(value: 'EXAM', child: Text('Khám')),
+                DropdownMenuItem(value: 'LAB_TEST', child: Text('Xét nghiệm')),
                 DropdownMenuItem(
-                  value: 'TRANSFER',
-                  child: Text('Chuyển khoản đã đối soát'),
+                  value: 'PRESCRIPTION',
+                  child: Text('Đơn thuốc'),
                 ),
               ],
-              onChanged: _busy || _locked
+              onChanged: _locked || _loading || _busy ? null : _changePurpose,
+            ),
+          const SizedBox(height: 8),
+          if (widget.source == null)
+            ExpansionTile(
+              title: const Text('Tham chiếu khoản thu từ tiếp nhận'),
+              children: [
+                _uuidField(_sourceId, 'Mã nguồn (sourceId)'),
+                _uuidField(_patientId, 'Mã bệnh nhân (patientId)'),
+                _uuidField(_episodeId, 'Mã đợt khám (careEpisodeId)'),
+              ],
+            ),
+          const SizedBox(height: 8),
+          if (widget.source == null)
+            FilledButton.icon(
+              onPressed: _loading || _busy || _locked || _reconciling
                   ? null
-                  : (value) => setState(() => _method = value!),
+                  : _discover,
+              icon: const Icon(Icons.search),
+              label: Text(_loading ? 'Đang tra cứu…' : 'Tra cứu từ Billing'),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _reference,
-              enabled: !_busy && !_locked,
-              maxLength: 120,
-              decoration: const InputDecoration(
-                labelText: 'Mã đối chiếu (không bắt buộc)',
-              ),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
             ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _confirmed,
-              onChanged: _busy || _locked
-                  ? null
-                  : (value) => setState(() => _confirmed = value ?? false),
-              title: const Text('Tôi đã thực nhận/đối soát khoản tiền này.'),
+          if (_error != null)
+            RequestError(
+              _error!,
+              onRetry:
+                  _error is ApiFailure &&
+                      ((_error as ApiFailure).status == null ||
+                          (_error as ApiFailure).status! >= 500 ||
+                          (_error as ApiFailure).status == 429)
+                  ? _discover
+                  : null,
             ),
-            if (_receipt != null) _receiptCard(_receipt!),
-            if (_commandError != null) RequestError(_commandError!),
-            if (_locked)
-              const Text(
-                'Thao tác đang chờ đối soát. Không gửi khoản thu khác cho đến khi kết quả được kiểm tra.',
-              ),
-            if (_locked && _frozen != null && _receipt == null)
-              OutlinedButton(
-                onPressed: _busy || _reconciling
-                    ? null
-                    : () => _submit(retry: _frozen),
-                child: const Text('Gửi lại đúng lệnh đã khóa'),
-              ),
-            if (_locked && _receipt?.status == 'COMPLETED')
-              OutlinedButton.icon(
-                onPressed: _busy || _reconciling ? null : _refreshAfterPayment,
-                icon: const Icon(Icons.refresh),
-                label: Text(
-                  _reconciling
-                      ? 'Đang đối soát…'
-                      : 'Đối soát số dư mới từ Billing',
+          if (_discovery case final item?) ...[
+            const Divider(height: 32),
+            ReferenceLabel(
+              kind: ReferenceKind.patient,
+              id: item.patientId,
+              label: 'Bệnh nhân',
+            ),
+            ReferenceLabel(
+              kind: ReferenceKind.department,
+              id: item.departmentId,
+              label: 'Khoa',
+            ),
+            Text(
+              'Khoản thu do Billing cung cấp',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            ExpansionTile(
+              title: const Text('Chi tiết tham chiếu'),
+              children: [
+                SelectableText('Mã yêu cầu: ${item.paymentRequestId}'),
+              ],
+            ),
+            Text(
+              'Trạng thái: ${item.status} · Tài khoản: ${item.accountStatus}',
+            ),
+            Text('Đề nghị: ${item.requestedAmount.format()} ${item.currency}'),
+            Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
+            Text('Còn lại: ${item.remainingAmount.format()} ${item.currency}'),
+            Text('Quan sát lúc: ${item.observedAt}'),
+            if (item.status == 'PENDING' ||
+                item.status == 'PARTIALLY_PAID') ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _amount,
+                enabled: !_busy && !_locked,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Số tiền thực nhận (${item.currency})',
                 ),
               ),
-            if (!_locked)
-              FilledButton(
-                onPressed: _busy || !_confirmed ? null : () => _submit(),
-                child: Text(_busy ? 'Đang ghi nhận…' : 'Ghi nhận khoản thu'),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                initialValue: _method,
+                decoration: const InputDecoration(
+                  labelText: 'Hình thức nhận tiền',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
+                  DropdownMenuItem(
+                    value: 'TRANSFER',
+                    child: Text('Chuyển khoản đã đối soát'),
+                  ),
+                ],
+                onChanged: _busy || _locked
+                    ? null
+                    : (value) => setState(() => _method = value!),
               ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _reference,
+                enabled: !_busy && !_locked,
+                maxLength: 120,
+                decoration: const InputDecoration(
+                  labelText: 'Mã đối chiếu (không bắt buộc)',
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _confirmed,
+                onChanged: _busy || _locked
+                    ? null
+                    : (value) => setState(() => _confirmed = value ?? false),
+                title: const Text('Tôi đã thực nhận/đối soát khoản tiền này.'),
+              ),
+              if (_receipt != null) _receiptCard(_receipt!),
+              if (_commandError != null) RequestError(_commandError!),
+              if (_locked)
+                const Text(
+                  'Thao tác đang chờ đối soát. Không gửi khoản thu khác cho đến khi kết quả được kiểm tra.',
+                ),
+              if (_locked && _frozen != null && _receipt == null)
+                OutlinedButton(
+                  onPressed: _busy || _reconciling
+                      ? null
+                      : () => _submit(retry: _frozen),
+                  child: const Text('Gửi lại đúng lệnh đã khóa'),
+                ),
+              if (_locked && _receipt?.status == 'COMPLETED')
+                OutlinedButton.icon(
+                  onPressed: _busy || _reconciling
+                      ? null
+                      : _refreshAfterPayment,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(
+                    _reconciling
+                        ? 'Đang đối soát…'
+                        : 'Đối soát số dư mới từ Billing',
+                  ),
+                ),
+              if (!_locked)
+                FilledButton(
+                  onPressed: _busy || !_confirmed ? null : () => _submit(),
+                  child: Text(_busy ? 'Đang ghi nhận…' : 'Ghi nhận khoản thu'),
+                ),
+            ],
+            if (item.status == 'PAID') const Text('Khoản thu đã thanh toán.'),
+            if (item.status == 'EXPIRED' || item.status == 'CANCELLED')
+              const Text('Khoản thu này không còn nhận thanh toán.'),
           ],
-          if (item.status == 'PAID') const Text('Khoản thu đã thanh toán.'),
-          if (item.status == 'EXPIRED' || item.status == 'CANCELLED')
-            const Text('Khoản thu này không còn nhận thanh toán.'),
         ],
-      ],
+      ),
     );
   }
 

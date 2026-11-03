@@ -2,8 +2,11 @@ import '../domain/reference.dart';
 import 'api_client.dart';
 
 class GatewayReferenceReader implements ReferenceReader {
-  const GatewayReferenceReader(this.client);
+  const GatewayReferenceReader(this.client, {this.role});
   final ApiClient client;
+  final String? role;
+  bool get _minimalPatient =>
+      const ['LAB_TECH', 'CASHIER', 'PHARMACIST'].contains(role);
 
   static (String, String, String) _fields(ReferenceKind kind) => switch (kind) {
     ReferenceKind.patient => ('patients', 'maBenhNhan', 'hoTen'),
@@ -55,7 +58,27 @@ class GatewayReferenceReader implements ReferenceReader {
   Future<ReferenceOption> read(ReferenceKind kind, String id) async {
     if (!isReferenceId(id)) throw ArgumentError('Định danh không hợp lệ.');
     final (path, _, _) = _fields(kind);
-    final result = _decode(kind, await client.get('/v1/$path/$id'));
+    if (kind == ReferenceKind.department || kind == ReferenceKind.doctor) {
+      final labelKind = kind == ReferenceKind.department
+          ? 'department'
+          : 'doctor';
+      final raw = await client.get('/v1/org/care-labels/$labelKind/$id');
+      if (raw is! Map ||
+          raw['id'] != id ||
+          raw['label'] is! String ||
+          (raw['label'] as String).trim().isEmpty) {
+        throw const FormatException('Thông tin tên không khớp yêu cầu.');
+      }
+      return ReferenceOption(id: id, name: raw['label'] as String);
+    }
+    final result = _decode(
+      kind,
+      await client.get(
+        kind == ReferenceKind.patient && _minimalPatient
+            ? '/v1/patients/directory/$id'
+            : '/v1/$path/$id',
+      ),
+    );
     if (result.id.toLowerCase() != id.toLowerCase()) {
       throw const FormatException('Tên không khớp định danh yêu cầu.');
     }
@@ -77,7 +100,11 @@ class GatewayReferenceReader implements ReferenceReader {
       throw ArgumentError('Chọn bệnh nhân trước khi tìm hồ sơ.');
     }
     final raw = await client.get(
-      kind == ReferenceKind.record ? '/v1/records/patient/$scope' : '/v1/$path',
+      kind == ReferenceKind.record
+          ? '/v1/records/patient/$scope'
+          : kind == ReferenceKind.patient && _minimalPatient
+          ? '/v1/patients/directory/search'
+          : '/v1/$path',
       query: switch (kind) {
         ReferenceKind.department => {'activeOnly': true},
         ReferenceKind.record => null,

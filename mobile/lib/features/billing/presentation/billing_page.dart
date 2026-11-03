@@ -8,6 +8,7 @@ import 'invoice_page.dart';
 import 'ledger_payment_page.dart';
 import 'providers.dart';
 import 'refund_due_page.dart';
+import 'payment_queue_page.dart';
 
 class BillingPage extends ConsumerWidget {
   const BillingPage({super.key});
@@ -29,15 +30,18 @@ class BillingPage extends ConsumerWidget {
   }
 }
 
-class _BillingWorkspace extends StatelessWidget {
+class _BillingWorkspace extends ConsumerWidget {
   const _BillingWorkspace({required this.repository, required this.role});
   final BillingRepository repository;
   final String role;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final queue = ref.watch(paymentQueueRepositoryProvider);
+    final refunds = ref.watch(outpatientRefundRepositoryProvider);
     final canOperate = role == 'ADMIN' || role == 'CASHIER';
     return DefaultTabController(
+      initialIndex: canOperate && queue != null ? 1 : 0,
       length: canOperate ? 3 + (role == 'ADMIN' ? 1 : 0) : 1,
       child: Column(
         children: [
@@ -55,8 +59,12 @@ class _BillingWorkspace extends StatelessWidget {
             child: TabBarView(
               children: [
                 if (canOperate) InvoicePage(repository: repository),
-                if (canOperate) LedgerPaymentPage(repository: repository),
-                if (canOperate) RefundDuePage(repository: repository),
+                if (canOperate)
+                  queue == null
+                      ? LedgerPaymentPage(repository: repository)
+                      : PaymentQueuePage(repository: repository, queue: queue),
+                if (canOperate)
+                  RefundDuePage(repository: repository, outpatient: refunds),
                 if (role == 'ADMIN' || role == 'MANAGER')
                   BillingReportsPage(repository: repository, role: role),
               ],
