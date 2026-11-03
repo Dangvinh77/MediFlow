@@ -32,11 +32,15 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
 
     @Override
     public VerifiedAccount execute(String username, String rawPassword) {
-        Account account = accountRepository.findByUsernameForUpdate(username)
+        String email = normalizeEmail(username);
+        Account account = accountRepository.findByUsernameForUpdate(email)
                 .orElseThrow(() -> invalidCredentials());
 
         if (account.getRole() == Role.SYSTEM
                 || !account.isActive()
+                || !account.isEmailLoginEnabled()
+                || (account.isMustChangePassword() && account.getTemporaryPasswordExpiresAt() != null
+                    && !account.getTemporaryPasswordExpiresAt().isAfter(java.time.Instant.now()))
                 || rawPassword == null
                 || !passwordHasher.matches(rawPassword, account.getPasswordHash())) {
             throw invalidCredentials();
@@ -64,5 +68,11 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
 
     private InvalidCredentialsException invalidCredentials() {
         return new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    private String normalizeEmail(String value) {
+        if (value == null || !value.equals(value.trim()) || value.length() > 254
+                || !value.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) throw invalidCredentials();
+        return value.toLowerCase(java.util.Locale.ROOT);
     }
 }

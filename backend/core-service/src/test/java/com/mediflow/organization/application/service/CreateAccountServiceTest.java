@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.mediflow.organization.application.port.out.AccountRepository;
+import com.mediflow.organization.application.port.out.AccountCreationReceiptRepository;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.organization.domain.exception.InvalidAccountException;
@@ -151,5 +152,28 @@ class CreateAccountServiceTest {
 
         assertThrows(InvalidAccountException.class, () -> service.execute(
                 "doctor.one", "plainpass", null, Role.DOCTOR));
+    }
+
+    @Test
+    void issueWithIdempotencyGeneratesEmailCredentialAndRequiresPasswordChange() {
+        var receipts = org.mockito.Mockito.mock(AccountCreationReceiptRepository.class);
+        var issuing = new CreateAccountService(accountRepository, passwordHasher, receipts);
+        UUID actor = UUID.randomUUID();
+        UUID staff = UUID.randomUUID();
+        when(accountRepository.existsByUsername("doctor@example.test")).thenReturn(false);
+        when(passwordHasher.hash(any())).thenReturn("hashed-temp-password");
+        when(accountRepository.save(any(Account.class))).thenAnswer(call -> call.getArgument(0));
+
+        var result = issuing.issueWithIdempotency(actor, "create-1", "Doctor@Example.Test",
+                staff, null, Role.DOCTOR, false);
+
+        assertEquals("doctor@example.test", result.account().getUsername());
+        org.junit.jupiter.api.Assertions.assertTrue(result.account().isMustChangePassword());
+        org.junit.jupiter.api.Assertions.assertNotNull(result.temporaryPassword());
+        org.junit.jupiter.api.Assertions.assertEquals(20, result.temporaryPassword().length());
+        org.assertj.core.api.Assertions.assertThat(result.account().getTemporaryPasswordExpiresAt())
+                .isAfter(java.time.Instant.now());
+        verify(passwordHasher).hash(result.temporaryPassword());
+        verify(receipts).save(any(AccountCreationReceiptRepository.Receipt.class));
     }
 }

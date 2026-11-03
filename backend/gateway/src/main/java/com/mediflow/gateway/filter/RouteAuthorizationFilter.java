@@ -91,6 +91,9 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/accounts/me/password", HttpMethod.PUT, Roles.ADMIN, Roles.MANAGER,
                     Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH, Roles.PATIENT),
             rule("/api/v1/org/accounts/{id}/password", HttpMethod.PUT, Roles.ADMIN),
+            rule("/api/v1/org/accounts/{id}/email", HttpMethod.PUT, Roles.ADMIN),
+            rule("/api/v1/org/accounts/{id}/mail-delivery", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v1/org/accounts/{id}/mail-delivery/{messageId}/retry", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/patient-accounts", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/org/accounts", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/accounts/{id}/status", HttpMethod.PUT, Roles.ADMIN),
@@ -250,7 +253,8 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        if (isPublic(path) || isInternalOnly(path)) {
+        HttpMethod method = exchange.getRequest().getMethod();
+        if (PublicEndpointPolicy.isPublic(path, method) || isInternalOnly(path)) {
             return chain.filter(exchange);
         }
 
@@ -260,7 +264,6 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                     "AUTH_UNAUTHORIZED", "Authentication is required");
         }
 
-        HttpMethod method = exchange.getRequest().getMethod();
         boolean allowed = method != null && RULES.stream()
                 .filter(rule -> rule.method().equals(method) && rule.matches(path))
                 .anyMatch(rule -> rule.roles().contains(role));
@@ -269,13 +272,6 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                     "AUTH_FORBIDDEN", "Role is not allowed to access this route");
         }
         return chain.filter(exchange);
-    }
-
-    private boolean isPublic(String path) {
-        return "/api/v1/auth/login".equals(path)
-                || "/api/v1/auth/refresh".equals(path)
-                || "/actuator/health".equals(path)
-                || "/actuator/info".equals(path);
     }
 
     private boolean isInternalOnly(String path) {

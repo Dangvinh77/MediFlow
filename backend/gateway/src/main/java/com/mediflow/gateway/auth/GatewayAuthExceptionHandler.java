@@ -14,7 +14,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import java.util.List;
 
 /** Stable validation/error envelope for the public authentication endpoints. */
-@RestControllerAdvice(assignableTypes = AuthController.class)
+@RestControllerAdvice(assignableTypes = {AuthController.class, AccountSecurityProxyController.class})
 public class GatewayAuthExceptionHandler {
 
     @ExceptionHandler(WebExchangeBindException.class)

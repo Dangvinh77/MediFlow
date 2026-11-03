@@ -1,0 +1,126 @@
+{
+  "baseline": "4e1942bbf988d4ba3e9a7892ebf69dc30c2156ab",
+  "scope": "Selected live wire, account authority, security and append-only migration baseline. Existing source is retrievable with git show baseline:path. Does not certify runtime or all contracts.",
+  "files": [
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java",
+      "baselineBlob": "70012ee11f418909ba4c4d2980bd231f8d0ae8d5"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountManagementController.java",
+      "baselineBlob": "a51743c66456683509c605705d62447bd46cddc5"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/PatientAccountController.java",
+      "baselineBlob": "4014a655987e711f730b6dbce474042e9ca89fef"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/dto/request/CreateAccountRequest.java",
+      "baselineBlob": "dd87d1b861e64a7d04739f79b860061ee911b59a"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/domain/model/Account.java",
+      "baselineBlob": "41003e7d06b7ad7607ed11a0c60d5b6ae499f784"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/infrastructure/config/OrganizationDemoSeeder.java",
+      "baselineBlob": "d6cc3c66fd8d1ef3c7dac09513768698475bf1ac"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java",
+      "baselineBlob": "ea4951705bfa87e972aac18ddf671d83d7cc4921"
+    },
+    {
+      "path": "backend/gateway/src/main/java/com/mediflow/gateway/filter/JwtAuthenticationFilter.java",
+      "baselineBlob": "64b9a7347f26bcb4b039365a6b2aba5b8edef8f3"
+    },
+    {
+      "path": "backend/gateway/src/main/resources/application.yml",
+      "baselineBlob": "263c0b0be98891513e622646210373f4cb679018"
+    },
+    {
+      "path": "frontend/src/features/organization/types.ts",
+      "baselineBlob": "ef042395e087f5d4d774bf5527228cf090810b2f"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "baselineBlob": "c4eac2cead50121b26c4530cd12c0069fbe1948b"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V10__local_demo_seed_receipts.sql",
+      "baselineBlob": "f56a6dd691f1907525dedf8477f6e37e2d4c3794"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V11__organization_profiles.sql",
+      "baselineBlob": "8bb52be5e8ce2e14e51cec98fc2e75ecc7b181d7"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V12__demo_profile_backfill_receipts.sql",
+      "baselineBlob": "5787f92e6f5d7d525f44159e5e0f37bc123e00fb"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V13__schedule_management_scope_authority.sql",
+      "baselineBlob": "3a2aa6afa2cec735bc583fde790ce225859a956c"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V14__account_initial_password.sql",
+      "baselineBlob": "b37c5e820845ac8a3bfbb08793e18d0ab41b21c9"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V15__department_head_appointments.sql",
+      "baselineBlob": "d003c5f8f883cd4e07fecd44d52d68369a25e3cd"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V1__init.sql",
+      "baselineBlob": "de82384b0ca88d1427066068992180979b1c7a69"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V2__account_patient_identity.sql",
+      "baselineBlob": "518ff1eaa5119e8eaaf0dcf2411838db8816b740"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V3__room_lookup.sql",
+      "baselineBlob": "a6e91f005cf5a701fb44e8cd45a1aa5d6cebcc15"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V4__surgery_reference_authority.sql",
+      "baselineBlob": "5476c2e537090f728cbb1b9f6e3e8a93deb634fb"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V5__organization_event_outbox.sql",
+      "baselineBlob": "45759ba617454b5354dcb02ead012295dde56b9d"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V6__staff_creation_idempotency_receipts.sql",
+      "baselineBlob": "064cd5b70a95b9fd024f10d34520969fb8051483"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V7__account_creation_idempotency_receipts.sql",
+      "baselineBlob": "da251fa4b12a6cda79aa1d085a411f12a318266b"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V8__staff_identity_number.sql",
+      "baselineBlob": "4a54e1025ace724e61d326720acc65691b069338"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V9__account_credential_version.sql",
+      "baselineBlob": "07cfcd9cf510293d0a1548c0f5d3603e8f24e55d"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/patient-migration/V1__init_patient.sql",
+      "baselineBlob": "eb33f86cebfaf47444bb0665ae3a016cbb81f863"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/patient-migration/V2__patient_event_outbox.sql",
+      "baselineBlob": "10bcbeaff6fb2c6b48b33c49546ca5ebdd80022e"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/patient-migration/V3__local_demo_seed_receipts.sql",
+      "baselineBlob": "aaddbb3647a15a74cc5ad289f7364c7bf8f051c3"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/patient-migration/V4__patient_archive_and_identity_audit.sql",
+      "baselineBlob": "93a799b0d94f515d55a711e39e1c3c9cfab8f96b"
+    }
+  ]
+}

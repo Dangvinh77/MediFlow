@@ -20,10 +20,10 @@ class ProvisionPatientAccountServiceTest {
     final UUID patient = UUID.randomUUID(), actor = UUID.randomUUID();
 
     @Test void derivesCredentialsAndForcesPatientRole() {
-        when(patients.identityNumber(patient)).thenReturn("012345678901");
-        var account = Account.create(UUID.randomUUID(), "012345678901", "hash", null, patient, Role.PATIENT);
+        when(patients.email(patient)).thenReturn("patient@example.test");
+        var account = Account.create(UUID.randomUUID(), "patient@example.test", "hash", null, patient, Role.PATIENT);
         account.requirePasswordChange();
-        when(creator.executeWithIdempotency(actor, "key", "012345678901", "1", null, patient, Role.PATIENT))
+        when(creator.issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false))
                 .thenReturn(new CreateAccountUseCase.CreationResult(account, false));
         var result = new ProvisionPatientAccountService(accounts, receipts, creator, patients).provision(actor, "key", patient);
         assertThat(result.account().getPatientId()).isEqualTo(patient);
@@ -31,11 +31,11 @@ class ProvisionPatientAccountServiceTest {
         var order = inOrder(receipts, accounts, creator);
         order.verify(receipts).lockKey(actor, "key");
         order.verify(accounts).lockOwner(null, patient);
-        order.verify(creator).executeWithIdempotency(actor, "key", "012345678901", "1", null, patient, Role.PATIENT);
+        order.verify(creator).issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false);
     }
 
     @Test void refusesReissueEvenForAnInactiveExistingAccount() {
-        when(patients.identityNumber(patient)).thenReturn("012345678901");
+        when(patients.email(patient)).thenReturn("patient@example.test");
         when(accounts.existsByPatientId(patient)).thenReturn(true);
         assertThatThrownBy(() -> new ProvisionPatientAccountService(accounts, receipts, creator, patients)
                 .provision(actor, "key", patient)).hasMessageContaining("tài khoản");
@@ -43,18 +43,18 @@ class ProvisionPatientAccountServiceTest {
     }
 
     @Test void allowsReceiptRecoveryWithoutIssuingAnotherAccount() {
-        var account = Account.create(UUID.randomUUID(), "012345678901", "hash", null, patient, Role.PATIENT);
+        var account = Account.create(UUID.randomUUID(), "patient@example.test", "hash", null, patient, Role.PATIENT);
         when(receipts.find(actor, "key")).thenReturn(Optional.of(new AccountCreationReceiptRepository.Receipt(
                 actor, "key", "fingerprint", "hash", account.getAccountId())));
         when(accounts.findById(account.getAccountId())).thenReturn(Optional.of(account));
         new ProvisionPatientAccountService(accounts, receipts, creator, patients).provision(actor, "key", patient);
         verifyNoInteractions(patients);
         verify(accounts, never()).existsByPatientId(any());
-        verify(creator).executeWithIdempotency(actor, "key", "012345678901", "1", null, patient, Role.PATIENT);
+        verify(creator).issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false);
     }
 
     @Test void unavailableOrInvalidPatientNeverCreatesAccount() {
-        when(patients.identityNumber(patient)).thenThrow(new IllegalArgumentException("Patient unavailable"));
+        when(patients.email(patient)).thenThrow(new IllegalArgumentException("Patient unavailable"));
         assertThatThrownBy(() -> new ProvisionPatientAccountService(accounts, receipts, creator, patients)
                 .provision(actor, "key", patient)).isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(creator);

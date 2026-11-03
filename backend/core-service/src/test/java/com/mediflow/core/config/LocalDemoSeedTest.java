@@ -105,6 +105,9 @@ public class LocalDemoSeedTest {
                 .containsExactly(patients.get(0).maBenhNhan(), patients.get(1).maBenhNhan());
         assertThat(count(orgJdbc)).isEqualTo(40);
         assertThat(count(patientJdbc)).isEqualTo(10);
+        assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(10);
+        assertThat(orgJdbc.queryForObject("select synthetic_email from local_demo_mailbox_account where seed_key='account-demo.admin'", String.class))
+                .isEqualTo("demo.staff01@example.test");
     }
 
     @Test void rerunPreservesPasswordAndDisabledAccountWithoutAnyCreates() {
@@ -212,6 +215,7 @@ public class LocalDemoSeedTest {
         var jdbc = new JdbcTemplate(source);
         jdbc.execute("create table local_demo_profile_receipt(seed_key varchar(100) primary key,entity_id uuid not null)");
         jdbc.execute("create table local_demo_seed_receipt(seed_key varchar(100) primary key,entity_id uuid not null)");
+        jdbc.execute("create table local_demo_mailbox_account(account_id uuid primary key,seed_key varchar(100) unique,synthetic_email varchar(254) unique)");
         jdbc.execute("create alias pg_advisory_xact_lock for 'com.mediflow.core.config.LocalDemoSeedTest.advisoryLock'");
         return jdbc;
     }

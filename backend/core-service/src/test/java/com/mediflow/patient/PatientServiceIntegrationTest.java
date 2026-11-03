@@ -50,15 +50,16 @@ class PatientServiceIntegrationTest {
     @Test void concurrentNurseIssuanceReplaysAndNeverReplacesEvenInactiveAccount() throws Exception {
         var patient = createPatient.create(new CreatePatientRequest("Portal Patient",
                 LocalDate.of(1995, 1, 1), Gender.M,
-                "0" + System.nanoTime(), null, null, null, null));
+                "0" + System.nanoTime(), null, null, "portal-" + UUID.randomUUID() + "@example.test", null));
         UUID actor = UUID.randomUUID();
         String firstKey = UUID.randomUUID().toString(), secondKey = UUID.randomUUID().toString();
         var start = new java.util.concurrent.CountDownLatch(1);
         var successes = new java.util.concurrent.ConcurrentLinkedQueue<String>();
+        var issuedCredentials = new java.util.concurrent.ConcurrentLinkedQueue<com.mediflow.organization.application.port.in.CreateAccountUseCase.CreationResult>();
         try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
             var calls = java.util.List.of(firstKey, secondKey).stream().map(key -> executor.submit(() -> {
                 start.await();
-                try { issuance.provision(actor, key, patient.maBenhNhan()); successes.add(key); return true; }
+                try { issuedCredentials.add(issuance.provision(actor, key, patient.maBenhNhan())); successes.add(key); return true; }
                 catch (com.mediflow.common.exception.DuplicateResourceException conflict) {
                     assertThat(conflict.getCode()).isEqualTo("PATIENT_ACCOUNT_ALREADY_ISSUED");
                     return false;
@@ -70,7 +71,7 @@ class PatientServiceIntegrationTest {
         }
         var replay = issuance.provision(actor, successes.element(), patient.maBenhNhan());
         assertThat(replay.replayed()).isTrue();
-        assertThat(replay.account().getUsername()).isEqualTo(patient.soCmnd());
+        assertThat(replay.account().getUsername()).isEqualTo(patient.email());
         assertThat(replay.account().isMustChangePassword()).isTrue();
         var jdbc = new org.springframework.jdbc.core.JdbcTemplate(organizationSource);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM account WHERE patient_id=?", Integer.class,
@@ -87,8 +88,10 @@ class PatientServiceIntegrationTest {
         archivePatient.delete(patient.maBenhNhan());
         var afterArchive = issuance.provision(actor, successes.element(), patient.maBenhNhan());
         assertThat(afterArchive.account().getAccountId()).isEqualTo(replay.account().getAccountId());
-        assertThat(afterArchive.account().getUsername()).isEqualTo(patient.soCmnd());
-        accounts.changePassword(replay.account().getAccountId(), "1", "patient-private-password");
+        assertThat(afterArchive.account().getUsername()).isEqualTo(patient.email());
+        String temporaryPassword = issuedCredentials.element().temporaryPassword();
+        assertThat(temporaryPassword).isNotBlank().isNotEqualTo("1");
+        accounts.changePassword(replay.account().getAccountId(), temporaryPassword, "patient-private-password");
         var afterChange = issuance.provision(actor, successes.element(), patient.maBenhNhan());
         assertThat(afterChange.account().isMustChangePassword()).isFalse();
         assertThat(jdbc.queryForObject("SELECT credential_version FROM account WHERE account_id=?", Long.class,
@@ -124,6 +127,10 @@ class PatientServiceIntegrationTest {
         registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
         registry.add("eureka.client.enabled", () -> false);
         registry.add("mediflow.patient.outbox.scheduling-enabled", () -> false);
+        registry.add("mediflow.security-mail.encryption-key", () -> java.util.Base64.getEncoder().encodeToString(new byte[32]));
+        registry.add("mediflow.security-mail.dispatch-enabled", () -> false);
+        registry.add("spring.mail.host", () -> "127.0.0.1");
+        registry.add("spring.mail.port", () -> 9);
         registry.add("mediflow.jwt.secret", () ->
                 "integration-test-secret-that-is-long-enough-for-hs256");
     }

@@ -10,14 +10,14 @@ vi.mock("../use-unsaved-changes", () => ({ useUnsavedChanges: () => ({ markDirty
 import { OwnStaffContactForm } from "./OwnStaffContactForm";
 beforeEach(() => { vi.clearAllMocks(); mocks.session = "session-a"; });
 it("sends only editable contact fields and retains the returned profile", async () => {
-  mocks.update.mockResolvedValue({ ...staff, email: "new@example.com" });
+  mocks.update.mockResolvedValue({ ...staff, address: "Hanoi" });
   const onSaved = vi.fn(); render(<OwnStaffContactForm staff={staff} onSaved={onSaved} />);
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+  expect(screen.getByLabelText("Email")).toHaveAttribute("readonly");
   fireEvent.change(screen.getByLabelText("Địa chỉ"), { target: { value: "  Hanoi  " } });
   fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin liên hệ" }));
   await screen.findByText("Đã cập nhật thông tin liên hệ.");
-  expect(mocks.update).toHaveBeenCalledExactlyOnceWith(staff.staffId, { phoneNumber: staff.phoneNumber, email: "new@example.com", address: "Hanoi" });
-  expect(onSaved).toHaveBeenCalledWith({ ...staff, email: "new@example.com" });
+  expect(mocks.update).toHaveBeenCalledExactlyOnceWith(staff.staffId, { phoneNumber: staff.phoneNumber, address: "Hanoi" });
+  expect(onSaved).toHaveBeenCalledWith({ ...staff, address: "Hanoi" });
   expect(mocks.saved).toHaveBeenCalledOnce();
   expect(screen.queryByLabelText("Chức danh")).not.toBeInTheDocument();
 });

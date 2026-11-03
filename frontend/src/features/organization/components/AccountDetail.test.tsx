@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ account: vi.fn(), updateAccountStatus: vi.fn()
 vi.mock("../api", () => ({ organizationApi: mocks }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.session }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("./PasswordForm", () => ({ PasswordForm: ({ accountId }: { accountId: string }) => <div>Đổi mật khẩu {accountId}</div> }));
+vi.mock("./AdminAccountSecurity", () => ({ AdminAccountSecurity: ({ accountId }: { accountId: string }) => <div>Đổi mật khẩu {accountId}</div> }));
 import { AccountDetail } from "./AccountDetail";
 
 beforeEach(() => { vi.clearAllMocks(); mocks.account.mockReset(); mocks.updateAccountStatus.mockReset(); mocks.session.mockReturnValue("session-a"); mocks.account.mockResolvedValue(accountContractFixture); });

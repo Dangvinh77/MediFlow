@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.UUID;
+import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
 
 @RestController
 @RequestMapping("/api/v1/org/patient-accounts")
@@ -28,19 +29,21 @@ public class PatientAccountController {
             throw new IllegalArgumentException("Unsupported account issuance field");
         }
     }
-    public record IssuedAccount(UUID accountId, UUID patientId, String username, boolean mustChangePassword) {}
+    public record IssuedAccount(UUID accountId, UUID patientId, String username, boolean mustChangePassword,
+            MailDeliveryDTO mailDelivery) {}
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     public ResponseEntity<ApiResponse<IssuedAccount>> provision(@Valid @RequestBody Request request,
             @RequestHeader("Idempotency-Key") String key, Authentication authentication) {
-        var result = accounts.provision(UUID.fromString(authentication.getName()), key, request.patientId());
+        var provisioned = accounts.provisionWithMail(UUID.fromString(authentication.getName()), key, request.patientId());
+        var result = provisioned.creation();
         var account = result.account();
         return ResponseEntity.status(result.replayed() ? 200 : 201)
                 .cacheControl(CacheControl.noStore())
                 .location(URI.create("/api/v1/org/accounts/" + account.getAccountId()))
                 .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .body(ApiResponse.ok(new IssuedAccount(account.getAccountId(), account.getPatientId(),
-                        account.getUsername(), account.isMustChangePassword()), correlation.currentOrCreate().toString()));
+                        account.getUsername(), account.isMustChangePassword(), provisioned.mailDelivery()), correlation.currentOrCreate().toString()));
     }
 }

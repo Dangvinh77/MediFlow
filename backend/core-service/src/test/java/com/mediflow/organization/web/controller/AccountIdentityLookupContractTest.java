@@ -5,6 +5,7 @@ import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.dto.response.AccountIdentityLookupDTO;
+import com.mediflow.organization.application.service.SecurityAccountOperationsService;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
 import com.mediflow.organization.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.organization.infrastructure.web.CorrelationIdFilter;
@@ -44,6 +45,9 @@ class AccountIdentityLookupContractTest {
 
     @MockBean
     private LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
+
+    @MockBean
+    private SecurityAccountOperationsService securityAccountOperationsService;
 
     @Test
     @WithMockUser(username = "gateway", authorities = "ROLE_SYSTEM_SERVICE")

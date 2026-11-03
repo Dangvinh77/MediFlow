@@ -43,7 +43,7 @@ public class PatientJpaEntity {
     @Column(name = "phone_number", length = 15)
     private String phoneNumber;
 
-    @Column(name = "email", length = 100)
+    @Column(name = "email", length = 254)
     private String email;
 
     @Column(name = "health_insurance_number", length = 20)

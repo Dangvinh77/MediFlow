@@ -27,7 +27,7 @@ public class AccountEntity {
     @Column(name = "account_id", nullable = false, updatable = false)
     private UUID accountId;
 
-    @Column(name = "username", nullable = false, length = 50)
+      @Column(name = "username", nullable = false, length = 254)
     private String username;
 
     @Column(name = "password_hash", nullable = false, length = 255)
@@ -35,6 +35,12 @@ public class AccountEntity {
 
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword;
+
+    @Column(name = "temporary_password_expires_at")
+    private Instant temporaryPasswordExpiresAt;
+
+    @Column(name = "email_migrated", nullable = false)
+    private boolean emailMigrated;
 
     @Column(name = "staff_id")
     private UUID staffId;
@@ -72,7 +78,8 @@ public class AccountEntity {
             Instant createdAt,
             Instant updatedAt) {
         this(accountId, username, passwordHash, staffId, null, role, active,
-                lastLoginAt, createdAt, updatedAt);
+                lastLoginAt, createdAt, updatedAt,
+                username != null && username.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"));
     }
 
     public AccountEntity(
@@ -86,6 +93,21 @@ public class AccountEntity {
             Instant lastLoginAt,
             Instant createdAt,
             Instant updatedAt) {
+        this(accountId, username, passwordHash, staffId, patientId, role, active,
+                lastLoginAt, createdAt, updatedAt,
+                username != null && username.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"));
+    }
+
+    public AccountEntity(UUID accountId, String username, String passwordHash, UUID staffId,
+            UUID patientId, Role role, boolean active, Instant lastLoginAt, Instant createdAt,
+            Instant updatedAt, boolean emailMigrated) {
+        this(accountId, username, passwordHash, staffId, patientId, role, active, lastLoginAt,
+                createdAt, updatedAt, emailMigrated, null);
+    }
+
+    public AccountEntity(UUID accountId, String username, String passwordHash, UUID staffId,
+            UUID patientId, Role role, boolean active, Instant lastLoginAt, Instant createdAt,
+            Instant updatedAt, boolean emailMigrated, Instant temporaryPasswordExpiresAt) {
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -96,6 +118,8 @@ public class AccountEntity {
         this.lastLoginAt = lastLoginAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.emailMigrated = emailMigrated;
+        this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
     }
 
     public UUID getAccountId() {
@@ -106,9 +130,18 @@ public class AccountEntity {
         return username;
     }
 
+      public void setUsername(String username) { this.username = username; }
+
     public boolean isMustChangePassword() { return mustChangePassword; }
+    public Instant getTemporaryPasswordExpiresAt() { return temporaryPasswordExpiresAt; }
+
+    public boolean isEmailMigrated() { return emailMigrated; }
 
     public void requirePasswordChange() { this.mustChangePassword = true; }
+    public void requirePasswordChangeUntil(Instant expiresAt) {
+        this.mustChangePassword = true;
+        this.temporaryPasswordExpiresAt = expiresAt;
+    }
 
     public String getPasswordHash() {
         return passwordHash;

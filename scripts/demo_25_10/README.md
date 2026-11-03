@@ -4,14 +4,16 @@
 
 Tại thư mục source chính, mở Docker Desktop và chạy lần lượt:
 
-1. `start-backend.bat`: kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
+1. `start-backend.bat`: tự nạp `smtp.local.env`, chọn IP Wi-Fi/LAN, kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
    chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch và lượt nguồn tái khám qua API.
    Chờ `READY` và giữ cửa sổ mở; đọc dòng `UI DATA` / `FOLLOW-UP SOURCE READY` hoặc `PARTIAL`.
 2. `start-frontend.bat`: cài dependencies theo lockfile và chạy web tại
-   `http://127.0.0.1:3000`, nối Gateway `http://127.0.0.1:28080`, bật các UI gates demo.
+   `http://<IP-máy>:3000`, nối Gateway nội bộ `http://127.0.0.1:28080`, bật các UI gates demo. Điện thoại dùng Gateway `http://<IP-máy>:28080/api`.
 3. `clean-docker.bat`: yêu cầu demo backend dừng qua stop file, xóa container MediFlow
    và các image/tag dự án nhận diện được; image còn được container dự án khác dùng
    được giữ lại. Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
+
+Lần đầu chạy backend bằng **Run as administrator** để cho phép hai cổng demo 28080/3000 từ LocalSubnet trên đúng adapter. Nếu dùng nhiều card mạng, truyền `-LanAddress <IP>` cho cả backend/frontend; `-LocalOnly` giữ cả hai trên loopback. iOS/Android dùng hướng dẫn [mobile cùng Wi-Fi](../../mobile/README.md#demo-điện-thoại-cùng-wi-fi-với-máy-windows).
 
 Chạy `clean-docker.bat -Preview` để xem trước mà không thay đổi Docker hoặc tạo stop file.
 Các file dùng đường dẫn tương đối từ chính file `.bat`, không cần đặt working directory.
@@ -34,9 +36,12 @@ trong 07:00–17:00, nên bắt đầu trước 16:00.
 **Hướng dẫn click từng bước, đủ ba trường hợp và đến nhận thuốc:**
 [DEMO_UI_TUNG_BUOC.md](DEMO_UI_TUNG_BUOC.md). Đọc `DEMO-DATA.local.md` tại đường dẫn
 `UI DATA` của lần chạy để biết đúng tên khoa, CCCD bệnh nhân và ngày có lịch.
-File **DEMO-CALENDAR.local.md** cùng thư mục ghi nhân sự, phòng và **tài khoản từng
-bác sĩ bổ sung**. Khi nurse chọn buổi có bác sĩ bổ sung, phải đăng nhập đúng bác sĩ
-trong file này để khám; `demo.doctor` chỉ xem được lịch của chính mình.
+File **DEMO-CALENDAR.local.md** cùng thư mục ghi nhân sự và phòng bổ sung để
+hiển thị lịch. Các nhân sự bổ sung này **không tự được cấp tài khoản**; script không
+chọn mật khẩu hoặc gửi credential đến email giả. Dùng tài khoản bác sĩ seed và lịch
+được chuẩn bị riêng cho demo đăng nhập/tái khám trong `DEMO-DATA.local.md`.
+Nếu muốn đăng nhập bằng một nhân sự bổ sung, ADMIN cần cập nhật email nhận được thư
+và cấp tài khoản theo luồng email của hệ thống; không dùng mật khẩu chung cũ.
 
 Nếu đã có stack `--scheduling --keep` đang chạy, chuẩn bị dữ liệu bằng:
 

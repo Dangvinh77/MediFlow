@@ -82,13 +82,16 @@ public class OrganizationDemoSeeder {
             lock();
             List<Account> existing = allAccounts();
             for (JsonNode row : data.required("accounts")) {
-                once(text(row, "key"), () -> {
-                    UUID staffId = text(row, "staffKey") == null ? null
-                            : Objects.requireNonNull(staffIds.get(text(row, "staffKey")));
-                    UUID patientId = text(row, "patientKey") == null ? null
-                            : Objects.requireNonNull(patientIds.get(text(row, "patientKey")));
-                    Role role = Role.valueOf(text(row, "role"));
-                    var match = existing.stream().filter(a -> a.getUsername().equals(text(row, "username")))
+                Role role = Role.valueOf(text(row, "role"));
+                UUID staffId = text(row, "staffKey") == null ? null
+                        : Objects.requireNonNull(staffIds.get(text(row, "staffKey")));
+                UUID patientId = text(row, "patientKey") == null ? null
+                        : Objects.requireNonNull(patientIds.get(text(row, "patientKey")));
+                String accountEmail = seedOwnerEmail(data, row, role);
+                UUID accountId = once(text(row, "key"), () -> {
+                    var match = existing.stream().filter(a -> a.getUsername().equals(text(row, "username"))
+                                    || (role == a.getRole() && Objects.equals(staffId, a.getStaffId())
+                                            && Objects.equals(patientId, a.getPatientId())))
                             .findFirst();
                     if (match.isPresent()) {
                         Account account = match.get();
@@ -98,11 +101,44 @@ public class OrganizationDemoSeeder {
                         }
                         return account.getAccountId();
                     }
-                    return createAccount.execute(text(row, "username"), text(row, "password"),
+                    return createAccount.execute(accountEmail, text(row, "password"),
                             staffId, patientId, role).getAccountId();
                 });
+                registerDemoMailboxAccount(text(row, "key"), accountId, accountEmail);
             }
         });
+    }
+
+    public static String seedOwnerEmail(JsonNode data, JsonNode row, Role role) {
+        JsonNode profileRows = role == Role.PATIENT ? data.required("patients") : data.required("staff");
+        String ownerKey = role == Role.PATIENT ? text(row, "patientKey") : text(row, "staffKey");
+        for (JsonNode profile : profileRows) {
+            if (ownerKey != null && ownerKey.equals(text(profile, "key"))) {
+                String email = text(profile, "email");
+                if (email != null && email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                    return email.trim().toLowerCase(java.util.Locale.ROOT);
+                }
+            }
+        }
+        throw new IllegalStateException("Seeded account owner has no valid email");
+    }
+
+    private void registerDemoMailboxAccount(String seedKey, UUID accountId, String syntheticEmail) {
+        if (!seedKey.startsWith("account-demo.") || !isSyntheticSeedEmail(syntheticEmail)) return;
+        Integer registered = jdbc.queryForObject("""
+                SELECT count(*) FROM local_demo_mailbox_account WHERE account_id=?
+                """, Integer.class, accountId);
+        if (registered == null || registered == 0) {
+            jdbc.update("""
+                    INSERT INTO local_demo_mailbox_account(account_id,seed_key,synthetic_email)
+                    VALUES (?,?,?)
+                    """, accountId, seedKey, syntheticEmail);
+        }
+    }
+
+    public static boolean isSyntheticSeedEmail(String email) {
+        return email != null && (email.matches("^demo-[a-z0-9.-]+@demo\\.mediflow\\.local$")
+                || email.matches("^demo\\.(staff|patient)[0-9]+@example\\.test$"));
     }
 
     private List<Staff> allStaff() {

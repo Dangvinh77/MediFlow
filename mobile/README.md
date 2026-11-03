@@ -31,11 +31,31 @@ flutter run -d <android-device-id> --dart-define=GATEWAY_URL=http://10.0.2.2:808
 
 - Android cần SDK và licenses (`flutter doctor --android-licenses`). Debug cho phép HTTP local; release dùng HTTPS. Signing scaffold hiện phục vụ phát triển, cần cấu hình riêng trước phát hành.
 - Điện thoại thật dùng địa chỉ Gateway truy cập được. HTTP LAN cần `--dart-define=ALLOW_INSECURE_HTTP=true` và vẫn chịu chính sách nền tảng; nên dùng HTTPS.
-- iOS cần macOS/Xcode, ATS mặc định yêu cầu HTTPS. Cờ Dart không bỏ qua ATS.
+- iOS cần macOS/Xcode. Bản Debug dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release/Profile dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
 - Windows native cần Visual Studio Desktop development with C++, MSVC và CMake.
 - Web chạy trực tiếp bằng flutter run cần Gateway cho phép browser origin. Script proxy giải quyết cho local. SecureStorage web cần HTTPS hoặc localhost; đổi port là đổi browser origin.
 
 SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng nhập lại; chưa tự refresh hoặc gửi lại lệnh nghiệp vụ. Backend quyết định quyền truy cập.
+
+### Demo điện thoại cùng Wi-Fi với máy Windows
+
+1. Chạy `start-backend.bat` ở thư mục gốc. SMTP được nạp tự động từ `smtp.local.env`. Lần đầu chạy bằng **Run as administrator** để tạo/cập nhật firewall cho TCP 28080 và 3000, giới hạn LocalSubnet trên đúng adapter đang chọn. Không cần đổi loại mạng Windows đang dùng.
+2. Chờ `READY`. Launcher in `Mobile Gateway: http://<IP-máy>:28080/api`. Cổng demo là **28080**, khác cổng 8080 của cách chạy dịch vụ thông thường.
+3. Chạy `start-frontend.bat` nếu cần mở web, mailbox hoặc link trong email trên điện thoại. Dùng URL IP cổng 3000 mà launcher in ra cho cả desktop và điện thoại để nút trong mailbox có cùng origin.
+4. Trên máy có Flutter và thiết bị Android/iOS kết nối, thay IP bằng địa chỉ được in ở bước 2:
+
+```powershell
+cd mobile
+flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true
+```
+
+Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
+
+Có thể chọn adapter bằng `start-backend.bat -LanAddress 192.168.1.3` và truyền cùng tham số cho `start-frontend.bat`. Dùng `-LocalOnly` ở cả hai launcher để chạy riêng trên máy. Các service/DB/broker nội bộ của demo vẫn bind loopback; mobile gọi Gateway.
+
+Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-máy>:28080/actuator/health`. Nếu không kết nối được, kiểm tra cùng Wi-Fi, firewall đã được tạo và mạng không bật cách ly thiết bị/guest Wi-Fi. Quy tắc firewall có tên `MediFlow-Lan-Demo-28080` và `MediFlow-Lan-Demo-3000`.
+
+Thiết lập iOS Debug dựa trên [Apple ATS](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowsarbitraryloads) và [quyền mạng nội bộ](https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription). Đây là cấu hình demo HTTP; bản phát hành dùng Gateway HTTPS.
 
 ## Phần hiện có và chia việc
 

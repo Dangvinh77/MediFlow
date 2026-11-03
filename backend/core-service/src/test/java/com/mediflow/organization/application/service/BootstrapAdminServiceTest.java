@@ -20,7 +20,7 @@ class BootstrapAdminServiceTest {
         var create = mock(CreateAccountUseCase.class);
         var admin = Account.create(UUID.randomUUID(), "existing-admin", "hash", UUID.randomUUID(), Role.ADMIN);
         when(accounts.search(null, Role.ADMIN, null, PageQuery.of(0, 1))).thenReturn(PageResult.of(List.of(admin), 1, 0, 1));
-        new BootstrapAdminService(accounts, departments, staff, create).execute("new-admin", "password", "012345678901", "Name", "QTHT");
+        new BootstrapAdminService(accounts, departments, staff, create).execute("new-admin@example.test", "password", "012345678901", "Name", "QTHT");
         verifyNoInteractions(departments, staff, create);
     }
     @Test void firstAdminUsesTheCreatedStaffIdentityAndRequiredIdentityNumber() {
@@ -29,11 +29,11 @@ class BootstrapAdminServiceTest {
         var staff = mock(CreateStaffUseCase.class);
         var create = mock(CreateAccountUseCase.class);
         var department = Department.create(UUID.randomUUID(), "Phòng Quản trị hệ thống", "QTHT", DepartmentType.ADMINISTRATIVE, null);
-        var employee = Staff.create("Admin Name", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, "012345678901");
+        var employee = Staff.create("Admin Name", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, "admin@example.test", "012345678901");
         when(accounts.search(null, Role.ADMIN, null, PageQuery.of(0, 1))).thenReturn(PageResult.empty(PageQuery.of(0, 1)));
         when(departments.execute("Phòng Quản trị hệ thống", "QTHT", DepartmentType.ADMINISTRATIVE, null)).thenReturn(department);
-        when(staff.execute("Admin Name", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, "012345678901")).thenReturn(employee);
-        new BootstrapAdminService(accounts, departments, staff, create).execute("local-admin", "strong-password", "012345678901", "Admin Name", "QTHT");
-        verify(create).execute("local-admin", "strong-password", employee.getStaffId(), null, Role.ADMIN);
+        when(staff.execute("Admin Name", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, "admin@example.test", "012345678901")).thenReturn(employee);
+        new BootstrapAdminService(accounts, departments, staff, create).execute("admin@example.test", "strong-password", "012345678901", "Admin Name", "QTHT");
+        verify(create).execute("admin@example.test", "strong-password", employee.getStaffId(), null, Role.ADMIN);
     }
 }

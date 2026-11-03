@@ -37,9 +37,12 @@ public class UpdateOwnStaffContactService implements UpdateOwnStaffContactUseCas
         if (!current.isActive()) throw new InvalidStaffDataException("Inactive staff cannot update contact information");
         String phone = clean(phoneNumber);
         String mail = clean(email);
-        if (mail != null && mail.length() > 100) throw new InvalidStaffDataException("Email must not exceed 100 characters");
+        if (mail != null && mail.length() > 254) throw new InvalidStaffDataException("Email must not exceed 254 characters");
+        if (mail != null && !mail.equalsIgnoreCase(current.getEmail() == null ? "" : current.getEmail())) {
+            throw new OwnStaffContactAccessDeniedException();
+        }
         current.update(current.getFullName(), current.getJobTitle(), current.getSpecialization(),
-                current.getLicenseNumber(), phone, mail);
+                current.getLicenseNumber(), phone, current.getEmail());
         StaffProfile old = current.getProfile();
         current.withProfile(new StaffProfile(old.dateOfBirth(), old.gender(), address, old.hireDate(), old.qualification()));
         Staff saved = staff.save(current);

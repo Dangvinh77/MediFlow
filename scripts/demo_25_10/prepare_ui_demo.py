@@ -18,6 +18,14 @@ import uuid
 
 HERE = Path(__file__).resolve().parent
 ZONE = dt.timezone(dt.timedelta(hours=7))
+SEED_LOGIN_EMAILS = {
+    'admin': 'demo.staff01@example.test',
+    'nurse': 'demo.staff04@example.test',
+    'doctor': 'demo.staff03@example.test',
+    'cashier': 'demo.staff19@example.test',
+    'patient': 'demo.patient01@example.test',
+    'patient2': 'demo.patient02@example.test',
+}
 
 
 class ApiError(RuntimeError):
@@ -123,7 +131,7 @@ class DemoApi:
 def prepare(api, now, schedule_only=False):
     today, tomorrow = demo_dates(now)
     for role in ('admin', 'nurse', 'doctor', 'cashier', 'patient', 'patient2'):
-        api.login(role, 'demo.' + role)
+        api.login(role, SEED_LOGIN_EMAILS[role])
     doctor_id = api.claims['doctor']['staffId']
     staff = api.call('admin', 'GET', '/api/v1/org/staff/' + doctor_id)
     department_id = staff['departmentId']

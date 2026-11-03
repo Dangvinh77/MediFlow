@@ -112,10 +112,11 @@ async function requestJson<T>(
   init?: RequestInit,
   retried = false,
   expectedSession?: string | null,
+  anonymous = false,
 ): Promise<T> {
-  const session = getSessionKey();
+  const session = anonymous ? null : getSessionKey();
   if (expectedSession !== undefined && session !== expectedSession) throw new ApiRequestError("Phiên đăng nhập đã thay đổi.", 401);
-  const token = getToken();
+  const token = anonymous ? null : getToken();
 
   const headers = new Headers(init?.headers);
 
@@ -205,10 +206,14 @@ async function requestJson<T>(
 async function request<T>(
   path: string,
   init?: RequestInit,
+  anonymous = false,
 ): Promise<T> {
   const body = await requestJson<ApiResponse<T>>(
     path,
     init,
+    false,
+    undefined,
+    anonymous,
   );
 
   if (!body.success) {
@@ -316,4 +321,10 @@ export const api = {
     requestJson<void>(path, {
       method: "DELETE",
     }),
+};
+
+/** Public auth/demo operations must work independently of a stale signed-in session. */
+export const publicApi = {
+  get: <T>(path: string) => request<T>(path, { method: "GET", cache: "no-store" }, true),
+  post: <T>(path: string, data: unknown) => request<T>(path, { ...mutationInit("POST", data), cache: "no-store" }, true),
 };

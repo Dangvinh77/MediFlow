@@ -10,7 +10,7 @@ import { PatientPicker } from "@/features/patient/components/PatientPicker";
 async function loadPatientIdentity(id: string) {
   const patient = await patientApi.getById(id);
   if (patient.daLuuTru) throw new Error("Hồ sơ bệnh nhân đã lưu trữ. Hãy chọn hồ sơ khác.");
-  return patient.soCmnd;
+  return patient.email;
 }
 
 export function AccountCreateWorkspace() {

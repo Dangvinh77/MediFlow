@@ -2,11 +2,14 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('Backend', 'Frontend', 'Clean')][string]$Action,
-    [switch]$Preview
+    [switch]$Preview,
+    [switch]$LocalOnly,
+    [string]$LanAddress
 )
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+. (Join-Path $PSScriptRoot 'Demo-Lan.ps1')
 
 function Require-Command([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -174,6 +177,15 @@ try {
     }
     switch ($Action) {
         'Backend' {
+            if (-not (Test-Path -LiteralPath (Join-Path $repoRoot 'smtp.local.env'))) {
+                throw 'Copy smtp.env.example to smtp.local.env and fill the SMTP configuration before starting the backend.'
+            }
+            . (Join-Path $repoRoot 'scripts\load-smtp-local.ps1')
+            $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$LocalOnly
+            if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
+            if ($env:MEDIFLOW_PUBLIC_WEB_URL -match '^http://(localhost|127\.0\.0\.1)(:3000)?/?$') {
+                $env:MEDIFLOW_PUBLIC_WEB_URL = "http://$($network.Address):3000"
+            }
             Require-Command 'java'
             Require-Command 'mvn'
             Require-Command 'python'
@@ -182,10 +194,17 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Backend build failed. See Maven output above.' }
             Write-Host 'Restoring sample data. Wait for READY; keep this window open.'
             Write-Host 'Gateway: http://127.0.0.1:28080. This disposable demo stops after two hours.'
-            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep
+            Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
+            Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
+            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true"
+            $networkArguments = @()
+            if (-not $LocalOnly) { $networkArguments += '--lan' }
+            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep @networkArguments
             if ($LASTEXITCODE -ne 0) { throw 'Demo startup failed. See scripts/demo_25_10/evidence/snapshot-*/ logs.' }
         }
         'Frontend' {
+            $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$LocalOnly
+            if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
             Require-Command 'node'
             Require-Command 'pnpm'
             $env:GATEWAY_URL = 'http://127.0.0.1:28080'
@@ -198,8 +217,10 @@ try {
             Set-Location (Join-Path $repoRoot 'frontend')
             & pnpm install --frozen-lockfile
             if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
-            Write-Host 'Frontend: http://127.0.0.1:3000. Start backend first and wait for READY.'
-            & pnpm dev --hostname 127.0.0.1 --port 3000
+            Write-Host "Frontend: http://$($network.Address):3000. Start backend first and wait for READY."
+            $bindAddress = '0.0.0.0'
+            if ($LocalOnly) { $bindAddress = '127.0.0.1' }
+            & pnpm dev --hostname $bindAddress --port 3000
             if ($LASTEXITCODE -ne 0) { throw 'Frontend stopped with an error. Check the output above.' }
         }
         'Clean' { Clean-ProjectDocker }

@@ -52,10 +52,10 @@ class VerifyCredentialsServiceTest {
     @Test
     void legacyDefaultPasswordIsRestrictedOnEveryLogin() {
         Account account = account(null, UUID.randomUUID(), true, Role.PATIENT);
-        when(accountRepository.findByUsernameForUpdate("patient.one")).thenReturn(Optional.of(account));
+        when(accountRepository.findByUsernameForUpdate("patient.one@example.test")).thenReturn(Optional.of(account));
         when(passwordHasher.matches("1", account.getPasswordHash())).thenReturn(true);
-        assertEquals(true, service.execute("patient.one", "1").mustChangePassword());
-        assertEquals(true, service.execute("patient.one", "1").mustChangePassword());
+        assertEquals(true, service.execute("patient.one@example.test", "1").mustChangePassword());
+        assertEquals(true, service.execute("patient.one@example.test", "1").mustChangePassword());
         assertEquals(true, account.isMustChangePassword());
     }
 
@@ -73,7 +73,7 @@ class VerifyCredentialsServiceTest {
                 "0901234567",
                 "alex@example.com", "012345678901");
 
-        when(accountRepository.findByUsernameForUpdate("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one@example.test"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("plainpass", account.getPasswordHash()))
                 .thenReturn(true);
@@ -82,7 +82,7 @@ class VerifyCredentialsServiceTest {
         when(accountRepository.save(any(Account.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        VerifiedAccount result = service.execute("doctor.one", "plainpass");
+        VerifiedAccount result = service.execute("Doctor.One@Example.Test", "plainpass");
 
         assertEquals(account.getAccountId(), result.accountId());
         assertEquals(staffId, result.staffId());
@@ -96,14 +96,14 @@ class VerifyCredentialsServiceTest {
     void execute_patientCredentials_returnsNullDepartment() {
         UUID patientId = UUID.randomUUID();
         Account account = account(null, patientId, true, Role.PATIENT);
-        when(accountRepository.findByUsernameForUpdate("patient.one"))
+        when(accountRepository.findByUsernameForUpdate("patient.one@example.test"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("plainpass", account.getPasswordHash()))
                 .thenReturn(true);
         when(accountRepository.save(any(Account.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        VerifiedAccount result = service.execute("patient.one", "plainpass");
+        VerifiedAccount result = service.execute("patient.one@example.test", "plainpass");
 
         assertNull(result.departmentId());
         assertEquals(patientId, result.patientId());
@@ -111,20 +111,20 @@ class VerifyCredentialsServiceTest {
 
     @Test
     void execute_unknownAndWrongPassword_useSameError() {
-        when(accountRepository.findByUsernameForUpdate("unknown"))
+        when(accountRepository.findByUsernameForUpdate("unknown@example.test"))
                 .thenReturn(Optional.empty());
         InvalidCredentialsException unknown = assertThrows(
                 InvalidCredentialsException.class,
-                () -> service.execute("unknown", "plainpass"));
+                () -> service.execute("unknown@example.test", "plainpass"));
 
         Account account = account(UUID.randomUUID(), true);
-        when(accountRepository.findByUsernameForUpdate("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one@example.test"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("wrongpass", account.getPasswordHash()))
                 .thenReturn(false);
         InvalidCredentialsException wrongPassword = assertThrows(
                 InvalidCredentialsException.class,
-                () -> service.execute("doctor.one", "wrongpass"));
+                () -> service.execute("doctor.one@example.test", "wrongpass"));
 
         assertEquals(unknown.getMessage(), wrongPassword.getMessage());
     }
@@ -132,12 +132,12 @@ class VerifyCredentialsServiceTest {
     @Test
     void execute_disabledAccount_usesSameErrorAndDoesNotCheckPassword() {
         Account account = account(UUID.randomUUID(), false);
-        when(accountRepository.findByUsernameForUpdate("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one@example.test"))
                 .thenReturn(Optional.of(account));
 
         InvalidCredentialsException exception = assertThrows(
                 InvalidCredentialsException.class,
-                () -> service.execute("doctor.one", "plainpass"));
+                () -> service.execute("doctor.one@example.test", "plainpass"));
 
         assertEquals("Invalid username or password", exception.getMessage());
         verify(passwordHasher, never()).matches(any(), any());
@@ -146,11 +146,11 @@ class VerifyCredentialsServiceTest {
     @Test
     void execute_systemAccount_isRejectedAsHumanLogin() {
         Account account = account(null, true, Role.SYSTEM);
-        when(accountRepository.findByUsernameForUpdate("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one@example.test"))
                 .thenReturn(Optional.of(account));
 
         assertThrows(InvalidCredentialsException.class,
-                () -> service.execute("doctor.one", "plainpass"));
+                () -> service.execute("doctor.one@example.test", "plainpass"));
         verify(passwordHasher, never()).matches(any(), any());
     }
 
@@ -165,7 +165,7 @@ class VerifyCredentialsServiceTest {
     private Account account(UUID staffId, UUID patientId, boolean active, Role role) {
         return new Account(
                 UUID.randomUUID(),
-                role == Role.PATIENT ? "patient.one" : "doctor.one",
+                role == Role.PATIENT ? "patient.one@example.test" : "doctor.one@example.test",
                 "$2a$10$hashed-value",
                 staffId,
                 patientId,

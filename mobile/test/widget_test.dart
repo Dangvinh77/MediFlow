@@ -75,7 +75,7 @@ void main() {
       );
       await tester.tap(find.byTooltip('Đăng xuất'));
       await tester.pumpAndSettle();
-      expect(find.text('Tên đăng nhập'), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
       expect(auth.saved, isNull);
     },
   );
@@ -94,7 +94,7 @@ void main() {
       expect(find.text('MediFlow'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'Đăng nhập'));
       await tester.pump();
-      expect(find.text('Nhập tên đăng nhập.'), findsOneWidget);
+      expect(find.text('Nhập email đăng nhập.'), findsOneWidget);
       expect(find.text('Nhập mật khẩu.'), findsOneWidget);
       expect(auth.logins, 0);
     },

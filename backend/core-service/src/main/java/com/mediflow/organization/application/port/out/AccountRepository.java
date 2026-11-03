@@ -9,11 +9,15 @@ public interface AccountRepository {
 
     boolean existsByPatientId(UUID patientId);
 
+    boolean existsByStaffId(UUID staffId);
+
     void lockOwner(UUID staffId, UUID patientId);
 
     java.util.List<Account> findActiveByOwner(UUID staffId, UUID patientId);
 
     boolean existsByUsername(String username);
+
+    boolean existsByEmail(String email);
 
     Optional<Account> findById(UUID accountId);
 

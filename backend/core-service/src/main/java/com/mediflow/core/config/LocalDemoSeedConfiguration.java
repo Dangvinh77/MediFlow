@@ -13,6 +13,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -45,6 +47,7 @@ public class LocalDemoSeedConfiguration {
     }
 
     @Bean
+    @Order(Ordered.LOWEST_PRECEDENCE - 1)
     ApplicationRunner localDemoSeedRunner(ObjectMapper mapper, OrganizationDemoSeeder organization,
             PatientDemoSeeder patient) {
         return args -> {

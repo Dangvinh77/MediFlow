@@ -56,6 +56,40 @@ class PatientControllerWebTest {
     @MockBean CreatePatientUseCase createPatient;
     @MockBean UpdatePatientUseCase updatePatient;
     @MockBean DeletePatientUseCase deletePatient;
+    @MockBean com.mediflow.organization.application.port.in.IsPatientAccountLinkedUseCase accountLinks;
+
+    @Test
+    void existingEmailChangesRequireAdminAndLinkedAccountUsesAuditedAccountRoute() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(patients.getById(id)).thenReturn(dto(id));
+        String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"email\":\"corrected@example.com\"}";
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
+                .andExpect(status().isForbidden());
+        when(accountLinks.isLinked(id)).thenReturn(true);
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("Authorization", bearer("access", "ADMIN", UUID.randomUUID().toString())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("PATIENT_EMAIL_LINKED_ACCOUNT"));
+        org.mockito.Mockito.verifyNoInteractions(updatePatient);
+    }
+
+    @Test
+    void nursePreservesEmailAndAdminMayCorrectUnlinkedProfileEmail() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(patients.getById(id)).thenReturn(dto(id));
+        when(updatePatient.update(any(), any())).thenReturn(dto(id));
+        String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"email\":\"%s\"}";
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("a@example.com"))
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("corrected@example.com"))
+                        .header("Authorization", bearer("access", "ADMIN", UUID.randomUUID().toString())))
+                .andExpect(status().isOk());
+        verify(updatePatient, org.mockito.Mockito.times(2)).update(org.mockito.ArgumentMatchers.eq(id), any());
+    }
 
     @Test
     void humanAccessCanReadPatientAndCorrelationIsPreserved() throws Exception {

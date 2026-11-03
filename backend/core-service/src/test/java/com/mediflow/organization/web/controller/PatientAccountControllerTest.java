@@ -2,9 +2,11 @@ package com.mediflow.organization.web.controller;
 import com.mediflow.organization.application.service.ProvisionPatientAccountService;
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
+import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.domain.model.Role;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
+import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -33,17 +35,22 @@ class PatientAccountControllerTest {
 
     @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
     void nurseIssuesOnlyPatientAndReceivesNoPassword() throws Exception {
-        var account = Account.create(UUID.randomUUID(), "012345678901", "hash", null, patient, Role.PATIENT);
+        var account = Account.create(UUID.randomUUID(), "patient@example.test", "hash", null, patient, Role.PATIENT);
         account.requirePasswordChange();
-        when(service.provision(actor, "key", patient)).thenReturn(new CreateAccountUseCase.CreationResult(account, false));
+        var creation = new CreateAccountUseCase.CreationResult(account, false, "Temporary-Only-123!");
+        var delivery = new MailDeliveryDTO(UUID.randomUUID(), MailDeliveryDTO.Status.PENDING);
+        when(service.provisionWithMail(actor, "key", patient))
+                .thenReturn(new ProvisionPatientAccountService.ProvisionedAccount(creation, delivery));
         when(correlation.currentOrCreate()).thenReturn(UUID.randomUUID());
         mvc.perform(post("/api/v1/org/patient-accounts").header("Idempotency-Key", "key")
                 .contentType("application/json").content("{\"patientId\":\"" + patient + "\"}"))
             .andExpect(status().isCreated()).andExpect(header().string("Cache-Control", "no-store"))
-            .andExpect(jsonPath("$.data.username").value("012345678901"))
+            .andExpect(jsonPath("$.data.username").value("patient@example.test"))
             .andExpect(jsonPath("$.data.mustChangePassword").value(true))
             .andExpect(jsonPath("$.data.password").doesNotExist())
-            .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
+            .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
+            .andExpect(jsonPath("$.data.mailDelivery.messageId").value(delivery.messageId().toString()))
+            .andExpect(jsonPath("$.data.mailDelivery.status").value("PENDING"));
     }
 
     @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")

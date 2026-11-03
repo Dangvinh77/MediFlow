@@ -19,7 +19,7 @@ describe("role-aware login landing", () => {
   it("starts without demo credentials", () => {
     localStorage.clear();
     render(<LoginPage />);
-    expect(screen.getByLabelText("Tài khoản")).toHaveValue("");
+    expect(screen.getByLabelText("Email")).toHaveValue("");
     expect(screen.getByLabelText("Mật khẩu")).toHaveValue("");
   });
   it.each([ ["PATIENT", "/notifications"], ["CASHIER", "/billing/payment-requests"], ["LAB_TECH", "/lab"] ] as const)("opens an accessible landing page for %s", async (role, destination) => {
