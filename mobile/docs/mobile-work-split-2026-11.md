@@ -5,6 +5,18 @@ Nguyên tắc chia: mỗi người nhận client của context mình sở hữu 
 **Hoàng Anh: Auth / Tổ chức / Bệnh nhân (Core, Gateway)**,
 **Huy: Dược / Báo cáo / Thu ngân / Lịch**.
 
+## Trạng thái (cập nhật 2026-11-03 tối)
+
+| ID | Trạng thái |
+|---|---|
+| HA-01 | ✅ Code xong — PR #567 (ép đổi mật khẩu theo claim JWT) + xử lý 403 `AUTH_PASSWORD_CHANGE_REQUIRED` giữa phiên. Còn nghiệm thu Gateway thật. |
+| HA-02 | ✅ Code xong — `run_web.ps1 -Demo`, lệnh LAN trong README và lệnh in ra từ `Demo-Launcher.ps1` đã có đủ cờ. |
+| HA-04 | ✅ Code xong — PR #567 (forgot/reset-password). Còn nghiệm thu với mail thật. |
+| HA-06 | ✅ Code xong — PR #567 (`records/mine`, `lab/mine`). Còn nghiệm thu với dữ liệu có kết quả. |
+| HA-09 | Một phần — PR #567 đã build APK debug và chạy Android; còn dọn `.gitkeep`. |
+| HY-02 | Đổi thành **nghiệm thu**: client đã gọi `reports/outpatient/daily`, `/monthly` sẵn. |
+| Còn lại | HA-03, HA-05, HA-07, HA-08, HY-01, HY-03–HY-07 chưa làm. |
+
 ## Quy ước chung
 
 - File dùng chung (`lib/app/dependencies.dart`, `router.dart`, `modules.dart`,
@@ -50,7 +62,7 @@ Nguyên tắc chia: mỗi người nhận client của context mình sở hữu 
 | ID | Việc | Ghi chú |
 |---|---|---|
 | HY-01 | Nghiệm thu Pharmacy Task 12 (MP-HUY-12) | Qua Gateway thật: kê đơn → thu tiền → xuất thuốc; kho chỉ bị trừ một lần; chặn xuất khi chưa thanh toán. Cần HA-02. Đóng H-05, H-06. |
-| HY-02 | Báo cáo ngoại trú | Kiểm tra màn Báo cáo; bổ sung `/v1/reports/outpatient/daily|monthly` nếu còn thiếu. |
+| HY-02 | Nghiệm thu báo cáo ngoại trú | Client đã có `/v1/reports/outpatient/daily`, `/monthly`; chỉ cần chạy qua Gateway thật với MANAGER/ADMIN và đối chiếu số liệu. |
 
 ### Giai đoạn 2
 

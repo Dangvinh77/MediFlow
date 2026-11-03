@@ -10,6 +10,7 @@ final workspaceAccessProvider = Provider<WorkspaceAccess?>((ref) => null);
 class ApiSession {
   String? accessToken;
   void Function(String)? onUnauthorized;
+  void Function(String)? onPasswordChangeRequired;
 }
 
 final apiSessionProvider = Provider((ref) => ApiSession());
@@ -20,6 +21,8 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     ref.watch(appConfigProvider),
     token: () => session.accessToken,
     onUnauthorized: (token) => session.onUnauthorized?.call(token),
+    onPasswordChangeRequired: (token) =>
+        session.onPasswordChangeRequired?.call(token),
   );
   ref.onDispose(client.close);
   return client;
