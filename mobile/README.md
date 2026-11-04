@@ -56,7 +56,7 @@ vẫn cần phạm vi coverage hợp lệ và được chọn riêng trong loạ
 
 - Android cần SDK và licenses (`flutter doctor --android-licenses`). Debug cho phép HTTP local; release dùng HTTPS. Signing scaffold hiện phục vụ phát triển, cần cấu hình riêng trước phát hành.
 - Điện thoại thật dùng địa chỉ Gateway truy cập được. HTTP LAN cần `--dart-define=ALLOW_INSECURE_HTTP=true` và vẫn chịu chính sách nền tảng; nên dùng HTTPS.
-- iOS cần macOS/Xcode. Bản Debug dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release/Profile dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
+- iOS cần macOS/Xcode. Bản Debug và Profile dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
 - Windows native cần Visual Studio Desktop development with C++, MSVC và CMake.
 - Web chạy trực tiếp bằng flutter run cần Gateway cho phép browser origin. Script proxy giải quyết cho local. SecureStorage web cần HTTPS hoặc localhost; đổi port là đổi browser origin.
 
@@ -93,8 +93,9 @@ Cũng có thể vào **Actions → Mobile iOS unsigned IPA → Run workflow** đ
   `MOBILE_GATEWAY_URL`; nếu chưa đặt variable thì dùng `http://192.168.1.3:28080/api`.
   Đặt variable tại **Settings → Secrets and variables → Actions → Variables**. URL này
   được đóng gói vào app; IP backend đổi thì phải build lại. Không dùng localhost/cổng service.
-- `build_mode`: mặc định `debug`, dùng plist cho phép HTTP LAN và có mô tả quyền Local Network.
-  `release` yêu cầu Gateway HTTPS; workflow chặn Release với HTTP để tránh artifact không kết nối được.
+- `build_mode`: mặc định `profile`, mở được từ màn hình chính iPhone, dùng plist cho phép HTTP LAN
+  và có mô tả quyền Local Network. `debug` cũng dùng plist đó nhưng từ iOS 14 chỉ khởi động được
+  bằng Flutter tooling hoặc Xcode, mở từ icon sẽ báo lỗi. `release` yêu cầu Gateway HTTPS; workflow chặn Release với HTTP để tránh artifact không kết nối được.
 - Sau khi thành công, tải artifact `mediflow-ios-unsigned-<mode>-<run>` ở cuối trang run.
   Bên trong có `mediflow-unsigned.ipa`, checksum SHA-256, `build-info.json` và hướng dẫn.
   Artifact được giữ 14 ngày. Các feature gate ngoại trú/Report và Pharmacy outpatient đã bật.
@@ -104,7 +105,7 @@ Workflow chạy mobile tests, build `flutter build ios --no-codesign`, rồi đ�
 IPA tự động: Flutter bỏ qua bước export IPA khi tắt ký.
 
 **IPA này chưa ký, chưa cài trực tiếp lên iPhone và chưa đưa lên TestFlight được.**
-Muốn cài cần bước ký ứng dụng và provisioning profile phù hợp. Bản Debug chưa ký cũng
+Muốn cài cần bước ký ứng dụng và provisioning profile phù hợp. Bản Debug/Profile chưa ký cũng
 không phải bản phát hành; workflow chưa cấu hình Apple signing hoặc upload App Store.
 Runner GitHub không cần kết nối tới IP LAN để biên dịch; backend chỉ cần truy cập được
 khi chạy app trên điện thoại cùng mạng. iOS runtime vẫn cần người dùng cấp Local Network.

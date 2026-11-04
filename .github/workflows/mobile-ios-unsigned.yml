@@ -14,10 +14,10 @@ on:
         type: string
         default: ''
       build_mode:
-        description: 'Debug supports LAN HTTP; Release requires HTTPS. Both outputs are unsigned.'
+        description: 'Profile opens from the home screen and supports LAN HTTP; Debug needs Flutter tooling or Xcode to launch; Release requires HTTPS. All outputs are unsigned.'
         type: choice
-        options: [debug, release]
-        default: debug
+        options: [profile, debug, release]
+        default: profile
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 45
     env:
       GATEWAY_URL: ${{ inputs.gateway_url || vars.MOBILE_GATEWAY_URL || 'http://192.168.1.3:28080/api' }}
-      BUILD_MODE: ${{ inputs.build_mode || 'debug' }}
+      BUILD_MODE: ${{ inputs.build_mode || 'profile' }}
     defaults:
       run:
         shell: bash
@@ -48,7 +48,7 @@ jobs:
 
           url = urlsplit(os.environ['GATEWAY_URL'])
           mode = os.environ['BUILD_MODE']
-          if (mode not in ('debug', 'release') or url.scheme not in ('http', 'https')
+          if (mode not in ('profile', 'debug', 'release') or url.scheme not in ('http', 'https')
               or not url.hostname or url.username is not None or url.password is not None
               or url.query or url.fragment or url.path not in ('/api', '/api/')
               or url.port in (*range(8081, 8092), 8761)):
@@ -109,7 +109,7 @@ jobs:
               'UNSIGNED IPA: cannot be installed directly on iPhone or uploaded to TestFlight.\n'
               'Apple signing and a matching provisioning profile are still required.\n'
               'The Gateway URL is compiled into this app; rebuild when the backend IP changes.\n'
-              'Debug supports LAN HTTP after granting Local Network permission; Release requires HTTPS.\n')
+              'Profile opens from the home screen and supports LAN HTTP after granting Local Network permission. Debug only launches from Flutter tooling or Xcode; Release requires HTTPS.\n')
           PY
           shasum -a 256 mediflow-unsigned.ipa > SHA256SUMS.txt
           cat README.txt >> "$GITHUB_STEP_SUMMARY"
