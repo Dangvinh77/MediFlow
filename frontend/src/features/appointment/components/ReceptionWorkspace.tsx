@@ -71,6 +71,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   const registrationReads = useRef(0);
   const selectionGeneration = useRef(0);
   const alive = useRef(true);
+  const patientField = useRef<HTMLInputElement>(null);
   const writeLock = useRef(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,7 +178,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   async function submitRegistration(body: RegistrationCreate) {
-    if (!enabled || !selectedSession || body.sessionId !== selectedSession.sessionId || writeLock.current || needsRefresh) return;
+    if (!enabled || !selectedSession || body.sessionId !== selectedSession.sessionId || writeLock.current || needsRefresh || createdRegistration) return;
     writeLock.current = true;
     const scope = listGeneration.current;
     const selection = selectionGeneration.current;
@@ -263,6 +264,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
   }
 
   function register() {
+    if (createdRegistration) return;
     if (!patientId.trim()) { setCreateError({ message: "Chọn bệnh nhân trước khi đăng ký.", correlationId: null }); return; }
     if (!selectedSession || selectedSession.status !== "OPEN" || selectedSession.availableCount < 1) return;
     const hasFollowUpRecommendation = visitType === "FOLLOW_UP" && Boolean(selectedFollowUpSource?.recommendation) && useFollowUpRecommendation;
@@ -305,6 +307,26 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
     setDepartmentId(value); setSessionsLoaded(false); setLoading(false); setSessions([]); setSessionPage(0); setSessionPages(0); setSelectedSession(null); setRegistrationList(null); setRegistrationPage(0); setRegistrationPages(0); setLoadError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
   }
 
+  function changePatient(value: string) {
+    followUpSourceGeneration.current++;
+    setCreatedRegistration(null); setLastCreateBody(null);
+    setPatientId(value); setCreateError(null); setFollowUpSources(null);
+    setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
+    setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
+  }
+
+  function nextPatient() {
+    if (writeLock.current || needsRefresh || !createdRegistration) return;
+    changePatient("");
+    setVisitType("NEW_VISIT"); setReceptionMode("AT_COUNTER"); setUseFollowUpRecommendation(true);
+    window.setTimeout(() => {
+      if (alive.current) {
+        patientField.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+        patientField.current?.focus();
+      }
+    }, 0);
+  }
+
   if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tính năng tiếp nhận theo lịch khám V2 chưa được mở.</p>;
 
   const submitBody = createError?.uncertain && lastCreateBody ? lastCreateBody : null;
@@ -318,28 +340,36 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       || selectedSession!.sessionDate > selectedRecommendation!.recommendedThrough);
 
   return <div className="space-y-6">
-    <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-3">
-      <Link href="/patients" className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 text-sm font-medium">Tìm hồ sơ bệnh nhân</Link>
-      <Link href="/patients/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">Tạo hồ sơ bệnh nhân</Link>
-    </nav>
+    <section aria-label="Bệnh nhân đăng ký khám" className="space-y-3 rounded-xl border border-border bg-surface p-5">
+      <h2 className="text-lg font-semibold">1. Bệnh nhân</h2>
+      <ReferenceInput ref={patientField} kind="patient" value={patientId} onValueChange={changePatient} aria-label="Bệnh nhân" disabled={creating || Boolean(createError?.uncertain) || Boolean(createdRegistration)} />
+      {patientId ? <p className="text-sm"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p> : null}
+      <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-3 text-sm">
+        {patientId ? <Link href={`/patients/${encodeURIComponent(patientId)}`} className="inline-flex min-h-11 items-center text-primary underline">Xem hồ sơ bệnh nhân</Link> : null}
+        <Link href="/patients/new" className="inline-flex min-h-11 items-center text-primary underline">Tạo hồ sơ bệnh nhân</Link>
+        <Link href="/patients" className="inline-flex min-h-11 items-center text-primary underline">Tìm hồ sơ bệnh nhân</Link>
+      </nav>
+    </section>
     <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">Chọn buổi khám</h2>
-      <Button type="button" variant="secondary" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
+      <h2 className="text-lg font-semibold">2. Chọn buổi khám</h2>
+      {fromDate !== vietnamToday() || toDate !== vietnamToday() ? <Button type="button" variant="secondary" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
         const today = vietnamToday(); setFromDate(today); setToDate(today);
         void loadSessions(0, { fromDate: today, toDate: today });
-      }}>Tiếp nhận hôm nay</Button>
-      <p className="mt-2 text-sm text-muted-foreground">Khoa và cả hai ngày là bắt buộc. Ngày mặc định là hôm nay theo giờ Việt Nam; định dạng ô ngày theo trình duyệt.</p>
+      }}>Tiếp nhận hôm nay</Button> : null}
+      <p className="mt-2 text-sm text-muted-foreground">Mặc định xem lịch hôm nay. Chọn khoa rồi tải các buổi còn chỗ.</p>
       <form noValidate className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
         <label className="space-y-1 text-sm font-medium">Khoa
           <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" disabled={creating || Boolean(createError?.uncertain)} />
         </label>
+        <details open={Object.keys(dateErrors).length ? true : undefined} className="sm:col-span-2"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Chọn ngày khác · {formatLocalDate(fromDate)} – {formatLocalDate(toDate)}</summary><div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-from-date">Từ ngày
           <input id="reception-from-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}
         </label>
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-to-date">Đến ngày
           <input id="reception-to-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}
         </label>
-        <div className="flex items-end"><Button type="submit" loading={loading} disabled={creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
+        </div></details>
+        <div className="flex items-end"><Button type="submit" loading={loading} disabled={!departmentId || creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
       </form>
       {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
       {!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch.</p> : null}
@@ -362,14 +392,8 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         <Button type="button" variant="secondary" disabled={creating || needsRefresh || Boolean(createError?.uncertain)} loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải phiếu trong buổi</Button>
       </div>
 
-      <form className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); if (submitBody) void submitRegistration(submitBody); else register(); }}>
-        <label className="space-y-1 text-sm font-medium">Bệnh nhân
-          <ReferenceInput kind="patient" value={patientId} onValueChange={value => {
-            followUpSourceGeneration.current++;
-            setCreatedRegistration(null);
-            setPatientId(value); setCreateError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
-          }} aria-label="Bệnh nhân" disabled={creating || Boolean(createError?.uncertain)} />
-        </label>
+      <form className="border-t border-border pt-4" onSubmit={event => { event.preventDefault(); if (submitBody) void submitRegistration(submitBody); else register(); }}>
+        <fieldset disabled={Boolean(createdRegistration)} className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-medium" htmlFor="reception-visit-type">Loại lượt khám
           <select id="reception-visit-type" value={visitType} onChange={event => {
             followUpSourceGeneration.current++;
@@ -381,11 +405,11 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
             <option value="NEW_VISIT">Khám đợt mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
           </select>
         </label>
-        <label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
+        <details><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">{receptionMode === "AT_COUNTER" ? "Có mặt tại quầy · Đổi hình thức" : "Đăng ký trước · Đổi hình thức"}</summary><label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
           <select id="reception-mode" value={receptionMode} onChange={event => setReceptionMode(event.target.value as "AT_COUNTER" | "PREBOOKED")} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
             <option value="AT_COUNTER">Đang có mặt tại quầy</option><option value="PREBOOKED">Đăng ký trước, sẽ đến sau</option>
           </select>
-        </label>
+        </label></details>
         {visitType === "FOLLOW_UP" ? <section className="space-y-3 rounded-lg border border-border p-4 sm:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><h3 className="font-semibold">Lượt khám trước</h3><p className="text-sm text-muted-foreground">Chỉ chọn lượt khám theo lịch đã hoàn tất của cùng bệnh nhân và khoa.</p></div>
@@ -426,11 +450,13 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
           <p>{createError.message}</p>{createError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{createError.correlationId}</span></p> : null}
           {createError.uncertain ? <p className="mt-2">Chưa xác định phiếu đã được tạo hay chưa. Hãy gửi lại đúng yêu cầu để dùng cùng khóa idempotency.</p> : null}
         </div> : null}
-        <div className="sm:col-span-2"><Button type="submit" loading={creating} disabled={needsRefresh}>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</Button><p className="mt-2 text-xs text-muted-foreground">Tái khám liên kết lượt đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối.</p></div>
+        <div className="sm:col-span-2"><Button type="submit" loading={creating} disabled={needsRefresh || Boolean(createdRegistration) || !patientId.trim()}>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</Button>{visitType === "FOLLOW_UP" ? <p className="mt-2 text-xs text-muted-foreground">Tái khám liên kết lượt đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối.</p> : null}</div>
+        </fieldset>
       </form>
 
       {createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
         <p role="status" className="font-semibold">{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : registrationStatusLabels[createdRegistration.status]}</p>
+        <Button type="button" disabled={needsRefresh || creating} onClick={nextPatient}>Tiếp nhận bệnh nhân tiếp theo</Button>
         <p className="mt-2">Chuyển bệnh nhân sang quầy thu ngân trước hạn giữ chỗ. Có thể bàn giao mã phiếu dưới đây để tra cứu đúng lượt.</p>
         <label className="mt-3 block space-y-1" htmlFor="reception-handoff-id">Mã phiếu bàn giao thu ngân
           <input id="reception-handoff-id" readOnly value={createdRegistration.registrationId} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" />

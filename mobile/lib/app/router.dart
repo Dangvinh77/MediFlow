@@ -7,10 +7,13 @@ import '../features/auth/presentation/account_recovery_page.dart';
 import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/appointment/presentation/appointment_page.dart';
+import '../features/appointment/presentation/reception_page.dart';
 import '../features/lab/presentation/lab_page.dart';
 import '../features/lab/presentation/my_lab_results_page.dart';
 import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/organization/presentation/organization_page.dart';
+import '../features/organization/domain/profile_account.dart';
+import '../features/organization/presentation/profile_account_panel.dart';
 import '../features/patient/presentation/patient_page.dart';
 import '../features/medical_record/presentation/medical_record_page.dart';
 import '../features/pharmacy/presentation/pharmacy_page.dart';
@@ -32,6 +35,25 @@ class _RouterRefresh extends ChangeNotifier {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefresh();
   ref.listen(sessionProvider, (_, _) => refresh.refresh());
+  Widget patientWorkspace(
+    BuildContext context, {
+    String? patientId,
+    bool create = false,
+  }) => PatientPage(
+    initialPatientId: patientId,
+    initiallyCreate: create,
+    accountPanelBuilder: (_, patient, access) => ProfileAccountPanel(
+      owner: ProfileAccountOwner.patient(
+        id: patient.id,
+        active: !patient.archived,
+      ),
+      access: access,
+      profileEmail: patient.email,
+    ),
+    onRegisterPatient: ref.read(outpatientUiEnabledProvider)
+        ? (id) => context.go('/appointments/reception?patientId=$id')
+        : null,
+  );
   final router = GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -49,6 +71,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/account/password';
       }
       if (publicAuth) return '/';
+      if ((path == '/appointments/reception' || path == '/patients/new') &&
+          ![UserRole.admin, UserRole.nurse].contains(session.role))
+        return '/forbidden';
       final module = modules.where((m) => m.matches(path)).firstOrNull;
       if (module != null && !module.allows(session.role)) return '/forbidden';
       if (path == '/pharmacy/drugs/new' ||
@@ -98,16 +123,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/appointments',
             builder: (context, _) => AppointmentPage(
+              onReception: () => context.go('/appointments/reception'),
               onOpenRecord: (patientId, visitId) {
                 Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => MedicalRecordForVisitPage(
                       patientId: patientId,
                       visitId: visitId,
+                      prescriptionWorkspaceBuilder:
+                          (context, record, {required canCreate}) =>
+                              RecordPrescriptionPanel(
+                                recordId: record.id,
+                                patientId: record.patientId,
+                                canCreate: canCreate,
+                              ),
                     ),
                   ),
                 );
               },
+            ),
+          ),
+          GoRoute(
+            path: '/appointments/reception',
+            builder: (context, state) => ReceptionPage(
+              initialPatientId: state.uri.queryParameters['patientId'],
+              onCreatePatient: () => context.go('/patients/new'),
+              onOpenPatient: (id) => context.go('/patients/$id'),
             ),
           ),
           GoRoute(path: '/lab', builder: (_, _) => const LabPage()),
@@ -123,10 +164,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/organization',
             builder: (_, _) => const OrganizationPage(),
           ),
-          GoRoute(path: '/patients', builder: (_, _) => const PatientPage()),
+          GoRoute(
+            path: '/patients',
+            builder: (context, _) => patientWorkspace(context),
+          ),
+          GoRoute(
+            path: '/patients/new',
+            builder: (context, _) => patientWorkspace(context, create: true),
+          ),
+          GoRoute(
+            path: '/patients/:id',
+            builder: (context, state) => patientWorkspace(
+              context,
+              patientId: state.pathParameters['id'],
+            ),
+          ),
           GoRoute(
             path: '/records',
-            builder: (_, _) => const MedicalRecordPage(),
+            builder: (_, _) => MedicalRecordPage(
+              prescriptionWorkspaceBuilder:
+                  (context, record, {required canCreate}) =>
+                      RecordPrescriptionPanel(
+                        recordId: record.id,
+                        patientId: record.patientId,
+                        canCreate: canCreate,
+                      ),
+            ),
           ),
           GoRoute(
             path: '/pharmacy',

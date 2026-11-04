@@ -15,7 +15,7 @@ import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
 import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import { getPharmacyCapabilities } from "../../permissions";
-import type { DrugDTO, PrescribingContextDTO } from "../../types";
+import type { DrugDTO, PrescriptionDTO, PrescribingContextDTO } from "../../types";
 import { getLocalTodayIso, isUuid } from "../../utils";
 import {
   createPrescriptionLine,
@@ -89,17 +89,20 @@ interface CreatePrescriptionFormProps {
   mode?: "outpatient" | "legacy";
   initialPatientId?: string;
   initialRecordId?: string;
+  sourceRecordId?: string;
+  onCreated?: (prescription: PrescriptionDTO) => void;
 }
 
-export function CreatePrescriptionForm({ mode = "outpatient", initialPatientId, initialRecordId }: CreatePrescriptionFormProps) {
+export function CreatePrescriptionForm({ mode = "outpatient", initialPatientId, initialRecordId, sourceRecordId, onCreated }: CreatePrescriptionFormProps) {
   const actorToken = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
-  const patientId = mode === "outpatient" && isUuid(initialPatientId ?? "") && isUuid(initialRecordId ?? "") ? initialPatientId! : "";
-  const recordId = patientId ? initialRecordId! : "";
+  const lockedSourceRecordId = mode === "outpatient" && isUuid(sourceRecordId ?? "") ? sourceRecordId! : "";
+  const patientId = !lockedSourceRecordId && mode === "outpatient" && isUuid(initialPatientId ?? "") && isUuid(initialRecordId ?? "") ? initialPatientId! : "";
+  const recordId = lockedSourceRecordId || (patientId ? initialRecordId! : "");
   // A different session or deployment mode starts a fresh draft and command.
-  return <PharmacySessionBoundary><PrescriptionForm key={`${mode}:${actorToken}:${patientId}:${recordId}`} mode={mode} actorToken={actorToken} initialPatientId={patientId} initialRecordId={recordId} /></PharmacySessionBoundary>;
+  return <PharmacySessionBoundary><PrescriptionForm key={`${mode}:${actorToken}:${patientId}:${recordId}`} mode={mode} actorToken={actorToken} initialPatientId={patientId} initialRecordId={recordId} sourceRecordId={lockedSourceRecordId} onCreated={onCreated} /></PharmacySessionBoundary>;
 }
 
-function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId }: { mode: "outpatient" | "legacy"; actorToken: string | null; initialPatientId: string; initialRecordId: string }) {
+function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId, sourceRecordId, onCreated }: { mode: "outpatient" | "legacy"; actorToken: string | null; initialPatientId: string; initialRecordId: string; sourceRecordId: string; onCreated?: (prescription: PrescriptionDTO) => void }) {
   const router = useRouter();
   const directory = useReferenceDirectory();
   const role = useSyncExternalStore(
@@ -114,6 +117,7 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
   const [uncertain, setUncertain] = useState(false);
   const completed = useRef(false);
   const [created, setCreated] = useState(false);
+  const [createdPrescription, setCreatedPrescription] = useState<PrescriptionDTO | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -169,19 +173,22 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
     const patientId = values.patientId;
     pharmacyApi.getPrescribingContext(recordId).then(data => {
       if (!current || getSessionKey() !== actorToken) return;
-      if (data.recordId !== recordId || data.patientId !== patientId || data.careEpisodeType !== "OUTPATIENT_VISIT" || !data.priceCodes.length) {
-        throw new Error("Hồ sơ chưa có đủ thông tin kê đơn hoặc không thuộc bệnh nhân đã chọn.");
+      const patientMatches = sourceRecordId ? isUuid(data.patientId) : data.patientId === patientId;
+      if (data.recordId !== recordId || !patientMatches || data.careEpisodeType !== "OUTPATIENT_VISIT" || !data.priceCodes.length) {
+        throw new Error(sourceRecordId
+          ? "Thông tin kê đơn do máy chủ trả về không khớp hồ sơ nguồn. Chưa thể tạo đơn thuốc từ hồ sơ này."
+          : "Hồ sơ chưa có đủ thông tin kê đơn hoặc không thuộc bệnh nhân đã chọn.");
       }
       setContextResult({ recordId, data });
-      setValues(previous => previous.recordId === recordId && previous.patientId === patientId ? {
-        ...previous, doctorId: data.doctorId, departmentId: data.departmentId, careEpisodeId: data.careEpisodeId,
+      setValues(previous => previous.recordId === recordId && (sourceRecordId || previous.patientId === patientId) ? {
+        ...previous, patientId: data.patientId, doctorId: data.doctorId, departmentId: data.departmentId, careEpisodeId: data.careEpisodeId,
         priceCode: data.priceCodes.length === 1 ? data.priceCodes[0] : "",
       } : previous);
     }).catch((cause: unknown) => {
-      if (current && getSessionKey() === actorToken) setContextResult({ recordId, error: apiErrorMessage(cause, "Chưa lấy được thông tin từ hồ sơ khám. Hãy thử lại.") });
+      if (current && getSessionKey() === actorToken) setContextResult({ recordId, error: cause instanceof Error && !(cause instanceof ApiRequestError) ? cause.message : apiErrorMessage(cause, "Chưa lấy được thông tin từ hồ sơ khám. Hãy thử lại.") });
     });
     return () => { current = false; };
-  }, [mode, values.recordId, values.patientId, contextRetry, actorToken, capabilities.canCreatePrescription]);
+  }, [mode, values.recordId, sourceRecordId ? "" : values.patientId, contextRetry, actorToken, capabilities.canCreatePrescription]);
 
   useEffect(() => {
     active.current = true;
@@ -342,7 +349,9 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
       setUncertain(false);
       completed.current = true;
       setCreated(true);
-      router.replace(`/pharmacy/prescriptions/${created.prescriptionId}`);
+      onCreated?.(created);
+      if (sourceRecordId) setCreatedPrescription(created);
+      else router.replace(`/pharmacy/prescriptions/${created.prescriptionId}`);
     } catch (cause: unknown) {
       if (!active.current || getSessionKey() !== actorToken) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
@@ -414,16 +423,16 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
         <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chọn bệnh nhân, hồ sơ khám và bác sĩ phụ trách. Kiểm tra thông tin trước khi kê thuốc.
+          {sourceRecordId ? "Hệ thống xác minh bệnh nhân, hồ sơ khám, bác sĩ và lượt khám từ hồ sơ nguồn." : "Chọn bệnh nhân, hồ sơ khám và bác sĩ phụ trách. Kiểm tra thông tin trước khi kê thuốc."}
         </p>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <Field label="Bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
+          {!sourceRecordId ? <Field label="Bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
             <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="Tìm bệnh nhân theo tên" />
             {!directory && <PharmacyIdentity kind="patient" id={values.patientId.trim()} />}
-          </Field>
-          <Field label="Hồ sơ khám" htmlFor="recordId" error={validationErrors.fields.recordId} required>
+          </Field> : <div><p className="text-sm font-medium">Bệnh nhân</p>{isUuid(values.patientId) ? <PharmacyIdentity kind="patient" id={values.patientId} /> : <p className="mt-2 text-sm text-muted-foreground">Đang lấy từ hồ sơ nguồn…</p>}</div>}
+          {!sourceRecordId ? <Field label="Hồ sơ khám" htmlFor="recordId" error={validationErrors.fields.recordId} required>
             <PrescriptionRecordPicker patientId={values.patientId} id="recordId" {...field("recordId")} value={values.recordId} onValueChange={(id) => updateField("recordId", id)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} />
-          </Field>
+          </Field> : <div><p className="text-sm font-medium">Hồ sơ khám</p><p className="mt-2 text-sm text-muted-foreground">Đã khóa theo hồ sơ hiện tại</p></div>}
           {mode === "legacy" && <>
           <Field label="Bác sĩ kê đơn" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
             <ReferenceInput kind="doctor" id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="Tìm bác sĩ theo tên" />
@@ -480,6 +489,11 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
       />
 
       <div className="flex flex-wrap items-center gap-3">
+        {createdPrescription && <div role="status" aria-label="Đã tạo đơn thuốc" className="w-full rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          <p className="font-semibold">Đã tạo đơn thuốc từ hồ sơ này.</p>
+          <p className="mt-1">Mã đơn: <span className="font-mono">{createdPrescription.prescriptionId}</span></p>
+          <Link className="mt-2 inline-flex min-h-10 items-center font-medium underline underline-offset-4" href={`/pharmacy/prescriptions/${createdPrescription.prescriptionId}`}>Mở chi tiết đơn thuốc</Link>
+        </div>}
         <Button
           type="submit"
           loading={submitting}
@@ -488,7 +502,7 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId 
         >
           {created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}
         </Button>
-        {uncertain && <Button type="button" disabled={submitting} onClick={() => {
+        {uncertain && !sourceRecordId && <Button type="button" disabled={submitting} onClick={() => {
           focusTarget.current = "patientId";
           intent.current = null; setUncertain(false); setValues(createEmptyOutpatientPrescriptionForm());
           setValidationErrors({ fields: {}, lines: {} }); setFormError(null);

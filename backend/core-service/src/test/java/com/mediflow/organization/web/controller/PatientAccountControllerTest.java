@@ -3,10 +3,10 @@ import com.mediflow.organization.application.service.ProvisionPatientAccountServ
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
+import com.mediflow.organization.application.service.SecurityAccountOperationsService;
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.domain.model.Role;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
-import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,11 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PatientAccountControllerTest {
     @Autowired MockMvc mvc;
     @MockBean ProvisionPatientAccountService service;
+    @MockBean SecurityAccountOperationsService securityOperations;
     @MockBean CorrelationIdProvider correlation;
     final UUID actor = UUID.fromString("00000000-0000-4000-8000-000000000002");
     final UUID patient = UUID.fromString("00000000-0000-4000-8000-000000000001");
+    final UUID correlationId = UUID.fromString("00000000-0000-4000-8000-000000000003");
     @org.junit.jupiter.api.BeforeEach void setUp() {
-        when(correlation.currentOrCreate()).thenReturn(UUID.randomUUID());
+        when(correlation.currentOrCreate()).thenReturn(correlationId);
     }
 
     @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
@@ -69,5 +71,77 @@ class PatientAccountControllerTest {
                 .contentType("application/json").content("{\"patientId\":\"" + patient + "\"}"))
             .andExpect(status().isForbidden());
         verifyNoInteractions(service);
+    }
+
+    @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
+    void nurseCanResetPatientPasswordByPatientIdWithoutReturningSecrets() throws Exception {
+        UUID messageId = UUID.fromString("00000000-0000-4000-8000-000000000004");
+        when(securityOperations.resetPatientPassword(actor, patient, "reset-key", correlationId))
+                .thenReturn(new MailDeliveryDTO(messageId, MailDeliveryDTO.Status.PENDING));
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v1/org/patient-accounts/{patientId}/password", patient)
+                        .header("Idempotency-Key", "reset-key")
+                        .contentType("application/json").content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.messageId").value(messageId.toString()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.password").doesNotExist())
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
+                .andExpect(jsonPath("$.data.textBody").doesNotExist())
+                .andExpect(jsonPath("$.data.htmlBody").doesNotExist());
+
+        verify(securityOperations).resetPatientPassword(actor, patient, "reset-key", correlationId);
+    }
+
+    @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
+    void nurseCanReadAndRetryPatientMailMetadataByPatientId() throws Exception {
+        UUID messageId = UUID.fromString("00000000-0000-4000-8000-000000000004");
+        var delivery = new MailDeliveryDTO(messageId, MailDeliveryDTO.Status.FAILED);
+        when(securityOperations.latestPatientDelivery(patient)).thenReturn(delivery);
+        when(securityOperations.retryPatientDelivery(actor, patient, messageId, correlationId))
+                .thenReturn(new MailDeliveryDTO(messageId, MailDeliveryDTO.Status.PENDING));
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/v1/org/patient-accounts/{patientId}/mail-delivery", patient))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.messageId").value(messageId.toString()))
+                .andExpect(jsonPath("$.data.status").value("FAILED"))
+                .andExpect(jsonPath("$.data.textBody").doesNotExist());
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/org/patient-accounts/{patientId}/mail-delivery/{messageId}/retry", patient, messageId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messageId").value(messageId.toString()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.htmlBody").doesNotExist());
+
+        verify(securityOperations).latestPatientDelivery(patient);
+        verify(securityOperations).retryPatientDelivery(actor, patient, messageId, correlationId);
+    }
+
+    @Test @WithMockUser(roles="DOCTOR")
+    void nonNurseCannotResetOrInspectPatientMailThroughScopedRoutes() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v1/org/patient-accounts/{patientId}/password", patient)
+                        .header("Idempotency-Key", "reset-key")
+                        .contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/v1/org/patient-accounts/{patientId}/mail-delivery", patient))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(securityOperations);
+    }
+
+    @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
+    void resetRejectsAnyCallerSuppliedCredentialData() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v1/org/patient-accounts/{patientId}/password", patient)
+                        .header("Idempotency-Key", "reset-key")
+                        .contentType("application/json").content("{\"newPassword\":\"guessable\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(securityOperations);
     }
 }

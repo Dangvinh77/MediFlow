@@ -166,13 +166,35 @@ describe("Medical record detail identity and permissions", () => {
     await screen.findByText("First record");
 
     fireEvent.click(screen.getByText("Tác vụ khác"));
-    if (role === "DOCTOR") expect(screen.getByRole("link", { name: "Kê đơn cho lượt khám" })).toHaveAttribute("href", "/pharmacy/prescriptions/new?patientId=patient-a&recordId=record-a");
-    else expect(screen.queryByRole("link", { name: "Kê đơn cho lượt khám" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Kê đơn cho lượt khám" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lập chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
     expect(screen.getByRole("link", { name: "Xem phiếu xét nghiệm" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
     expect(screen.getByLabelText("Ghi chú xử trí")).not.toBeVisible();
     fireEvent.click(screen.getByText("Hoàn tất lần khám"));
     expect(screen.getByLabelText("Ghi chú xử trí")).toBeVisible();
+  });
+
+  it("renders the embedded doctor prescription workspace before completion only for an open outpatient record", async () => {
+    const appointmentRecord = { ...record, appointmentId: "appointment-a" };
+    mocks.getById.mockResolvedValue(appointmentRecord);
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled prescriptionWorkspace={<div>Embedded prescription workspace</div>} />);
+    const workspace = await screen.findByText("Embedded prescription workspace");
+    expect(workspace).toBeVisible();
+    expect(workspace.compareDocumentPosition(screen.getByText("Hoàn tất lần khám")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("gives the embedded doctor workspace no create permission for a COMPLETED record", async () => {
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a", status: "COMPLETED" });
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled prescriptionWorkspace={(_record, canCreate) => <div>Embedded prescription workspace · {canCreate ? "can-create" : "read-only"}</div>} />);
+    expect(await screen.findByText(/read-only/)).toBeVisible();
+  });
+
+  it("does not render the prescription workspace for a NURSE", async () => {
+    mocks.role = "NURSE";
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a" });
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled prescriptionWorkspace={<div>Embedded prescription workspace</div>} />);
+    await screen.findByText("First record");
+    expect(screen.queryByText("Embedded prescription workspace")).not.toBeInTheDocument();
   });
 
   it("does not expose outpatient commands to nurses or to a record without an appointment", async () => {

@@ -6,7 +6,9 @@ import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/organization.dart';
+import '../domain/profile_account.dart';
 import 'access_boundary.dart';
+import 'profile_account_panel.dart';
 
 class DepartmentDetailPage extends StatelessWidget {
   const DepartmentDetailPage({super.key, required this.departmentId});
@@ -484,6 +486,22 @@ class _StaffDetailState extends State<_StaffDetail> {
           OrganizationField('Số chứng chỉ', staff.licenseNumber),
           OrganizationField('Điện thoại', staff.phoneNumber),
           OrganizationField('Email', staff.email),
+          if (widget.access.role == 'ADMIN')
+            ProfileAccountPanel(
+              key: ValueKey((
+                'staff-account',
+                widget.access.sessionIdentity,
+                staff.id,
+              )),
+              owner: ProfileAccountOwner.staff(
+                id: staff.id,
+                jobTitle: staff.jobTitle,
+                active: staff.active,
+              ),
+              access: widget.access,
+              profileEmail: staff.email,
+              onChanged: _load,
+            ),
           OrganizationField(
             'Trạng thái',
             staff.active ? 'Đang làm việc' : 'Ngừng hoạt động',

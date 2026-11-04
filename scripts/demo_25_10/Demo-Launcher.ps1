@@ -1,10 +1,14 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Backend', 'Frontend', 'Clean')][string]$Action,
+    [ValidateSet('Backend', 'Frontend', 'Clean', 'Stop')][string]$Action,
     [switch]$Preview,
     [switch]$LocalOnly,
-    [string]$LanAddress
+    [string]$LanAddress,
+    [switch]$Fast,
+    [switch]$Rebuild,
+    [switch]$ResetData,
+    [ValidateRange(1, 3)][int]$StartupParallelism = 2
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,6 +25,29 @@ function Invoke-Docker([string[]]$Arguments) {
     $output = & docker @Arguments 2>&1
     if ($LASTEXITCODE -ne 0) { throw "Docker failed: $($Arguments -join ' ')`n$($output -join "`n")" }
     return $output
+}
+
+function Invoke-DemoBuild([switch]$Force) {
+    $helper = Join-Path $PSScriptRoot 'demo_build.py'
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    if (-not $Force) {
+        & python $helper check
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host 'Using verified current demo JARs; Maven build skipped.'
+            Write-Host "TIMING build check: $([Math]::Round($timer.Elapsed.TotalSeconds, 1))s"
+            return
+        }
+        if ($LASTEXITCODE -ne 10) { throw 'Could not validate the demo build cache.' }
+    }
+    Require-Command 'mvn'
+    $inputs = & python $helper fingerprint
+    if ($LASTEXITCODE -ne 0) { throw 'Could not fingerprint the Maven build inputs.' }
+    Write-Host 'Building the eight demo applications...'
+    & mvn -q -pl backend/core-service,backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service,backend/support-service,backend/gateway,backend/eureka-server -am '-DskipTests' package
+    if ($LASTEXITCODE -ne 0) { throw 'Backend build failed. See Maven output above.' }
+    & python $helper record --expected-inputs $inputs
+    if ($LASTEXITCODE -ne 0) { throw 'Could not record the successful demo build.' }
+    Write-Host "TIMING build: $([Math]::Round($timer.Elapsed.TotalSeconds, 1))s"
 }
 
 function Read-Containers {
@@ -67,14 +94,75 @@ function Test-OwnedContainer($Container) {
     return $name -match '^mediflow-' -or (Test-ProjectPath $workingDir)
 }
 
-function Stop-Rehearsal {
+function Test-DemoJar($Process, [string]$Module) {
+    if (-not $Process -or $Process.Name -ne 'java.exe' -or -not $Process.CommandLine) { return $false }
+    $match = [regex]::Match($Process.CommandLine, '(?:^|\s)-jar\s+(?:"(?<jar>[^"]+)"|(?<jar>\S+))(?=\s|$)')
+    if (-not $match.Success) { return $false }
+    $jar = $match.Groups['jar'].Value
+    if (-not [IO.Path]::IsPathRooted($jar)) { return $false }
+    $expected = Join-Path $repoRoot "backend\$Module\target\$Module-0.0.1-SNAPSHOT.jar"
+    return [string]::Equals([IO.Path]::GetFullPath($jar), $expected, [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Test-OrphanProcess($Process) {
+    if (-not $Process.CreationDate -or -not $Process.ParentProcessId) { return $false }
+    $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($Process.ParentProcessId)" -ErrorAction Stop
+    # A newer parent means Windows reused the original runner's PID.
+    return -not $parent -or ($parent.CreationDate -and $parent.CreationDate -gt $Process.CreationDate)
+}
+
+function Stop-OrphanDemoProcesses {
+    $modulesByPort = @{
+        28761 = 'eureka-server'; 28089 = 'core-service'; 28082 = 'clinical-service'
+        28084 = 'lab-service'; 28085 = 'pharmacy-service'; 28086 = 'billing-service'
+        28087 = 'support-service'; 28080 = 'gateway'
+    }
+    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object {
+        $modulesByPort.ContainsKey([int]$_.LocalPort)
+    })
+    if ($listeners.Count -eq 0) { return }
+    $processes = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" -ErrorAction Stop)
+    foreach ($process in $processes) {
+        $listener = $listeners | Where-Object {
+            $_.OwningProcess -eq $process.ProcessId -and
+            (Test-DemoJar $process $modulesByPort[[int]$_.LocalPort])
+        } | Select-Object -First 1
+        if (-not $listener -or -not (Test-OrphanProcess $process)) { continue }
+        $module = $modulesByPort[[int]$listener.LocalPort]
+        $description = "$module (PID $($process.ProcessId), port $($listener.LocalPort))"
+        if ($Preview) { Write-Host "Preview: would stop orphan demo process: $description"; continue }
+
+        # Re-read identity immediately before stopping; never trust a saved PID alone.
+        $current = Get-CimInstance Win32_Process -Filter "ProcessId = $($process.ProcessId)" -ErrorAction Stop
+        if (-not (Test-DemoJar $current $module) -or
+            $current.CreationDate -ne $process.CreationDate -or -not (Test-OrphanProcess $current)) { continue }
+        $liveProcess = Get-Process -Id $current.ProcessId -ErrorAction SilentlyContinue
+        if (-not $liveProcess) { continue }
+        try {
+            # Open the process handle before checking its start time, pinning its identity.
+            $null = $liveProcess.Handle
+            $difference = ($liveProcess.StartTime.ToUniversalTime() - $current.CreationDate.ToUniversalTime()).TotalMilliseconds
+            if ([Math]::Abs($difference) -ge 1) { continue }
+            Write-Host "Stopping orphan demo process: $description"
+            Stop-Process -InputObject $liveProcess -ErrorAction Stop
+        } finally {
+            if ($liveProcess.PSObject.Methods['Dispose']) { $liveProcess.Dispose() }
+        }
+    }
+}
+
+function Stop-Rehearsal([switch]$PreserveInfrastructure) {
     $manifestPath = Join-Path $PSScriptRoot 'evidence\active-rehearsal.local.json'
     if (-not (Test-Path -LiteralPath $manifestPath)) { return }
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if ($PreserveInfrastructure -and -not $manifest.persistent) {
+        throw 'This session is disposable. Close its backend window normally; use start-backend.bat -Fast for sessions that retain data.'
+    }
     $live = @(Read-Containers | Where-Object {
         $_.Name.TrimStart('/') -in $manifest.containers -and (Test-OwnedContainer $_)
     })
-    if ($live.Count -eq 0) { return }
+    # A persistent runner publishes its stop identity before it creates containers.
+    if ($live.Count -eq 0 -and -not $manifest.persistent) { return }
     $evidenceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'evidence'))
     $evidence = [IO.Path]::GetFullPath([string]$manifest.evidence)
     $stop = [IO.Path]::GetFullPath([string]$manifest.stopFile)
@@ -84,18 +172,27 @@ function Stop-Rehearsal {
         throw 'Active demo stop file is outside this repository. Stop its backend window first.'
     }
     if ($Preview) { Write-Host 'Preview: would request demo JVM shutdown through its stop file.'; return }
-    Write-Host 'Stopping the active demo backend and its disposable containers...'
+    if ($manifest.persistent) { Write-Host 'Stopping demo applications; database, broker and images will be kept.' }
+    else { Write-Host 'Stopping the active demo backend and its disposable containers...' }
     New-Item -ItemType File -Path $stop -Force | Out-Null
     $deadline = (Get-Date).AddSeconds(150)
     do {
         $remaining = @(Read-Containers | Where-Object { $_.Id -in $live.Id })
-        if ($remaining.Count -eq 0) { return }
+        if ($remaining.Count -eq 0 -and -not $manifest.persistent) { return }
         # A closed/crashed runner can leave orphan containers. Never kill a reused PID.
         $javaProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" | Where-Object {
             $_.ProcessId -in $manifest.pids -and $_.CommandLine -and
+            (-not $manifest.runnerPid -or $_.ParentProcessId -eq $manifest.runnerPid) -and
             $_.CommandLine.IndexOf($repoRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
         })
-        if ($javaProcesses.Count -eq 0) { return }
+        $runnerAlive = $false
+        if ($manifest.persistent -and $manifest.runnerPid) {
+            $runner = Get-CimInstance Win32_Process -Filter "ProcessId = $($manifest.runnerPid)"
+            $runnerPath = Join-Path $repoRoot 'scripts\demo_25_10\rehearse_snapshot.py'
+            $runnerAlive = $runner -and $runner.CommandLine -and
+                $runner.CommandLine.IndexOf($runnerPath, [StringComparison]::OrdinalIgnoreCase) -ge 0
+        }
+        if ($javaProcesses.Count -eq 0 -and -not $runnerAlive) { return }
         Start-Sleep -Seconds 2
     } while ((Get-Date) -lt $deadline)
     throw 'Demo is still stopping. Close its backend window, then run cleanup again.'
@@ -107,6 +204,7 @@ function Clean-ProjectDocker {
     $before = @(Read-Containers)
     $ownedBefore = @($before | Where-Object { Test-OwnedContainer $_ })
     $candidateIds = @($ownedBefore | ForEach-Object { $_.Image })
+    Stop-OrphanDemoProcesses
     Stop-Rehearsal
 
     $compose = Invoke-Docker -Arguments @('compose', '-f', (Join-Path $repoRoot 'docker-compose.yml'),
@@ -169,7 +267,9 @@ function Clean-ProjectDocker {
 Push-Location $repoRoot
 try {
     if ($Preview -and $Action -ne 'Clean') { throw '-Preview is supported only by clean-docker.bat.' }
-    if ($Action -in @('Backend', 'Clean')) {
+    if ($Fast -and $Rebuild) { throw 'Use either -Fast or -Rebuild.' }
+    if (($Fast -or $Rebuild -or $ResetData) -and $Action -ne 'Backend') { throw 'Build/data options are supported only by start-backend.bat.' }
+    if ($Action -in @('Backend', 'Clean', 'Stop')) {
         Require-Command 'docker'
         & docker info *> $null
         if ($LASTEXITCODE -ne 0) { throw 'Open Docker Desktop and wait for its Engine, then run this file again.' }
@@ -187,20 +287,22 @@ try {
                 $env:MEDIFLOW_PUBLIC_WEB_URL = "http://$($network.Address):3000"
             }
             Require-Command 'java'
-            Require-Command 'mvn'
             Require-Command 'python'
-            Write-Host 'Building the eight demo applications. First startup may take several minutes...'
-            & mvn -q -pl backend/core-service,backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service,backend/support-service,backend/gateway,backend/eureka-server -am '-DskipTests' package
-            if ($LASTEXITCODE -ne 0) { throw 'Backend build failed. See Maven output above.' }
-            Write-Host 'Restoring sample data. Wait for READY; keep this window open.'
-            Write-Host 'Gateway: http://127.0.0.1:28080. This disposable demo stops after two hours.'
+            $persistent = $Fast -or $Rebuild -or $ResetData
+            Invoke-DemoBuild -Force:($Rebuild -or -not $persistent)
+            if ($persistent) { Write-Host 'Starting retained demo workspace. Existing data will be reused unless -ResetData was supplied.' }
+            else { Write-Host 'Restoring a fresh disposable demo. Use -Fast for retained data and verified build reuse.' }
+            Write-Host 'Wait for READY; keep this window open. Applications stop after two hours.'
+            Write-Host 'Gateway: http://127.0.0.1:28080.'
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
             Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
-            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep @networkArguments
-            if ($LASTEXITCODE -ne 0) { throw 'Demo startup failed. See scripts/demo_25_10/evidence/snapshot-*/ logs.' }
+            if ($persistent) { $networkArguments += '--persistent' }
+            if ($ResetData) { $networkArguments += '--reset-data' }
+            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep --startup-parallelism $StartupParallelism @networkArguments
+            if ($LASTEXITCODE -ne 0) { throw 'Demo startup failed. See scripts/demo_25_10/evidence/workspace or snapshot-*/ logs.' }
         }
         'Frontend' {
             $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$LocalOnly
@@ -224,6 +326,11 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Frontend stopped with an error. Check the output above.' }
         }
         'Clean' { Clean-ProjectDocker }
+        'Stop' {
+            Stop-OrphanDemoProcesses
+            Stop-Rehearsal -PreserveInfrastructure
+            Write-Host 'Backend stopped. Retained demo data and images were not removed.'
+        }
     }
     exit 0
 } catch {

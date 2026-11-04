@@ -9,6 +9,12 @@ import '../../../core/widgets/request_state.dart';
 import '../domain/patient.dart';
 import 'providers.dart';
 
+typedef PatientAccountPanelBuilder = Widget Function(
+  BuildContext context,
+  Patient patient,
+  WorkspaceAccess access,
+);
+
 bool _canRetry(Object? error) =>
     error is! FormatException &&
     error is! ArgumentError &&
@@ -42,18 +48,96 @@ class _PatientBoundary extends ConsumerWidget {
 }
 
 class PatientPage extends StatelessWidget {
-  const PatientPage({super.key});
+  const PatientPage({
+    super.key,
+    this.initialPatientId,
+    this.initiallyCreate = false,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
+
+  final String? initialPatientId;
+  final bool initiallyCreate;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
+
   @override
   Widget build(BuildContext context) => _PatientBoundary(
-    builder: (repository, access) =>
-        _PatientList(repository: repository, access: access),
+    builder: (repository, access) {
+      final patientId = initialPatientId;
+      if (patientId != null) {
+        return _PatientDetail(
+          key: ValueKey((patientId, access.sessionIdentity)),
+          repository: repository,
+          access: access,
+          patientId: patientId,
+          accountPanelBuilder: accountPanelBuilder,
+          onRegisterPatient: onRegisterPatient,
+        );
+      }
+      if (initiallyCreate) {
+        return _InitialPatientCreateFlow(
+          accountPanelBuilder: accountPanelBuilder,
+          onRegisterPatient: onRegisterPatient,
+        );
+      }
+      return _PatientList(
+        repository: repository,
+        access: access,
+        accountPanelBuilder: accountPanelBuilder,
+        onRegisterPatient: onRegisterPatient,
+      );
+    },
   );
 }
 
+class _InitialPatientCreateFlow extends StatefulWidget {
+  const _InitialPatientCreateFlow({
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
+
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
+
+  @override
+  State<_InitialPatientCreateFlow> createState() =>
+      _InitialPatientCreateFlowState();
+}
+
+class _InitialPatientCreateFlowState extends State<_InitialPatientCreateFlow> {
+  String? _createdPatientId;
+
+  @override
+  Widget build(BuildContext context) {
+    final createdPatientId = _createdPatientId;
+    if (createdPatientId != null) {
+      return PatientDetailPage(
+        patientId: createdPatientId,
+        accountPanelBuilder: widget.accountPanelBuilder,
+        onRegisterPatient: widget.onRegisterPatient,
+      );
+    }
+    return PatientEditorPage(
+      onSaved: () {},
+      onCreated: (patient) {
+        if (mounted) setState(() => _createdPatientId = patient.id);
+      },
+    );
+  }
+}
+
 class _PatientList extends StatefulWidget {
-  const _PatientList({required this.repository, required this.access});
+  const _PatientList({
+    required this.repository,
+    required this.access,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
   final PatientRepository repository;
   final WorkspaceAccess access;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
   @override
   State<_PatientList> createState() => _PatientListState();
 }
@@ -162,7 +246,11 @@ class _PatientListState extends State<_PatientList> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: const Text('Hồ sơ bệnh nhân')),
-          body: PatientDetailPage(patientId: id),
+          body: PatientDetailPage(
+            patientId: id,
+            accountPanelBuilder: widget.accountPanelBuilder,
+            onRegisterPatient: widget.onRegisterPatient,
+          ),
         ),
       ),
     );
@@ -183,8 +271,15 @@ class _PatientListState extends State<_PatientList> {
 }
 
 class PatientDetailPage extends StatelessWidget {
-  const PatientDetailPage({super.key, required this.patientId});
+  const PatientDetailPage({
+    super.key,
+    required this.patientId,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
   final String patientId;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
 
   @override
   Widget build(BuildContext context) => _PatientBoundary(
@@ -193,6 +288,8 @@ class PatientDetailPage extends StatelessWidget {
       repository: repository,
       access: access,
       patientId: patientId,
+      accountPanelBuilder: accountPanelBuilder,
+      onRegisterPatient: onRegisterPatient,
     ),
   );
 }
@@ -203,10 +300,14 @@ class _PatientDetail extends StatefulWidget {
     required this.repository,
     required this.access,
     required this.patientId,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
   });
   final PatientRepository repository;
   final WorkspaceAccess access;
   final String patientId;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
   @override
   State<_PatientDetail> createState() => _PatientDetailState();
 }
@@ -285,6 +386,8 @@ class _PatientDetailState extends State<_PatientDetail> {
           _PatientField('Email', patient.email),
           _PatientField('Địa chỉ', patient.address),
           _PatientField('Mã BHYT', patient.insuranceNumber),
+          if (widget.accountPanelBuilder case final builder?)
+            builder(context, patient, widget.access),
           _PatientField('Tạo lúc', patient.createdAt),
           _PatientField('Cập nhật', patient.updatedAt),
           if (_commandError != null) ...[
@@ -310,6 +413,16 @@ class _PatientDetailState extends State<_PatientDetail> {
                   onPressed: _deleting ? null : () => _confirmDelete(patient),
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('Xóa hồ sơ'),
+                ),
+              if (!patient.archived &&
+                  widget.onRegisterPatient != null &&
+                  const {'ADMIN', 'NURSE'}.contains(widget.access.role))
+                FilledButton.icon(
+                  onPressed: _deleting
+                      ? null
+                      : () => widget.onRegisterPatient!(patient.id),
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('Đăng ký khám'),
                 ),
             ],
           ),
@@ -414,9 +527,15 @@ class _PatientField extends StatelessWidget {
 }
 
 class PatientEditorPage extends StatelessWidget {
-  const PatientEditorPage({super.key, this.patientId, required this.onSaved});
+  const PatientEditorPage({
+    super.key,
+    this.patientId,
+    required this.onSaved,
+    this.onCreated,
+  });
   final String? patientId;
   final VoidCallback onSaved;
+  final ValueChanged<Patient>? onCreated;
   @override
   Widget build(BuildContext context) => _PatientBoundary(
     builder: (repository, access) {
@@ -429,6 +548,7 @@ class PatientEditorPage extends StatelessWidget {
           repository: repository,
           patientId: patientId,
           onSaved: onSaved,
+          onCreated: onCreated,
         ),
       );
     },
@@ -440,10 +560,12 @@ class _PatientForm extends StatefulWidget {
     required this.repository,
     required this.patientId,
     required this.onSaved,
+    this.onCreated,
   });
   final PatientRepository repository;
   final String? patientId;
   final VoidCallback onSaved;
+  final ValueChanged<Patient>? onCreated;
   @override
   State<_PatientForm> createState() => _PatientFormState();
 }
@@ -680,12 +802,17 @@ class _PatientFormState extends State<_PatientForm> {
       insuranceNumber: _insurance.text,
     );
     try {
+      late final Patient savedPatient;
       if (_editing) {
-        await SavePatient(widget.repository).update(widget.patientId!, draft);
+        savedPatient = await SavePatient(widget.repository)
+            .update(widget.patientId!, draft);
       } else {
-        await SavePatient(widget.repository).create(draft);
+        savedPatient = await SavePatient(widget.repository).create(draft);
       }
-      if (mounted) widget.onSaved();
+      if (mounted) {
+        widget.onSaved();
+        if (!_editing) widget.onCreated?.call(savedPatient);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {

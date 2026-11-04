@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers(disabledWithoutDocker = true)
 class SecurityMailStorePostgresTest {
@@ -116,5 +117,28 @@ class SecurityMailStorePostgresTest {
 
         assertThat(store.incrementRecoveryRequest("a".repeat(64), windowStart)).isEqualTo(1);
         assertThat(store.incrementRecoveryRequest("a".repeat(64), windowStart)).isEqualTo(2);
+    }
+
+    @Test
+    void patientScopedRetryRequiresTheCurrentRecipientAddress() {
+        UUID accountId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO security_mail_message
+                    (message_id,operation_key,account_id,sender_email,recipient_email,message_kind,subject,
+                     encrypted_content,content_expires_at,demo_mailbox,status,attempts,next_attempt_at,created_at)
+                VALUES (?,?,?,?,?,?,?, ?,now()+interval '1 day',false,'FAILED',5,now(),now())
+                """, messageId, "failed-patient-credential-" + messageId, accountId,
+                "notice@example.test", "current@example.test", "ADMIN_RESET", "Credential update", new byte[] { 1, 2, 3 });
+
+        assertThatThrownBy(() -> store.retry(accountId, messageId, "old@example.test"))
+                .isInstanceOf(com.mediflow.common.exception.ResourceNotFoundException.class);
+        assertThat(jdbc.queryForObject("SELECT status FROM security_mail_message WHERE message_id=?", String.class,
+                messageId)).isEqualTo("FAILED");
+
+        var retried = store.retry(accountId, messageId, "current@example.test");
+
+        assertThat(retried.messageId()).isEqualTo(messageId);
+        assertThat(retried.status()).isEqualTo(com.mediflow.organization.application.dto.response.MailDeliveryDTO.Status.PENDING);
     }
 }

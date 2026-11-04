@@ -12,6 +12,13 @@ abstract interface class PharmacyRepository {
   });
   Future<Drug> getDrug(String id);
   Future<Prescription> getPrescription(String id);
+  Future<PageResult<Prescription>> searchPrescriptions({
+    String? keyword,
+    String? patientId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  });
   Future<Drug> createDrug(CreateDrug command);
   Future<Drug> adjustStock(String id, AdjustDrugStock command);
   Future<CancelPrescriptionResult> cancelPrescription(
@@ -61,5 +68,32 @@ class ReadPrescription {
       throw ArgumentError('Mã đơn thuốc phải là UUID hợp lệ.');
     }
     return repository.getPrescription(id);
+  }
+}
+
+class SearchPrescriptions {
+  const SearchPrescriptions(this.repository);
+  final PharmacyRepository repository;
+  Future<PageResult<Prescription>> call({
+    String? keyword,
+    String? patientId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  }) {
+    if (page < 0 || size < 1 || size > 100) {
+      throw ArgumentError('Trang hoặc kích thước trang không hợp lệ.');
+    }
+    if (patientId != null && !isPharmacyId(patientId)) {
+      throw ArgumentError('Mã bệnh nhân phải là UUID hợp lệ.');
+    }
+    final normalized = keyword?.trim();
+    return repository.searchPrescriptions(
+      keyword: normalized == null || normalized.isEmpty ? null : normalized,
+      patientId: patientId,
+      status: status,
+      page: page,
+      size: size,
+    );
   }
 }

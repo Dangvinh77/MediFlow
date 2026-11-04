@@ -15,6 +15,9 @@ public interface AccountRepository {
 
     java.util.List<Account> findActiveByOwner(UUID staffId, UUID patientId);
 
+    /** All accounts explicitly linked to one profile owner, ordered newest first. */
+    java.util.List<Account> findByOwner(UUID staffId, UUID patientId);
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

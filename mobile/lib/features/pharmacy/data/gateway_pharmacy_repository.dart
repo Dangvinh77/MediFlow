@@ -202,4 +202,34 @@ class GatewayPharmacyRepository
     }
     return rx;
   }
+
+  @override
+  Future<PageResult<Prescription>> searchPrescriptions({
+    String? keyword,
+    String? patientId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (page < 0 || size < 1 || size > 100) {
+      throw ArgumentError('Trang hoặc kích thước trang không hợp lệ.');
+    }
+    if (patientId != null && !isPharmacyId(patientId)) {
+      throw ArgumentError('Mã bệnh nhân phải là UUID hợp lệ.');
+    }
+    final normalized = keyword?.trim();
+    final result = await client.get(
+      '/v1/pharmacy/prescriptions',
+      query: {
+        'page': page,
+        'size': size,
+        if (normalized != null && normalized.isNotEmpty) 'keyword': normalized,
+        if (patientId != null) 'patientId': patientId,
+        if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+      },
+    );
+    final json = PharmacyDto.object(result);
+    PharmacyDto.integer(json, 'size', minimum: 1);
+    return decodePage(json, PharmacyDto.prescription);
+  }
 }

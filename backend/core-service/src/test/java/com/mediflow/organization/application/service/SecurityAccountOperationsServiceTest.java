@@ -5,6 +5,7 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.out.AccountEmailChangeStore;
 import com.mediflow.organization.application.port.out.AccountRecoveryTokenStore;
 import com.mediflow.organization.application.port.out.AccountRepository;
+import com.mediflow.organization.application.port.out.PatientAccountSecurityAuditStore;
 import com.mediflow.organization.application.port.out.PatientAccountIdentityPort;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.SecurityMailStore;
@@ -36,13 +37,14 @@ class SecurityAccountOperationsServiceTest {
     private final SecurityMailStore mail = mock(SecurityMailStore.class);
     private final FakeRecoveryTokens recovery = new FakeRecoveryTokens();
     private final AccountEmailChangeStore emailChanges = mock(AccountEmailChangeStore.class);
+    private final PatientAccountSecurityAuditStore patientSecurityAudit = mock(PatientAccountSecurityAuditStore.class);
     private final SecurityAccountOperationsService service = new SecurityAccountOperationsService(
-            creator, accounts, staff, patients, passwords, mail, recovery, emailChanges,
+            creator, accounts, staff, patients, passwords, mail, recovery, emailChanges, patientSecurityAudit,
             new SecurityMailTemplate("http://localhost:3000"), "no-reply@example.test");
 
     @BeforeEach
     void setUp() {
-        reset(creator, accounts, staff, patients, passwords, mail, emailChanges);
+        reset(creator, accounts, staff, patients, passwords, mail, emailChanges, patientSecurityAudit);
         recovery.clear();
     }
 
@@ -97,6 +99,124 @@ class SecurityAccountOperationsServiceTest {
                 Role.ADMIN, false)).isInstanceOf(InvalidAccountException.class)
                 .hasMessageContaining("must match");
         verifyNoInteractions(creator);
+    }
+
+    @Test
+    void patientScopedResetVerifiesPatientEmailAndWritesActorTargetAuditAtomically() {
+        UUID actor = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID correlationId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "patient@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        MailDeliveryDTO delivery = new MailDeliveryDTO(UUID.randomUUID(), MailDeliveryDTO.Status.PENDING);
+        when(patients.email(patientId)).thenReturn("patient@example.test");
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(passwords.hash(anyString())).thenReturn("new-hash");
+        when(accounts.save(target)).thenReturn(target);
+        when(mail.enqueue(any())).thenReturn(delivery);
+
+        MailDeliveryDTO result = service.resetPatientPassword(actor, patientId, "patient-reset-key", correlationId);
+
+        assertThat(result).isEqualTo(delivery);
+        assertThat(target.getPasswordHash()).isEqualTo("new-hash");
+        verify(accounts).incrementCredentialVersion(target.getAccountId());
+        verify(patientSecurityAudit).record(
+                eq(PatientAccountSecurityAuditStore.Action.PATIENT_PASSWORD_RESET), eq(actor), eq(patientId),
+                eq(target.getAccountId()), eq(correlationId), argThat(key -> key.startsWith("patient-reset:" + patientId + ":")));
+        verify(mail).enqueue(argThat(message -> message.accountId().equals(target.getAccountId())
+                && message.recipient().equals("patient@example.test")
+                && message.kind().equals("ADMIN_RESET")));
+    }
+
+    @Test
+    void patientResetReplayReturnsOriginalDeliveryWithoutChangingCredentialAgain() {
+        UUID actor = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        MailDeliveryDTO original = new MailDeliveryDTO(UUID.randomUUID(), MailDeliveryDTO.Status.SENT);
+        when(mail.byOperationKey(anyString())).thenReturn(Optional.of(original));
+
+        assertThat(service.resetPatientPassword(actor, patientId, "same-key", UUID.randomUUID())).isEqualTo(original);
+
+        verify(mail).lockOperation(anyString());
+        verify(mail).byOperationKey(anyString());
+        verifyNoInteractions(patients, accounts, passwords, patientSecurityAudit);
+    }
+
+    @Test
+    void patientResetRejectsEmailSyncPendingOrIneligibleProfilesBeforeChangingCredential() {
+        UUID actor = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "old@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        when(patients.email(patientId)).thenReturn("new@example.test");
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+
+        assertThatThrownBy(() -> service.resetPatientPassword(actor, patientId, "key", UUID.randomUUID()))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("profile email");
+
+        assertThat(target.getPasswordHash()).isEqualTo("old-hash");
+        verify(mail, never()).enqueue(any());
+        verifyNoInteractions(patientSecurityAudit);
+    }
+
+    @Test
+    void patientResetRejectsInactiveLinkedAccount() {
+        UUID patientId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "patient@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        target.deactivate();
+        when(patients.email(patientId)).thenReturn("patient@example.test");
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+
+        assertThatThrownBy(() -> service.resetPatientPassword(UUID.randomUUID(), patientId, "key", UUID.randomUUID()))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("active patient email account");
+
+        verify(mail, never()).enqueue(any());
+        verifyNoInteractions(patientSecurityAudit);
+    }
+
+    @Test
+    void patientMailRetryIsOwnerScopedEmailSynchronizedAndAudited() {
+        UUID actor = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
+        UUID correlationId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "patient@example.test", "hash", null,
+                patientId, Role.PATIENT);
+        MailDeliveryDTO retried = new MailDeliveryDTO(messageId, MailDeliveryDTO.Status.PENDING);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(patients.email(patientId)).thenReturn("patient@example.test");
+        when(mail.retry(target.getAccountId(), messageId, target.getUsername())).thenReturn(retried);
+
+        assertThat(service.retryPatientDelivery(actor, patientId, messageId, correlationId)).isEqualTo(retried);
+
+        verify(mail).retry(target.getAccountId(), messageId, "patient@example.test");
+        verify(patientSecurityAudit).record(PatientAccountSecurityAuditStore.Action.PATIENT_MAIL_RETRY,
+                actor, patientId, target.getAccountId(), correlationId, null);
+    }
+
+    @Test
+    void patientMailRetryRejectsMessagesSentToAnOldProfileEmail() {
+        UUID patientId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "old@example.test", "hash", null,
+                patientId, Role.PATIENT);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(patients.email(patientId)).thenReturn("current@example.test");
+
+        assertThatThrownBy(() -> service.retryPatientDelivery(UUID.randomUUID(), patientId,
+                UUID.randomUUID(), UUID.randomUUID()))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("profile email");
+
+        verify(mail, never()).retry(any(), any(), anyString());
+        verifyNoInteractions(patientSecurityAudit);
     }
 
     private static Account account(String email, boolean active) {

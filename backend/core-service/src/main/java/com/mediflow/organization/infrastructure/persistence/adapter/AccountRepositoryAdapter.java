@@ -47,6 +47,14 @@ public class AccountRepositoryAdapter implements AccountRepository {
     }
 
     @Override
+    public java.util.List<Account> findByOwner(UUID staffId, UUID patientId) {
+        if ((staffId == null) == (patientId == null)) {
+            throw new IllegalArgumentException("Exactly one profile owner id is required");
+        }
+        return jpaRepository.findByOwner(staffId, patientId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
     public Optional<Account> findByIdForUpdate(UUID id) {
         return jpaRepository.findByIdForUpdate(id).map(entity -> {
             // A status command may have read its owner before waiting for the owner lock.

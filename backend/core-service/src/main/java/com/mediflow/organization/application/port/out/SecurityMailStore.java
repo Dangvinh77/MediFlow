@@ -15,6 +15,8 @@ public interface SecurityMailStore {
     Optional<MailDeliveryDTO> byOperationKey(String operationKey);
     Optional<MailDeliveryDTO> latestForAccount(UUID accountId);
     MailDeliveryDTO retry(UUID accountId, UUID messageId);
+    /** Patient-scoped retry additionally requires the message's stored recipient to be current. */
+    MailDeliveryDTO retry(UUID accountId, UUID messageId, String expectedRecipient);
     List<QueuedMessage> claimDue(int limit);
     void markSent(UUID messageId);
     void markFailed(UUID messageId, String failureCode);

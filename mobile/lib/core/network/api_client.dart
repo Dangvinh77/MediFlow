@@ -62,6 +62,7 @@ class ApiClient {
     bool raw = false,
     bool public = false,
     String? idempotencyKey,
+    String? correlationId,
   }) => _request(
     path,
     'POST',
@@ -69,10 +70,24 @@ class ApiClient {
     raw: raw,
     public: public,
     idempotencyKey: idempotencyKey,
+    correlationId: correlationId,
   );
 
   Future<Object?> put(String path, [Object? body]) =>
       _request(path, 'PUT', body: body);
+
+  Future<Object?> putIdempotent(
+    String path,
+    Object body, {
+    required String idempotencyKey,
+    String? correlationId,
+  }) => _request(
+    path,
+    'PUT',
+    body: body,
+    idempotencyKey: idempotencyKey,
+    correlationId: correlationId,
+  );
 
   Future<Object?> patch(String path, Object body) =>
       _request(path, 'PATCH', body: body);
@@ -87,18 +102,27 @@ class ApiClient {
     bool raw = false,
     bool public = false,
     String? idempotencyKey,
+    String? correlationId,
   }) async {
     if (idempotencyKey != null &&
         (idempotencyKey.isEmpty ||
             idempotencyKey.contains(RegExp(r'[\r\n]')))) {
       throw ArgumentError('Idempotency-Key không hợp lệ.');
     }
+    if (correlationId != null &&
+        !RegExp(
+          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+        ).hasMatch(correlationId)) {
+      throw ArgumentError('X-Correlation-Id không hợp lệ.');
+    }
     // Prevent absolute URLs, context paths and credentials leaking outside Gateway.
-    if (!path.startsWith('/v1/') ||
+    if (!(path.startsWith('/v1/') || path.startsWith('/v2/')) ||
         path.contains('..') ||
+        path.contains(RegExp(r'[\\\r\n]')) ||
+        RegExp(r'%2e|%2f|%5c', caseSensitive: false).hasMatch(path) ||
         path.contains('?') ||
         path.contains('#')) {
-      throw ArgumentError('API path phải bắt đầu bằng /v1/.');
+      throw ArgumentError('API path phải bắt đầu bằng /v1/ hoặc /v2/.');
     }
     try {
       final response = await _dio.request<Object?>(
@@ -108,7 +132,10 @@ class ApiClient {
         options: Options(
           method: method,
           extra: {'public': public},
-          headers: {'Idempotency-Key': ?idempotencyKey},
+          headers: {
+            'Idempotency-Key': ?idempotencyKey,
+            'X-Correlation-Id': ?correlationId,
+          },
         ),
       );
       if (method == 'DELETE' && response.statusCode == 204) return null;

@@ -63,6 +63,45 @@ describe("reception session registration", () => {
     return user;
   }
 
+  it("lets the nurse identify the patient before choosing a session", () => {
+    render(<ReceptionWorkspace enabled initialPatientId="patient-from-profile" />);
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("patient-from-profile");
+    expect(screen.getByLabelText("Bệnh nhân").compareDocumentPosition(screen.getByLabelText("Khoa")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("requires the next-patient action after success and keeps the selected session", async () => {
+    mocks.create.mockResolvedValue(registration);
+    render(<ReceptionWorkspace enabled />);
+    const user = await registerPatient();
+    await screen.findByLabelText("Mã phiếu bàn giao thu ngân");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Tiếp nhận bệnh nhân tiếp theo" })).toBeEnabled());
+    expect(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" })).toBeDisabled();
+    expect(screen.getByLabelText("Loại lượt khám")).toBeDisabled();
+    fireEvent.submit(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }).closest("form")!);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Tiếp nhận bệnh nhân tiếp theo" }));
+    expect(screen.getByLabelText("Bệnh nhân")).toHaveValue("");
+    expect(screen.getByRole("heading", { name: /Tiếp nhận vào buổi/ })).toBeVisible();
+    expect(screen.queryByLabelText("Mã phiếu bàn giao thu ngân")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" })).toBeDisabled();
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    await user.type(screen.getByLabelText("Bệnh nhân"), "next-patient");
+    expect(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" })).toBeEnabled();
+  });
+
+  it("starts with compact date and reception controls and reveals date errors", async () => {
+    render(<ReceptionWorkspace enabled />);
+    const user = userEvent.setup();
+    const dateOptions = screen.getByText(/Chọn ngày khác/).closest("details")!;
+    expect(dateOptions).not.toHaveAttribute("open");
+    expect(screen.queryByRole("button", { name: "Tiếp nhận hôm nay" })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(dateOptions).toHaveAttribute("open");
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
+
   it("loads today's sessions directly even after another date range was entered", async () => {
     render(<ReceptionWorkspace enabled />);
     const user = userEvent.setup();

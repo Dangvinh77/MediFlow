@@ -4,10 +4,10 @@ import { ApiRequestError } from "@/lib/api";
 import type { Role } from "@/lib/roles";
 import type { DrugDTO } from "../../types";
 
-const mocks = vi.hoisted(() => ({ role: "DOCTOR" as Role | null, search: vi.fn(), doctor: vi.fn(), create: vi.fn(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ role: "DOCTOR" as Role | null, search: vi.fn(), doctor: vi.fn(), create: vi.fn(), context: vi.fn(), createOutpatient: vi.fn(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, getSessionKey: () => "actor-token", subscribeToAuthChanges: () => () => {} }));
-vi.mock("../../api", () => ({ pharmacyApi: { searchDrugs: mocks.search, getPrescribingDoctor: mocks.doctor, createPrescription: mocks.create } }));
+vi.mock("../../api", () => ({ pharmacyApi: { searchDrugs: mocks.search, getPrescribingDoctor: mocks.doctor, getPrescribingContext: mocks.context, createPrescription: mocks.create, createOutpatientPrescription: mocks.createOutpatient } }));
 import { CreatePrescriptionForm } from "./CreatePrescriptionForm";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -27,7 +27,7 @@ describe("CreatePrescriptionForm", () => {
   beforeEach(() => {
     mocks.role = "DOCTOR"; mocks.search.mockReset().mockResolvedValue({ content: [drug] });
     mocks.doctor.mockReset().mockResolvedValue({ staffId: id, departmentId: id, jobTitle: "DOCTOR", active: true });
-    mocks.create.mockReset(); mocks.router.replace.mockReset();
+    mocks.create.mockReset(); mocks.context.mockReset(); mocks.createOutpatient.mockReset(); mocks.router.replace.mockReset();
   });
   it.each(["PHARMACIST", "MANAGER", null] as const)("does not read catalog or create with role %s", role => {
     mocks.role = role; render(<CreatePrescriptionForm mode="legacy" />);
@@ -171,5 +171,49 @@ describe("CreatePrescriptionForm", () => {
     await screen.findByText(/Không có thuốc phù hợp/);
     await act(async () => resolve({ content: [drug] }));
     expect(screen.queryByRole("option", { name: /Paracetamol/ })).not.toBeInTheDocument();
+  });
+
+  it("locks a source record, trusts the prescribing context for patient identity, and shows a receipt in place", async () => {
+    const sourceRecordId = "00000000-0000-4000-8000-000000000010";
+    const patientId = "00000000-0000-4000-8000-000000000011";
+    const episodeId = "00000000-0000-4000-8000-000000000012";
+    const context = { recordId: sourceRecordId, patientId, doctorId: id, departmentId: id,
+      careEpisodeType: "OUTPATIENT_VISIT" as const, careEpisodeId: episodeId, priceCodes: ["OUTPATIENT"] };
+    const created = { prescriptionId: "00000000-0000-4000-8000-000000000013", recordId: sourceRecordId, patientId,
+      doctorId: id, departmentId: id, prescribedDate: "2024-02-29", totalAmount: 5000, lines: [], status: "ACTIVE",
+      dispenseStatus: "PENDING", paymentConfirmed: false, cancelledAt: null, cancelledBy: null, cancellationReason: null,
+      createdAt: "2026-11-04T00:00:00Z", updatedAt: "2026-11-04T00:00:00Z" };
+    const onCreated = vi.fn();
+    mocks.context.mockResolvedValue(context);
+    mocks.createOutpatient.mockResolvedValue(created);
+    render(<CreatePrescriptionForm mode="outpatient" sourceRecordId={sourceRecordId} onCreated={onCreated} />);
+
+    expect(await screen.findByText(/Đã lấy thông tin kê đơn từ hồ sơ khám/)).toBeVisible();
+    expect(mocks.context).toHaveBeenCalledExactlyOnceWith(sourceRecordId);
+    expect(screen.queryByLabelText("Bệnh nhân", { exact: false })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Hồ sơ khám", { exact: false })).not.toBeInTheDocument();
+    await screen.findByRole("option", { name: /Paracetamol/ });
+    fill("Ngày kê đơn", "2024-02-29"); fill("Số lượng", "2"); fill("Cách dùng", "Sau ăn");
+    fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo đơn thuốc" }));
+
+    await waitFor(() => expect(mocks.createOutpatient).toHaveBeenCalledWith(expect.objectContaining({
+      request: expect.objectContaining({ recordId: sourceRecordId, patientId, doctorId: id, careEpisodeId: episodeId }),
+    })));
+    expect(onCreated).toHaveBeenCalledExactlyOnceWith(created);
+    expect(await screen.findByRole("status", { name: "Đã tạo đơn thuốc" })).toHaveTextContent(created.prescriptionId);
+    expect(screen.getByRole("link", { name: "Mở chi tiết đơn thuốc" })).toHaveAttribute("href", `/pharmacy/prescriptions/${created.prescriptionId}`);
+    expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+
+  it("blocks an embedded create when server prescribing context belongs to another record", async () => {
+    const sourceRecordId = "00000000-0000-4000-8000-000000000010";
+    mocks.context.mockResolvedValue({ recordId: "00000000-0000-4000-8000-000000000099", patientId: id,
+      doctorId: id, departmentId: id, careEpisodeType: "OUTPATIENT_VISIT", careEpisodeId: id, priceCodes: ["OUTPATIENT"] });
+    render(<CreatePrescriptionForm mode="outpatient" sourceRecordId={sourceRecordId} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("không khớp hồ sơ nguồn");
+    expect(screen.queryByLabelText("Bệnh nhân", { exact: false })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tạo đơn thuốc" })).toBeDisabled();
+    expect(mocks.createOutpatient).not.toHaveBeenCalled();
   });
 });

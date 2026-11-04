@@ -72,6 +72,19 @@ describe("PrescriptionDetail status evidence", () => {
     expect(await screen.findByRole("heading", { name: "Không tìm thấy đơn thuốc" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
   });
+  it("links an authorized doctor back to the exact source record and hides the link from pharmacists", async () => {
+    const recordId = "00000000-0000-4000-8000-000000000050";
+    mocks.role = "DOCTOR";
+    mocks.getPrescription.mockResolvedValue({ ...prescription, recordId });
+    const doctorView = render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="outpatient" />);
+    expect(await screen.findByRole("link", { name: "Mở hồ sơ khám nguồn" })).toHaveAttribute("href", `/records/${recordId}`);
+    doctorView.unmount();
+    mocks.role = "PHARMACIST";
+    mocks.getPrescription.mockResolvedValue({ ...prescription, recordId });
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="outpatient" />);
+    await screen.findByText("Thanh toán được kiểm tra khi xuất thuốc");
+    expect(screen.queryByRole("link", { name: "Mở hồ sơ khám nguồn" })).not.toBeInTheDocument();
+  });
   it("keeps correlation and denies paid actions on a forbidden read", async () => {
     mocks.getPrescription.mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "read-trace"));
     render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);

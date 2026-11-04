@@ -1,9 +1,9 @@
 """Restore the demo into disposable infrastructure and smoke six packaged deployments.
 
-Usage: python scripts/demo_25_10/rehearse_snapshot.py [--keep]
+Usage: python scripts/demo_25_10/rehearse_snapshot.py [--keep] [--persistent] [--reset-data]
 With --keep, the stack stays up for UI rehearsal until its evidence/stop file exists.
 Requires Docker Compose, Python 3 and the eight already-built application JARs.
-Never connects to existing databases, volumes or broker queues.
+Only --persistent reuses this checkout's verified isolated rehearsal infrastructure.
 """
 import argparse
 import datetime as dt
@@ -14,6 +14,7 @@ import socket
 import subprocess
 import time
 import urllib.request
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -43,6 +44,8 @@ def await_ready(probe, timeout=180):
         try:
             if probe():
                 return
+        except InterruptedError:
+            raise
         except (OSError, ValueError):
             pass
         time.sleep(2)
@@ -58,7 +61,14 @@ def parse_options(argv=None):
                         help="Prepare current schedules and a completed follow-up source through Gateway")
     parser.add_argument("--lan", action="store_true",
                         help="Expose only the disposable Gateway on the local network")
+    parser.add_argument("--persistent", action="store_true",
+                        help="Retain this checkout's isolated infrastructure and reuse its preparation journals")
+    parser.add_argument("--reset-data", action="store_true",
+                        help="Replace only the verified persistent demo infrastructure")
+    parser.add_argument("--startup-parallelism", type=int, choices=(1, 2, 3), default=2)
     options = parser.parse_args(argv)
+    if options.reset_data and not options.persistent:
+        parser.error("--reset-data requires --persistent")
     if options.prepare_ui_demo and not options.scheduling:
         parser.error("--prepare-ui-demo requires --scheduling")
     return options
@@ -76,69 +86,152 @@ def snapshot_environment_value(value, pgport):
             .replace("http://eureka-server:8761", "http://127.0.0.1:28761"))
 
 
+def check_stop(stop_file):
+    if stop_file and stop_file.exists():
+        raise InterruptedError('Demo stopped by request')
+
+
+def await_broker(rabbit, stop_file=None):
+    def broker_ready():
+        check_stop(stop_file)
+        state = command("docker", "inspect", rabbit, "--format", "{{.State.Status}}").stdout.strip()
+        if state == "exited":
+            raise RuntimeError("Rehearsal broker exited; inspect rabbit.log")
+        boot_log = command("docker", "logs", rabbit)
+        if "Server startup complete" not in boot_log.stdout + boot_log.stderr:
+            return False
+        # Retained containers keep logs from previous boots. Only a live ping is readiness.
+        return command("docker", "exec", "--user", "rabbitmq", rabbit,
+                       "rabbitmq-diagnostics", "-q", "ping", check=False).returncode == 0
+    # Do not run Erlang CLI as root during boot: it can create a root-owned
+    # .erlang.cookie before the broker user, causing an eacces startup failure.
+    await_ready(broker_ready)
+
+
+def initialize_infrastructure(options, evidence, containers, pg, rabbit, workspace):
+    def checked_command(*args, **kwargs):
+        check_stop(evidence / 'stop')
+        return command(*args, **kwargs)
+    labels = workspace.docker_labels if workspace else []
+    pg_id = checked_command("docker", "run", "-d", "--name", pg, *labels, "-e", "POSTGRES_PASSWORD=postgres",
+            "-p", "127.0.0.1::5432", "postgres:16-alpine", log=evidence / "postgres-container.log")
+    containers.append(pg)
+    if workspace:
+        workspace.track("pg", pg, pg_id.stdout.strip())
+    pgport = checked_command("docker", "port", pg, "5432/tcp").stdout.strip().rsplit(":", 1)[1]
+    await_ready(lambda: checked_command("docker", "exec", pg, "pg_isready", "-U", "postgres", check=False).returncode == 0)
+    checked_command("docker", "cp", str(HERE / "MediFlow_Demo_Database_2026-10-25.sql"), pg + ":/tmp/demo.sql")
+    checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "postgres",
+            "-f", "/tmp/demo.sql", log=evidence / "restore.log")
+    # Reimport must refuse before loading any data into a populated target.
+    refused = checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+                      "-d", "postgres", "-f", "/tmp/demo.sql", log=evidence / "restore-refusal.log", check=False)
+    if refused.returncode == 0 or "demo restore refused" not in (refused.stdout + refused.stderr).lower():
+        raise RuntimeError("The populated-target restore guard was not confirmed")
+    if options.scheduling:
+        checked_command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
+        checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+                "-d", "mediflow_organization", "-f", "/tmp/scheduling.sql", log=evidence / "scheduling-seed.log")
+    counts = {}
+    for context in DATABASES:
+        query = "SELECT count(*) FROM pg_tables WHERE schemaname='public'"
+        value = checked_command("docker", "exec", pg, "psql", "-XAt", "-U", "postgres", "-d", "mediflow_" + context,
+                        "-c", query).stdout.strip()
+        counts[context] = {"publicTables": int(value)}
+        if not int(value):
+            raise RuntimeError("Empty restored context: " + context)
+    (evidence / "restored-contexts.json").write_text(json.dumps(counts, indent=2), encoding="utf-8")
+    rabbit_id = checked_command("docker", "run", "-d", "--name", rabbit, *labels, "--hostname", "rehearsal-rabbit",
+            "-e", "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=+S 2:2", "-e", "RABBITMQ_DEFAULT_USER=rehearsal",
+            "-e", "RABBITMQ_DEFAULT_PASS=rehearsal-local", "-p", "127.0.0.1::5672", "rabbitmq:3.13-alpine")
+    containers.append(rabbit)
+    if workspace:
+        workspace.track("rabbit", rabbit, rabbit_id.stdout.strip())
+    rabbitport = checked_command("docker", "port", rabbit, "5672/tcp").stdout.strip().rsplit(":", 1)[1]
+    await_broker(rabbit, evidence / "stop")
+    if workspace:
+        workspace.complete()
+    return pgport, rabbitport
+
+
+def start_application_batches(launch, wait, parallelism=2):
+    business = NAMES[2:-1]
+    groups = [[NAMES[0]], [NAMES[1]]]
+    groups.extend(business[index:index + parallelism] for index in range(0, len(business), parallelism))
+    groups.append([NAMES[-1]])
+    for group in groups:
+        pending = [(name, launch(name)) for name in group]
+        for name, process in pending:
+            wait(name, process)
+
+
 def main():
     options = parse_options()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    evidence = HERE / "evidence" / ("snapshot-" + stamp)
-    evidence.mkdir(parents=True)
+    evidence = HERE / "evidence" / ("workspace" if options.persistent else "snapshot-" + stamp)
+    evidence.mkdir(parents=True, exist_ok=options.persistent)
+    def run_command(*args, **kwargs):
+        check_stop(evidence / 'stop')
+        return command(*args, **kwargs)
+    workspace = None
+    lock = None
+    if options.persistent:
+        from demo_runtime import Workspace, WorkspaceLock
+        workspace = Workspace(ROOT, evidence, run_command, options.scheduling)
+        lock = WorkspaceLock(evidence / 'runner.lock')
+        lock.acquire()
     containers, applications, streams = [], [], []
-    prefix = "mediflow-rehearsal-" + stamp
+    prefix = "mediflow-rehearsal-" + stamp + "-" + uuid.uuid4().hex[:8]
     pg, rabbit = prefix + "-pg", prefix + "-rabbit"
     try:
         for name, port in PORTS.items():
             with socket.socket() as candidate:
                 candidate.bind((server_bind_address(name, options.lan), port))
+        (evidence / 'stop').unlink(missing_ok=True)
+        manifest = {"persistent": options.persistent, "runnerPid": os.getpid(), "evidence": str(evidence),
+                    "gateway": "http://127.0.0.1:28080", "ports": PORTS,
+                    "lan": options.lan, "gatewayBindAddress": server_bind_address("gateway", options.lan),
+                    "scheduling": options.scheduling, "containers": containers, "pids": [],
+                    "stopFile": str(evidence / "stop")}
+        manifest_path = HERE / "evidence" / "active-rehearsal.local.json"
+        def save_manifest():
+            temporary = manifest_path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+            temporary.replace(manifest_path)
+        save_manifest()
         compose_args = ["docker", "compose", "-f", "docker-compose.yml"]
         if options.scheduling:
             compose_args.extend(["-f", "compose.demo.local.yml", "-f", "compose.outpatient.local.yml"])
-        compose = json.loads(command(*compose_args, "config", "--format", "json").stdout)["services"]
+        compose = json.loads(run_command(*compose_args, "config", "--format", "json").stdout)["services"]
         for name in NAMES:
             jar = ROOT / "backend" / name / "target" / (name + "-0.0.1-SNAPSHOT.jar")
             if not jar.is_file():
                 raise RuntimeError("Build missing JAR: " + str(jar))
-        command("docker", "run", "-d", "--name", pg, "-e", "POSTGRES_PASSWORD=postgres",
-                "-p", "127.0.0.1::5432", "postgres:16-alpine", log=evidence / "postgres-container.log")
-        containers.append(pg)
-        pgport = command("docker", "port", pg, "5432/tcp").stdout.strip().rsplit(":", 1)[1]
-        await_ready(lambda: command("docker", "exec", pg, "pg_isready", "-U", "postgres", check=False).returncode == 0)
-        command("docker", "cp", str(HERE / "MediFlow_Demo_Database_2026-10-25.sql"), pg + ":/tmp/demo.sql")
-        command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "postgres",
-                "-f", "/tmp/demo.sql", log=evidence / "restore.log")
-        # Reimport must refuse before loading any data into a populated target.
-        refused = command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
-                          "-d", "postgres", "-f", "/tmp/demo.sql", log=evidence / "restore-refusal.log", check=False)
-        if refused.returncode == 0 or "demo restore refused" not in (refused.stdout + refused.stderr).lower():
-            raise RuntimeError("The populated-target restore guard was not confirmed")
-        if options.scheduling:
-            command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
-            command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
-                    "-d", "mediflow_organization", "-f", "/tmp/scheduling.sql", log=evidence / "scheduling-seed.log")
-        counts = {}
-        for context in DATABASES:
-            query = "SELECT count(*) FROM pg_tables WHERE schemaname='public'"
-            value = command("docker", "exec", pg, "psql", "-XAt", "-U", "postgres", "-d", "mediflow_" + context,
-                            "-c", query).stdout.strip()
-            counts[context] = {"publicTables": int(value)}
-            if not int(value):
-                raise RuntimeError("Empty restored context: " + context)
-        (evidence / "restored-contexts.json").write_text(json.dumps(counts, indent=2), encoding="utf-8")
-        command("docker", "run", "-d", "--name", rabbit, "--hostname", "rehearsal-rabbit",
-                "-e", "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=+S 2:2", "-e", "RABBITMQ_DEFAULT_USER=rehearsal",
-                "-e", "RABBITMQ_DEFAULT_PASS=rehearsal-local", "-p", "127.0.0.1::5672", "rabbitmq:3.13-alpine")
-        containers.append(rabbit)
-        rabbitport = command("docker", "port", rabbit, "5672/tcp").stdout.strip().rsplit(":", 1)[1]
-        def broker_ready():
-            state = command("docker", "inspect", rabbit, "--format", "{{.State.Status}}").stdout.strip()
-            if state == "exited":
-                raise RuntimeError("Rehearsal broker exited; inspect rabbit.log")
-            boot_log = command("docker", "logs", rabbit)
-            return "Server startup complete" in boot_log.stdout + boot_log.stderr
-        # Do not run Erlang CLI as root during boot: it can create a root-owned
-        # .erlang.cookie before the broker user, causing an eacces startup failure.
-        await_ready(broker_ready)
-        command("docker", "exec", "--user", "rabbitmq", rabbit, "rabbitmq-diagnostics", "-q", "ping")
+        phase_started = time.monotonic()
+        if workspace:
+            reused = workspace.open(reset=options.reset_data)
+        else:
+            reused = None
+        if reused:
+            pg, rabbit = reused["pg"], reused["rabbit"]
+            containers.extend([pg, rabbit])
+            pgport = run_command("docker", "port", pg, "5432/tcp").stdout.strip().rsplit(":", 1)[1]
+            rabbitport = run_command("docker", "port", rabbit, "5672/tcp").stdout.strip().rsplit(":", 1)[1]
+            await_ready(lambda: run_command("docker", "exec", pg, "pg_isready", "-U", "postgres", check=False).returncode == 0)
+            await_broker(rabbit, evidence / "stop")
+            print("Reusing isolated database/broker; snapshot restore skipped.", flush=True)
+        else:
+            if workspace:
+                workspace.begin()
+            pgport, rabbitport = initialize_infrastructure(options, evidence, containers, pg, rabbit, workspace)
+        check_stop(evidence / "stop")
+        save_manifest()
+        print(f"TIMING infrastructure: {time.monotonic() - phase_started:.1f}s", flush=True)
         health = {}
-        for name in NAMES:
+        phase_started = time.monotonic()
+        def launch(name):
+            if (evidence / 'stop').exists():
+                raise InterruptedError('Demo startup stopped by request')
             env = os.environ.copy()
             for key, value in compose[name].get("environment", {}).items():
                 if value is not None:
@@ -195,31 +288,52 @@ def main():
                                        cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT,
                                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             applications.append(process)
+            manifest['pids'].append(process.pid)
+            save_manifest()
+            return process
+
+        def wait_application(name, process):
             def ready():
+                if (evidence / 'stop').exists():
+                    raise InterruptedError('Demo startup stopped by request')
                 if process.poll() is not None:
                     raise RuntimeError(name + " exited; inspect its log")
                 return get_json(f"http://127.0.0.1:{PORTS[name]}/actuator/health").get("status") == "UP"
             await_ready(ready)
             health[name] = get_json(f"http://127.0.0.1:{PORTS[name]}/actuator/health")
             print(name + " UP", flush=True)
+        start_application_batches(launch, wait_application, options.startup_parallelism)
+        print(f"TIMING applications: {time.monotonic() - phase_started:.1f}s", flush=True)
         (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
-        manifest = {"evidence": str(evidence), "gateway": "http://127.0.0.1:28080", "ports": PORTS,
-                    "lan": options.lan, "gatewayBindAddress": server_bind_address("gateway", options.lan),
-                    "scheduling": options.scheduling,
-                    "containers": containers, "pids": [p.pid for p in applications], "stopFile": str(evidence / "stop")}
-        (HERE / "evidence" / "active-rehearsal.local.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        phase_started = time.monotonic()
         if options.prepare_ui_demo:
             from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
-            fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json'), dt.datetime.now(ZONE))
+            fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json', evidence / 'stop'), dt.datetime.now(ZONE))
             write_fixtures(fixtures, evidence)
             from prepare_demo_calendar import prepare as prepare_calendar, write_fixtures as write_calendar
-            write_calendar(prepare_calendar(DemoApi(manifest['gateway'], evidence / 'calendar-journal.local.json')), evidence)
-        (evidence / "result.txt").write_text("PASS: eight database restores, populated-target refusal, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")
+            calendar_api = DemoApi(manifest['gateway'], evidence / 'calendar-journal.local.json', evidence / 'stop')
+            cached_calendar = evidence / 'calendar-fixtures.local.json'
+            if reused and cached_calendar.exists():
+                from prepare_demo_calendar import verify
+                calendar = json.loads(cached_calendar.read_text(encoding='utf-8'))
+                calendar_api.login('admin', 'demo.staff01@example.test')
+                verify(calendar_api, calendar)
+                write_calendar(calendar, evidence)
+                print("Reused and verified the existing calendar; calendar writes skipped.", flush=True)
+            else:
+                write_calendar(prepare_calendar(calendar_api), evidence)
+        print(f"TIMING UI preparation: {time.monotonic() - phase_started:.1f}s", flush=True)
+        (evidence / "result.txt").write_text("PASS: isolated infrastructure ready, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")
         print("READY " + str(evidence), flush=True)
         if options.keep:
             deadline = time.monotonic() + 7200
             while not (evidence / "stop").exists() and time.monotonic() < deadline:
                 time.sleep(2)
+    except InterruptedError:
+        if not (evidence / 'stop').exists():
+            raise
+        (evidence / 'result.txt').write_text('STOPPED by request.\n', encoding='utf-8')
+        print('STOPPED by request.', flush=True)
     except Exception as error:
         (evidence / "result.txt").write_text("FAILED: " + str(error), encoding="utf-8")
         raise
@@ -231,11 +345,14 @@ def main():
                     process.wait(timeout=15)
                 except subprocess.TimeoutExpired:
                     process.kill()
+                    process.wait(timeout=5)
         for stream in streams:
             stream.close()
-        for container in reversed(containers):
+        for container in ([] if workspace else reversed(containers)):
             command("docker", "logs", container, log=evidence / (container.rsplit("-", 1)[-1] + ".log"), check=False)
             command("docker", "rm", "-f", container, check=False)
+        if lock:
+            lock.release()
 
 
 if __name__ == "__main__":

@@ -20,6 +20,28 @@ Các đường dẫn sau đi qua Gateway, trả envelope `ApiResponse` và `Cach
 | POST `/api/v1/org/accounts/{id}/mail-delivery/{messageId}/retry` | ADMIN | Gửi lại đúng thư cũ, không thay mật khẩu lần nữa |
 | PUT `/api/v1/org/accounts/{id}/email` | ADMIN | `{email,reason}`; audit actor lấy từ principal, vô hiệu phiên/link cũ; cập nhật hồ sơ qua đúng context |
 
+Account metadata theo hồ sơ dùng owner UUID, không tìm tài khoản bằng email:
+
+| Method/path | Quyền | Dữ liệu/hành vi |
+|---|---|---|
+| GET `/api/v1/org/profile-accounts/staff/{staffId}` | ADMIN | Xác nhận staff tồn tại; trả `{account,profileEmail,emailSyncPending}` |
+| GET `/api/v1/org/profile-accounts/patient/{patientId}` | ADMIN/NURSE | Xác nhận Patient tồn tại qua Patient use case; trả cùng shape |
+| PUT `/api/v1/org/patient-accounts/{patientId}/password` | ADMIN/NURSE | Body `{}` và `Idempotency-Key`; tạo credential tạm và trả `MailDelivery` |
+| GET `/api/v1/org/patient-accounts/{patientId}/mail-delivery` | ADMIN/NURSE | Trạng thái thư gần nhất của account Patient, không có nội dung thư |
+| POST `/api/v1/org/patient-accounts/{patientId}/mail-delivery/{messageId}/retry` | ADMIN/NURSE | Retry đúng message và chỉ khi email nhận thư còn khớp email hồ sơ/account hiện tại |
+
+`account` là `AccountResponse` sẵn có hoặc `null` khi profile chưa có account; `profileEmail`
+là email authoritative của hồ sơ. `emailSyncPending=true` khi account tồn tại và email hồ sơ
+khác username account sau trim, không phân biệt hoa thường. Lookup chọn account active trước,
+sau đó account mới nhất nếu chỉ còn lịch sử inactive; không tra bằng email. Account response
+không chứa password/hash và không có body thư. Patient reset xác nhận profile còn eligible,
+account đang active, role `PATIENT`, đúng `patientId`, và email profile/account đồng bộ. Một
+Idempotency-Key cùng actor/patient trả lại delivery gốc và không reset credential lần hai.
+Credential thay đổi, mail enqueue và audit actor/patient/target/action/correlation lưu trong
+cùng Organization transaction; patient UUID vẫn là bare reference vì Patient giữ store riêng.
+Email chưa đồng bộ phải được sửa qua luồng ADMIN email-change hiện có trước khi reset/retry;
+không báo thành công giả. Quyền reset generic theo account ID vẫn chỉ ADMIN.
+
 `MailDelivery` gồm `messageId,status`; status public chỉ `PENDING,SENT,FAILED`.
 Kết quả cấp tài khoản thêm `mailDelivery`; không trả mật khẩu tạm qua API.
 Thay email của hồ sơ đã liên kết tài khoản qua API hồ sơ thông thường bị từ chối;
