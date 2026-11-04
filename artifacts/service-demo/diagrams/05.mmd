@@ -1,0 +1,5 @@
+flowchart TB
+U["Tiếp nhận · Lưu bệnh nhân"] --> P["Patient · patientId + outbox"]
+P -->|"patient.created"| R["RabbitMQ · mediflow.events"]
+R --> Q["notification.q"]
+Q --> N["Notification · thông báo chào mừng"]

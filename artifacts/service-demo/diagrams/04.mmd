@@ -1,0 +1,4 @@
+flowchart TB
+U["Admin · Lưu khoa / nhân viên"] --> O["Organization · ghi dữ liệu + outbox"]
+O -->|"department.created / staff.created"| R["RabbitMQ · mediflow.events"]
+R --> Q["Queue có binding phù hợp"]

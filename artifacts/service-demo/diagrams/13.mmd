@@ -1,0 +1,6 @@
+flowchart TB
+U["Thu ngân · Xác nhận thanh toán"] --> B["Billing · payment + outbox"]
+B -->|"payment.completed"| R["RabbitMQ · mediflow.events"]
+B -->|"financial.clearance.granted"| R
+R --> C["Nguồn PRESCRIPTION · đủ điều kiện thực hiện"]
+R --> S["Report / Notification · queue riêng"]

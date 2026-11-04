@@ -1,0 +1,5 @@
+flowchart TB
+P["Clinical / Lab / Pharmacy / Billing"] -->|"facts đã xảy ra"| R["RabbitMQ · mediflow.events"]
+R --> Q["report.outpatient-v1.q"]
+Q --> T["Report · read model / kỳ đã được chấp nhận"]
+U["Manager · chọn kỳ báo cáo"] -->|"GET qua Gateway"| T

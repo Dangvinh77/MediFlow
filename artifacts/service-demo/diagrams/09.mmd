@@ -1,0 +1,4 @@
+flowchart TB
+U["UI · Tạo yêu cầu xét nghiệm"] --> L["Lab · kiểm chỉ định qua REST"]
+L -->|"lab.request.created"| R["RabbitMQ · mediflow.events"]
+R --> B["Billing · LAB_TEST payment request"]

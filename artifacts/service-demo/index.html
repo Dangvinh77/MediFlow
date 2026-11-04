@@ -1,0 +1,972 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>MediFlow · Service Demo</title><style>*{box-sizing:border-box} :root{font-family:Arial,'Segoe UI',sans-serif;color:#173c37;background:#dce6e0}body{margin:0}button{font:inherit;cursor:pointer}#stage{position:fixed;inset:0;display:grid;place-items:center;padding:30px 20px 62px}.slide{display:none;position:relative;width:1440px;height:900px;background:#fcfdf9;overflow:hidden;padding:34px 58px 40px;transform-origin:center;box-shadow:0 15px 65px #193c3720}.slide.active{display:block;animation:enter .25s ease both}header{display:flex;align-items:center;justify-content:space-between;height:42px;border-bottom:1px solid #cbd9d0;padding-bottom:18px}.brand{font-size:27px;letter-spacing:-1.6px;font-weight:800}.brand span{font-weight:400}.brand i{font-size:30px;color:#0b8c79;font-style:normal;padding-left:4px}.section{font-size:12px;letter-spacing:2px;font-weight:700}.owner{font-size:17px;font-weight:700}.owner small{display:inline-block;margin-left:14px;font-size:12px;color:#6f8076;font-weight:400}.heading{margin:28px 0 25px}.service{color:#087d6b;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px}h1{font-size:39px;line-height:1.15;letter-spacing:-1.25px;margin:0;font-weight:650}.columns{display:grid;grid-template-columns:1.08fr 1fr;gap:40px;align-items:start}.role{font-size:16px;color:#087d6b;font-weight:700;margin-bottom:9px}.route{font:13px Consolas,monospace;color:#65776e;background:#f0f4ed;padding:10px 12px;margin:0 0 12px;overflow-wrap:anywhere}.row{padding:14px 0;border-bottom:1px solid #d6dfd5}.row span{display:block;font-size:16px;color:#667c6e;margin-bottom:7px}.row strong{display:block;font-size:21px;font-weight:500;line-height:1.4;overflow-wrap:anywhere}.diagram{display:flex;align-items:center;justify-content:center;background:#f2f6f4;border-radius:5px;cursor:zoom-in;overflow:hidden;min-height:380px;height:440px;padding:14px}.diagram svg{max-height:100%;max-width:100%;width:100%;height:100%}.caption{display:block;font-size:12px;color:#75867b;margin-top:9px;text-align:right}.proof{border-left:3px solid #078571;padding:0 0 0 16px;margin-top:20px}.proof b{font-size:11px;letter-spacing:1.2px;color:#087d6b}.proof p{font-size:17px;line-height:1.5;margin:8px 0 0}.handoff{position:absolute;bottom:82px;left:58px;right:58px;border-top:1px solid #bfd3c6;padding-top:17px;font-size:17px;line-height:1.4;display:flex;gap:17px;align-items:baseline}.handoff span{font-size:11px;letter-spacing:1px;white-space:nowrap;color:#087d6b;font-weight:700}footer{position:absolute;left:58px;right:58px;bottom:28px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:1.4px;color:#74847a}footer b{color:#17453a;font-size:12px}.cover{background:#123d36;color:#fcfdf7}.cover header{border-color:#ffffff30}.cover .brand i{color:#82d6ac}.cover .owner small{color:#aec7bb}.cover-body{padding-top:70px}.cover-rule{width:100px;height:5px;background:#8bd6ac;margin-bottom:29px}.eyebrow{font-size:12px;letter-spacing:2.5px;color:#b3d3bd}.cover h1{font-size:83px;line-height:1.04;font-weight:500;letter-spacing:-3px;margin:20px 0 26px}.intro{font-size:24px;line-height:1.5;color:#c8dace;max-width:760px}.cover-team{display:flex;gap:38px;border-top:1px solid #ffffff30;margin-top:44px;padding-top:23px}.cover-team span{font-size:21px;line-height:1.7}.cover-team b{font-size:13px;font-weight:400;color:#aecdbc}.cover-hint{font-size:13px;color:#a9c6b4;letter-spacing:1px;margin-top:30px}.cover footer,.cover footer b{color:#b6d3bc}.team table{width:100%;border-collapse:collapse;margin-top:26px;font-size:20px}.team th{text-align:left;color:#5d776b;font-size:12px;letter-spacing:.6px;padding:12px 10px;border-bottom:2px solid #91b4a1}.team td{padding:22px 10px;border-bottom:1px solid #d6e1d4;font-size:18px;line-height:1.35}.team td:first-child{font-weight:700;font-size:22px}.team td:last-child{white-space:nowrap;font-size:14px}.journey{margin-top:26px}.journey .diagram{height:150px;min-height:150px}.architecture{display:grid;grid-template-columns:350px 1fr;gap:32px}.architecture .row strong{font-size:17px}.architecture .row span{font-size:14px}.architecture .diagram{height:445px}.lead{font-size:17px;margin:0 0 10px;color:#527164}.checklist .row{padding:10px 0}.checklist .row strong{font-size:18px}.checklist .row span{font-size:14px}.checklist .diagram{height:490px}.controls{position:fixed;bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;left:0;right:0}.controls button{border:1px solid #b5cbbb;background:#f8fbf4;color:#214b3b;border-radius:5px;padding:8px 13px;font-size:12px;transition:background .15s,transform .15s}.controls button:hover{background:#c6e5ce;transform:translateY(-2px)}.controls #counter{font-size:12px;padding:0 10px;min-width:70px;text-align:center}button:focus-visible,.diagram:focus-visible{outline:3px solid #078571;outline-offset:3px}.progress{position:fixed;height:3px;bottom:0;left:0;background:#087f6c;transition:width .2s}.drawer{display:none;position:fixed;right:16px;top:16px;bottom:70px;width:390px;background:#fcfdf9;box-shadow:0 8px 40px #123d3655;padding:22px;overflow:auto;z-index:6;border-radius:8px}.drawer.open{display:block}.drawer button{display:block;text-align:left;width:100%;border:0;border-bottom:1px solid #d5e1d2;background:transparent;padding:14px 5px;color:#244a3b;font-size:15px}.drawer button:hover{background:#eef5e9}.drawer h2{font-size:22px}.notes{display:none;position:fixed;bottom:65px;left:5%;right:5%;background:#123d36;color:white;z-index:7;padding:22px 28px;border-radius:8px;box-shadow:0 4px 30px #0005;font-size:17px;line-height:1.6;max-height:40vh;overflow:auto;overflow-wrap:anywhere}.notes.open{display:block}.notes strong{display:block;color:#a1e0b4;font-size:12px;letter-spacing:2px;margin-bottom:8px}dialog{border:0;border-radius:8px;background:#fcfdf9;color:#153e33;width:92vw;max-width:1400px;max-height:94vh;padding:28px;box-shadow:0 10px 70px #0005}dialog::backdrop{background:#09281de0}dialog .close{float:right;padding:8px 15px}dialog h2{font-size:22px;max-width:90%}dialog pre{white-space:pre-wrap;font:16px/1.65 Consolas,monospace;background:#edf4ea;padding:22px}dialog .diagram{height:70vh;cursor:default}dialog .dialog-help{font-size:13px;color:#5d776b}@keyframes enter{from{opacity:.4}to{opacity:1}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media print{@page{size:16in 10in;margin:0}body{background:white}#stage{position:static;display:block;padding:0}.slide{display:block!important;transform:none!important;box-shadow:none;page-break-after:always;break-after:page;width:16in;height:10in;padding:34px 58px}.controls,.drawer,.notes,.progress,dialog{display:none!important}.slide:last-child{page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}.architecture{display:flex;flex-direction:column;gap:14px}.architecture .visual{order:-1;width:100%}.architecture .diagram{height:310px;min-height:310px}.architecture .content{width:100%}.architecture .role{display:none}.architecture .rows{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:26px}.architecture .row{border:0;padding:0}.architecture .row strong{font-size:16px}.architecture .caption{display:none}.architecture .lead{font-size:15px}</style></head><body><main id="stage"><section class="slide cover" id="slide-1" aria-label="Slide 1: Một lượt khám. Một luồng phối hợp."><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">MEDIFLOW / SERVICE DEMO</span><span class="owner">Cả nhóm <small>25–30 phút</small></span></header><div class="cover-body"><div class="cover-rule"></div><p class="eyebrow">HỆ THỐNG QUẢN LÝ KHÁM NGOẠI TRÚ</p><h1>Một lượt khám.<br>Một luồng phối hợp.</h1><p class="intro">Từ admin quản lý hệ thống đến bệnh nhân nhận kết quả, nhận thuốc và ra về.</p><div class="cover-team"><span>Hoàng Anh<br><b>Gateway · Organization · Patient</b></span><span>Vinh<br><b>Clinical · Lab</b></span><span>Huy<br><b>Pharmacy · Report</b></span><span>Lộc<br><b>Billing · Notification</b></span></div><p class="cover-hint">25–30 phút &nbsp; / &nbsp; UI → Service → RabbitMQ → Consumer</p></div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>04.11.2026 · Kịch bản dựa trên source</span><b>01 / 18</b></footer></section><section class="slide team" id="slide-2" aria-label="Slide 2: Trình bày theo hành trình bệnh nhân"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">01 / THÀNH VIÊN & TASKSHEET</span><span class="owner">Cả nhóm <small>1 phút</small></span></header><div class="heading"><div class="service">KỊCH BẢN PHỐI HỢP</div><h1>Trình bày theo hành trình bệnh nhân</h1></div><table><thead><tr><th>Thành viên</th><th>Service phụ trách demo</th><th>Tasksheet ngắn gọn</th><th>Slide</th></tr></thead><tbody><tr><td>Hoàng Anh</td><td>Gateway · Organization · Patient</td><td>Mở kiến trúc, quản trị khoa/nhân sự, tiếp nhận hồ sơ</td><td>03–05</td></tr><tr><td>Vinh</td><td>Clinical · Lab</td><td>Đăng ký, khám, chỉ định, xét nghiệm, kết luận</td><td>06, 08–09, 11, 15</td></tr><tr><td>Huy</td><td>Pharmacy · Report</td><td>Tạo đơn, cấp thuốc, đối chiếu báo cáo cuối luồng</td><td>12, 14, 17</td></tr><tr><td>Lộc</td><td>Billing · Notification</td><td>Thu phí khám → Lab → thuốc, thông báo cá nhân</td><td>07, 10, 13, 16</td></tr></tbody></table><div class="journey"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1125.119 86.45" width="1125.119" height="86.45" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="153.834,38.45 185.834,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="286.323,38.45 318.323,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="441.783,38.45 473.783,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="583.905,38.45 615.905,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="E" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="750.48,38.45 782.48,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="909.645,38.45 941.645,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="node" data-id="A" data-label="Admin cấu hình" data-shape="rectangle">
+  <rect x="20" y="20" width="133.834" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="86.917" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Admin cấu hình</text>
+</g>
+<g class="node" data-id="B" data-label="Tiếp nhận" data-shape="rectangle">
+  <rect x="185.834" y="20" width="100.489" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="236.07850000000002" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Tiếp nhận</text>
+</g>
+<g class="node" data-id="C" data-label="Thu phí khám" data-shape="rectangle">
+  <rect x="318.323" y="20" width="123.46" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="380.053" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thu phí khám</text>
+</g>
+<g class="node" data-id="D" data-label="Khám + Lab" data-shape="rectangle">
+  <rect x="473.783" y="20" width="110.122" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="528.844" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Khám + Lab</text>
+</g>
+<g class="node" data-id="E" data-label="Thuốc + thu phí" data-shape="rectangle">
+  <rect x="615.905" y="20" width="134.575" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="683.1925" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thuốc + thu phí</text>
+</g>
+<g class="node" data-id="F" data-label="Kết luận / ra về" data-shape="rectangle">
+  <rect x="782.48" y="20" width="127.16499999999999" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="846.0625" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Kết luận / ra về</text>
+</g>
+<g class="node" data-id="G" data-label="Thông báo + báo cáo" data-shape="rectangle">
+  <rect x="941.645" y="20" width="163.474" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="1023.382" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thông báo + báo cáo</text>
+</g>
+</svg></div></div><div class="handoff"><span>NHỊP TRÌNH BÀY</span>Hoàng Anh mở đầu → Vinh khám/Lab ↔ Lộc thu phí → Huy thuốc ↔ Lộc thu phí → Vinh kết luận → Lộc thông báo → Huy báo cáo</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>02 / 18</b></footer></section><section class="slide " id="slide-3" aria-label="Slide 3: Gateway là cửa vào của 6 ứng dụng nghiệp vụ"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">02 / HẠ TẦNG</span><span class="owner">Hoàng Anh <small>2 phút</small></span></header><div class="heading"><div class="service">Gateway</div><h1>Gateway là cửa vào của 6 ứng dụng nghiệp vụ</h1></div><div class="architecture"><div class="content"><div class="role">Định tuyến · xác thực · discovery</div><div class="rows"><div class="row"><span>Bấm UI</span><strong>Đăng nhập → mở danh sách bệnh nhân; xem request qua Gateway trong Network.</strong></div><div class="row"><span>Event phát đi</span><strong>Không có domain event chỉ vì Gateway định tuyến request. Event do context nghiệp vụ phát.</strong></div><div class="row"><span>Tương tác</span><strong>Nét liền: HTTP; nét đứt: discovery / messaging. Các mũi tên RabbitMQ minh họa, không liệt kê mọi subscription. PostgreSQL :5432, 8 context stores riêng.</strong></div></div></div><div class="visual"><p class="lead">8 context nghiệp vụ • 6 business deployments • 8 kho dữ liệu độc lập</p><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1232.1509999999998 314.5400000000001" width="1232.1509999999998" height="314.5400000000001" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="W" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HTTP /api · JWT" points="183.24450000000002,152.25000000000003 311.976,152.25 311.976,174.55 323.976,174.55" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="E" data-to="G" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="service discovery" points="149.8995,209.15000000000003 311.976,209.15000000000003 311.976,186.85000000000002 323.976,186.85000000000002" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,38.45 475.14099999999996,38.45" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="K" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,95.35000000000001 589.9239999999999,95.35000000000001" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,152.25 589.9239999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,209.15000000000003 589.9239999999999,209.15000000000003" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,266.05 589.9239999999999,266.05" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="G" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="451.14099999999996,180.7 463.14099999999996,180.7 463.14099999999996,223.375 960.4979999999998,223.375" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="R" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="720.8659999999999,38.45 736.1644999999999,38.45 736.1644999999999,152.25 744.8659999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="K" data-to="R" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="709.6789999999999,95.35000000000001 736.1644999999999,95.35000000000001 736.1644999999999,152.25 744.8659999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L" data-to="R" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="690.4129999999999,152.25 736.1644999999999,152.25 736.1644999999999,152.25 744.8659999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="R" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="727.4629999999999,209.15000000000003 736.1644999999999,209.15000000000003 736.1644999999999,152.25 744.8659999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="702.2689999999999,266.05 736.1644999999999,266.05 736.1644999999999,152.25 744.8659999999999,152.25" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="S" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="936.4979999999998,152.25 948.4979999999998,152.25 948.4979999999998,217.22500000000002 960.4979999999998,217.22500000000002" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="W" data-to="G" data-label="HTTP /api · JWT">
+  <rect x="198.136" y="136.25" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="247.056" y="151.4" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">HTTP /api · JWT</text>
+</g>
+<g class="edge-label" data-from="E" data-to="G" data-label="service discovery">
+  <rect x="191.008" y="193.15000000000003" width="104.96800000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="243.49200000000002" y="208.30000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">service discovery</text>
+</g>
+<g class="node" data-id="W" data-label="Web :3000 / Mobile" data-shape="rectangle">
+  <rect x="33.108500000000014" y="133.8" width="150.136" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="108.1765" y="152.25" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Web :3000 / Mobile</text>
+</g>
+<g class="node" data-id="G" data-label="Gateway :8080" data-shape="rectangle">
+  <rect x="323.976" y="162.25" width="127.16499999999999" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="387.5585" y="180.7" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Gateway :8080</text>
+</g>
+<g class="node" data-id="E" data-label="Eureka :8761" data-shape="rectangle">
+  <rect x="33.108500000000014" y="190.70000000000005" width="116.79099999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="91.504" y="209.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Eureka :8761</text>
+</g>
+<g class="node" data-id="C" data-label="Core :8089 — Organization + Patient" data-shape="rectangle">
+  <rect x="475.14099999999996" y="20" width="245.72499999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="598.0034999999999" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Core :8089 — Organization + Patient</text>
+</g>
+<g class="node" data-id="K" data-label="Clinical :8082" data-shape="rectangle">
+  <rect x="589.9239999999999" y="76.9" width="119.755" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="649.8014999999998" y="95.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical :8082</text>
+</g>
+<g class="node" data-id="L" data-label="Lab :8084" data-shape="rectangle">
+  <rect x="589.9239999999999" y="133.8" width="100.489" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="640.1684999999999" y="152.25" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lab :8084</text>
+</g>
+<g class="node" data-id="P" data-label="Pharmacy :8085" data-shape="rectangle">
+  <rect x="589.9239999999999" y="190.70000000000005" width="137.539" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="658.6934999999999" y="209.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Pharmacy :8085</text>
+</g>
+<g class="node" data-id="B" data-label="Billing :8086" data-shape="rectangle">
+  <rect x="589.9239999999999" y="247.60000000000002" width="112.345" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="646.0964999999999" y="266.05" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing :8086</text>
+</g>
+<g class="node" data-id="S" data-label="Support :8087 — Report + Notification" data-shape="rectangle">
+  <rect x="960.4979999999998" y="204.925" width="251.65299999999993" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="1086.3244999999997" y="223.375" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Support :8087 — Report + Notification</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ :5672 / UI :15672" data-shape="rectangle">
+  <rect x="744.8659999999999" y="133.8" width="191.63199999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="840.6819999999999" y="152.25" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ :5672 / UI :15672</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Hoàng Anh tiếp tục Organization: tạo dữ liệu nền cho lượt khám</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>03 / 18</b></footer></section><section class="slide " id="slide-4" aria-label="Slide 4: Chuẩn bị khoa, nhân sự và tài khoản"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">03 / ADMIN QUẢN LÝ</span><span class="owner">Hoàng Anh <small>2 phút</small></span></header><div class="heading"><div class="service">Organization · Core :8089</div><h1>Chuẩn bị khoa, nhân sự và tài khoản</h1></div><div class="columns"><div class="content"><div class="role">ADMIN</div><div class="route">/organization/departments · /organization/staff · /organization/accounts</div><div class="rows"><div class="row"><span>UI: lưu khoa mới</span><strong>department.created</strong></div><div class="row"><span>UI: tạo nhân viên</span><strong>staff.created</strong></div><div class="row"><span>UI: đổi khoa của nhân viên</span><strong>staff.department.changed</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Hiển thị khoa và nhân viên vừa tạo; đối chiếu routing key tại exchange. Không nói Report nhận event tổ chức nếu không có binding.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 279.056 335.9" width="279.056" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="O" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="139.528,56.900000000000006 139.528,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="O" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="department.created / staff.created" points="139.528,125.80000000000001 139.528,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="139.528,247.00000000000003 139.528,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="O" data-to="R" data-label="department.created / staff.created">
+  <rect x="52.528000000000006" y="152.8" width="173.87199999999999" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="139.464" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">department.created / staff.created</text>
+</g>
+<g class="node" data-id="U" data-label="Admin · Lưu khoa / nhân viên" data-shape="rectangle">
+  <rect x="34.4495" y="20" width="210.15699999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.528" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Admin · Lưu khoa / nhân viên</text>
+</g>
+<g class="node" data-id="O" data-label="Organization · ghi dữ liệu + outbox" data-shape="rectangle">
+  <rect x="20" y="88.9" width="239.05599999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.528" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Organization · ghi dữ liệu + outbox</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="38.15450000000001" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.528" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="Q" data-label="Queue có binding phù hợp" data-shape="rectangle">
+  <rect x="43.712" y="279" width="191.63199999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.528" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Queue có binding phù hợp</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Dữ liệu khoa/bác sĩ sẵn sàng → chuyển Patient tiếp nhận người bệnh</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>04 / 18</b></footer></section><section class="slide " id="slide-5" aria-label="Slide 5: Tìm đúng hồ sơ trước khi tạo bệnh nhân mới"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">04 / BỆNH NHÂN ĐẾN KHÁM</span><span class="owner">Hoàng Anh <small>2 phút</small></span></header><div class="heading"><div class="service">Patient · Core :8089</div><h1>Tìm đúng hồ sơ trước khi tạo bệnh nhân mới</h1></div><div class="columns"><div class="content"><div class="role">NURSE / tiếp nhận</div><div class="route">/patients → /patients/new → chi tiết bệnh nhân</div><div class="rows"><div class="row"><span>UI: tìm hồ sơ theo định danh</span><strong>GET / đọc dữ liệu · không phát event</strong></div><div class="row"><span>UI: lưu bệnh nhân mới</span><strong>patient.created</strong></div><div class="row"><span>UI: lưu chỉnh sửa hồ sơ</span><strong>patient.updated</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Giữ patientId vừa tạo; hồ sơ tồn tại dù cấp account gặp lỗi. Cấp tài khoản PATIENT từ hồ sơ, dùng email theo contract hiện hành.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 279.797 404.79999999999995" width="279.797" height="404.79999999999995" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="139.8985,56.900000000000006 139.8985,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="patient.created" points="139.8985,125.80000000000001 139.8985,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="139.8985,247.00000000000003 139.8985,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="139.8985,315.9 139.8985,347.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="P" data-to="R" data-label="patient.created">
+  <rect x="95.89850000000001" y="152.8" width="87.74200000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="139.76950000000002" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">patient.created</text>
+</g>
+<g class="node" data-id="U" data-label="Tiếp nhận · Lưu bệnh nhân" data-shape="rectangle">
+  <rect x="40.00700000000002" y="20" width="199.783" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.8985" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Tiếp nhận · Lưu bệnh nhân</text>
+</g>
+<g class="node" data-id="P" data-label="Patient · patientId + outbox" data-shape="rectangle">
+  <rect x="42.600500000000025" y="88.9" width="194.59599999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.8985" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Patient · patientId + outbox</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="38.525000000000034" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.8985" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="Q" data-label="notification.q" data-shape="rectangle">
+  <rect x="82.61450000000002" y="279" width="114.568" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.8985" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">notification.q</text>
+</g>
+<g class="node" data-id="N" data-label="Notification · thông báo chào mừng" data-shape="rectangle">
+  <rect x="20" y="347.9" width="239.79700000000003" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="139.8985" y="366.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Notification · thông báo chào mừng</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Bàn giao patientId và khoa → Vinh đăng ký lượt khám</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>05 / 18</b></footer></section><section class="slide " id="slide-6" aria-label="Slide 6: Đăng ký và giữ chỗ trước khi thu phí khám"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">05 / ĐĂNG KÝ NGOẠI TRÚ</span><span class="owner">Vinh <small>2 phút</small></span></header><div class="heading"><div class="service">Clinical · :8082</div><h1>Đăng ký và giữ chỗ trước khi thu phí khám</h1></div><div class="columns"><div class="content"><div class="role">NURSE; ADMIN/MANAGER quản lý lịch</div><div class="route">/appointments/reception</div><div class="rows"><div class="row"><span>UI: chọn lịch, khoa, bác sĩ</span><strong>Clinical kiểm lịch và sức chứa</strong></div><div class="row"><span>UI: xác nhận đăng ký tại quầy</span><strong>outpatient.registration.changed</strong></div><div class="row"><span>Trạng thái chờ thu</span><strong>Có mã lượt / registration; chưa coi là đã khám</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Phiếu cùng patientId, bác sĩ/khoa, giờ dự kiến và số tiền cần thu. Tiếp nhận tại quầy ghi nhận đã có mặt trong cùng intent.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 286.466 335.9" width="286.466" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="143.233,56.900000000000006 143.233,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="outpatient.registration.changed" points="143.233,125.80000000000001 143.233,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="143.233,247.00000000000003 143.233,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="C" data-to="R" data-label="outpatient.registration.changed">
+  <rect x="61.23299999999999" y="152.8" width="163.77400000000003" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="143.12" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">outpatient.registration.changed</text>
+</g>
+<g class="node" data-id="U" data-label="UI · Đăng ký tại quầy" data-shape="rectangle">
+  <rect x="63.34849999999999" y="20" width="159.769" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="143.233" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">UI · Đăng ký tại quầy</text>
+</g>
+<g class="node" data-id="C" data-label="Clinical · registration + reservation" data-shape="rectangle">
+  <rect x="20" y="88.9" width="246.46599999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="143.233" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical · registration + reservation</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="41.85950000000001" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="143.233" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · chuẩn bị khoản thu EXAM" data-shape="rectangle">
+  <rect x="21.85250000000002" y="279" width="242.76099999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="143.233" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · chuẩn bị khoản thu EXAM</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Giữ nguyên mã lượt → Lộc thu phí khám ở slide 07</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>06 / 18</b></footer></section><section class="slide " id="slide-7" aria-label="Slide 7: Thu phí khám, sau đó mới xác nhận phiếu"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">06 / THU PHÍ KHÁM</span><span class="owner">Lộc <small>1–2 phút</small></span></header><div class="heading"><div class="service">Billing · :8086</div><h1>Thu phí khám, sau đó mới xác nhận phiếu</h1></div><div class="columns"><div class="content"><div class="role">CASHIER</div><div class="route">/billing/scheduled-payments</div><div class="rows"><div class="row"><span>UI: chọn đúng khoản EXAM</span><strong>Đọc lại nguồn, số tiền và báo giá từ Billing</strong></div><div class="row"><span>UI: xác nhận thu tiền</span><strong>payment.completed</strong></div><div class="row"><span>Sau đủ nghĩa vụ tài chính</span><strong>outpatient.financial.eligibility.granted</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Clinical đọc lại được phiếu đã xác nhận. Không lấy HTTP thanh toán thành công làm bằng chứng consumer đã xử lý.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="6"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 481.79599999999994 335.9" width="481.79599999999994" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="228.301,56.900000000000006 228.30099999999996,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="196.6093333333333,125.80000000000001 196.6093333333333,145.8 152.92599999999996,145.8 152.92599999999996,198.10000000000002 194.50983333333332,198.10000000000002 194.50983333333332,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="outpatient.financial.eligibility.granted" points="259.99266666666665,125.80000000000001 259.99266666666665,145.8 303.676,145.8 303.676,198.10000000000002 262.0921666666666,198.10000000000002 262.0921666666666,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="228.301,247.00000000000003 228.301,263 112.85199999999999,263 112.85199999999999,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="228.301,247.00000000000003 228.301,263 343.74999999999994,263 343.74999999999994,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="B" data-to="R" data-label="payment.completed">
+  <rect x="99.42599999999996" y="152.8" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="152.80099999999996" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="B" data-to="R" data-label="outpatient.financial.eligibility.granted">
+  <rect x="210.176" y="152.8" width="186.34599999999998" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="303.349" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">outpatient.financial.eligibility.granted</text>
+</g>
+<g class="node" data-id="U" data-label="Thu ngân · Xác nhận thanh toán" data-shape="rectangle">
+  <rect x="114.701" y="20" width="227.19999999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="228.301" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thu ngân · Xác nhận thanh toán</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · payment + outbox" data-shape="rectangle">
+  <rect x="133.22599999999997" y="88.9" width="190.14999999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="228.30099999999996" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · payment + outbox</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="126.92750000000001" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="228.301" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="C" data-label="Clinical · xác nhận phiếu" data-shape="rectangle">
+  <rect x="20" y="279" width="185.70399999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="112.85199999999999" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical · xác nhận phiếu</text>
+</g>
+<g class="node" data-id="S" data-label="Report / Notification · queue riêng" data-shape="rectangle">
+  <rect x="225.70399999999995" y="279" width="236.09199999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="343.74999999999994" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report / Notification · queue riêng</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Lộc → Vinh: phiếu đã confirmed và đã có mặt → bắt đầu khám</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>07 / 18</b></footer></section><section class="slide " id="slide-8" aria-label="Slide 8: Mở hồ sơ khám và tạo chỉ định đúng lượt"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">07 / BÁC SĨ KHÁM</span><span class="owner">Vinh <small>2 phút</small></span></header><div class="heading"><div class="service">Clinical · :8082</div><h1>Mở hồ sơ khám và tạo chỉ định đúng lượt</h1></div><div class="columns"><div class="content"><div class="role">DOCTOR được phân công</div><div class="route">/appointments/[id] → /records/[id] → lab-order</div><div class="rows"><div class="row"><span>UI: bắt đầu khám / lưu hồ sơ</span><strong>appointment.status.changed / medicalrecord.created, theo command</strong></div><div class="row"><span>UI: lưu chẩn đoán</span><strong>diagnosis.added</strong></div><div class="row"><span>UI: lưu chỉ định xét nghiệm</span><strong>Lưu Clinical Lab Order; không gán event lab.request.created tại bước này</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Ghi triệu chứng, chẩn đoán, mã chỉ định và recordId. medicalrecord.created không tự tạo một xét nghiệm từ chẩn đoán.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 485.45399999999995 335.9" width="485.45399999999995" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="237.7885,56.900000000000006 237.7885,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="medicalrecord.created / diagnosis.added" points="207.94933333333333,125.80000000000001 207.94933333333333,145.80000000000004 121.5,145.80000000000004 121.5,210.10000000000005" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="O" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="267.62766666666664,125.80000000000001 267.62766666666664,145.8 354.077,145.8 354.077,157.8" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="O" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="UI chuyển bước + Lab kiểm nguồn bằng REST" points="354.077,194.70000000000002 354.077,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="C" data-to="R" data-label="medicalrecord.created / diagnosis.added">
+  <rect x="16" y="152.80000000000004" width="210.70000000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="121.35000000000001" y="167.95000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">medicalrecord.created / diagnosis.added</text>
+</g>
+<g class="edge-label" data-from="O" data-to="L" data-label="UI chuyển bước + Lab kiểm nguồn bằng REST">
+  <rect x="239.077" y="221.70000000000002" width="229.11400000000006" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="353.634" y="236.85000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">UI chuyển bước + Lab kiểm nguồn bằng REST</text>
+</g>
+<g class="node" data-id="U" data-label="Bác sĩ · Lưu hồ sơ / chẩn đoán" data-shape="rectangle">
+  <rect x="126.782" y="20" width="222.013" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="237.7885" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Bác sĩ · Lưu hồ sơ / chẩn đoán</text>
+</g>
+<g class="node" data-id="C" data-label="Clinical · hồ sơ đang mở" data-shape="rectangle">
+  <rect x="148.27100000000002" y="88.9" width="179.03499999999997" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="237.7885" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical · hồ sơ đang mở</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="20.12650000000002" y="210.10000000000005" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="121.5" y="228.55000000000007" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="O" data-label="Lưu chỉ định · sourceOrderId" data-shape="rectangle">
+  <rect x="242.7" y="157.8" width="222.754" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="354.077" y="176.25" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lưu chỉ định · sourceOrderId</text>
+</g>
+<g class="node" data-id="L" data-label="Lab · tạo yêu cầu ở slide 09" data-shape="rectangle">
+  <rect x="253.4445" y="279" width="201.265" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="354.077" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lab · tạo yêu cầu ở slide 09</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Vinh chuyển vai LAB_TECH → tạo yêu cầu từ chỉ định đã lưu</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>08 / 18</b></footer></section><section class="slide " id="slide-9" aria-label="Slide 9: Tạo phiếu Lab từ chỉ định của bác sĩ"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">08 / LAB NHẬN CHỈ ĐỊNH</span><span class="owner">Vinh <small>1 phút</small></span></header><div class="heading"><div class="service">Lab · :8084</div><h1>Tạo phiếu Lab từ chỉ định của bác sĩ</h1></div><div class="columns"><div class="content"><div class="role">LAB_TECH theo quyền nguồn</div><div class="route">/records/[recordId]/lab-order → /lab/[testId]</div><div class="rows"><div class="row"><span>UI: tạo yêu cầu từ chỉ định</span><strong>Lab xác minh sourceOrderId với Clinical qua REST</strong></div><div class="row"><span>Sau khi tạo yêu cầu thành công</span><strong>lab.request.created</strong></div><div class="row"><span>Kết quả phía Billing</span><strong>Khoản thu LAB_TEST đúng source, patient và lượt</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Phiếu Lab có recordId/sourceOrderId và patientId đúng; trạng thái chưa được phép thực hiện khi còn thiếu clearance.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="8"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 298.3219999999999 335.9" width="298.3219999999999" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="149.16099999999994,56.900000000000006 149.16099999999994,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="lab.request.created" points="149.16099999999994,125.80000000000001 149.16099999999994,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="149.16099999999994,247.00000000000003 149.16099999999994,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="L" data-to="R" data-label="lab.request.created">
+  <rect x="93.66099999999994" y="152.8" width="110.31400000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="148.81799999999996" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">lab.request.created</text>
+</g>
+<g class="node" data-id="U" data-label="UI · Tạo yêu cầu xét nghiệm" data-shape="rectangle">
+  <rect x="48.15799999999997" y="20" width="202.00599999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="149.16099999999994" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">UI · Tạo yêu cầu xét nghiệm</text>
+</g>
+<g class="node" data-id="L" data-label="Lab · kiểm chỉ định qua REST" data-shape="rectangle">
+  <rect x="37.78399999999996" y="88.9" width="222.75399999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="149.16099999999994" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lab · kiểm chỉ định qua REST</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="47.787499999999966" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="149.16099999999994" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · LAB_TEST payment request" data-shape="rectangle">
+  <rect x="20" y="279" width="258.3219999999999" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="149.16099999999994" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · LAB_TEST payment request</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Vinh → Lộc: thu phí xét nghiệm trước khi bấm Bắt đầu xét nghiệm</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>09 / 18</b></footer></section><section class="slide " id="slide-10" aria-label="Slide 10: Thanh toán Lab để mở quyền thực hiện"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">09 / THU PHÍ XÉT NGHIỆM</span><span class="owner">Lộc <small>1–2 phút</small></span></header><div class="heading"><div class="service">Billing · :8086</div><h1>Thanh toán Lab để mở quyền thực hiện</h1></div><div class="columns"><div class="content"><div class="role">CASHIER</div><div class="route">/billing/payment-requests → chọn LAB_TEST</div><div class="rows"><div class="row"><span>UI: chọn đúng khoản LAB_TEST</span><strong>Đọc lại nguồn, số tiền và báo giá từ Billing</strong></div><div class="row"><span>UI: xác nhận thu tiền</span><strong>payment.completed</strong></div><div class="row"><span>Sau đủ nghĩa vụ tài chính</span><strong>financial.clearance.granted</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Lab chuyển đủ điều kiện / READY cho đúng phiếu. Chưa có clearance thì không bắt đầu xét nghiệm.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 584.795 335.9" width="584.795" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="305.55025,56.900000000000006 305.55025,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="273.8585833333333,125.80000000000001 273.8585833333333,145.8 239.92524999999998,145.8 239.92524999999998,198.10000000000002 271.75908333333336,198.10000000000002 271.75908333333336,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="financial.clearance.granted" points="337.2419166666666,125.80000000000001 337.2419166666666,145.8 371.17525,145.8 371.17525,198.10000000000002 339.34141666666665,198.10000000000002 339.34141666666665,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="305.55025,247.00000000000003 305.55025,263 164.3515,263 164.3515,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="305.55025,247.00000000000003 305.55025,263 446.74899999999997,263 446.74899999999997,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="B" data-to="R" data-label="payment.completed">
+  <rect x="186.42524999999998" y="152.8" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="239.80024999999998" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="B" data-to="R" data-label="financial.clearance.granted">
+  <rect x="297.17525" y="152.8" width="147.14200000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="370.74625000000003" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">financial.clearance.granted</text>
+</g>
+<g class="node" data-id="U" data-label="Thu ngân · Xác nhận thanh toán" data-shape="rectangle">
+  <rect x="191.95025" y="20" width="227.19999999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="305.55025" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thu ngân · Xác nhận thanh toán</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · payment + outbox" data-shape="rectangle">
+  <rect x="210.47525" y="88.9" width="190.14999999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="305.55025" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · payment + outbox</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="204.17675000000003" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="305.55025" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="C" data-label="Nguồn LAB_TEST · đủ điều kiện thực hiện" data-shape="rectangle">
+  <rect x="20" y="279" width="288.703" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="164.3515" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Nguồn LAB_TEST · đủ điều kiện thực hiện</text>
+</g>
+<g class="node" data-id="S" data-label="Report / Notification · queue riêng" data-shape="rectangle">
+  <rect x="328.703" y="279" width="236.09199999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="446.74899999999997" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report / Notification · queue riêng</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Lộc → Vinh: kiểm tra Lab đã READY và có clearanceId</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>10 / 18</b></footer></section><section class="slide " id="slide-11" aria-label="Slide 11: Thực hiện xét nghiệm và lưu kết quả"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">10 / LAB TRẢ KẾT QUẢ</span><span class="owner">Vinh <small>2 phút</small></span></header><div class="heading"><div class="service">Lab · :8084</div><h1>Thực hiện xét nghiệm và lưu kết quả</h1></div><div class="columns"><div class="content"><div class="role">LAB_TECH</div><div class="route">/lab/[testId]</div><div class="rows"><div class="row"><span>UI: Bắt đầu xét nghiệm</span><strong>Kiểm READY + clearanceId trong luồng V1</strong></div><div class="row"><span>UI: Nhập kết quả → Lưu kết quả</span><strong>lab.result.created</strong></div><div class="row"><span>UI: xem kết quả trên hồ sơ khám</span><strong>Đọc kết quả cùng lượt, không thu phí khám lần hai</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Chỉ số, đơn vị, khoảng tham chiếu và kết luận hiển thị. Bác sĩ đọc lại kết quả trong hồ sơ hiện tại.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="10"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 494.39300000000003 404.79999999999995" width="494.39300000000003" height="404.79999999999995" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="318.588,125.80000000000001 318.588,145.8 270.30491666666666,145.8 270.30491666666666,157.8" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="lab.result.created" points="243.67675,194.70000000000002 243.67675,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.67675,315.9 243.67675,331.9 125.07849999999999,331.9 125.07849999999999,347.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.67675,315.9 243.67675,331.9 362.275,331.9 362.275,347.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="L" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HTTP qua Gateway" points="168.76549999999997,56.900000000000006 168.7655,145.8 217.04858333333334,145.8 217.04858333333334,157.8" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="L" data-to="R" data-label="lab.result.created">
+  <rect x="193.17674999999997" y="221.70000000000002" width="100.81000000000003" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="243.58175" y="236.85000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">lab.result.created</text>
+</g>
+<g class="edge-label" data-from="C" data-to="L" data-label="HTTP qua Gateway">
+  <rect x="114.7655" y="100.50000000000001" width="107.938" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="168.7345" y="115.65000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">HTTP qua Gateway</text>
+</g>
+<g class="node" data-id="U" data-label="Lab UI · Lưu kết quả" data-shape="rectangle">
+  <rect x="238.70350000000002" y="88.9" width="159.769" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="318.588" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lab UI · Lưu kết quả</text>
+</g>
+<g class="node" data-id="L" data-label="Lab · COMPLETED" data-shape="rectangle">
+  <rect x="163.79225000000002" y="157.8" width="159.76899999999995" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="243.67675" y="176.25" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Lab · COMPLETED</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="142.30325000000002" y="279" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="243.67675" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="N" data-label="notification.q · báo có kết quả" data-shape="rectangle">
+  <rect x="20" y="347.9" width="210.15699999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="125.07849999999999" y="366.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">notification.q · báo có kết quả</text>
+</g>
+<g class="node" data-id="T" data-label="report.outpatient-v1.q · thống kê" data-shape="rectangle">
+  <rect x="250.15699999999998" y="347.9" width="224.23600000000002" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="362.275" y="366.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">report.outpatient-v1.q · thống kê</text>
+</g>
+<g class="node" data-id="C" data-label="Bác sĩ · đọc kết quả" data-shape="rectangle">
+  <rect x="88.13999999999999" y="20" width="161.251" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="168.76549999999997" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Bác sĩ · đọc kết quả</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Vinh kết luận chuyên môn → Huy trình bày Pharmacy trên hồ sơ này</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>11 / 18</b></footer></section><section class="slide " id="slide-12" aria-label="Slide 12: Tạo đơn thuốc gắn với hồ sơ đang khám"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">11 / KÊ ĐƠN</span><span class="owner">Huy <small>2 phút</small></span></header><div class="heading"><div class="service">Pharmacy · :8085</div><h1>Tạo đơn thuốc gắn với hồ sơ đang khám</h1></div><div class="columns"><div class="content"><div class="role">DOCTOR tạo đơn; PHARMACIST quản lý kho</div><div class="route">/pharmacy/prescriptions/new</div><div class="rows"><div class="row"><span>UI: chọn hồ sơ, thuốc, số lượng</span><strong>Pharmacy kiểm Clinical context và tồn kho</strong></div><div class="row"><span>UI: Tạo đơn thuốc</span><strong>prescription.created</strong></div><div class="row"><span>Billing nhận nguồn đơn</span><strong>Chuẩn bị khoản thu PRESCRIPTION</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Có prescriptionId, đúng patient/record/lượt và chi tiết thuốc. Kê đơn là quyết định của bác sĩ; Huy là người trình bày service.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="11"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 304.991 335.9" width="304.991" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="152.4955,56.900000000000006 152.4955,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.created" points="152.4955,125.80000000000001 152.4955,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="152.4955,247.00000000000003 152.4955,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="P" data-to="R" data-label="prescription.created">
+  <rect x="94.49549999999999" y="152.8" width="115.06600000000003" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="152.0285" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">prescription.created</text>
+</g>
+<g class="node" data-id="U" data-label="Bác sĩ · Tạo đơn thuốc" data-shape="rectangle">
+  <rect x="63.71900000000001" y="20" width="177.55299999999997" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="152.4955" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Bác sĩ · Tạo đơn thuốc</text>
+</g>
+<g class="node" data-id="P" data-label="Pharmacy · đơn + giữ tồn theo contract" data-shape="rectangle">
+  <rect x="20" y="88.9" width="264.991" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="152.4955" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Pharmacy · đơn + giữ tồn theo contract</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="51.122000000000014" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="152.4955" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · khoản thu PRESCRIPTION" data-shape="rectangle">
+  <rect x="30.74450000000003" y="279" width="243.50199999999992" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="152.4955" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · khoản thu PRESCRIPTION</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Huy → Lộc: thu tiền đơn thuốc; chưa bấm xuất thuốc</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>12 / 18</b></footer></section><section class="slide " id="slide-13" aria-label="Slide 13: Thu tiền đúng đơn, rồi bàn giao quầy thuốc"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">12 / THU TIỀN THUỐC</span><span class="owner">Lộc <small>1–2 phút</small></span></header><div class="heading"><div class="service">Billing · :8086</div><h1>Thu tiền đúng đơn, rồi bàn giao quầy thuốc</h1></div><div class="columns"><div class="content"><div class="role">CASHIER</div><div class="route">/billing/payment-requests → chọn PRESCRIPTION</div><div class="rows"><div class="row"><span>UI: chọn đúng khoản PRESCRIPTION</span><strong>Đọc lại nguồn, số tiền và báo giá từ Billing</strong></div><div class="row"><span>UI: xác nhận thu tiền</span><strong>payment.completed</strong></div><div class="row"><span>Sau đủ nghĩa vụ tài chính</span><strong>financial.clearance.granted</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Đơn thuốc đủ điều kiện cấp; payment thành công chưa có nghĩa thuốc đã xuất khỏi kho.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="12"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 609.9889999999999 335.9" width="609.9889999999999" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="324.44575,56.900000000000006 324.44575,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="292.75408333333326,125.80000000000001 292.75408333333326,145.8 258.82075,145.8 258.82075,198.10000000000002 290.65458333333333,198.10000000000002 290.65458333333333,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="financial.clearance.granted" points="356.1374166666666,125.80000000000001 356.1374166666666,145.8 390.07075,145.8 390.07075,198.10000000000002 358.2369166666666,198.10000000000002 358.2369166666666,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="324.44575,247.00000000000003 324.44575,263 176.94849999999997,263 176.94849999999997,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="324.44575,247.00000000000003 324.44575,263 471.9429999999999,263 471.9429999999999,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="B" data-to="R" data-label="payment.completed">
+  <rect x="205.32074999999998" y="152.8" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="258.69575" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="B" data-to="R" data-label="financial.clearance.granted">
+  <rect x="316.07075" y="152.8" width="147.14200000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="389.64175" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">financial.clearance.granted</text>
+</g>
+<g class="node" data-id="U" data-label="Thu ngân · Xác nhận thanh toán" data-shape="rectangle">
+  <rect x="210.84574999999998" y="20" width="227.19999999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="324.44575" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Thu ngân · Xác nhận thanh toán</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · payment + outbox" data-shape="rectangle">
+  <rect x="229.37074999999996" y="88.9" width="190.14999999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="324.44575" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · payment + outbox</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="223.07225" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="324.44575" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="C" data-label="Nguồn PRESCRIPTION · đủ điều kiện thực hiện" data-shape="rectangle">
+  <rect x="20" y="279" width="313.89699999999993" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="176.94849999999997" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Nguồn PRESCRIPTION · đủ điều kiện thực hiện</text>
+</g>
+<g class="node" data-id="S" data-label="Report / Notification · queue riêng" data-shape="rectangle">
+  <rect x="353.89699999999993" y="279" width="236.09199999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="471.9429999999999" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report / Notification · queue riêng</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Lộc → Huy: kiểm clearance đúng đơn rồi xuất thuốc</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>13 / 18</b></footer></section><section class="slide " id="slide-14" aria-label="Slide 14: Xuất thuốc là một bước riêng sau thanh toán"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">13 / BỆNH NHÂN NHẬN THUỐC</span><span class="owner">Huy <small>2 phút</small></span></header><div class="heading"><div class="service">Pharmacy · :8085</div><h1>Xuất thuốc là một bước riêng sau thanh toán</h1></div><div class="columns"><div class="content"><div class="role">PHARMACIST</div><div class="route">/pharmacy/prescriptions/[prescriptionId]</div><div class="rows"><div class="row"><span>UI: kiểm đơn và trạng thái thu</span><strong>Đọc lại clearance / trạng thái hợp lệ</strong></div><div class="row"><span>UI: Xác nhận xuất thuốc</span><strong>prescription.filled</strong></div><div class="row"><span>Nhánh lỗi để giải thích</span><strong>prescription.dispense.failed · không xuất kho giả</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Đơn đã cấp thuốc, có bằng chứng xuất thuốc và tồn kho thay đổi phù hợp. Nếu cấp lỗi sau thu: xử lý đối soát/hoàn tiền theo nghiệp vụ.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="13"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 449.19199999999995 335.9" width="449.19199999999995" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="244.97349999999994,56.900000000000006 244.97349999999997,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.filled" points="244.97349999999997,125.80000000000001 244.97349999999997,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="244.97349999999997,247.00000000000003 244.97349999999997,263 137.67549999999997,263 137.67549999999997,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="244.97349999999997,247.00000000000003 244.97349999999997,263 352.27149999999995,263 352.27149999999995,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="P" data-to="R" data-label="prescription.filled">
+  <rect x="194.97349999999997" y="152.8" width="99.62200000000003" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="244.78449999999998" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">prescription.filled</text>
+</g>
+<g class="node" data-id="U" data-label="Dược sĩ · Xác nhận xuất thuốc" data-shape="rectangle">
+  <rect x="135.0785" y="20" width="219.78999999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="244.97349999999994" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Dược sĩ · Xác nhận xuất thuốc</text>
+</g>
+<g class="node" data-id="P" data-label="Pharmacy · ghi dispense / cập nhật kho" data-shape="rectangle">
+  <rect x="109.14349999999999" y="88.9" width="271.65999999999997" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="244.97349999999997" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Pharmacy · ghi dispense / cập nhật kho</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="143.6" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="244.97349999999997" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="B" data-label="Billing · ghi nhận đơn đã thực hiện" data-shape="rectangle">
+  <rect x="20" y="279" width="235.35099999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="137.67549999999997" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Billing · ghi nhận đơn đã thực hiện</text>
+</g>
+<g class="node" data-id="S" data-label="Report / Notification" data-shape="rectangle">
+  <rect x="275.35099999999994" y="279" width="153.841" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="352.27149999999995" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report / Notification</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Huy → Vinh: hoàn tất hồ sơ khám và hướng dẫn ra về</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>14 / 18</b></footer></section><section class="slide " id="slide-15" aria-label="Slide 15: Hoàn tất hồ sơ và hướng dẫn bệnh nhân ra về"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">14 / KẾT THÚC LƯỢT KHÁM</span><span class="owner">Vinh <small>1–2 phút</small></span></header><div class="heading"><div class="service">Clinical · :8082</div><h1>Hoàn tất hồ sơ và hướng dẫn bệnh nhân ra về</h1></div><div class="columns"><div class="content"><div class="role">DOCTOR</div><div class="route">/records/[recordId] → Hoàn tất lần khám</div><div class="rows"><div class="row"><span>UI: đọc Lab, lưu kết luận</span><strong>Tiếp tục cùng hồ sơ; không tạo lượt mới</strong></div><div class="row"><span>UI: Hoàn tất hồ sơ khám</span><strong>medicalrecord.completed</strong></div><div class="row"><span>UI: lưu lời hẹn tái khám nếu dùng</span><strong>followup.recommendation.created</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Kết luận, hướng dẫn và thời điểm hoàn tất hiển thị. Bệnh nhân đã xử lý các nghĩa vụ tài chính và nhận thuốc nếu có.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="14"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482.537 335.9" width="482.537" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="249.23425000000003,56.900000000000006 249.23425000000003,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="medicalrecord.completed" points="249.23425000000003,125.80000000000001 249.23425,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="249.23425,247.00000000000003 249.23425,263 133.60000000000002,263 133.60000000000002,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="249.23425,247.00000000000003 249.23425,263 364.86850000000004,263 364.86850000000004,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="C" data-to="R" data-label="medicalrecord.completed">
+  <rect x="180.73424999999997" y="152.8" width="136.45000000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="248.95925" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">medicalrecord.completed</text>
+</g>
+<g class="node" data-id="U" data-label="Bác sĩ · Hoàn tất hồ sơ khám" data-shape="rectangle">
+  <rect x="144.89675000000003" y="20" width="208.67499999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="249.23425000000003" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Bác sĩ · Hoàn tất hồ sơ khám</text>
+</g>
+<g class="node" data-id="C" data-label="Clinical · COMPLETED" data-shape="rectangle">
+  <rect x="159.71675000000005" y="88.9" width="179.03499999999994" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="249.23425000000003" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical · COMPLETED</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="147.86075000000002" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="249.23425" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="N" data-label="Notification · kết quả khám đã có" data-shape="rectangle">
+  <rect x="20" y="279" width="227.20000000000002" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="133.60000000000002" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Notification · kết quả khám đã có</text>
+</g>
+<g class="node" data-id="T" data-label="Report · lượt khám hoàn tất" data-shape="rectangle">
+  <rect x="267.20000000000005" y="279" width="195.33699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="364.86850000000004" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report · lượt khám hoàn tất</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Vinh → Lộc: đăng nhập PATIENT xem thông báo và kết quả cá nhân</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>15 / 18</b></footer></section><section class="slide " id="slide-16" aria-label="Slide 16: Nhận event, lưu thông báo cho đúng bệnh nhân"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">15 / THÔNG BÁO CÁ NHÂN</span><span class="owner">Lộc <small>2 phút</small></span></header><div class="heading"><div class="service">Notification · Support :8087</div><h1>Nhận event, lưu thông báo cho đúng bệnh nhân</h1></div><div class="columns"><div class="content"><div class="role">PATIENT</div><div class="route">/notifications · /records/mine · /lab/mine</div><div class="rows"><div class="row"><span>Tự động khi event nguồn tới</span><strong>Nhận patient.created / lab.result.created / medicalrecord.completed</strong></div><div class="row"><span>Sau khi lưu thông báo thành công</span><strong>notification.sent</strong></div><div class="row"><span>UI: mở thông báo / xem kết quả</span><strong>Đọc dữ liệu · không tự phát lab.result.created</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Đúng bệnh nhân thấy thông báo có kết quả; mở cổng cá nhân đọc chi tiết từ Clinical/Lab. Nhận lại event không nhân đôi thông báo.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="15"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 471.1635 335.9" width="471.1635" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="event nghiệp vụ" points="136.676,56.900000000000006 136.676,149.5" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="102.88483333333332,186.40000000000003 102.88483333333332,198.10000000000002 77.28399999999999,198.10000000000002 77.28399999999999,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="77.28399999999999,247 77.28399999999999,267 137.23024999999998,267 137.23024999999998,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="N" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="notification.sent" points="196.06799999999998,279 196.06799999999998,214.7 170.46716666666663,214.7 170.46716666666663,186.40000000000003" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="U" data-to="N" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HTTP qua Gateway" points="354.6065,186.39999999999998 354.6065,267 254.90574999999995,267 254.90574999999995,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="P" data-to="R" data-label="event nghiệp vụ">
+  <rect x="90.676" y="83.9" width="91.30600000000001" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="136.329" y="99.05000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">event nghiệp vụ</text>
+</g>
+<g class="edge-label" data-from="N" data-to="R" data-label="notification.sent">
+  <rect x="150.56799999999998" y="221.7" width="90.11800000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="195.627" y="236.85" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">notification.sent</text>
+</g>
+<g class="edge-label" data-from="U" data-to="N" data-label="HTTP qua Gateway">
+  <rect x="300.6065" y="221.7" width="107.938" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="354.5755" y="236.85" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">HTTP qua Gateway</text>
+</g>
+<g class="node" data-id="P" data-label="Patient / Lab / Clinical" data-shape="rectangle">
+  <rect x="54.19799999999998" y="20" width="164.95600000000002" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="136.676" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Patient / Lab / Clinical</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="35.30250000000001" y="149.5" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="136.676" y="167.95" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="Q" data-label="notification.q" data-shape="rectangle">
+  <rect x="19.999999999999996" y="210.10000000000002" width="114.568" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="77.28399999999999" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">notification.q</text>
+</g>
+<g class="node" data-id="N" data-label="Notification · lưu IN_APP + outbox" data-shape="rectangle">
+  <rect x="78.39249999999998" y="279" width="235.35099999999997" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="196.06799999999998" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Notification · lưu IN_APP + outbox</text>
+</g>
+<g class="node" data-id="U" data-label="PATIENT · xem thông báo" data-shape="rectangle">
+  <rect x="258.04949999999997" y="149.5" width="193.114" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="354.6065" y="167.95" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">PATIENT · xem thông báo</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Lộc → Huy: báo cáo cuối lượt từ các facts đã ghi nhận</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>16 / 18</b></footer></section><section class="slide " id="slide-17" aria-label="Slide 17: Đối chiếu một lượt khám từ các event nguồn"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">16 / BÁO CÁO CUỐI LUỒNG</span><span class="owner">Huy <small>2 phút</small></span></header><div class="heading"><div class="service">Report · Support :8087</div><h1>Đối chiếu một lượt khám từ các event nguồn</h1></div><div class="columns"><div class="content"><div class="role">MANAGER / ADMIN theo quyền báo cáo</div><div class="route">/reports/outpatient</div><div class="rows"><div class="row"><span>Event nghiệp vụ nhận vào</span><strong>medicalrecord.completed · lab.result.created · prescription.filled</strong></div><div class="row"><span>Event tài chính nhận vào</span><strong>payment.completed · payment.refunded</strong></div><div class="row"><span>UI: chọn kỳ / xem biểu đồ</span><strong>Đọc read model · không phát report.generated</strong></div></div><div class="proof"><b>KIỂM CHỨNG TRÊN DEMO</b><p>Đối chiếu lượt khám, Lab, đơn đã cấp và tiền thu theo kỳ dữ liệu đã được chấp nhận. Phân biệt thu tiền, hỗ trợ mô phỏng và hoàn tiền.</p></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="16"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 479.573 335.9" width="479.573" height="335.9" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="P" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="facts đã xảy ra" points="134.7115,56.900000000000006 134.7115,149.5" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="134.7115,186.40000000000003 134.7115,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="134.7115,247 134.7115,267 197.28858333333332,267 197.28858333333332,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="U" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="GET qua Gateway" points="357.82899999999995,186.39999999999998 357.82899999999995,267 295.25191666666666,267 295.25191666666666,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="P" data-to="R" data-label="facts đã xảy ra">
+  <rect x="91.71149999999999" y="83.9" width="85.96000000000001" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="134.6915" y="99.05000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">facts đã xảy ra</text>
+</g>
+<g class="edge-label" data-from="U" data-to="T" data-label="GET qua Gateway">
+  <rect x="307.32899999999995" y="221.7" width="100.81" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="357.7339999999999" y="236.85" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">GET qua Gateway</text>
+</g>
+<g class="node" data-id="P" data-label="Clinical / Lab / Pharmacy / Billing" data-shape="rectangle">
+  <rect x="20" y="20" width="229.42299999999997" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="134.7115" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Clinical / Lab / Pharmacy / Billing</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="33.338000000000015" y="149.5" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="134.7115" y="167.95" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="Q" data-label="report.outpatient-v1.q" data-shape="rectangle">
+  <rect x="53.34499999999997" y="210.10000000000002" width="162.73300000000003" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="134.7115" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">report.outpatient-v1.q</text>
+</g>
+<g class="node" data-id="T" data-label="Report · read model / kỳ đã được chấp nhận" data-shape="rectangle">
+  <rect x="99.32525" y="279" width="293.89" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="246.27024999999998" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Report · read model / kỳ đã được chấp nhận</text>
+</g>
+<g class="node" data-id="U" data-label="Manager · chọn kỳ báo cáo" data-shape="rectangle">
+  <rect x="256.085" y="149.5" width="203.488" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="357.82899999999995" y="167.95" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Manager · chọn kỳ báo cáo</text>
+</g>
+</svg></div><span class="caption">Sơ đồ Mermaid · bấm để phóng to</span></div></div><div class="handoff"><span>BÀN GIAO</span>Huy chốt demo: cùng một bệnh nhân, các service phối hợp qua hợp đồng rõ ràng</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>17 / 18</b></footer></section><section class="slide checklist" id="slide-18" aria-label="Slide 18: Một dữ liệu demo, bốn người bàn giao rõ ràng"><header><span class="brand">medi<span>flow</span><i>+</i></span><span class="section">17 / ĐỐI CHIẾU & CHẠY THỬ</span><span class="owner">Cả nhóm <small>1 phút</small></span></header><div class="heading"><div class="service">KỊCH BẢN PHỐI HỢP</div><h1>Một dữ liệu demo, bốn người bàn giao rõ ràng</h1></div><div class="columns checklist"><div class="rows"><div class="row"><span>Trước buổi demo</span><strong>Khởi động 6 business apps; seed khoa/bác sĩ/thuốc/lịch; kiểm tài khoản và quyền.</strong></div><div class="row"><span>Chốt profile</span><strong>Scheduled EXAM; Lab/Rx clearance; Notification IN_APP; Report consumer/read/accepted period.</strong></div><div class="row"><span>Bộ mã dùng chung</span><strong>patientId → registration/appointmentId → recordId → testId → prescriptionId → paymentId.</strong></div><div class="row"><span>Bằng chứng trên RabbitMQ</span><strong>Mở :15672, chỉ exchange, routing key, bindings, consumer và DLQ. Queue rỗng có thể đã xử lý xong.</strong></div><div class="row"><span>Khi timeout</span><strong>Tra cứu kết quả; retry đúng intent/key; không tạo đơn hay thu tiền mới để che outcome chưa rõ.</strong></div></div><div class="visual"><div class="diagram" tabindex="0" role="button" aria-label="Phóng to sơ đồ" data-zoom="17"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 428.56999999999994 473.69999999999993" width="428.56999999999994" height="473.69999999999993" style="background:#f2f6f4">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#087f72" stroke="#087f72" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="U" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="221.50974999999994,56.900000000000006 221.50974999999994,88.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="S" data-to="R" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="routing key + eventId" points="221.50974999999994,125.80000000000001 221.50974999999994,210.10000000000002" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="R" data-to="Q" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="221.50974999999994,247.00000000000003 221.50974999999994,279" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="185.00158333333331,315.9 185.00158333333331,335.9 131.00649999999996,335.9 131.00649999999996,347.9" fill="none" stroke="#63837b" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Q" data-to="D" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Lỗi quá số lần retry" points="258.0179166666666,315.9 258.0179166666666,352.5 312.013,352.5 312.013,416.79999999999995" fill="none" stroke="#63837b" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="S" data-to="R" data-label="routing key + eventId">
+  <rect x="164.00974999999994" y="152.8" width="114.47200000000002" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="221.24574999999996" y="167.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">routing key + eventId</text>
+</g>
+<g class="edge-label" data-from="Q" data-to="D" data-label="Lỗi quá số lần retry">
+  <rect x="258.013" y="359.5" width="107.93800000000003" height="30.3" rx="2" ry="2" fill="#f2f6f4" stroke="#d7e0dd" stroke-width="1" />
+  <text font-family="Arial" x="311.98199999999997" y="374.65" text-anchor="middle" font-size="11" font-weight="400" fill="#6d8683" dy="3.8499999999999996">Lỗi quá số lần retry</text>
+</g>
+<g class="node" data-id="U" data-label="Một thao tác ghi trên UI" data-shape="rectangle">
+  <rect x="136.06774999999993" y="20" width="170.884" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="221.50974999999994" y="38.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Một thao tác ghi trên UI</text>
+</g>
+<g class="node" data-id="S" data-label="Service · ghi nghiệp vụ / outbox tùy nhánh" data-shape="rectangle">
+  <rect x="78.64024999999992" y="88.9" width="285.73900000000003" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="221.50974999999994" y="107.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Service · ghi nghiệp vụ / outbox tùy nhánh</text>
+</g>
+<g class="node" data-id="R" data-label="RabbitMQ · mediflow.events" data-shape="rectangle">
+  <rect x="120.13624999999998" y="210.10000000000002" width="202.74699999999996" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="221.50974999999994" y="228.55" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">RabbitMQ · mediflow.events</text>
+</g>
+<g class="node" data-id="Q" data-label="Queue consumer đúng binding" data-shape="rectangle">
+  <rect x="111.98524999999997" y="279" width="219.04899999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="221.50974999999994" y="297.45" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Queue consumer đúng binding</text>
+</g>
+<g class="node" data-id="C" data-label="Consumer · dedupe + lưu effect" data-shape="rectangle">
+  <rect x="20" y="347.9" width="222.01299999999995" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="131.00649999999996" y="366.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">Consumer · dedupe + lưu effect</text>
+</g>
+<g class="node" data-id="D" data-label="mediflow.events.dlx → DLQ" data-shape="rectangle">
+  <rect x="215.45599999999996" y="416.79999999999995" width="193.11399999999998" height="36.900000000000006" rx="0" ry="0" fill="#ffffff" stroke="#b9d2ca" stroke-width="0.75" />
+  <text font-family="Arial" x="312.0129999999999" y="435.24999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="#143c38" dy="4.55">mediflow.events.dlx → DLQ</text>
+</g>
+</svg></div></div></div><div class="handoff">Phím ← → chuyển slide · G mục lục · N ghi chú · M mã Mermaid · F toàn màn hình · P in / PDF</div><footer><span>MEDIFLOW · OUTPATIENT CARE</span><span>UI → SERVICE → EVENT → KẾT QUẢ</span><b>18 / 18</b></footer></section></main><nav class="controls" aria-label="Điều khiển slide"><button id="prev" aria-label="Slide trước">←</button><span id="counter"></span><button id="next" aria-label="Slide tiếp theo">→</button><button id="toc">G · Mục lục</button><button id="note">N · Ghi chú</button><button id="mermaid">M · Mermaid</button><button id="full">F · Toàn màn hình</button><button id="print">P · In / PDF</button></nav><aside class="drawer" aria-label="Mục lục"><h2>Thứ tự trình bày</h2></aside><aside class="notes" aria-label="Ghi chú người trình bày"></aside><dialog aria-label="Sơ đồ và mã Mermaid"></dialog><div class="progress"></div><script>const slides=[{"type":"cover","title":"Một lượt khám.\u003cbr>Một luồng phối hợp.","section":"MEDIFLOW / SERVICE DEMO","owner":"Cả nhóm","time":"25–30 phút","intro":"Từ admin quản lý hệ thống đến bệnh nhân nhận kết quả, nhận thuốc và ra về.","notes":"Phân công ở đây là phân công thuyết trình theo yêu cầu 04/11/2026, không thay đổi ownership sửa source. Đây là kịch bản dựa trên source, không phải biên bản chạy thành công. Dùng dữ liệu demo; giữ cùng patientId/careEpisodeId xuyên suốt."},{"type":"team","section":"01 / THÀNH VIÊN & TASKSHEET","title":"Trình bày theo hành trình bệnh nhân","owner":"Cả nhóm","time":"1 phút","notes":"Không gom toàn bộ Billing thành một khối sau khi đã làm xong xét nghiệm/cấp thuốc. Lộc quay lại đúng ba điểm thu. Vinh và Huy tiếp tục ngay trên cùng bệnh nhân. Bốn người chịu trách nhiệm các context như bảng; Core/Support chỉ là host triển khai.","rows":[["Hoàng Anh","Gateway · Organization · Patient","Mở kiến trúc, quản trị khoa/nhân sự, tiếp nhận hồ sơ","03–05"],["Vinh","Clinical · Lab","Đăng ký, khám, chỉ định, xét nghiệm, kết luận","06, 08–09, 11, 15"],["Huy","Pharmacy · Report","Tạo đơn, cấp thuốc, đối chiếu báo cáo cuối luồng","12, 14, 17"],["Lộc","Billing · Notification","Thu phí khám → Lab → thuốc, thông báo cá nhân","07, 10, 13, 16"]],"diagram":"flowchart LR\nA[\"Admin cấu hình\"] --> B[\"Tiếp nhận\"] --> C[\"Thu phí khám\"] --> D[\"Khám + Lab\"] --> E[\"Thuốc + thu phí\"] --> F[\"Kết luận / ra về\"] --> G[\"Thông báo + báo cáo\"]"},{"section":"02 / HẠ TẦNG","title":"Gateway là cửa vào của 6 ứng dụng nghiệp vụ","owner":"Hoàng Anh","service":"Gateway","time":"2 phút","wide":true,"lead":"8 context nghiệp vụ • 6 business deployments • 8 kho dữ liệu độc lập","diagram":"flowchart LR\nW[\"Web :3000 / Mobile\"] -->|\"HTTP /api · JWT\"| G[\"Gateway :8080\"]\nE[\"Eureka :8761\"] -.->|\"service discovery\"| G\nG --> C[\"Core :8089 — Organization + Patient\"]\nG --> K[\"Clinical :8082\"]\nG --> L[\"Lab :8084\"]\nG --> P[\"Pharmacy :8085\"]\nG --> B[\"Billing :8086\"]\nG --> S[\"Support :8087 — Report + Notification\"]\nC -.-> R[\"RabbitMQ :5672 / UI :15672\"]\nK -.-> R\nL -.-> R\nP -.-> R\nB -.-> R\nR -.-> S","rows":[["Bấm UI","Đăng nhập → mở danh sách bệnh nhân; xem request qua Gateway trong Network."],["Event phát đi","Không có domain event chỉ vì Gateway định tuyến request. Event do context nghiệp vụ phát."],["Tương tác","Nét liền: HTTP; nét đứt: discovery / messaging. Các mũi tên RabbitMQ minh họa, không liệt kê mọi subscription. PostgreSQL :5432, 8 context stores riêng."]],"handoff":"Hoàng Anh tiếp tục Organization: tạo dữ liệu nền cho lượt khám","notes":"docker-compose.yml; backend/gateway/src/main/resources/application.yml; backend/support-service/src/main/resources/application.yml | Gateway routes /org và /patients tới Core; /reports và /notifications mặc định tới Support. 8088 Report standalone và 8087 Notification standalone chỉ thuộc legacy-support, không chạy chồng cổng Support. 8081/8083 không phải các service riêng trong topology hiện tại. Inpatient 8090 và Surgery 8091 không thuộc MVP. PostgreSQL trên hình là hạ tầng chung; mỗi context có store riêng, không truy vấn chéo. JWT kiểm ở Gateway và downstream."},{"section":"03 / ADMIN QUẢN LÝ","title":"Chuẩn bị khoa, nhân sự và tài khoản","owner":"Hoàng Anh","service":"Organization · Core :8089","time":"2 phút","role":"ADMIN","route":"/organization/departments · /organization/staff · /organization/accounts","rows":[["UI: lưu khoa mới","department.created"],["UI: tạo nhân viên","staff.created"],["UI: đổi khoa của nhân viên","staff.department.changed"]],"diagram":"flowchart TB\nU[\"Admin · Lưu khoa / nhân viên\"] --> O[\"Organization · ghi dữ liệu + outbox\"]\nO -->|\"department.created / staff.created\"| R[\"RabbitMQ · mediflow.events\"]\nR --> Q[\"Queue có binding phù hợp\"]","proof":"Hiển thị khoa và nhân viên vừa tạo; đối chiếu routing key tại exchange. Không nói Report nhận event tổ chức nếu không có binding.","handoff":"Dữ liệu khoa/bác sĩ sẵn sàng → chuyển Patient tiếp nhận người bệnh","notes":"backend/core-service/src/main/java/com/mediflow/organization/infrastructure/messaging/OrganizationEventOutboxAdapter.java; organization/application/event/* | Đăng nhập/cấp tài khoản không tự đồng nghĩa department.created/staff.created. Sửa thông tin liên hệ có staff.contact.updated; chỉ demo nếu cần. Organization giữ account identity. Lịch nhận khám và sức chứa thuộc Clinical, không thuộc Organization. Không cần tạo mới mọi danh mục nếu đã có dữ liệu seed hợp lệ."},{"section":"04 / BỆNH NHÂN ĐẾN KHÁM","title":"Tìm đúng hồ sơ trước khi tạo bệnh nhân mới","owner":"Hoàng Anh","service":"Patient · Core :8089","time":"2 phút","role":"NURSE / tiếp nhận","route":"/patients → /patients/new → chi tiết bệnh nhân","rows":[["UI: tìm hồ sơ theo định danh","GET / đọc dữ liệu · không phát event"],["UI: lưu bệnh nhân mới","patient.created"],["UI: lưu chỉnh sửa hồ sơ","patient.updated"]],"diagram":"flowchart TB\nU[\"Tiếp nhận · Lưu bệnh nhân\"] --> P[\"Patient · patientId + outbox\"]\nP -->|\"patient.created\"| R[\"RabbitMQ · mediflow.events\"]\nR --> Q[\"notification.q\"]\nQ --> N[\"Notification · thông báo chào mừng\"]","proof":"Giữ patientId vừa tạo; hồ sơ tồn tại dù cấp account gặp lỗi. Cấp tài khoản PATIENT từ hồ sơ, dùng email theo contract hiện hành.","handoff":"Bàn giao patientId và khoa → Vinh đăng ký lượt khám","notes":"backend/core-service/src/main/java/com/mediflow/patient/infrastructure/messaging/PatientEventPublisherAdapter.java | Tái sử dụng hồ sơ khi bệnh nhân quay lại. Cấp account là command Organization riêng, không tạo patient lần hai. Contract email 04/11/2026 ở đầu docs/plans/03-contracts.md thay mô tả username CCCD/mật khẩu 1 cũ phía dưới. Không đọc mật khẩu qua API; mail bảo mật của Organization khác Notification in-app. patient.archived là nhánh quản trị phụ, không dùng trong lượt demo chính."},{"section":"05 / ĐĂNG KÝ NGOẠI TRÚ","title":"Đăng ký và giữ chỗ trước khi thu phí khám","owner":"Vinh","service":"Clinical · :8082","time":"2 phút","role":"NURSE; ADMIN/MANAGER quản lý lịch","route":"/appointments/reception","rows":[["UI: chọn lịch, khoa, bác sĩ","Clinical kiểm lịch và sức chứa"],["UI: xác nhận đăng ký tại quầy","outpatient.registration.changed"],["Trạng thái chờ thu","Có mã lượt / registration; chưa coi là đã khám"]],"diagram":"flowchart TB\nU[\"UI · Đăng ký tại quầy\"] --> C[\"Clinical · registration + reservation\"]\nC -->|\"outpatient.registration.changed\"| R[\"RabbitMQ · mediflow.events\"]\nR --> B[\"Billing · chuẩn bị khoản thu EXAM\"]","proof":"Phiếu cùng patientId, bác sĩ/khoa, giờ dự kiến và số tiền cần thu. Tiếp nhận tại quầy ghi nhận đã có mặt trong cùng intent.","handoff":"Giữ nguyên mã lượt → Lộc thu phí khám ở slide 07","notes":"backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/messaging/ClinicalEventPublisherAdapter.java; clinical/application/service/OutpatientRegistrationApplicationService.java; ClinicalLabOrderApplicationService.java; ClinicalCareFinanceApplicationService.java | Kịch bản chính chọn scheduled registration, cần scheduling UI/backend và issuer tương ứng được bật/kiểm thử. Legacy appointment.created và appointment.status.changed là contract khác, không trộn với scheduled flow. Registration chưa đủ tài chính không đồng nghĩa phiếu đã confirmed. Cần chuẩn bị lịch đang mở trước buổi demo."},{"section":"06 / THU PHÍ KHÁM","title":"Thu phí khám, sau đó mới xác nhận phiếu","owner":"Lộc","service":"Billing · :8086","time":"1–2 phút","role":"CASHIER","route":"/billing/scheduled-payments","rows":[["UI: chọn đúng khoản EXAM","Đọc lại nguồn, số tiền và báo giá từ Billing"],["UI: xác nhận thu tiền","payment.completed"],["Sau đủ nghĩa vụ tài chính","outpatient.financial.eligibility.granted"]],"diagram":"flowchart TB\nU[\"Thu ngân · Xác nhận thanh toán\"] --> B[\"Billing · payment + outbox\"]\nB -->|\"payment.completed\"| R[\"RabbitMQ · mediflow.events\"]\nB -->|\"outpatient.financial.eligibility.granted\"| R\nR --> C[\"Clinical · xác nhận phiếu\"]\nR --> S[\"Report / Notification · queue riêng\"]","proof":"Clinical đọc lại được phiếu đã xác nhận. Không lấy HTTP thanh toán thành công làm bằng chứng consumer đã xử lý.","handoff":"Lộc → Vinh: phiếu đã confirmed và đã có mặt → bắt đầu khám","notes":"backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/messaging/LedgerEventOutboxAdapter.java; ScheduledEligibilityOutboxAdapter.java; billing/application; docs/plans/03-contracts.md | Dùng contract đúng nhánh: scheduled EXAM dùng outpatient.financial.eligibility.granted; Lab/Rx V1 dùng financial.clearance.granted. invoice.created gắn bước issuer tạo yêu cầu, không phải mỗi click vào danh sách. Nhánh nghĩa vụ 0 dùng command eligibility riêng, không tạo payment 0. Không gộp 3 loại phí thành 1 khoản tùy ý. Timeout: tra cứu outcome, retry cùng idempotency key. Report/Notification chỉ xử lý khi profile và bindings đúng. Các sơ đồ bỏ bớt consumer phụ cho dễ theo dõi."},{"section":"07 / BÁC SĨ KHÁM","title":"Mở hồ sơ khám và tạo chỉ định đúng lượt","owner":"Vinh","service":"Clinical · :8082","time":"2 phút","role":"DOCTOR được phân công","route":"/appointments/[id] → /records/[id] → lab-order","rows":[["UI: bắt đầu khám / lưu hồ sơ","appointment.status.changed / medicalrecord.created, theo command"],["UI: lưu chẩn đoán","diagnosis.added"],["UI: lưu chỉ định xét nghiệm","Lưu Clinical Lab Order; không gán event lab.request.created tại bước này"]],"diagram":"flowchart TB\nU[\"Bác sĩ · Lưu hồ sơ / chẩn đoán\"] --> C[\"Clinical · hồ sơ đang mở\"]\nC -->|\"medicalrecord.created / diagnosis.added\"| R[\"RabbitMQ · mediflow.events\"]\nC --> O[\"Lưu chỉ định · sourceOrderId\"]\nO -->|\"UI chuyển bước + Lab kiểm nguồn bằng REST\"| L[\"Lab · tạo yêu cầu ở slide 09\"]","proof":"Ghi triệu chứng, chẩn đoán, mã chỉ định và recordId. medicalrecord.created không tự tạo một xét nghiệm từ chẩn đoán.","handoff":"Vinh chuyển vai LAB_TECH → tạo yêu cầu từ chỉ định đã lưu","notes":"backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/messaging/ClinicalEventPublisherAdapter.java; clinical/application/service/OutpatientRegistrationApplicationService.java; ClinicalLabOrderApplicationService.java; ClinicalCareFinanceApplicationService.java | ClinicalLabOrderApplicationService lưu order dưới hồ sơ OPEN và appointment IN_EXAM, kiểm assigned doctor. Không có event phát cho create order trong service đã đọc; không phát minh clinical.lab.ordered. Lab đọc source context qua authority API, không SQL sang Clinical. Nút UI diễn đạt theo thao tác, không cam kết mọi nhãn bằng nhau giữa các nhánh UI."},{"section":"08 / LAB NHẬN CHỈ ĐỊNH","title":"Tạo phiếu Lab từ chỉ định của bác sĩ","owner":"Vinh","service":"Lab · :8084","time":"1 phút","role":"LAB_TECH theo quyền nguồn","route":"/records/[recordId]/lab-order → /lab/[testId]","rows":[["UI: tạo yêu cầu từ chỉ định","Lab xác minh sourceOrderId với Clinical qua REST"],["Sau khi tạo yêu cầu thành công","lab.request.created"],["Kết quả phía Billing","Khoản thu LAB_TEST đúng source, patient và lượt"]],"diagram":"flowchart TB\nU[\"UI · Tạo yêu cầu xét nghiệm\"] --> L[\"Lab · kiểm chỉ định qua REST\"]\nL -->|\"lab.request.created\"| R[\"RabbitMQ · mediflow.events\"]\nR --> B[\"Billing · LAB_TEST payment request\"]","proof":"Phiếu Lab có recordId/sourceOrderId và patientId đúng; trạng thái chưa được phép thực hiện khi còn thiếu clearance.","handoff":"Vinh → Lộc: thu phí xét nghiệm trước khi bấm Bắt đầu xét nghiệm","notes":"backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/messaging; frontend/src/features/lab/components/LabActions.tsx | Source-based request V1 và contract source fields phải đúng, không tạo UUID giả. Không mô tả queue lab.q nhận lab.request.created để tự sinh phiếu thứ hai. lab.request.created là fact do Lab tạo sau khi phiếu được ghi."},{"section":"09 / THU PHÍ XÉT NGHIỆM","title":"Thanh toán Lab để mở quyền thực hiện","owner":"Lộc","service":"Billing · :8086","time":"1–2 phút","role":"CASHIER","route":"/billing/payment-requests → chọn LAB_TEST","rows":[["UI: chọn đúng khoản LAB_TEST","Đọc lại nguồn, số tiền và báo giá từ Billing"],["UI: xác nhận thu tiền","payment.completed"],["Sau đủ nghĩa vụ tài chính","financial.clearance.granted"]],"diagram":"flowchart TB\nU[\"Thu ngân · Xác nhận thanh toán\"] --> B[\"Billing · payment + outbox\"]\nB -->|\"payment.completed\"| R[\"RabbitMQ · mediflow.events\"]\nB -->|\"financial.clearance.granted\"| R\nR --> C[\"Nguồn LAB_TEST · đủ điều kiện thực hiện\"]\nR --> S[\"Report / Notification · queue riêng\"]","proof":"Lab chuyển đủ điều kiện / READY cho đúng phiếu. Chưa có clearance thì không bắt đầu xét nghiệm.","handoff":"Lộc → Vinh: kiểm tra Lab đã READY và có clearanceId","notes":"backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/messaging/LedgerEventOutboxAdapter.java; ScheduledEligibilityOutboxAdapter.java; billing/application; docs/plans/03-contracts.md | Dùng contract đúng nhánh: scheduled EXAM dùng outpatient.financial.eligibility.granted; Lab/Rx V1 dùng financial.clearance.granted. invoice.created gắn bước issuer tạo yêu cầu, không phải mỗi click vào danh sách. Nhánh nghĩa vụ 0 dùng command eligibility riêng, không tạo payment 0. Không gộp 3 loại phí thành 1 khoản tùy ý. Timeout: tra cứu outcome, retry cùng idempotency key. Report/Notification chỉ xử lý khi profile và bindings đúng. Các sơ đồ bỏ bớt consumer phụ cho dễ theo dõi."},{"section":"10 / LAB TRẢ KẾT QUẢ","title":"Thực hiện xét nghiệm và lưu kết quả","owner":"Vinh","service":"Lab · :8084","time":"2 phút","role":"LAB_TECH","route":"/lab/[testId]","rows":[["UI: Bắt đầu xét nghiệm","Kiểm READY + clearanceId trong luồng V1"],["UI: Nhập kết quả → Lưu kết quả","lab.result.created"],["UI: xem kết quả trên hồ sơ khám","Đọc kết quả cùng lượt, không thu phí khám lần hai"]],"diagram":"flowchart TB\nU[\"Lab UI · Lưu kết quả\"] --> L[\"Lab · COMPLETED\"]\nL -->|\"lab.result.created\"| R[\"RabbitMQ · mediflow.events\"]\nR --> N[\"notification.q · báo có kết quả\"]\nR --> T[\"report.outpatient-v1.q · thống kê\"]\nC[\"Bác sĩ · đọc kết quả\"] -->|\"HTTP qua Gateway\"| L","proof":"Chỉ số, đơn vị, khoảng tham chiếu và kết luận hiển thị. Bác sĩ đọc lại kết quả trong hồ sơ hiện tại.","handoff":"Vinh kết luận chuyên môn → Huy trình bày Pharmacy trên hồ sơ này","notes":"backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/messaging; frontend/src/features/lab/components/LabActions.tsx | Không khẳng định Clinical nhận event để sao chép toàn bộ Lab result. Clinical có thể đọc qua contract/source context. Hủy là nhánh riêng lab.request.cancelled: Billing xử lý nghĩa vụ/void/refund theo trạng thái; không nói hủy tự hoàn tiền. Notification chỉ báo có kết quả, không chứa toàn bộ chỉ số."},{"section":"11 / KÊ ĐƠN","title":"Tạo đơn thuốc gắn với hồ sơ đang khám","owner":"Huy","service":"Pharmacy · :8085","time":"2 phút","role":"DOCTOR tạo đơn; PHARMACIST quản lý kho","route":"/pharmacy/prescriptions/new","rows":[["UI: chọn hồ sơ, thuốc, số lượng","Pharmacy kiểm Clinical context và tồn kho"],["UI: Tạo đơn thuốc","prescription.created"],["Billing nhận nguồn đơn","Chuẩn bị khoản thu PRESCRIPTION"]],"diagram":"flowchart TB\nU[\"Bác sĩ · Tạo đơn thuốc\"] --> P[\"Pharmacy · đơn + giữ tồn theo contract\"]\nP -->|\"prescription.created\"| R[\"RabbitMQ · mediflow.events\"]\nR --> B[\"Billing · khoản thu PRESCRIPTION\"]","proof":"Có prescriptionId, đúng patient/record/lượt và chi tiết thuốc. Kê đơn là quyết định của bác sĩ; Huy là người trình bày service.","handoff":"Huy → Lộc: thu tiền đơn thuốc; chưa bấm xuất thuốc","notes":"backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/infrastructure/messaging/PharmacyEventPublisherAdapter.java; frontend/src/features/pharmacy/components/prescription | Phân biệt người thuyết trình với vai nghiệp vụ. Context lookup/identity/stock reservation phải sẵn sàng. Không nhập đơn không có authority nguồn để làm cho demo đi tiếp. stock.adjusted gắn điều chỉnh kho; stock.low chỉ phát khi điều kiện tồn thấp xảy ra, không luôn đi kèm mọi đơn."},{"section":"12 / THU TIỀN THUỐC","title":"Thu tiền đúng đơn, rồi bàn giao quầy thuốc","owner":"Lộc","service":"Billing · :8086","time":"1–2 phút","role":"CASHIER","route":"/billing/payment-requests → chọn PRESCRIPTION","rows":[["UI: chọn đúng khoản PRESCRIPTION","Đọc lại nguồn, số tiền và báo giá từ Billing"],["UI: xác nhận thu tiền","payment.completed"],["Sau đủ nghĩa vụ tài chính","financial.clearance.granted"]],"diagram":"flowchart TB\nU[\"Thu ngân · Xác nhận thanh toán\"] --> B[\"Billing · payment + outbox\"]\nB -->|\"payment.completed\"| R[\"RabbitMQ · mediflow.events\"]\nB -->|\"financial.clearance.granted\"| R\nR --> C[\"Nguồn PRESCRIPTION · đủ điều kiện thực hiện\"]\nR --> S[\"Report / Notification · queue riêng\"]","proof":"Đơn thuốc đủ điều kiện cấp; payment thành công chưa có nghĩa thuốc đã xuất khỏi kho.","handoff":"Lộc → Huy: kiểm clearance đúng đơn rồi xuất thuốc","notes":"backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/messaging/LedgerEventOutboxAdapter.java; ScheduledEligibilityOutboxAdapter.java; billing/application; docs/plans/03-contracts.md | Dùng contract đúng nhánh: scheduled EXAM dùng outpatient.financial.eligibility.granted; Lab/Rx V1 dùng financial.clearance.granted. invoice.created gắn bước issuer tạo yêu cầu, không phải mỗi click vào danh sách. Nhánh nghĩa vụ 0 dùng command eligibility riêng, không tạo payment 0. Không gộp 3 loại phí thành 1 khoản tùy ý. Timeout: tra cứu outcome, retry cùng idempotency key. Report/Notification chỉ xử lý khi profile và bindings đúng. Các sơ đồ bỏ bớt consumer phụ cho dễ theo dõi."},{"section":"13 / BỆNH NHÂN NHẬN THUỐC","title":"Xuất thuốc là một bước riêng sau thanh toán","owner":"Huy","service":"Pharmacy · :8085","time":"2 phút","role":"PHARMACIST","route":"/pharmacy/prescriptions/[prescriptionId]","rows":[["UI: kiểm đơn và trạng thái thu","Đọc lại clearance / trạng thái hợp lệ"],["UI: Xác nhận xuất thuốc","prescription.filled"],["Nhánh lỗi để giải thích","prescription.dispense.failed · không xuất kho giả"]],"diagram":"flowchart TB\nU[\"Dược sĩ · Xác nhận xuất thuốc\"] --> P[\"Pharmacy · ghi dispense / cập nhật kho\"]\nP -->|\"prescription.filled\"| R[\"RabbitMQ · mediflow.events\"]\nR --> B[\"Billing · ghi nhận đơn đã thực hiện\"]\nR --> S[\"Report / Notification\"]","proof":"Đơn đã cấp thuốc, có bằng chứng xuất thuốc và tồn kho thay đổi phù hợp. Nếu cấp lỗi sau thu: xử lý đối soát/hoàn tiền theo nghiệp vụ.","handoff":"Huy → Vinh: hoàn tất hồ sơ khám và hướng dẫn ra về","notes":"backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/infrastructure/messaging/PharmacyEventPublisherAdapter.java; frontend/src/features/pharmacy/components/prescription | Luồng V0 có thể xử lý payment.completed khác luồng V1 clearance + explicit dispense. Slide này dùng nhánh V1: không nói payment.completed tự cấp thuốc. Failure/refund là nhánh phụ; không cần cố tình phá dữ liệu chính. Replay cùng event không được xuất thuốc lần hai."},{"section":"14 / KẾT THÚC LƯỢT KHÁM","title":"Hoàn tất hồ sơ và hướng dẫn bệnh nhân ra về","owner":"Vinh","service":"Clinical · :8082","time":"1–2 phút","role":"DOCTOR","route":"/records/[recordId] → Hoàn tất lần khám","rows":[["UI: đọc Lab, lưu kết luận","Tiếp tục cùng hồ sơ; không tạo lượt mới"],["UI: Hoàn tất hồ sơ khám","medicalrecord.completed"],["UI: lưu lời hẹn tái khám nếu dùng","followup.recommendation.created"]],"diagram":"flowchart TB\nU[\"Bác sĩ · Hoàn tất hồ sơ khám\"] --> C[\"Clinical · COMPLETED\"]\nC -->|\"medicalrecord.completed\"| R[\"RabbitMQ · mediflow.events\"]\nR --> N[\"Notification · kết quả khám đã có\"]\nR --> T[\"Report · lượt khám hoàn tất\"]","proof":"Kết luận, hướng dẫn và thời điểm hoàn tất hiển thị. Bệnh nhân đã xử lý các nghĩa vụ tài chính và nhận thuốc nếu có.","handoff":"Vinh → Lộc: đăng nhập PATIENT xem thông báo và kết quả cá nhân","notes":"backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/messaging/ClinicalEventPublisherAdapter.java; clinical/application/service/OutpatientRegistrationApplicationService.java; ClinicalLabOrderApplicationService.java; ClinicalCareFinanceApplicationService.java | Hoàn tất hồ sơ không đồng nghĩa tự settle mọi khoản phí. Kiểm pending Lab/nguồn nghiệp vụ theo guard hiện tại. Lời hẹn tái khám là recommendation, chưa giữ suất hoặc chứng minh đã thu tiền. Portal /records/mine chỉ trả hồ sơ completed; /lab/mine chỉ trả kết quả completed thuộc principal."},{"section":"15 / THÔNG BÁO CÁ NHÂN","title":"Nhận event, lưu thông báo cho đúng bệnh nhân","owner":"Lộc","service":"Notification · Support :8087","time":"2 phút","role":"PATIENT","route":"/notifications · /records/mine · /lab/mine","rows":[["Tự động khi event nguồn tới","Nhận patient.created / lab.result.created / medicalrecord.completed"],["Sau khi lưu thông báo thành công","notification.sent"],["UI: mở thông báo / xem kết quả","Đọc dữ liệu · không tự phát lab.result.created"]],"diagram":"flowchart TB\nP[\"Patient / Lab / Clinical\"] -->|\"event nghiệp vụ\"| R[\"RabbitMQ · mediflow.events\"]\nR --> Q[\"notification.q\"]\nQ --> N[\"Notification · lưu IN_APP + outbox\"]\nN -->|\"notification.sent\"| R\nU[\"PATIENT · xem thông báo\"] -->|\"HTTP qua Gateway\"| N","proof":"Đúng bệnh nhân thấy thông báo có kết quả; mở cổng cá nhân đọc chi tiết từ Clinical/Lab. Nhận lại event không nhân đôi thông báo.","handoff":"Lộc → Huy: báo cáo cuối lượt từ các facts đã ghi nhận","notes":"backend/notification-service/src/main/java/com/mediflow/notification/infrastructure/config/RabbitConfig.java; infrastructure/messaging/PatientResultNoticeDecoder.java | notification.sent thể hiện xử lý gửi/lưu theo contract, không chứng minh người bệnh đã đọc hoặc SMS/email đã đến. Luồng này chọn IN_APP. notification.sent không được vẽ quay lại notification.q nếu không có binding tương ứng. Source events có dạng flat và nested khác nhau; dùng decoder/version đúng. Patient không dùng patientId tùy ý để xem kết quả người khác."},{"section":"16 / BÁO CÁO CUỐI LUỒNG","title":"Đối chiếu một lượt khám từ các event nguồn","owner":"Huy","service":"Report · Support :8087","time":"2 phút","role":"MANAGER / ADMIN theo quyền báo cáo","route":"/reports/outpatient","rows":[["Event nghiệp vụ nhận vào","medicalrecord.completed · lab.result.created · prescription.filled"],["Event tài chính nhận vào","payment.completed · payment.refunded"],["UI: chọn kỳ / xem biểu đồ","Đọc read model · không phát report.generated"]],"diagram":"flowchart TB\nP[\"Clinical / Lab / Pharmacy / Billing\"] -->|\"facts đã xảy ra\"| R[\"RabbitMQ · mediflow.events\"]\nR --> Q[\"report.outpatient-v1.q\"]\nQ --> T[\"Report · read model / kỳ đã được chấp nhận\"]\nU[\"Manager · chọn kỳ báo cáo\"] -->|\"GET qua Gateway\"| T","proof":"Đối chiếu lượt khám, Lab, đơn đã cấp và tiền thu theo kỳ dữ liệu đã được chấp nhận. Phân biệt thu tiền, hỗ trợ mô phỏng và hoàn tiền.","handoff":"Huy chốt demo: cùng một bệnh nhân, các service phối hợp qua hợp đồng rõ ràng","notes":"backend/report-service/src/main/java/com/mediflow/report/infrastructure/config/ReportOutpatientConsumerConfiguration.java; RabbitConfig.java; frontend/src/app/(dashboard)/reports/outpatient/page.tsx | report.outpatient-v1.q là intake ngoại trú có gate; report.q là queue legacy với bindings khác. /reports/outpatient có capability/accepted-period gates: không hứa dữ liệu của lượt vừa tạo sẽ hiển thị ngay trên kỳ đã publish. Chuẩn bị kỳ accepted phù hợp; nói rõ độ trễ và thời điểm snapshot. Report đọc store của mình, không JOIN DB Billing. Không tạo event report.generated chỉ vì nhấn xem thống kê."},{"type":"checklist","section":"17 / ĐỐI CHIẾU & CHẠY THỬ","title":"Một dữ liệu demo, bốn người bàn giao rõ ràng","owner":"Cả nhóm","time":"1 phút","notes":"Đây là checklist chuẩn bị, chưa xác nhận hệ thống đang chạy hoặc acceptance đã đạt. Không tự bật toàn bộ cờ. Đọc docs/plans/06-acceptance-runbook.md, docs/plans/20-email-account-demo-runbook-2026-11-04.md và profile thực tế. Source baseline 8d6c287d; làm slide ngày 04/11/2026.","diagram":"flowchart TB\nU[\"Một thao tác ghi trên UI\"] --> S[\"Service · ghi nghiệp vụ / outbox tùy nhánh\"]\nS -->|\"routing key + eventId\"| R[\"RabbitMQ · mediflow.events\"]\nR --> Q[\"Queue consumer đúng binding\"]\nQ --> C[\"Consumer · dedupe + lưu effect\"]\nQ -.->|\"Lỗi quá số lần retry\"| D[\"mediflow.events.dlx → DLQ\"]","rows":[["Trước buổi demo","Khởi động 6 business apps; seed khoa/bác sĩ/thuốc/lịch; kiểm tài khoản và quyền."],["Chốt profile","Scheduled EXAM; Lab/Rx clearance; Notification IN_APP; Report consumer/read/accepted period."],["Bộ mã dùng chung","patientId → registration/appointmentId → recordId → testId → prescriptionId → paymentId."],["Bằng chứng trên RabbitMQ","Mở :15672, chỉ exchange, routing key, bindings, consumer và DLQ. Queue rỗng có thể đã xử lý xong."],["Khi timeout","Tra cứu kết quả; retry đúng intent/key; không tạo đơn hay thu tiền mới để che outcome chưa rõ."]],"handoff":"Phím ← → chuyển slide · G mục lục · N ghi chú · M mã Mermaid · F toàn màn hình · P in / PDF"}]; let current=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));const els=[...document.querySelectorAll('.slide')];const notes=document.querySelector('.notes');const drawer=document.querySelector('.drawer');const dlg=document.querySelector('dialog');function resize(){const scale=Math.min((innerWidth-40)/1440,(innerHeight-100)/900);els.forEach(e=>e.style.transform='scale('+scale+')')}function show(n){current=Math.max(0,Math.min(slides.length-1,n));els.forEach((e,i)=>{e.classList.toggle('active',i===current);e.setAttribute('aria-hidden',String(i!==current))});history.replaceState(null,'','#'+(current+1));document.querySelector('#counter').textContent=(current+1)+' / '+slides.length;document.querySelector('.progress').style.width=((current+1)/slides.length*100)+'%';notes.innerHTML='<strong>GHI CHÚ NGƯỜI TRÌNH BÀY</strong>'+slides[current].notes;document.title='MediFlow · '+(current+1)+' / '+slides.length}function toggleN(){notes.classList.toggle('open')}function toggleG(){drawer.classList.toggle('open')}function full(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});else document.exitFullscreen?.()}function modal(mode,i=current){const s=slides[i];dlg.replaceChildren();const close=document.createElement('button');close.className='close';close.textContent='Đóng ×';close.onclick=()=>dlg.close();dlg.append(close);const h=document.createElement('h2');h.textContent=s.title.replaceAll('<br>',' ');dlg.append(h);if(mode==='source'){const p=document.createElement('p');p.className='dialog-help';p.textContent='Mã nguồn Mermaid của sơ đồ trên slide. Các bản .mmd nằm trong thư mục diagrams/.';dlg.append(p);const pre=document.createElement('pre');pre.textContent=s.diagram||'Slide này không có sơ đồ Mermaid.';dlg.append(pre)}else {const original=els[i].querySelector('.diagram');if(!original)return;const clone=original.cloneNode(true);clone.removeAttribute('data-zoom');clone.removeAttribute('role');dlg.append(clone)}dlg.showModal()}document.querySelector('#prev').onclick=()=>show(current-1);document.querySelector('#next').onclick=()=>show(current+1);document.querySelector('#toc').onclick=toggleG;document.querySelector('#note').onclick=toggleN;document.querySelector('#mermaid').onclick=()=>modal('source');document.querySelector('#full').onclick=full;document.querySelector('#print').onclick=()=>window.print();slides.forEach((s,i)=>{const b=document.createElement('button');b.textContent=String(i+1).padStart(2,'0')+' · '+s.owner+' · '+s.title.replaceAll('<br>',' ');b.onclick=()=>{show(i);drawer.classList.remove('open')};drawer.append(b)});document.querySelectorAll('[data-zoom]').forEach(e=>{e.onclick=()=>modal('zoom',+e.dataset.zoom);e.onkeydown=ev=>{if(ev.key==='Enter')modal('zoom',+e.dataset.zoom)}});addEventListener('keydown',e=>{if(dlg.open)return;if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(current+1)}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(current-1)}if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1);if(e.key.toLowerCase()==='n')toggleN();if(e.key.toLowerCase()==='g')toggleG();if(e.key.toLowerCase()==='m')modal('source');if(e.key.toLowerCase()==='f')full();if(e.key.toLowerCase()==='p')window.print();if(e.key==='Escape'){notes.classList.remove('open');drawer.classList.remove('open')}});addEventListener('resize',resize);addEventListener('hashchange',()=>show((parseInt(location.hash.slice(1))||1)-1));let tx=0;addEventListener('touchstart',e=>tx=e.changedTouches[0].screenX,{passive:true});addEventListener('touchend',e=>{if(dlg.open)return;const dx=e.changedTouches[0].screenX-tx;if(Math.abs(dx)>70)show(current+(dx<0?1:-1))},{passive:true});resize();show(current);</script></body></html>

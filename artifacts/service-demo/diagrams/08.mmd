@@ -1,0 +1,5 @@
+flowchart TB
+U["Bác sĩ · Lưu hồ sơ / chẩn đoán"] --> C["Clinical · hồ sơ đang mở"]
+C -->|"medicalrecord.created / diagnosis.added"| R["RabbitMQ · mediflow.events"]
+C --> O["Lưu chỉ định · sourceOrderId"]
+O -->|"UI chuyển bước + Lab kiểm nguồn bằng REST"| L["Lab · tạo yêu cầu ở slide 09"]
