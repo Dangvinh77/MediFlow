@@ -101,16 +101,13 @@ class GatewayLabWorkflow implements LabWorkflow {
   }
 
   @override
-  Future<LabDetail> cancel(String id, String reason, String actorId) async {
+  Future<LabDetail> cancel(String id, String reason) async {
     _id(id);
-    if (reason.trim().isEmpty || !isReferenceId(actorId)) {
-      throw ArgumentError('Cần lý do hủy và định danh người thực hiện hợp lệ.');
+    if (reason.trim().isEmpty || reason.trim().length > 1000) {
+      throw ArgumentError('Lý do hủy phải có từ 1 đến 1000 ký tự.');
     }
     return _decode(
-      await client.put('/v1/lab/$id/cancel', {
-        'reason': reason.trim(),
-        'cancelledBy': actorId,
-      }),
+      await client.put('/v1/lab/$id/cancel', {'reason': reason.trim()}),
       id,
     );
   }

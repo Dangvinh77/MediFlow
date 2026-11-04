@@ -56,5 +56,5 @@ abstract interface class LabWorkflow {
     String? conclusion,
     String date,
   );
-  Future<LabDetail> cancel(String id, String reason, String actorId);
+  Future<LabDetail> cancel(String id, String reason);
 }

@@ -224,6 +224,7 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
       return const AlertDialog(content: Text('Phiên đăng nhập đã thay đổi.'));
     }
     return AlertDialog(
+      scrollable: true,
       title: Text('Chọn ${widget.label}'),
       content: SizedBox(
         width: 480,
@@ -294,8 +295,9 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
               'Tên được lọc theo từng trang. Dùng trang sau để xem thêm.',
               style: TextStyle(fontSize: 12),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 TextButton(
                   onPressed: loading || page == 0

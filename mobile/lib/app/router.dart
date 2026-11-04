@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/login_page.dart';
+import '../features/auth/presentation/account_recovery_page.dart';
+import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/lab/presentation/lab_page.dart';
+import '../features/lab/presentation/my_lab_results_page.dart';
+import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/organization/presentation/organization_page.dart';
 import '../features/patient/presentation/patient_page.dart';
 import '../features/medical_record/presentation/medical_record_page.dart';
@@ -35,8 +39,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.uri.path;
       if (auth.isLoading) return null;
       final session = auth.asData?.value;
-      if (session == null) return path == '/login' ? null : '/login';
-      if (path == '/login') return '/';
+      final publicAuth = const [
+        '/login',
+        '/forgot-password',
+        '/reset-password',
+      ].contains(path);
+      if (session == null) return publicAuth ? null : '/login';
+      if (session.mustChangePassword && path != '/account/password') {
+        return '/account/password';
+      }
+      if (publicAuth) return '/';
       final module = modules.where((m) => m.matches(path)).firstOrNull;
       if (module != null && !module.allows(session.role)) return '/forbidden';
       if (path == '/pharmacy/drugs/new' ||
@@ -53,6 +65,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, _) => const AccountRecoveryPage(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, state) => AccountRecoveryPage(
+          reset: true,
+          token: state.uri.queryParameters['token'] ?? '',
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) => Consumer(
           builder: (context, ref, _) {
@@ -69,10 +92,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/', builder: (_, _) => const HomePage()),
           GoRoute(
+            path: '/account/password',
+            builder: (_, _) => const ChangePasswordPage(),
+          ),
+          GoRoute(
             path: '/appointments',
             builder: (_, _) => const AppointmentPage(),
           ),
           GoRoute(path: '/lab', builder: (_, _) => const LabPage()),
+          GoRoute(
+            path: '/my-results/exams',
+            builder: (_, _) => const MyExamResultsPage(),
+          ),
+          GoRoute(
+            path: '/my-results/lab',
+            builder: (_, _) => const MyLabResultsPage(),
+          ),
           GoRoute(
             path: '/organization',
             builder: (_, _) => const OrganizationPage(),

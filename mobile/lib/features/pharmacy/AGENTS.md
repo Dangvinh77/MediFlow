@@ -1,6 +1,6 @@
 # Mobile pharmacy
 
-Owner: **Huy**. Root/mobile AGENTS and docs/ai/14-flutter.md apply.
+Owner: **Vinh**, entire-mobile assignment 2026-11-03 (previously Huy). Root/mobile AGENTS and docs/ai/14-flutter.md apply.
 Writable business scope: `mobile/lib/features/pharmacy/**` and its tests.
 Use presentation → domain ← data. Exact Gateway contracts only; no feature-to-feature imports.
 Shared network/session/router/config changes require coordination with Vinh. Do not edit another owner feature.

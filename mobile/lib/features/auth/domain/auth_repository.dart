@@ -13,9 +13,9 @@ class SignIn {
   Future<Session> call(String username, String password) {
     if (username.trim().isEmpty ||
         password.isEmpty ||
-        username.trim().length > 50 ||
+        username.trim().length > 254 ||
         password.length > 72) {
-      throw const FormatException('Kiểm tra tên đăng nhập và mật khẩu.');
+      throw const FormatException('Kiểm tra email và mật khẩu.');
     }
     return repository.login(username.trim(), password);
   }

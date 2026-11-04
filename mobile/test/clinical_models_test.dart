@@ -57,7 +57,7 @@ void main() {
       modules.where((m) => m.allows(UserRole.labTech)).map((m) => m.path),
       ['/lab', '/support'],
     );
-    expect(modules.map((m) => m.owner).toSet(), {'Vinh', 'Huy'});
+    expect(modules.map((m) => m.owner).toSet(), {'Vinh'});
     expect(
       modules.any((m) => m.path == '/inpatient' || m.path == '/surgery'),
       isFalse,

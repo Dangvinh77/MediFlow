@@ -24,6 +24,20 @@ class Session {
   final String refreshToken;
   final UserRole role;
 
+  // Routing hint only; Gateway enforces the current account requirement.
+  bool get mustChangePassword {
+    try {
+      final claims = jsonDecode(
+        utf8.decode(
+          base64Url.decode(base64Url.normalize(accessToken.split('.')[1])),
+        ),
+      );
+      return claims is Map && claims['mustChangePassword'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Display/workflow hints only; Gateway validates the signed token and resource authority.
   String? get patientId => _referenceClaim('patientId');
   String? get staffId => _referenceClaim('staffId');

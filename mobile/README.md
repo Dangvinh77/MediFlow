@@ -1,5 +1,12 @@
 # MediFlow Mobile — Outpatient Care Management
 
+Đồng bộ 04/11/2026 với master `1ce0968e`: email login tối đa 254 ký tự, Quên mật khẩu và
+Đặt lại mật khẩu (dán liên kết/mã từ email), tạo tài khoản với mật khẩu do backend sinh,
+Lab cancellation lấy actor từ backend và sửa bố cục màn hình nhỏ/keyboard/large text.
+[Checks và screenshots](docs/evidence/2026-11-04-ui/README.md): 376 tests, web build,
+Android debug APK PASS; chưa nghiệm thu qua Gateway/device trong phiên này.
+Chưa cấu hình universal links Android/iOS cho domain triển khai.
+
 Client cho **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**, hướng tới phòng khám đa khoa và khoa khám bệnh ngoại trú của bệnh viện. Nội trú/phẫu thuật hoãn; feature có thư mục hoặc route chưa đồng nghĩa đã hoàn tất nghiệp vụ.
 
 Flutter client dùng **backend thật qua Gateway**. Không có demo, tài khoản giả hay dữ liệu mẫu trong ứng dụng. Backend tắt thì ứng dụng báo lỗi kết nối.
@@ -58,6 +65,20 @@ Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-m
 Thiết lập iOS Debug dựa trên [Apple ATS](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowsarbitraryloads) và [quyền mạng nội bộ](https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription). Đây là cấu hình demo HTTP; bản phát hành dùng Gateway HTTPS.
 
 ## Phần hiện có và chia việc
+
+**Phân công hiện hành 03/11/2026:** Vinh nhận toàn bộ mobile từ leader qua chỉ định trực tiếp
+của người dùng, bao gồm Pharmacy/Report, mọi context đang hoạt động và shared app/platform.
+Các bảng phân công theo đợt bên dưới là lịch sử. Theo dõi phần còn thiếu và tiêu chí hoàn tất
+tại [workboard toàn mobile](docs/mobile-completion-workboard.md).
+
+Đợt đầu bổ sung màn hình đổi mật khẩu tại `/account/password`, tự điều hướng khi access JWT
+có `mustChangePassword=true`; thành công yêu cầu đăng nhập lại. PATIENT có hai mục
+`/my-results/exams` và `/my-results/lab` dùng API `mine` từ signed principal, không nhập mã
+bệnh nhân hoặc gọi endpoint hồ sơ dành cho staff. Đã có
+[nghiệm thu web một phần qua Gateway](docs/evidence/2026-11-03-web/README.md) và
+[Android debug build/install/launch và UI smoke một phần](docs/evidence/2026-11-03-android/README.md).
+Ca mine có dữ liệu, đổi mật khẩu thành công và nghiệm thu native toàn diện vẫn chưa đóng;
+iOS chưa nghiệm thu.
 
 Đợt Review3 ngày 22/10/2026 bổ sung thao tác lịch hẹn, tiếp nhận, hồ sơ khám,
 chẩn đoán, nguồn chỉ định Lab, chi tiết và lệnh xét nghiệm, truy vấn báo cáo,

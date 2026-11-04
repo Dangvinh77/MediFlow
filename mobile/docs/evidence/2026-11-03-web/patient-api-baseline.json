@@ -1,0 +1,30 @@
+[
+  {
+    "route": "/api/v1/records/mine",
+    "totalElements": 0,
+    "account": "demo.patient",
+    "itemIds": [],
+    "success": true
+  },
+  {
+    "route": "/api/v1/lab/mine",
+    "totalElements": 0,
+    "account": "demo.patient",
+    "itemIds": [],
+    "success": true
+  },
+  {
+    "route": "/api/v1/records/mine",
+    "totalElements": 0,
+    "account": "demo.patient2",
+    "itemIds": [],
+    "success": true
+  },
+  {
+    "route": "/api/v1/lab/mine",
+    "totalElements": 0,
+    "account": "demo.patient2",
+    "itemIds": [],
+    "success": true
+  }
+]

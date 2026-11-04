@@ -106,11 +106,10 @@ class StaffDraft {
 class AccountDraft {
   const AccountDraft({
     required this.username,
-    required this.password,
     required this.ownerId,
     required this.role,
   });
-  final String username, password, ownerId, role;
+  final String username, ownerId, role;
 }
 
 abstract interface class OrganizationRepository {
@@ -267,7 +266,7 @@ class SaveStaff {
     final email = draft.email?.trim();
     if (email != null &&
         email.isNotEmpty &&
-        (email.length > 100 ||
+        (email.length > 254 ||
             !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email))) {
       throw ArgumentError('Email không hợp lệ.');
     }
@@ -278,11 +277,10 @@ class SaveAccount {
   const SaveAccount(this.repository);
   final OrganizationRepository repository;
   Future<Account> create(AccountDraft draft) {
-    if (!RegExp(r'^[a-zA-Z0-9._-]{3,50}$').hasMatch(draft.username)) {
-      throw ArgumentError('Tên đăng nhập phải có 3 đến 50 ký tự hợp lệ.');
-    }
-    if (draft.password.length < 8 || draft.password.length > 72) {
-      throw ArgumentError('Mật khẩu phải có từ 8 đến 72 ký tự.');
+    if (draft.username.trim().length > 254 ||
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(draft.username.trim())) {
+      throw ArgumentError('Email đăng nhập không hợp lệ.');
     }
     if (!accountRoles.contains(draft.role)) {
       throw ArgumentError('Vai trò không hợp lệ.');

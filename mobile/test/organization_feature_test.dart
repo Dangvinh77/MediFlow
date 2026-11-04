@@ -68,7 +68,7 @@ Map<String, dynamic> staffJson({String department = departmentId}) => {
 
 Map<String, dynamic> accountJson({bool active = true}) => {
   'accountId': accountId,
-  'username': 'nurse.01',
+  'username': 'nurse.01@example.org',
   'staffId': staffId,
   'patientId': null,
   'role': 'NURSE',
@@ -346,15 +346,14 @@ void main() {
     expect(
       OrganizationDto.createAccountBody(
         const AccountDraft(
-          username: 'patient01',
-          password: 'password123',
+          username: 'patient01@example.org',
           ownerId: departmentId,
           role: 'PATIENT',
         ),
       ),
       {
-        'username': 'patient01',
-        'password': 'password123',
+        'username': 'patient01@example.org',
+
         'staffId': null,
         'patientId': departmentId,
         'role': 'PATIENT',
@@ -404,8 +403,7 @@ void main() {
       await repository.updateStaff(staffId, draft);
       await repository.transferStaff(staffId, departmentId2);
       const account = AccountDraft(
-        username: 'nurse.01',
-        password: 'password123',
+        username: 'nurse.01@example.org',
         ownerId: staffId,
         role: 'NURSE',
       );
@@ -462,7 +460,7 @@ void main() {
       size: 20,
     );
 
-    expect(result.items.single.username, 'nurse.01');
+    expect(result.items.single.username, 'nurse.01@example.org');
     expect(result.number, 0);
     expect(adapter.requests.single.method, 'GET');
     expect(adapter.requests.single.uri.path, '/api/v1/org/accounts');
@@ -513,7 +511,7 @@ void main() {
       await tester.tap(find.text('Tài khoản'));
       await tester.pumpAndSettle();
 
-      expect(find.text('nurse.01'), findsOneWidget);
+      expect(find.text('nurse.01@example.org'), findsOneWidget);
       expect(repository.accountSearches, hasLength(1));
       expect(repository.accountSearches.single['page'], 0);
 
@@ -542,10 +540,16 @@ void main() {
       await tester.tap(find.text('Trang sau'));
       await tester.pumpAndSettle();
       expect(repository.accountSearches.last['page'], 1);
-      final chooseAccount = find.widgetWithText(TextButton, 'Chọn nurse.01');
+      final chooseAccount = find.widgetWithText(
+        TextButton,
+        'Chọn nurse.01@example.org',
+      );
       await tester.tap(chooseAccount);
       await tester.pumpAndSettle();
-      expect(find.text('Tài khoản được chọn: nurse.01'), findsOneWidget);
+      expect(
+        find.text('Tài khoản được chọn: nurse.01@example.org'),
+        findsOneWidget,
+      );
 
       final activeStatus = find.byType(DropdownButtonFormField<bool>);
       await tester.tap(activeStatus);
@@ -625,8 +629,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tài khoản'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).at(0), 'owner.01');
-    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'owner.01@example.org',
+    );
+
     await pickReference(tester, label: 'Nhân viên', name: 'Tran Thi Binh');
 
     await tester.tap(find.byKey(const ValueKey('account-create-role')));
@@ -792,8 +799,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tài khoản'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).at(0), 'doctor.01');
-    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'doctor.01@example.org',
+    );
+
     await pickReference(tester, label: 'Nhân viên', name: 'Tran Thi Binh');
     final createButton = find.widgetWithText(FilledButton, 'Tạo tài khoản');
     await tester.ensureVisible(createButton);

@@ -1,0 +1,20 @@
+[
+  {
+    "completedLabs": 1,
+    "identity": "999882000022",
+    "completedExams": 1,
+    "patientId": "d1b4b5f4-6570-4c4f-9185-1c8056f6f008"
+  },
+  {
+    "completedLabs": 0,
+    "identity": "999882000007",
+    "completedExams": 1,
+    "patientId": "1298df65-78f7-4223-8526-2ad70948f03f"
+  },
+  {
+    "completedLabs": 1,
+    "identity": "999883000030",
+    "completedExams": 1,
+    "patientId": "67bf5f80-1437-4ae8-907c-43fbfe839395"
+  }
+]
