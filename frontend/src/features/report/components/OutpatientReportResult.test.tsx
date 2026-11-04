@@ -16,6 +16,9 @@ describe("outpatient statistics", () => {
     expect(screen.getAllByText("Tiền thu ròng")[0].nextElementSibling).toHaveTextContent("-20");
     expect(screen.getByText(/Tiền thu ròng không phải doanh thu/)).toBeVisible();
     expect(screen.getByRole("list", {name:"Các kỳ báo cáo"})).toBeInTheDocument();
+    expect(screen.getByText("Tổng lượt khám").nextElementSibling).toHaveTextContent(/^1$/);
+    expect(screen.getByText("Số lượng đã cấp").nextElementSibling).toHaveTextContent(/^9$/);
+    expect(screen.getByText("Thu ròng cả kỳ").nextElementSibling).toHaveTextContent("-20 VND");
   });
   it("does not draw an uncovered report as zero activity", () => {
     render(<OutpatientReportResult report={{...report, covered:false}} />);

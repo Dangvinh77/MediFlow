@@ -85,6 +85,10 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
       <OutpatientAvailablePeriods key={`${mode}:${departmentId}`} mode={mode} departmentId={departmentId.trim() || undefined} onSelect={period => {
         clear(); setFromDate(period.fromDate); setToDate(period.toDate); setYear(period.fromDate.slice(0,4));
         setDepartmentId(period.departmentId ?? ""); setScopeReset(value => value+1); setErrors({});
+        const query = { mode, fromDate: period.fromDate, toDate: period.toDate, year: Number(period.fromDate.slice(0, 4)), departmentId: period.departmentId ?? undefined };
+        if (onQuerySubmit(query)) return;
+        setSubmittedQuery(query);
+        load(() => mode === "daily" ? reportApi.outpatientDaily(query.fromDate, query.toDate, query.departmentId) : reportApi.outpatientMonthly(query.year, query.departmentId));
       }} />
       {state.status === "success" && ((departmentId.trim() || undefined) !== submittedQuery.departmentId
         || (mode === "daily" ? fromDate !== submittedQuery.fromDate || toDate !== submittedQuery.toDate : Number(year) !== submittedQuery.year)) &&

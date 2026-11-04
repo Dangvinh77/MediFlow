@@ -21,9 +21,14 @@ Từ thư mục mobile, chạy:
 ./tool/run_web.ps1
 # Đổi địa chỉ khi cần:
 ./tool/run_web.ps1 -Port 4301 -Gateway http://127.0.0.1:8080
-# Demo với backend start-backend.bat: bật UI lệnh ngoại trú + Pharmacy V1
+# Demo: bật UI lệnh ngoại trú, Pharmacy V1 và báo cáo ngoại trú đã đối soát
 ./tool/run_web.ps1 -Demo -Gateway http://127.0.0.1:28080
 ```
+
+Riêng báo cáo có thể bật bằng `-ReportOutpatientUi`. Khi bật, màn báo cáo ưu tiên
+ngoại trú theo tháng. Bấm **Tìm kỳ có dữ liệu → Dùng kỳ này** để tải ngay kỳ
+đã đối soát; dữ liệu mô phỏng được ghi nhãn trên kết quả. Số liệu kỳ hiện tại
+chưa đối soát không được diễn giải thành hoạt động bằng 0.
 
 Không có `-Demo` (hoặc `-OutpatientUi`, `-PharmacyMode outpatient`) thì app vẫn đọc dữ liệu
 nhưng các thao tác tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.

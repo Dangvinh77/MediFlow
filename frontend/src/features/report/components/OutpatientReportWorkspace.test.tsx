@@ -30,7 +30,7 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockReset(); mocks.monthly.mockReset(); mocks.router.replace.mockReset();
     vi.spyOn(window.history, "pushState").mockImplementation(() => {});
   });
-  it("discovery fills year visibly and waits for explicit report submission", async () => {
+  it("discovery opens the selected report without a second submission", async () => {
     mocks.query = "view=monthly";
     mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
     mocks.monthly.mockReturnValue(new Promise(() => {}));
@@ -39,7 +39,6 @@ describe("Outpatient report workspace", () => {
     fireEvent.click(await screen.findByRole("button", {name:"Dùng kỳ này"}));
     expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
     expect(mocks.monthly).not.toHaveBeenCalled();
-    submit();
     expect(window.history.pushState).toHaveBeenCalledWith(null,"","/reports/outpatient?view=monthly&year=2025");
     mocks.query = "view=monthly&year=2025";
     view.rerender(<OutpatientReportWorkspace enabled />);

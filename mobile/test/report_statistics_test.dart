@@ -102,6 +102,7 @@ void main() {
                     'Lượt khám hoàn tất': 0,
                     'Xét nghiệm': 0,
                     'Đơn đã cấp': 0,
+                    'Đơn vị thuốc đã cấp': 0,
                   }),
                   ReportRow('2025-01-02', {
                     'Tiền thu': 100,
@@ -110,6 +111,7 @@ void main() {
                     'Lượt khám hoàn tất': 2,
                     'Xét nghiệm': 1,
                     'Đơn đã cấp': 1,
+                    'Đơn vị thuốc đã cấp': 4,
                   }),
                 ], currency: 'VND'),
               ),
@@ -118,6 +120,9 @@ void main() {
         ),
       );
       expect(find.text('Dòng tiền ngoại trú (VND)'), findsOneWidget);
+      expect(find.text('Tổng kỳ đã chọn'), findsOneWidget);
+      expect(find.text('80 VND'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
       expect(
         find.text('Hoạt động ngoại trú (lượt / xét nghiệm / đơn)'),
         findsOneWidget,

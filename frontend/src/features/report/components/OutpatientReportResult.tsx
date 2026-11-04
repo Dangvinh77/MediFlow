@@ -33,6 +33,19 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
       </dl>
       <details className="mt-3 text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer py-3 focus-visible:outline-2 focus-visible:outline-primary">Mã đối soát</summary><p className="break-all">{report.coverageId}</p></details>
       {report.periods.length > 0 && <>
+        <section aria-label="Tổng kỳ đã chọn" className="mt-5">
+          <h3 className="font-semibold">Tổng kỳ đã chọn</h3>
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {([
+              ["Tổng lượt khám", "completedVisits"], ["Tổng xét nghiệm", "labTests"],
+              ["Đơn thuốc đã cấp", "dispensedPrescriptions"], ["Số lượng đã cấp", "dispensedUnits"],
+              ["Tổng tiền thu", "cashReceived"], ["Tổng hoàn tiền", "refunds"], ["Thu ròng cả kỳ", "netCash"],
+            ] as const).map(([label, key]) => <div key={key} className="min-w-0 rounded-lg bg-background p-3">
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="mt-1 break-words text-xl font-semibold tabular-nums">{formatDecimal(report.periods.reduce((sum, period) => sum + period[key], 0))}{["cashReceived", "refunds", "netCash"].includes(key) ? ` ${report.currency}` : ""}</dd>
+            </div>)}
+          </dl>
+        </section>
         <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
           <OutpatientTrendChart periods={report.periods} kind="cash" currency={report.currency} />
           <OutpatientTrendChart periods={report.periods} kind="activity" currency={report.currency} />

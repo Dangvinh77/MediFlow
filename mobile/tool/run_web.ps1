@@ -5,12 +5,14 @@ param(
     # chạy bằng start-backend.bat / compose.demo.local.yml.
     [switch]$Demo,
     [switch]$OutpatientUi,
+    [switch]$ReportOutpatientUi,
     [ValidateSet('unavailable', 'outpatient', 'legacy')]
     [string]$PharmacyMode = 'unavailable'
 )
 $ErrorActionPreference = 'Stop'
 if ($Demo) {
     $OutpatientUi = $true
+    $ReportOutpatientUi = $true
     if (-not $PSBoundParameters.ContainsKey('PharmacyMode')) { $PharmacyMode = 'outpatient' }
 }
 $defines = @(
@@ -18,6 +20,7 @@ $defines = @(
     "--dart-define=PHARMACY_MODE=$PharmacyMode"
 )
 if ($OutpatientUi) { $defines += '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true' }
+if ($ReportOutpatientUi) { $defines += '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true' }
 Write-Host "Build flags: $($defines -join ' ')"
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {

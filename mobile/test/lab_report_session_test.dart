@@ -95,6 +95,29 @@ void main() {
   );
 
   testWidgets(
+    'enabled report opens outpatient statistics instead of legacy zeros',
+    (tester) async {
+      await tester.pumpWidget(
+        host(
+          'report-demo',
+          const ReportPage(outpatientEnabled: true),
+          reports: Reports(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final selector = tester.widget<DropdownButtonFormField<ReportKind>>(
+        find.byType(DropdownButtonFormField<ReportKind>),
+      );
+      expect(selector.initialValue, ReportKind.outpatientMonthly);
+      expect(find.text('Tìm kỳ có dữ liệu'), findsOneWidget);
+      expect(
+        availableReportKinds(outpatientEnabled: true).first,
+        ReportKind.outpatientMonthly,
+      );
+    },
+  );
+
+  testWidgets(
     'lost Lab command response locks actions until detail reconciliation',
     (tester) async {
       final workflow = Workflow();

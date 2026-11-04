@@ -28,7 +28,7 @@ function EnabledOutpatientWorkspace() {
   }
   return (
     <PageShell title="Báo cáo ngoại trú" description="Lượt khám, xét nghiệm, cấp thuốc và thu hoàn tiền đã đối soát.">
-      <Link href="/reports" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác</Link>
+      <Link href="/reports?view=monthly" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác (nguồn cũ)</Link>
       <nav aria-label="Kỳ báo cáo ngoại trú" className="mt-3 flex flex-wrap gap-x-6 border-b border-border">
         {(["daily", "monthly"] as const).map((mode) => {
           const next = new URLSearchParams(rawQuery); next.set("view", mode);

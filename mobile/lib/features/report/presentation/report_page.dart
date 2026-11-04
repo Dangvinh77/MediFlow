@@ -23,10 +23,13 @@ const reportTitles = {
 };
 
 List<ReportKind> availableReportKinds({required bool outpatientEnabled}) => [
+  if (outpatientEnabled) ...[
+    ReportKind.outpatientMonthly,
+    ReportKind.outpatientDaily,
+  ],
   for (final kind in ReportKind.values)
-    if (outpatientEnabled ||
-        (kind != ReportKind.outpatientDaily &&
-            kind != ReportKind.outpatientMonthly))
+    if (kind != ReportKind.outpatientDaily &&
+        kind != ReportKind.outpatientMonthly)
       kind,
 ];
 
@@ -104,6 +107,14 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
   Object? error;
   bool loading = false;
   int generation = 0;
+  @override
+  void initState() {
+    super.initState();
+    kind = widget.outpatientEnabled
+        ? ReportKind.outpatientMonthly
+        : ReportKind.daily;
+  }
+
   @override
   void dispose() {
     generation++;
@@ -244,6 +255,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
             to.text = period.to;
             department = period.departmentId;
             changed();
+            load();
           },
         ),
       FilledButton.icon(
