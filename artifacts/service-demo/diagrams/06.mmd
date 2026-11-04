@@ -1,0 +1,4 @@
+flowchart TB
+U["UI · Đăng ký tại quầy"] --> C["Clinical · registration + reservation"]
+C -->|"outpatient.registration.changed"| R["RabbitMQ · mediflow.events"]
+R --> B["Billing · chuẩn bị khoản thu EXAM"]

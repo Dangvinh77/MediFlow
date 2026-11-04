@@ -1,0 +1,5 @@
+flowchart TB
+U["Dược sĩ · Xác nhận xuất thuốc"] --> P["Pharmacy · ghi dispense / cập nhật kho"]
+P -->|"prescription.filled"| R["RabbitMQ · mediflow.events"]
+R --> B["Billing · ghi nhận đơn đã thực hiện"]
+R --> S["Report / Notification"]
