@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { OutpatientAvailablePeriodDTO, DailyReportDTO, MonthlyReportDTO, OutpatientReportDTO, TopMedicineDTO } from "./types";
+import type { OutpatientAvailablePeriodDTO, DailyReportDTO, MonthlyReportDTO, OutpatientReportDTO, OutpatientStatisticsDTO, TopMedicineDTO } from "./types";
 
 export const reportApi = {
   availablePeriods: (departmentId?: string) => {
@@ -16,6 +16,11 @@ export const reportApi = {
     const query = new URLSearchParams({ year: String(year) });
     if (departmentId) query.set("departmentId", departmentId);
     return api.get<OutpatientReportDTO>(`/v1/reports/outpatient/monthly?${query}`);
+  },
+  outpatientStatistics: (fromDate: string, toDate: string, departmentId?: string) => {
+    const query = new URLSearchParams({ fromDate, toDate });
+    if (departmentId) query.set("departmentId", departmentId);
+    return api.get<OutpatientStatisticsDTO>(`/v1/reports/outpatient/statistics?${query}`);
   },
   daily: (date: string, departmentId?: string) => {
     const query = new URLSearchParams({ date });

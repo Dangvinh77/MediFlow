@@ -1,0 +1,106 @@
+{
+  "completedRecord" : {
+    "recordId" : "99277236-39cb-4ebd-8dcc-fce65dbe212d",
+    "patientId" : "ae931abf-f3ff-418b-9c0e-16c8b08f4dde",
+    "doctorId" : "ff29ff5f-17e3-466b-a7df-7ab14b3c6c81",
+    "departmentId" : "b7de063b-665b-403a-afe4-82d7513f25b0",
+    "examinationDate" : "2026-11-04",
+    "symptoms" : null,
+    "appointmentId" : "10775686-6acd-4a29-8ca7-5f3e9862df94",
+    "diagnoses" : [ {
+      "diagnosisId" : "b4f2b826-8304-462b-8b87-bd6179ab4785",
+      "diagnosisName" : "Outpatient follow up",
+      "description" : "CBC reviewed",
+      "icdCode" : "Z09"
+    } ],
+    "createdAt" : "2026-11-04T05:08:22.358249Z",
+    "updatedAt" : "2026-11-04T05:09:10.716738800Z",
+    "status" : "COMPLETED",
+    "disposition" : "OUTPATIENT_FOLLOW_UP",
+    "dispositionNote" : "Follow up after reviewed CBC",
+    "completedAt" : "2026-11-04T05:09:10.716738800Z"
+  },
+  "labPayment" : {
+    "transactionId" : "f4157b6e-6d71-43e3-8a46-3e90002532e3",
+    "accountId" : "8e0aa634-b9d8-4b39-8661-4658c652652c",
+    "paymentRequestId" : "d9421875-2281-47ce-be8d-d94f2cae91ab",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 150000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-11-04T05:08:24.232562Z"
+  },
+  "appointmentId" : "10775686-6acd-4a29-8ca7-5f3e9862df94",
+  "examPayment" : {
+    "transactionId" : "71d22687-c092-4c8d-8ec7-b83f4fd8c64b",
+    "accountId" : "8e0aa634-b9d8-4b39-8661-4658c652652c",
+    "paymentRequestId" : "f577281e-a1f3-4ae2-b8d6-ec3a0182b274",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 100000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-11-04T05:07:57.830877Z"
+  },
+  "resultEvent" : {
+    "eventId" : "b4575cfd-019c-4299-b0b2-5ed7a85d0481",
+    "payload" : {
+      "labId" : "e2ec18df-b9b0-4f7a-b87f-1f1101bc5ec3",
+      "labType" : "CBC",
+      "results" : [ {
+        "unit" : "g/dL",
+        "value" : "13.2",
+        "resultId" : "219f2325-def0-45ba-bfca-587b7ef163df",
+        "indicator" : "Hemoglobin",
+        "referenceRange" : "12.0-16.0"
+      } ],
+      "recordId" : "99277236-39cb-4ebd-8dcc-fce65dbe212d",
+      "patientId" : "ae931abf-f3ff-418b-9c0e-16c8b08f4dde",
+      "conclusion" : "No abnormality observed",
+      "verifiedBy" : "79a95961-1ca0-4ecb-a92c-2a3c778a33fc",
+      "completedAt" : "2026-11-04T05:08:47.321012500Z",
+      "departmentId" : "b7de063b-665b-403a-afe4-82d7513f25b0",
+      "careEpisodeId" : "10775686-6acd-4a29-8ca7-5f3e9862df94",
+      "performedDate" : "2026-11-04",
+      "resultVersion" : 1,
+      "careEpisodeType" : "OUTPATIENT_VISIT"
+    },
+    "version" : 1,
+    "producer" : "lab-service",
+    "eventType" : "lab.result.created",
+    "occurredAt" : "2026-11-04T05:08:47.321012500Z",
+    "correlationId" : "ee7f3361-ea67-4c35-9ceb-e9084376f6ac"
+  },
+  "sourceOrderId" : "5072d87e-1de6-48f6-abf5-38f1f6b9c60f",
+  "labTestId" : "e2ec18df-b9b0-4f7a-b87f-1f1101bc5ec3",
+  "clearance" : {
+    "eventId" : "dc59604e-2f18-463e-b17e-b090eed1a67d",
+    "eventType" : "financial.clearance.granted",
+    "version" : 1,
+    "occurredAt" : "2026-11-04T05:08:24.232562800Z",
+    "correlationId" : "4447d64e-085a-4cfb-9662-e58538e230f5",
+    "producer" : "billing-service",
+    "payload" : {
+      "clearanceId" : "39a10152-164b-44bf-ad45-0fc59b41cc6d",
+      "invoiceId" : "b7e96cbc-730a-474e-82e7-d85baccd9538",
+      "accountId" : "8e0aa634-b9d8-4b39-8661-4658c652652c",
+      "patientId" : "ae931abf-f3ff-418b-9c0e-16c8b08f4dde",
+      "careEpisodeType" : "OUTPATIENT_VISIT",
+      "careEpisodeId" : "10775686-6acd-4a29-8ca7-5f3e9862df94",
+      "purpose" : "LAB_TEST",
+      "appointmentId" : null,
+      "recordId" : "99277236-39cb-4ebd-8dcc-fce65dbe212d",
+      "labTestIds" : [ "e2ec18df-b9b0-4f7a-b87f-1f1101bc5ec3" ],
+      "prescriptionId" : null,
+      "admissionId" : null,
+      "surgeryCaseId" : null,
+      "amount" : 150000.0,
+      "currency" : "VND",
+      "paymentMethod" : "CASH",
+      "expiresAt" : null,
+      "emergencyOverride" : false
+    }
+  },
+  "recordId" : "99277236-39cb-4ebd-8dcc-fce65dbe212d"
+}

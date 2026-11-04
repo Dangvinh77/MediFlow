@@ -44,7 +44,7 @@ export function readOutpatientQuery(params: URLSearchParams, now = new Date()) {
     departmentId: params.get("departmentId")?.trim() || undefined,
   };
   const explicit = mode === "daily" ? params.has("fromDate") && params.has("toDate") : params.has("year");
-  return { query, autoLoad: explicit && Object.keys(validateOutpatientQuery(query)).length === 0 };
+  return { query, explicit, autoLoad: explicit && Object.keys(validateOutpatientQuery(query)).length === 0 };
 }
 
 export function buildOutpatientQuery(params: URLSearchParams, query: OutpatientReportQuery) {

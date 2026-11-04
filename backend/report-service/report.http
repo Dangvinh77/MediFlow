@@ -25,6 +25,15 @@
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
+### Provisional outpatient charts — ADMIN all departments; MANAGER must supply an assigned department.
+### Requires care-finance-v2 and outpatient-read. reconciled=false; zero means no recorded contribution.
+GET {{host}}/api/v1/reports/outpatient/statistics?fromDate=2026-11-01&toDate=2026-11-30
+Authorization: Bearer {{token}}
+
+### Same statistics restricted to one department (use its real UUID).
+GET {{host}}/api/v1/reports/outpatient/statistics?fromDate=2026-11-01&toDate=2026-11-30&departmentId={{departmentId}}
+Authorization: Bearer {{token}}
+
 ### ADMIN coverage preview — NEW, Gateway allowlist dependency OPEN (user kept Gateway out of scope).
 ### Requires explicit outpatient-coverage-acceptance gate in addition to the existing reader gates.
 ### Module verification is separate; do not bypass Gateway from FE or treat this sample as source acceptance.

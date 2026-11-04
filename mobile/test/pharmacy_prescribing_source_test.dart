@@ -12,7 +12,7 @@ import 'package:mediflow_mobile/features/pharmacy/presentation/create_prescripti
 
 import 'pharmacy_fixtures.dart';
 import 'pharmacy_prescription_widget_test.dart'
-    show host, Writer, tap, pumpCommand;
+    show host, Writer, tap, visible, pumpCommand;
 import 'reference_picker_test_support.dart';
 
 PrescribingSource source({
@@ -308,7 +308,12 @@ void main() {
     await tester.tap(choose);
     await tester.pumpAndSettle();
     await tap(tester, 'Tạo đơn thuốc');
-    await tester.tap(find.text('Xác nhận kê đơn'));
+    final confirm = find.ancestor(
+      of: find.text('Xác nhận kê đơn'),
+      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+    );
+    await visible(tester, confirm);
+    await tester.tap(confirm);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(writer.intents, hasLength(1));

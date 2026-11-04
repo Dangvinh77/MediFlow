@@ -129,6 +129,17 @@ class GatewayWebTest {
     }
 
     @Test
+    void outpatientStatisticsUsesExactReadRolesAndRejectsOtherMethods() {
+        String path = "/api/v1/reports/outpatient/statistics";
+        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.MANAGER);
+        expectForbidden(HttpMethod.GET, path, Roles.CASHIER);
+        expectForbidden(HttpMethod.GET, path, Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST, path, Roles.ADMIN);
+        webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
     void reportCoverageWithoutSupportReturnsUnavailableRatherThanApproval() {
         expectDownstreamUnavailable(HttpMethod.GET,
                 "/api/v1/reports/outpatient/coverage/preview", Roles.ADMIN);

@@ -108,8 +108,13 @@ class PackagedOutpatientLabAcceptanceIT {
                     Map.entry("MEDIFLOW_ORGANIZATION_DB_URL", databaseUrl("mediflow_organization")),
                     Map.entry("SPRING_PROFILES_ACTIVE", "local"),
                     Map.entry("MEDIFLOW_DEMO_SEED_ENABLED", "false"),
+                    // Isolated demo mailbox captures generated credentials; never sends real email.
+                    Map.entry("MEDIFLOW_DEMO_MAILBOX_ENABLED", "true"),
+                    Map.entry("MEDIFLOW_SECURITY_MAIL_DISPATCH_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_SECURITY_MAIL_KEY", "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="),
+                    Map.entry("MANAGEMENT_HEALTH_MAIL_ENABLED", "false"),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED", "true"),
-                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin@example.test"),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER", "999999999901"),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME", "Isolated Acceptance Admin"),
@@ -205,7 +210,8 @@ class PackagedOutpatientLabAcceptanceIT {
             processes.add(start("gateway", gatewayJar, gatewayPort, Map.of(
                     "MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     "--eureka.client.service-url.defaultZone=" + eurekaUrl,
-                    "--eureka.client.registry-fetch-interval-seconds=1"));
+                    "--eureka.client.registry-fetch-interval-seconds=1",
+                    "--mediflow.demo-mailbox.enabled=true"));
             awaitHealthy(gatewayPort, "gateway");
 
             String setupAdmin = login(gatewayUrl, "acceptance.admin");
@@ -708,21 +714,45 @@ class PackagedOutpatientLabAcceptanceIT {
                 "departmentId", departmentId.toString(), "jobTitle", jobTitle,
                 "specialization", "DOCTOR".equals(jobTitle) ? "General medicine" : null,
                 "licenseNumber", "DOCTOR".equals(jobTitle) ? "LIC-" + label + "-" + unique : null,
-                "phoneNumber", digits(10), "email", label + "-" + unique + "@example.test",
+                "phoneNumber", digits(10), "email", "lab-" + ("labtech".equals(label) ? "tech" : label) + "-" + unique + "@example.test",
                 "identityNumber", digits(12)));
         return UUID.fromString(staff.path("staffId").asText());
     }
 
     private void createAccount(String gateway, String adminToken, String username,
                                String role, UUID staffId) throws Exception {
-        post(gateway, "/api/v1/org/accounts", adminToken,
-                "username", username, "password", PASSWORD, "staffId", staffId.toString(),
-                "patientId", null, "role", role);
+        String email = username + "@example.test";
+        JsonNode account = data(post(gateway, "/api/v1/org/accounts", adminToken,
+                "username", email, "staffId", staffId.toString(), "patientId", null, "role", role));
+        // Explicitly register only this generated fixture account in the isolated Organization
+        // demo registry. Mailbox access requires seed provenance, not an email suffix or a flag.
+        // This is credential fixture setup, never a business lookup across context databases.
+        UUID accountId = UUID.fromString(account.path("accountId").asText());
+        String seedKey = "lab-acceptance-" + accountId;
+        JdbcTemplate organizationFixture = database("mediflow_organization");
+        organizationFixture.update("INSERT INTO local_demo_seed_receipt(seed_key,entity_id) VALUES (?,?)", seedKey, accountId);
+        organizationFixture.update("INSERT INTO local_demo_mailbox_account(account_id,seed_key,synthetic_email) VALUES (?,?,?)",
+                accountId, seedKey, email);
+        organizationFixture.update("UPDATE security_mail_message SET demo_mailbox=true,status='SENT',sent_at=now() WHERE message_id=? AND account_id=?",
+                UUID.fromString(account.path("mailDelivery").path("messageId").asText()), accountId);
+        String messagePath = "/api/v1/demo/mailbox/accounts/" + account.path("accountId").asText()
+                + "/messages/" + account.path("mailDelivery").path("messageId").asText();
+        JsonNode message = data(successful(gatewayRequest(gateway, "GET", messagePath, null, null)));
+        String temporary = message.path("textBody").asText().lines()
+                .filter(line -> line.startsWith("Mật khẩu tạm: ")).findFirst().orElseThrow()
+                .substring("Mật khẩu tạm: ".length());
+        String initialToken = login(gateway, email, temporary);
+        successful(gatewayRequest(gateway, "PUT", "/api/v1/org/accounts/me/password", initialToken,
+                JSON.writeValueAsString(Map.of("currentPassword", temporary, "newPassword", PASSWORD))));
     }
 
     private String login(String gateway, String username) throws Exception {
+        return login(gateway, username.contains("@") ? username : username + "@example.test", PASSWORD);
+    }
+
+    private String login(String gateway, String username, String password) throws Exception {
         HttpResponse<String> response = gatewayRequest(gateway, "POST", "/api/v1/auth/login", null,
-                JSON.writeValueAsString(Map.of("username", username, "password", PASSWORD)));
+                JSON.writeValueAsString(Map.of("username", username, "password", password)));
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         String token = JSON.readTree(response.body()).path("accessToken").asText();
         assertThat(token).isNotBlank();
@@ -759,6 +789,9 @@ class PackagedOutpatientLabAcceptanceIT {
                 .header(JwtClaims.HEADER_CORRELATION_ID, UUID.randomUUID().toString());
         if (token != null) {
             builder.header("Authorization", "Bearer " + token);
+        }
+        if ("POST".equals(method) && "/api/v1/org/accounts".equals(path)) {
+            builder.header("Idempotency-Key", UUID.randomUUID().toString());
         }
         if (body != null) {
             builder.header("Content-Type", "application/json");

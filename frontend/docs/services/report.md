@@ -124,3 +124,14 @@ currency, timezone and provenance, and label explicitly synthetic evidence. Refu
 net cash negative; zero only describes accepted coverage. Units dispensed remain separate.
 UI/backend gates remain OFF by default; this implementation does not establish live source
 acceptance or enable the runtime after pull.
+
+## Provisional operations charts — 2026-11-04
+
+`/reports` opens the outpatient workspace when its UI gate is on. The page first loads this
+month's provisional statistics: totals, stacked daily revenue by exam/Lab/prescription, daily
+visits and per-department visits and revenue. They are labelled as not reconciled; the accepted
+report stays below. MANAGER chooses an authorized department before the read.
+
+The figures count only contributions already projected into Report. Missing events can leave gaps;
+zero does not establish no activity. Revenue means gross service receipts; refunds are separate.
+Receipts predating service classification stay visibly unclassified rather than being guessed.

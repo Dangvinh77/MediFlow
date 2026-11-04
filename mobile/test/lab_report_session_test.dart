@@ -64,6 +64,10 @@ class Reports implements ReportRepository {
   final pending = Completer<ReportData>();
   @override
   Future<ReportData> read(ReportQuery query) => pending.future;
+
+  @override
+  Future<OperationsStatistics> statistics(ReportQuery query) =>
+      throw UnimplementedError();
 }
 
 void main() {

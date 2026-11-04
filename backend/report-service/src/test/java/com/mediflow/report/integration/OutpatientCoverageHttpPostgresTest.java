@@ -49,7 +49,8 @@ class OutpatientCoverageHttpPostgresTest {
             JpaRepositoriesAutoConfiguration.class,RabbitAutoConfiguration.class,FlywayAutoConfiguration.class})
     @EnableTransactionManagement
     @Import({SecurityConfig.class,GlobalExceptionHandler.class,OutpatientCoverageAcceptanceController.class,
-            OutpatientReportController.class,ReportOutpatientReadConfiguration.class,
+            OutpatientReportController.class,OutpatientStatisticsController.class,OutpatientStatisticsPersistenceAdapter.class,
+            ReportOutpatientReadConfiguration.class,
             ReportOutpatientCoverageAcceptanceConfiguration.class,OutpatientReportReadPersistenceAdapter.class,
             OutpatientCoverageAcceptancePersistenceAdapter.class})
     static class Harness {
@@ -80,6 +81,10 @@ class OutpatientCoverageHttpPostgresTest {
         String query="?fromDate=2026-10-01&toDate=2026-10-01";
         assertThat(call(HttpMethod.GET,root+"/available-periods","ADMIN",null).getBody().get("data").size()).isZero();
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"ADMIN",null).getStatusCode().value()).isEqualTo(404);
+        var provisional=call(HttpMethod.GET,root+"/statistics"+query,"ADMIN",null);
+        assertThat(provisional.getStatusCode().value()).isEqualTo(200);
+        assertThat(provisional.getBody().at("/data/reconciled").asBoolean()).isFalse();
+        assertThat(call(HttpMethod.GET,root+"/statistics"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         assertThat(call(HttpMethod.GET,root+"/coverage/preview"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
         var response=call(HttpMethod.GET,root+"/coverage/preview"+query,"ADMIN",null);
         assertThat(response.getStatusCode().value()).isEqualTo(200);

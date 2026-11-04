@@ -7,6 +7,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/report.dart';
+import 'operations_statistics.dart';
 import 'outpatient_statistics.dart';
 
 final reportRepositoryProvider = Provider<ReportRepository>(
@@ -20,13 +21,15 @@ const reportTitles = {
   ReportKind.topMedicines: 'Thuốc sử dụng nhiều',
   ReportKind.outpatientDaily: 'Ngoại trú theo ngày',
   ReportKind.outpatientMonthly: 'Ngoại trú theo tháng',
+  ReportKind.operations: 'Doanh thu & lượt khám theo khoa',
 };
 
 List<ReportKind> availableReportKinds({required bool outpatientEnabled}) => [
   for (final kind in ReportKind.values)
     if (outpatientEnabled ||
         (kind != ReportKind.outpatientDaily &&
-            kind != ReportKind.outpatientMonthly))
+            kind != ReportKind.outpatientMonthly &&
+            kind != ReportKind.operations))
       kind,
 ];
 
@@ -92,18 +95,37 @@ class _ReportWorkspace extends StatefulWidget {
 }
 
 class _ReportWorkspaceState extends State<_ReportWorkspace> {
-  ReportKind kind = ReportKind.daily;
-  final from = TextEditingController(
-        text: DateTime.now().toIso8601String().substring(0, 10),
+  // In outpatient MVP the legacy aggregates stay empty; open on live operations instead.
+  late ReportKind kind = widget.outpatientEnabled
+      ? ReportKind.operations
+      : ReportKind.daily;
+  late final from = TextEditingController(
+        text: kind == ReportKind.operations
+            ? DateTime(
+                DateTime.now().year,
+                DateTime.now().month,
+              ).toIso8601String().substring(0, 10)
+            : DateTime.now().toIso8601String().substring(0, 10),
       ),
       to = TextEditingController(
         text: DateTime.now().toIso8601String().substring(0, 10),
       );
   String? department;
   ReportData? data;
+  OperationsStatistics? operations;
   Object? error;
   bool loading = false;
   int generation = 0;
+  @override
+  void initState() {
+    super.initState();
+    if (kind == ReportKind.operations && !widget.needsDepartment) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) load();
+      });
+    }
+  }
+
   @override
   void dispose() {
     generation++;
@@ -118,16 +140,26 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       loading = true;
       error = null;
       data = null;
+      operations = null;
     });
     try {
-      final result = await widget.repository.read(
-        ReportQuery(
-          kind: kind,
-          from: from.text,
-          to: to.text,
-          departmentId: department,
-        ),
+      final query = ReportQuery(
+        kind: kind,
+        from: from.text,
+        to: to.text,
+        departmentId: department,
       );
+      if (kind == ReportKind.operations) {
+        if (widget.needsDepartment && department == null) {
+          throw ArgumentError('Chọn khoa được phân quyền.');
+        }
+        final result = await widget.repository.statistics(query);
+        if (mounted && current == generation) {
+          setState(() => operations = result);
+        }
+        return;
+      }
+      final result = await widget.repository.read(query);
       if (mounted && current == generation) setState(() => data = result);
     } catch (e) {
       if (mounted && current == generation) {
@@ -148,6 +180,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
     generation++;
     setState(() {
       data = null;
+      operations = null;
       error = null;
       loading = false;
     });
@@ -207,7 +240,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         ),
       ),
       if (kind == ReportKind.topMedicines ||
-          kind == ReportKind.outpatientDaily) ...[
+          kind == ReportKind.outpatientDaily ||
+          kind == ReportKind.operations) ...[
         const SizedBox(height: 12),
         TextField(
           controller: to,
@@ -257,6 +291,10 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
           child: Center(child: CircularProgressIndicator()),
         ),
       if (error != null) RequestError(error!, onRetry: load),
+      if (operations != null) ...[
+        const SizedBox(height: 24),
+        OperationsStatisticsView(operations!),
+      ],
       if (data != null) ...[
         const SizedBox(height: 24),
         Text(data!.title, style: Theme.of(context).textTheme.titleLarge),

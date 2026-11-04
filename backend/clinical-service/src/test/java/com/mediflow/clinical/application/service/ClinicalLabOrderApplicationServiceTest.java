@@ -168,12 +168,49 @@ class ClinicalLabOrderApplicationServiceTest {
         verify(orders, never()).save(any());
     }
 
+    @Test
+    void create_rejectsPriceCodeOutsideConfiguredBillingCatalogueBeforePersisting() {
+        var service = service(true, true, List.of("LAB", "LAB_CBC"));
+
+        assertThatThrownBy(() -> service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), "CBC")))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_PRICE_CODE_UNKNOWN")
+                .hasMessageContaining("LAB, LAB_CBC");
+        verify(records, never()).findByIdForUpdate(any());
+        verify(orders, never()).save(any());
+    }
+
+    @Test
+    void create_rejectsWhitespacePaddedConfiguredPriceCodeBeforePersisting() {
+        var service = service(true, true, List.of("LAB", "LAB_CBC"));
+
+        assertThatThrownBy(() -> service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), " LAB_CBC ")))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_PRICE_CODE_UNKNOWN");
+        verify(records, never()).findByIdForUpdate(any());
+        verify(orders, never()).save(any());
+    }
+
+    @Test
+    void create_acceptsConfiguredPriceCode() {
+        var created = service(true, true, List.of("LAB", "LAB_CBC")).create(record.getRecordId(),
+                new CreateClinicalLabOrderRequest("CBC", LocalDate.of(2026, 9, 21), "LAB_CBC"));
+
+        assertThat(created.priceCode()).isEqualTo("LAB_CBC");
+        verify(orders).save(any(ClinicalLabOrder.class));
+    }
+
     private ClinicalLabOrderApplicationService service(boolean outpatientEnabled) {
         return service(outpatientEnabled, true);
     }
 
     private ClinicalLabOrderApplicationService service(boolean outpatientEnabled, boolean careFinanceEnabled) {
+        return service(outpatientEnabled, careFinanceEnabled, List.of());
+    }
+
+    private ClinicalLabOrderApplicationService service(boolean outpatientEnabled, boolean careFinanceEnabled,
+                                                       List<String> labPriceCodes) {
         return new ClinicalLabOrderApplicationService(appointments, records, orders, actors, staff,
-                new OutpatientMvpMode(outpatientEnabled), careFinanceEnabled, clock);
+                new OutpatientMvpMode(outpatientEnabled), careFinanceEnabled, labPriceCodes, clock);
     }
 }
