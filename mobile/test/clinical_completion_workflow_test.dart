@@ -244,18 +244,21 @@ void main() {
       );
 
       records.onGet = (_) async => record(status: 'COMPLETED');
-      await tester.pumpWidget(
-        host(
-          child: MedicalRecordDetailPage(
-            recordId: recordId,
-            prescriptionWorkspaceBuilder: prescriptionSlot,
-          ),
-          records: records,
-          outpatientEnabled: true,
-        ),
+      // Updating a fake does not reload the mounted record; exercise its refresh action.
+      final refresh = find.text('Làm mới hồ sơ');
+      await tester.scrollUntilVisible(
+        refresh,
+        -200,
+        scrollable: detailScrollable.first,
       );
+      await tester.tap(refresh);
       await tester.pumpAndSettle();
       expect(receivedCanCreate, isFalse);
+      await tester.scrollUntilVisible(
+        find.text('Prescription slot: false'),
+        200,
+        scrollable: detailScrollable.first,
+      );
       expect(find.text('Prescription slot: false'), findsOneWidget);
       expect(find.text('Hoàn tất hồ sơ khám'), findsNothing);
     },

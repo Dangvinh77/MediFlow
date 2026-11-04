@@ -1168,3 +1168,23 @@ the acceptance reference and all five source references explicitly start `SYNTHE
 Older responses without this additive field remain readable by the clients. No source
 references or accepting actor are exposed. A compatible historical seed is discoverable
 only if its approval remains valid; discovery never accepts or restores seed data.
+
+
+## Provisional outpatient operations statistics (2026-11-04)
+
+`GET /api/v1/reports/outpatient/statistics?fromDate=<date>&toDate=<date>&departmentId=<UUID>`
+(ADMIN/MANAGER, same live department scope guard and gates as daily/monthly; at most 366 days)
+returns `fromDate`, `toDate`, `departmentId`, `currency`, `zoneId`, `reconciled=false`, `totals`,
+`days[]` (every requested date, zero-filled) and `departments[]`. Each figure set carries
+`completedVisits`, `examRevenue`, `labRevenue`, `prescriptionRevenue`, `unclassifiedRevenue` and
+`refunds`. Revenue is gross outpatient SERVICE_PAYMENT cash by service line; refunds are separate.
+
+These figures are read from Report's own projections without accepted coverage and are therefore
+never "reconciled"; clients must label them provisional and keep the reconciled report distinct.
+The service line is recorded at `payment.completed` consumption (Report V30 `service_purpose`):
+a prescription target is PRESCRIPTION, a Lab target is LAB_TEST, no target is EXAM. Receipts
+recorded earlier without a line are `unclassifiedRevenue`.
+
+Scheduled (V2 registration) EXAM requests are now enrolled in the Billing outpatient publication
+cohort with `record_id=registrationId` as source (Billing V33 widens the payload fence). Their
+`payment.completed` is published like V1 EXAM/LAB_TEST/PRESCRIPTION instead of being held.

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.report.application.dto.command.carefinance.DecodedCareFinanceEvent;
+import com.mediflow.report.application.mapper.BillingCashReceiptMapper;
 import com.mediflow.report.application.port.out.CashReceiptStorePort;
 import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.CashReceipt;
@@ -54,13 +55,15 @@ public class CashReceiptPersistenceAdapter implements CashReceiptStorePort {
                 INSERT INTO report_cash_receipt(transaction_id, first_event_id, invoice_id,
                     payment_request_id, account_id, patient_id, department_id, care_episode_type,
                     care_episode_id, classification, amount, currency, payment_method, completed_at,
-                    completed_at_iso, business_date, report_zone, payload_fingerprint, fact_fingerprint)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (transaction_id) DO NOTHING
+                    completed_at_iso, business_date, report_zone, payload_fingerprint, fact_fingerprint, service_purpose)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (transaction_id) DO NOTHING
                 """, receipt.transactionId(), metadata.eventId(), receipt.invoiceId(), receipt.paymentRequestId(),
                 receipt.accountId(), receipt.patientId(), receipt.departmentId(), receipt.careEpisodeType(),
                 receipt.careEpisodeId(), receipt.classification().name(), receipt.amount(), receipt.currency(),
                 receipt.paymentMethod(), Timestamp.from(receipt.completedAt()), receipt.completedAt().toString(),
-                Date.valueOf(receipt.businessDate()), receipt.reportZone(), payloadHash, factHash);
+                Date.valueOf(receipt.businessDate()), receipt.reportZone(), payloadHash, factHash,
+                // Outside both fingerprints: classification for statistics, not receipt identity.
+                BillingCashReceiptMapper.servicePurpose(event.payload()));
         var stored = jdbc.queryForMap("""
                 SELECT payload_fingerprint, fact_fingerprint FROM report_cash_receipt WHERE transaction_id=?
                 """, receipt.transactionId());

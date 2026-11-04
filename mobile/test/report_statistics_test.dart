@@ -27,6 +27,10 @@ class Reports implements ReportRepository {
 
   @override
   Future<ReportData> read(ReportQuery query) => throw UnimplementedError();
+
+  @override
+  Future<OperationsStatistics> statistics(ReportQuery query) =>
+      throw UnimplementedError();
 }
 
 void main() {

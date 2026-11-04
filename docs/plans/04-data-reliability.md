@@ -91,6 +91,11 @@ trong một workload demo đã khóa; không xây resilience platform mới ngo�
 Chỉ đọc/công bố metrics có supported source evidence. Cash và refunded amounts không gọi earned.
 Final-settlement-only earned policy giữ nguyên cho kernel deferred; MVP không cần financial
 publication all-five/history conversion. Coverage thiếu phải unavailable, không zero giả.
+Ngoại lệ thống kê vận hành theo [hợp đồng 04/11/2026](03-contracts.md#provisional-outpatient-operations-statistics-2026-11-04):
+`/outpatient/statistics` chỉ tổng hợp facts đã ghi nhận tại Report, luôn `reconciled=false`.
+Số 0 ở đây nghĩa là chưa có contribution trong projection, không chứng minh không có hoạt động
+hay nguồn đã đồng bộ đủ; UI phải nói rõ tạm tính và khả năng thiếu sự kiện. Báo cáo daily/monthly
+đã đối soát vẫn bắt buộc accepted coverage, không dùng thống kê tạm tính thay cho đối soát.
 Rebuild isolated chỉ áp dụng Report data, không chạy lại business commands hay gửi notifications.
 
 ## Quan sát và phục hồi

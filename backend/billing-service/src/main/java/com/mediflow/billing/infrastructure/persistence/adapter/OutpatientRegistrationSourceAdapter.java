@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.billing.application.event.OutpatientRegistrationChangedEvent;
 import com.mediflow.billing.application.service.IssueOutpatientQuoteService;
+import com.mediflow.billing.application.port.out.OutpatientPublicationCohortPort;
 import com.mediflow.billing.application.port.out.OutpatientRegistrationSourcePort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort.PriceSnapshot;
 import com.mediflow.billing.domain.exception.BillingRuleException;
@@ -32,14 +33,17 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
     private final ObjectMapper mapper;
     private final ObjectProvider<IssueOutpatientQuoteService> quoteIssuer;
     private final boolean quotesEnabled;
+    private final OutpatientPublicationCohortPort cohort;
 
     public OutpatientRegistrationSourceAdapter(JdbcTemplate jdbc, ObjectMapper mapper,
             ObjectProvider<IssueOutpatientQuoteService> quoteIssuer,
-            @Value("${mediflow.billing.outpatient-quotes.enabled:false}") boolean quotesEnabled) {
+            @Value("${mediflow.billing.outpatient-quotes.enabled:false}") boolean quotesEnabled,
+            OutpatientPublicationCohortPort cohort) {
         this.jdbc = jdbc;
         this.mapper = mapper;
         this.quoteIssuer = quoteIssuer;
         this.quotesEnabled = quotesEnabled;
+        this.cohort = cohort;
     }
 
     @Override
@@ -199,6 +203,7 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
                 fact.priceCode(), description, quantity, unitAmount, gross, Timestamp.from(fact.changedAt()));
         jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
                 requestId, chargeId, amount);
+        cohort.enrollIfEligible(requestId);
         if (quoteLine != null) {
             IssueOutpatientQuoteService issuer = quoteIssuer.getIfAvailable();
             if (issuer == null) throw new IllegalStateException("Outpatient quote issuer is not configured");

@@ -47,6 +47,13 @@ flutter run -d <device-id> --dart-define=GATEWAY_URL=https://gateway.example.org
 flutter run -d <android-device-id> --dart-define=GATEWAY_URL=http://10.0.2.2:8080/api
 ```
 
+Với backend demo ngoại trú đã bật consumer/read gates, `tool/run_web.ps1 -Demo`
+bật cả `MEDIFLOW_OUTPATIENT_UI_ENABLED` và `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED`.
+Bản native cần truyền riêng hai `--dart-define=...=true` tương ứng. Report mở mặc định
+biểu đồ doanh thu khám/xét nghiệm/thuốc và lượt khám theo ngày, theo khoa. Đây là số liệu
+đã đồng bộ, chưa đối soát; số 0 không chứng minh không có hoạt động. Báo cáo đã đối soát
+vẫn cần phạm vi coverage hợp lệ và được chọn riêng trong loại báo cáo.
+
 - Android cần SDK và licenses (`flutter doctor --android-licenses`). Debug cho phép HTTP local; release dùng HTTPS. Signing scaffold hiện phục vụ phát triển, cần cấu hình riêng trước phát hành.
 - Điện thoại thật dùng địa chỉ Gateway truy cập được. HTTP LAN cần `--dart-define=ALLOW_INSECURE_HTTP=true` và vẫn chịu chính sách nền tảng; nên dùng HTTPS.
 - iOS cần macOS/Xcode. Bản Debug dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release/Profile dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
@@ -64,7 +71,7 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ```powershell
 cd mobile
-flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
+flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
 ```
 
 Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
@@ -148,3 +155,5 @@ không tự mở quyền shared hoặc mở thêm Notification cho Huy.
 ```
 
 Script kiểm tra format, analyzer, test ứng dụng và loader package, build web. Test doubles chỉ nằm trong test. Unit/widget test không thay kiểm tra đăng nhập/backend thật. Host Android/iOS/Windows đã scaffold; phải build với toolchain phù hợp trước khi xác nhận chạy native.
+
+Kiểm tra LAB/Report sau chỉnh giờ 04/11/2026: [UI, biểu đồ và kết quả nghiệm thu](../docs/acceptance/2026-11-04-lab-report/README.md).

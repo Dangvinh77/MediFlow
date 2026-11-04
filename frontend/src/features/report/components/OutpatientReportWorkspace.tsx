@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
 import { buildOutpatientQuery, readOutpatientQuery } from "../outpatientQuery";
 import { OutpatientReportView } from "./OutpatientReportView";
+import { OutpatientStatisticsView } from "./OutpatientStatisticsView";
 
 export function OutpatientReportWorkspace({ enabled = false }: { enabled?: boolean }) {
   if (!enabled) return (
@@ -27,8 +28,10 @@ function EnabledOutpatientWorkspace() {
     return true;
   }
   return (
-    <PageShell title="Báo cáo ngoại trú" description="Lượt khám, xét nghiệm, cấp thuốc và thu hoàn tiền đã đối soát.">
+    <PageShell title="Báo cáo ngoại trú" description="Doanh thu khám, xét nghiệm, thuốc và lượt khám theo khoa; báo cáo đã đối soát bên dưới.">
       <Link href="/reports?view=monthly" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác</Link>
+      <OutpatientStatisticsView />
+      <h2 className="mt-10 border-t border-border pt-6 text-lg font-semibold">Báo cáo đã đối soát</h2>
       <nav aria-label="Kỳ báo cáo ngoại trú" className="mt-3 flex flex-wrap gap-x-6 border-b border-border">
         {(["daily", "monthly"] as const).map((mode) => {
           const next = new URLSearchParams(rawQuery); next.set("view", mode);

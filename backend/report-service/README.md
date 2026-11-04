@@ -332,3 +332,10 @@ recent scopes; MANAGER must supply an authorized department. An empty list is no
 Daily/monthly results now expose explicit `syntheticData` provenance. All read gates stay OFF by
 default. See the [exact additive contract](../../docs/plans/03-contracts.md#accepted-outpatient-period-discovery-2026-11-03)
 and the requests in `report.http`. No coverage acceptance, seed restore or producer write occurs.
+
+## Provisional outpatient statistics (2026-11-04)
+
+`GET /api/v1/reports/outpatient/statistics` charts visits and gross cash by service line (exam,
+Lab, prescription) per day and per department without accepted coverage (`reconciled=false`).
+V30 adds `report_cash_receipt.service_purpose`. See the
+[contract](../../docs/plans/03-contracts.md#provisional-outpatient-operations-statistics-2026-11-04).

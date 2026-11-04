@@ -43,7 +43,9 @@ function Invoke-DemoBuild([switch]$Force) {
     $inputs = & python $helper fingerprint
     if ($LASTEXITCODE -ne 0) { throw 'Could not fingerprint the Maven build inputs.' }
     Write-Host 'Building the eight demo applications...'
-    & mvn -q -pl backend/core-service,backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service,backend/support-service,backend/gateway,backend/eureka-server -am '-DskipTests' package
+    # A clock correction can leave future-dated classes that Maven considers current.
+    # Only rebuilds clear outputs; the verified content-hash fast path above still skips Maven.
+    & mvn -q -pl backend/core-service,backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service,backend/support-service,backend/gateway,backend/eureka-server -am '-DskipTests' clean package
     if ($LASTEXITCODE -ne 0) { throw 'Backend build failed. See Maven output above.' }
     & python $helper record --expected-inputs $inputs
     if ($LASTEXITCODE -ne 0) { throw 'Could not record the successful demo build.' }
@@ -296,7 +298,7 @@ try {
             Write-Host 'Gateway: http://127.0.0.1:28080.'
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
-            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
+            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
             if ($persistent) { $networkArguments += '--persistent' }

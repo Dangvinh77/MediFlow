@@ -17,7 +17,10 @@ $defines = @(
     "--dart-define=GATEWAY_URL=http://localhost:$Port/api",
     "--dart-define=PHARMACY_MODE=$PharmacyMode"
 )
-if ($OutpatientUi) { $defines += '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true' }
+if ($OutpatientUi) {
+    $defines += '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true'
+    $defines += '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true'
+}
 Write-Host "Build flags: $($defines -join ' ')"
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {

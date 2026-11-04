@@ -62,3 +62,25 @@ export interface OutpatientAvailablePeriodDTO {
   reconciledAt: string;
   syntheticData: boolean;
 }
+
+/** OutpatientStatisticsDTO: provisional (not reconciled) outpatient operations from Report projections. */
+export interface OutpatientStatisticsFigures {
+  completedVisits: number;
+  examRevenue: number;
+  labRevenue: number;
+  prescriptionRevenue: number;
+  unclassifiedRevenue: number;
+  refunds: number;
+}
+
+export interface OutpatientStatisticsDTO {
+  fromDate: string;
+  toDate: string;
+  departmentId: string | null;
+  currency: string;
+  zoneId: string;
+  reconciled: boolean;
+  totals: OutpatientStatisticsFigures;
+  days: (OutpatientStatisticsFigures & { date: string })[];
+  departments: (OutpatientStatisticsFigures & { departmentId: string })[];
+}

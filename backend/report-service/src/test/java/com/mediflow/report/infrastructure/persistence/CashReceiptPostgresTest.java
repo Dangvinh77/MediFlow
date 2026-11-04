@@ -57,6 +57,52 @@ class CashReceiptPostgresTest {
     }
 
     @Test
+    void servicePurposesPersistWithoutDuplicatingReceiptsOnReplay() throws Exception {
+        // Consumer variations of the locked producer fixture, not new wire contracts.
+        for (String purpose : java.util.List.of("EXAM", "LAB_TEST", "PRESCRIPTION")) {
+            var base = fixture("service");
+            var event = delivery(base, UUID.randomUUID(), UUID.randomUUID(), "100.00", "VND");
+            var payload = new LinkedHashMap<>(event.payload());
+            payload.put("prescriptionId", "PRESCRIPTION".equals(purpose) ? UUID.randomUUID().toString() : null);
+            payload.put("labTestIds", "LAB_TEST".equals(purpose)
+                    ? java.util.List.of(UUID.randomUUID().toString()) : java.util.List.of());
+            event = new DecodedCareFinanceEvent(event.metadata(), payload);
+            service.apply(event);
+            service.apply(event);
+            service.apply(delivery(event, UUID.randomUUID(), event.metadata().sourceId(), "100.00", "VND"));
+            assertThat(jdbc.queryForObject("SELECT service_purpose FROM report_cash_receipt WHERE transaction_id=?",
+                    String.class, event.metadata().sourceId())).isEqualTo(purpose);
+        }
+        service.apply(fixture("deposit"));
+        assertThat(jdbc.queryForObject("SELECT service_purpose FROM report_cash_receipt WHERE classification='ADMISSION_DEPOSIT'",
+                String.class)).isNull();
+        assertThat(count("report_cash_receipt")).isEqualTo(4);
+        assertThat(total(null, "VND")).isEqualByComparingTo("400.00");
+        var day = java.time.LocalDate.of(2026, 10, 5);
+        var rows = new com.mediflow.report.infrastructure.persistence.adapter.OutpatientStatisticsPersistenceAdapter(jdbc)
+                .load(day, day, null, "Asia/Bangkok", "VND");
+        assertThat(rows).extracting(row -> row.kind())
+                .containsExactlyInAnyOrder("EXAM", "LAB_TEST", "PRESCRIPTION");
+        assertThat(rows).allSatisfy(row -> assertThat(row.amount()).isEqualByComparingTo("100.00"));
+    }
+
+    @Test
+    void replayOfLegacyReceiptDoesNotInferOrBackfillServicePurpose() throws Exception {
+        var event = fixture("service");
+        service.apply(event);
+        // Model the nullable column on a receipt recorded before migration V30.
+        jdbc.update("UPDATE report_cash_receipt SET service_purpose=NULL");
+        service.apply(delivery(event, UUID.randomUUID(), event.metadata().sourceId(), "100.00", "VND"));
+        assertThat(jdbc.queryForObject("SELECT service_purpose FROM report_cash_receipt", String.class)).isNull();
+        assertThat(count("report_cash_receipt")).isOne();
+        assertThat(total(null, "VND")).isEqualByComparingTo("100.00");
+        var day = java.time.LocalDate.of(2026, 10, 5);
+        assertThat(new com.mediflow.report.infrastructure.persistence.adapter.OutpatientStatisticsPersistenceAdapter(jdbc)
+                .load(day, day, null, "Asia/Bangkok", "VND"))
+                .singleElement().satisfies(row -> assertThat(row.kind()).isEqualTo("UNCLASSIFIED"));
+    }
+
+    @Test
     void actualBillingReceipts_createGrossScopesButNoEarnedLiabilityOrLegacyEffects() throws Exception {
         service.apply(fixture("service"));
         service.apply(fixture("deposit"));

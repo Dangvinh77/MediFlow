@@ -80,7 +80,7 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         // Billing only learns the code asynchronously and dead-letters unknown ones, leaving a Lab
         // test with no payment request. Reject here while the doctor can still correct it.
         if (!labPriceCodes.isEmpty() && request.priceCode() != null && !request.priceCode().isBlank()
-                && !labPriceCodes.contains(request.priceCode().trim())) {
+                && !labPriceCodes.contains(request.priceCode())) {
             throw new InvalidClinicalDataException("CLINICAL_LAB_PRICE_CODE_UNKNOWN",
                     "Mã giá xét nghiệm không có trong bảng giá: " + request.priceCode().trim()
                             + ". Mã hợp lệ: " + String.join(", ", labPriceCodes));

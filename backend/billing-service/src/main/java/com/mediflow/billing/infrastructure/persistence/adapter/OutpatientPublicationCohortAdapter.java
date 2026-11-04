@@ -42,10 +42,12 @@ public class OutpatientPublicationCohortAdapter implements OutpatientPublication
         if (!properties.purposes().contains(purpose)) return;
         UUID accountId = (UUID) request.get("account_id");
         var target = jdbc.queryForMap(
-                "SELECT appointment_id, prescription_id, lab_test_ids FROM PAYMENT_REQUEST_TARGET WHERE payment_request_id = ?",
+                "SELECT appointment_id, record_id, prescription_id, lab_test_ids FROM PAYMENT_REQUEST_TARGET WHERE payment_request_id = ?",
                 paymentRequestId);
         UUID sourceId = switch (purpose) {
-            case "EXAM" -> (UUID) target.get("appointment_id");
+            // V1 appointment EXAM targets appointment_id; scheduled EXAM targets record_id=registrationId.
+            case "EXAM" -> target.get("appointment_id") != null ? (UUID) target.get("appointment_id")
+                    : (UUID) target.get("record_id");
             case "PRESCRIPTION" -> (UUID) target.get("prescription_id");
             case "LAB_TEST" -> labTestId(target);
             default -> null;

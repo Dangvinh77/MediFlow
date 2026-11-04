@@ -1,5 +1,13 @@
 # Frontend Workboard
 
+## LAB / Report sau chỉnh giờ — 2026-11-04
+
+Vinh / user-assigned task-scoped override cho Report frontend và mobile. Thống kê
+vận hành tự tải tháng hiện tại, biểu đồ tiền thu khám/xét nghiệm/thuốc, lượt khám
+theo ngày và khoa. Phân biệt rõ số liệu tạm tính với báo cáo đã đối soát; không tự
+chấp nhận coverage hoặc suy diễn loại khoản thu lịch sử. Kiểm tra UI thật trên
+Gateway với dữ liệu demo cách ly, kèm [bằng chứng và giới hạn](../../docs/acceptance/2026-11-04-lab-report/README.md).
+
 ## Hồ sơ tài khoản, khám và tiếp nhận — 2026-11-04
 
 Vinh / user-assigned task-scoped implementation trên baseline `d9a1635b`, gồm

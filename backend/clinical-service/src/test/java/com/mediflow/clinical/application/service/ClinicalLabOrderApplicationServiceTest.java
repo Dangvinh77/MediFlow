@@ -181,6 +181,17 @@ class ClinicalLabOrderApplicationServiceTest {
     }
 
     @Test
+    void create_rejectsWhitespacePaddedConfiguredPriceCodeBeforePersisting() {
+        var service = service(true, true, List.of("LAB", "LAB_CBC"));
+
+        assertThatThrownBy(() -> service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), " LAB_CBC ")))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_PRICE_CODE_UNKNOWN");
+        verify(records, never()).findByIdForUpdate(any());
+        verify(orders, never()).save(any());
+    }
+
+    @Test
     void create_acceptsConfiguredPriceCode() {
         var created = service(true, true, List.of("LAB", "LAB_CBC")).create(record.getRecordId(),
                 new CreateClinicalLabOrderRequest("CBC", LocalDate.of(2026, 9, 21), "LAB_CBC"));
