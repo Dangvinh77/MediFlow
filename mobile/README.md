@@ -27,7 +27,7 @@ Từ thư mục mobile, chạy:
 ./tool/run_web.ps1
 # Đổi địa chỉ khi cần:
 ./tool/run_web.ps1 -Port 4301 -Gateway http://127.0.0.1:8080
-# Demo với backend start-backend.bat: bật UI lệnh ngoại trú + Pharmacy V1
+# Demo với backend scripts/run/start-backend.bat: bật UI lệnh ngoại trú + Pharmacy V1
 ./tool/run_web.ps1 -Demo -Gateway http://127.0.0.1:28080
 ```
 
@@ -64,9 +64,9 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ### Demo điện thoại cùng Wi-Fi với máy Windows
 
-1. Chạy `start-backend.bat` ở thư mục gốc. SMTP được nạp tự động từ `smtp.local.env`. Lần đầu chạy bằng **Run as administrator** để tạo/cập nhật firewall cho TCP 28080 và 3000, giới hạn LocalSubnet trên đúng adapter đang chọn. Không cần đổi loại mạng Windows đang dùng.
+1. Chạy `scripts/run/start-backend.bat` từ thư mục gốc (hoặc mở file trong `scripts/run`). SMTP được nạp tự động từ `smtp.local.env`. Lần đầu chạy bằng **Run as administrator** để tạo/cập nhật firewall cho TCP 28080 và 3000, giới hạn LocalSubnet trên đúng adapter đang chọn. Không cần đổi loại mạng Windows đang dùng.
 2. Chờ `READY`. Launcher in `Mobile Gateway: http://<IP-máy>:28080/api`. Cổng demo là **28080**, khác cổng 8080 của cách chạy dịch vụ thông thường.
-3. Chạy `start-frontend.bat` nếu cần mở web, mailbox hoặc link trong email trên điện thoại. Dùng URL IP cổng 3000 mà launcher in ra cho cả desktop và điện thoại để nút trong mailbox có cùng origin.
+3. Chạy `scripts/run/start-frontend.bat` nếu cần mở web, mailbox hoặc link trong email trên điện thoại. Dùng URL IP cổng 3000 mà launcher in ra cho cả desktop và điện thoại để nút trong mailbox có cùng origin.
 4. Trên máy có Flutter và thiết bị Android/iOS kết nối, thay IP bằng địa chỉ được in ở bước 2:
 
 ```powershell
@@ -76,7 +76,7 @@ flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dar
 
 Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
 
-Có thể chọn adapter bằng `start-backend.bat -LanAddress 192.168.1.3` và truyền cùng tham số cho `start-frontend.bat`. Dùng `-LocalOnly` ở cả hai launcher để chạy riêng trên máy. Các service/DB/broker nội bộ của demo vẫn bind loopback; mobile gọi Gateway.
+Có thể chọn adapter bằng `scripts/run/start-backend.bat -LanAddress 192.168.1.3` và truyền cùng tham số cho `scripts/run/start-frontend.bat`. Dùng `-LocalOnly` ở cả hai launcher để chạy riêng trên máy. Các service/DB/broker nội bộ của demo vẫn bind loopback; mobile gọi Gateway.
 
 Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-máy>:28080/actuator/health`. Nếu không kết nối được, kiểm tra cùng Wi-Fi, firewall đã được tạo và mạng không bật cách ly thiết bị/guest Wi-Fi. Quy tắc firewall có tên `MediFlow-Lan-Demo-28080` và `MediFlow-Lan-Demo-3000`.
 

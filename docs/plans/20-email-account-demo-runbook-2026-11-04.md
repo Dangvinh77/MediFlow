@@ -11,9 +11,9 @@ Tài liệu này hướng dẫn chạy nhánh email-account-recovery. [Kết qu�
 - `MEDIFLOW_PUBLIC_WEB_URL=http://localhost:3000` hiện trỏ về frontend. Sau deploy đổi thành origin HTTPS của Vercel, không thêm `/login` phía sau.
 - `MEDIFLOW_DEMO_MAILBOX_ENABLED=true` chỉ dành cho môi trường demo. Giữ false khi deploy thật.
 
-Khi dùng `start-backend.bat`, launcher tự nạp file local vào cùng tiến trình trước khi build/chạy dịch vụ; không cần nạp thủ công. Mặc định launcher chọn IP riêng của adapter mạng thật, mở Gateway demo cổng **28080**, và đổi origin email localhost thành `http://<IP-máy>:3000` trong tiến trình chạy. Giá trị trong file local không bị sửa. URL Vercel đã cấu hình sẽ được giữ nguyên.
+Khi dùng `scripts/run/start-backend.bat`, launcher tự nạp file local vào cùng tiến trình trước khi build/chạy dịch vụ; không cần nạp thủ công. Mặc định launcher chọn IP riêng của adapter mạng thật, mở Gateway demo cổng **28080**, và đổi origin email localhost thành `http://<IP-máy>:3000` trong tiến trình chạy. Giá trị trong file local không bị sửa. URL Vercel đã cấu hình sẽ được giữ nguyên.
 
-Chạy `start-frontend.bat` để phục vụ web/link email trên cùng Wi-Fi. Lần đầu mở `start-backend.bat` bằng **Run as administrator** để thêm firewall LocalSubnet trên adapter được chọn cho hai cổng 28080/3000. Các dịch vụ và hạ tầng nội bộ vẫn chỉ nhận kết nối loopback. Để chạy riêng trên máy, dùng `-LocalOnly` cho cả hai launcher; để chọn IP cụ thể, dùng cùng `-LanAddress <IP>` cho cả hai.
+Chạy `scripts/run/start-frontend.bat` để phục vụ web/link email trên cùng Wi-Fi. Lần đầu mở `scripts/run/start-backend.bat` bằng **Run as administrator** để thêm firewall LocalSubnet trên adapter được chọn cho hai cổng 28080/3000. Các dịch vụ và hạ tầng nội bộ vẫn chỉ nhận kết nối loopback. Để chạy riêng trên máy, dùng `-LocalOnly` cho cả hai launcher; để chọn IP cụ thể, dùng cùng `-LanAddress <IP>` cho cả hai.
 
 Xem [hướng dẫn điện thoại Android/iOS](../../mobile/README.md#demo-điện-thoại-cùng-wi-fi-với-máy-windows). Từ điện thoại, dùng đúng URL IP mà launcher in; `localhost` trên điện thoại là chính điện thoại.
 

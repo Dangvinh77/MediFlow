@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8899", "--directory", "docs/eproject_general_plan"],
       "port": 8899
+    },
+    {
+      "name": "frontend-demo",
+      "runtimeExecutable": "powershell.exe",
+      "runtimeArgs": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/demo_25_10/Demo-Launcher.ps1", "-Action", "Frontend", "-LocalOnly"],
+      "port": 3000
     }
   ]
 }

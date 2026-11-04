@@ -4,12 +4,12 @@ Khung nguồn được giữ sau khi dọn bản quay thử. **Không chứa vid
 
 ## Khởi động lần sau
 
-1. Chạy `start-backend.bat` trong **07:00–16:45 giờ Việt Nam** nếu cần cả lượt nguồn tái khám. Chờ `FOLLOW-UP SOURCE READY`, `CALENDAR READY` và `READY`.
-2. Chạy `start-frontend.bat`. Kịch bản nghiệp vụ: [DEMO_UI_TUNG_BUOC.md](../demo_25_10/DEMO_UI_TUNG_BUOC.md). Dùng ngày thực tế D; các UUID phải lấy lại từ UI của phiên mới.
+1. Chạy `scripts/run/start-backend.bat` trong **07:00–16:45 giờ Việt Nam** nếu cần cả lượt nguồn tái khám. Chờ `FOLLOW-UP SOURCE READY`, `CALENDAR READY` và `READY`.
+2. Chạy `scripts/run/start-frontend.bat`. Kịch bản nghiệp vụ: [DEMO_UI_TUNG_BUOC.md](../demo_25_10/DEMO_UI_TUNG_BUOC.md). Dùng ngày thực tế D; các UUID phải lấy lại từ UI của phiên mới.
 3. Chạy **start-video.bat** trong thư mục này. Nó sao chép khung vào `target/mediflow-demo-video`, chỉ khởi tạo khi thư mục đó chưa tồn tại, rồi mở preview cổng 3017. Nó không khởi động lại dữ liệu bệnh viện.
 4. Ghi các đoạn thao tác bằng bộ điều khiển trình duyệt đang có, theo ví dụ dưới.
 5. Tại thư mục bản làm việc: `python assemble.py`, `npm run check`, kiểm ảnh với `npx hyperframes@0.9.2 snapshot --review`, rồi `npm run render -- --quality delivery -o demo.mp4` khi đủ các chương.
-6. Đối chiếu `coverage-template.json` với đoạn đã ghi; không coi một đoạn có khung hình là nghiệp vụ đã thành công. Khi xong dừng preview bằng `npx hyperframes@0.9.2 preview --stop`, dừng frontend và chạy `clean-docker.bat` từ gốc dự án.
+6. Đối chiếu `coverage-template.json` với đoạn đã ghi; không coi một đoạn có khung hình là nghiệp vụ đã thành công. Khi xong dừng preview bằng `npx hyperframes@0.9.2 preview --stop`, dừng frontend và chạy `scripts/run/clean-docker.bat` từ gốc dự án.
 
 ## Dành cho trợ lý ở lần quay tiếp theo
 

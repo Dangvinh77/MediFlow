@@ -312,6 +312,7 @@ try {
             Require-Command 'node'
             Require-Command 'pnpm'
             $env:GATEWAY_URL = 'http://127.0.0.1:28080'
+            $env:MEDIFLOW_DEV_ALLOWED_ORIGINS = $network.Address
             $env:MEDIFLOW_SCHEDULING_UI_ENABLED = 'true'
             $env:MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED = 'true'
             $env:MEDIFLOW_ZERO_PAYABLE_UI_ENABLED = 'true'

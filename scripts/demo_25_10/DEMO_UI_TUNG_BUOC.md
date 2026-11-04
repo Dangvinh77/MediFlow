@@ -1,7 +1,7 @@
 # Demo UI theo service: admin → tiếp nhận → khám → Lab → thuốc → ra về
 
 Cập nhật **04/11/2026**. Chỉ dùng dữ liệu mẫu. Hướng dẫn dùng seed của
-`start-backend.bat`; không chạy thêm SQL/Python giữa các quầy.
+`scripts/run/start-backend.bat`; không chạy thêm SQL/Python giữa các quầy.
 
 Phân công dưới đây là **phân công trình bày**, không thay đổi quyền sửa source.
 Người trình bày có thể đăng nhập nhiều vai nghiệp vụ; ví dụ Huy trình bày Pharmacy
@@ -43,19 +43,19 @@ Queue rỗng có thể do consumer đã xử lý, không phải bằng chứng k
 ### 1.1. Khởi động
 
 1. Mở Docker Desktop, chờ Engine hoạt động.
-2. Nhấp đúp **start-backend.bat** tại thư mục gốc. Chờ **CALENDAR READY** rồi **READY**.
+2. Nhấp đúp **start-backend.bat** trong thư mục **scripts/run**. Chờ **CALENDAR READY** rồi **READY**.
    Lần đầu cần thêm vài phút để chuẩn bị nhân sự và lịch. Giữ cửa sổ backend mở.
 3. Muốn demo đủ cả tái khám, khởi động backend **trong 07:00–16:45 giờ Việt Nam** và
    kiểm dòng **FOLLOW-UP SOURCE READY**. Nếu hiện **PARTIAL**, vẫn demo tạo hồ sơ,
    chọn lịch được nhưng chưa có lượt nguồn tái khám.
-4. Nhấp đúp **start-frontend.bat**. Mở **http://127.0.0.1:3000/login**.
+4. Nhấp đúp **scripts/run/start-frontend.bat**. Mở **http://127.0.0.1:3000/login**.
 
 Không chạy lại backend giữa các quầy: một lần khởi động mới phục hồi lại dữ liệu,
 làm mất lượt bạn vừa thao tác. Phiên demo tự dừng sau hai giờ.
 
 Nếu một trang vừa build được nhưng phiên dev cũ trả **404**, dừng riêng frontend,
 chuyển thư mục `frontend/.next/dev` sang một thư mục lưu tạm dưới `target/` ở gốc
-dự án, rồi chạy lại **start-frontend.bat** và tải lại trang. Không khởi động lại
+dự án, rồi chạy lại **scripts/run/start-frontend.bat** và tải lại trang. Không khởi động lại
 backend để xử lý cache frontend, vì sẽ mất lượt đang demo. Đây là tình huống cache
 đã quan sát khi nghiệm thu 02/11, không phải cách bỏ qua lỗi quyền hoặc lỗi nghiệp vụ.
 
@@ -612,7 +612,7 @@ nếu có; nói rõ đó là dữ liệu nền, không nhận là kết quả l�
 - [ ] Mỗi người chỉ đúng thao tác UI/event, không coi thao tác chỉ đọc là phát event.
 - [ ] Ghi lại lỗi UI, ảnh và bước nếu có; không coi dữ liệu tự chuẩn bị là bước đã click đạt.
 
-Kết thúc: đóng frontend bằng **Ctrl+C**, chạy **clean-docker.bat** tại thư mục gốc.
+Kết thúc: đóng frontend bằng **Ctrl+C**, chạy **clean-docker.bat** trong thư mục **scripts/run**.
 
 Hướng dẫn là kịch bản thao tác, chưa khẳng định toàn hành trình đã nghiệm thu.
 [Biên bản lưới tuần/bổ nhiệm](../../docs/acceptance/weekly-roster-2026-11-01/README.md) ·

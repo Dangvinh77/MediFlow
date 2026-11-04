@@ -1,0 +1,75 @@
+MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
+
+1. CHUẨN BỊ
+- Mở Docker Desktop và chờ Docker sẵn sàng.
+- Cài Java 21, Maven, Python, Node.js và pnpm; các lệnh phải có trong PATH.
+- Cấu hình email trong smtp.local.env ở thư mục gốc dự án nếu cần gửi email.
+- Bốn file BAT nằm trong scripts\run. Có thể nhấp đúp từ Explorer hoặc chạy
+  từ cửa sổ lệnh. Không cần chuyển thư mục về gốc để đường dẫn hoạt động.
+
+2. KHỞI ĐỘNG BACKEND
+- Nhấp đúp start-backend.bat, chờ thông báo READY rồi giữ cửa sổ mở.
+- Lần đầu dùng qua Wi-Fi: chuột phải -> Run as administrator để tạo firewall
+  cho Gateway 28080 và frontend 3000 trên mạng nội bộ.
+- Không truyền tham số: chạy phiên demo tạm; ứng dụng dừng sau hai giờ.
+  Dữ liệu phiên tạm không được giữ để dùng cho lần chạy tiếp theo.
+- Muốn giữ dữ liệu và tái sử dụng bản build hợp lệ, mở terminal tại scripts\run:
+    .\start-backend.bat -Fast
+- Buộc build lại mã nguồn:
+    .\start-backend.bat -Rebuild
+- Tạo lại dữ liệu demo được giữ (làm mất dữ liệu demo cũ của chế độ này):
+    .\start-backend.bat -ResetData
+- Máy ít RAM có thể giảm số ứng dụng khởi động đồng thời:
+    .\start-backend.bat -Fast -StartupParallelism 1
+
+3. KHỞI ĐỘNG FRONTEND
+- Sau khi backend báo READY, nhấp đúp start-frontend.bat.
+- Chờ Next.js sẵn sàng, mở URL được in trong cửa sổ, thường là:
+    http://<IP-máy>:3000
+- Giữ cửa sổ frontend mở khi sử dụng.
+
+4. ĐIỆN THOẠI CÙNG WI-FI / CHẠY RIÊNG TRÊN MÁY
+- Mặc định launcher chọn IP LAN và cho phép truy cập qua Wi-Fi.
+- Chọn IP cụ thể (thay bằng IP thật của máy Windows), dùng cho cả hai lệnh:
+    .\start-backend.bat -Fast -LanAddress 192.168.1.3
+    .\start-frontend.bat -LanAddress 192.168.1.3
+- App mobile dùng Gateway: http://<IP-máy>:28080/api
+- Kiểm tra bằng trình duyệt điện thoại:
+    http://<IP-máy>:28080/actuator/health
+- Chạy riêng trên máy, dùng -LocalOnly cho cả backend và frontend:
+    .\start-backend.bat -Fast -LocalOnly
+    .\start-frontend.bat -LocalOnly
+- Với -LocalOnly, dùng http://127.0.0.1:3000; điện thoại không truy cập được.
+- iOS HTTP LAN cần bản Debug được cấu hình đúng Gateway và quyền Local Network.
+  Xem thêm mobile\README.md tính từ thư mục gốc dự án.
+
+5. DỪNG VÀ GIỮ DỮ LIỆU DEMO
+- Dừng frontend: tại cửa sổ frontend nhấn Ctrl+C (xác nhận Y nếu được hỏi).
+- Với backend đã chạy bằng -Fast, -Rebuild hoặc -ResetData, chạy:
+    .\stop-backend.bat
+  Lệnh dừng các ứng dụng backend của phiên giữ dữ liệu; giữ database, broker
+  và dữ liệu để lần sau dùng .\start-backend.bat -Fast.
+- Với phiên demo tạm, dừng tại cửa sổ backend bằng Ctrl+C để runner kết thúc
+  và dọn tài nguyên của phiên. stop-backend.bat không chuyển phiên tạm thành
+  phiên giữ dữ liệu và không phải lệnh dừng frontend.
+
+6. DỌN DOCKER CỦA DỰ ÁN
+- Xem trước, chưa dừng/xóa gì:
+    .\clean-docker.bat -Preview
+- Thực hiện dọn:
+    .\clean-docker.bat
+- Lệnh yêu cầu backend demo dừng, dọn container và image/tag MediFlow nhận
+  diện được, xử lý Java demo còn sót đủ điều kiện. Không xóa volume, không
+  prune toàn máy; giữ image đang được container dự án khác sử dụng.
+- Không dùng lệnh dọn giữa các lần chạy nhanh nếu muốn tái sử dụng hạ tầng.
+- Frontend vẫn cần dừng bằng Ctrl+C riêng.
+
+7. NẾU CHẠY TỪ THƯ MỤC GỐC DỰ ÁN
+    .\scripts\run\start-backend.bat -Fast
+    .\scripts\run\start-frontend.bat
+    .\scripts\run\stop-backend.bat
+    .\scripts\run\clean-docker.bat -Preview
+
+Các file BAT chuyển tiếp tham số tới scripts\demo_25_10\Demo-Launcher.ps1.
+Không đặt mật khẩu hoặc token trong lệnh. MEDIFLOW_NO_PAUSE=1 có thể dùng
+trong môi trường tự động để bỏ bước chờ nhấn phím khi lệnh kết thúc.
