@@ -82,6 +82,33 @@ Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-m
 
 Thiết lập iOS Debug dựa trên [Apple ATS](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowsarbitraryloads) và [quyền mạng nội bộ](https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription). Đây là cấu hình demo HTTP; bản phát hành dùng Gateway HTTPS.
 
+## Build IPA chưa ký bằng GitHub Actions
+
+Workflow [Mobile iOS unsigned IPA](../.github/workflows/mobile-ios-unsigned.yml) dùng
+macOS/Xcode và Flutter **3.47.0**, không cần chứng chỉ hoặc Apple secrets. Workflow chạy
+khi push vào `master` hoặc mở/cập nhật PR có thay đổi `mobile/**` hay chính workflow.
+Cũng có thể vào **Actions → Mobile iOS unsigned IPA → Run workflow** để build thủ công.
+
+- `gateway_url`: URL Gateway kết thúc bằng `/api`. Nếu bỏ trống, lấy repository variable
+  `MOBILE_GATEWAY_URL`; nếu chưa đặt variable thì dùng `http://192.168.1.3:28080/api`.
+  Đặt variable tại **Settings → Secrets and variables → Actions → Variables**. URL này
+  được đóng gói vào app; IP backend đổi thì phải build lại. Không dùng localhost/cổng service.
+- `build_mode`: mặc định `debug`, dùng plist cho phép HTTP LAN và có mô tả quyền Local Network.
+  `release` yêu cầu Gateway HTTPS; workflow chặn Release với HTTP để tránh artifact không kết nối được.
+- Sau khi thành công, tải artifact `mediflow-ios-unsigned-<mode>-<run>` ở cuối trang run.
+  Bên trong có `mediflow-unsigned.ipa`, checksum SHA-256, `build-info.json` và hướng dẫn.
+  Artifact được giữ 14 ngày. Các feature gate ngoại trú/Report và Pharmacy outpatient đã bật.
+
+Workflow chạy mobile tests, build `flutter build ios --no-codesign`, rồi đóng gói
+`Payload/Runner.app` thành IPA. Không dùng `flutter build ipa --no-codesign` để mong có
+IPA tự động: Flutter bỏ qua bước export IPA khi tắt ký.
+
+**IPA này chưa ký, chưa cài trực tiếp lên iPhone và chưa đưa lên TestFlight được.**
+Muốn cài cần bước ký ứng dụng và provisioning profile phù hợp. Bản Debug chưa ký cũng
+không phải bản phát hành; workflow chưa cấu hình Apple signing hoặc upload App Store.
+Runner GitHub không cần kết nối tới IP LAN để biên dịch; backend chỉ cần truy cập được
+khi chạy app trên điện thoại cùng mạng. iOS runtime vẫn cần người dùng cấp Local Network.
+
 ## Phần hiện có và chia việc
 
 **Phân công hiện hành 03/11/2026:** Vinh nhận toàn bộ mobile từ leader qua chỉ định trực tiếp
