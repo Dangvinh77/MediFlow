@@ -1,6 +1,7 @@
 import datetime as dt
 import importlib.util
 from pathlib import Path
+import tempfile
 import unittest
 import urllib.parse
 
@@ -12,6 +13,7 @@ SPEC.loader.exec_module(calendar)
 class Api:
     def __init__(self):
         self.state, self.rows, self.writes = {}, {}, 0
+        self.logins = []
         self.departments = [
             {'departmentId': 'clinical', 'departmentName': 'Khoa Nội', 'departmentType': 'CLINICAL', 'active': True},
             {'departmentId': 'lab', 'departmentName': 'Khoa Xét nghiệm', 'departmentType': 'PARACLINICAL', 'active': True},
@@ -20,7 +22,7 @@ class Api:
         ]
 
     def login(self, role, username):
-        pass
+        self.logins.append((role, username))
 
     def call(self, role, method, path, body=None, expected=(200,), stage=None, **kwargs):
         if method == 'POST':
@@ -53,6 +55,7 @@ class Api:
         kind = 'staff' if parsed.path.endswith('/staff') else 'accounts' if parsed.path.endswith('/accounts') else 'sessions'
         rows = self.rows.get(kind, [])
         rows = [r for r in rows if not query.get('departmentId') or r['departmentId'] == query['departmentId']]
+        rows = [r for r in rows if query.get('activeOnly') != 'true' or r.get('active', True)]
         rows = [r for r in rows if not query.get('fromDate') or query['fromDate'] <= r['sessionDate'] <= query['toDate']]
         # Force pagination even on small fixtures; readers must fetch beyond page 0.
         size, page = 7, int(query.get('page', 0))
@@ -73,8 +76,9 @@ class CalendarTest(unittest.TestCase):
     def test_every_department_staffed_clinical_only_scheduled_and_rerun_has_no_duplicates(self):
         api = Api()
         result = calendar.prepare(api)
+        self.assertEqual(api.logins, [('admin', 'demo.staff01@example.test')])
         self.assertEqual(len(api.rows['staff']), 40)
-        self.assertEqual(len(api.rows['accounts']), 6)
+        self.assertFalse(api.rows.get('accounts'))
         self.assertEqual(len(api.rows['shifts']), 184)
         self.assertEqual(len(api.rows['sessions']), 184)
         clinical = api.rows['staff'][:10]
@@ -90,9 +94,18 @@ class CalendarTest(unittest.TestCase):
         calendar.prepare(api)
         self.assertEqual(api.writes, writes)
 
+    def test_fixture_guide_never_publishes_generated_or_seed_passwords(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result = calendar.prepare(Api())
+            calendar.write_fixtures(result, Path(folder))
+            guide = (Path(folder) / 'DEMO-CALENDAR.local.md').read_text(encoding='utf-8')
+        self.assertNotIn('MediFlowDemo@2026', guide)
+        self.assertNotIn('Mật khẩu ban đầu', guide)
+        self.assertIn('không tạo tài khoản', guide.casefold())
+
     def test_replay_detects_changed_profession_or_revoked_account(self):
         for target, field, value, message in [('staff', 'jobTitle', 'NURSE', 'Staffing'),
-                                               ('accounts', 'isActive', False, 'account changed')]:
+                                               ('staff', 'active', False, 'Staffing')]:
             with self.subTest(target=target):
                 api = Api()
                 # API search and journal are independent snapshots, as on the real Gateway.

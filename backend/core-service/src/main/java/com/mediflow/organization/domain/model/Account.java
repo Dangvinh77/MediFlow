@@ -19,7 +19,7 @@ public class Account {
 
         private final UUID accountId;
 
-        private final String username;
+        private String username;
 
     /**
      *
@@ -31,7 +31,10 @@ public class Account {
      */
     private String passwordHash;
 
+    private boolean emailLoginEnabled;
+
     private boolean mustChangePassword;
+        private Instant temporaryPasswordExpiresAt;
 
     /**
      *
@@ -66,7 +69,7 @@ public class Account {
             Instant createdAt,
             Instant updatedAt) {
         this(accountId, username, passwordHash, staffId, null, role, active,
-                lastLoginAt, createdAt, updatedAt);
+                lastLoginAt, createdAt, updatedAt, isEmail(username));
     }
 
         public Account(
@@ -80,11 +83,27 @@ public class Account {
             Instant lastLoginAt,
             Instant createdAt,
             Instant updatedAt) {
+        this(accountId, username, passwordHash, staffId, patientId, role, active,
+                lastLoginAt, createdAt, updatedAt, isEmail(username));
+    }
+
+    public Account(UUID accountId, String username, String passwordHash, UUID staffId, UUID patientId,
+            Role role, boolean active, Instant lastLoginAt, Instant createdAt, Instant updatedAt,
+            boolean emailLoginEnabled) {
+        this(accountId, username, passwordHash, staffId, patientId, role, active, lastLoginAt,
+                createdAt, updatedAt, emailLoginEnabled, null);
+    }
+
+    public Account(UUID accountId, String username, String passwordHash, UUID staffId, UUID patientId,
+            Role role, boolean active, Instant lastLoginAt, Instant createdAt, Instant updatedAt,
+            boolean emailLoginEnabled, Instant temporaryPasswordExpiresAt) {
         validate(username, passwordHash, role, staffId, patientId);
 
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
+        this.emailLoginEnabled = emailLoginEnabled;
+        this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
         this.staffId = staffId;
         this.patientId = patientId;
         this.role = role;
@@ -122,7 +141,8 @@ public class Account {
                 true,
                 null,
                 now,
-                now);
+                now,
+                isEmail(username));
     }
 
     private void validate(
@@ -131,12 +151,12 @@ public class Account {
             Role role,
             UUID staffId,
             UUID patientId) {
-        if (username == null
-                || username.length() < 3
-                || username.length() > 50
-                || !username.matches("^[a-zA-Z0-9._-]+$")) {
-            throw new InvalidAccountException(
-                    "Username must contain 3 to 50 letters, digits, dots, underscores, or hyphens");
+        boolean email = username != null && username.length() <= 254
+                && username.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+        boolean legacyServiceOrSeed = username != null && username.length() <= 50
+                && username.matches("^[a-zA-Z0-9._-]+$");
+        if (username == null || username.length() < 3 || (!email && !legacyServiceOrSeed)) {
+            throw new InvalidAccountException("Username must be a valid email address");
         }
 
         if (passwordHash == null || passwordHash.isBlank()) {
@@ -208,6 +228,7 @@ public class Account {
 
         this.passwordHash = newPasswordHash;
         this.mustChangePassword = false;
+        this.temporaryPasswordExpiresAt = null;
 
         touch();
     }
@@ -224,9 +245,42 @@ public class Account {
         return username;
     }
 
+    public void changeEmail(String email) {
+        String normalized = email == null ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized == null || normalized.length() > 254
+                || !normalized.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidAccountException("A valid account email is required");
+        }
+        this.username = normalized;
+        this.emailLoginEnabled = true;
+        touch();
+    }
+
+    private static boolean isEmail(String value) {
+        return value != null && value.length() <= 254 && value.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    }
+
+    public boolean isEmailLoginEnabled() { return emailLoginEnabled; }
+
     public boolean isMustChangePassword() { return mustChangePassword; }
 
     public void requirePasswordChange() { this.mustChangePassword = true; }
+
+    public void requirePasswordChangeUntil(Instant expiresAt) {
+        if (expiresAt == null || !expiresAt.isAfter(Instant.now())) {
+            throw new InvalidAccountException("Temporary password expiry must be in the future");
+        }
+        this.mustChangePassword = true;
+        this.temporaryPasswordExpiresAt = expiresAt;
+    }
+
+    /** Reconstitutes the stored mandatory-change expiry without applying a new TTL. */
+    public void restoreTemporaryPasswordExpiry(Instant expiresAt) {
+        this.mustChangePassword = true;
+        this.temporaryPasswordExpiresAt = expiresAt;
+    }
+
+    public Instant getTemporaryPasswordExpiresAt() { return temporaryPasswordExpiresAt; }
 
     public String getPasswordHash() {
         return passwordHash;

@@ -12,6 +12,8 @@ import com.mediflow.patient.application.port.in.DeletePatientUseCase;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
 import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
+import com.mediflow.organization.application.port.in.IsPatientAccountLinkedUseCase;
+import com.mediflow.patient.domain.exception.InvalidPatientDataException;
 import jakarta.validation.Valid;
 import com.mediflow.patient.application.port.out.CorrelationIdProvider;
 import org.springframework.http.ResponseEntity;
@@ -38,16 +40,26 @@ public class PatientController {
     private final UpdatePatientUseCase updatePatient;
     private final DeletePatientUseCase deletePatient;
     private final CorrelationIdProvider correlationIds;
+    private final IsPatientAccountLinkedUseCase accountLinks;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public PatientController(GetPatientUseCase patients, ReadPatientIdentityUseCase lookup,
                              CreatePatientUseCase createPatient, UpdatePatientUseCase updatePatient,
-                             DeletePatientUseCase deletePatient, CorrelationIdProvider correlationIds) {
+                             DeletePatientUseCase deletePatient, CorrelationIdProvider correlationIds,
+                             IsPatientAccountLinkedUseCase accountLinks) {
         this.patients = patients;
         this.lookup = lookup;
         this.createPatient = createPatient;
         this.updatePatient = updatePatient;
         this.deletePatient = deletePatient;
         this.correlationIds = correlationIds;
+        this.accountLinks = accountLinks;
+    }
+
+    public PatientController(GetPatientUseCase patients, ReadPatientIdentityUseCase lookup,
+                             CreatePatientUseCase createPatient, UpdatePatientUseCase updatePatient,
+                             DeletePatientUseCase deletePatient, CorrelationIdProvider correlationIds) {
+        this(patients, lookup, createPatient, updatePatient, deletePatient, correlationIds, patientId -> false);
     }
 
     @PostMapping
@@ -93,7 +105,18 @@ public class PatientController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     public ResponseEntity<ApiResponse<PatientDTO>> update(
-            @PathVariable UUID id, @Valid @RequestBody UpdatePatientRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody UpdatePatientRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        if (request.email() != null) {
+            PatientDTO current = patients.getById(id);
+            if (!request.email().equalsIgnoreCase(current.email() == null ? "" : current.email())) {
+                boolean admin = authentication.getAuthorities().stream()
+                        .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+                if (!admin) throw new org.springframework.security.access.AccessDeniedException("Only ADMIN can change patient email");
+                if (accountLinks.isLinked(id)) throw new InvalidPatientDataException(
+                        "PATIENT_EMAIL_LINKED_ACCOUNT", "Đổi email đăng nhập trong phần quản lý tài khoản");
+            }
+        }
         return ResponseEntity.ok(ApiResponse.ok(updatePatient.update(id, request), correlationId()));
     }
 

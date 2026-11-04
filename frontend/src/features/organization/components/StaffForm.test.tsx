@@ -316,14 +316,30 @@ describe("StaffForm", () => {
     expect(mocks.router.push).not.toHaveBeenCalled();
   });
 
-  it("keeps legacy identity optional and immutable when editing", async () => {
+  it("requires an audited reason for CCCD correction and preserves login email", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture, email: "staff@example.com" });
+    mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, email: "staff@example.com", identityNumber: "098765432109" });
+    render(<StaffForm staffId={staffContractFixture.staffId} />);
+    fireEvent.change(await screen.findByLabelText(/^CCCD/), { target: { value: "098765432109" } });
+    const form = screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!;
+    fireEvent.submit(form);
+    expect(await screen.findByRole("alert")).toHaveTextContent("lý do thay đổi CCCD");
+    expect(mocks.updateStaff).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText(/Lý do thay đổi CCCD/), { target: { value: "Đối chiếu giấy tờ gốc" } });
+    fireEvent.submit(form);
+    await waitFor(() => expect(mocks.updateStaff).toHaveBeenCalled());
+    expect(mocks.updateStaff.mock.calls[0][1]).toMatchObject({ identityNumber: "098765432109", identityChangeReason: "Đối chiếu giấy tờ gốc", email: "staff@example.com" });
+  });
+
+  it("preserves an unchanged optional legacy identity when editing", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.staffMember.mockResolvedValue({ ...staffContractFixture, identityNumber: null });
     mocks.updateStaff.mockResolvedValue({ ...staffContractFixture, identityNumber: null });
     render(<StaffForm staffId={staffContractFixture.staffId} />);
     const identity = await screen.findByLabelText(/CCCD/);
     fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
-    expect(identity).toHaveAttribute("readonly");
+    expect(identity).not.toHaveAttribute("readonly");
     expect(identity).not.toBeRequired();
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalled());

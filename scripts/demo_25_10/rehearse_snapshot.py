@@ -49,16 +49,35 @@ def await_ready(probe, timeout=180):
     raise RuntimeError("Readiness deadline exceeded")
 
 
-def main():
-    keep = argparse.ArgumentParser()
-    keep.add_argument("--keep", action="store_true")
-    keep.add_argument("--scheduling", action="store_true",
-                      help="Enable the opt-in outpatient revision 2 rehearsal overlay")
-    keep.add_argument("--prepare-ui-demo", action="store_true",
-                      help="Prepare current schedules and a completed follow-up source through Gateway")
-    options = keep.parse_args()
+def parse_options(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--keep", action="store_true")
+    parser.add_argument("--scheduling", action="store_true",
+                        help="Enable the opt-in outpatient revision 2 rehearsal overlay")
+    parser.add_argument("--prepare-ui-demo", action="store_true",
+                        help="Prepare current schedules and a completed follow-up source through Gateway")
+    parser.add_argument("--lan", action="store_true",
+                        help="Expose only the disposable Gateway on the local network")
+    options = parser.parse_args(argv)
     if options.prepare_ui_demo and not options.scheduling:
-        keep.error("--prepare-ui-demo requires --scheduling")
+        parser.error("--prepare-ui-demo requires --scheduling")
+    return options
+
+
+def server_bind_address(name, lan=False):
+    return "0.0.0.0" if name == "gateway" and lan else "127.0.0.1"
+
+
+def snapshot_environment_value(value, pgport):
+    # The immutable snapshot uses mediflow_pharmacy; Compose's Docker store has
+    # a different name. Both the endpoint and this name belong to this runner.
+    return (str(value).replace("postgres:5432", "127.0.0.1:" + pgport)
+            .replace("/mediflow_pharmacy_docker", "/mediflow_pharmacy")
+            .replace("http://eureka-server:8761", "http://127.0.0.1:28761"))
+
+
+def main():
+    options = parse_options()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     evidence = HERE / "evidence" / ("snapshot-" + stamp)
     evidence.mkdir(parents=True)
@@ -66,9 +85,9 @@ def main():
     prefix = "mediflow-rehearsal-" + stamp
     pg, rabbit = prefix + "-pg", prefix + "-rabbit"
     try:
-        for port in PORTS.values():
+        for name, port in PORTS.items():
             with socket.socket() as candidate:
-                candidate.bind(("127.0.0.1", port))
+                candidate.bind((server_bind_address(name, options.lan), port))
         compose_args = ["docker", "compose", "-f", "docker-compose.yml"]
         if options.scheduling:
             compose_args.extend(["-f", "compose.demo.local.yml", "-f", "compose.outpatient.local.yml"])
@@ -123,10 +142,9 @@ def main():
             env = os.environ.copy()
             for key, value in compose[name].get("environment", {}).items():
                 if value is not None:
-                    value = str(value).replace("postgres:5432", "127.0.0.1:" + pgport)
-                    value = value.replace("http://eureka-server:8761", "http://127.0.0.1:28761")
-                    env[key] = value
+                    env[key] = snapshot_environment_value(value, pgport)
             env.update({"SERVER_PORT": str(PORTS[name]), "SPRING_PROFILES_ACTIVE": "outpatient-mvp",
+                        "SERVER_ADDRESS": server_bind_address(name, options.lan),
                         "EUREKA_DEFAULT_ZONE": "http://127.0.0.1:28761/eureka/",
                         "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE": "http://127.0.0.1:28761/eureka/",
                         "EUREKA_INSTANCE_PREFER_IP_ADDRESS": "true", "EUREKA_INSTANCE_IP_ADDRESS": "127.0.0.1",
@@ -186,6 +204,7 @@ def main():
             print(name + " UP", flush=True)
         (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
         manifest = {"evidence": str(evidence), "gateway": "http://127.0.0.1:28080", "ports": PORTS,
+                    "lan": options.lan, "gatewayBindAddress": server_bind_address("gateway", options.lan),
                     "scheduling": options.scheduling,
                     "containers": containers, "pids": [p.pid for p in applications], "stopFile": str(evidence / "stop")}
         (HERE / "evidence" / "active-rehearsal.local.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

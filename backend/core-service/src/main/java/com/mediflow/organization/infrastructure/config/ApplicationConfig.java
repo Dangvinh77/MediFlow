@@ -85,6 +85,12 @@ public class ApplicationConfig {
                 return new com.mediflow.organization.application.service.ManageAccountsService(accounts, passwords);
         }
 
+        @Bean
+        public com.mediflow.organization.application.port.in.IsPatientAccountLinkedUseCase isPatientAccountLinkedUseCase(
+                        AccountRepository accounts) {
+                return new com.mediflow.organization.application.service.IsPatientAccountLinkedService(accounts);
+        }
+
 
         @Bean
         public VerifyCredentialsUseCase verifyCredentialsUseCase(
@@ -210,7 +216,9 @@ public class ApplicationConfig {
 
         @Bean
         public UpdateStaffUseCase updateStaffUseCase(
-                        StaffRepository staffRepository, DepartmentRepository departmentRepository) {
-                return new UpdateStaffService(staffRepository, departmentRepository);
+                        StaffRepository staffRepository, DepartmentRepository departmentRepository,
+                        AccountRepository accounts,
+                        com.mediflow.organization.application.port.out.StaffIdentityAuditPort identityAudit) {
+                return new UpdateStaffService(staffRepository, departmentRepository, accounts, identityAudit);
         }
 }

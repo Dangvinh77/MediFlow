@@ -91,7 +91,7 @@ class OrganizationServiceIntegrationTest {
     }
     @Test
     void initialPasswordRestrictionSurvivesReloadAndClearsWithCredentialRevocation() {
-        String username = "initial." + UUID.randomUUID();
+        String username = "initial+" + UUID.randomUUID() + "@example.test";
         var created = createAccountUseCase.execute(username, "1", null, UUID.randomUUID(), Role.PATIENT);
         assertThat(manageAccounts.getById(created.getAccountId()).isMustChangePassword()).isTrue();
         assertThat(lookupAccountIdentityUseCase.lookup(created.getAccountId()).mustChangePassword()).isTrue();
@@ -385,7 +385,7 @@ class OrganizationServiceIntegrationTest {
     @Test
     void accountSearchAndPasswordManagementUseRealPostgresAndBcrypt() {
         var doctor = newDoctor(newDepartment().getDepartmentId());
-        String username = "manage_" + UUID.randomUUID().toString().substring(0, 8);
+        String username = "manage+" + UUID.randomUUID().toString().substring(0, 8) + "@example.test";
         var account = createAccountUseCase.execute(username, "original-password", doctor.getStaffId(), Role.DOCTOR);
         var page = manageAccounts.search(username, Role.DOCTOR, true, com.mediflow.common.api.PageQuery.of(0, 20));
         assertThat(page.totalElements()).isEqualTo(1);
@@ -644,7 +644,7 @@ class OrganizationServiceIntegrationTest {
 
         UUID patientId = UUID.randomUUID();
         var patientAccount = createAccountUseCase.execute(
-                "patient." + UUID.randomUUID().toString().substring(0, 12),
+                "patient+" + UUID.randomUUID().toString().substring(0, 12) + "@example.test",
                 "Patient123!",
                 null,
                 patientId,

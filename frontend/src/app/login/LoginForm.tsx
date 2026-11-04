@@ -4,6 +4,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { mustChangePassword } from "@/lib/session";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import Link from "next/link";
+import { accountSecurityApi } from "@/features/organization/security-api";
 import {
   getRole,
   isAuthenticated,
@@ -40,6 +42,12 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoMailboxEnabled, setDemoMailboxEnabled] = useState(false);
+  useEffect(() => {
+    let active = true;
+    accountSecurityApi.demoConfig().then(value => { if (active) setDemoMailboxEnabled(value.enabled); }).catch(() => { /* Optional demo feature. */ });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (authenticated) {
@@ -81,14 +89,15 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          Tài khoản
+          Email
           <input
             className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
+            type="email"
             required
-            maxLength={50}
+            maxLength={254}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -114,10 +123,7 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
           {loading ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Nếu quên mật khẩu, liên hệ quầy tiếp nhận để được xác minh và hỗ trợ khôi phục
-        tài khoản hiện có. Không cần tạo hồ sơ bệnh nhân mới.
-      </p>
+      <div className="mt-5 flex flex-wrap justify-between gap-4 text-sm font-medium text-primary"><Link href="/forgot-password" className="underline">Quên mật khẩu?</Link>{demoMailboxEnabled ? <Link href="/demo-mailbox" className="underline">Hộp thư demo</Link> : null}</div>
     </main>
   );
 }

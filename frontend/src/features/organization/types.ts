@@ -77,13 +77,19 @@ export interface CreateStaffRequest {
   email: string | null;
 }
 
-export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId" | "identityNumber">;
+export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId" | "identityNumber"> & {
+  identityNumber?: string;
+  identityChangeReason?: string;
+};
+
+export interface MailDelivery { messageId: string; status: "PENDING" | "SENT" | "FAILED" }
 
 export type AccountRole =
   | "ADMIN" | "DOCTOR" | "NURSE" | "PHARMACIST" | "CASHIER"
   | "LAB_TECH" | "MANAGER" | "PATIENT" | "SYSTEM";
 
 export interface AccountDTO {
+  mailDelivery?: MailDelivery | null;
   accountId: string;
   username: string;
   staffId: string | null;
@@ -98,7 +104,7 @@ export interface AccountDTO {
 export interface CreateAccountRequest {
   replaceActiveAccount?: boolean;
   username: string;
-  password: string;
+  password?: string;
   staffId: string | null;
   patientId: string | null;
   role: AccountRole;
@@ -119,6 +125,7 @@ export interface StaffDTO extends StaffProfile {
   updatedAt: string | null;
 }
 export interface IssuedPatientAccount {
+  mailDelivery?: MailDelivery | null;
   accountId: string;
   patientId: string;
   username: string;

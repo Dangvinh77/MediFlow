@@ -19,4 +19,18 @@ public interface UpdateStaffUseCase {
             String email
     );
     Staff execute(UUID staffId, String fullName, JobTitle jobTitle, String specialization, String licenseNumber, String phoneNumber, String email, StaffProfile profile);
+
+    default Staff execute(UUID staffId, String fullName, JobTitle jobTitle, String specialization,
+            String licenseNumber, String phoneNumber, String email, StaffProfile profile,
+            String identityNumber, String identityChangeReason) {
+        if (identityNumber != null) throw new UnsupportedOperationException("Staff identity correction is not configured");
+        return execute(staffId, fullName, jobTitle, specialization, licenseNumber, phoneNumber, email, profile);
+    }
+
+    default Staff execute(UUID staffId, String fullName, JobTitle jobTitle, String specialization,
+            String licenseNumber, String phoneNumber, String email, StaffProfile profile,
+            String identityNumber, String identityChangeReason, UUID changedByAccountId) {
+        return execute(staffId, fullName, jobTitle, specialization, licenseNumber, phoneNumber, email,
+                profile, identityNumber, identityChangeReason);
+    }
 }

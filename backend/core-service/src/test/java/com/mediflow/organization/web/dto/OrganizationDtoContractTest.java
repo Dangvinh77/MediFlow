@@ -42,7 +42,8 @@ class OrganizationDtoContractTest {
                 "phoneNumber", "email", "identityNumber", "profile");
         assertFields(new UpdateStaffRequest("Doctor", JobTitle.DOCTOR, "Surgery", "LIC-1",
                         "0123456789", "doctor@example.com"),
-                "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email", "profile");
+                "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email", "profile",
+                "identityNumber", "identityChangeReason");
         assertFields(new ChangeStaffDepartmentRequest(departmentId), "newDepartmentId");
     }
 

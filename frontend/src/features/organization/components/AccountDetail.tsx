@@ -13,7 +13,7 @@ import { accountRoleLabels } from "../account-roles";
 import { isRequestSessionCurrent } from "../request-session";
 import type { AccountDTO } from "../types";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
-import { PasswordForm } from "./PasswordForm";
+import { AdminAccountSecurity } from "./AdminAccountSecurity";
 import { AccountStaffLink } from "./AccountStaffLink";
 
 /** Route composition keys this component by account and signed-in session. */
@@ -70,7 +70,7 @@ export function AccountDetail({ accountId, schedulingEnabled = false, renderPati
     <RecordIdentity name={account.username} subtitle={accountRoleLabels[account.role]} />
     {schedulingEnabled && account.role === "MANAGER" ? <Link href={`/appointments/schedule?managerAccountId=${encodeURIComponent(account.accountId)}#manager-scope`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-primary">Quản lý phạm vi khoa</Link> : null}
     <DetailSection title="Chi tiết tài khoản">
-      <Info label="Tên đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
+      <Info label="Email đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
       <Info label="Trạng thái" value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />
       <div><dt className="text-sm text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1.5 break-words text-sm leading-6">{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}>Bệnh nhân: Xem hồ sơ</Link> : "Chưa liên kết"}</dd></div>
       <Info label="Mã tài khoản" value={account.accountId} /><Info label="Lần đăng nhập gần nhất" value={formatInstant(account.lastLoginAt)} />
@@ -80,7 +80,7 @@ export function AccountDetail({ accountId, schedulingEnabled = false, renderPati
     {confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="status-confirm-title" aria-describedby="status-confirm-message" className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 id="status-confirm-title" className="font-semibold">Xác nhận active tài khoản</h2><p id="status-confirm-message">{confirmation}</p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}>Hủy</Button><Button type="button" loading={busy} onClick={() => void updateStatus(true, true)}>Tiếp tục active tài khoản</Button></div></div> : null}
     {error ? <div role="alert" className="space-y-3 text-sm text-danger"><p>{error}</p>{unknown ? <Button type="button" onClick={reload}>Tải lại trạng thái</Button> : null}</div> : null}
     {success ? <p role="status" className="text-sm text-success">{success}</p> : null}
-    {account.role !== "SYSTEM" && !busy && !unknown && !confirmation ? <PasswordForm accountId={account.accountId} username={account.username} /> : null}
+    {account.role !== "SYSTEM" && !busy && !unknown && !confirmation ? <AdminAccountSecurity key={`${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} onEmailChanged={reload} /> : null}
   </section>;
 }
 

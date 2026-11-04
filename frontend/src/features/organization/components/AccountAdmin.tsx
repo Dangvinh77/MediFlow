@@ -20,7 +20,6 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
   const mounted = useRef(true);
   const submitting = useRef(false);
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("1");
   const [ownerType, setOwnerType] = useState(initialOwnerType);
   const [ownerId, setOwnerId] = useState(initialOwnerId);
   const [staff, setStaff] = useState<StaffDTO | null>(null);
@@ -39,14 +38,14 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
     let disposed = false;
     const session = getSessionKey();
     const load = ownerType === "staff"
-      ? organizationApi.staffMember(ownerId).then(value => ({ username: value.identityNumber, staff: value }))
+      ? organizationApi.staffMember(ownerId).then(value => ({ username: value.email, staff: value }))
       : loadPatientIdentity ? loadPatientIdentity(ownerId).then(username => ({ username, staff: null }))
-      : Promise.reject(new Error("Không thể tải CCCD bệnh nhân."));
+      : Promise.reject(new Error("Không thể tải email bệnh nhân."));
     load.then(({ username, staff: value }) => {
       if (!disposed && getSessionKey() === session) {
         if (value && !value.active) { setStaffError("Nhân viên đã ngừng làm việc. Hãy chọn nhân viên khác."); return; }
-        if (!username?.trim() || !/^[a-zA-Z0-9._-]{3,50}$/.test(username.trim())) {
-          setStaffError("Hồ sơ chưa có CCCD hợp lệ để tạo tên đăng nhập. Hãy cập nhật hồ sơ trước."); return;
+        if (!username?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username.trim())) {
+          setStaffError("Hồ sơ chưa có email hợp lệ để đăng nhập và nhận mật khẩu. Hãy cập nhật hồ sơ trước."); return;
         }
         setUsername(username.trim());
         setStaff(value);
@@ -54,12 +53,12 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
     }).catch((cause: unknown) => {
       if (disposed || !isRequestSessionCurrent(session, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
-      else setStaffError(cause instanceof Error ? cause.message : "Không tải được CCCD của hồ sơ.");
+      else setStaffError(cause instanceof Error ? cause.message : "Không tải được email của hồ sơ.");
     });
     return () => { disposed = true; };
   }, [ownerId, ownerType, staffAttempt, router, loadPatientIdentity]);
 
-  function selectOwner(id: string) { setUsername(""); setPassword("1"); setOwnerId(id); setStaff(null); setStaffError(null); setError(null); }
+  function selectOwner(id: string) { setUsername(""); setOwnerId(id); setStaff(null); setStaffError(null); setError(null); }
 
   async function send(body: CreateAccountRequest) {
     if (submitting.current) return;
@@ -68,7 +67,7 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
     let intent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     let replacementKey: string | undefined;
     try {
-      // Store only command metadata. Passwords stay in this mounted form's memory.
+      // Persist command metadata so a lost response can reuse the same issuance key.
       const identity = { username: body.username, role: body.role, staffId: body.staffId, patientId: body.patientId };
       intent = await prepareCreation("account", session, identity);
       if (!mounted.current || getSessionKey() !== session) { intent.cancelUnsent(); return; }
@@ -78,18 +77,20 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
         return;
       }
       if (body.replaceActiveAccount) sessionStorage.setItem(replacementKey, "true");
-      const account = await organizationApi.createAccount(body, intent.key);
+      const account = body.patientId
+        ? await organizationApi.provisionPatientAccount(body.patientId, intent.key)
+        : await organizationApi.createAccount(body, intent.key);
       intent.settle();
       sessionStorage.removeItem(replacementKey);
       if (!mounted.current || getSessionKey() !== session) return;
-      setPassword(""); setConfirmation(null); setUnresolved(null);
+      setConfirmation(null); setUnresolved(null);
       router.push(`/organization/accounts/${account.accountId}`);
     } catch (cause: unknown) {
       intent?.settle(cause);
       if (replacementKey && cause instanceof ApiRequestError && cause.status >= 400 && cause.status < 500 && cause.status !== 408 && !cause.code?.endsWith("IDEMPOTENCY_KEY_REUSED")) sessionStorage.removeItem(replacementKey);
       if (!mounted.current || !isRequestSessionCurrent(session, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) { router.replace("/login"); return; }
-      if (cause instanceof ApiRequestError && cause.status === 409 && cause.code?.endsWith("ACCOUNT_OWNER_ACTIVE")) {
+      if (body.staffId && cause instanceof ApiRequestError && cause.status === 409 && cause.code?.endsWith("ACCOUNT_OWNER_ACTIVE")) {
         setUnresolved(null); setConfirmation({ body, message: cause.message });
       } else if ((!(cause instanceof ApiRequestError) && !(cause instanceof CreationIntentError))
         || (cause instanceof ApiRequestError && (cause.status < 400 || cause.status === 408 || cause.status >= 500))) {
@@ -106,16 +107,15 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
     event.preventDefault();
     if (locked || !role || !username || staffError) return;
     if (!isUuid(ownerId)) { setError("Vui lòng chọn hồ sơ liên kết hợp lệ."); return; }
-    if (new TextEncoder().encode(password).length > 72) { setError("Mật khẩu không được quá 72 byte UTF-8."); return; }
-    void send({ username: username.trim(), password, role, staffId: ownerType === "staff" ? ownerId : null, patientId: ownerType === "patient" ? ownerId : null });
+    void send({ username: username.trim().toLowerCase(), role, staffId: ownerType === "staff" ? ownerId : null, patientId: ownerType === "patient" ? ownerId : null });
   }
 
   return <section className="mt-6 max-w-3xl space-y-5">
     <form onSubmit={create} className="rounded-xl border border-border bg-surface p-5 sm:p-6">
       <fieldset disabled={locked} className="space-y-5">
         <div><h2 className="text-lg font-semibold">Thông tin tài khoản mới</h2><p className="mt-1 text-sm text-muted-foreground">Chọn hồ sơ liên kết để tự động xác định vai trò truy cập.</p></div>
-        <Field label="Tên đăng nhập" htmlFor="account-username" required hint="Tự động lấy từ CCCD của hồ sơ được chọn."><input id="account-username" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" autoComplete="off" readOnly value={username} className={controlClassName} /></Field>
-        <Field label="Mật khẩu ban đầu" htmlFor="account-password" hint="Người dùng phải đổi mật khẩu khi đăng nhập, trước khi sử dụng hệ thống."><input id="account-password" readOnly autoComplete="off" value={password} className={controlClassName} /></Field>
+        <Field label="Email đăng nhập" htmlFor="account-username" required hint="Lấy từ email của hồ sơ được chọn."><input id="account-username" type="email" required maxLength={254} autoComplete="off" readOnly value={username} className={controlClassName} /></Field>
+        <p className="rounded-lg bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">Hệ thống sẽ gửi mật khẩu tạm và link đăng nhập đến email này. Người dùng phải đổi mật khẩu trong lần đăng nhập đầu tiên. Tài khoản seed nhận thư trong hộp thư demo.</p>
         <Field label="Loại hồ sơ liên kết" htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value === "patient" ? "patient" : "staff"); selectOwner(""); }}><option value="staff">Nhân viên</option><option value="patient">Bệnh nhân</option></select></Field>
         {ownerType === "staff" ? <StaffPicker id="account-owner" label="Nhân viên" value={ownerId} onChange={selectOwner} disabled={locked} required /> : renderPatientPicker ? renderPatientPicker(ownerId, selectOwner, locked) : <Field label="Mã bệnh nhân" htmlFor="account-owner" required><input id="account-owner" required className={controlClassName} value={ownerId} onChange={event => selectOwner(event.target.value)} /></Field>}
         <Field label="Vai trò tự động" htmlFor="account-role" hint="Vai trò được xác định từ chức danh của nhân viên hoặc hồ sơ bệnh nhân."><input id="account-role" readOnly className={controlClassName} value={role ? accountRoleLabels[role] : ownerId ? "Đang tải chức danh…" : "Chưa chọn hồ sơ"} /></Field>

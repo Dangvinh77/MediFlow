@@ -17,6 +17,10 @@ public class AccountRepositoryAdapter implements AccountRepository {
         return jpaRepository.existsByPatientId(patientId);
     }
 
+    @Override public boolean existsByStaffId(UUID staffId) {
+        return jpaRepository.existsByStaffId(staffId);
+    }
+
     private final AccountJpaRepository jpaRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     @jakarta.persistence.PersistenceContext(unitName = "organization")
@@ -71,13 +75,20 @@ public class AccountRepositoryAdapter implements AccountRepository {
     }
 
     @Override
+    public boolean existsByEmail(String email) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists(select 1 from account where role<>'SYSTEM' and lower(btrim(username))=lower(btrim(?)))",
+                Boolean.class, email));
+    }
+
+    @Override
     public Optional<Account> findById(UUID accountId) {
         return jpaRepository.findById(accountId).map(this::toDomain);
     }
 
     @Override
     public Optional<Account> findByUsername(String username) {
-        return jpaRepository.findByUsername(username).map(this::toDomain);
+        return jpaRepository.findByUsernameAndEmailMigratedTrue(username).map(this::toDomain);
     }
 
     @Override
@@ -119,8 +130,13 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 entity.isActive(),
                 entity.getLastLoginAt(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
-        if (entity.isMustChangePassword()) account.requirePasswordChange();
+                entity.getUpdatedAt(), entity.isEmailMigrated());
+        if (entity.isMustChangePassword()) {
+            if (entity.getTemporaryPasswordExpiresAt() != null) {
+                // Restore persisted expiry without recomputing it.
+                account.restoreTemporaryPasswordExpiry(entity.getTemporaryPasswordExpiresAt());
+            } else account.requirePasswordChange();
+        }
         return account;
     }
 
@@ -135,8 +151,11 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 account.isActive(),
                 account.getLastLoginAt(),
                 account.getCreatedAt(),
-                account.getUpdatedAt());
-        if (account.isMustChangePassword()) entity.requirePasswordChange();
+                account.getUpdatedAt(), account.isEmailLoginEnabled(), account.getTemporaryPasswordExpiresAt());
+        if (account.isMustChangePassword()) {
+            if (account.getTemporaryPasswordExpiresAt() != null) entity.requirePasswordChangeUntil(account.getTemporaryPasswordExpiresAt());
+            else entity.requirePasswordChange();
+        }
         return entity;
     }
 }

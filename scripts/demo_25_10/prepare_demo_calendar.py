@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 START, END = dt.date(2026, 11, 1), dt.date(2027, 1, 31)
 SLOTS = (('07:00', '12:00'), ('12:00', '17:00'))
 ROOM_NAME = 'Phong kham lich day demo'
-PASSWORD = 'MediFlowDemo@2026'  # Public synthetic fixture only; never reset existing accounts.
+ADMIN_LOGIN_EMAIL = 'demo.staff01@example.test'
 
 
 def dates(start, end):
@@ -49,7 +49,6 @@ def staff_plan(department):
 
 def verify(api, result):
     verified = 0
-    accounts = {row['accountId']: row for row in pages(api, '/api/v1/org/accounts')}
     for department in result['departments']:
         department_id = department['departmentId']
         live_staff = {row['staffId']: row for row in pages(api, '/api/v1/org/staff', departmentId=department_id, activeOnly='true')}
@@ -83,15 +82,13 @@ def verify(api, result):
                 raise RuntimeError('Calendar coverage changed; reconcile the journal/session: ' + session_id)
         verified += len(observed)
         for doctor in department['doctors']:
-            account = accounts.get(doctor['accountId'])
-            if (not account or not account['isActive'] or account['staffId'] != doctor['staffId']
-                    or account['role'] != 'DOCTOR' or account['username'] != doctor['username']):
-                raise RuntimeError('Demo doctor account changed; no password or access reset was attempted')
+            if doctor['staffId'] not in live_staff or live_staff[doctor['staffId']]['jobTitle'] != 'DOCTOR':
+                raise RuntimeError('Calendar doctor staffing changed; reconcile before continuing')
     result['verifiedSessions'] = verified
 
 
 def prepare(api):
-    api.login('admin', 'demo.admin')
+    api.login('admin', ADMIN_LOGIN_EMAIL)
     departments = api.call('admin', 'GET', '/api/v1/org/departments?activeOnly=true')
     if not departments:
         raise RuntimeError('No active departments in the restored demo')
@@ -121,12 +118,9 @@ def prepare(api):
             }, expected=(200, 201), stage=f'roster-{department_id}-{index:02d}')
             row['staff'].append(staff)
             if title == 'DOCTOR':
-                username = f'demo.roster.{token}.bs{index:02d}'
-                account = api.call('admin', 'POST', '/api/v1/org/accounts', {
-                    'username': username, 'password': PASSWORD, 'staffId': staff['staffId'], 'patientId': None, 'role': 'DOCTOR',
-                }, expected=(200, 201), stage=f'roster-account-{department_id}-{index:02d}', journal_omit=('password',))
-                row['doctors'].append({'staffId': staff['staffId'], 'fullName': full_name,
-                                       'accountId': account['accountId'], 'username': username})
+                # The rotating roster is synthetic scheduling data, not an invitation
+                # workflow. Do not issue credentials or send mail to example.test.
+                row['doctors'].append({'staffId': staff['staffId'], 'fullName': full_name})
         if room:
             for day_index, day in enumerate(dates(START, END)):
                 for slot_index, (start, end) in enumerate(SLOTS):
@@ -152,15 +146,16 @@ def write_fixtures(result, evidence):
     (evidence / 'calendar-fixtures.local.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     lines = ['# Nhân sự và lịch khám demo', '', f'01/11/2026–31/01/2027, {result["days"]} ngày, 07:00–12:00 và 12:00–17:00 mỗi ngày, kể cả cuối tuần.',
              'Mỗi buổi 40 chỗ, chưa đăng ký bệnh nhân. Giờ Việt Nam; không khám trước ngày/giờ thực.',
-             'Mật khẩu ban đầu của tài khoản bác sĩ mẫu: `MediFlowDemo@2026`. Không đặt lại mật khẩu khi chạy lại.', '',
              '| Khoa | Nhân sự bổ sung | Buổi đã kiểm | Phòng |', '|---|---|---|---|']
     for row in result['departments']:
         lines.append(f'| {row["departmentName"]} | {len(row["staff"])} | {len(row["sessions"])} | {row.get("room", {}).get("roomName", "Không lập lịch khám bác sĩ")} |')
-    lines += ['', '## Tài khoản bác sĩ theo khoa', '', '| Khoa | Bác sĩ | Tên đăng nhập |', '|---|---|---|']
+    lines += ['', '## Bác sĩ luân phiên trong lịch', '', '| Khoa | Bác sĩ | Tài khoản bổ sung |', '|---|---|---|']
     for row in result['departments']:
         for doctor in row['doctors']:
-            lines.append(f'| {row["departmentName"]} | {doctor["fullName"]} | `{doctor["username"]}` |')
-    lines += ['', 'Nurse chọn khoa/ngày → Tải buổi khám → Chọn buổi. Khi khám, đăng nhập đúng bác sĩ trên buổi đã chọn theo bảng này, không mặc định demo.doctor.',
+            lines.append(f'| {row["departmentName"]} | {doctor["fullName"]} | Không tạo tài khoản |')
+    lines += ['', 'Nhân sự bác sĩ luân phiên chỉ phục vụ dữ liệu lịch demo; script không cấp tài khoản và không gửi email đến địa chỉ tổng hợp.',
+              'Để thao tác hồ sơ khám, dùng bác sĩ seed đã có tài khoản email `demo.staff03@example.test` cùng lịch được tạo bởi prepare_ui_demo.',
+              'Nurse chọn khoa/ngày → Tải buổi khám → Chọn buổi. Khi khám, dùng đúng bác sĩ có tài khoản trên lượt khám.',
               'Ngày hôm qua có lịch để xem nhưng không đăng ký mới được. Sau 17:00 chọn ngày sau để đăng ký trước, chờ đúng buổi mới khám.',
               'Ngày ngoài khoảng trên không được bảo đảm lịch. Khoa xét nghiệm/dược/hành chính chỉ bổ sung nhân sự.',
               'Nếu ca/buổi/tài khoản đã bị sửa hoặc hủy sau seed, script báo đối soát, không tự mở lại hay khôi phục quyền.']

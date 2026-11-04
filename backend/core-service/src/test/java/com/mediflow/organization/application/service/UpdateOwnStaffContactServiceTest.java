@@ -16,14 +16,14 @@ class UpdateOwnStaffContactServiceTest {
 
     @Test
     void updatesOnlyOwnContactAndPreservesIdentityEmploymentAndProfile() {
-        var member = Staff.create("A", UUID.randomUUID(), JobTitle.DOCTOR, "Internal", "LIC-1", null, null, "001234567890");
+        var member = Staff.create("A", UUID.randomUUID(), JobTitle.DOCTOR, "Internal", "LIC-1", null, "a@example.test", "001234567890");
         member.withProfile(new StaffProfile(LocalDate.of(1990, 1, 1), StaffProfile.Gender.FEMALE,
                 "Old", LocalDate.of(2020, 1, 1), "Specialist"));
         when(staff.findByIdForUpdate(member.getStaffId())).thenReturn(Optional.of(member));
         when(staff.save(any())).thenAnswer(call -> call.getArgument(0));
         var before = member.getProfile();
         var department = member.getDepartmentId();
-        var result = service.update(member.getStaffId(), member.getStaffId(), " 0901234567 ", " a@example.test ", " New ");
+        var result = service.update(member.getStaffId(), member.getStaffId(), " 0901234567 ", null, " New ");
         verify(events).publishStaffContactUpdated(any());
         assertThat(result.getPhoneNumber()).isEqualTo("0901234567");
         assertThat(result.getEmail()).isEqualTo("a@example.test");
@@ -48,9 +48,25 @@ class UpdateOwnStaffContactServiceTest {
     void invalidContactDoesNotSave() {
         var member = Staff.create("A", UUID.randomUUID(), JobTitle.NURSE, null, null, null, null, "001234567890");
         when(staff.findByIdForUpdate(member.getStaffId())).thenReturn(Optional.of(member));
+        when(staff.save(any())).thenAnswer(call -> call.getArgument(0));
         assertThatThrownBy(() -> service.update(member.getStaffId(), member.getStaffId(), "abc", null, null))
                 .isInstanceOf(com.mediflow.organization.domain.exception.InvalidStaffDataException.class);
         verify(staff, never()).save(any());
         verifyNoInteractions(events);
+    }
+
+    @Test
+    void changingOwnEmailIsRejectedAndOmittedEmailPreservesCurrentValue() {
+        var member = Staff.create("A", UUID.randomUUID(), JobTitle.NURSE, null, null, null,
+                "a@example.test", "001234567890");
+        when(staff.findByIdForUpdate(member.getStaffId())).thenReturn(Optional.of(member));
+        when(staff.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        assertThatThrownBy(() -> service.update(member.getStaffId(), member.getStaffId(), null,
+                "changed@example.test", null))
+                .isInstanceOf(com.mediflow.organization.domain.exception.OwnStaffContactAccessDeniedException.class);
+        var result = service.update(member.getStaffId(), member.getStaffId(), null, null, null);
+
+        assertThat(result.getEmail()).isEqualTo("a@example.test");
     }
 }

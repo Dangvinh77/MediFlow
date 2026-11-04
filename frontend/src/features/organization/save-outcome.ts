@@ -32,6 +32,7 @@ export interface StaffSaveDraft {
 export function staffMatchesDraft(current: StaffDTO, draft: StaffSaveDraft) {
   const body = draft.body;
   return current.fullName === body.fullName
+    && (body.identityNumber === undefined || current.identityNumber === body.identityNumber)
     && current.jobTitle === body.jobTitle
     && current.specialization === body.specialization
     && current.licenseNumber === body.licenseNumber

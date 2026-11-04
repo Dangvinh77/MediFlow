@@ -68,6 +68,18 @@ describe("organizationApi facade contract", () => {
     );
   });
 
+  it("requests a generated ADMIN reset with an idempotency key and no plaintext password", async () => {
+    put.mockResolvedValueOnce({ messageId: "mail-1", status: "PENDING" });
+    await organizationApi.resetPassword("account-a", "reset-intent");
+    expect(put).toHaveBeenCalledWith("/v1/org/accounts/account-a/password", {}, { idempotencyKey: "reset-intent" });
+  });
+  it("retries the exact delivery job and sends the audited email change", async () => {
+    await organizationApi.retryMail("account-a", "mail-1");
+    expect(post).toHaveBeenCalledWith("/v1/org/accounts/account-a/mail-delivery/mail-1/retry", {});
+    await organizationApi.updateAccountEmail("account-a", "new@example.com", "Verified correction");
+    expect(put).toHaveBeenCalledWith("/v1/org/accounts/account-a/email", { email: "new@example.com", reason: "Verified correction" });
+  });
+
   it("posts and puts department DTO bodies, including explicit null to remove a head", async () => {
     post.mockResolvedValueOnce(departmentContractFixture);
     await organizationApi.createDepartment(createDepartmentRequestFixture);

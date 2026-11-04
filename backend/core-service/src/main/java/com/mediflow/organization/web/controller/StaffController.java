@@ -169,7 +169,9 @@ public class StaffController {
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<StaffResponse>> updateStaff(
                         @PathVariable UUID staffId,
-                        @Valid @RequestBody UpdateStaffRequest request) {
+                        @Valid @RequestBody UpdateStaffRequest request,
+                        Authentication authentication) {
+                UUID changedBy = UUID.fromString(authentication.getName());
                 Staff staff = (request.profile() == null ? updateStaffUseCase.execute(
                                 staffId,
                                 request.fullName(),
@@ -177,14 +179,14 @@ public class StaffController {
                                 request.specialization(),
                                 request.licenseNumber(),
                                 request.phoneNumber(),
-                                request.email()) : updateStaffUseCase.execute(
+                                request.email(), null, request.identityNumber(), request.identityChangeReason(), changedBy) : updateStaffUseCase.execute(
                                 staffId,
                                 request.fullName(),
                                 request.jobTitle(),
                                 request.specialization(),
                                 request.licenseNumber(),
                                 request.phoneNumber(),
-                                request.email(), request.profile().toDomain()));
+                                request.email(), request.profile().toDomain(), request.identityNumber(), request.identityChangeReason(), changedBy));
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 StaffResponse.from(staff),

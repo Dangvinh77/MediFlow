@@ -43,12 +43,13 @@ function IssuanceWorkspace({ patientId }: { patientId: string }) {
     <p className="text-sm text-muted-foreground">Hồ sơ đã được lưu. Bệnh nhân chưa cần đăng nhập để tiếp tục khám. Khi muốn xem kết quả khám, xét nghiệm hoặc thông báo, bệnh nhân đăng nhập và đổi mật khẩu ban đầu một lần.</p>
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {issued ? <div role="status" className="space-y-1 text-sm">
-      <p>Đã cấp tài khoản. Tên đăng nhập: <strong>{issued.username}</strong></p>
+      <p>Đã cấp tài khoản. Email đăng nhập: <strong>{issued.username}</strong></p>
       {issued.mustChangePassword
-        ? <p>Mật khẩu ban đầu: <strong>1</strong>. Giao thông tin trực tiếp cho đúng bệnh nhân.</p>
+        ? <p>Mật khẩu tạm và link đăng nhập được gửi đến email của bệnh nhân. Tài khoản seed nhận thư trong hộp thư demo.</p>
         : <p>Mật khẩu đã được bệnh nhân đổi. Tiếp tục dùng mật khẩu hiện tại; yêu cầu này không đặt lại mật khẩu.</p>}
     </div> : <Button type="button" loading={busy} onClick={() => void provision()}>Cấp tài khoản bệnh nhân</Button>}
     <Link className="block text-sm font-medium text-primary underline" href={`/appointments/reception?patientId=${encodeURIComponent(patientId)}`}>Tiếp tục đăng ký khám</Link>
-    <p className="text-sm text-muted-foreground">Nếu đã có tài khoản, dùng tài khoản cũ; quên mật khẩu cần phục hồi sau xác minh danh tính.</p>
+    {issued?.mailDelivery ? <p className="text-sm text-muted-foreground">Trạng thái email: {issued.mailDelivery.status === "SENT" ? "Đã gửi" : issued.mailDelivery.status === "FAILED" ? "Gửi chưa thành công. Liên hệ quản trị viên để gửi lại." : "Đang chờ gửi"}.</p> : null}
+    <p className="text-sm text-muted-foreground">Nếu đã có tài khoản, dùng tài khoản cũ; có thể khôi phục mật khẩu qua email ở trang đăng nhập.</p>
   </section>;
 }

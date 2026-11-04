@@ -11,6 +11,12 @@ import com.mediflow.organization.application.port.in.ManageAccountsUseCase;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.domain.model.Role;
 import com.mediflow.organization.web.dto.response.AccountResponse;
+import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
+import com.mediflow.organization.application.service.SecurityAccountOperationsService;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,11 +28,17 @@ import org.springframework.web.bind.annotation.*;
 public class AccountManagementController {
     private final ManageAccountsUseCase accounts;
     private final CorrelationIdProvider correlationIds;
+    private final SecurityAccountOperationsService securityOperations;
 
-    public AccountManagementController(ManageAccountsUseCase accounts, CorrelationIdProvider correlationIds) {
+    public AccountManagementController(ManageAccountsUseCase accounts, CorrelationIdProvider correlationIds,
+            SecurityAccountOperationsService securityOperations) {
         this.accounts = accounts;
         this.correlationIds = correlationIds;
+        this.securityOperations = securityOperations;
     }
+
+    public record ChangeAccountEmailRequest(@Email @NotBlank @Size(max = 254) String email,
+            @NotBlank @Size(max = 500) String reason) { }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -57,10 +69,39 @@ public class AccountManagementController {
 
     @PutMapping("/{accountId}/password")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Boolean>> resetPassword(@PathVariable UUID accountId,
-            @Valid @RequestBody ResetPasswordRequest request) {
-        accounts.resetPassword(accountId, request.newPassword());
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(true, correlationIds.currentOrCreate().toString()));
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> resetPassword(@PathVariable UUID accountId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody JsonNode request, Authentication authentication) {
+        if (request == null || !request.isObject() || request.size() != 0) {
+            throw new IllegalArgumentException("Admin reset does not accept a caller-supplied password");
+        }
+        MailDeliveryDTO delivery = securityOperations.resetPassword(UUID.fromString(authentication.getName()), accountId, idempotencyKey);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(delivery, correlationIds.currentOrCreate().toString()));
+    }
+
+    @GetMapping("/{accountId}/mail-delivery")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> getMailDelivery(@PathVariable UUID accountId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
+                securityOperations.latestDelivery(accountId), correlationIds.currentOrCreate().toString()));
+    }
+
+    @PostMapping("/{accountId}/mail-delivery/{messageId}/retry")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> retryMail(@PathVariable UUID accountId,
+            @PathVariable UUID messageId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
+                securityOperations.retryDelivery(accountId, messageId), correlationIds.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/{accountId}/email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AccountResponse>> changeEmail(@PathVariable UUID accountId,
+            @Valid @RequestBody ChangeAccountEmailRequest request, Authentication authentication) {
+        var account = securityOperations.changeEmail(UUID.fromString(authentication.getName()), accountId,
+                request.email(), request.reason());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
+                AccountResponse.from(account), correlationIds.currentOrCreate().toString()));
     }
 
 }

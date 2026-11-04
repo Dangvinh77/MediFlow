@@ -40,7 +40,7 @@ public class StaffEntity {
         @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(name = "identity_number", length = 12, updatable = false)
+    @Column(name = "identity_number", length = 12)
     private String identityNumber;
 
         @Column(name = "department_id", nullable = false)
@@ -65,7 +65,7 @@ public class StaffEntity {
         @Column(name = "phone_number", length = 15)
     private String phoneNumber;
 
-        @Column(name = "email", length = 100)
+        @Column(name = "email", length = 254)
     private String email;
 
         @Enumerated(EnumType.STRING)

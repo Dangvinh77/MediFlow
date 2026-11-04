@@ -24,6 +24,7 @@ di chuyển tài liệu không tự đóng các acceptance còn thiếu.
 - [Thiết kế hệ thống](plans/01-system-design.md)
 - [Luồng nghiệp vụ](plans/02-business-flows.md)
 - [Hợp đồng tích hợp](plans/03-contracts.md)
+- [Demo tài khoản qua email và cấu hình SMTP local](plans/20-email-account-demo-runbook-2026-11-04.md)
 - [WF-01: đối chiếu source và khoảng trống hợp đồng](plans/09-outpatient-source-lock-2026-10-26.md)
 - [Hợp đồng lịch khám/giữ suất và ma trận nghiệm thu](plans/10-scheduling-contract-acceptance.md)
 - [Source NURSE onboarding đã triển khai](plans/11-patient-onboarding-source-acceptance-2026-10-27.md)

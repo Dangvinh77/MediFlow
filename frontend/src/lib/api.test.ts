@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("client-only", () => ({}));
 const session = vi.hoisted(() => ({ getToken: vi.fn(), getSessionKey: vi.fn(() => "test-session"), getRefreshToken: vi.fn(() => null), clearSession: vi.fn() }));
 vi.mock("./session", () => session);
-import { api, ApiRequestError } from "./api";
+import { api, publicApi, ApiRequestError } from "./api";
 
 const fetchMock = vi.fn();
 const key = "10000000-0000-4000-8000-000000000001";
@@ -19,6 +19,15 @@ describe("shared API transport", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("sends public recovery without an old bearer and preserves the current session on refusal", async () => {
+    respond(401, { success: false, error: { code: "INVALID_RESET_TOKEN", message: "Link hết hạn" } });
+    await expect(publicApi.post("/v1/auth/reset-password", { token: "once", newPassword: "new-password" })).rejects.toMatchObject({ status: 401 });
+    expect(new Headers(sent().headers).get("Authorization")).toBeNull();
+    expect(sent().cache).toBe("no-store");
+    expect(session.clearSession).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
   it("sends key, signed bearer and JSON through the same-origin Gateway", async () => {
     respond();

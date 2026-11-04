@@ -26,6 +26,8 @@ export function StaffForm({ staffId }: Props) {
 function StaffFormWorkspace({ staffId }: Props) {
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const [identityNumber, setIdentityNumber] = useState("");
+  const [identityChangeReason, setIdentityChangeReason] = useState("");
+  const [originalIdentity, setOriginalIdentity] = useState("");
   const router = useRouter(); const editing = Boolean(staffId);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const [profile, setProfile] = useState<StaffProfile>({ dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null });
@@ -52,6 +54,7 @@ function StaffFormWorkspace({ staffId }: Props) {
         originalDepartment.current = staff.departmentId;
         setFullName(staff.fullName);
         setIdentityNumber(staff.identityNumber ?? "");
+        setOriginalIdentity(staff.identityNumber ?? "");
         setDepartmentId(staff.departmentId);
         setJobTitle(staff.jobTitle);
         setSpecialization(staff.specialization ?? "");
@@ -73,6 +76,8 @@ function StaffFormWorkspace({ staffId }: Props) {
     originalDepartment.current = staff.departmentId;
     setFullName(staff.fullName);
     setIdentityNumber(staff.identityNumber ?? "");
+    setOriginalIdentity(staff.identityNumber ?? "");
+    setIdentityChangeReason("");
     setJobTitle(staff.jobTitle);
     setSpecialization(staff.specialization ?? "");
     setLicenseNumber(staff.licenseNumber ?? "");
@@ -89,9 +94,12 @@ function StaffFormWorkspace({ staffId }: Props) {
       setError("Bác sĩ phải có số giấy phép hành nghề.");
       return;
     }
-    if (!editing && !/^[0-9]{12}$/.test(identityNumber.trim())) {
+    if ((!editing || identityNumber.trim() !== originalIdentity) && !/^[0-9]{12}$/.test(identityNumber.trim())) {
       setError("CCCD phải gồm đúng 12 chữ số.");
       return;
+    }
+    if (editing && identityNumber.trim() !== originalIdentity && !identityChangeReason.trim()) {
+      setError("Vui lòng nhập lý do thay đổi CCCD."); return;
     }
     const today = new Date();
     const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -102,7 +110,7 @@ function StaffFormWorkspace({ staffId }: Props) {
     const sessionToken = getSessionKey();
     // Capture the user's transfer intent before a save/read refreshes the baseline.
     const wantsTransfer = departmentId !== originalDepartment.current;
-    const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null, profile: { ...profile, address: profile.address?.trim() || null, qualification: profile.qualification?.trim() || null } };
+    const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null, profile: { ...profile, address: profile.address?.trim() || null, qualification: profile.qualification?.trim() || null }, ...(editing && identityNumber.trim() !== originalIdentity ? { identityNumber: identityNumber.trim(), identityChangeReason: identityChangeReason.trim() } : {}) };
     let creationIntent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     let completed = false;
     let profileWriteSent = false;
@@ -239,7 +247,8 @@ function StaffFormWorkspace({ staffId }: Props) {
     <fieldset disabled={saving || Boolean(unknownSave)} className="min-w-0 space-y-5">
       <FormSection title="Thông tin định danh" description="Họ tên và CCCD dùng để xác định hồ sơ nhân sự.">
         <Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field>
-        <Field label="CCCD" htmlFor="staff-identity" required={!editing} hint={editing ? "CCCD được xác lập khi tạo hồ sơ." : "Nhập đủ 12 chữ số."}><input id="staff-identity" required={!editing} readOnly={editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
+        <Field label="CCCD" htmlFor="staff-identity" required={!editing} hint="Nhập đủ 12 chữ số. Thay đổi CCCD không làm đổi email đăng nhập."><input id="staff-identity" required={!editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
+        {editing && identityNumber.trim() !== originalIdentity ? <Field label="Lý do thay đổi CCCD" htmlFor="staff-identity-reason" required><textarea id="staff-identity-reason" required maxLength={500} rows={3} value={identityChangeReason} onChange={event => setIdentityChangeReason(event.target.value)} className={controlClassName} /></Field> : null}
       </FormSection>
       <FormSection title="Thông tin cá nhân bổ sung" description="Thông tin tùy chọn, chỉ admin và chính nhân viên được xem.">
         <Field label="Ngày sinh" htmlFor="staff-birth"><input id="staff-birth" type="date" value={profile.dateOfBirth ?? ""} onChange={event => setProfile(previous => ({ ...previous, dateOfBirth: event.target.value || null }))} className={controlClassName} /></Field>
@@ -256,7 +265,7 @@ function StaffFormWorkspace({ staffId }: Props) {
       </FormSection>
       <FormSection title="Thông tin liên hệ" description="Thông tin liên lạc của nhân sự.">
         <Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" autoComplete="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Email" htmlFor="staff-email" hint="Nếu nhân viên đã có tài khoản, đổi email tại Quản lý tài khoản để lưu lý do và cập nhật email đăng nhập."><input id="staff-email" type="email" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
     </fieldset>
     <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing ? <Button type="submit" data-create-account="true" disabled={saving}>Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>

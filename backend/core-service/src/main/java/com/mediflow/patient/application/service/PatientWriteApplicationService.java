@@ -89,7 +89,8 @@ public class PatientWriteApplicationService
             throw new DuplicateResourceException("PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
         }
         patient.update(request.hoTen(), request.ngaySinh(), request.gioiTinh(), request.diaChi(),
-                request.soDienThoai(), request.email(), request.bhytSo(), identityNumber);
+                request.soDienThoai(), request.email() == null ? patient.email() : request.email(),
+                request.bhytSo(), identityNumber);
         Patient saved = patients.save(patient);
         if (identityChanged) {
             identityAudit.record(patientId, request.lyDoThayDoiDinhDanh().trim(), oldIdentity,
@@ -98,6 +99,24 @@ public class PatientWriteApplicationService
         events.publishUpdated(new PatientUpdatedEvent(
                 UUID.randomUUID(), saved.updatedAt(), correlationIds.currentOrCreate().toString(),
                 saved.patientId(), saved.fullName(), saved.email(), saved.phoneNumber(), saved.address()));
+        return mapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional("patientTransactionManager")
+    public PatientDTO synchronizeAccountEmail(UUID patientId, String email) {
+        Patient patient = patients.findByIdForUpdate(patientId)
+                .orElseThrow(() -> new PatientNotFoundException(patientId));
+        if (patient.archived()) {
+            throw new InvalidPatientDataException("PATIENT_ARCHIVED", "Hồ sơ đã lưu trữ, không thể đồng bộ email");
+        }
+        if (java.util.Objects.equals(patient.email(), email)) return mapper.toDto(patient);
+        patient.update(patient.fullName(), patient.dateOfBirth(), patient.gender(), patient.address(),
+                patient.phoneNumber(), email, patient.healthInsuranceNumber(), patient.identityNumber());
+        Patient saved = patients.save(patient);
+        events.publishUpdated(new PatientUpdatedEvent(UUID.randomUUID(), saved.updatedAt(),
+                correlationIds.currentOrCreate().toString(), saved.patientId(), saved.fullName(),
+                saved.email(), saved.phoneNumber(), saved.address()));
         return mapper.toDto(saved);
     }
 

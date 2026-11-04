@@ -61,8 +61,8 @@ class LocalDemoSeedPostgresTest {
         assertThat(org.queryForObject("select count(*) from staff", Integer.class)).isEqualTo(20);
         assertThat(org.queryForObject("select count(*) from account", Integer.class)).isEqualTo(10);
         assertThat(patient.queryForObject("select count(*) from patient", Integer.class)).isEqualTo(10);
-        var admin = login.execute("demo.admin", "MediFlowDemo@2026");
-        var patientLogin = login.execute("demo.patient", "MediFlowDemo@2026");
+        var admin = login.execute("demo.staff01@example.test", "MediFlowDemo@2026");
+        var patientLogin = login.execute("demo.patient01@example.test", "MediFlowDemo@2026");
         UUID expectedPatient = patient.queryForObject(
                 "select entity_id from local_demo_seed_receipt where seed_key='patient-01'", UUID.class);
         assertThat(patientLogin.patientId()).isEqualTo(expectedPatient);
@@ -72,7 +72,7 @@ class LocalDemoSeedPostgresTest {
         var orgOutbox = org.queryForList("select * from organization_event_outbox order by event_id");
         var patientOutbox = patient.queryForList("select * from patient_event_outbox order by event_id");
         runner.run(new DefaultApplicationArguments());
-        assertThat(login.execute("demo.admin", "UserChangedPassword@2026").accountId()).isEqualTo(admin.accountId());
+        assertThat(login.execute("demo.staff01@example.test", "UserChangedPassword@2026").accountId()).isEqualTo(admin.accountId());
         assertThat(org.queryForObject("select count(*) from staff", Integer.class)).isEqualTo(20);
         assertThat(org.queryForObject("select full_name from staff where identity_number='777880000001'", String.class))
                 .isEqualTo("Edited Demo");

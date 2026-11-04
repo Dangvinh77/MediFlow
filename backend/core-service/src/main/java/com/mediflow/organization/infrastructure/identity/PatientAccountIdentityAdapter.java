@@ -3,6 +3,7 @@ package com.mediflow.organization.infrastructure.identity;
 import com.mediflow.organization.application.port.out.PatientAccountIdentityPort;
 import com.mediflow.organization.domain.exception.InvalidAccountException;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
+import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
 import org.springframework.stereotype.Component;
 import java.util.UUID;
 
@@ -10,7 +11,11 @@ import java.util.UUID;
 @Component
 public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort {
     private final GetPatientUseCase patients;
-    public PatientAccountIdentityAdapter(GetPatientUseCase patients) { this.patients = patients; }
+    private final UpdatePatientUseCase patientUpdates;
+    public PatientAccountIdentityAdapter(GetPatientUseCase patients, UpdatePatientUseCase patientUpdates) {
+        this.patients = patients;
+        this.patientUpdates = patientUpdates;
+    }
 
     @Override public String identityNumber(UUID patientId) {
         var patient = patients.getById(patientId);
@@ -19,5 +24,24 @@ public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort
             throw new InvalidAccountException("Hồ sơ đã lưu trữ hoặc chưa có định danh hợp lệ để cấp tài khoản.");
         }
         return patient.soCmnd().trim();
+    }
+
+    @Override public String email(UUID patientId) {
+        var patient = patients.getById(patientId);
+        String email = patient.email();
+        if (patient.daLuuTru() || email == null || email.length() > 254
+                || !email.trim().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidAccountException("Hồ sơ bệnh nhân chưa có email hợp lệ để cấp tài khoản.");
+        }
+        return email.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    @Override public String displayName(UUID patientId) {
+        var patient = patients.getById(patientId);
+        return patient.daLuuTru() ? "" : patient.hoTen();
+    }
+
+    @Override public void updateEmail(UUID patientId, String email) {
+        patientUpdates.synchronizeAccountEmail(patientId, email);
     }
 }

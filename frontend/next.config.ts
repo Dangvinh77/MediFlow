@@ -8,6 +8,16 @@ const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:8080";
 const nextConfig: NextConfig = {
   output: process.env.NODE_ENV === "production" ? "standalone" : undefined,
 
+  async headers() {
+    return ["/account-access", "/reset-password", "/forgot-password", "/demo-mailbox"].map(source => ({
+      source, headers: [
+        { key: "Cache-Control", value: "no-store" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow" },
+      ],
+    }));
+  },
+
   async rewrites() {
     return [
       {

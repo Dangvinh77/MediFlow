@@ -33,7 +33,7 @@ public record CreatePatientRequest(
         String soDienThoai,
 
         @Email(message = "email không đúng định dạng")
-        @Size(max = 100, message = "email tối đa 100 ký tự")
+        @Size(max = 254, message = "email tối đa 254 ký tự")
         String email,
 
         @Pattern(regexp = "\\d{2}-\\d{8}-\\d", message = "bhytSo không đúng định dạng")

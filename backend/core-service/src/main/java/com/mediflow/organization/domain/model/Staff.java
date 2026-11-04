@@ -22,7 +22,7 @@ public class Staff {
 
     private final UUID staffId;
 
-    private final String identityNumber;
+    private String identityNumber;
 
     private String fullName;
 
@@ -191,6 +191,14 @@ public class Staff {
         this.phoneNumber = phoneNumber;
         this.email = email;
 
+        this.updatedAt = Instant.now();
+    }
+
+    public void correctIdentityNumber(String identityNumber) {
+        if (identityNumber == null || !identityNumber.matches("[0-9]{12}")) {
+            throw new InvalidStaffDataException("Identity number must contain exactly 12 digits");
+        }
+        this.identityNumber = identityNumber;
         this.updatedAt = Instant.now();
     }
 

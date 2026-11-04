@@ -24,7 +24,15 @@ public interface CreateAccountUseCase {
         throw new UnsupportedOperationException("Account creation receipts are not configured");
     }
 
-    record CreationResult(Account account, boolean replayed) {}
+    record CreationResult(Account account, boolean replayed, String temporaryPassword) {
+        public CreationResult(Account account, boolean replayed) { this(account, replayed, null); }
+    }
+
+    /** Creates an account with a server-generated temporary password under the same receipt lock. */
+    default CreationResult issueWithIdempotency(UUID actorAccountId, String idempotencyKey,
+            String email, UUID staffId, UUID patientId, Role role, boolean replaceActiveAccount) {
+        throw new UnsupportedOperationException("Secure account issuance is not configured");
+    }
 
     default Account execute(
             String username,

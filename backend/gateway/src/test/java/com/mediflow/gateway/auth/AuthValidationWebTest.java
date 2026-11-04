@@ -76,6 +76,18 @@ class AuthValidationWebTest {
     }
 
     @Test
+    void login_acceptsEmailLongerThanLegacyUsernameLimit() {
+        String email = "a".repeat(45) + "@example.test";
+        webTestClient.post().uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"username\":\"" + email + "\",\"password\":\"password\"}")
+                .exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_UPSTREAM_UNAVAILABLE");
+    }
+
+    @Test
     void login_malformedJson_returnsValidationError() {
         webTestClient.post().uri("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)

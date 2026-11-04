@@ -5,6 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.security.SecureRandom;
+import java.util.Locale;
+import java.time.Instant;
 
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
@@ -26,6 +29,9 @@ public class CreateAccountService implements CreateAccountUseCase {
     private final AccountRepository accountRepository;
     private final PasswordHasher passwordHasher;
     private final AccountCreationReceiptRepository receipts;
+    private static final SecureRandom TEMPORARY_PASSWORD_RANDOM = new SecureRandom();
+    private static final char[] TEMPORARY_PASSWORD_ALPHABET =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%".toCharArray();
 
     public CreateAccountService(
             AccountRepository accountRepository,
@@ -44,6 +50,58 @@ public class CreateAccountService implements CreateAccountUseCase {
     public CreationResult executeWithIdempotency(UUID actorAccountId, String idempotencyKey,
             String username, String rawPassword, UUID staffId, UUID patientId, Role role) {
         return executeWithIdempotency(actorAccountId, idempotencyKey, username, rawPassword, staffId, patientId, role, false);
+    }
+
+    @Override
+    public CreationResult issueWithIdempotency(UUID actorAccountId, String idempotencyKey,
+            String email, UUID staffId, UUID patientId, Role role, boolean replaceActiveAccount) {
+        String normalizedEmail = normalizeEmail(email);
+        if (actorAccountId == null || idempotencyKey == null || idempotencyKey.isBlank()
+                || idempotencyKey.length() > 160 || role == null || role == Role.SYSTEM) {
+            throw new IllegalArgumentException("Actor, valid idempotency key, email and human role are required");
+        }
+        if ((role == Role.PATIENT) != (patientId != null)
+                || (role == Role.PATIENT) == (staffId != null)) {
+            throw new InvalidAccountException("Account owner does not match the requested role");
+        }
+        if (receipts == null) throw new IllegalStateException("Account receipt store is unavailable");
+        receipts.lockKey(actorAccountId, idempotencyKey);
+        String fingerprint = fingerprint(normalizedEmail, staffId, patientId, role, replaceActiveAccount);
+        var previous = receipts.find(actorAccountId, idempotencyKey);
+        if (previous.isPresent()) {
+            Receipt receipt = previous.get();
+            if (!receipt.requestFingerprint().equals(fingerprint)) {
+                throw new DuplicateResourceException("ACCOUNT_IDEMPOTENCY_KEY_REUSED",
+                        "Idempotency key was already used for another account request");
+            }
+            Account account = accountRepository.findById(receipt.accountId())
+                    .orElseThrow(() -> new IllegalStateException("Account creation receipt target is missing"));
+            return new CreationResult(account, true);
+        }
+        String temporaryPassword = temporaryPassword();
+        Account account = execute(normalizedEmail, temporaryPassword, staffId, patientId, role, replaceActiveAccount);
+        account.requirePasswordChangeUntil(Instant.now().plusSeconds(24 * 60 * 60));
+        account = accountRepository.save(account);
+        receipts.save(new Receipt(actorAccountId, idempotencyKey, fingerprint,
+                account.getPasswordHash(), account.getAccountId()));
+        return new CreationResult(account, false, temporaryPassword);
+    }
+
+    private static String normalizeEmail(String value) {
+        if (value == null || !value.equals(value.trim())) throw new InvalidAccountException("A valid account email is required");
+        String email = value.toLowerCase(Locale.ROOT);
+        if (email.length() > 254 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidAccountException("A valid account email is required");
+        }
+        return email;
+    }
+
+    private static String temporaryPassword() {
+        char[] password = new char[20];
+        for (int i = 0; i < password.length; i++) {
+            password[i] = TEMPORARY_PASSWORD_ALPHABET[TEMPORARY_PASSWORD_RANDOM.nextInt(TEMPORARY_PASSWORD_ALPHABET.length)];
+        }
+        return new String(password);
     }
 
     @Override
@@ -117,7 +175,8 @@ public class CreateAccountService implements CreateAccountUseCase {
                     "SYSTEM accounts are issued only as short-lived service tokens");
         }
 
-        if (accountRepository.existsByUsername(username)) {
+        if (accountRepository.existsByUsername(username) ||
+                (username != null && username.contains("@") && accountRepository.existsByEmail(username))) {
             throw new DuplicateResourceException(
                     "ACCOUNT_USERNAME_DUPLICATE",
                     "Account username already exists: " + username);

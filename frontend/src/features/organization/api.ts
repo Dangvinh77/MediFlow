@@ -30,7 +30,7 @@ export const organizationApi = {
   replaceHeadAppointment: (departmentId: string, body: HeadAppointmentCommand, options: Required<MutationOptions>) => api.put<HeadAppointmentSnapshot>(`/v2/org/departments/${encodeURIComponent(departmentId)}/head-appointments`, body, options),
   provisionPatientAccount: (patientId: string, idempotencyKey: string) =>
     api.post<import("./types").IssuedPatientAccount>("/v1/org/patient-accounts", { patientId }, { idempotencyKey }),
-  updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email: string | null; address: string | null }) =>
+  updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email?: string | null; address: string | null }) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
   careLabel: (kind: "doctor" | "department" | "room", id: string) =>
     api.get<{ id: string; label: string }>(`/v1/org/care-labels/${kind}/${encodeURIComponent(id)}`),
@@ -45,8 +45,11 @@ export const organizationApi = {
   },
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put<boolean>("/v1/org/accounts/me/password", { currentPassword, newPassword }),
-  resetPassword: (accountId: string, newPassword: string) =>
-    api.put<boolean>(`/v1/org/accounts/${encodeURIComponent(accountId)}/password`, { newPassword }),
+  resetPassword: (accountId: string, idempotencyKey: string) =>
+    api.put<import("./types").MailDelivery>(`/v1/org/accounts/${encodeURIComponent(accountId)}/password`, {}, { idempotencyKey }),
+  mailDelivery: (accountId: string) => api.get<import("./types").MailDelivery>(`/v1/org/accounts/${encodeURIComponent(accountId)}/mail-delivery`),
+  retryMail: (accountId: string, messageId: string) => api.post<import("./types").MailDelivery>(`/v1/org/accounts/${encodeURIComponent(accountId)}/mail-delivery/${encodeURIComponent(messageId)}/retry`, {}),
+  updateAccountEmail: (accountId: string, email: string, reason: string) => api.put<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}/email`, { email, reason }),
   departments: (activeOnly = true) =>
     api.get<DepartmentDTO[]>(`/v1/org/departments?activeOnly=${activeOnly}`),
   department: (departmentId: string) =>

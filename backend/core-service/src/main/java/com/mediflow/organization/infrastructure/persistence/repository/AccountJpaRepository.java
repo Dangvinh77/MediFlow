@@ -11,6 +11,8 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, UUID>
 
     boolean existsByPatientId(UUID patientId);
 
+    boolean existsByStaffId(UUID staffId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where a.active = true and "
             + "((:staffId is not null and a.staffId = :staffId) or (:patientId is not null and a.patientId = :patientId)) order by a.accountId")
@@ -23,7 +25,7 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, UUID>
     Optional<AccountEntity> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") UUID id);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where a.username = :username")
+    @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where a.username = :username and a.emailMigrated = true")
     Optional<AccountEntity> findByUsernameForUpdate(@org.springframework.data.repository.query.Param("username") String username);
 
     @org.springframework.data.jpa.repository.Query(value = "select credential_version from account where account_id = :id", nativeQuery = true)
@@ -35,5 +37,5 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, UUID>
 
     boolean existsByUsername(String username);
 
-    Optional<AccountEntity> findByUsername(String username);
+    Optional<AccountEntity> findByUsernameAndEmailMigratedTrue(String username);
 }

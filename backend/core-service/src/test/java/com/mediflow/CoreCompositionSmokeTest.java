@@ -46,6 +46,8 @@ import java.util.UUID;
         "mediflow.datasource.patient.password=",
         "mediflow.datasource.patient.driver-class-name=org.h2.Driver",
         "mediflow.database.migrate=false",
+        "mediflow.security-mail.dispatch-enabled=false",
+        "mediflow.patient-email-sync.dispatch-enabled=false",
         "mediflow.patient.outbox.scheduling-enabled=false",
         "spring.jpa.properties.hibernate.hbm2ddl.auto=create-drop",
         "mediflow.jwt.secret=01234567890123456789012345678901",

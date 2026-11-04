@@ -75,6 +75,12 @@ mediflow:
     sliding-window-size: ${MEDIFLOW_ORGANIZATION_AUTH_WINDOW_SIZE:10}
     minimum-number-of-calls: ${MEDIFLOW_ORGANIZATION_AUTH_MIN_CALLS:5}
     wait-duration-seconds: ${MEDIFLOW_ORGANIZATION_AUTH_OPEN_SECONDS:10}
+  demo-mailbox:
+    enabled: ${MEDIFLOW_DEMO_MAILBOX_ENABLED:false}
+  security:
+    public-rate-limit:
+      max-requests: ${MEDIFLOW_PUBLIC_AUTH_RATE_LIMIT_MAX:5}
+      window-seconds: ${MEDIFLOW_PUBLIC_AUTH_RATE_LIMIT_WINDOW_SECONDS:900}
 
 management:
   endpoints:

@@ -174,20 +174,46 @@ class StaffControllerContractTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
     void changingDepartmentHeadTitleReturnsExistingBusinessErrorContract() throws Exception {
         UUID staffId = UUID.randomUUID();
         when(updateStaffUseCase.execute(staffId, "Audit Nurse",
-                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null))
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null,
+                null, null, null, UUID.fromString(ACTOR_ID)))
                 .thenThrow(new com.mediflow.organization.domain.exception.InvalidDepartmentHeadException(
                         "Remove or reassign the department head before changing their professional title"));
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(BASE_PATH + "/{id}", staffId)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"fullName\":\"Audit Nurse\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}"))
+                        .content("{\"fullName\":\"Audit Nurse\",\"jobTitle\":\"NURSE\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("DEPARTMENT_HEAD_INVALID"))
                 .andExpect(header().exists(JwtClaims.HEADER_CORRELATION_ID));
+    }
+
+    @Test
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
+    void identityCorrectionForwardsReasonAndSignedActorInsteadOfBodyActor() throws Exception {
+        var updated = com.mediflow.organization.domain.model.Staff.create("Audit Nurse", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null,
+                "member@example.test", "012345678902");
+        UUID id = updated.getStaffId();
+        when(updateStaffUseCase.execute(id, "Audit Nurse", com.mediflow.organization.domain.model.JobTitle.NURSE,
+                null, null, null, "member@example.test", null, "012345678902", "Corrected document",
+                UUID.fromString(ACTOR_ID))).thenReturn(updated);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(BASE_PATH + "/{id}", id)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fullName":"Audit Nurse","jobTitle":"NURSE","email":"member@example.test",
+                                 "identityNumber":"012345678902","identityChangeReason":"Corrected document",
+                                 "changedByAccountId":"99999999-9999-9999-9999-999999999999"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.identityNumber").value("012345678902"))
+                .andExpect(jsonPath("$.data.email").value("member@example.test"));
+        org.mockito.Mockito.verify(updateStaffUseCase).execute(id, "Audit Nurse",
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null,
+                "member@example.test", null, "012345678902", "Corrected document", UUID.fromString(ACTOR_ID));
     }
 
     @Test

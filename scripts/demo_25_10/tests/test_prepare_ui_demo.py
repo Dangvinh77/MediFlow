@@ -15,11 +15,13 @@ SPEC.loader.exec_module(demo)
 class FakeApi:
     def __init__(self):
         self.state, self.claims, self.calls, self.sessions = {}, {}, [], []
+        self.logins = []
         self.record = None
         self.registration_status = 'CONFIRMED'
         self.payment_status = 'COMPLETED'
 
     def login(self, role, username):
+        self.logins.append((role, username))
         self.claims[role] = {'staffId': 'doctor-id', 'patientId': role + '-id'}
 
     def call(self, role, method, path, body=None, expected=(200,), stage=None):
@@ -107,6 +109,14 @@ class PreparationTest(unittest.TestCase):
     def test_full_preparation_completes_only_patient2_and_leaves_demo_cases_unbooked(self):
         api = FakeApi()
         report = demo.prepare(api, dt.datetime(2026, 10, 28, 9, tzinfo=demo.ZONE))
+        self.assertEqual(api.logins, [
+            ('admin', 'demo.staff01@example.test'),
+            ('nurse', 'demo.staff04@example.test'),
+            ('doctor', 'demo.staff03@example.test'),
+            ('cashier', 'demo.staff19@example.test'),
+            ('patient', 'demo.patient01@example.test'),
+            ('patient2', 'demo.patient02@example.test'),
+        ])
         self.assertTrue(report['historyReady'])
         registrations = [body for _, method, path, body in api.calls if method == 'POST' and path == '/api/v2/outpatient-registrations']
         self.assertEqual(len(registrations), 1)
@@ -162,19 +172,24 @@ class DemoApiTest(unittest.TestCase):
         stream.status = status
         return stream
 
-    def test_account_retry_keeps_key_and_runtime_password_out_of_journal(self):
-        body = {'username': 'demo.roster.example.bs01', 'password': 'public-demo-password', 'role': 'DOCTOR'}
+    def test_account_retry_uses_generated_credential_contract_without_password(self):
+        body = {'username': 'roster.example.bs01@example.test', 'staffId': 'staff-1',
+                'patientId': None, 'role': 'DOCTOR'}
         path = '/api/v1/org/accounts'
         with patch.object(demo.urllib.request, 'urlopen', side_effect=TimeoutError('uncertain')) as first:
             with self.assertRaises(TimeoutError):
-                self.api.call('admin', 'POST', path, body, stage='account', journal_omit=('password',))
-        self.assertNotIn('public-demo-password', self.api.journal.read_text())
+                self.api.call('admin', 'POST', path, body, stage='account')
         reopened = demo.DemoApi(self.api.gateway, self.api.journal)
-        with patch.object(demo.urllib.request, 'urlopen', return_value=self.response(201, {'data': {'accountId': 'one'}})) as retry:
-            reopened.call('admin', 'POST', path, body, expected=(201,), stage='account', journal_omit=('password',))
+        mail_delivery = {'messageId': 'mail-id', 'status': 'PENDING'}
+        with patch.object(demo.urllib.request, 'urlopen', return_value=self.response(201, {
+                'data': {'accountId': 'one', 'username': body['username'], 'mailDelivery': mail_delivery}})) as retry:
+            result = reopened.call('admin', 'POST', path, body, expected=(201,), stage='account')
         self.assertEqual(first.call_args.args[0].data, retry.call_args.args[0].data)
         self.assertEqual(first.call_args.args[0].get_header('Idempotency-key'), retry.call_args.args[0].get_header('Idempotency-key'))
-        self.assertNotIn('password', json.loads(reopened.journal.read_text())['account']['body'])
+        saved = json.loads(reopened.journal.read_text())['account']
+        self.assertNotIn('password', saved['body'])
+        self.assertNotIn('password', saved['result'])
+        self.assertEqual(result['mailDelivery'], mail_delivery)
 
     def test_wait_skips_expected_http_errors_before_evaluating_data(self):
         ready = {'paymentRequestId': 'request', 'reservationId': 'reservation', 'reservationRevision': 3}

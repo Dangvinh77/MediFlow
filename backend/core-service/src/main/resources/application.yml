@@ -15,8 +15,37 @@ spring:
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
     publisher-confirm-type: correlated
     publisher-returns: true
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 8000
+          writetimeout: 8000
 
 mediflow:
+  public-web-url: ${MEDIFLOW_PUBLIC_WEB_URL:http://localhost:3000}
+  mail:
+    from: ${MEDIFLOW_MAIL_FROM:noreply@mediflow.local}
+    from-name: ${MEDIFLOW_MAIL_FROM_NAME:MediFlow}
+  security-mail:
+    encryption-key: ${MEDIFLOW_SECURITY_MAIL_KEY:}
+    dispatch-enabled: ${MEDIFLOW_SECURITY_MAIL_DISPATCH_ENABLED:true}
+    dispatch-delay-ms: ${MEDIFLOW_SECURITY_MAIL_DISPATCH_DELAY_MS:5000}
+  demo-mailbox:
+    enabled: ${MEDIFLOW_DEMO_MAILBOX_ENABLED:false}
+    retention-days: ${MEDIFLOW_DEMO_MAILBOX_RETENTION_DAYS:30}
+  patient-email-sync:
+    dispatch-enabled: ${MEDIFLOW_PATIENT_EMAIL_SYNC_DISPATCH_ENABLED:true}
+    dispatch-delay-ms: ${MEDIFLOW_PATIENT_EMAIL_SYNC_DELAY_MS:5000}
   demo-seed:
     enabled: ${MEDIFLOW_DEMO_SEED_ENABLED:true}
   datasource:

@@ -24,7 +24,7 @@ public record CreateStaffRequest(
         @Pattern(regexp = "\\d{10,15}", message = "Phone number must contain 10 to 15 digits")
         String phoneNumber,
         @Email(message = "Email must be valid")
-        @Size(max = 100, message = "Email must not exceed 100 characters")
+        @Size(max = 254, message = "Email must not exceed 254 characters")
         String email,
         @NotBlank(message = "Identity number must not be blank")
         @Pattern(regexp = "[0-9]{12}", message = "Identity number must contain exactly 12 digits")

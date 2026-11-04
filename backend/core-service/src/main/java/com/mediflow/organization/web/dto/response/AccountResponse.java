@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.domain.model.Role;
+import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
 
 public record AccountResponse(
         UUID accountId,
@@ -15,7 +16,8 @@ public record AccountResponse(
         boolean isActive,
         Instant lastLoginAt,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        MailDeliveryDTO mailDelivery) {
 
     public static AccountResponse from(Account account) {
         return new AccountResponse(
@@ -27,6 +29,12 @@ public record AccountResponse(
                 account.isActive(),
                 account.getLastLoginAt(),
                 account.getCreatedAt(),
-                account.getUpdatedAt());
+                account.getUpdatedAt(), null);
+    }
+
+    public static AccountResponse from(Account account, MailDeliveryDTO mailDelivery) {
+        return new AccountResponse(account.getAccountId(), account.getUsername(), account.getStaffId(),
+                account.getPatientId(), account.getRole(), account.isActive(), account.getLastLoginAt(),
+                account.getCreatedAt(), account.getUpdatedAt(), mailDelivery);
     }
 }

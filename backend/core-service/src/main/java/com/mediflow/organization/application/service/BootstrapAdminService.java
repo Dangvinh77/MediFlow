@@ -22,9 +22,14 @@ public class BootstrapAdminService implements BootstrapAdminUseCase {
     @Override
     public void execute(String username, String password, String identityNumber, String fullName, String abbreviation) {
         if (accounts.search(null, Role.ADMIN, null, PageQuery.of(0, 1)).totalElements() > 0) return;
+        if (username == null || !username.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new com.mediflow.organization.domain.exception.InvalidAccountException(
+                    "Bootstrap administrator must use an email address for login");
+        }
+        String email = username.trim().toLowerCase(java.util.Locale.ROOT);
         var department = departments.execute("Phòng Quản trị hệ thống", abbreviation, DepartmentType.ADMINISTRATIVE, null);
         var employee = staff.execute(fullName, department.getDepartmentId(), JobTitle.ADMINISTRATIVE,
-                null, null, null, null, identityNumber);
-        createAccount.execute(username, password, employee.getStaffId(), null, Role.ADMIN);
+                null, null, null, email, identityNumber);
+        createAccount.execute(email, password, employee.getStaffId(), null, Role.ADMIN);
     }
 }

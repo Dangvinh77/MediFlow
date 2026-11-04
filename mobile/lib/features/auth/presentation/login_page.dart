@@ -65,15 +65,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       TextFormField(
                         controller: _username,
                         enabled: !session.isLoading,
-                        autofillHints: const [AutofillHints.username],
-                        maxLength: 50,
+                        autofillHints: const [AutofillHints.email],
+                        keyboardType: TextInputType.emailAddress,
+                        maxLength: 254,
                         decoration: const InputDecoration(
-                          labelText: 'Tên đăng nhập',
-                          prefixIcon: Icon(Icons.person_outline),
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
                         textInputAction: TextInputAction.next,
                         validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Nhập tên đăng nhập.'
+                            ? 'Nhập email đăng nhập.'
                             : null,
                       ),
                       const SizedBox(height: 16),

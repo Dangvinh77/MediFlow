@@ -1,5 +1,50 @@
 # Hợp đồng tích hợp tối thiểu
 
+## Tài khoản đăng nhập bằng email và khôi phục — 04/11/2026
+
+Organization trong Core giữ quyền dữ liệu tài khoản, phiên bản credential, mã khôi phục
+và thư bảo mật. Email của human account phải hợp lệ, duy nhất sau chuẩn hóa chữ thường;
+CCCD chỉ là định danh hồ sơ và được sửa theo quyền/audit hiện có. Tài khoản SYSTEM
+không tham gia luồng đăng nhập/khôi phục cho người dùng.
+
+Các đường dẫn sau đi qua Gateway, trả envelope `ApiResponse` và `Cache-Control: no-store`:
+
+| Method/path | Quyền | Dữ liệu/hành vi |
+|---|---|---|
+| POST `/api/v1/auth/forgot-password` | Public, có giới hạn tần suất | `{email}`; luôn phản hồi chung khi email không đủ điều kiện; không trả token |
+| POST `/api/v1/auth/reset-password` | Public, có giới hạn tần suất | `{token,newPassword}`; token một lần, hết hạn 30 phút và ràng buộc credential version |
+| POST `/api/v1/org/accounts` | ADMIN | `username` là email của staff được chọn, role phải khớp hồ sơ; hệ thống tự cấp mật khẩu; giữ Idempotency-Key |
+| POST `/api/v1/org/patient-accounts` | ADMIN/NURSE theo quyền tiếp nhận hiện có | `{patientId}` + Idempotency-Key; lấy email từ hồ sơ Patient, tự cấp mật khẩu |
+| PUT `/api/v1/org/accounts/{id}/password` | ADMIN | Không nhận mật khẩu do người gọi chọn; bắt buộc Idempotency-Key, trả `MailDelivery` |
+| GET `/api/v1/org/accounts/{id}/mail-delivery` | ADMIN | Trạng thái thư gần nhất, không trả nội dung hoặc mật khẩu |
+| POST `/api/v1/org/accounts/{id}/mail-delivery/{messageId}/retry` | ADMIN | Gửi lại đúng thư cũ, không thay mật khẩu lần nữa |
+| PUT `/api/v1/org/accounts/{id}/email` | ADMIN | `{email,reason}`; audit actor lấy từ principal, vô hiệu phiên/link cũ; cập nhật hồ sơ qua đúng context |
+
+`MailDelivery` gồm `messageId,status`; status public chỉ `PENDING,SENT,FAILED`.
+Kết quả cấp tài khoản thêm `mailDelivery`; không trả mật khẩu tạm qua API.
+Thay email của hồ sơ đã liên kết tài khoản qua API hồ sơ thông thường bị từ chối;
+non-ADMIN không sửa email hiện có. CCCD sửa không đổi email đăng nhập.
+
+Gateway có facade public chính xác từng method/path. Core chỉ nhận các yêu cầu
+khôi phục/mailbox nội bộ từ service token `gateway` tại `/api/v1/org/account-security/**`;
+không mở toàn bộ `/auth/**` hoặc `/demo/**`. Thư thật dùng SMTP multipart HTML/text,
+logo CID; nội dung hàng chờ mã hóa và được gửi bất đồng bộ.
+
+Demo mailbox tắt mặc định, chỉ bật bằng `MEDIFLOW_DEMO_MAILBOX_ENABLED` ở Core/Gateway.
+GET `/api/v1/demo/mailbox/config` trả `{enabled}`. GET `/accounts` bên dưới prefix
+`/api/v1/demo/mailbox` nhận `role,keyword,page,size`, trả `PageResult` các item
+`{accountId,role,displayName,email}`. GET `/accounts/{id}/messages` trả trang thư
+`{messageId,subject,from,to,createdAt,preview}`; GET `/accounts/{id}/messages/{messageId}`
+thêm `textBody,htmlBody` thay cho preview. Chỉ seed được chứng thực và địa chỉ giả
+phù hợp mới được xem; không dùng hậu tố email giả đơn thuần làm bằng chứng seed.
+Frontend lọc HTML và đặt iframe sandbox/CSP, không chạy script hoặc tải ảnh ngoài.
+
+[Baseline source lock](source-lock/2026-11-04-email-account-baseline.json),
+[thiết kế đã duyệt](../superpowers/specs/2026-11-04-email-account-recovery-design.md),
+[vận hành demo và cấu hình local](20-email-account-demo-runbook-2026-11-04.md).
+Các mô tả trên là hợp đồng của thay đổi; bằng chứng nghiệm thu runtime phải được ghi riêng.
+
+
 ## Hủy xét nghiệm theo người đăng nhập — 03/11/2026
 
 PUT `/api/v1/lab/{id}/cancel`, ADMIN/DOCTOR/LAB_TECH, body `{"reason":"..."}`.

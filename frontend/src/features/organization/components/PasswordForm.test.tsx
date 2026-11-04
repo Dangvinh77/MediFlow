@@ -23,14 +23,15 @@ it("serializes password changes and signs out only after confirmed success", asy
   expect(mocks.logout).toHaveBeenCalledTimes(1);
   expect(mocks.replace).toHaveBeenCalledWith("/login");
 });
-it("cannot apply a late password-reset result to another selected account", async () => {
+it("cannot apply a late password-change result after the session changes", async () => {
   let resolve!: () => void;
-  mocks.reset.mockReturnValue(new Promise<void>(done => { resolve = done; }));
-  const view = render(<PasswordForm accountId="account-a" username="A" />); fill();
-  fireEvent.submit(screen.getByRole("button", { name: "Đặt lại mật khẩu" }).closest("form")!);
-  view.rerender(<PasswordForm accountId="account-b" username="B" />);
+  mocks.change.mockReturnValue(new Promise<void>(done => { resolve = done; }));
+  render(<PasswordForm />); fill();
+  fireEvent.change(screen.getByLabelText(/^Mật khẩu hiện tại/), { target: { value: "old-password" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Đổi mật khẩu" }).closest("form")!);
+  mocks.getSessionKey.mockReturnValue("b");
   await act(async () => resolve());
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Đặt lại mật khẩu: B" })).toBeVisible();
-  await waitFor(() => expect(mocks.reset).toHaveBeenCalledWith("account-a", "new-password"));
+  expect(mocks.logout).not.toHaveBeenCalled();
+  await waitFor(() => expect(mocks.change).toHaveBeenCalledWith("old-password", "new-password"));
 });

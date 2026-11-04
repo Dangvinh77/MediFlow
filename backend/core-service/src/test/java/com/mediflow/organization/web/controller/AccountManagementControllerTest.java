@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.port.in.ManageAccountsUseCase;
+import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
+import com.mediflow.organization.application.service.SecurityAccountOperationsService;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
 import com.mediflow.organization.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.organization.infrastructure.web.CorrelationIdFilter;
@@ -44,12 +46,23 @@ class AccountManagementControllerTest {
     static final String ACTOR = "22222222-2222-2222-2222-222222222222";
     @Autowired MockMvc mvc;
     @MockBean ManageAccountsUseCase accounts;
+    @MockBean SecurityAccountOperationsService securityOperations;
     @Test @WithMockUser(roles = "DOCTOR")
     void doctorCannotListAccountsOrResetOtherPasswords() throws Exception {
         mvc.perform(get("/api/v1/org/accounts")).andExpect(status().isForbidden());
-        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password").contentType("application/json")
-                .content("{\"newPassword\":\"new-password\"}")).andExpect(status().isForbidden());
+        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password")
+                .header("Idempotency-Key", "reset-key").contentType("application/json")
+                .content("{}")).andExpect(status().isForbidden());
+        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/email").contentType("application/json")
+                .content("{\"email\":\"new@example.test\",\"reason\":\"correction\"}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/org/accounts/" + ACTOR + "/mail-delivery"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/org/accounts/" + ACTOR + "/mail-delivery/"
+                        + "33333333-3333-4333-8333-333333333333/retry"))
+                .andExpect(status().isForbidden());
         verifyNoInteractions(accounts);
+        verifyNoInteractions(securityOperations);
     }
     @Test @WithMockUser(roles = "ADMIN")
     void adminCanSearchWithExactFilters() throws Exception {
@@ -65,14 +78,25 @@ class AccountManagementControllerTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").value(true));
         verify(accounts).changePassword(UUID.fromString(ACTOR), "old-password", "new-password");
     }
-    @Test @WithMockUser(roles = "ADMIN")
+    @Test @WithMockUser(username = ACTOR, roles = "ADMIN")
     void adminResetAndValidation() throws Exception {
-        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password").contentType("application/json")
-                .content("{\"newPassword\":\"new-password\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.data").value(true));
-        verify(accounts).resetPassword(UUID.fromString(ACTOR), "new-password");
-        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password").contentType("application/json")
-                .content("{\"newPassword\":\"short\"}")).andExpect(status().isBadRequest());
-        verifyNoMoreInteractions(accounts);
+        UUID messageId = UUID.fromString("33333333-3333-4333-8333-333333333333");
+        when(securityOperations.resetPassword(UUID.fromString(ACTOR), UUID.fromString(ACTOR), "reset-key"))
+                .thenReturn(new MailDeliveryDTO(messageId, MailDeliveryDTO.Status.PENDING));
+        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password")
+                        .header("Idempotency-Key", "reset-key").contentType("application/json").content("{}"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.messageId").value(messageId.toString()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
+        verify(securityOperations).resetPassword(UUID.fromString(ACTOR), UUID.fromString(ACTOR), "reset-key");
+
+        // The previous API let administrators choose and submit the password. That body is now rejected.
+        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/password")
+                        .header("Idempotency-Key", "legacy-key").contentType("application/json")
+                        .content("{\"newPassword\":\"caller-chosen-password\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoMoreInteractions(securityOperations);
+        verifyNoInteractions(accounts);
     }
     @Test void anonymousCannotListOrChangePassword() throws Exception {
         mvc.perform(get("/api/v1/org/accounts")).andExpect(status().isUnauthorized());
