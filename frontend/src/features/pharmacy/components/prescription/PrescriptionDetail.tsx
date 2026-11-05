@@ -397,7 +397,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border text-xs text-muted-foreground">
-              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th><th className="px-3 py-3">Đơn giá</th><th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3 text-right">Thành tiền</th></tr>
+              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th><th className="px-3 py-3">Đơn giá</th><th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3">Ghi chú</th><th className="px-3 py-3 text-right">Thành tiền</th></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {prescription.lines.map((line) => (
@@ -406,6 +406,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
                   <td className="px-3 py-3">{line.quantity}</td>
                   <td className="px-3 py-3">{formatVnd(line.unitPrice)}</td>
                   <td className="px-3 py-3">{line.dosage ?? "—"}</td>
+                  <td className="px-3 py-3">{line.note ?? "—"}</td>
                   <td className="px-3 py-3 text-right font-medium">{formatVnd(line.lineTotal)}</td>
                 </tr>
               ))}

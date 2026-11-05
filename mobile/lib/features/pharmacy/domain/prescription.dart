@@ -17,9 +17,10 @@ class PrescriptionLine {
     required this.unitPrice,
     required this.dosage,
     required this.lineTotal,
+    this.note,
   });
   final String id, drugId;
-  final String? drugName, dosage;
+  final String? drugName, dosage, note;
   final int quantity;
   final num unitPrice, lineTotal;
 }

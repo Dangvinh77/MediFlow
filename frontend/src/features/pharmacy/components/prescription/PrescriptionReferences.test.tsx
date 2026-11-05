@@ -53,7 +53,9 @@ describe("Pharmacy with the shared dashboard reference directory", () => {
     expect(mocks.context).toHaveBeenCalledWith(record);
     expect(source.search).toHaveBeenCalledWith("record", "", 0, patient);
     fill("Ngày kê đơn", "2024-02-29");
-    fireEvent.change(await screen.findByRole("combobox", { name: /^Thuốc/ }), { target: { value: patient } });
+    fireEvent.click(await screen.findByRole("button", { name: "Thêm Paracetamol vào toa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Chỉ tối" }));
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
     fireEvent.submit(field("Hồ sơ khám").closest("form")!);
     await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(1));
     expect(mocks.create.mock.calls[0][0]).toMatchObject({ commandId: expect.stringMatching(/^[\da-f-]{36}$/i), request: {

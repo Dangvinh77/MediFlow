@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import 'pharmacy_request_error.dart';
+import '../domain/dosage_schedule.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
 import '../domain/prescribing_source.dart';
+import 'dosage_schedule_sheet.dart';
 import 'pharmacy_boundary.dart';
 import 'pharmacy_date_text.dart';
 import 'pharmacy_status_text.dart';
@@ -192,6 +194,10 @@ class _RecordPrescriptionResultsState
     _load();
   }
 
+  /// Prescribers do not see money; other record readers keep the amount.
+  bool get _showAmount =>
+      ref.watch(pharmacyAccessProvider)?.canPrescribe != true;
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -224,7 +230,7 @@ class _RecordPrescriptionResultsState
               'Đơn thuốc · ${pharmacyDate(prescription.prescribedDate)}',
             ),
             subtitle: Text(
-              '${prescriptionStatusText(prescription.status)} · ${prescription.totalAmount} đồng\nMã đơn: ${prescription.id}',
+              '${prescriptionStatusText(prescription.status)}${_showAmount ? ' · ${prescription.totalAmount} đồng' : ''}\nMã đơn: ${prescription.id}',
             ),
             trailing: IconButton(
               tooltip: 'Xem chi tiết đơn thuốc',
@@ -316,13 +322,18 @@ class _DraftLine {
   final Drug drug;
   final quantity = TextEditingController(text: '1');
   final dosage = TextEditingController();
+  final note = TextEditingController();
   final focus = FocusNode();
   final dosageFocus = FocusNode();
+  final noteFocus = FocusNode();
+  DosageSchedule? schedule;
   void dispose() {
     quantity.dispose();
     dosage.dispose();
+    note.dispose();
     focus.dispose();
     dosageFocus.dispose();
+    noteFocus.dispose();
   }
 }
 
@@ -579,6 +590,120 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
     }
   }
 
+  Future<void> _chooseDosage(_DraftLine line) async {
+    final chosen = await showDosageScheduleSheet(
+      context,
+      drugName: line.drug.name,
+      unit: line.drug.unit,
+      stock: line.drug.stockQuantity,
+      initial: line.schedule,
+    );
+    if (chosen == null || !mounted || !lines.contains(line)) return;
+    final unit = line.drug.unit;
+    final previous = line.schedule?.suggestedQuantity(unit);
+    final next = chosen.suggestedQuantity(unit);
+    setState(() {
+      line.schedule = chosen;
+      line.dosage.text = chosen.format(unit);
+      // A manual quantity survives reopening; only a changed calculation replaces it.
+      if (next != null && next != previous) line.quantity.text = '$next';
+      errors.removeWhere((key, _) => key.startsWith('lines'));
+    });
+  }
+
+  Widget _lineRow(int i, bool locked) {
+    final line = lines[i];
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${i + 1}. ${line.drug.name}',
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Bỏ dòng ${i + 1}',
+                icon: const Icon(Icons.close),
+                onPressed: locked
+                    ? null
+                    : () {
+                        setState(() => lines.remove(line));
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          line.dispose();
+                          if (!mounted) return;
+                          final target = lines.isEmpty
+                              ? keywordFocus
+                              : lines.last.focus;
+                          target.requestFocus();
+                          if (target.context != null) {
+                            Scrollable.ensureVisible(target.context!);
+                          }
+                        });
+                      },
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 10,
+              children: [
+                TextField(
+                  controller: line.quantity,
+                  focusNode: line.focus,
+                  enabled: !locked,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Số lượng dòng ${i + 1}',
+                    suffixText: line.drug.unit,
+                    isDense: true,
+                    errorText:
+                        errors['lines.$i.quantity'] ?? errors['lines.$i'],
+                  ),
+                ),
+                TextField(
+                  controller: line.dosage,
+                  focusNode: line.dosageFocus,
+                  enabled: !locked,
+                  readOnly: true,
+                  minLines: 1,
+                  maxLines: 3,
+                  onTap: () => _chooseDosage(line),
+                  decoration: InputDecoration(
+                    labelText: 'Cách dùng dòng ${i + 1}',
+                    hintText: 'Chạm để chọn cách dùng',
+                    prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                    isDense: true,
+                    errorText: errors['lines.$i.dosage'],
+                  ),
+                ),
+                TextField(
+                  controller: line.note,
+                  focusNode: line.noteFocus,
+                  enabled: !locked,
+                  maxLength: 500,
+                  decoration: InputDecoration(
+                    labelText: 'Ghi chú dòng ${i + 1}',
+                    isDense: true,
+                    counterText: '',
+                    errorText: errors['lines.$i.note'],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   CreateOutpatientPrescription _command() => CreateOutpatientPrescription(
     context: OutpatientPrescriptionContext(
       recordId: fields['recordId']!.text.trim(),
@@ -596,6 +721,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
             drugId: line.drug.id,
             quantity: int.tryParse(line.quantity.text) ?? 0,
             dosage: line.dosage.text.isEmpty ? null : line.dosage.text,
+            note: line.note.text.trim().isEmpty ? null : line.note.text.trim(),
           ),
         )
         .toList(),
@@ -688,7 +814,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                   label: 'Lượt khám',
                 ),
               Text(
-                '${current.command.lines.length} thuốc trong đơn. Thông tin và giá sẽ được kiểm tra khi tạo đơn.',
+                '${current.command.lines.length} thuốc trong đơn. Thông tin sẽ được kiểm tra khi tạo đơn.',
               ),
             ],
           ),
@@ -852,24 +978,24 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           Card(
             child: ListTile(
               title: Text(drug.name),
-              subtitle: Text(
-                '${drug.unit} · Còn: ${drug.stockQuantity} · Giá tham khảo: ${drug.price} đồng',
-              ),
+              subtitle: Text('${drug.unit} · Còn: ${drug.stockQuantity}'),
               trailing: IconButton(
                 tooltip: 'Chọn ${drug.name}',
                 icon: const Icon(Icons.add),
                 onPressed:
-                    locked || lines.any((line) => line.drug.id == drug.id)
+                    locked ||
+                        drug.stockQuantity == 0 ||
+                        lines.any((line) => line.drug.id == drug.id)
                     ? null
                     : () {
                         final line = _DraftLine(drug);
                         setState(() => lines.add(line));
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (!mounted) return;
-                          line.focus.requestFocus();
                           if (line.focus.context != null) {
                             Scrollable.ensureVisible(line.focus.context!);
                           }
+                          _chooseDosage(line);
                         });
                       },
               ),
@@ -893,56 +1019,26 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
               ),
             ],
           ),
-        for (var i = 0; i < lines.length; i++)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(lines[i].drug.name),
-                  TextField(
-                    controller: lines[i].quantity,
-                    focusNode: lines[i].focus,
-                    enabled: !locked,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Số lượng dòng ${i + 1}',
-                      errorText:
-                          errors['lines.$i.quantity'] ?? errors['lines.$i'],
-                    ),
-                  ),
-                  TextField(
-                    controller: lines[i].dosage,
-                    focusNode: lines[i].dosageFocus,
-                    enabled: !locked,
-                    maxLength: 255,
-                    decoration: InputDecoration(
-                      labelText: 'Liều dùng dòng ${i + 1}',
-                      errorText: errors['lines.$i.dosage'],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: locked
-                        ? null
-                        : () {
-                            final removed = lines[i];
-                            setState(() => lines.remove(removed));
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              removed.dispose();
-                              if (!mounted) return;
-                              final target = lines.isEmpty
-                                  ? keywordFocus
-                                  : lines.last.focus;
-                              target.requestFocus();
-                              if (target.context != null) {
-                                Scrollable.ensureVisible(target.context!);
-                              }
-                            });
-                          },
-                    child: Text('Bỏ dòng ${i + 1}'),
-                  ),
-                ],
+        if (lines.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Semantics(
+              label: 'Toa thuốc',
+              container: true,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < lines.length; i++) ...[
+                      if (i > 0) const Divider(height: 1),
+                      _lineRow(i, locked),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -974,9 +1070,6 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                       Text('Mã đơn thuốc: ${created!.id}'),
                       Text(
                         'Trạng thái: ${prescriptionStatusText(created!.status)}',
-                      ),
-                      Text(
-                        'Tổng tiền theo máy chủ: ${created!.totalAmount} đồng',
                       ),
                       Text('Số loại thuốc: ${created!.lines.length}'),
                     ],
@@ -1021,6 +1114,10 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                           }
                           if (errors.containsKey('lines.$i.dosage')) {
                             target = lines[i].dosageFocus;
+                            break;
+                          }
+                          if (errors.containsKey('lines.$i.note')) {
+                            target = lines[i].noteFocus;
                             break;
                           }
                         }

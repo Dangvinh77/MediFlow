@@ -33,7 +33,14 @@ CreateOutpatientPrescription rxCommand({
   ),
   prescribedDate: date,
   lines:
-      lines ?? [const RequestedPrescriptionLine(drugId: drugId, quantity: 2)],
+      lines ??
+      [
+        const RequestedPrescriptionLine(
+          drugId: drugId,
+          quantity: 2,
+          dosage: 'Sau ăn',
+        ),
+      ],
 );
 
 void main() {

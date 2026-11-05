@@ -153,6 +153,9 @@ Future<void> fillRx(WidgetTester tester) async {
   await tester.ensureVisible(choose);
   await tester.tap(choose);
   await tester.pumpAndSettle();
+  await tester.tap(find.text('Chỉ tối'));
+  await tester.pumpAndSettle();
+  await tap(tester, 'Áp dụng');
   await enter(tester, 'Số lượng dòng 1', '2');
 }
 

@@ -8,6 +8,23 @@ import 'pharmacy_fixtures.dart';
 import 'pharmacy_prescription_widget_test.dart' show host, Writer, fillRx, tap;
 
 void main() {
+  testWidgets('out-of-stock drug cannot be added to the prescription', (
+    tester,
+  ) async {
+    final repository = PharmacyStub()
+      ..search = (_, page, _) async =>
+          drugsPage(page: page, items: [drug(stock: 0)]);
+    await tester.pumpWidget(host(repository, const CreatePrescriptionPage()));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Tìm trong danh mục');
+    final add = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.add),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(add.onPressed, isNull);
+  });
   testWidgets('empty catalog with totalPages zero is visible', (tester) async {
     final repository = PharmacyStub()
       ..search = (_, _, _) async => const PageResult(
@@ -44,7 +61,7 @@ void main() {
         final label = field.contains('quantity')
             ? 'Số lượng dòng 1'
             : field.contains('dosage')
-            ? 'Liều dùng dòng 1'
+            ? 'Cách dùng dòng 1'
             : 'Bệnh nhân';
         if (field == 'patientId') {
           final input = tester.widget<Focus>(

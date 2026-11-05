@@ -103,7 +103,7 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
             long reserved = reservations.findReservedByDrug(line.drugId()).stream()
                     .mapToLong(StockReservation::getQuantity).sum();
             if ((long) drug.getStockQuantity() - reserved < line.quantity()) throw invalid("Insufficient available stock");
-            lines.add(PrescriptionLine.create(drug.getDrugId(), line.quantity(), drug.getPrice(), line.dosage(), drug.getDrugName()));
+            lines.add(PrescriptionLine.create(drug.getDrugId(), line.quantity(), drug.getPrice(), line.dosage(), drug.getDrugName(), line.note()));
         }
         now = clock.instant(); // Reservation reads/waits must not retain the earlier business date.
         requireContext(context, command, now);
@@ -142,7 +142,8 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
             throw invalid("Admission creation awaits authoritative medication eligibility, never active=true inference");
         }
         if (request.lines().stream().anyMatch(line -> line == null || line.drugId() == null || line.quantity() == null
-                || line.quantity() < 1 || (line.dosage() != null && line.dosage().length() > 255))
+                || line.quantity() < 1 || (line.dosage() != null && line.dosage().length() > 255)
+                || (line.note() != null && line.note().length() > 500))
                 || request.lines().stream().map(PrescriptionLineRequest::drugId).distinct().count() != request.lines().size()) {
             throw invalid("Positive, unique, bounded prescription lines are required");
         }
@@ -174,6 +175,8 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
             append(digest, request.recordId());
             for (var line : request.lines().stream().sorted(Comparator.comparing(PrescriptionLineRequest::drugId)).toList()) {
                 append(digest, line.drugId()); append(digest, line.quantity()); append(digest, line.dosage());
+                // Absent notes hash exactly as before V22, so commands issued before the upgrade still replay.
+                if (line.note() != null) { append(digest, "note"); append(digest, line.note()); }
             }
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException exception) { throw new IllegalStateException("SHA-256 unavailable", exception); }

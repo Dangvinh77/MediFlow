@@ -4,12 +4,16 @@ import type {
   PrescriptionLineRequest,
 } from "../../types";
 import { getLocalTodayIso, isUuid } from "../../utils";
+import type { DosageSchedule } from "./dosageSchedule";
 
 export interface PrescriptionLineFormValue {
   rowKey: string;
   drugId: string;
   quantity: string;
+  /** Read-only text generated from `schedule`; the schedule itself stays client-side. */
   dosage: string;
+  schedule: DosageSchedule | null;
+  note: string;
   drug: DrugDTO | null;
 }
 
@@ -33,6 +37,7 @@ export interface PrescriptionLineFieldErrors {
   drugId?: string;
   quantity?: string;
   dosage?: string;
+  note?: string;
 }
 
 export type CreatePrescriptionFieldErrors = Partial<
@@ -51,14 +56,16 @@ const INTEGER_MAX = 2_147_483_647;
 
 let nextRowKey = 0;
 
-export function createPrescriptionLine(): PrescriptionLineFormValue {
+export function createPrescriptionLine(drug: DrugDTO | null = null): PrescriptionLineFormValue {
   nextRowKey += 1;
   return {
     rowKey: `prescription-line-${nextRowKey}`,
-    drugId: "",
+    drugId: drug?.drugId ?? "",
     quantity: "1",
     dosage: "",
-    drug: null,
+    schedule: null,
+    note: "",
+    drug,
   };
 }
 
@@ -69,7 +76,7 @@ export function createEmptyPrescriptionForm(): CreatePrescriptionFormValues {
     doctorId: "",
     departmentId: "",
     prescribedDate: getLocalTodayIso(),
-    lines: [createPrescriptionLine()],
+    lines: [],
   };
 }
 
@@ -115,8 +122,14 @@ export function validateCreatePrescriptionForm(
       lineErrors.quantity = "Số lượng phải là số nguyên dương trong giới hạn cho phép.";
     }
 
-    if (line.dosage.trim().length > 255) {
+    if (!line.dosage.trim()) {
+      lineErrors.dosage = "Chọn cách dùng cho thuốc này.";
+    } else if (line.dosage.trim().length > 255) {
       lineErrors.dosage = "Cách dùng không được dài quá 255 ký tự.";
+    }
+
+    if (line.note.trim().length > 500) {
+      lineErrors.note = "Ghi chú không được dài quá 500 ký tự.";
     }
 
     if (Object.keys(lineErrors).length > 0) {
@@ -141,6 +154,7 @@ export function toCreatePrescriptionRequest(
     drugId: line.drugId.trim(),
     quantity: Number(line.quantity),
     ...(line.dosage.trim() ? { dosage: line.dosage.trim() } : {}),
+    ...(line.note.trim() ? { note: line.note.trim() } : {}),
   }));
 
   return {

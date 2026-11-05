@@ -23,12 +23,17 @@ const id = "00000000-0000-4000-8000-000000000001";
 const episode = "00000000-0000-4000-8000-000000000002";
 function fill(label: string, value: string) { fireEvent.change(screen.getByLabelText(label, { exact: false }), { target: { value } }); }
 function submit() { fireEvent.submit(screen.getByLabelText("Hồ sơ khám", { exact: false }).closest("form")!); }
+async function addDrug(name = "Paracetamol", preset = "Chỉ tối") {
+  fireEvent.click(await screen.findByRole("button", { name: `Thêm ${name} vào toa` }));
+  const dialog = screen.getByRole("dialog");
+  fireEvent.click(within(dialog).getByRole("button", { name: preset }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Áp dụng" }));
+}
 async function validForm() {
-  await screen.findByRole("option", { name: /Paracetamol/ });
+  await screen.findByRole("button", { name: "Thêm Paracetamol vào toa" });
   for (const label of ["Bệnh nhân", "Hồ sơ khám"]) fill(label, id);
   await screen.findByText("Đã lấy thông tin kê đơn từ hồ sơ khám.");
-  fill("Ngày kê đơn", "2024-02-29");
-  fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
+  fill("Ngày kê đơn", "2024-02-29"); await addDrug();
 }
 function changeActor() { act(() => { mocks.token = "actor-b"; mocks.listeners.forEach(listener => listener()); }); }
 
@@ -49,7 +54,7 @@ describe("outpatient prescription form", () => {
   });
   it("does not trust an incomplete or malformed handoff", async () => {
     render(<CreatePrescriptionForm initialPatientId={id} initialRecordId="not-an-id" />);
-    await screen.findByRole("option", { name: /Paracetamol/ });
+    await screen.findByRole("button", { name: "Thêm Paracetamol vào toa" });
     expect(screen.getByLabelText("Bệnh nhân", { exact: false })).toHaveValue("");
     expect(mocks.context).not.toHaveBeenCalled();
   });
@@ -97,30 +102,39 @@ describe("outpatient prescription form", () => {
     await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
     expect(mocks.create.mock.calls[1][0].commandId).not.toBe(oldKey);
   });
-  it("moves keyboard focus to the new line and preserves its normal tab order", async () => {
+  it("opens the dosage dialog from the keyboard, traps focus and returns to the drug search", async () => {
     const user = userEvent.setup();
     render(<CreatePrescriptionForm />);
-    await screen.findByRole("option", { name: /Paracetamol/ });
-    screen.getByRole("button", { name: "Thêm dòng thuốc" }).focus();
+    (await screen.findByRole("button", { name: "Thêm Paracetamol vào toa" })).focus();
     await user.keyboard("{Enter}");
-    const row = within(screen.getByRole("region", { name: "Thuốc 2" }));
-    expect(row.getByRole("combobox")).toHaveFocus();
-    await user.tab(); expect(row.getByRole("spinbutton")).toHaveFocus();
-    await user.tab(); expect(row.getByRole("textbox")).toHaveFocus();
+    const dialog = screen.getByRole("dialog");
+    const first = within(dialog).getByRole("button", { name: "Sáng - Tối" });
+    expect(first).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(within(dialog).getByRole("button", { name: "Áp dụng" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.getByLabelText("Tìm thuốc trong danh mục")).toHaveFocus());
     expect(mocks.create).not.toHaveBeenCalled();
   });
   it.each([1, 2, 3])("keeps focus on a surviving line after removing line %s", async removed => {
     const user = userEvent.setup();
+    mocks.search.mockResolvedValue({ content: ["A", "B", "C"].map((name, index) => ({ drugId: `00000000-0000-4000-8000-00000000010${index}`,
+      drugName: name, unit: "Viên", price: 2500, stockQuantity: 20, activeIngredient: null, manufacturer: null, expiryDate: "2099-01-01", lowStockThreshold: 10 })) });
     render(<CreatePrescriptionForm />);
-    await screen.findByRole("option", { name: /Paracetamol/ });
-    fireEvent.click(screen.getByRole("button", { name: "Thêm dòng thuốc" }));
-    fireEvent.click(screen.getByRole("button", { name: "Thêm dòng thuốc" }));
-    const selectors = screen.getAllByRole("combobox");
-    const expected = selectors[removed < 3 ? removed : removed - 2];
+    for (const name of ["A", "B", "C"]) await addDrug(name);
+    const quantities = screen.getAllByRole("spinbutton");
+    const expected = quantities[removed < 3 ? removed : removed - 2];
     await user.click(screen.getByRole("button", { name: `Xóa dòng thuốc ${removed}` }));
-    expect(expected).toHaveFocus();
-    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    await waitFor(() => expect(expected).toHaveFocus());
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("submits the line note and generated dosage through the V1 intent", async () => {
+    mocks.create.mockResolvedValue({ prescriptionId: "server-rx" });
+    render(<CreatePrescriptionForm />); await validForm();
+    fill("Ghi chú dòng 1", " Uống đủ liệu trình "); submit();
+    const intent: OutpatientPrescriptionIntent = mocks.create.mock.calls[0][0];
+    expect(intent.request.lines).toEqual([{ drugId: id, quantity: 1, dosage: "Tối 1 viên sau ăn", note: "Uống đủ liệu trình" }]);
   });
   it("focuses the earliest visible source field regardless of server error order", async () => {
     mocks.create.mockRejectedValue(new ApiRequestError("Invalid source", 400, "VALIDATION_ERROR", [

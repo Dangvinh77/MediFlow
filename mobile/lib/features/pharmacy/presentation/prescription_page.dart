@@ -610,7 +610,9 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                     Text(line.drugName ?? 'Thuốc chưa có tên hiển thị'),
                     Text('Số lượng: ${line.quantity}'),
                     Text('Đơn giá: ${line.unitPrice} đồng'),
-                    Text('Liều dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
+                    Text('Cách dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
+                    if (line.note?.trim().isNotEmpty ?? false)
+                      Text('Ghi chú: ${line.note}'),
                     Text('Thành tiền: ${line.lineTotal} đồng'),
                   ],
                 ),

@@ -4,6 +4,7 @@ import {
   toOutpatientPrescriptionRequest,
   validateOutpatientPrescriptionForm,
 } from "./outpatientPrescriptionForm";
+import { createPrescriptionLine } from "./prescriptionFormValidation";
 import { hasCreatePrescriptionErrors, toCreatePrescriptionRequest } from "./prescriptionFormValidation";
 
 const ids = {
@@ -20,7 +21,7 @@ function valid() {
     ...values, recordId: ids.record, patientId: ids.patient, doctorId: ids.doctor,
     departmentId: ids.department, careEpisodeId: ids.episode, priceCode: "DRUG",
     prescribedDate: "2026-10-18",
-    lines: [{ ...values.lines[0], drugId: ids.drug, quantity: "2", dosage: "Sau ăn" }],
+    lines: [{ ...createPrescriptionLine(), drugId: ids.drug, quantity: "2", dosage: "Sau ăn" }],
   };
 }
 
@@ -30,8 +31,7 @@ describe("Public outpatient prescription validation and wire shape", () => {
     for (const field of ["recordId", "patientId", "doctorId", "departmentId", "careEpisodeId", "priceCode"] as const) {
       expect(values[field]).toBe("");
     }
-    expect(values.lines).toHaveLength(1);
-    expect(values.lines[0].drugId).toBe("");
+    expect(values.lines).toHaveLength(0);
   });
   it.each(["recordId", "patientId", "doctorId", "departmentId", "careEpisodeId"] as const)(
     "requires the exact public source UUID for %s without substituting another identifier", (field) => {
