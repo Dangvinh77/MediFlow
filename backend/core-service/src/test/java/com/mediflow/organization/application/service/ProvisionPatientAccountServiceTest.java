@@ -28,9 +28,11 @@ class ProvisionPatientAccountServiceTest {
         var result = new ProvisionPatientAccountService(accounts, receipts, creator, patients).provision(actor, "key", patient);
         assertThat(result.account().getPatientId()).isEqualTo(patient);
         assertThat(result.account().isMustChangePassword()).isTrue();
-        var order = inOrder(receipts, accounts, creator);
+        var order = inOrder(receipts, accounts, patients, creator);
         order.verify(receipts).lockKey(actor, "key");
         order.verify(accounts).lockOwner(null, patient);
+        order.verify(accounts).existsByPatientId(patient);
+        order.verify(patients).email(patient);
         order.verify(creator).issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false);
     }
 

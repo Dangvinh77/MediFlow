@@ -192,6 +192,17 @@ class StaffControllerContractTest {
     }
 
     @Test
+    @WithMockUser(username = ACTOR_ID, roles = "NURSE")
+    void nurseCannotChangeStaffEmailThroughTheStaffProfileRoute() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(BASE_PATH + "/{id}", staffId)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Member\",\"jobTitle\":\"NURSE\",\"email\":\"new@example.test\"}"))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(updateStaffUseCase);
+    }
+
+    @Test
     @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
     void identityCorrectionForwardsReasonAndSignedActorInsteadOfBodyActor() throws Exception {
         var updated = com.mediflow.organization.domain.model.Staff.create("Audit Nurse", DEPARTMENT_ID,

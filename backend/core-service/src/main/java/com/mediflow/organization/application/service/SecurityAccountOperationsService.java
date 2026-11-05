@@ -209,13 +209,44 @@ public class SecurityAccountOperationsService {
         }
     }
 
-    public Account changeEmail(UUID actor, UUID accountId, String requestedEmail, String reason) {
-        if (actor == null || reason == null || reason.isBlank() || reason.trim().length() > 500) {
-            throw new InvalidAccountException("An admin and a reason of at most 500 characters are required");
+    public Account changePatientEmail(UUID actor, UUID patientId, String requestedEmail, String reason) {
+        validateEmailChange(actor, reason);
+        if (patientId == null) throw new InvalidAccountException("A patient profile is required");
+        String newEmail = normalizeEmail(requestedEmail);
+        accounts.lockOwner(null, patientId);
+        patients.requireActivePatient(patientId);
+        Account linked = requirePatientAccount(patientId);
+        Account account = accounts.findByIdForUpdate(linked.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(linked.getAccountId()));
+        requirePatientOwner(account, patientId);
+        if (newEmail.equalsIgnoreCase(account.getUsername())) {
+            // A successful account change may be waiting on Patient's retryable sync queue.
+            // Re-submitting the account's current username is a repair request only when the
+            // authoritative profile still differs; it must not revoke credentials again.
+            if (!sameEmail(patients.profileEmail(patientId), newEmail)) {
+                emailChanges.queuePatientProfileSync(account.getAccountId(), patientId, newEmail);
+            }
+            return account;
         }
+        return changeEmailLocked(actor, account, newEmail, reason.trim());
+    }
+
+    public Account changeEmail(UUID actor, UUID accountId, String requestedEmail, String reason) {
+        validateEmailChange(actor, reason);
         String newEmail = normalizeEmail(requestedEmail);
         Account account = accounts.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+        return changeEmailLocked(actor, account, newEmail, reason.trim());
+    }
+
+    private static void validateEmailChange(UUID actor, String reason) {
+        if (actor == null || reason == null || reason.isBlank() || reason.trim().length() > 500) {
+            throw new InvalidAccountException("A valid actor and a reason of at most 500 characters are required");
+        }
+    }
+
+    private Account changeEmailLocked(UUID actor, Account account, String newEmail, String reason) {
+        UUID accountId = account.getAccountId();
         if (account.getRole() == Role.SYSTEM) throw new InvalidAccountException("Service account email cannot be changed");
         String oldEmail = account.getUsername();
         if (newEmail.equalsIgnoreCase(oldEmail)) return account;
@@ -225,8 +256,7 @@ public class SecurityAccountOperationsService {
         Account saved = accounts.save(account);
         accounts.incrementCredentialVersion(accountId);
         recoveryTokens.invalidateUnused(accountId, Instant.now());
-        emailChanges.record(accountId, actor, isValidEmail(oldEmail) ? oldEmail : null,
-                newEmail, reason.trim());
+        emailChanges.record(accountId, actor, isValidEmail(oldEmail) ? oldEmail : null, newEmail, reason);
 
         if (account.getStaffId() != null) {
             Staff owner = staff.findByIdForUpdate(account.getStaffId())
@@ -337,6 +367,10 @@ public class SecurityAccountOperationsService {
             throw new InvalidAccountException("Hồ sơ chưa có email hợp lệ để đăng nhập và nhận mật khẩu");
         }
         return value.toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean sameEmail(String first, String second) {
+        return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
     }
 
     private static boolean isValidEmail(String value) {

@@ -45,6 +45,12 @@ public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort
         return patient.daLuuTru() ? "" : patient.hoTen();
     }
 
+    @Override public void requireActivePatient(UUID patientId) {
+        if (patients.getById(patientId).daLuuTru()) {
+            throw new InvalidAccountException("An archived patient profile cannot change account email");
+        }
+    }
+
     @Override public void updateEmail(UUID patientId, String email) {
         patientUpdates.synchronizeAccountEmail(patientId, email);
     }

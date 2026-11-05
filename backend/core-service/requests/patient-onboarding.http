@@ -15,6 +15,13 @@ Content-Type: application/json
 
 {"patientId":"{{patientId}}"}
 
+### NURSE changes a linked patient login email by Patient UUID
+PUT {{gateway}}/api/v1/org/patient-accounts/{{patientId}}/email
+Authorization: Bearer {{nurseToken}}
+Content-Type: application/json
+
+{"email":"patient.corrected@example.test","reason":"Confirmed with patient"}
+
 ### Role injection must return 400
 POST {{gateway}}/api/v1/org/patient-accounts
 Authorization: Bearer {{nurseToken}}

@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PatientAccountController.class)
@@ -53,6 +54,45 @@ class PatientAccountControllerTest {
             .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
             .andExpect(jsonPath("$.data.mailDelivery.messageId").value(delivery.messageId().toString()))
             .andExpect(jsonPath("$.data.mailDelivery.status").value("PENDING"));
+    }
+
+    @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
+    void nurseCanChangePatientAccountEmailThroughThePatientScopedPath() throws Exception {
+        var account = Account.create(UUID.randomUUID(), "new@example.test", "secret-hash", null, patient, Role.PATIENT);
+        when(securityOperations.changePatientEmail(actor, patient, "new@example.test", "patient correction"))
+                .thenReturn(account);
+        mvc.perform(put("/api/v1/org/patient-accounts/{patientId}/email", patient)
+                        .contentType("application/json")
+                        .content("{\"email\":\"new@example.test\",\"reason\":\"patient correction\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.patientId").value(patient.toString()))
+                .andExpect(jsonPath("$.data.username").value("new@example.test"))
+                .andExpect(jsonPath("$.data.role").value("PATIENT"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
+        verify(securityOperations).changePatientEmail(actor, patient, "new@example.test", "patient correction");
+    }
+
+    @Test @WithMockUser(roles="DOCTOR")
+    void nonAdminNurseCannotChangePatientAccountEmail() throws Exception {
+        mvc.perform(put("/api/v1/org/patient-accounts/{patientId}/email", patient)
+                        .contentType("application/json")
+                        .content("{\"email\":\"new@example.test\",\"reason\":\"patient correction\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(securityOperations);
+    }
+
+    @Test @WithMockUser(roles="NURSE")
+    void patientEmailChangeRejectsInvalidOrCallerSuppliedOwnershipFields() throws Exception {
+        mvc.perform(put("/api/v1/org/patient-accounts/{patientId}/email", patient)
+                        .contentType("application/json")
+                        .content("{\"email\":\"not-an-email\",\"reason\":\"correction\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/v1/org/patient-accounts/{patientId}/email", patient)
+                        .contentType("application/json")
+                        .content("{\"email\":\"new@example.test\",\"reason\":\"correction\",\"accountId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(securityOperations);
     }
 
     @Test @WithMockUser(username="00000000-0000-4000-8000-000000000002", roles="NURSE")
