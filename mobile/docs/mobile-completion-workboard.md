@@ -8,6 +8,7 @@ là công cụ vận hành, chưa tính vào phạm vi role nghiệp vụ.
 
 | Vai trò | Web có, mobile chưa có | Endpoint |
 |---|---|---|
+| ADMIN | Thao tác lại sự kiện outbox Dược; màn chi tiết tài khoản | `/v1/pharmacy/admin/outbox/{id}/replay`, `/v1/org/accounts/{id}` |
 
 MANAGER và ADMIN đã có quản lý buổi khám, phạm vi quản lý lịch và bổ nhiệm trưởng khoa. Bác sĩ là trưởng khoa có màn Quản lý khoa theo `/v1/org/me/capabilities`.
 
