@@ -21,16 +21,22 @@ const recordId = '10000000-0000-4000-8000-000000000005';
 const diagnosisId = '10000000-0000-4000-8000-000000000006';
 const sourceOrderId = '10000000-0000-4000-8000-000000000007';
 
-Appointment appointment({String reason = 'New session'}) => Appointment(
+Appointment appointment({
+  String reason = 'New session',
+  String status = 'PENDING',
+  int careContractVersion = 0,
+  String? examClearanceId,
+}) => Appointment(
   id: appointmentId,
   patientId: patientId,
   doctorId: doctorId,
   departmentId: departmentId,
   date: '2026-10-22',
   time: '09:30:00',
-  status: 'PENDING',
+  status: status,
   createdAt: '2026-10-22T08:00:00Z',
-  careContractVersion: 0,
+  careContractVersion: careContractVersion,
+  examClearanceId: examClearanceId,
   reason: reason,
 );
 
@@ -51,7 +57,8 @@ MedicalRecord record({String symptoms = 'Headache', String status = 'OPEN'}) =>
 class AppointmentFake implements AppointmentRepository {
   Future<PageResult<Appointment>> Function(int page)? onSearch;
   Future<Appointment> Function(String id)? onGet;
-  int searches = 0;
+  Future<ScheduledExamReadiness> Function(String id)? onReadiness;
+  int searches = 0, starts = 0, readinessReads = 0;
   @override
   Future<PageResult<Appointment>> search({
     int page = 0,
@@ -83,7 +90,23 @@ class AppointmentFake implements AppointmentRepository {
   @override
   Future<Appointment> checkIn(String appointmentId) async => appointment();
   @override
-  Future<Appointment> startExam(String appointmentId) async => appointment();
+  Future<Appointment> startExam(String appointmentId) async {
+    starts++;
+    return appointment(status: 'IN_EXAM', careContractVersion: 2);
+  }
+
+  @override
+  Future<ScheduledExamReadiness> examReadiness(String registrationId) {
+    readinessReads++;
+    return onReadiness?.call(registrationId) ??
+        Future.value(
+          const ScheduledExamReadiness(
+            readyForExam: true,
+            checkedInAt: '2026-10-22T08:00:00Z',
+          ),
+        );
+  }
+
   @override
   Future<Appointment> cancel(String appointmentId) async => appointment();
 }
@@ -424,6 +447,99 @@ void main() {
     expect(find.text('Lý do: Current session appointment'), findsOneWidget);
     expect(find.text('Lý do: Old private appointment'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('scheduled exam start', () {
+    Appointment scheduled({String status = 'READY_FOR_EXAM'}) => appointment(
+      status: status,
+      careContractVersion: 2,
+      examClearanceId: 'clearance',
+    );
+
+    Future<List<(String, String)>> pumpDetail(
+      WidgetTester tester,
+      AppointmentFake appointments, {
+      String role = 'DOCTOR',
+    }) async {
+      final opened = <(String, String)>[];
+      await tester.pumpWidget(
+        host(
+          child: AppointmentDetailPage(
+            appointmentId: appointmentId,
+            onOpenRecord: (patient, visit) => opened.add((patient, visit)),
+          ),
+          appointments: appointments,
+          outpatientEnabled: true,
+          role: role,
+        ),
+      );
+      await tester.pumpAndSettle();
+      return opened;
+    }
+
+    testWidgets('a doctor starts a ready registration and opens its record', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()..onGet = (_) async => scheduled();
+      final opened = await pumpDetail(tester, appointments);
+
+      await tester.tap(find.text('Bắt đầu khám'));
+      await tester.pumpAndSettle();
+
+      expect(appointments.starts, 1);
+      expect(opened, [(patientId, appointmentId)]);
+    });
+
+    testWidgets('a doctor waits while the patient has not arrived', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()
+        ..onGet = ((_) async => scheduled())
+        ..onReadiness = (_) async => const ScheduledExamReadiness(
+          readyForExam: false,
+          checkedInAt: null,
+        );
+      await pumpDetail(tester, appointments);
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(find.textContaining('Chờ bệnh nhân đến quầy'), findsOneWidget);
+    });
+
+    testWidgets('a failed readiness read never offers the start action', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()
+        ..onGet = ((_) async => scheduled())
+        ..onReadiness = ((_) async => throw const ApiFailure('Gateway lỗi'));
+      await pumpDetail(tester, appointments);
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(
+        find.textContaining('Chưa kiểm tra được điều kiện khám'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an admin cannot start a scheduled registration', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()..onGet = (_) async => scheduled();
+      await pumpDetail(tester, appointments, role: 'ADMIN');
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(appointments.readinessReads, 0);
+    });
+
+    testWidgets('a completed visit still opens its record', (tester) async {
+      final appointments = AppointmentFake()
+        ..onGet = (_) async => scheduled(status: 'COMPLETED');
+      final opened = await pumpDetail(tester, appointments);
+
+      await tester.tap(find.text('Mở hồ sơ khám'));
+      await tester.pumpAndSettle();
+
+      expect(opened, [(patientId, appointmentId)]);
+    });
   });
 
   testWidgets('a new session cannot see a previous appointment detail', (

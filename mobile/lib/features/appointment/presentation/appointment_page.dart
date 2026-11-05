@@ -234,6 +234,8 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
   bool _uncertain = false;
   int _generation = 0;
   Object? _sessionIdentity;
+  ScheduledExamReadiness? _readiness;
+  Object? _readinessError;
 
   @override
   void initState() {
@@ -256,14 +258,32 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
       _error = null;
       _loading = true;
       _uncertain = false;
+      _readiness = null;
+      _readinessError = null;
     });
     try {
       final appointment = await ref
           .read(appointmentRepositoryProvider)
           .getById(widget.appointmentId);
+      ScheduledExamReadiness? readiness;
+      Object? readinessError;
+      if (needsScheduledReadiness(
+        appointment,
+        role: ref.read(workspaceAccessProvider)?.role,
+      )) {
+        try {
+          readiness = await ref
+              .read(appointmentRepositoryProvider)
+              .examReadiness(appointment.id);
+        } catch (error) {
+          readinessError = error;
+        }
+      }
       if (_isCurrent(generation)) {
         setState(() {
           _appointment = appointment;
+          _readiness = readiness;
+          _readinessError = readinessError;
           _loading = false;
         });
       }
@@ -373,7 +393,12 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
       appointment,
       role: role,
       outpatientEnabled: outpatientEnabled,
+      scheduledReady: _readiness?.readyForExam == true,
     );
+    final waitingToStart =
+        outpatientEnabled &&
+        !canStart &&
+        needsScheduledReadiness(appointment, role: role);
     final canCancel = canCancelAppointment(appointment, role: role);
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -441,6 +466,30 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                   ),
             icon: const Icon(Icons.description),
             label: const Text('Tiếp tục khám'),
+          ),
+        if (outpatientEnabled &&
+            appointment.status == 'COMPLETED' &&
+            widget.onOpenRecord != null)
+          FilledButton.icon(
+            onPressed: _busy || _uncertain
+                ? null
+                : () => widget.onOpenRecord!(
+                    appointment.patientId,
+                    appointment.id,
+                  ),
+            icon: const Icon(Icons.description),
+            label: const Text('Mở hồ sơ khám'),
+          ),
+        if (waitingToStart)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              _readinessError != null
+                  ? 'Chưa kiểm tra được điều kiện khám. Chọn Làm mới để thử lại.'
+                  : _readiness?.checkedInAt == null
+                  ? 'Chờ bệnh nhân đến quầy tiếp nhận để ghi nhận có mặt.'
+                  : 'Chưa đủ điều kiện bắt đầu. Kiểm tra giờ khám và trạng thái phiếu, sau đó làm mới.',
+            ),
           ),
         Wrap(
           spacing: 8,

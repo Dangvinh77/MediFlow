@@ -4,6 +4,21 @@ import '../domain/appointment.dart';
 // Exact read projection of AppointmentDTO; no synthesized identifiers, status,
 // or contract version are used to make an action appear available.
 abstract final class AppointmentDto {
+  static ScheduledExamReadiness examReadiness(
+    Object? value,
+    String registrationId,
+  ) {
+    if (value is! Map<String, dynamic> ||
+        value['registrationId'] != registrationId ||
+        value['readyForExam'] is! bool) {
+      throw const FormatException('Phản hồi phiếu khám không hợp lệ.');
+    }
+    return ScheduledExamReadiness(
+      readyForExam: value['readyForExam'] as bool,
+      checkedInAt: value['checkedInAt'] as String?,
+    );
+  }
+
   static Appointment fromJson(Map<String, dynamic> json) {
     final version = json['careContractVersion'];
     if (version is! int || version < 0) {
