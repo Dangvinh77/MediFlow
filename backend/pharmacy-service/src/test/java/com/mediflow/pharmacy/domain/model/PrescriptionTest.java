@@ -34,6 +34,13 @@ class PrescriptionTest {
     }
 
     @Test
+    void line_noteOverLimit_throwsBusinessRule() {
+        assertThatThrownBy(() -> PrescriptionLine.create(
+                UUID.randomUUID(), 1, new BigDecimal("1000.00"), "Sau ăn", "Paracetamol", "x".repeat(501)))
+                .isInstanceOf(PrescriptionRuleException.class);
+    }
+
+    @Test
     void create_duplicateDrug_throwsBusinessRule() {
         UUID drugId = UUID.randomUUID();
         PrescriptionLine first = PrescriptionLine.create(

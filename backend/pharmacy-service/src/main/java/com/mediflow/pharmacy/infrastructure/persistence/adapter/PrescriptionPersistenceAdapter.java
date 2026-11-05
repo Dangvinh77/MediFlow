@@ -88,7 +88,7 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
 
     private PrescriptionLine toDomainLine(PrescriptionLineJpaEntity l) {
         return PrescriptionLine.restore(
-                l.getLineId(), l.getDrugId(), l.getQuantity(), l.getUnitPrice(), l.getDosage(), l.getLineTotal(), l.getDrugNameSnapshot());
+                l.getLineId(), l.getDrugId(), l.getQuantity(), l.getUnitPrice(), l.getDosage(), l.getLineTotal(), l.getDrugNameSnapshot(), l.getNote());
     }
 
     private PrescriptionJpaEntity toEntity(Prescription p) {
@@ -127,6 +127,7 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 .quantity(l.getQuantity())
                 .unitPrice(l.getUnitPrice())
                 .dosage(l.getDosage())
+                .note(l.getNote())
                 .lineTotal(l.getLineTotal())
                 .build();
     }

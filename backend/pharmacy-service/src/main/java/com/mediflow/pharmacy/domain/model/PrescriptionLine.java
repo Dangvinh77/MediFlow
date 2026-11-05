@@ -10,6 +10,8 @@ import lombok.Getter;
 @Getter
 public class PrescriptionLine {
 
+    private static final int MAX_NOTE_LENGTH = 500;
+
     private final UUID lineId;
     private final UUID drugId;
     private final int quantity;
@@ -17,6 +19,7 @@ public class PrescriptionLine {
     private final String dosage;
     private final BigDecimal lineTotal;
     private final String drugNameSnapshot;
+    private final String note;
 
     private PrescriptionLine(
             UUID lineId,
@@ -24,7 +27,7 @@ public class PrescriptionLine {
             int quantity,
             BigDecimal unitPrice,
             String dosage,
-            BigDecimal lineTotal, String drugNameSnapshot) {
+            BigDecimal lineTotal, String drugNameSnapshot, String note) {
         this.lineId = lineId;
         this.drugId = drugId;
         this.quantity = quantity;
@@ -32,6 +35,7 @@ public class PrescriptionLine {
         this.dosage = dosage;
         this.lineTotal = lineTotal;
         this.drugNameSnapshot = drugNameSnapshot;
+        this.note = note;
     }
 
     /**
@@ -51,14 +55,21 @@ public class PrescriptionLine {
         }
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity))
                 .setScale(2, RoundingMode.HALF_UP);
-        return new PrescriptionLine(null, drugId, quantity, unitPrice, dosage, lineTotal, null);
+        return new PrescriptionLine(null, drugId, quantity, unitPrice, dosage, lineTotal, null, null);
     }
 
     /** Captures a server-resolved catalogue name; never supplied by a client or backfilled historically. */
     public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unitPrice, String dosage, String drugNameSnapshot) {
+        return create(drugId, quantity, unitPrice, dosage, drugNameSnapshot, null);
+    }
+
+    /** Captures a server-resolved catalogue name together with the prescriber's optional note. */
+    public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unitPrice, String dosage,
+            String drugNameSnapshot, String note) {
         requireName(drugNameSnapshot);
+        requireNote(note);
         var line = create(drugId, quantity, unitPrice, dosage);
-        return new PrescriptionLine(line.lineId, drugId, quantity, unitPrice, dosage, line.lineTotal, drugNameSnapshot);
+        return new PrescriptionLine(line.lineId, drugId, quantity, unitPrice, dosage, line.lineTotal, drugNameSnapshot, note);
     }
 
     /**
@@ -84,8 +95,20 @@ public class PrescriptionLine {
 
     public static PrescriptionLine restore(UUID lineId, UUID drugId, int quantity, BigDecimal unitPrice,
             String dosage, BigDecimal lineTotal, String drugNameSnapshot) {
+        return restore(lineId, drugId, quantity, unitPrice, dosage, lineTotal, drugNameSnapshot, null);
+    }
+
+    public static PrescriptionLine restore(UUID lineId, UUID drugId, int quantity, BigDecimal unitPrice,
+            String dosage, BigDecimal lineTotal, String drugNameSnapshot, String note) {
         if (drugNameSnapshot != null) requireName(drugNameSnapshot);
-        return new PrescriptionLine(lineId, drugId, quantity, unitPrice, dosage, lineTotal, drugNameSnapshot);
+        requireNote(note);
+        return new PrescriptionLine(lineId, drugId, quantity, unitPrice, dosage, lineTotal, drugNameSnapshot, note);
+    }
+
+    private static void requireNote(String note) {
+        if (note != null && note.length() > MAX_NOTE_LENGTH) {
+            throw new PrescriptionRuleException("PRESCRIPTION_LINE_NOTE_TOO_LONG", "A prescription line note is limited to 500 characters");
+        }
     }
 
     private static void requireName(String name) {

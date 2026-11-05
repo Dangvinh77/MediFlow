@@ -211,7 +211,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
         }
         return new ResolvedPrescriptionLine(
                 PrescriptionLine.create(
-                        request.drugId(), request.quantity(), drug.getPrice(), request.dosage(), drug.getDrugName()),
+                        request.drugId(), request.quantity(), drug.getPrice(), request.dosage(), drug.getDrugName(), request.note()),
                 drug.getDrugName());
     }
 

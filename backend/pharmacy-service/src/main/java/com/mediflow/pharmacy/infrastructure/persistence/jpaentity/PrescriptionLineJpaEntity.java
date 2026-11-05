@@ -51,6 +51,9 @@ public class PrescriptionLineJpaEntity {
     @Column(name = "dosage", length = 255)
     private String dosage;
 
+    @Column(name = "note", length = 500)
+    private String note;
+
     @Column(name = "line_total", precision = 15, scale = 2, nullable = false)
     private BigDecimal lineTotal;
 }

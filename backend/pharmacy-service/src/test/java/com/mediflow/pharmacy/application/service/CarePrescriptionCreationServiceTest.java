@@ -76,6 +76,22 @@ class CarePrescriptionCreationServiceTest {
         verify(receipts, times(2)).claim(eq(key), eq(doctor.accountId()), fingerprints.capture());
         assertThat(fingerprints.getAllValues().get(0)).isEqualTo(fingerprints.getAllValues().get(1));
     }
+    @Test void create_changedNote_changesBusinessFingerprint() {
+        service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a"));
+        service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "b", "Uống đủ liệu trình"));
+        var fingerprints = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(receipts, times(2)).claim(eq(key), eq(doctor.accountId()), fingerprints.capture());
+        assertThat(fingerprints.getAllValues().get(0)).isNotEqualTo(fingerprints.getAllValues().get(1));
+    }
+    @Test void create_note_isStoredOnTheLine() {
+        service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a", "Uống đủ liệu trình"));
+        verify(prescriptions).save(argThat(p -> "Uống đủ liệu trình".equals(p.getLines().getFirst().getNote())));
+    }
+    @Test void create_overlongNote_failsBeforeReceiptOrStock() {
+        assertThatThrownBy(() -> service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a", "x".repeat(501))))
+                .hasMessageContaining("bounded prescription lines");
+        verifyNoInteractions(receipts, drugs, prescriptions, capture);
+    }
     @Test void create_changedQuantity_changesBusinessFingerprint() {
         service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a"));
         service.createCare(key, command(doctor, CareContext.OUTPATIENT, 3, "b"));
@@ -212,8 +228,11 @@ class CarePrescriptionCreationServiceTest {
                 "OUTPATIENT_VISIT", episode, "OPEN", null, now);
     }
     private CreatePrescriptionCommand command(ActorIdentity actor, CareContext context, int quantity, String correlation) {
+        return command(actor, context, quantity, correlation, null);
+    }
+    private CreatePrescriptionCommand command(ActorIdentity actor, CareContext context, int quantity, String correlation, String note) {
         return new CreatePrescriptionCommand(new CreatePrescriptionRequest(null, patient, doctor.staffId(), department,
-                LocalDate.of(2026, 10, 2), List.of(new PrescriptionLineRequest(drugId, quantity, "Daily")), 1, context,
+                LocalDate.of(2026, 10, 2), List.of(new PrescriptionLineRequest(drugId, quantity, "Daily", note)), 1, context,
                 context == CareContext.OUTPATIENT ? CareEpisodeType.OUTPATIENT_VISIT : CareEpisodeType.ADMISSION,
                 episode, context == CareContext.ADMISSION ? episode : null, "DRUG"), actor, correlation);
     }

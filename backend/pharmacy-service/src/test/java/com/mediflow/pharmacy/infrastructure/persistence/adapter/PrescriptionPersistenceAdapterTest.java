@@ -104,7 +104,7 @@ class PrescriptionPersistenceAdapterTest {
     void save_drugPriceChangesLater_preservesCapturedPrescriptionPrice() {
         Drug drug = drugAdapter.save(newDrug("Paracetamol", "1000.00"));
         PrescriptionLine line = PrescriptionLine.create(
-                drug.getDrugId(), 2, drug.getPrice(), "Ngày 2 lần", drug.getDrugName());
+                drug.getDrugId(), 2, drug.getPrice(), "Ngày 2 lần", drug.getDrugName(), "Uống đủ liệu trình");
         Prescription prescription = prescriptionAdapter.save(Prescription.create(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -129,6 +129,7 @@ class PrescriptionPersistenceAdapterTest {
 
         assertThat(reloaded.getCreatedAt()).isNotNull();
         assertThat(reloaded.getLines().get(0).getDrugNameSnapshot()).isEqualTo("Paracetamol");
+        assertThat(reloaded.getLines().get(0).getNote()).isEqualTo("Uống đủ liệu trình");
         assertThat(reloaded.getLines()).hasSize(1);
         assertThat(reloaded.getLines().get(0).getUnitPrice())
                 .isEqualByComparingTo("1000.00");

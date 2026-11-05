@@ -14,9 +14,16 @@ import jakarta.validation.constraints.Size;
  * @param drugId drug reference
  * @param quantity requested quantity
  * @param dosage dosage instructions
+ * @param note optional prescriber note for this line
  */
 public record PrescriptionLineRequest(
         @NotNull UUID drugId,
         @NotNull @Min(1) Integer quantity,
-        @Size(max = 255) String dosage
-) {}
+        @Size(max = 255) String dosage,
+        @Size(max = 500) String note
+) {
+    /** Line without a prescriber note. */
+    public PrescriptionLineRequest(UUID drugId, Integer quantity, String dosage) {
+        this(drugId, quantity, dosage, null);
+    }
+}

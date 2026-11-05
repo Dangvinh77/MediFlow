@@ -15,8 +15,9 @@ import java.util.UUID;
  * @param unitPrice captured unit price
  * @param dosage dosage instructions
  * @param lineTotal calculated line total
+ * @param note optional prescriber note
  */
 public record PrescriptionLineDTO(
         UUID lineId, UUID drugId, String drugName,
-        int quantity, BigDecimal unitPrice, String dosage, BigDecimal lineTotal
+        int quantity, BigDecimal unitPrice, String dosage, BigDecimal lineTotal, String note
 ) {}
