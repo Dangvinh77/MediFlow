@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../network/api_failure.dart';
+import '../theme/medical_colors.dart';
+import 'medical_ui.dart';
 
 class RequestError extends StatelessWidget {
   const RequestError(this.error, {super.key, this.onRetry});
@@ -17,23 +19,30 @@ class RequestError extends StatelessWidget {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 36),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            if (failure?.correlationId != null) ...[
-              const SizedBox(height: 8),
-              SelectableText('Mã hỗ trợ: ${failure!.correlationId}'),
+        child: StateMessage(
+          icon: Icons.error_outline,
+          color: context.medical.danger,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(message, textAlign: TextAlign.center),
+              if (failure?.correlationId != null) ...[
+                const SizedBox(height: 8),
+                SelectableText(
+                  'Mã hỗ trợ: ${failure!.correlationId}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (onRetry != null) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Thử lại'),
+                ),
+              ],
             ],
-            if (onRetry != null)
-              TextButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Thử lại'),
-              ),
-          ],
+          ),
         ),
       ),
     );

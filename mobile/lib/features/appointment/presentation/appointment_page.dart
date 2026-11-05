@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/medical_ui.dart';
+
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/paged_list.dart';
@@ -173,7 +175,10 @@ class _AppointmentCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Chip(label: Text(_appointmentStatus(appointment.status))),
+                StatusPill(
+                  _appointmentStatus(appointment.status),
+                  tone: statusToneOf(appointment.status),
+                ),
               ],
             ),
             ReferenceLabel(
@@ -414,7 +419,10 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                Chip(label: Text(_appointmentStatus(appointment.status))),
+                StatusPill(
+                  _appointmentStatus(appointment.status),
+                  tone: statusToneOf(appointment.status),
+                ),
                 ReferenceLabel(
                   kind: ReferenceKind.patient,
                   id: appointment.patientId,
@@ -444,9 +452,8 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
         if (_uncertain)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
+            child: NoticeBox(
               'Kết quả thao tác chưa rõ. Làm mới lịch hẹn trước khi thử lại.',
-              style: TextStyle(color: Colors.deepOrange),
             ),
           ),
         if (appointment.status == 'IN_EXAM')
@@ -818,9 +825,8 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
             ),
             if (_error != null) _InlineError(_error!),
             if (_uncertain)
-              const Text(
+              const NoticeBox(
                 'Kết quả chưa rõ. Đóng trang và làm mới danh sách trước khi tạo hoặc sửa lại.',
-                style: TextStyle(color: Colors.deepOrange),
               ),
             const SizedBox(height: 12),
             FilledButton.icon(

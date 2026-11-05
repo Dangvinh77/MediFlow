@@ -38,6 +38,7 @@ void main() {
     expect(find.text('Hỗ trợ'), findsOneWidget);
     expect(find.text('Báo cáo'), findsNothing);
     await tester.ensureVisible(find.text('Hỗ trợ'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Hỗ trợ'));
     await tester.pumpAndSettle();
     expect(find.text('Báo cáo'), findsOneWidget);

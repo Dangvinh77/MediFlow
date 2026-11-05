@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/medical_colors.dart';
+import '../../../core/widgets/medical_ui.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
@@ -62,13 +64,45 @@ class _LabPageState extends ConsumerState<LabPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.type,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 12,
+                      children: [
+                        const IconBadge(
+                          Icons.science_outlined,
+                          color: Wayfinding.lab,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.type,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              Text(
+                                'Ngày yêu cầu: ${labDateLabel(item.requestedDate)}',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: context.medical.mutedText,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    Text('Ngày yêu cầu: ${labDateLabel(item.requestedDate)}'),
-                    Text('Trạng thái: ${labStatusLabel(item.status)}'),
-                    const Text('Xem chi tiết để kiểm tra đối soát viện phí'),
+                    const SizedBox(height: 10),
+                    StatusPill(
+                      labStatusLabel(item.status),
+                      tone: statusToneOf(item.status),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Xem chi tiết để kiểm tra đối soát viện phí',
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: context.medical.mutedText),
+                    ),
                     ReferenceLabel(
                       kind: ReferenceKind.patient,
                       id: item.patientId,

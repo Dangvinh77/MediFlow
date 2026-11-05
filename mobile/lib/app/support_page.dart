@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/session_controller.dart';
+import 'module_directory.dart';
 import 'modules.dart';
 
 class SupportPage extends ConsumerWidget {
@@ -15,12 +15,10 @@ class SupportPage extends ConsumerWidget {
         ? <AppModule>[]
         : visibleSupportModules(role);
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       children: [
-        Text('Hỗ trợ', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
         const Text('Báo cáo và thông báo cho công việc hằng ngày.'),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         if (available.isEmpty)
           const Card(
             child: Padding(
@@ -30,17 +28,7 @@ class SupportPage extends ConsumerWidget {
               ),
             ),
           ),
-        for (final module in available)
-          Card(
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Icon(module.icon),
-              title: Text(module.title),
-              subtitle: Text(module.description),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go(module.path),
-            ),
-          ),
+        ModuleDirectory(modules: available),
       ],
     );
   }

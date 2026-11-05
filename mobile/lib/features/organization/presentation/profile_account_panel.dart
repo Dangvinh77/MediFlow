@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/medical_colors.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/domain/workspace_access.dart';
@@ -284,9 +287,9 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           ],
           if (profile.emailSyncPending) ...[
             const SizedBox(height: 8),
-            const _StatusMessage(
+            _StatusMessage(
               'Email hồ sơ đã đổi. Email đăng nhập đang được đồng bộ; tải lại để kiểm tra trạng thái mới nhất.',
-              color: Colors.orange,
+              color: context.medical.warning,
             ),
           ],
           const SizedBox(height: 8),
@@ -324,7 +327,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             widget.owner.isPatient
                 ? 'Hồ sơ bệnh nhân đã lưu trữ. Không thể cấp tài khoản mới.'
                 : 'Nhân viên đã ngừng hoạt động. Không thể cấp tài khoản mới.',
-            color: Colors.orange,
+            color: context.medical.warning,
           ),
         ] else if (!hasEmail) ...[
           const SizedBox(height: 8),
@@ -334,9 +337,9 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         ],
         if (_intents.issueOutcomeUnknown) ...[
           const SizedBox(height: 8),
-          const _StatusMessage(
+          _StatusMessage(
             'Chưa xác nhận được lần cấp tài khoản vừa rồi. Thử lại cùng yêu cầu để đối soát, không tạo yêu cầu mới.',
-            color: Colors.orange,
+            color: context.medical.warning,
           ),
         ],
         const SizedBox(height: 12),
@@ -414,13 +417,13 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         ),
         if (credentialBlockReason != null) ...[
           const SizedBox(height: 8),
-          _StatusMessage(credentialBlockReason, color: Colors.orange),
+          _StatusMessage(credentialBlockReason, color: context.medical.warning),
         ],
         if (_intents.resetOutcomeUnknown) ...[
           const SizedBox(height: 6),
-          const _StatusMessage(
+          _StatusMessage(
             'Kết quả chưa xác định. Thử lại cùng khóa để đối soát; mật khẩu không bị đặt lại thêm lần nữa.',
-            color: Colors.orange,
+            color: context.medical.warning,
           ),
         ],
         if (widget.owner.active && _allowed) _buildEmailForm(context, account),
@@ -474,9 +477,9 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           onChanged: (_) => setState(() {}),
         ),
         if (_intents.emailOutcomeUnknown) ...[
-          const _StatusMessage(
+          _StatusMessage(
             'Chưa xác nhận được kết quả đổi email. Kiểm tra tên đăng nhập trước khi thử lại.',
-            color: Colors.orange,
+            color: context.medical.warning,
           ),
           TextButton(
             onPressed: _busy ? null : () => _checkEmailChange(account),
@@ -842,7 +845,7 @@ String _mailStatusName(ProfileMailStatus status) => switch (status) {
 Color _mailColor(BuildContext context, ProfileMailStatus status) =>
     switch (status) {
       ProfileMailStatus.sent => Theme.of(context).colorScheme.primary,
-      ProfileMailStatus.pending => Colors.orange,
+      ProfileMailStatus.pending => context.medical.warning,
       ProfileMailStatus.failed => Theme.of(context).colorScheme.error,
     };
 

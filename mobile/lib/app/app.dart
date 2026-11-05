@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/session_controller.dart';
 import 'router.dart';
 
@@ -12,20 +13,9 @@ class MediFlowApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'MediFlow',
       debugShowCheckedModeBanner: false,
-      theme: _theme(Brightness.light),
-      darkTheme: _theme(Brightness.dark),
+      theme: buildAppTheme(Brightness.light),
+      darkTheme: buildAppTheme(Brightness.dark),
       routerConfig: ref.watch(routerProvider),
     );
   }
-
-  ThemeData _theme(Brightness brightness) => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0F766E),
-      brightness: brightness,
-    ),
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(),
-    ),
-  );
 }
