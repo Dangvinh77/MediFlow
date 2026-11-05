@@ -1,0 +1,96 @@
+MEDIFLOW MOBILE - HƯỚNG DẪN TEST UI VÀ CHẠY DEMO TRÊN WINDOWS
+
+1. CHUẨN BỊ
+- Cài Flutter 3.47 và Android SDK; flutter, adb, emulator phải có trong PATH.
+- Muốn dùng dữ liệu thật: bật backend theo mục 2 trước khi chạy app.
+- Các lệnh trong hướng dẫn này chạy bằng PowerShell, tại thư mục mobile,
+  trừ mục 2 chạy tại scripts\run.
+
+2. KHỞI ĐỘNG BACKEND DEMO
+- Mở Docker Desktop và chờ Docker sẵn sàng.
+- Mở PowerShell tại scripts\run, tùy cách test mà chọn một lệnh:
+    Chỉ test trên máy này (Chrome, emulator):
+      .\start-backend.bat -Fast -LocalOnly
+    Có dùng điện thoại thật cùng Wi-Fi:
+      .\start-backend.bat -Fast
+- Chờ thông báo READY rồi giữ cửa sổ mở.
+- Lần đầu dùng qua Wi-Fi: chuột phải start-backend.bat -> Run as administrator
+  để tạo firewall.
+- Chi tiết các tùy chọn backend: scripts\run\HUONG_DAN.txt
+
+3. TEST UI TRÊN CHROME (NHANH NHẤT, CÓ HOT RELOAD)
+- Chạy:
+    .\tool\run_dev.ps1 -Demo -Gateway http://127.0.0.1:28080
+- Lần chạy đầu mất khoảng 2 phút. Chrome tự mở app.
+- Nhấn F12, rồi Ctrl+Shift+M, chọn mẫu iPhone và tải lại trang.
+- Thử thêm khổ nhỏ khoảng 360 x 640 để tìm lỗi tràn chữ.
+- Cổng 4300 đang bận thì đổi cổng: -Port 4301 (đổi cổng là đổi origin,
+  phiên đăng nhập cũ không dùng lại được).
+
+4. TEST UI TRÊN ANDROID EMULATOR (GẦN MÁY THẬT HƠN)
+- Chạy:
+    .\tool\run_dev.ps1 -Target android -Demo -Gateway http://127.0.0.1:28080
+- Script tự bật emulator pixel_api36 nếu chưa chạy. Dùng AVD khác:
+    -Emulator <id>     (xem danh sách bằng: flutter emulators)
+- Giữ nguyên 127.0.0.1: script tự đổi thành 10.0.2.2 cho emulator.
+- Máy khởi động chậm thì tăng thời gian chờ: -BootTimeoutSeconds 300
+- Log emulator nằm ở: %TEMP%\mediflow-emulator
+
+5. PHÍM KHI ĐANG CHẠY
+- r: hot reload, cập nhật giao diện sau khi sửa code.
+- R: hot restart, chạy lại app từ đầu.
+- q: thoát.
+
+6. KIỂM TRA QUA IP MÁY THẬT
+- Bật backend không có -LocalOnly. Cửa sổ backend sẽ in dòng:
+    Mobile Gateway: http://<IP-máy>:28080/api
+- Thử Gateway qua IP LAN ngay trên máy này:
+    .\tool\run_dev.ps1 -Demo -Gateway http://<IP-máy>:28080
+  Cách này KHÔNG kiểm tra firewall hay Wi-Fi, vì request vẫn đi từ máy này.
+- Kiểm tra điện thoại có kết nối được: mở trên trình duyệt điện thoại:
+    http://<IP-máy>:28080/actuator/health
+  Không mở được thì app cũng không kết nối được. Kiểm tra cùng Wi-Fi,
+  firewall và mạng có bật cách ly thiết bị (guest Wi-Fi) không.
+- Chạy app trên điện thoại thật: dùng lệnh flutter run đầy đủ trong mục
+  "Demo điện thoại cùng Wi-Fi" của mobile\README.md. run_dev.ps1 chỉ hỗ trợ
+  Chrome và emulator.
+- Đổi Wi-Fi hoặc IP thì phải build lại app với địa chỉ mới.
+
+7. NÊN TEST Ở ĐÂU
+- Chrome đánh giá tốt: bố cục, tràn chữ, luồng thao tác, form, validate,
+  lỗi từ API, phân quyền theo role.
+- Chrome KHÔNG kiểm tra được: bàn phím che form, status bar, tai thỏ, nút back,
+  hiệu năng. Font và cách xuống dòng cũng có thể khác trên iPhone.
+- Quy trình đề xuất:
+    Hằng ngày: test trên Chrome.
+    Xong mỗi màn hình có form: chạy lại trên emulator.
+    Trước khi demo: kiểm tra luồng chính trên điện thoại thật, nhất là iPhone.
+- Windows không chạy được iOS Simulator; Edge cho kết quả gần như Chrome
+  nên không cần test thêm.
+
+8. CÁC CỜ CỦA run_dev.ps1
+- -Target chrome|android     Nơi chạy app, mặc định chrome.
+- -Demo                      Bật UI ngoại trú và Pharmacy V1. Không có cờ này
+                             thì tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.
+- -Gateway <url>             Địa chỉ Gateway, mặc định http://127.0.0.1:8080.
+                             Backend demo dùng cổng 28080.
+- -Port <số>                 Cổng web trên Chrome, mặc định 4300.
+- -PharmacyMode <mode>       unavailable, outpatient hoặc legacy.
+- -Emulator <id>             AVD cần bật, mặc định pixel_api36.
+- -BootTimeoutSeconds <số>   Thời gian chờ emulator, mặc định 180.
+
+9. KHI GẶP LỖI
+- Đăng nhập báo lỗi kết nối: kiểm tra backend đã READY và -Gateway đúng cổng.
+- Thao tác bị khóa: chạy lại với -Demo.
+- "Gateway must be a Gateway origin": chỉ truyền địa chỉ dạng
+  http://IP:cổng, không kèm /api và không dùng cổng service 8081-8091, 8761.
+- Emulator bị treo hoặc mất kết nối khi cài APK: đóng bớt ứng dụng để giải
+  phóng RAM rồi chạy lại.
+- Sửa code mà màn hình không đổi: nhấn R; vẫn không đổi thì nhấn q và chạy lại.
+
+10. DỪNG
+- App mobile: nhấn q tại cửa sổ đang chạy.
+- Backend -Fast: mở PowerShell tại scripts\run rồi chạy .\stop-backend.bat
+  (giữ dữ liệu cho lần sau).
+- Backend phiên tạm: nhấn Ctrl+C tại cửa sổ backend.
+- Emulator: đóng cửa sổ emulator.

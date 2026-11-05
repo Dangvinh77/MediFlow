@@ -41,6 +41,25 @@ nhưng các thao tác tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.
 
 Mở `http://localhost:4300` (hoặc port đã chọn). Script lấy dependencies, build web rồi chạy static host cùng proxy `/api/*` sang Gateway thật, tránh cần sửa CORS backend. Proxy bind loopback, chỉ dùng phát triển. Ctrl+C để dừng; sau khi sửa code chạy lại script để build. Không đưa mật khẩu/token vào lệnh hoặc Git.
 
+### Test UI nhanh có hot reload
+
+Từ thư mục mobile, sau khi Gateway đã chạy:
+
+```powershell
+# Chrome: F12, Ctrl+Shift+M, chọn mẫu iPhone rồi tải lại trang
+./tool/run_dev.ps1
+# Android emulator: tự bật pixel_api36 nếu chưa chạy
+./tool/run_dev.ps1 -Target android
+# Backend demo và cờ UI ngoại trú, dùng được với cả hai target
+./tool/run_dev.ps1 -Target android -Demo -Gateway http://127.0.0.1:28080
+```
+
+Nhấn `r` để hot reload, `R` để hot restart, `q` để thoát. Với Chrome, script sinh
+`web_dev_config.yaml` (đã gitignore) để Flutter proxy `/api/*` sang Gateway, không cần sửa CORS.
+Với emulator, Gateway loopback được đổi thành `10.0.2.2`. Đổi AVD bằng `-Emulator <id>`;
+log emulator nằm ở `%TEMP%\mediflow-emulator`. Chrome giả lập iPhone chỉ kiểm tra được layout:
+không có font SF Pro, bàn phím iOS và safe area thật, nên vẫn phải kiểm tra trên iPhone trước khi demo.
+
 ## Thiết bị và cấu hình
 
 GATEWAY_URL phải có hậu tố `/api`, không chứa credentials/query/fragment. Cấm gọi cổng service trực tiếp. Ví dụ:
