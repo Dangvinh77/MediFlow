@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/medical_colors.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/report.dart';
 
@@ -15,8 +16,8 @@ class OperationsStatisticsView extends StatelessWidget {
     OperationsFigures totals,
   ) => [
     ('Khám bệnh', scheme.primary, (f) => f.examRevenue),
-    ('Xét nghiệm', Colors.green.shade600, (f) => f.labRevenue),
-    ('Thuốc', Colors.orange.shade700, (f) => f.prescriptionRevenue),
+    ('Xét nghiệm', Wayfinding.lab, (f) => f.labRevenue),
+    ('Thuốc', Wayfinding.pharmacy, (f) => f.prescriptionRevenue),
     if (totals.unclassifiedRevenue > 0)
       ('Chưa phân loại', scheme.outline, (f) => f.unclassifiedRevenue),
   ];
@@ -32,7 +33,7 @@ class OperationsStatisticsView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.amber.withValues(alpha: 0.12),
+            color: context.medical.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(

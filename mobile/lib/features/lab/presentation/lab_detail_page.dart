@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/medical_ui.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
@@ -223,7 +226,11 @@ class _LabDetailState extends State<_LabDetail> {
                     label: 'Hồ sơ khám',
                   ),
                   const SizedBox(height: 12),
-                  Chip(label: Text(labStatusLabel(v.status))),
+                  StatusPill(
+                    labStatusLabel(v.status),
+                    tone: statusToneOf(v.status),
+                  ),
+                  const SizedBox(height: 8),
                   Text('Ngày yêu cầu: ${labDateLabel(v.requestedDate)}'),
                   if (v.performedDate != null)
                     Text('Ngày thực hiện: ${labDateLabel(v.performedDate!)}'),

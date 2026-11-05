@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/medical_ui.dart';
+
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
@@ -314,14 +316,13 @@ class _RecordCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Chip(
-                  label: Text(
-                    record.status == 'OPEN'
-                        ? 'Đang khám'
-                        : record.status == 'COMPLETED'
-                        ? 'Đã hoàn tất'
-                        : 'Trạng thái khác',
-                  ),
+                StatusPill(
+                  record.status == 'OPEN'
+                      ? 'Đang khám'
+                      : record.status == 'COMPLETED'
+                      ? 'Đã hoàn tất'
+                      : 'Trạng thái khác',
+                  tone: statusToneOf(record.status),
                 ),
               ],
             ),
@@ -557,9 +558,8 @@ class _MedicalRecordEditorPageState
             ),
             if (_error != null) _RetryMessage(error: _error!),
             if (_uncertain)
-              const Text(
+              const NoticeBox(
                 'Kết quả tạo hồ sơ chưa rõ. Không gửi lại; hãy tra cứu bệnh nhân để xác nhận hồ sơ trước.',
-                style: TextStyle(color: Colors.deepOrange),
               ),
             FilledButton.icon(
               onPressed: _busy || _uncertain ? null : _save,
@@ -751,14 +751,13 @@ class _MedicalRecordDetailPageState
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                Chip(
-                  label: Text(
-                    record.status == 'OPEN'
-                        ? 'Đang khám'
-                        : record.status == 'COMPLETED'
-                        ? 'Đã hoàn tất'
-                        : 'Trạng thái khác',
-                  ),
+                StatusPill(
+                  record.status == 'OPEN'
+                      ? 'Đang khám'
+                      : record.status == 'COMPLETED'
+                      ? 'Đã hoàn tất'
+                      : 'Trạng thái khác',
+                  tone: statusToneOf(record.status),
                 ),
                 ReferenceLabel(
                   kind: ReferenceKind.record,
@@ -859,9 +858,8 @@ class _MedicalRecordDetailPageState
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
         if (_uncertain)
-          const Text(
+          const NoticeBox(
             'Kết quả thao tác chưa rõ. Làm mới hồ sơ trước khi thử lại.',
-            style: TextStyle(color: Colors.deepOrange),
           ),
         if (_busy) const LinearProgressIndicator(),
         Wrap(
@@ -1401,9 +1399,8 @@ class _ClinicalLabWorkflowPanelState
                   child: const Text('Gửi chỉ định xét nghiệm'),
                 ),
                 if (_sourceUncertain)
-                  const Text(
+                  const NoticeBox(
                     'Chưa rõ kết quả lập chỉ định trong hồ sơ. Không lập lại; cần bộ phận hỗ trợ đối soát hồ sơ. Lab có thể chưa nhận được yêu cầu.',
-                    style: TextStyle(color: Colors.deepOrange),
                   ),
               ] else ...[
                 Text(
@@ -1419,9 +1416,8 @@ class _ClinicalLabWorkflowPanelState
                     ),
                   ),
                   if (_labUncertain || _labConflict)
-                    const Text(
+                    const NoticeBox(
                       'Chưa rõ trạng thái yêu cầu hoặc mã nguồn đã tồn tại. Đối soát trong hàng đợi xét nghiệm trước khi thao tác lại. Không lập chỉ định thay thế.',
-                      style: TextStyle(color: Colors.deepOrange),
                     ),
                 ] else
                   const ListTile(

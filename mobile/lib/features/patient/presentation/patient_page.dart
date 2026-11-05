@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
+import '../../../core/theme/medical_colors.dart';
+import '../../../core/widgets/medical_ui.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/patient.dart';
@@ -209,10 +211,12 @@ class _PatientListState extends State<_PatientList> {
           canRetry: _canRetry,
           itemBuilder: (context, patient) => Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: const IconBadge(
+                Icons.person_outline,
+                color: Wayfinding.patient,
+              ),
               title: Text(patient.name),
               subtitle: Text('CCCD/CMND: ${patient.identityNumber}'),
-              isThreeLine: true,
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openDetail(context, patient.id),
             ),

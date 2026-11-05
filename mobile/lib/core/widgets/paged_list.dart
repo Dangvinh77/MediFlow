@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../domain/page_result.dart';
+import '../theme/medical_colors.dart';
+import 'medical_ui.dart';
 import 'request_state.dart';
 
 // Receives a domain use case; widgets never call the API client directly.
@@ -82,10 +84,14 @@ class _PagedListState<T> extends State<PagedList<T>> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: const [
                       Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          'Chưa có dữ liệu phù hợp.',
-                          textAlign: TextAlign.center,
+                        padding: EdgeInsets.fromLTRB(32, 56, 32, 32),
+                        child: StateMessage(
+                          icon: Icons.inbox_outlined,
+                          color: Wayfinding.home,
+                          child: Text(
+                            'Chưa có dữ liệu phù hợp.',
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     ],
@@ -100,10 +106,11 @@ class _PagedListState<T> extends State<PagedList<T>> {
                   ),
           ),
         ),
+        const Divider(),
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -118,6 +125,7 @@ class _PagedListState<T> extends State<PagedList<T>> {
                 ),
                 Text(
                   'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} kết quả',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 IconButton(
                   tooltip: 'Trang sau',

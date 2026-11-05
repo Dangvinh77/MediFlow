@@ -17,3 +17,10 @@ Track implementation and separate runtime/native acceptance in
   Clinical and Lab use English camelCase.
 - Use Riverpod for state and SecureStorage for JWTs.
 - Do not apply Java/JPA/Flyway rules or the Next.js frontend structure inside `mobile/`.
+
+## UI look
+
+- Theme lives in `lib/core/theme/`; shared pieces in `lib/core/widgets/medical_ui.dart`. Prefer stock
+  Material widgets so the theme applies, and read colours from the theme, never hard-code them.
+- `Wayfinding` colours name an area of the app (`AppModule.accent`). `MedicalColors` statuses
+  (`StatusPill`, `NoticeBox`) name a state. Do not use one for the other.
