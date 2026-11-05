@@ -11,17 +11,21 @@ import type { Role } from "@/lib/roles";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { medicalRecordApi } from "../api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordDisposition } from "../types";
 import { AddDiagnosisForm } from "./AddDiagnosisForm";
 import { CompleteRecordForm } from "./CompleteRecordForm";
 import { FollowUpRecommendationPanel } from "./FollowUpRecommendationPanel";
 
+type PrescriptionWorkspaceSlot = ReactNode | ((record: MedicalRecordDTO, canCreate: boolean) => ReactNode);
+
 interface MedicalRecordDetailProps {
   recordId: string;
   notice?: "created" | "updated";
   outpatientEnabled?: boolean;
   schedulingV2Enabled?: boolean;
+  prescriptionWorkspace?: PrescriptionWorkspaceSlot;
 }
 
 interface RequestError {
@@ -73,7 +77,7 @@ export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
   return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, role }: MedicalRecordDetailProps & { role: Role | null }) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, prescriptionWorkspace, role }: MedicalRecordDetailProps & { role: Role | null }) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -235,7 +239,6 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
   const canMutate = role === "ADMIN" || role === "DOCTOR";
   const isOpen = record.status === "OPEN";
   const actionsBlocked = refreshing || pendingRecord !== null || writeInFlight;
-  const pharmacyHref = `/pharmacy/prescriptions/new?patientId=${encodeURIComponent(record.patientId)}&recordId=${encodeURIComponent(record.recordId)}`;
   const actionClass = "inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium underline decoration-border underline-offset-4 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
   return (
@@ -313,6 +316,15 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         </details>
       ) : null}
 
+      {(role === "ADMIN" || role === "DOCTOR") && prescriptionWorkspace ? (
+        <section className="border-b border-border pb-5" aria-labelledby="record-prescription-heading">
+          <h2 id="record-prescription-heading" className="text-lg font-semibold">Đơn thuốc của hồ sơ khám</h2>
+          {typeof prescriptionWorkspace === "function"
+            ? prescriptionWorkspace(record, outpatientEnabled && role === "DOCTOR" && isOpen && Boolean(record.appointmentId) && !actionsBlocked)
+            : prescriptionWorkspace}
+        </section>
+      ) : null}
+
       {outpatientEnabled && canMutate && isOpen && record.appointmentId ? (
         <details className="border-b border-border pb-3">
           <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4">Hoàn tất lần khám</summary>
@@ -321,12 +333,11 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         </details>
       ) : null}
 
-      {(canMutate && isOpen) || (outpatientEnabled && role === "DOCTOR" && isOpen && record.appointmentId) ? (
+      {canMutate && isOpen ? (
         <details className="border-t border-border pt-3">
           <summary className="min-h-10 cursor-pointer py-2 text-sm font-medium text-muted-foreground">Tác vụ khác</summary>
           <div className="flex flex-wrap gap-1 pt-1">
             {canMutate && isOpen ? <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={`/records/${record.recordId}/edit`}>Sửa triệu chứng</Link> : null}
-            {outpatientEnabled && role === "DOCTOR" && isOpen && record.appointmentId ? <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={pharmacyHref}>Kê đơn cho lượt khám</Link> : null}
           </div>
         </details>
       ) : null}

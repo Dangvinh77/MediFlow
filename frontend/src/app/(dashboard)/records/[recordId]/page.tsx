@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
-import { MedicalRecordDetail } from "@/features/medical-record/components/MedicalRecordDetail";
+import { RecordDetailWorkspace } from "../RecordDetailWorkspace";
 import { isUuid } from "@/lib/validation";
 import { outpatientUiEnabled } from "@/lib/outpatient-ui";
+import { resolvePrescriptionMode } from "@/features/pharmacy/prescriptionMode";
 
 export const metadata: Metadata = { title: "Chi tiết hồ sơ khám | MediFlow" };
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function RecordDetailPage({ params, searchParams }: RecordD
   const { recordId } = await params;
   const { notice } = await searchParams;
   const id = recordId.trim();
+  const prescriptionMode = resolvePrescriptionMode(process.env.MEDIFLOW_PHARMACY_PRESCRIPTION_MODE);
 
   return (
     <PageShell title="Chi tiết hồ sơ khám" description="Thông tin khám, chẩn đoán và hướng xử trí.">
@@ -27,10 +29,11 @@ export default async function RecordDetailPage({ params, searchParams }: RecordD
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
-          <MedicalRecordDetail
+          <RecordDetailWorkspace
             recordId={id}
             outpatientEnabled={outpatientUiEnabled()}
             schedulingV2Enabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"}
+            prescriptionMode={prescriptionMode}
             notice={notice === "created" || notice === "updated" ? notice : undefined}
           />
         </RoleGate>

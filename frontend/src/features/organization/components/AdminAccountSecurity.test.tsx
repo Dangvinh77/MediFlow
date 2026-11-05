@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { ApiRequestError } from "@/lib/api";
-const mocks = vi.hoisted(() => ({ account: vi.fn(), resetPassword: vi.fn(), mailDelivery: vi.fn(), retryMail: vi.fn(), updateAccountEmail: vi.fn(), session: "a" }));
+const mocks = vi.hoisted(() => ({ account: vi.fn(), resetPassword: vi.fn(), mailDelivery: vi.fn(), retryMail: vi.fn(), updateAccountEmail: vi.fn(), patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), session: "a" }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: () => mocks.session }));
 import { AdminAccountSecurity } from "./AdminAccountSecurity";
@@ -31,6 +31,19 @@ it("retries the same mail without issuing another password", async () => {
   render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
   fireEvent.click(await screen.findByRole("button", { name: "Gửi lại thư" }));
   await waitFor(() => expect(mocks.retryMail).toHaveBeenCalledExactlyOnceWith("account-a", "mail-1"));
+  expect(mocks.resetPassword).not.toHaveBeenCalled();
+});
+it("uses patient-scoped reset and retry endpoints and can hide email changes from nurses", async () => {
+  mocks.patientMailDelivery.mockResolvedValue({ messageId: "patient-mail", status: "FAILED" });
+  mocks.retryPatientMail.mockResolvedValue({ messageId: "patient-mail", status: "PENDING" });
+  mocks.resetPatientPassword.mockResolvedValue({ messageId: "patient-mail", status: "PENDING" });
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" patientIdForMail="patient-a" allowEmailChange={false} />);
+  expect(await screen.findByRole("button", { name: "Gửi lại thư" })).toBeVisible();
+  expect(screen.queryByLabelText("Email đăng nhập mới")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Gửi lại thư" }));
+  await waitFor(() => expect(mocks.retryPatientMail).toHaveBeenCalledExactlyOnceWith("patient-a", "patient-mail"));
+  fireEvent.click(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  await waitFor(() => expect(mocks.resetPatientPassword).toHaveBeenCalledExactlyOnceWith("patient-a", expect.any(String)));
   expect(mocks.resetPassword).not.toHaveBeenCalled();
 });
 it("keeps the same reset intent across timeout and remount and never asks for plaintext passwords", async () => {

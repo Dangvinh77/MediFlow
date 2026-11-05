@@ -3,6 +3,7 @@ import type { HeadAppointmentCommand, HeadAppointmentSnapshot } from "./types";
 import type { PageResult } from "@/lib/types";
 import type {
   AccountDTO,
+  ProfileAccountDTO,
   ChangeStaffDepartmentRequest,
   CreateAccountRequest,
   CreateDepartmentRequest,
@@ -30,6 +31,14 @@ export const organizationApi = {
   replaceHeadAppointment: (departmentId: string, body: HeadAppointmentCommand, options: Required<MutationOptions>) => api.put<HeadAppointmentSnapshot>(`/v2/org/departments/${encodeURIComponent(departmentId)}/head-appointments`, body, options),
   provisionPatientAccount: (patientId: string, idempotencyKey: string) =>
     api.post<import("./types").IssuedPatientAccount>("/v1/org/patient-accounts", { patientId }, { idempotencyKey }),
+  profileAccount: (ownerType: "staff" | "patient", ownerId: string) =>
+    api.get<ProfileAccountDTO>(`/v1/org/profile-accounts/${ownerType}/${encodeURIComponent(ownerId)}`),
+  resetPatientPassword: (patientId: string, idempotencyKey: string) =>
+    api.put<import("./types").MailDelivery>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/password`, {}, { idempotencyKey }),
+  patientMailDelivery: (patientId: string) =>
+    api.get<import("./types").MailDelivery>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/mail-delivery`),
+  retryPatientMail: (patientId: string, messageId: string) =>
+    api.post<import("./types").MailDelivery>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/mail-delivery/${encodeURIComponent(messageId)}/retry`, {}),
   updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email?: string | null; address: string | null }) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
   careLabel: (kind: "doctor" | "department" | "room", id: string) =>

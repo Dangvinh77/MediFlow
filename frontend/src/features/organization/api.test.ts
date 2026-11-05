@@ -46,6 +46,13 @@ describe("organizationApi facade contract", () => {
     await organizationApi.updateAccountStatus(accountContractFixture.accountId, true, true);
     expect(put).toHaveBeenCalledWith(`/v1/org/accounts/${accountContractFixture.accountId}/status`, { isActive: true, replaceActiveAccount: true });
   });
+  it("looks up linked accounts by profile identity and returns only account metadata", async () => {
+    const snapshot = { account: accountContractFixture, profileEmail: "patient@example.com", emailSyncPending: true };
+    get.mockResolvedValueOnce(snapshot);
+    await expect(organizationApi.profileAccount("patient", accountContractFixture.patientId!)).resolves.toEqual(snapshot);
+    expect(get).toHaveBeenCalledWith(`/v1/org/profile-accounts/patient/${accountContractFixture.patientId}`);
+    expect(JSON.stringify(snapshot)).not.toMatch(/password|hash/i);
+  });
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
@@ -78,6 +85,15 @@ describe("organizationApi facade contract", () => {
     expect(post).toHaveBeenCalledWith("/v1/org/accounts/account-a/mail-delivery/mail-1/retry", {});
     await organizationApi.updateAccountEmail("account-a", "new@example.com", "Verified correction");
     expect(put).toHaveBeenCalledWith("/v1/org/accounts/account-a/email", { email: "new@example.com", reason: "Verified correction" });
+  });
+  it("scopes patient reset and mail commands by patient profile, never by caller-supplied account ID", async () => {
+    const patientId = accountContractFixture.patientId!;
+    await organizationApi.resetPatientPassword(patientId, "patient-reset-intent");
+    expect(put).toHaveBeenCalledWith(`/v1/org/patient-accounts/${patientId}/password`, {}, { idempotencyKey: "patient-reset-intent" });
+    await organizationApi.patientMailDelivery(patientId);
+    expect(get).toHaveBeenLastCalledWith(`/v1/org/patient-accounts/${patientId}/mail-delivery`);
+    await organizationApi.retryPatientMail(patientId, "mail-1");
+    expect(post).toHaveBeenLastCalledWith(`/v1/org/patient-accounts/${patientId}/mail-delivery/mail-1/retry`, {});
   });
 
   it("posts and puts department DTO bodies, including explicit null to remove a head", async () => {

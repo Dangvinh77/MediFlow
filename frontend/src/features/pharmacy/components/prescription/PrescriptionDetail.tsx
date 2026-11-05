@@ -389,6 +389,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
           <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Ngày kê đơn</dt><dd className="mt-1">{formatDate(prescription.prescribedDate)}</dd></div>
         </dl>
+        {(role === "ADMIN" || role === "DOCTOR") && isUuid(prescription.recordId ?? "") ? <Link className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-medium text-primary underline-offset-4 hover:bg-surface-muted hover:underline" href={`/records/${prescription.recordId}`}>Mở hồ sơ khám nguồn</Link> : null}
       </section>
 
       <section className="rounded-xl border border-border bg-surface p-6">

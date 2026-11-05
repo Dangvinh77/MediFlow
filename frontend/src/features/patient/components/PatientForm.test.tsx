@@ -50,15 +50,16 @@ describe("PatientForm", () => {
     mocks.setToken("session-a");
   });
 
-  it("saves the patient before opening account creation with its returned UUID", async () => {
+  it("saves the patient and lands on its profile for account actions", async () => {
     mocks.create.mockResolvedValue(patientContractFixture);
     render(<PatientForm />); fill();
-    fireEvent.click(screen.getByRole("button", { name: "Lưu và tạo tài khoản" }));
-    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/accounts/new?ownerType=patient&ownerId=${patientContractFixture.maBenhNhan}`));
+    expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bệnh nhân" }));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/patients/${patientContractFixture.maBenhNhan}?notice=created`));
     expect(mocks.create).toHaveBeenCalledTimes(1);
   });
 
-  it("does not offer account administration to nurses creating a patient", () => {
+  it("does not add a separate account action to the patient form", () => {
     mocks.getRole.mockReturnValue("NURSE");
     render(<PatientForm />);
     expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();

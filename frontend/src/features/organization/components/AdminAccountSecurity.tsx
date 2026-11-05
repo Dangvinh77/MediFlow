@@ -11,7 +11,16 @@ import { isSaveOutcomeUnknown } from "../save-outcome";
 import type { MailDelivery } from "../types";
 
 const labels = { PENDING: "Đang chờ gửi", SENT: "Đã chuyển đến máy chủ email / hộp thư demo", FAILED: "Gửi email chưa thành công" };
-export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { accountId: string; username: string; onEmailChanged?: () => void }) {
+interface AdminAccountSecurityProps {
+  accountId: string;
+  username: string;
+  patientIdForMail?: string;
+  allowEmailChange?: boolean;
+  disablePasswordActions?: boolean;
+  onEmailChanged?: () => void;
+}
+
+export function AdminAccountSecurity({ accountId, username, patientIdForMail, allowEmailChange = true, disablePasswordActions = false, onEmailChanged }: AdminAccountSecurityProps) {
   const alive = useRef(true), lock = useRef(false);
   const [delivery, setDelivery] = useState<MailDelivery | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,13 +37,15 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
     let disposed = false;
     const session = getSessionKey();
     const revision = deliveryRevision.current;
-    Promise.resolve().then(() => organizationApi.mailDelivery(accountId)).then(result => { if (!disposed && getSessionKey() === session && deliveryRevision.current === revision) setDelivery(result); }).catch(cause => {
+    Promise.resolve().then(() => patientIdForMail
+      ? organizationApi.patientMailDelivery(patientIdForMail)
+      : organizationApi.mailDelivery(accountId)).then(result => { if (!disposed && getSessionKey() === session && deliveryRevision.current === revision) setDelivery(result); }).catch(cause => {
       if (!disposed && getSessionKey() === session && deliveryRevision.current === revision && !(cause instanceof ApiRequestError && cause.status === 404)) setError(cause instanceof Error ? cause.message : "Chưa đọc được trạng thái gửi thư.");
     });
     return () => { disposed = true; };
-  }, [accountId, attempt]);
+  }, [accountId, attempt, patientIdForMail]);
   async function action(kind: "reset" | "retry" | "email" | "checkEmail") {
-    if (lock.current || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail")) return;
+    if (lock.current || (disablePasswordActions && (kind === "reset" || kind === "retry")) || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail") || (!allowEmailChange && (kind === "email" || kind === "checkEmail"))) return;
     if (kind === "reset" && !unknown && !window.confirm(`Cấp mật khẩu tạm mới và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
     const session = getSessionKey();
     const current = () => alive.current && getSessionKey() === session;
@@ -43,13 +54,19 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
     let intent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     try {
       if (kind === "reset") {
-        intent = await prepareCreation("account", session, { accountId, purpose: "admin-password-reset" }, `password:${accountId}`);
+        intent = await prepareCreation("account", session, patientIdForMail
+          ? { patientId: patientIdForMail, purpose: "patient-password-reset" }
+          : { accountId, purpose: "admin-password-reset" }, `password:${patientIdForMail ?? accountId}`);
         if (!current()) { intent.cancelUnsent(); return; }
-        const result = await organizationApi.resetPassword(accountId, intent.key);
+        const result = patientIdForMail
+          ? await organizationApi.resetPatientPassword(patientIdForMail, intent.key)
+          : await organizationApi.resetPassword(accountId, intent.key);
         intent.settle();
         if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
       } else if (kind === "retry" && delivery) {
-        const result = await organizationApi.retryMail(accountId, delivery.messageId);
+        const result = patientIdForMail
+          ? await organizationApi.retryPatientMail(patientIdForMail, delivery.messageId)
+          : await organizationApi.retryMail(accountId, delivery.messageId);
         if (current()) { setDelivery(result); setNotice("Đã yêu cầu gửi lại đúng thư này; mật khẩu không bị đặt lại lần nữa."); }
       } else if (kind === "checkEmail") {
         const result = await organizationApi.account(accountId);
@@ -79,12 +96,13 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
     {delivery ? <p role="status" className="rounded-lg bg-surface-muted p-3 text-sm">Trạng thái thư gần nhất: <strong>{labels[delivery.status]}</strong></p> : null}
     {notice ? <p role="status" className="text-sm leading-6 text-success">{notice}</p> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
+    {disablePasswordActions ? <p role="status" className="text-sm text-warning">Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh.</p> : null}
+    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
     {emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning">Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục.</p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}>Kiểm tra kết quả đổi email</Button></div> : null}
     {unknown ? <p className="text-sm text-warning">Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại.</p> : null}
-    <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
+    {allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
       <h3 className="font-semibold">Đổi email đăng nhập</h3><p className="text-sm text-muted-foreground">Chỉ quản trị viên được thay đổi. Kiểm tra kỹ người sở hữu trước khi lưu.</p>
       <fieldset disabled={busy || unknown || emailUnknown} className="grid gap-4 sm:grid-cols-2"><Field label="Email đăng nhập mới" htmlFor="admin-account-email"><input id="admin-account-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className={controlClassName} /></Field><Field label="Lý do thay đổi email" htmlFor="admin-email-reason"><input id="admin-email-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} className={controlClassName} /></Field><div><Button type="submit" disabled={email.trim() === username || !reason.trim()} loading={busy}>Lưu email mới</Button></div></fieldset>
-    </form>
+    </form> : null}
   </section>;
 }

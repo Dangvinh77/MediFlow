@@ -6,15 +6,16 @@ import { patientContractFixture as patient } from "@/features/patient/contract.f
 import type { PatientDTO } from "@/features/patient/types";
 
 const mocks = vi.hoisted(() => ({
-  getById: vi.fn(), provisionPatientAccount: vi.fn(), role: vi.fn(() => "NURSE"),
+  getById: vi.fn(), profileAccount: vi.fn(), provisionPatientAccount: vi.fn(), role: vi.fn(() => "NURSE"),
   session: vi.fn(() => "session-a"), subscribe: vi.fn(() => () => {}),
+  patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), mailDelivery: vi.fn(), resetPassword: vi.fn(), retryMail: vi.fn(), account: vi.fn(), updateAccountEmail: vi.fn(),
   router: { replace: vi.fn(), push: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("@/lib/auth", () => ({ getRole: mocks.role, subscribeToAuthChanges: mocks.subscribe }));
+vi.mock("@/lib/auth", () => ({ getRole: mocks.role, getSessionKey: mocks.session, subscribeToAuthChanges: mocks.subscribe }));
 vi.mock("@/lib/session", () => ({ getSessionKey: mocks.session, subscribeToAuthChanges: mocks.subscribe }));
 vi.mock("@/features/patient/api", () => ({ patientApi: { getById: mocks.getById } }));
-vi.mock("@/features/organization/api", () => ({ organizationApi: { provisionPatientAccount: mocks.provisionPatientAccount } }));
+vi.mock("@/features/organization/api", () => ({ organizationApi: mocks }));
 import PatientDetailPage from "./page";
 
 async function page(notice?: string, patientId = patient.maBenhNhan) {
@@ -27,6 +28,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getById.mockReset().mockResolvedValue(patient);
   mocks.provisionPatientAccount.mockReset();
+  mocks.profileAccount.mockReset().mockResolvedValue({ account: null, profileEmail: "patient@example.com", emailSyncPending: false });
+  mocks.patientMailDelivery.mockResolvedValue(null);
   mocks.role.mockReturnValue("NURSE");
 });
 
@@ -70,18 +73,23 @@ it.each([404, 503])("hides onboarding when patient lookup returns %s", async (st
 
 it("recovers an uncertain issuance after reopening the plain detail URL with the same key", async () => {
   mocks.provisionPatientAccount.mockRejectedValueOnce(new Error("Timeout"));
+  const existingAccount = { accountId: "account-a", username: "patient@example.com", patientId: patient.maBenhNhan,
+    staffId: null, role: "PATIENT", isActive: true, lastLoginAt: null, createdAt: "2026-11-04T00:00:00Z",
+    updatedAt: "2026-11-04T00:00:00Z", mailDelivery: null };
+  mocks.profileAccount.mockResolvedValueOnce({ account: null, profileEmail: "patient@example.com", emailSyncPending: false })
+    .mockResolvedValueOnce({ account: null, profileEmail: "patient@example.com", emailSyncPending: false })
+    .mockResolvedValue({ account: existingAccount, profileEmail: "patient@example.com", emailSyncPending: false });
   const first = render(await page("created"));
   fireEvent.click(await screen.findByRole("button", { name: "Cấp tài khoản bệnh nhân" }));
   await screen.findByRole("alert");
   const key = mocks.provisionPatientAccount.mock.calls[0][1];
   first.unmount();
-  mocks.provisionPatientAccount.mockResolvedValue({ accountId: "account-a", patientId: patient.maBenhNhan,
-    username: patient.soCmnd, mustChangePassword: false });
+  mocks.provisionPatientAccount.mockResolvedValue({ accountId: "account-a", patientId: patient.maBenhNhan, username: "patient@example.com" });
   render(await page());
   fireEvent.click(await screen.findByRole("button", { name: "Cấp tài khoản bệnh nhân" }));
-  await screen.findByText(/Mật khẩu đã được bệnh nhân đổi/);
+  expect(await screen.findByText("Tài khoản đang hoạt động")).toBeVisible();
   expect(mocks.provisionPatientAccount).toHaveBeenLastCalledWith(patient.maBenhNhan, key);
-  expect(screen.queryByText(/Mật khẩu ban đầu:/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Mật khẩu ban đầu|secret-password|passwordHash/i)).not.toBeInTheDocument();
 });
 
 it("keeps the registration link when the backend reports an existing account", async () => {
@@ -91,6 +99,28 @@ it("keeps the registration link when the backend reports an existing account", a
   await screen.findByRole("alert");
   expect(screen.getByRole("link", { name: "Tiếp tục đăng ký khám" })).toBeVisible();
   await waitFor(() => expect(mocks.provisionPatientAccount).toHaveBeenCalledTimes(1));
+});
+
+it("refreshes the patient profile after an audited account email change", async () => {
+  mocks.role.mockReturnValue("ADMIN");
+  const before = { ...patient, email: "patient@example.com" };
+  const after = { ...patient, email: "corrected@example.com" };
+  mocks.getById.mockReset().mockResolvedValueOnce(before).mockResolvedValue(after);
+  const account = { accountId: "account-a", username: "patient@example.com", patientId: patient.maBenhNhan,
+    staffId: null, role: "PATIENT", isActive: true, lastLoginAt: null, createdAt: "2026-11-04T00:00:00Z",
+    updatedAt: "2026-11-04T00:00:00Z", mailDelivery: null };
+  mocks.profileAccount.mockResolvedValue({ account, profileEmail: "patient@example.com", emailSyncPending: false });
+  mocks.mailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  mocks.updateAccountEmail.mockResolvedValue(account);
+
+  render(await page());
+  fireEvent.change(await screen.findByLabelText("Email đăng nhập mới"), { target: { value: "corrected@example.com" } });
+  fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Đã đối chiếu hồ sơ" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
+
+  await waitFor(() => expect(mocks.getById).toHaveBeenCalledTimes(2));
+  expect(await screen.findByText("corrected@example.com")).toBeVisible();
+  expect(mocks.updateAccountEmail).toHaveBeenCalledWith("account-a", "corrected@example.com", "Đã đối chiếu hồ sơ");
 });
 
 it("rejects invalid identifiers before loading a patient or showing onboarding", async () => {

@@ -101,6 +101,12 @@ export interface AccountDTO {
   updatedAt: string;
 }
 
+export interface ProfileAccountDTO {
+  account: AccountDTO | null;
+  profileEmail: string | null;
+  emailSyncPending: boolean;
+}
+
 export interface CreateAccountRequest {
   replaceActiveAccount?: boolean;
   username: string;
