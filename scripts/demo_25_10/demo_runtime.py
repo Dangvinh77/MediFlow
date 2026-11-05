@@ -36,12 +36,16 @@ class WorkspaceLock:
 
 
 class Workspace:
-    def __init__(self, root, evidence, command, scheduling):
+    def __init__(self, root, evidence, command, scheduling, report_demo=False):
         self.root, self.evidence, self.command = root.resolve(), evidence.resolve(), command
         self.path = self.evidence / 'infrastructure.local.json'
         self.owner = hashlib.sha256(str(self.root).casefold().encode()).hexdigest()
-        inputs = hashlib.sha256(str(scheduling).encode())
-        for name in ('MediFlow_Demo_Database_2026-10-25.sql', 'seed_outpatient_scheduling.sql'):
+        inputs = hashlib.sha256((str(scheduling) + ':' + str(report_demo)).encode())
+        names = ['MediFlow_Demo_Database_2026-10-25.sql', 'seed_outpatient_scheduling.sql',
+                 'seed_report_demo.sql']
+        if report_demo:
+            names.extend(('report_demo_seed.py', 'prepare_report_demo.py'))
+        for name in names:
             path = root / 'scripts/demo_25_10' / name
             if path.exists():
                 inputs.update(path.read_bytes())
@@ -109,8 +113,18 @@ class Workspace:
                 self.command('docker', 'rm', '-f', container['Id'])
             for name in ('ui-demo-journal.local.json', 'calendar-journal.local.json',
                          'ui-demo-fixtures.local.json', 'calendar-fixtures.local.json',
+                         'report-demo-journal.local.json', 'report-demo-acceptance.local.json',
                          'DEMO-DATA.local.md', 'DEMO-CALENDAR.local.md'):
                 (self.evidence / name).unlink(missing_ok=True)
+            exports = self.evidence / 'report-source-exports' / '2024-annual'
+            evidence_root = self.evidence.resolve()
+            if exports.resolve().is_relative_to(evidence_root) and exports.exists():
+                for artifact in exports.glob('*.json'):
+                    if artifact.is_file():
+                        artifact.unlink()
+                exports.rmdir()
+                if not any(exports.parent.iterdir()):
+                    exports.parent.rmdir()
             self.path.unlink()
             return None
         if (missing or not self.state.get('ready') or set(self.state['containers']) != {'pg', 'rabbit'}

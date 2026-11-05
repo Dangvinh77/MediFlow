@@ -74,6 +74,17 @@ class RehearsalBindingTest(unittest.TestCase):
         self.assertFalse(runner.parse_options([]).lan)
         self.assertTrue(runner.parse_options(['--lan']).lan)
 
+    def test_report_demo_acceptance_is_an_explicit_scheduling_preparation(self):
+        self.assertTrue(runner.parse_options(['--scheduling', '--prepare-report-demo']).prepare_report_demo)
+        with self.assertRaises(SystemExit):
+            runner.parse_options(['--prepare-report-demo'])
+
+    def test_port_offset_supports_parallel_loopback_rehearsal_without_ui_shortcuts(self):
+        options = runner.parse_options(['--port-offset', '10000'])
+        self.assertEqual(options.port_offset, 10000)
+        with self.assertRaises(SystemExit):
+            runner.parse_options(['--port-offset', '10000', '--scheduling', '--prepare-ui-demo'])
+
     def test_only_gateway_binds_all_interfaces_in_lan_mode(self):
         self.assertEqual(runner.server_bind_address('gateway', True), '0.0.0.0')
         for name in runner.NAMES[:-1]:

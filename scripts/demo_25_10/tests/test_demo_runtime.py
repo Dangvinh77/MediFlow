@@ -90,15 +90,31 @@ class PersistentRuntimeTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'ResetData'):
             other.open()
 
+    def test_report_fixture_mode_is_part_of_workspace_signature(self):
+        self.workspace.begin()
+        self.track('pg')
+        self.track('rabbit')
+        self.workspace.complete()
+        report_fixture = self.module.Workspace(self.path, self.path, self.workspace.command, True, True)
+        with self.assertRaisesRegex(RuntimeError, 'ResetData'):
+            report_fixture.open()
+
     def test_reset_does_not_remove_journals_until_containers_are_verified(self):
         self.workspace.begin()
         self.track('pg')
         journal = self.path / 'ui-demo-journal.local.json'
         journal.write_text('journal')
+        report_journal = self.path / 'report-demo-journal.local.json'
+        report_journal.write_text('report journal')
+        report_export = self.path / 'report-source-exports' / '2024-annual' / 'CLINICAL.json'
+        report_export.parent.mkdir(parents=True)
+        report_export.write_text('{}')
         self.containers['id-pg']['Name'] = '/foreign'
         with self.assertRaises(RuntimeError):
             self.workspace.open(reset=True)
         self.assertEqual(journal.read_text(), 'journal')
+        self.assertEqual(report_journal.read_text(), 'report journal')
+        self.assertTrue(report_export.exists())
 
     def test_removed_container_requires_reset_and_is_not_replaced_by_name(self):
         self.workspace.begin()

@@ -4,7 +4,25 @@
 
 The rehearsal enables the outpatient consumer and read endpoints. `OutpatientReportReadService` still requires accepted coverage matching the requested department (including hospital-wide `null`), dates, configured Report timezone and VND. Pending/invalid evidence or a changed evidence fingerprint invalidates the read. `REPORT_NOT_FOUND` means unavailable accepted coverage, not zero activity.
 
-The SQL snapshot already contains a finite synthetic demo acceptance for **2025-01-01 through 2025-12-31**, department `9a6dd24a-1c1f-4122-9e31-7cfea345ec45`, timezone `Asia/Bangkok`, coverage `313d5b9a-28c8-4b9a-af17-15e9ec7f39c7`. It does not cover 31 October 2026 or hospital-wide requests. For a read-only historical demo, try daily 15 June 2025 (or monthly year 2025) in that exact department after verifying the current configured timezone and unchanged evidence. This is synthetic historical acceptance, not acceptance of today's workflow.
+The base SQL snapshot contains a finite synthetic 2025 acceptance for department `9a6dd24a-1c1f-4122-9e31-7cfea345ec45`. The maintained disposable runner layers [seed_report_demo.sql](seed_report_demo.sql) into the restored Report database, adds a rich closed 2024 fixture and provisional September–November 2026 chart facts, then uses the existing ADMIN preview/acceptance API to reconcile the 2024 fixture. The launcher enables the acceptance endpoint only during this step and restarts Support with the gate off. The accepted 2024 and 2025 annual department periods are synthetic demonstration evidence, not proof of real upstream completeness.
+
+The generated SQL is deterministic and idempotent. It inserts only into Report operational, receipt and refund projections. It does not create `report_outpatient_coverage` rows, alter existing source history or mark the 2026 operational samples accepted. The companion `report_demo_seed_manifest.json` records its fixture counts and totals.
+
+To regenerate the companion artifact and manifest:
+
+```powershell
+python scripts/demo_25_10/report_demo_seed.py
+```
+
+To prepare an isolated Report acceptance explicitly outside the standard launcher, start the disposable stack with `--scheduling --prepare-report-demo --keep`. The preparation writes five `SYNTHETIC-DEMO-*` source export files, checks their row counts against the Report preview and POSTs only the closed 2024 annual scope using an ADMIN token. A standalone run of `prepare_report_demo.py` is preview-only by default; add `--accept` to request the same API acceptance. The evidence bundle is written under that rehearsal's `report-source-exports/2024-annual` and `report-demo-acceptance.local.json` paths.
+
+For a direct manual restore of the SQL snapshot, apply the companion after the snapshot has created `mediflow_report`:
+
+```powershell
+psql -X -v ON_ERROR_STOP=1 -U postgres -d mediflow_report -f scripts/demo_25_10/seed_report_demo.sql
+```
+
+Then start the disposable runner with `--scheduling --prepare-report-demo` to reconcile through the ADMIN API. Do not add acceptance records with SQL. Current 2026 chart statistics remain provisional and are not accepted coverage.
 
 The acceptance prerequisite is explicit and stronger than one completed visit:
 
