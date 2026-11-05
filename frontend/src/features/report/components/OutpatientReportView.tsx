@@ -89,10 +89,10 @@ function OutpatientReportContent({ initialQuery, autoLoad, discoverLatest = fals
         autoSelectLatest={autoDiscover} onSelect={(period, automatic) => {
         clear(); setFromDate(period.fromDate); setToDate(period.toDate); setYear(period.fromDate.slice(0,4));
         setDepartmentId(period.departmentId ?? ""); setScopeReset(value => value+1); setErrors({});
-        if (!automatic) return;
         setAutoDiscover(false);
         const query = { mode, fromDate: period.fromDate, toDate: period.toDate, year: Number(period.fromDate.slice(0, 4)),
           departmentId: period.departmentId ?? undefined };
+          if (!automatic && onQuerySubmit(query)) return;
         setSubmittedQuery(query);
         load(() => mode === "daily" ? reportApi.outpatientDaily(query.fromDate, query.toDate, query.departmentId) : reportApi.outpatientMonthly(query.year, query.departmentId));
       }} />

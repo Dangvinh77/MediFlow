@@ -66,7 +66,7 @@ function EnabledOutpatientWorkspace() {
   }
   return (
     <PageShell title="Báo cáo ngoại trú" description="Doanh thu khám, xét nghiệm, thuốc và lượt khám theo khoa; báo cáo đã đối soát bên dưới.">
-      <Link href="/reports?view=monthly" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác</Link>
+      <Link href="/reports?view=monthly" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác (nguồn cũ)</Link>
       <OutpatientStatisticsView />
       <ReportDisclosure
         key={rawQuery}

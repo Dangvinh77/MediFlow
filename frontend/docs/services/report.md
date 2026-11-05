@@ -1,5 +1,18 @@
 # Frontend Service: Report
 
+2026-11-05 master synchronization retains the new operational statistics landing,
+latest accepted-period discovery and compact source/trend/period disclosures.
+Huy's additive accepted-period totals and immediate manual period selection remain
+available alongside those changes. The bare `/reports` now opens `/reports/outpatient`.
+
+2026-11-04 demo usability: with `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true`,
+the bare `/reports` landing opens `/reports/outpatient?view=monthly`.
+Explicit legacy views remain at `/reports?view=monthly` (or daily/medicines).
+Available-period selection now submits its exact accepted dates/year and department
+immediately. Both clients show additive totals across returned periods before trends;
+net cash is summed from the server's `netCash`, never recomputed as revenue.
+Missing coverage still stays unavailable, and synthetic provenance stays visible.
+
 > **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
 > mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
 > Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;

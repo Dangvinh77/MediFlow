@@ -39,6 +39,19 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
         </div>
       </details>
       {report.periods.length > 0 && <>
+        <section aria-label="Tổng kỳ đã chọn" className="mt-5">
+          <h3 className="font-semibold">Tổng kỳ đã chọn</h3>
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {([
+              ["Tổng lượt khám", "completedVisits"], ["Tổng xét nghiệm", "labTests"],
+              ["Đơn thuốc đã cấp", "dispensedPrescriptions"], ["Số lượng đã cấp", "dispensedUnits"],
+              ["Tổng tiền thu", "cashReceived"], ["Tổng hoàn tiền", "refunds"], ["Thu ròng cả kỳ", "netCash"],
+            ] as const).map(([label, key]) => <div key={key} className="min-w-0 rounded-lg bg-background p-3">
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="mt-1 break-words text-xl font-semibold tabular-nums">{formatDecimal(report.periods.reduce((sum, period) => sum + period[key], 0))}{["cashReceived", "refunds", "netCash"].includes(key) ? ` ${report.currency}` : ""}</dd>
+            </div>)}
+          </dl>
+        </section>
         <details className="mt-4 rounded-lg border border-border px-3">
           <summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline-2 focus-visible:outline-primary">Xu hướng theo kỳ</summary>
           <div className="pb-3">

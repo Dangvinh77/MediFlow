@@ -45,7 +45,7 @@ describe("Outpatient report workspace", () => {
     expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
     expect(window.history.pushState).not.toHaveBeenCalled();
   });
-  it("manual discovery still fills filters and waits for explicit submission", async () => {
+  it("manual discovery opens the selected report without a second submission", async () => {
     mocks.query = "view=monthly&year=2024";
     mocks.monthly.mockReturnValue(new Promise(() => {}));
     mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
@@ -55,7 +55,6 @@ describe("Outpatient report workspace", () => {
     fireEvent.click(await screen.findByRole("button", {name:"Dùng kỳ này"}));
     expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
     expect(mocks.monthly).toHaveBeenCalledTimes(1);
-    submit();
     expect(window.history.pushState).toHaveBeenCalledWith(null,"","/reports/outpatient?view=monthly&year=2025");
   });
   it("defaults closed even for a valid direct URL and makes no request", () => {

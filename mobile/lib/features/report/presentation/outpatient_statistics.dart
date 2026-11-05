@@ -10,9 +10,42 @@ class OutpatientStatistics extends StatelessWidget {
   const OutpatientStatistics(this.data, {super.key});
   final ReportData data;
 
+  String total(String key) {
+    final value = data.rows.fold<num>(0, (sum, row) => sum + row.metrics[key]!);
+    return value
+        .toStringAsFixed(value % 1 == 0 ? 0 : 2)
+        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
+      Text('Tổng kỳ đã chọn', style: Theme.of(context).textTheme.titleLarge),
+      for (final entry in const {
+        'Tổng lượt khám': 'Lượt khám hoàn tất',
+        'Tổng xét nghiệm': 'Xét nghiệm',
+        'Đơn thuốc đã cấp': 'Đơn đã cấp',
+        'Số lượng đã cấp': 'Đơn vị thuốc đã cấp',
+        'Tổng tiền thu': 'Tiền thu',
+        'Tổng hoàn tiền': 'Hoàn tiền',
+        'Thu ròng cả kỳ': 'Thu ròng',
+      }.entries)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Expanded(child: Text(entry.key)),
+              Flexible(
+                child: Text(
+                  '${total(entry.value)} ${const ['Tiền thu', 'Hoàn tiền', 'Thu ròng'].contains(entry.value) ? data.currency : ''}'
+                      .trim(),
+                  textAlign: TextAlign.end,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
       _Trend(data.rows, [
         'Tiền thu',
         'Hoàn tiền',

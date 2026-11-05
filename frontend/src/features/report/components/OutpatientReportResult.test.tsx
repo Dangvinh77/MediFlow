@@ -11,6 +11,9 @@ const report: OutpatientReportDTO = {
 describe("outpatient statistics", () => {
   it("keeps trends, evidence and exact period metrics available through compact disclosures", () => {
     render(<OutpatientReportResult report={report} />);
+    expect(screen.getByText("Tổng lượt khám").nextElementSibling).toHaveTextContent(/^1$/);
+    expect(screen.getByText("Số lượng đã cấp").nextElementSibling).toHaveTextContent(/^9$/);
+    expect(screen.getByText("Thu ròng cả kỳ").nextElementSibling).toHaveTextContent("-20 VND");
     const trends = screen.getByText("Xu hướng theo kỳ").closest("details");
     expect(trends).toBeInTheDocument();
     expect(trends).not.toHaveAttribute("open");

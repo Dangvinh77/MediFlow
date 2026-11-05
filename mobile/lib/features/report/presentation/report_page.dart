@@ -25,11 +25,15 @@ const reportTitles = {
 };
 
 List<ReportKind> availableReportKinds({required bool outpatientEnabled}) => [
+  if (outpatientEnabled) ...[
+    ReportKind.operations,
+    ReportKind.outpatientMonthly,
+    ReportKind.outpatientDaily,
+  ],
   for (final kind in ReportKind.values)
-    if (outpatientEnabled ||
-        (kind != ReportKind.outpatientDaily &&
-            kind != ReportKind.outpatientMonthly &&
-            kind != ReportKind.operations))
+    if (kind != ReportKind.outpatientDaily &&
+        kind != ReportKind.outpatientMonthly &&
+        kind != ReportKind.operations)
       kind,
 ];
 
@@ -261,6 +265,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       to.text = period.to;
       department = period.departmentId;
       changed();
+      load();
     },
   );
 

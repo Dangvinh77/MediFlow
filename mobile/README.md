@@ -31,6 +31,11 @@ Từ thư mục mobile, chạy:
 ./tool/run_web.ps1 -Demo -Gateway http://127.0.0.1:28080
 ```
 
+Riêng báo cáo có thể bật bằng `-ReportOutpatientUi`. Khi bật, màn báo cáo ưu tiên
+thống kê vận hành theo khoa; báo cáo ngoại trú đã đối soát nằm trong danh sách loại
+báo cáo. Bấm **Tìm kỳ có dữ liệu → Dùng kỳ này** để tải ngay kỳ đã đối soát.
+Dữ liệu mô phỏng giữ nhãn riêng; kỳ chưa đối soát không được coi là hoạt động bằng 0.
+
 Không có `-Demo` (hoặc `-OutpatientUi`, `-PharmacyMode outpatient`) thì app vẫn đọc dữ liệu
 nhưng các thao tác tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.
 

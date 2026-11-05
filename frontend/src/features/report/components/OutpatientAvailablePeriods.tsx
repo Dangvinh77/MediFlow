@@ -38,7 +38,7 @@ export function OutpatientAvailablePeriods({ departmentId, mode, autoSelectLates
   return <section aria-label="Kỳ có dữ liệu đã đối soát" className="mt-4 space-y-3 rounded-xl border border-border bg-surface p-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="font-semibold">Kỳ có dữ liệu đã đối soát</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Tìm trong các kỳ đối soát gần nhất. Chọn kỳ để điền bộ lọc, rồi bấm xem báo cáo.</p></div>
+        <p className="mt-1 text-sm text-muted-foreground">Tìm kỳ đã đối soát, rồi chọn “Dùng kỳ này” để xem ngay. Kỳ chưa đối soát không được coi là hoạt động bằng 0.</p></div>
       <Button type="button" disabled={needsDepartment} loading={state.status === "loading"} onClick={()=>load(request)}>Tìm kỳ có dữ liệu</Button>
     </div>
     {needsDepartment && <p className="text-sm text-muted-foreground">Chọn khoa được phân quyền trước khi tìm kỳ báo cáo.</p>}
