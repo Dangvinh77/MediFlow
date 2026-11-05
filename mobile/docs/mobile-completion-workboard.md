@@ -11,11 +11,13 @@ là công cụ vận hành, chưa tính vào phạm vi role nghiệp vụ.
 | DOCTOR | Lịch khám của tôi; lịch làm việc của tôi và sửa/hủy ca; đề xuất tái khám trong hồ sơ | `/v2/consultation-sessions/mine`, `/v2/doctor-work-shifts/**`, `/v2/records/{id}/follow-up-recommendation(s)` |
 | NURSE | Danh sách phiếu theo buổi; ghi nhận bệnh nhân đã đến; hủy phiếu | `/v2/consultation-sessions/{id}/registrations`, `/v2/outpatient-registrations/{id}/arrival`, `/cancellation` |
 | PATIENT | Phiếu khám của tôi và hủy phiếu | `/v2/outpatient-registrations/mine`, `/cancellation` |
-| CASHIER | Cần đối chiếu thu xét nghiệm V2 và xác nhận 0 đồng | `/v2/billing/payment-requests/{id}/lab-payments`, `/lab-zero-payable-eligibility` |
 | MANAGER | Quản lý buổi khám; tổng quan khoa; lịch toàn khoa; buổi khám và phòng; phân công ca | `/v2/consultation-sessions/**`, `/v2/org/consultation-rooms`, `/v2/doctor-work-shifts/**` |
 | ADMIN | Như MANAGER; phạm vi quản lý lịch; bổ nhiệm trưởng khoa | `/v2/org/accounts/{id}/schedule-management-scope`, `/v2/org/departments/{id}/head-appointments` |
 
 Bác sĩ được giao làm trưởng khoa cũng cần capabilities từ `/v1/org/me/capabilities`.
+
+CASHIER đã đủ theo bảng này: thu xét nghiệm theo báo giá và xác nhận 0 đồng đã có trên mobile.
+Khi bật báo giá, khoản xét nghiệm chưa có báo giá bị chặn thu, giống web.
 
 ## Luồng hồ sơ và tiếp nhận — 04/11/2026
 

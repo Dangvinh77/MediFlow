@@ -5,6 +5,7 @@ import '../domain/billing_commands.dart';
 import '../domain/billing_models.dart';
 import 'billing_dto.dart';
 import '../domain/payment_queue.dart';
+import '../domain/lab_quote_payment.dart';
 import '../domain/scheduled_payments.dart';
 
 class GatewayBillingRepository
@@ -12,7 +13,8 @@ class GatewayBillingRepository
         BillingRepository,
         PaymentQueueRepository,
         OutpatientRefundRepository,
-        ScheduledPaymentRepository {
+        ScheduledPaymentRepository,
+        LabQuotePaymentRepository {
   const GatewayBillingRepository(this.client);
   final ApiClient client;
 
@@ -162,6 +164,56 @@ class GatewayBillingRepository
             result.payment!.paymentRequestId.toLowerCase() !=
                 paymentRequestId.toLowerCase()) {
       throw const FormatException('Kết quả thu phí không khớp yêu cầu.');
+    }
+    return result;
+  }
+
+  @override
+  Future<LedgerPayment> payLabQuote(
+    String paymentRequestId,
+    LabPaymentCommand command, {
+    required String idempotencyKey,
+    required String correlationId,
+  }) async {
+    final result = BillingDto.ledgerPayment(
+      await client.post(
+        '/v2/billing/payment-requests/$paymentRequestId/lab-payments',
+        {
+          'quoteId': command.quoteId,
+          'amount': command.amount,
+          'currency': command.currency,
+          'paymentMethod': command.paymentMethod,
+        },
+        idempotencyKey: idempotencyKey,
+        correlationId: correlationId,
+      ),
+    );
+    if (result.paymentRequestId.toLowerCase() !=
+        paymentRequestId.toLowerCase()) {
+      throw const FormatException('Kết quả thu không khớp yêu cầu.');
+    }
+    return result;
+  }
+
+  @override
+  Future<LabZeroLiabilityReceipt> confirmLabZeroLiability(
+    String paymentRequestId,
+    String quoteId, {
+    required String idempotencyKey,
+    required String correlationId,
+  }) async {
+    final result = BillingDto.labZeroLiabilityReceipt(
+      await client.post(
+        '/v2/billing/payment-requests/$paymentRequestId/lab-zero-payable-eligibility',
+        {'quoteId': quoteId},
+        idempotencyKey: idempotencyKey,
+        correlationId: correlationId,
+      ),
+    );
+    if (result.paymentRequestId.toLowerCase() !=
+            paymentRequestId.toLowerCase() ||
+        result.quoteId.toLowerCase() != quoteId.toLowerCase()) {
+      throw const FormatException('Kết quả xác nhận không khớp yêu cầu.');
     }
     return result;
   }

@@ -5,6 +5,7 @@ import 'package:mediflow_mobile/core/network/api_client.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/features/billing/data/gateway_billing_repository.dart';
 import 'package:mediflow_mobile/features/billing/domain/billing_commands.dart';
+import 'package:mediflow_mobile/features/billing/domain/lab_quote_payment.dart';
 import 'package:mediflow_mobile/features/billing/domain/scheduled_payments.dart';
 
 import 'billing_notification_fixtures.dart';
@@ -35,6 +36,87 @@ void main() {
     expect(request.headers['Authorization'], 'Bearer billing-test-token');
     expect(result.items.single.totalAmount.minorUnits, 123450);
     expect(result.items.single.fees.single.amount.format(), '1234.50');
+  });
+
+  test('lab payment posts the exact quote command and headers', () async {
+    adapter.data = {
+      'transactionId': '10000000-0000-4000-8000-000000000051',
+      'accountId': '10000000-0000-4000-8000-000000000052',
+      'paymentRequestId': paymentRequestId,
+      'classification': 'SERVICE_PAYMENT',
+      'status': 'COMPLETED',
+      'amount': 36000.00,
+      'currency': 'VND',
+      'paymentMethod': 'CASH',
+      'completedAt': '2026-11-05T03:00:00Z',
+    };
+    final result = await repository.payLabQuote(
+      paymentRequestId,
+      const LabPaymentCommand(
+        quoteId: '10000000-0000-4000-8000-000000000053',
+        amount: '36000.00',
+        currency: 'VND',
+        paymentMethod: 'CASH',
+      ),
+      idempotencyKey: '10000000-0000-4000-8000-000000000054',
+      correlationId: '10000000-0000-4000-8000-000000000055',
+    );
+
+    final request = adapter.requests.single;
+    expect(request.method, 'POST');
+    expect(
+      request.uri.path,
+      '/api/v2/billing/payment-requests/$paymentRequestId/lab-payments',
+    );
+    expect(request.data, {
+      'quoteId': '10000000-0000-4000-8000-000000000053',
+      'amount': '36000.00',
+      'currency': 'VND',
+      'paymentMethod': 'CASH',
+    });
+    expect(
+      request.headers['Idempotency-Key'],
+      '10000000-0000-4000-8000-000000000054',
+    );
+    expect(
+      request.headers['X-Correlation-Id'],
+      '10000000-0000-4000-8000-000000000055',
+    );
+    expect(result.amount.minorUnits, 3600000);
+  });
+
+  test('lab zero confirmation rejects a receipt for another quote', () async {
+    const quoteId = '10000000-0000-4000-8000-000000000056';
+    adapter.data = {
+      'eligibilityOperationId': '10000000-0000-4000-8000-000000000057',
+      'paymentRequestId': paymentRequestId,
+      'quoteId': quoteId,
+      'basis': 'ZERO_LIABILITY',
+      'clearanceId': '10000000-0000-4000-8000-000000000058',
+      'completedAt': '2026-11-05T03:00:00Z',
+    };
+    final receipt = await repository.confirmLabZeroLiability(
+      paymentRequestId,
+      quoteId,
+      idempotencyKey: '10000000-0000-4000-8000-000000000059',
+      correlationId: '10000000-0000-4000-8000-00000000005a',
+    );
+    expect(
+      adapter.requests.single.uri.path,
+      '/api/v2/billing/payment-requests/$paymentRequestId/lab-zero-payable-eligibility',
+    );
+    expect(adapter.requests.single.data, {'quoteId': quoteId});
+    expect(receipt.quoteId, quoteId);
+
+    await expectLater(
+      repository.confirmLabZeroLiability(
+        paymentRequestId,
+        '10000000-0000-4000-8000-00000000005b',
+        idempotencyKey: '10000000-0000-4000-8000-00000000005c',
+        correlationId: '10000000-0000-4000-8000-00000000005d',
+      ),
+      throwsFormatException,
+    );
   });
 
   test('payment discovery sends all explicit source identities', () async {
