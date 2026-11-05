@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => "/reports/outpatient", useSearchParams: () => new URLSearchParams(mocks.query) }));
 vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.daily, outpatientMonthly: mocks.monthly, availablePeriods: mocks.available } }));
 // The provisional statistics section has its own test; these cases cover the reconciled report only.
-vi.mock("./OutpatientStatisticsView", () => ({ OutpatientStatisticsView: () => null }));
+vi.mock("./OutpatientStatisticsView", () => ({ OutpatientStatisticsView: () => <div role="region" aria-label="Thống kê tạm tính" /> }));
 import { OutpatientReportWorkspace } from "./OutpatientReportWorkspace";
 
 const department = "00000000-0000-4000-8000-000000000001";
@@ -68,8 +68,27 @@ describe("Outpatient report workspace", () => {
     mocks.query = ""; mocks.available.mockResolvedValue([]);
     render(<OutpatientReportWorkspace enabled />);
     await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    fireEvent.click(screen.getByText("Báo cáo đã đối soát"));
     expect(screen.getByText("Chọn phạm vi để xem báo cáo ngoại trú đã đối soát.")).toBeVisible();
     expect(mocks.daily).not.toHaveBeenCalled(); expect(mocks.monthly).not.toHaveBeenCalled();
+  });
+  it("keeps provisional statistics visible while the reconciled workspace opens on demand", async () => {
+    mocks.query = ""; mocks.available.mockResolvedValue([]);
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    const summary = screen.getByText("Báo cáo đã đối soát");
+    const disclosure = summary.closest("details");
+    expect(disclosure).toBeInTheDocument();
+    expect(disclosure).not.toHaveAttribute("open");
+    expect(screen.getByRole("region", { name: "Thống kê tạm tính" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Xem báo cáo" })).not.toBeVisible();
+
+    fireEvent.click(summary);
+    expect(disclosure).toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Xem báo cáo" })).toBeVisible();
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    expect(mocks.daily).not.toHaveBeenCalled();
+    expect(mocks.monthly).not.toHaveBeenCalled();
   });
   it("renders accepted zero periods with response currency, zone, scope and provenance", async () => {
     mocks.daily.mockResolvedValue({ ...zero, departmentId: department });
@@ -81,8 +100,10 @@ describe("Outpatient report workspace", () => {
     expect(within(result).getByText(/Phạm vi:/)).toBeVisible();
     expect(within(result).getByText("Tiền tệ: VND · Múi giờ: Asia/Bangkok")).toBeVisible();
     expect(within(result).getByText("Đã đối soát")).toBeVisible();
+    fireEvent.click(within(result).getByText("Nguồn và đối soát"));
     expect(within(result).getByText("Dữ liệu nguồn cập nhật").nextElementSibling).toHaveTextContent("07:00");
     const periods = within(result).getByRole("list", { name: "Các kỳ báo cáo" });
+    fireEvent.click(within(periods).getByText(/0 lượt · 0 xét nghiệm · 0 đơn/));
     expect(within(periods).getAllByRole("definition")).toHaveLength(7);
     for (const value of within(periods).getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "2024-03-01" } });
@@ -118,6 +139,7 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockResolvedValue({ ...zero, periods: [{ ...zero.periods[0], cashReceived: 100, refunds: 200, netCash: -125.5 }] });
     render(<OutpatientReportWorkspace enabled />);
     await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
+    fireEvent.click(screen.getByText(/Thu ròng: -125,5 VND/));
     expect(screen.getByText("Tiền thu ròng").nextElementSibling).toHaveTextContent("-125,5");
   });
   it("uses the monthly year contract and preserves all response periods", async () => {

@@ -142,6 +142,23 @@ coverage nằm trong [runtime handoff](../docs/handoffs/HANDOFF-REVIEW3-RUNTIME-
 
 Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lịch hẹn đọc `/v1/appointments`, lọc ngày/phân trang; Lab đọc `/v1/lab`, lọc trạng thái/phân trang. Có loading/empty/error/retry, correlation ID và bỏ qua phản hồi cũ. Lab hiển thị trạng thái nghiệp vụ riêng với thanh toán.
 
+Billing follows the web task set by role: `ADMIN`/`CASHIER` can use the collection queue,
+optional exam-fee collection, payment history and refunds; `MANAGER` sees revenue reports.
+The exam-fee V2 client is disabled by default. Enable its mobile UI with
+`--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true`; optional quotes use
+`--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true`, and zero-liability confirmation
+also requires `--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true`. These UI defines do not
+enable backend routes or grant access: Billing must enable `mediflow.billing.ledger.enabled`
+and `mediflow.billing.scheduled-payments.enabled`; quotes also require
+`mediflow.billing.outpatient-quotes.enabled`, and zero-liability confirmation requires
+`mediflow.billing.zero-payable-eligibility.enabled`. The cashier amount always comes from
+Billing, and uncertain commands keep their idempotency key in secure storage until reconciled.
+
+Mọi vai trò đã đăng nhập đều có thể mở hồ sơ cá nhân tại `/profile`. Nhân sự chỉ cập nhật
+số điện thoại và địa chỉ của chính mình; email đăng nhập chỉ do quản trị viên quản lý.
+Bệnh nhân xem hồ sơ của mình ở chế độ chỉ đọc. Màn hình này không thay thế chức năng
+quản lý tài khoản dành cho quản trị viên.
+
 Từ 2026-10-21, theo phân công bổ sung của người dùng, Vinh tiếp nhận hoàn thiện client
 Organization/Patient và Billing/Notification. Chi tiết phạm vi và bằng chứng kiểm tra của
 đợt này ở [client completion](docs/ha-loc-client-completion.md). Inpatient/Surgery vẫn deferred.

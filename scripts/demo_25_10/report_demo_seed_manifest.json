@@ -1,0 +1,46 @@
+{
+  "provenance": "SYNTHETIC_DISPOSABLE_DEMO_PROJECTION_FIXTURE",
+  "windows": {
+    "historicalReviewFixture": {
+      "fromDate": "2024-01-01",
+      "toDate": "2024-12-31",
+      "departmentId": "9a6dd24a-1c1f-4122-9e31-7cfea345ec45"
+    },
+    "provisionalCurrentStatistics": {
+      "fromDate": "2026-09-01",
+      "toDate": "2026-11-05",
+      "departments": [
+        "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+        "601fc45a-d78b-4821-a309-c3bc0169fa03",
+        "c68138a8-fcb3-4ec2-b10a-50c3f38076a4",
+        "6f1627e2-6faf-4162-9c67-9363492d187a"
+      ]
+    }
+  },
+  "counts": {
+    "completedVisits": 2864,
+    "operationalFacts": 8592,
+    "receipts": 6444,
+    "refunds": 216
+  },
+  "periods": {
+    "2024": {
+      "completedVisits": 2096,
+      "receipts": 4716,
+      "refunds": 160
+    },
+    "2026": {
+      "completedVisits": 768,
+      "receipts": 1728,
+      "refunds": 56
+    }
+  },
+  "revenueVnd": {
+    "EXAM": "429600000.00",
+    "LAB_TEST": "114560000.00",
+    "PRESCRIPTION": "165320000.00"
+  },
+  "refundsVnd": "3311000.00",
+  "reconciled": false,
+  "acceptedCoverageAdded": false
+}

@@ -5,6 +5,7 @@ import 'package:mediflow_mobile/core/network/api_client.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/features/billing/data/gateway_billing_repository.dart';
 import 'package:mediflow_mobile/features/billing/domain/billing_commands.dart';
+import 'package:mediflow_mobile/features/billing/domain/scheduled_payments.dart';
 
 import 'billing_notification_fixtures.dart';
 
@@ -55,6 +56,84 @@ void main() {
     });
     expect(result.remainingAmount.minorUnits, 7525);
   });
+
+  test(
+    'scheduled exam-fee lookup and queue use the live v2 contracts',
+    () async {
+      adapter.data = scheduledPaymentRequestJson();
+      final request = await repository.scheduledPaymentRequestByRegistration(
+        registrationId,
+      );
+      expect(request.registrationId, registrationId);
+      expect(request.reservationRevision, 4);
+      expect(request.remainingAmount.minorUnits, 7500);
+      expect(
+        adapter.requests.single.uri.path,
+        '/api/v2/billing/payment-requests/by-registration',
+      );
+      expect(adapter.requests.single.uri.queryParameters, {
+        'registrationId': registrationId,
+      });
+
+      adapter.data = {
+        'content': [scheduledPaymentQueueItemJson()],
+        'number': 0,
+        'totalPages': 1,
+        'totalElements': 1,
+      };
+      final page = await repository.scheduledPaymentQueue(patientId: patientId);
+      expect(page.items.single.registrationId, registrationId);
+      expect(
+        adapter.requests.last.uri.path,
+        '/api/v2/billing/payment-requests',
+      );
+      expect(adapter.requests.last.uri.queryParameters, {
+        'page': '0',
+        'size': '10',
+        'patientId': patientId,
+      });
+    },
+  );
+
+  test(
+    'scheduled payment posts the exact v2 command and idempotency headers',
+    () async {
+      adapter.data = scheduledPaymentResultJson();
+      final result = await repository.payScheduledRequest(
+        paymentRequestId,
+        const ScheduledPaymentCommand(
+          reservationId: reservationId,
+          expectedReservationRevision: 4,
+          quoteId: null,
+          amount: '75.00',
+          currency: 'VND',
+          paymentMethod: 'BANK_TRANSFER',
+          providerReference: 'transfer-42',
+        ),
+        idempotencyKey: eventId,
+        correlationId: eventId,
+      );
+      final request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(
+        request.uri.path,
+        '/api/v2/billing/payment-requests/$paymentRequestId/payments',
+      );
+      expect(request.headers['Idempotency-Key'], eventId);
+      expect(request.headers['X-Correlation-Id'], eventId);
+      expect(adapter.bodies.single, {
+        'reservationId': reservationId,
+        'expectedReservationRevision': 4,
+        'quoteId': null,
+        'amount': '75.00',
+        'currency': 'VND',
+        'paymentMethod': 'BANK_TRANSFER',
+        'providerReference': 'transfer-42',
+      });
+      expect(result.operation.status, 'COMPLETED');
+      expect(result.payment?.transactionId, transactionId);
+    },
+  );
 
   test(
     'ledger payment posts exact frozen payment fields and parses receipt',

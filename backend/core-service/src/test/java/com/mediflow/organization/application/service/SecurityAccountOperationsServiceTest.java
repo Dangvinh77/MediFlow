@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -112,6 +113,7 @@ class SecurityAccountOperationsServiceTest {
         when(patients.email(patientId)).thenReturn("patient@example.test");
         when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
         when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(patients.profileEmail(patientId)).thenReturn("same@example.test");
         when(passwords.hash(anyString())).thenReturn("new-hash");
         when(accounts.save(target)).thenReturn(target);
         when(mail.enqueue(any())).thenReturn(delivery);
@@ -217,6 +219,146 @@ class SecurityAccountOperationsServiceTest {
 
         verify(mail, never()).retry(any(), any(), anyString());
         verifyNoInteractions(patientSecurityAudit);
+    }
+
+    @Test
+    void patientScopedEmailChangeUsesPatientOwnerAndAuditedCredentialSyncFlow() {
+        UUID actor = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID correlationId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "old@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        recovery.put(new AccountRecoveryTokenStore.RecoveryToken(UUID.randomUUID(), target.getAccountId(),
+                hash("old-recovery"), 3L, Instant.now().plusSeconds(300), null));
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(accounts.existsByEmail("new@example.test")).thenReturn(false);
+        when(accounts.save(target)).thenReturn(target);
+        when(accounts.credentialVersion(target.getAccountId())).thenReturn(4L);
+        when(patients.displayName(patientId)).thenReturn("Patient One");
+
+        Account updated = service.changePatientEmail(actor, patientId, "NEW@example.test", "  corrected at registration  ");
+
+        assertThat(updated.getUsername()).isEqualTo("new@example.test");
+        verify(patients).requireActivePatient(patientId);
+        verify(accounts).findByOwner(null, patientId);
+        verify(accounts).incrementCredentialVersion(target.getAccountId());
+        verify(emailChanges).record(target.getAccountId(), actor, "old@example.test", "new@example.test",
+                "corrected at registration");
+        verify(emailChanges).queuePatientProfileSync(target.getAccountId(), patientId, "new@example.test");
+        assertThat(recovery.token.usedAt()).isNotNull();
+
+        ArgumentCaptor<SecurityMailStore.NewMessage> messages = ArgumentCaptor.forClass(SecurityMailStore.NewMessage.class);
+        verify(mail, times(2)).enqueue(messages.capture());
+        assertThat(messages.getAllValues()).extracting(SecurityMailStore.NewMessage::recipient)
+                .containsExactlyInAnyOrder("old@example.test", "new@example.test");
+        assertThat(messages.getAllValues()).allMatch(message -> "ACCOUNT_EMAIL_CHANGED".equals(message.kind()));
+    }
+
+    @Test
+    void patientScopedEmailChangeRejectsAnotherPatientAccountOwner() {
+        UUID patientId = UUID.randomUUID();
+        Account wrongOwner = Account.create(UUID.randomUUID(), "other@example.test", "hash", null,
+                UUID.randomUUID(), Role.PATIENT);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(wrongOwner));
+
+        assertThatThrownBy(() -> service.changePatientEmail(UUID.randomUUID(), patientId,
+                "new@example.test", "correction"))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("not linked to this patient profile");
+
+        verify(accounts, never()).findByIdForUpdate(any());
+        verify(accounts, never()).save(any());
+        verifyNoInteractions(emailChanges, mail);
+    }
+
+    @Test
+    void patientScopedEmailChangeRejectsStaffAccountReturnedForPatientOwner() {
+        UUID patientId = UUID.randomUUID();
+        Account staffAccount = Account.create(UUID.randomUUID(), "staff@example.test", "hash",
+                UUID.randomUUID(), null, Role.NURSE);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(staffAccount));
+
+        assertThatThrownBy(() -> service.changePatientEmail(UUID.randomUUID(), patientId,
+                "new@example.test", "correction"))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("not linked to this patient profile");
+
+        verify(accounts, never()).save(any());
+        verifyNoInteractions(emailChanges, mail);
+    }
+
+    @Test
+    void patientScopedEmailChangeRejectsArchivedProfileBeforeResolvingAccount() {
+        UUID patientId = UUID.randomUUID();
+        doThrow(new InvalidAccountException("archived patient profile"))
+                .when(patients).requireActivePatient(patientId);
+
+        assertThatThrownBy(() -> service.changePatientEmail(UUID.randomUUID(), patientId,
+                "new@example.test", "correction"))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("archived patient profile");
+
+        verify(accounts).lockOwner(null, patientId);
+        verifyNoMoreInteractions(accounts);
+        verifyNoInteractions(emailChanges, mail);
+    }
+
+    @Test
+    void patientScopedEmailChangeRejectsDuplicateEmailWithoutChangingCredentials() {
+        UUID patientId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "old@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(accounts.existsByEmail("used@example.test")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.changePatientEmail(UUID.randomUUID(), patientId,
+                "used@example.test", "correction"))
+                .isInstanceOf(InvalidAccountException.class)
+                .hasMessageContaining("already linked");
+
+        verify(accounts, never()).save(any());
+        verify(accounts, never()).incrementCredentialVersion(any());
+        verifyNoInteractions(emailChanges, mail);
+    }
+
+    @Test
+    void samePatientAccountEmailRequeuesOnlyWhenProfileSyncIsStillPending() {
+        UUID patientId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        Account target = Account.create(accountId, "same@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(accountId)).thenReturn(Optional.of(target));
+        when(patients.profileEmail(patientId)).thenReturn("stale@example.test");
+
+        Account unchanged = service.changePatientEmail(UUID.randomUUID(), patientId,
+                "same@example.test", "retry profile sync");
+
+        assertThat(unchanged.getUsername()).isEqualTo("same@example.test");
+        verify(emailChanges).queuePatientProfileSync(accountId, patientId, "same@example.test");
+        verify(accounts, never()).save(any());
+        verify(accounts, never()).incrementCredentialVersion(any());
+        verifyNoInteractions(mail);
+    }
+
+    @Test
+    void patientScopedEmailChangeWithSameAddressDoesNotRevokeOrSendAgain() {
+        UUID patientId = UUID.randomUUID();
+        Account target = Account.create(UUID.randomUUID(), "same@example.test", "old-hash", null,
+                patientId, Role.PATIENT);
+        when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
+        when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
+        when(patients.profileEmail(patientId)).thenReturn("same@example.test");
+
+        Account unchanged = service.changePatientEmail(UUID.randomUUID(), patientId,
+                "SAME@example.test", "correction");
+
+        assertThat(unchanged.getUsername()).isEqualTo("same@example.test");
+        verify(accounts, never()).save(any());
+        verify(accounts, never()).incrementCredentialVersion(any());
+        verifyNoInteractions(emailChanges, mail);
     }
 
     private static Account account(String email, boolean active) {

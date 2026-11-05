@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 NAMES = ["eureka-server", "core-service", "clinical-service", "lab-service",
          "pharmacy-service", "billing-service", "support-service", "gateway"]
 PORTS = dict(zip(NAMES, [28761, 28089, 28082, 28084, 28085, 28086, 28087, 28080]))
+BASE_PORTS = PORTS.copy()
 DATABASES = ["organization", "patient", "clinical", "lab", "pharmacy", "billing", "notification", "report"]
 
 
@@ -66,11 +67,21 @@ def parse_options(argv=None):
     parser.add_argument("--reset-data", action="store_true",
                         help="Replace only the verified persistent demo infrastructure")
     parser.add_argument("--startup-parallelism", type=int, choices=(1, 2, 3), default=2)
+    parser.add_argument("--prepare-report-demo", action="store_true",
+                        help="Seed and accept the closed synthetic Report fixture through ADMIN Gateway APIs")
+    parser.add_argument("--port-offset", type=int, default=0,
+                        help="Add a positive offset to all local rehearsal ports (for parallel disposable stacks)")
     options = parser.parse_args(argv)
     if options.reset_data and not options.persistent:
         parser.error("--reset-data requires --persistent")
     if options.prepare_ui_demo and not options.scheduling:
         parser.error("--prepare-ui-demo requires --scheduling")
+    if options.prepare_report_demo and not options.scheduling:
+        parser.error("--prepare-report-demo requires --scheduling")
+    if options.port_offset < 0 or max(BASE_PORTS.values()) + options.port_offset > 65535:
+        parser.error("--port-offset must keep every local port in 1..65535")
+    if options.port_offset and options.prepare_ui_demo:
+        parser.error("--port-offset cannot be combined with UI preparation, whose fixture scripts require port 28080")
     return options
 
 
@@ -78,12 +89,12 @@ def server_bind_address(name, lan=False):
     return "0.0.0.0" if name == "gateway" and lan else "127.0.0.1"
 
 
-def snapshot_environment_value(value, pgport):
+def snapshot_environment_value(value, pgport, eureka_port=28761):
     # The immutable snapshot uses mediflow_pharmacy; Compose's Docker store has
     # a different name. Both the endpoint and this name belong to this runner.
     return (str(value).replace("postgres:5432", "127.0.0.1:" + pgport)
             .replace("/mediflow_pharmacy_docker", "/mediflow_pharmacy")
-            .replace("http://eureka-server:8761", "http://127.0.0.1:28761"))
+            .replace("http://eureka-server:8761", "http://127.0.0.1:" + str(eureka_port)))
 
 
 def check_stop(stop_file):
@@ -128,6 +139,9 @@ def initialize_infrastructure(options, evidence, containers, pg, rabbit, workspa
                       "-d", "postgres", "-f", "/tmp/demo.sql", log=evidence / "restore-refusal.log", check=False)
     if refused.returncode == 0 or "demo restore refused" not in (refused.stdout + refused.stderr).lower():
         raise RuntimeError("The populated-target restore guard was not confirmed")
+    checked_command("docker", "cp", str(HERE / "seed_report_demo.sql"), pg + ":/tmp/report-demo.sql")
+    checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+            "-d", "mediflow_report", "-f", "/tmp/report-demo.sql", log=evidence / "report-demo-seed.log")
     if options.scheduling:
         checked_command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
         checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
@@ -167,6 +181,7 @@ def start_application_batches(launch, wait, parallelism=2):
 
 def main():
     options = parse_options()
+    PORTS.update({name: port + options.port_offset for name, port in BASE_PORTS.items()})
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     evidence = HERE / "evidence" / ("workspace" if options.persistent else "snapshot-" + stamp)
     evidence.mkdir(parents=True, exist_ok=options.persistent)
@@ -177,10 +192,11 @@ def main():
     lock = None
     if options.persistent:
         from demo_runtime import Workspace, WorkspaceLock
-        workspace = Workspace(ROOT, evidence, run_command, options.scheduling)
+        workspace = Workspace(ROOT, evidence, run_command, options.scheduling, options.prepare_report_demo)
         lock = WorkspaceLock(evidence / 'runner.lock')
         lock.acquire()
     containers, applications, streams = [], [], []
+    report_evidence = None
     prefix = "mediflow-rehearsal-" + stamp + "-" + uuid.uuid4().hex[:8]
     pg, rabbit = prefix + "-pg", prefix + "-rabbit"
     try:
@@ -189,9 +205,10 @@ def main():
                 candidate.bind((server_bind_address(name, options.lan), port))
         (evidence / 'stop').unlink(missing_ok=True)
         manifest = {"persistent": options.persistent, "runnerPid": os.getpid(), "evidence": str(evidence),
-                    "gateway": "http://127.0.0.1:28080", "ports": PORTS,
+                    "gateway": f"http://127.0.0.1:{PORTS['gateway']}", "ports": PORTS,
                     "lan": options.lan, "gatewayBindAddress": server_bind_address("gateway", options.lan),
-                    "scheduling": options.scheduling, "containers": containers, "pids": [],
+                    "scheduling": options.scheduling, "reportDemo": options.prepare_report_demo,
+                    "containers": containers, "pids": [],
                     "stopFile": str(evidence / "stop")}
         manifest_path = HERE / "evidence" / "active-rehearsal.local.json"
         def save_manifest():
@@ -229,23 +246,28 @@ def main():
         print(f"TIMING infrastructure: {time.monotonic() - phase_started:.1f}s", flush=True)
         health = {}
         phase_started = time.monotonic()
-        def launch(name):
+        app_processes = {}
+        def launch(name, report_acceptance=None):
             if (evidence / 'stop').exists():
                 raise InterruptedError('Demo startup stopped by request')
             env = os.environ.copy()
             for key, value in compose[name].get("environment", {}).items():
                 if value is not None:
-                    env[key] = snapshot_environment_value(value, pgport)
+                    env[key] = snapshot_environment_value(value, pgport, PORTS["eureka-server"])
             env.update({"SERVER_PORT": str(PORTS[name]), "SPRING_PROFILES_ACTIVE": "outpatient-mvp",
                         "SERVER_ADDRESS": server_bind_address(name, options.lan),
-                        "EUREKA_DEFAULT_ZONE": "http://127.0.0.1:28761/eureka/",
-                        "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE": "http://127.0.0.1:28761/eureka/",
+                        "EUREKA_DEFAULT_ZONE": f"http://127.0.0.1:{PORTS['eureka-server']}/eureka/",
+                        "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE": f"http://127.0.0.1:{PORTS['eureka-server']}/eureka/",
                         "EUREKA_INSTANCE_PREFER_IP_ADDRESS": "true", "EUREKA_INSTANCE_IP_ADDRESS": "127.0.0.1",
                         "EUREKA_INSTANCE_HOSTNAME": "127.0.0.1", "SPRING_RABBITMQ_HOST": "127.0.0.1",
                         "SPRING_RABBITMQ_PORT": rabbitport, "SPRING_RABBITMQ_USERNAME": "rehearsal",
                         "SPRING_RABBITMQ_PASSWORD": "rehearsal-local", "MEDIFLOW_RABBIT_HOST": "127.0.0.1",
                         "MEDIFLOW_RABBIT_PORT": rabbitport, "MEDIFLOW_RABBIT_USER": "rehearsal",
                         "MEDIFLOW_RABBIT_PASSWORD": "rehearsal-local", "MEDIFLOW_DEMO_SEED_ENABLED": "false"})
+            if report_acceptance is None:
+                report_acceptance = options.prepare_report_demo
+            if name == "support-service":
+                env["MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED"] = "true" if report_acceptance else "false"
             gates = {
                 "clinical-service": ["MEDIFLOW_CARE_FINANCE_V2_ENABLED", "MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED"],
                 "lab-service": ["MEDIFLOW_CARE_FINANCE_V2", "MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED"],
@@ -269,7 +291,7 @@ def main():
             if name == "billing-service":
                 # The scheduling lock adapter uses direct internal HTTP in Docker.
                 # Packaged JAR rehearsal must use the isolated Clinical port instead.
-                env["MEDIFLOW_CLIENTS_CLINICAL_SERVICE"] = "http://127.0.0.1:28082"
+                env["MEDIFLOW_CLIENTS_CLINICAL_SERVICE"] = f"http://127.0.0.1:{PORTS['clinical-service']}"
                 env["MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES"] = "RX-DEMO"
                 env["MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES"] = "EXAM,LAB_TEST,PRESCRIPTION"
                 env["MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE"] = "LOCAL-DEMO-REHEARSAL"
@@ -288,6 +310,7 @@ def main():
                                        cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT,
                                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             applications.append(process)
+            app_processes[name] = process
             manifest['pids'].append(process.pid)
             save_manifest()
             return process
@@ -306,6 +329,35 @@ def main():
         print(f"TIMING applications: {time.monotonic() - phase_started:.1f}s", flush=True)
         (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
         phase_started = time.monotonic()
+        if options.prepare_report_demo:
+            from prepare_ui_demo import DemoApi
+            from prepare_report_demo import prepare as prepare_report
+            report_api = DemoApi(manifest['gateway'], evidence / 'report-demo-journal.local.json', evidence / 'stop')
+            report_evidence = prepare_report(report_api, evidence, accept=True)
+            if report_evidence['availableSyntheticPeriods'] < 2:
+                raise RuntimeError("Expected at least two currently valid synthetic historical Report periods")
+            print("REPORT DEMO READY: " + str(report_evidence['availableSyntheticPeriods'])
+                  + " accepted synthetic periods; source evidence: "
+                  + str(evidence / 'report-demo-acceptance.local.json'), flush=True)
+
+            # Keep the acceptance surface open only while the reviewed synthetic fixture is submitted.
+            previous = app_processes['support-service']
+            previous.terminate()
+            try:
+                previous.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                previous.kill()
+                previous.wait(timeout=5)
+            applications.remove(previous)
+            manifest['pids'].remove(previous.pid)
+            save_manifest()
+            old_stream = next(stream for stream in streams if stream.name.endswith('support-service.log'))
+            old_stream.close()
+            streams.remove(old_stream)
+            replacement = launch('support-service', report_acceptance=False)
+            wait_application('support-service', replacement)
+            print("Report acceptance gate disabled after demo fixture preparation.", flush=True)
+            (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
         if options.prepare_ui_demo:
             from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
             fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json', evidence / 'stop'), dt.datetime.now(ZONE))
@@ -323,7 +375,12 @@ def main():
             else:
                 write_calendar(prepare_calendar(calendar_api), evidence)
         print(f"TIMING UI preparation: {time.monotonic() - phase_started:.1f}s", flush=True)
-        (evidence / "result.txt").write_text("PASS: isolated infrastructure ready, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n", encoding="utf-8")
+        result_text = "PASS: isolated infrastructure ready, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n"
+        if report_evidence:
+            result_text += (f"Report fixture: {report_evidence['availableSyntheticPeriods']} accepted synthetic periods; "
+                            "the 2024 annual scope was verified through ADMIN API and current statistics remain provisional.\n")
+            result_text += "Acceptance endpoint gate disabled after preparation.\n"
+        (evidence / "result.txt").write_text(result_text, encoding="utf-8")
         print("READY " + str(evidence), flush=True)
         if options.keep:
             deadline = time.monotonic() + 7200

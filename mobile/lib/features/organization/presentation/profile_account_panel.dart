@@ -176,7 +176,8 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           _intents.issueOutcomeUnknown = false;
         }
         if (profile.account?.username.toLowerCase() ==
-            _intents.pendingEmailTarget?.toLowerCase()) {
+                _intents.pendingEmailTarget?.toLowerCase() &&
+            !profile.emailSyncPending) {
           _intents.pendingEmailTarget = null;
           _intents.emailOutcomeUnknown = false;
         }
@@ -422,13 +423,12 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             color: Colors.orange,
           ),
         ],
-        if (!widget.owner.isPatient && widget.access.role == 'ADMIN')
-          _buildStaffEmailForm(context, account),
+        if (widget.owner.active && _allowed) _buildEmailForm(context, account),
       ],
     );
   }
 
-  Widget _buildStaffEmailForm(BuildContext context, Account account) => Padding(
+  Widget _buildEmailForm(BuildContext context, Account account) => Padding(
     padding: const EdgeInsets.only(top: 16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -439,30 +439,39 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Quản trị viên cần ghi rõ lý do. Email hồ sơ và tên đăng nhập sẽ được cập nhật cùng thao tác.',
+        Text(
+          widget.owner.isPatient
+              ? 'Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ.'
+              : 'Chỉ quản trị viên được đổi email nhân viên. Email hồ sơ và tên đăng nhập sẽ được cập nhật cùng thao tác.',
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _email,
-          enabled: !_busy && !_intents.emailOutcomeUnknown,
+          enabled:
+              !_busy &&
+              !_intents.emailOutcomeUnknown &&
+              !_intents.resetOutcomeUnknown,
           keyboardType: TextInputType.emailAddress,
           maxLength: 254,
           decoration: const InputDecoration(
             labelText: 'Email đăng nhập mới',
             border: OutlineInputBorder(),
           ),
-          onChanged: (_) => _emailEdited = true,
+          onChanged: (_) => setState(() => _emailEdited = true),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _emailReason,
-          enabled: !_busy && !_intents.emailOutcomeUnknown,
+          enabled:
+              !_busy &&
+              !_intents.emailOutcomeUnknown &&
+              !_intents.resetOutcomeUnknown,
           maxLength: 500,
           decoration: const InputDecoration(
             labelText: 'Lý do thay đổi email',
             border: OutlineInputBorder(),
           ),
+          onChanged: (_) => setState(() {}),
         ),
         if (_intents.emailOutcomeUnknown) ...[
           const _StatusMessage(
@@ -480,12 +489,15 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             onPressed:
                 _busy ||
                     _intents.emailOutcomeUnknown ||
-                    _email.text.trim().toLowerCase() ==
-                        account.username.toLowerCase() ||
+                    _intents.resetOutcomeUnknown ||
+                    (_email.text.trim().toLowerCase() ==
+                            account.username.toLowerCase() &&
+                        !(widget.owner.isPatient &&
+                            _profile?.emailSyncPending == true)) ||
                     !isProfileAccountEmail(_email.text) ||
                     _emailReason.text.trim().isEmpty
                 ? null
-                : () => _updateStaffEmail(account),
+                : () => _updateEmail(account),
             child: const Text('Lưu email mới'),
           ),
         ),
@@ -693,11 +705,21 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
     }
   }
 
-  Future<void> _updateStaffEmail(Account account) async {
-    if (_busy || !_isCurrent(widget.access.sessionIdentity)) return;
+  Future<void> _updateEmail(Account account) async {
+    if (_busy ||
+        !widget.owner.active ||
+        _intents.emailOutcomeUnknown ||
+        _intents.resetOutcomeUnknown ||
+        !_isCurrent(widget.access.sessionIdentity)) {
+      return;
+    }
     final target = _email.text.trim().toLowerCase();
     final reason = _emailReason.text.trim();
-    if (!isProfileAccountEmail(target) || reason.isEmpty) return;
+    if (!isProfileAccountEmail(target) ||
+        reason.isEmpty ||
+        reason.length > 500) {
+      return;
+    }
     final sessionIdentity = widget.access.sessionIdentity;
     setState(() {
       _busy = true;
@@ -707,15 +729,23 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
       _intents.pendingEmailTarget = target;
     });
     try {
-      await UpdateStaffLoginEmail(ref.read(profileAccountRepositoryProvider))
-          .call(accountId: account.id, email: target, reason: reason);
+      final repository = ref.read(profileAccountRepositoryProvider);
+      if (widget.owner.isPatient) {
+        await UpdatePatientLoginEmail(repository)
+            .call(patientId: widget.owner.id, email: target, reason: reason);
+      } else {
+        await UpdateStaffLoginEmail(repository)
+            .call(accountId: account.id, email: target, reason: reason);
+      }
       if (!_isCurrent(sessionIdentity)) return;
       setState(() {
         _intents.emailOutcomeUnknown = false;
         _intents.pendingEmailTarget = null;
         _emailReason.clear();
         _emailEdited = false;
-        _notice = 'Đã cập nhật email đăng nhập. Vui lòng dùng email mới ở lần đăng nhập sau.';
+        _notice = target == account.username.toLowerCase()
+            ? 'Đã yêu cầu đồng bộ email hồ sơ theo email đăng nhập hiện tại.'
+            : 'Đã cập nhật email đăng nhập. Vui lòng dùng email mới ở lần đăng nhập sau.';
       });
       widget.onChanged?.call();
       await _load();
@@ -748,12 +778,23 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
       if (_loadError != null || _profile == null) return;
       final currentUsername = _profile?.account?.username;
       if (currentUsername?.toLowerCase() == target) {
-        setState(() {
-          _intents.emailOutcomeUnknown = false;
-          _intents.pendingEmailTarget = null;
-          _emailEdited = false;
-          _notice = 'Đã xác nhận email đăng nhập mới.';
-        });
+        if (widget.owner.isPatient && _profile?.emailSyncPending == true) {
+          setState(() {
+            _intents.emailOutcomeUnknown = false;
+            _intents.pendingEmailTarget = null;
+            _emailEdited = true;
+            _notice =
+                'Chưa xác nhận đồng bộ. Có thể gửi lại yêu cầu đồng bộ cùng email.';
+          });
+        } else {
+          setState(() {
+            _intents.emailOutcomeUnknown = false;
+            _intents.pendingEmailTarget = null;
+            _emailEdited = false;
+            _emailReason.clear();
+            _notice = 'Đã xác nhận email đăng nhập mới.';
+          });
+        }
         widget.onChanged?.call();
       } else {
         setState(() {

@@ -2,6 +2,7 @@ package com.mediflow.organization.web.controller;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.mediflow.common.api.ApiResponse;
+import com.mediflow.organization.web.dto.response.AccountResponse;
 import com.mediflow.organization.application.service.ProvisionPatientAccountService;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import jakarta.validation.Valid;
@@ -16,6 +17,9 @@ import java.util.UUID;
 import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
 import com.mediflow.organization.application.service.SecurityAccountOperationsService;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/api/v1/org/patient-accounts")
@@ -35,6 +39,12 @@ public class PatientAccountController {
             throw new IllegalArgumentException("Unsupported account issuance field");
         }
     }
+    public record ChangePatientEmailRequest(@Email @NotBlank @Size(max = 254) String email,
+            @NotBlank @Size(max = 500) String reason) {
+        @JsonAnySetter public void rejectUnknown(String key, Object value) {
+            throw new IllegalArgumentException("Unsupported patient account email field");
+        }
+    }
     public record IssuedAccount(UUID accountId, UUID patientId, String username, boolean mustChangePassword,
             MailDeliveryDTO mailDelivery) {}
 
@@ -51,6 +61,16 @@ public class PatientAccountController {
                 .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .body(ApiResponse.ok(new IssuedAccount(account.getAccountId(), account.getPatientId(),
                         account.getUsername(), account.isMustChangePassword(), provisioned.mailDelivery()), correlation.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/{patientId}/email")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    public ResponseEntity<ApiResponse<AccountResponse>> changeEmail(@PathVariable UUID patientId,
+            @Valid @RequestBody ChangePatientEmailRequest request, Authentication authentication) {
+        var account = securityOperations.changePatientEmail(UUID.fromString(authentication.getName()),
+                patientId, request.email(), request.reason());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(ApiResponse.ok(AccountResponse.from(account), correlation.currentOrCreate().toString()));
     }
 
     @PutMapping("/{patientId}/password")

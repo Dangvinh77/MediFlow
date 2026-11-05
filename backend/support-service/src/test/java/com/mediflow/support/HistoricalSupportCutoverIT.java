@@ -208,7 +208,7 @@ class HistoricalSupportCutoverIT {
 
     private void assertReport(int port) throws Exception {
         assertThat(send(port, "GET", "/api/v1/reports/daily?date=2026-10-17", null,
-                SupportSecurityTest.token("MANAGER", "access")).statusCode()).isEqualTo(200);
+                SupportSecurityTest.token("ADMIN", "access")).statusCode()).isEqualTo(200);
     }
 
     private String snapshot(String database, boolean historyOnly) throws Exception {

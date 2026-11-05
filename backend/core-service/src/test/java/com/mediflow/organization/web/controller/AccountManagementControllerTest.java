@@ -64,6 +64,15 @@ class AccountManagementControllerTest {
         verifyNoInteractions(accounts);
         verifyNoInteractions(securityOperations);
     }
+
+    @Test @WithMockUser(roles = "NURSE")
+    void nurseCannotChangeAnAccountEmailThroughTheGenericRoute() throws Exception {
+        mvc.perform(put("/api/v1/org/accounts/" + ACTOR + "/email").contentType("application/json")
+                        .content("{\"email\":\"new@example.test\",\"reason\":\"correction\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(accounts, securityOperations);
+    }
+
     @Test @WithMockUser(roles = "ADMIN")
     void adminCanSearchWithExactFilters() throws Exception {
         when(accounts.search("doc", Role.DOCTOR, false, PageQuery.of(2, 20))).thenReturn(PageResult.empty(PageQuery.of(2, 20)));

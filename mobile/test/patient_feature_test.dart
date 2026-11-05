@@ -143,6 +143,16 @@ Widget host(
   child: const MaterialApp(home: Scaffold(body: PatientPage())),
 );
 
+Future<void> tapPatientSave(WidgetTester tester, String label) async {
+  final save = find.text(label);
+  await tester.scrollUntilVisible(
+    save,
+    240,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(save);
+}
+
 Future<void> enterValidPatientDraft(WidgetTester tester) async {
   await tester.enterText(find.byType(TextFormField).at(0), 'Nguyen Van An');
   await tester.tap(find.byType(TextFormField).at(1));
@@ -185,6 +195,37 @@ void main() {
       throwsArgumentError,
     );
     expect(repository.creates, 0);
+  });
+
+  test('patient contact email accepts the live 254-character limit', () async {
+    final repository = PatientStub();
+    final email = '${'a' * 64}@${'b' * 63}.${'c' * 63}.${'d' * 61}';
+    expect(email, hasLength(254));
+
+    await SavePatient(repository).create(
+      PatientDraft(
+        name: 'An',
+        birthDate: '1988-02-03',
+        gender: 'M',
+        identityNumber: '012345678901',
+        email: email,
+      ),
+    );
+
+    expect(repository.creates, 1);
+    expect(
+      () => SavePatient(repository).create(
+        PatientDraft(
+          name: 'An',
+          birthDate: '1988-02-03',
+          gender: 'M',
+          identityNumber: '012345678901',
+          email: '${email}e',
+        ),
+      ),
+      throwsArgumentError,
+    );
+    expect(repository.creates, 1);
   });
 
   test('Patient wire model supports optional identity updates', () {
@@ -321,7 +362,7 @@ void main() {
       ),
     );
     await enterValidPatientDraft(tester);
-    await tester.tap(find.text('Tạo bệnh nhân'));
+    await tapPatientSave(tester, 'Tạo bệnh nhân');
     await tester.pumpAndSettle();
     expect(repo.creates, 1);
     expect(saved, 1);
@@ -350,13 +391,13 @@ void main() {
       ),
     );
     await enterValidPatientDraft(tester);
-    await tester.tap(find.text('Tạo bệnh nhân'));
+    await tapPatientSave(tester, 'Tạo bệnh nhân');
     await tester.pumpAndSettle();
     expect(repo.creates, 1);
-    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
     await tester.pumpAndSettle();
     expect(find.textContaining('Kết quả tạo chưa xác định.'), findsOneWidget);
-    await tester.tap(find.text('Tạo bệnh nhân'), warnIfMissed: false);
+    await tapPatientSave(tester, 'Tạo bệnh nhân');
     await tester.pumpAndSettle();
     expect(repo.creates, 1);
   });
@@ -409,7 +450,7 @@ void main() {
         find.widgetWithText(TextFormField, 'CCCD/CMND *'),
         '987654321',
       );
-      await tester.tap(find.text('Lưu thay đổi'));
+      await tapPatientSave(tester, 'Lưu thay đổi');
       await tester.pump();
       expect(submitted?.gender, 'F');
       expect(submitted?.identityNumber, '987654321');
@@ -630,7 +671,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tìm kiếm'), findsNothing);
       await enterValidPatientDraft(tester);
-      await tester.tap(find.text('Tạo bệnh nhân'));
+      await tapPatientSave(tester, 'Tạo bệnh nhân');
       await tester.pumpAndSettle();
 
       expect(find.text('New reception patient'), findsOneWidget);

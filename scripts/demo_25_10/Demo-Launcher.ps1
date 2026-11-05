@@ -303,7 +303,7 @@ try {
             if (-not $LocalOnly) { $networkArguments += '--lan' }
             if ($persistent) { $networkArguments += '--persistent' }
             if ($ResetData) { $networkArguments += '--reset-data' }
-            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --keep --startup-parallelism $StartupParallelism @networkArguments
+            & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --prepare-report-demo --keep --startup-parallelism $StartupParallelism @networkArguments
             if ($LASTEXITCODE -ne 0) { throw 'Demo startup failed. See scripts/demo_25_10/evidence/workspace or snapshot-*/ logs.' }
         }
         'Frontend' {

@@ -31,8 +31,12 @@ class CareRouteAuthorizationTest {
     static Stream<Arguments> matrix() {
         List<MatrixRow> rows = List.of(
                 new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/patient-accounts/" + ID + "/email", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/staff/" + ID, Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/patient/" + ID, Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID, Set.of("ADMIN")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID + "/contact",
+                        Set.of("ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/patient-accounts/" + ID + "/password", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/patient-accounts/" + ID + "/mail-delivery", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts/" + ID
@@ -127,6 +131,11 @@ class CareRouteAuthorizationTest {
         for (String role : ROLES) {
             everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT,
                     "/api/v1/org/accounts/" + ID + "/password", role, "ADMIN".equals(role));
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT,
+                    "/api/v1/org/accounts/" + ID + "/email", role, "ADMIN".equals(role));
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT,
+                    "/api/v1/org/patient-accounts/" + ID + "/email", role,
+                    "ADMIN".equals(role) || "NURSE".equals(role));
             everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST,
                     "/api/v1/org/patient-accounts/" + ID + "/password", role, false);
             everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET,

@@ -80,6 +80,11 @@ abstract interface class ProfileAccountRepository {
     required String email,
     required String reason,
   });
+  Future<void> updatePatientEmail({
+    required String patientId,
+    required String email,
+    required String reason,
+  });
 }
 
 class ReadProfileAccount {
@@ -179,6 +184,29 @@ class UpdateStaffLoginEmail {
     }
     return repository.updateStaffEmail(
       accountId: accountId,
+      email: email.trim().toLowerCase(),
+      reason: reason.trim(),
+    );
+  }
+}
+
+class UpdatePatientLoginEmail {
+  const UpdatePatientLoginEmail(this.repository);
+
+  final ProfileAccountRepository repository;
+
+  Future<void> call({
+    required String patientId,
+    required String email,
+    required String reason,
+  }) {
+    _requireId(patientId, 'bệnh nhân');
+    _requireEmail(email);
+    if (reason.trim().isEmpty || reason.trim().length > 500) {
+      throw ArgumentError('Lý do thay đổi email phải có từ 1 đến 500 ký tự.');
+    }
+    return repository.updatePatientEmail(
+      patientId: patientId,
       email: email.trim().toLowerCase(),
       reason: reason.trim(),
     );

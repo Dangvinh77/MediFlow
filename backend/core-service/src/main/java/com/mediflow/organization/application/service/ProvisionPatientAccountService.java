@@ -60,12 +60,15 @@ public class ProvisionPatientAccountService {
                     .orElseThrow(() -> new IllegalStateException("Account creation receipt target is missing"))
                     .getUsername();
         } else {
-            email = patients.email(patientId);
             accounts.lockOwner(null, patientId);
             if (accounts.existsByPatientId(patientId)) {
                 throw new DuplicateResourceException("PATIENT_ACCOUNT_ALREADY_ISSUED",
                         "Bệnh nhân đã được cấp tài khoản. Dùng tài khoản cũ hoặc phục hồi sau xác minh danh tính.");
             }
+            // Read only after taking the owner lock shared with Patient profile email writes.
+            // If a correction wins first, issuance sees the committed email; if issuance wins,
+            // the correction waits and then observes the newly linked account.
+            email = patients.email(patientId);
         }
         var creation = creator.issueWithIdempotency(actor, key, email, null, patientId, Role.PATIENT, false);
         MailDeliveryDTO delivery = null;

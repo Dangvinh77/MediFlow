@@ -1,0 +1,135 @@
+{
+  "baseline": "c586e274fd9b40677bc6a7d2896003fbf92b71db",
+  "scope": "Selected Core patient-account email controller/service, profile-email safeguard, issuance owner lock and Patient write path, patient sync event/dispatcher, append-only email/audit migrations, Gateway exact-method role policy and current source/tests/request fixture. The email/issuance race is coordinated only by the Organization transaction-scoped owner lock; Patient and Organization keep independent local transactions and stores. No producer wire change or schema migration is authorized for this route.",
+  "capturedAt": "2026-11-05",
+  "files": [
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/PatientAccountController.java",
+      "baselineBlob": "aea35c75a882a331c72378ae375e9d51900b498d"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountManagementController.java",
+      "baselineBlob": "b19c2f07fc3a111865b893b2efda5fa9aef4fee8"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/service/SecurityAccountOperationsService.java",
+      "baselineBlob": "612ed3c1e8ab32d76af1cfde7ec55f65247a1aea"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/port/out/PatientAccountIdentityPort.java",
+      "baselineBlob": "f886a4bbdc4cce8b4f7c60fa1d5e0cabdcae306e"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/infrastructure/identity/PatientAccountIdentityAdapter.java",
+      "baselineBlob": "e54173630c4147a2becc2d2470cc5c51948168bd"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/port/out/AccountRepository.java",
+      "baselineBlob": "9132e90563bb8a01cff96f73310d2d48fbae0300"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/service/IsPatientAccountLinkedService.java",
+      "baselineBlob": "7a067eb82a44c5fa3fb87d7443c766fe2aa62a83"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java",
+      "baselineBlob": "410ab07ed32cb7b1119614e84da2aaa1df960479"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/patient/application/service/PatientWriteApplicationService.java",
+      "baselineBlob": "c6738974dfb8624c003007061f73729fff9629f1"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/patient/application/event/PatientUpdatedEvent.java",
+      "baselineBlob": "def42859ceb67f226b44eb56cd62d31965dc4f14"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/patient/infrastructure/messaging/PatientEventPublisherAdapter.java",
+      "baselineBlob": "9681e4d49c548fc09c48d0ae7f71adac69f902ef"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/infrastructure/persistence/adapter/AccountEmailChangeRepositoryAdapter.java",
+      "baselineBlob": "4b89fbc06f57b4a818a9b3fb446c19007d1d68df"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/infrastructure/mail/PatientAccountEmailSyncDispatcher.java",
+      "baselineBlob": "d050214262c8ca5039c07d4adecb706c4795e5cc"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V16__email_account_and_security_mail.sql",
+      "baselineBlob": "c7e75908f6ff648602b159329060eb7543389001"
+    },
+    {
+      "path": "backend/core-service/src/main/resources/db/organization-migration/V17__patient_account_security_audit.sql",
+      "baselineBlob": "931ce5d43095eb45e21d7cd91b0b9a23ac7f3ba6"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/web/controller/PatientAccountControllerTest.java",
+      "baselineBlob": "54a4aae7906f5b6cefaa71516930bac570e0a392"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/web/controller/AccountManagementControllerTest.java",
+      "baselineBlob": "4072c5a1a30da75c5eda04225f83dc9ee35f6d71"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/application/service/SecurityAccountOperationsServiceTest.java",
+      "baselineBlob": "02758b8565863044e232b7b3d6b4085a4931a688"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/patient/web/PatientControllerWebTest.java",
+      "baselineBlob": "0332cb72aa02112da7ada1a6575e563a8858dc12"
+    },
+    {
+      "path": "backend/core-service/requests/patient-onboarding.http",
+      "baselineBlob": "565cd39e3e3efd80fb328ad39535c37613e2e905"
+    },
+    {
+      "path": "backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java",
+      "baselineBlob": "17f40763b401070c3d547639e37eb510470cbd95"
+    },
+    {
+      "path": "backend/gateway/src/test/java/com/mediflow/gateway/CareRouteAuthorizationTest.java",
+      "baselineBlob": "457f0aecd41673a0cae3037b228392b560214adb"
+    },
+    {
+      "path": "docs/plans/03-contracts.md",
+      "baselineBlob": "147f1aa7fb0085129c2bb59ce1aa82b9d50b51fe"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java",
+      "baselineBlob": "ee5893b26bf7960a566fd67c067cb439fd8d63b4"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/web/controller/OwnStaffContactController.java",
+      "baselineBlob": "5405d96a526aff8d2a51b46c505cd76a77c67ba5"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/service/UpdateOwnStaffContactService.java",
+      "baselineBlob": "863fcec4a1216dd6c19d670ab396315dcee92495"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/web/controller/StaffControllerContractTest.java",
+      "baselineBlob": "a3cb3255053357e18671ce816876ff2526851a6f"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/application/service/UpdateOwnStaffContactServiceTest.java",
+      "baselineBlob": "42dfbc41792ae55a8681973d9e57cea7dfa54eaa"
+    },
+    {
+      "path": "backend/core-service/src/main/java/com/mediflow/organization/application/service/ProvisionPatientAccountService.java",
+      "baselineBlob": "46cbf1762ca7bf152d3d4a426f93d21cf0caeaa2"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/organization/application/service/ProvisionPatientAccountServiceTest.java",
+      "baselineBlob": "af7c774df811352527ea19e3c29d7a39e445d8e1"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/patient/PatientServiceIntegrationTest.java",
+      "baselineBlob": "75bef486d1467b693c3cb7c8f91c5599243a1205"
+    },
+    {
+      "path": "backend/core-service/src/test/java/com/mediflow/patient/application/service/PatientWriteApplicationServiceTest.java",
+      "baselineBlob": "af333ace0aeb52227afeeed07f7efc97fa190fa1"
+    }
+  ]
+}

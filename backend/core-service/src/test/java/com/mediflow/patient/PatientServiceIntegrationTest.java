@@ -16,6 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.annotation.DirtiesContext;
@@ -44,6 +45,7 @@ import com.mediflow.patient.infrastructure.persistence.PatientJpaRepository;
 class PatientServiceIntegrationTest {
     @Autowired com.mediflow.organization.application.service.ProvisionPatientAccountService issuance;
     @Autowired com.mediflow.organization.application.port.in.ManageAccountsUseCase accounts;
+    @Autowired com.mediflow.patient.application.port.out.PatientAccountOwnerLockPort patientAccountOwnerLock;
     @Autowired @org.springframework.beans.factory.annotation.Qualifier("organizationDataSource")
     javax.sql.DataSource organizationSource;
 
@@ -101,6 +103,91 @@ class PatientServiceIntegrationTest {
                 .hasFieldOrPropertyWithValue("code", "ACCOUNT_IDEMPOTENCY_KEY_REUSED");
     }
 
+    @Test void emailCorrectionCommitsBeforeIssuanceReadsTheProfileUnderTheSharedOwnerLock() throws Exception {
+        var patient = createPatient.create(new CreatePatientRequest("Race Patient",
+                LocalDate.of(1992, 3, 4), Gender.F,
+                "0" + System.nanoTime(), null, null, "race-old-" + UUID.randomUUID() + "@example.test", null));
+        String correctedEmail = "race-new-" + UUID.randomUUID() + "@example.test";
+        UUID actor = UUID.randomUUID();
+        String key = UUID.randomUUID().toString();
+        var ownerLockHeld = new java.util.concurrent.CountDownLatch(1);
+        var allowProfileWrite = new java.util.concurrent.CountDownLatch(1);
+        var profileWriteCommitted = new java.util.concurrent.CountDownLatch(1);
+        var releaseOwnerLock = new java.util.concurrent.CountDownLatch(1);
+
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var profileUpdate = executor.submit(() -> patientAccountOwnerLock.withOwnerLock(
+                    patient.maBenhNhan(), () -> {
+                        ownerLockHeld.countDown();
+                        awaitLatch(allowProfileWrite, "profile-write barrier");
+                        var updated = updatePatient.update(patient.maBenhNhan(),
+                                new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                                        patient.hoTen(), patient.ngaySinh(), patient.gioiTinh(), patient.diaChi(),
+                                        patient.soDienThoai(), correctedEmail, patient.bhytSo(), patient.soCmnd(), null));
+                        profileWriteCommitted.countDown();
+                        awaitLatch(releaseOwnerLock, "owner-lock release");
+                        return updated;
+                    }));
+
+            assertThat(ownerLockHeld.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            var issuanceStarted = new java.util.concurrent.CountDownLatch(1);
+            var issue = executor.submit(() -> {
+                issuanceStarted.countDown();
+                return issuance.provisionWithMail(actor, key, patient.maBenhNhan());
+            });
+            assertThat(issuanceStarted.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            awaitPatientOwnerLockWait(patient.maBenhNhan());
+            assertThat(issue.isDone()).isFalse();
+
+            allowProfileWrite.countDown();
+            assertThat(profileWriteCommitted.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            releaseOwnerLock.countDown();
+
+            assertThat(profileUpdate.get(10, java.util.concurrent.TimeUnit.SECONDS).email()).isEqualTo(correctedEmail);
+            var provisioned = issue.get(20, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(provisioned.creation().account().getUsername()).isEqualTo(correctedEmail);
+            assertThat(getPatient.getById(patient.maBenhNhan()).email()).isEqualTo(correctedEmail);
+
+            String operation = "patient-issue:" + java.util.HexFormat.of().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256").digest(
+                            (actor + ":" + key).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            var organizationJdbc = new JdbcTemplate(organizationSource);
+            assertThat(organizationJdbc.queryForObject(
+                    "SELECT recipient_email FROM security_mail_message WHERE operation_key=?",
+                    String.class, operation)).isEqualTo(correctedEmail);
+        } finally {
+            releaseOwnerLock.countDown();
+        }
+    }
+
+    private void awaitPatientOwnerLockWait(UUID patientId) throws Exception {
+        String ownerKey = "account-owner:patient:" + patientId;
+        var jdbc = new JdbcTemplate(organizationSource);
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbc.queryForObject("""
+                    SELECT count(*) FROM pg_locks
+                    WHERE locktype='advisory' AND granted=false AND objsubid=1
+                      AND classid::bigint=((hashtextextended(?,0) >> 32) & 4294967295)
+                      AND objid::bigint=(hashtextextended(?,0) & 4294967295)
+                    """, Integer.class, ownerKey, ownerKey);
+            if (waiting != null && waiting > 0) return;
+            Thread.sleep(10);
+        }
+        throw new AssertionError("Issuance did not wait on the patient owner lock");
+    }
+
+    private static void awaitLatch(java.util.concurrent.CountDownLatch latch, String name) {
+        try {
+            if (!latch.await(15, java.util.concurrent.TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Timed out waiting for " + name);
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted waiting for " + name, interrupted);
+        }
+    }
+
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
             "postgres:16-alpine");
@@ -137,6 +224,9 @@ class PatientServiceIntegrationTest {
 
     @Autowired
     private CreatePatientUseCase createPatient;
+
+    @Autowired
+    private com.mediflow.patient.application.port.in.GetPatientUseCase getPatient;
 
     @Autowired
     private com.mediflow.patient.application.port.in.UpdatePatientUseCase updatePatient;

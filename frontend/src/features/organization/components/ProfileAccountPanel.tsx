@@ -102,13 +102,13 @@ function ProfileAccountWorkspace({ ownerType, ownerId, profileActive = true, job
   const { account, profileEmail, emailSyncPending } = lookup.value;
   return <section className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-5">
     <div><h2 className="text-lg font-semibold">Tài khoản hồ sơ</h2><p className="mt-1 text-sm text-muted-foreground">{profileEmail ? `Email hồ sơ: ${profileEmail}` : "Hồ sơ chưa có email để tạo hoặc khôi phục tài khoản."}</p></div>
-    {emailSyncPending ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Email hồ sơ và email đăng nhập đang chờ đồng bộ. Hãy kiểm tra lại trước khi cấp hoặc khôi phục mật khẩu.</p> : null}
+    {emailSyncPending ? <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3"><p role="status" className="text-sm text-warning">Email hồ sơ và email đăng nhập đang chờ đồng bộ. Hãy kiểm tra lại trước khi cấp hoặc khôi phục mật khẩu. Bạn có thể xác minh email đúng và lưu kèm lý do để đồng bộ lại.</p><Button type="button" onClick={() => { setAttempt(value => value + 1); onProfileChanged?.(); }}>Kiểm tra đồng bộ email</Button></div> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {account ? <>
       <p className={`text-sm ${account.isActive ? "text-success" : "text-warning"}`}>{account.isActive ? "Tài khoản đang hoạt động" : "Tài khoản đã khóa"}</p>
       <p className="text-sm text-muted-foreground">Email đăng nhập: {account.username}</p>
       {!profileActive ? <p role="status" className="text-sm text-warning">Hồ sơ đã ngừng hoạt động. Các thao tác gửi mật khẩu tạm đang bị khóa.</p> : null}
-      <AdminAccountSecurity key={`${ownerType}:${ownerId}:${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} patientIdForMail={ownerType === "patient" ? ownerId : undefined} allowEmailChange={role === "ADMIN"} disablePasswordActions={!profileActive || emailSyncPending || (ownerType === "patient" && !account.isActive)} onEmailChanged={() => { setAttempt(value => value + 1); onProfileChanged?.(); }} />
+      <AdminAccountSecurity key={`${ownerType}:${ownerId}:${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} patientIdForMail={ownerType === "patient" ? ownerId : undefined} emailSyncPending={ownerType === "patient" && emailSyncPending} allowEmailChange={profileActive && (role === "ADMIN" || (ownerType === "patient" && role === "NURSE"))} disablePasswordActions={!profileActive || emailSyncPending || (ownerType === "patient" && !account.isActive)} onEmailChanged={() => { setAttempt(value => value + 1); onProfileChanged?.(); }} />
     </> : <>
       <p className="text-sm text-muted-foreground">{profileEmail ? "Tài khoản được tạo bằng email hồ sơ; mật khẩu ban đầu được gửi qua thư." : "Cập nhật email hồ sơ trước khi tạo tài khoản."}</p>
       <Button type="button" variant="primary" loading={busy} disabled={busy || !profileActive || !profileEmail || emailSyncPending || (ownerType === "staff" && !jobTitle)} onClick={() => void issue()}>

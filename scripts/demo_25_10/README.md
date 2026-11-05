@@ -8,7 +8,7 @@ Các file BAT nằm trong [`../run/`](../run/). Có thể mở trực tiếp t�
 hướng dẫn đầy đủ ở [`HUONG_DAN.txt`](../run/HUONG_DAN.txt). Các lệnh bên dưới tính từ gốc dự án.
 
 1. `scripts/run/start-backend.bat`: tự nạp `smtp.local.env`, chọn IP Wi-Fi/LAN, kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
-   chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch và lượt nguồn tái khám qua API.
+   chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch, Report demo có đối soát synthetic và lượt nguồn tái khám qua API.
    Chờ `READY` và giữ cửa sổ mở; đọc dòng `UI DATA` / `FOLLOW-UP SOURCE READY` hoặc `PARTIAL`.
 2. `scripts/run/start-frontend.bat`: cài dependencies theo lockfile và chạy web tại
    `http://<IP-máy>:3000`, nối Gateway nội bộ `http://127.0.0.1:28080`, bật các UI gates demo. Điện thoại dùng Gateway `http://<IP-máy>:28080/api`.
@@ -172,9 +172,14 @@ Run the packaged Lab acceptance separately from the full topology/Billing suite 
 this laptop: a concurrent rehearsal hit an Organization upstream deadline.
 
 The Gateway smoke logs in through the real synthetic ADMIN account and reads all
-six deployments. Report uses the snapshot's accepted closed day `2025-06-15` and
-department `9a6dd24a-1c1f-4122-9e31-7cfea345ec45`. An uncovered current period returns
-`404 REPORT_NOT_FOUND`; do not fabricate coverage or change SQL to make it appear.
+six deployments. The default Windows launcher layers deterministic Report projections,
+generates five synthetic export files, and uses the existing ADMIN preview/acceptance API
+for the closed 2024 annual general-clinic fixture. It then restarts Support with the
+acceptance gate disabled. The snapshot's existing 2025 annual synthetic acceptance stays
+valid, so the demo has at least two available synthetic historical periods. Report chart
+data from Sep–Nov 2026 is provisional. Direct import of the monolithic snapshot alone
+still contains only its 2025 accepted scope; see [REPORT_READINESS.md](REPORT_READINESS.md)
+for the companion SQL and explicit API preparation flow. Do not add coverage with SQL.
 
 After the web build, launch Next with the same UI gates:
 
@@ -253,6 +258,8 @@ Do not use the runner against a project/deployed database. Stop the stack with t
   presenter steps, gates, routes, errors and historical scenario IDs.
 - [SQL snapshot](MediFlow_Demo_Database_2026-10-25.sql): import with `psql`, empty
   isolated targets only. Do not reset delivery rows or edit clearance/state IDs.
+- [Report readiness and seed](REPORT_READINESS.md): deterministic Report companion data,
+  explicit five-export preview/acceptance workflow, and retained synthetic evidence paths.
 
 Topology health and snapshot restore smoke do not certify every refund, Pharmacy
 dispense or Report coverage workflow. The normal paid Lab acceptance specifically

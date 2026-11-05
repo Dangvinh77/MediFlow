@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediflow_mobile/core/domain/workspace_access.dart';
+import 'package:mediflow_mobile/core/config/app_config.dart';
 import 'package:mediflow_mobile/core/domain/page_result.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/features/billing/domain/billing_models.dart';
+import 'package:mediflow_mobile/features/billing/domain/scheduled_payments.dart';
 import 'package:mediflow_mobile/features/billing/data/billing_dto.dart';
 import 'package:mediflow_mobile/features/billing/presentation/billing_page.dart';
 import 'package:mediflow_mobile/features/billing/presentation/invoice_page.dart';
 import 'package:mediflow_mobile/features/billing/presentation/providers.dart';
+import 'package:mediflow_mobile/features/billing/presentation/scheduled_payment_page.dart';
 
 import 'billing_notification_fixtures.dart';
 
@@ -91,22 +94,212 @@ Future<void> enterField(WidgetTester tester, String label, String value) async {
   await tester.enterText(finder, value);
 }
 
-Widget billingHost(BillingStub repository, {String role = 'ADMIN'}) =>
-    ProviderScope(
-      overrides: [
-        workspaceAccessProvider.overrideWithValue(
-          WorkspaceAccess(sessionIdentity: Object(), role: role),
-        ),
-        billingRepositoryProvider.overrideWithValue(repository),
-      ],
-      child: const MaterialApp(home: Scaffold(body: BillingPage())),
+class ScheduledBillingFake extends Fake implements ScheduledPaymentRepository {
+  ScheduledBillingFake({
+    this.readGate,
+    this.firstPayError,
+    this.firstZeroError,
+    this.resultStatus = 'PREPARING',
+    this.quote,
+    this.quoteError,
+    Map<String, dynamic>? requestJson,
+  }) : request = BillingDto.scheduledPaymentRequest(
+         requestJson ?? scheduledPaymentRequestJson(),
+       );
+
+  final Completer<void>? readGate;
+  final Object? firstPayError, firstZeroError;
+  final String resultStatus;
+  final RegistrationPaymentRequest request;
+  OutpatientQuote? quote;
+  Object? quoteError;
+  final payments =
+      <
+        ({
+          String paymentRequestId,
+          ScheduledPaymentCommand command,
+          String idempotencyKey,
+          String correlationId,
+        })
+      >[];
+  final zeroPayments =
+      <
+        ({
+          String paymentRequestId,
+          ScheduledZeroLiabilityCommand command,
+          String idempotencyKey,
+          String correlationId,
+        })
+      >[];
+
+  @override
+  Future<PageResult<ScheduledPaymentQueueItem>> scheduledPaymentQueue({
+    String? patientId,
+    int page = 0,
+  }) async => PageResult(
+    items: const [],
+    number: page,
+    totalPages: 1,
+    totalElements: 0,
+  );
+
+  @override
+  Future<RegistrationPaymentRequest> scheduledPaymentRequestByRegistration(
+    String registrationId,
+  ) async => request;
+
+  @override
+  Future<OutpatientQuote> outpatientQuote(String paymentRequestId) async {
+    final error = quoteError;
+    if (error != null) throw error;
+    return quote ??
+        (throw UnsupportedError('No quote configured for this test.'));
+  }
+
+  @override
+  Future<ScheduledPaymentResult> payScheduledRequest(
+    String paymentRequestId,
+    ScheduledPaymentCommand command, {
+    required String idempotencyKey,
+    required String correlationId,
+  }) async {
+    payments.add((
+      paymentRequestId: paymentRequestId,
+      command: command,
+      idempotencyKey: idempotencyKey,
+      correlationId: correlationId,
+    ));
+    if (payments.length == 1 && firstPayError != null) throw firstPayError!;
+    return BillingDto.scheduledPaymentResult(
+      scheduledPaymentResultJson(status: resultStatus),
     );
+  }
+
+  @override
+  Future<ScheduledPaymentResult> confirmScheduledZeroLiability(
+    String paymentRequestId,
+    ScheduledZeroLiabilityCommand command, {
+    required String idempotencyKey,
+    required String correlationId,
+  }) async {
+    zeroPayments.add((
+      paymentRequestId: paymentRequestId,
+      command: command,
+      idempotencyKey: idempotencyKey,
+      correlationId: correlationId,
+    ));
+    if (zeroPayments.length == 1 && firstZeroError != null) {
+      throw firstZeroError!;
+    }
+    return BillingDto.scheduledPaymentResult(
+      scheduledPaymentResultJson(
+        status: resultStatus,
+        basis: 'ZERO_LIABILITY',
+        quoteId: command.quoteId,
+      ),
+    );
+  }
+}
+
+class MemoryScheduledPaymentRecoveryStore
+    implements ScheduledPaymentRecoveryStore {
+  MemoryScheduledPaymentRecoveryStore({this.readGate});
+
+  final Completer<void>? readGate;
+  final Map<String, ScheduledPaymentRecovery> entries = {};
+
+  @override
+  Future<ScheduledPaymentRecovery?> read(String paymentRequestId) async {
+    await readGate?.future;
+    return entries[paymentRequestId];
+  }
+
+  @override
+  Future<void> save(
+    String paymentRequestId,
+    ScheduledPaymentRecovery recovery,
+  ) async {
+    entries[paymentRequestId] = recovery;
+  }
+
+  @override
+  Future<void> clear(String paymentRequestId) async {
+    entries.remove(paymentRequestId);
+  }
+}
+
+Widget billingHost(
+  BillingStub repository, {
+  String role = 'ADMIN',
+  bool schedulingEnabled = false,
+}) => ProviderScope(
+  overrides: [
+    workspaceAccessProvider.overrideWithValue(
+      WorkspaceAccess(sessionIdentity: Object(), role: role),
+    ),
+    billingRepositoryProvider.overrideWithValue(repository),
+    scheduledPaymentRepositoryProvider.overrideWithValue(
+      ScheduledBillingFake(),
+    ),
+    scheduledPaymentRecoveryStoreProvider.overrideWithValue(
+      MemoryScheduledPaymentRecoveryStore(),
+    ),
+    appConfigProvider.overrideWithValue(
+      AppConfig(
+        'http://localhost:8080/api',
+        scheduledPaymentsEnabled: schedulingEnabled,
+      ),
+    ),
+  ],
+  child: const MaterialApp(home: Scaffold(body: BillingPage())),
+);
+
+OutpatientQuote examQuote({
+  required String quoteId,
+  required Money payable,
+  required Money support,
+  required String supportRate,
+}) {
+  final now = DateTime.now().toUtc();
+  return OutpatientQuote(
+    quoteId: quoteId,
+    paymentRequestId: paymentRequestId,
+    patientId: patientId,
+    careEpisodeType: 'OUTPATIENT_VISIT',
+    careEpisodeId: episodeId,
+    currency: 'VND',
+    lines: [
+      OutpatientQuoteLine(
+        sourceId: registrationId,
+        sourceType: 'EXAM',
+        priceCode: 'EXAM-001',
+        catalogueVersion: 'catalogue-v1',
+        policyVersion: 'support-v1',
+        description: 'Khám ngoại trú',
+        quantity: '1',
+        unitPrice: const Money(10000),
+        grossAmount: const Money(10000),
+        supportRate: supportRate,
+        supportAmount: support,
+        patientPayable: payable,
+      ),
+    ],
+    grossAmount: const Money(10000),
+    supportAmount: support,
+    patientPayable: payable,
+    issuedAt: now.toIso8601String(),
+    expiresAt: now.add(const Duration(hours: 1)).toIso8601String(),
+  );
+}
 
 Future<void> openLedger(WidgetTester tester, BillingStub repository) async {
   await tester.pumpWidget(billingHost(repository));
   await tester.pumpAndSettle();
   await tester.tap(
-    find.descendant(of: find.byType(TabBar), matching: find.text('Khoản thu')),
+    find.descendant(
+      of: find.byType(TabBar),
+      matching: find.text('Xét nghiệm và thuốc'),
+    ),
   );
   await tester.pumpAndSettle();
   await enterField(tester, 'Mã nguồn (sourceId)', sourceId);
@@ -135,6 +328,379 @@ void main() {
     expect(repository.completedPayments, isEmpty);
     expect(repository.refundRequests, isEmpty);
   });
+
+  testWidgets(
+    'cashier starts in the live collection queue and sees web tasks',
+    (tester) async {
+      useTallViewport(tester);
+      await tester.pumpWidget(billingHost(BillingStub(), role: 'CASHIER'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(TabBar),
+          matching: find.text('Xét nghiệm và thuốc'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Lịch sử thu'), findsOneWidget);
+      expect(find.text('Hoàn tiền'), findsOneWidget);
+      expect(find.text('Phí khám'), findsNothing);
+      expect(find.text('Báo cáo'), findsNothing);
+      expect(find.text('Tra cứu khoản thu'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'scheduled exam fees appear only for cashier roles when enabled',
+    (tester) async {
+      useTallViewport(tester);
+      await tester.pumpWidget(
+        billingHost(BillingStub(), role: 'CASHIER', schedulingEnabled: true),
+      );
+      await tester.pumpAndSettle();
+      final scheduledTab = find.descendant(
+        of: find.byType(TabBar),
+        matching: find.text('Phí khám'),
+      );
+      expect(scheduledTab, findsOneWidget);
+      await tester.tap(scheduledTab);
+      await tester.pumpAndSettle();
+      expect(find.text('Thu phí khám'), findsOneWidget);
+
+      await tester.pumpWidget(
+        billingHost(BillingStub(), role: 'MANAGER', schedulingEnabled: true),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Phí khám'), findsNothing);
+      expect(find.text('Doanh thu theo khoa'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'scheduled queue search scrolls into view on a narrow keyboard-height viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.45)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: ScheduledPaymentQueuePage(
+              repository: ScheduledBillingFake(),
+              recoveryStore: MemoryScheduledPaymentRecoveryStore(),
+              quoteEnabled: false,
+              zeroPayableEnabled: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tra cứu theo mã đăng ký'));
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 290);
+      await tester.pumpAndSettle();
+
+      final registration = fieldWithLabel('Mã đăng ký (UUID)');
+      await tester.ensureVisible(registration);
+      await tester.pumpAndSettle();
+      final search = find.widgetWithText(FilledButton, 'Tra cứu phí khám');
+      await tester.scrollUntilVisible(
+        search,
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.getRect(registration).bottom, lessThanOrEqualTo(350));
+      expect(tester.getRect(search).bottom, lessThanOrEqualTo(350));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'scheduled collection waits for recovery and retries the frozen amount with the same key',
+    (tester) async {
+      useTallViewport(tester);
+      final readGate = Completer<void>();
+      final repository = ScheduledBillingFake(
+        firstPayError: StateError('Connection lost'),
+      );
+      final recoveryStore = MemoryScheduledPaymentRecoveryStore(
+        readGate: readGate,
+      );
+      final request = repository.request;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ScheduledPaymentCollectionPage(
+              repository: repository,
+              recoveryStore: recoveryStore,
+              request: request,
+              quoteEnabled: false,
+              zeroPayableEnabled: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final pay = find.widgetWithText(FilledButton, 'Thu phí khám');
+      expect(pay, findsOneWidget);
+      expect(tester.widget<FilledButton>(pay).onPressed, isNull);
+      readGate.complete();
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(pay).onPressed, isNotNull);
+
+      await tester.tap(pay);
+      await tester.pumpAndSettle();
+      expect(find.text('Gửi lại đúng yêu cầu đã khóa'), findsOneWidget);
+      expect(repository.payments, hasLength(1));
+      expect(repository.payments.single.command.amount, '75.00');
+      expect(repository.payments.single.command.reservationId, reservationId);
+      final firstAttemptKey = repository.payments.single.idempotencyKey;
+      expect(
+        recoveryStore.entries[request.paymentRequestId]?.idempotencyKey,
+        firstAttemptKey,
+      );
+
+      await tester.tap(find.text('Gửi lại đúng yêu cầu đã khóa'));
+      await tester.pumpAndSettle();
+      expect(repository.payments, hasLength(2));
+      expect(repository.payments.last.idempotencyKey, firstAttemptKey);
+      expect(repository.payments.last.command.amount, '75.00');
+      expect(
+        recoveryStore.entries[request.paymentRequestId]?.operationId,
+        paymentOperationId,
+      );
+      expect(
+        find.textContaining('Đang chờ Billing hoàn tất giao dịch'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'idempotency conflict retains the frozen command for an exact retry',
+    (tester) async {
+      useTallViewport(tester);
+      final repository = ScheduledBillingFake(
+        firstPayError: const ApiFailure(
+          'Idempotency conflict',
+          status: 409,
+          code: 'BILLING_IDEMPOTENCY_CONFLICT',
+        ),
+      );
+      final recoveryStore = MemoryScheduledPaymentRecoveryStore();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ScheduledPaymentCollectionPage(
+              repository: repository,
+              recoveryStore: recoveryStore,
+              request: repository.request,
+              quoteEnabled: false,
+              zeroPayableEnabled: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Thu phí khám'));
+      await tester.pumpAndSettle();
+
+      final firstKey = repository.payments.single.idempotencyKey;
+      expect(recoveryStore.entries[paymentRequestId]?.idempotencyKey, firstKey);
+      expect(find.text('Gửi lại đúng yêu cầu đã khóa'), findsOneWidget);
+
+      await tester.tap(find.text('Gửi lại đúng yêu cầu đã khóa'));
+      await tester.pumpAndSettle();
+      expect(repository.payments, hasLength(2));
+      expect(repository.payments.last.idempotencyKey, firstKey);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('discounted exam collection uses the Billing payable amount', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final quote = examQuote(
+      quoteId: '10000000-0000-4000-8000-000000000020',
+      payable: const Money(7500),
+      support: const Money(2500),
+      supportRate: '0.25',
+    );
+    final repository = ScheduledBillingFake(
+      quote: quote,
+      requestJson: scheduledPaymentRequestJson(
+        status: 'PENDING',
+        requestedAmount: '75.00',
+        paidAmount: '0.00',
+        remainingAmount: '75.00',
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ScheduledPaymentCollectionPage(
+            repository: repository,
+            recoveryStore: MemoryScheduledPaymentRecoveryStore(),
+            request: repository.request,
+            quoteEnabled: true,
+            zeroPayableEnabled: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Thu phí khám'));
+    await tester.pumpAndSettle();
+
+    expect(repository.payments, hasLength(1));
+    expect(repository.payments.single.command.amount, '75.00');
+    expect(
+      repository.payments.single.command.amount,
+      quote.patientPayable.format(),
+    );
+    expect(repository.payments.single.command.quoteId, quote.quoteId);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'zero-liability request is available at zero balance and frozen retry ignores a missing refreshed quote',
+    (tester) async {
+      useTallViewport(tester);
+      const zeroQuoteId = '10000000-0000-4000-8000-000000000021';
+      final repository = ScheduledBillingFake(
+        quote: examQuote(
+          quoteId: zeroQuoteId,
+          payable: const Money(0),
+          support: const Money(10000),
+          supportRate: '1.0',
+        ),
+        firstZeroError: StateError('Connection lost'),
+        requestJson: scheduledPaymentRequestJson(
+          status: 'PENDING',
+          requestedAmount: '0.00',
+          paidAmount: '0.00',
+          remainingAmount: '0.00',
+        ),
+      );
+      final recoveryStore = MemoryScheduledPaymentRecoveryStore();
+      Widget page(Key key) => MaterialApp(
+        home: Scaffold(
+          body: ScheduledPaymentCollectionPage(
+            key: key,
+            repository: repository,
+            recoveryStore: recoveryStore,
+            request: repository.request,
+            quoteEnabled: true,
+            zeroPayableEnabled: true,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(page(const ValueKey('zero-first')));
+      await tester.pumpAndSettle();
+      final confirmZero = find.text('Xác nhận nghĩa vụ 0 đồng');
+      expect(confirmZero, findsOneWidget);
+      await tester.tap(confirmZero);
+      await tester.pumpAndSettle();
+      expect(repository.zeroPayments, hasLength(1));
+      final frozen = recoveryStore.entries[paymentRequestId]!;
+      final frozenKey = frozen.idempotencyKey;
+      expect(frozen.zeroCommand?.quoteId, zeroQuoteId);
+      expect(find.text('Gửi lại đúng yêu cầu đã khóa'), findsOneWidget);
+
+      repository.quote = null;
+      repository.quoteError = const ApiFailure(
+        'No current quote',
+        status: 404,
+        code: 'OUTPATIENT_QUOTE_NOT_FOUND',
+      );
+      await tester.pumpWidget(page(const ValueKey('zero-reopened')));
+      await tester.pumpAndSettle();
+      expect(find.text('Gửi lại đúng yêu cầu đã khóa'), findsOneWidget);
+      await tester.tap(find.text('Gửi lại đúng yêu cầu đã khóa'));
+      await tester.pumpAndSettle();
+      expect(repository.zeroPayments, hasLength(2));
+      expect(repository.zeroPayments.last.idempotencyKey, frozenKey);
+      expect(repository.zeroPayments.last.command.quoteId, zeroQuoteId);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a closed unpaid operation clears recovery and blocks another collection',
+    (tester) async {
+      useTallViewport(tester);
+      final repository = ScheduledBillingFake(resultStatus: 'CLOSED_NOT_PAID');
+      final recoveryStore = MemoryScheduledPaymentRecoveryStore();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ScheduledPaymentCollectionPage(
+              repository: repository,
+              recoveryStore: recoveryStore,
+              request: repository.request,
+              quoteEnabled: false,
+              zeroPayableEnabled: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Thu phí khám'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('được đóng mà chưa thu tiền'), findsOneWidget);
+      expect(find.text('Thu phí khám'), findsNothing);
+      expect(recoveryStore.entries, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'closed-not-paid conflict clears recovery and disables a stale request',
+    (tester) async {
+      useTallViewport(tester);
+      final repository = ScheduledBillingFake(
+        firstPayError: const ApiFailure(
+          'Payment operation closed without payment',
+          status: 409,
+          code: 'PAYMENT_OPERATION_CLOSED',
+        ),
+      );
+      final recoveryStore = MemoryScheduledPaymentRecoveryStore();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ScheduledPaymentCollectionPage(
+              repository: repository,
+              recoveryStore: recoveryStore,
+              request: repository.request,
+              quoteEnabled: false,
+              zeroPayableEnabled: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Thu phí khám'));
+      await tester.pumpAndSettle();
+
+      expect(recoveryStore.entries, isEmpty);
+      expect(find.textContaining('được đóng mà chưa thu tiền'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Thu phí khám'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('invoice patient edit invalidates a late history response', (
     tester,
@@ -400,7 +966,7 @@ void main() {
 
     await tester.tap(find.text('Báo cáo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Khoản thu'));
+    await tester.tap(find.text('Xét nghiệm và thuốc'));
     await tester.pumpAndSettle();
     final retry = find.text('Gửi lại đúng lệnh đã khóa');
     await ensureFinderVisible(tester, retry);

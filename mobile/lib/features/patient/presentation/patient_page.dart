@@ -657,115 +657,134 @@ class _PatientFormState extends State<_PatientForm> {
     }
     return Form(
       key: _form,
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          TextFormField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Họ và tên *'),
-            maxLength: 100,
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Vui lòng nhập họ tên.'
-                : value.trim().length > 100
-                ? 'Họ tên tối đa 100 ký tự.'
-                : null,
-          ),
-          TextFormField(
-            controller: _birthDate,
-            readOnly: true,
-            decoration: const InputDecoration(labelText: 'Ngày sinh *'),
-            onTap: _pickBirthDate,
-            validator: (value) => isValidPatientBirthDate(value ?? '')
-                ? null
-                : 'Vui lòng chọn ngày sinh hợp lệ, không ở tương lai.',
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _gender,
-            decoration: const InputDecoration(labelText: 'Giới tính *'),
-            items: const [
-              DropdownMenuItem(value: 'M', child: Text('Nam')),
-              DropdownMenuItem(value: 'F', child: Text('Nữ')),
-            ],
-            onChanged: (value) => setState(() => _gender = value ?? 'M'),
-          ),
-          TextFormField(
-            controller: _identity,
-            decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
-            maxLength: 20,
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Vui lòng nhập số CCCD/CMND.'
-                : value.trim().length > 20
-                ? 'Tối đa 20 ký tự.'
-                : null,
-          ),
-          TextFormField(
-            controller: _phone,
-            decoration: const InputDecoration(labelText: 'Điện thoại'),
-            keyboardType: TextInputType.phone,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
-                ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
-                : null,
-          ),
-          TextFormField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    (value.trim().length > 100 ||
-                        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                            .hasMatch(value.trim()))
-                ? 'Email không hợp lệ.'
-                : null,
-          ),
-          TextFormField(
-            controller: _address,
-            decoration: const InputDecoration(labelText: 'Địa chỉ'),
-            maxLength: 255,
-            maxLines: 2,
-          ),
-          TextFormField(
-            controller: _insurance,
-            decoration: const InputDecoration(labelText: 'Mã BHYT'),
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    !RegExp(r'^\d{2}-\d{8}-\d$').hasMatch(value.trim())
-                ? 'Mã BHYT phải theo dạng 12-12345678-1.'
-                : null,
-          ),
-          if (_saveError != null) ...[
-            const SizedBox(height: 8),
-            RequestError(_saveError!),
-          ],
-          if (_uncertainCreate)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Họ và tên *'),
+              maxLength: 100,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Vui lòng nhập họ tên.'
+                  : value.trim().length > 100
+                  ? 'Họ tên tối đa 100 ký tự.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _birthDate,
+              readOnly: true,
+              decoration: const InputDecoration(labelText: 'Ngày sinh *'),
+              onTap: _pickBirthDate,
+              validator: (value) => isValidPatientBirthDate(value ?? '')
+                  ? null
+                  : 'Vui lòng chọn ngày sinh hợp lệ, không ở tương lai.',
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _gender,
+              decoration: const InputDecoration(labelText: 'Giới tính *'),
+              items: const [
+                DropdownMenuItem(value: 'M', child: Text('Nam')),
+                DropdownMenuItem(value: 'F', child: Text('Nữ')),
+              ],
+              onChanged: (value) => setState(() => _gender = value ?? 'M'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _identity,
+              decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
+              maxLength: 20,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Vui lòng nhập số CCCD/CMND.'
+                  : value.trim().length > 20
+                  ? 'Tối đa 20 ký tự.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phone,
+              decoration: const InputDecoration(labelText: 'Điện thoại'),
+              keyboardType: TextInputType.phone,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
+                  ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _email,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+              maxLength: 254,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      (value.trim().length > 254 ||
+                          !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                              .hasMatch(value.trim()))
+                  ? 'Email không hợp lệ.'
+                  : null,
+            ),
+            if (_editing)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Email của tài khoản đã cấp được đổi trong mục Tài khoản của hồ sơ. Nếu chưa có tài khoản, cập nhật email tại đây rồi cấp tài khoản.',
+                ),
               ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _address,
+              decoration: const InputDecoration(labelText: 'Địa chỉ'),
+              maxLength: 255,
+              maxLines: 2,
             ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _saving || _uncertainCreate ? null : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
-          ),
-          if (_uncertainCreate)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Quay lại danh sách để làm mới'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _insurance,
+              decoration: const InputDecoration(labelText: 'Mã BHYT'),
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      !RegExp(r'^\d{2}-\d{8}-\d$').hasMatch(value.trim())
+                  ? 'Mã BHYT phải theo dạng 12-12345678-1.'
+                  : null,
             ),
-        ],
+            if (_saveError != null) ...[
+              const SizedBox(height: 8),
+              RequestError(_saveError!),
+            ],
+            if (_uncertainCreate)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.',
+                ),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _saving || _uncertainCreate ? null : _save,
+              icon: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
+            ),
+            if (_uncertainCreate)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Quay lại danh sách để làm mới'),
+              ),
+          ],
+        ),
       ),
     );
   }

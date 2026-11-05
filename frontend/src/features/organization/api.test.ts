@@ -94,6 +94,8 @@ describe("organizationApi facade contract", () => {
     expect(get).toHaveBeenLastCalledWith(`/v1/org/patient-accounts/${patientId}/mail-delivery`);
     await organizationApi.retryPatientMail(patientId, "mail-1");
     expect(post).toHaveBeenLastCalledWith(`/v1/org/patient-accounts/${patientId}/mail-delivery/mail-1/retry`, {});
+    await organizationApi.updatePatientEmail(patientId, "new@example.com", "Patient verified");
+    expect(put).toHaveBeenLastCalledWith(`/v1/org/patient-accounts/${patientId}/email`, { email: "new@example.com", reason: "Patient verified" });
   });
 
   it("posts and puts department DTO bodies, including explicit null to remove a head", async () => {

@@ -31,11 +31,15 @@ import '../features/organization/data/gateway_organization_repository.dart';
 import '../features/organization/data/gateway_profile_account_repository.dart';
 import '../features/organization/presentation/providers.dart';
 import '../features/billing/data/gateway_billing_repository.dart';
+import '../features/billing/data/secure_scheduled_payment_recovery_store.dart';
+import '../features/billing/domain/billing_models.dart';
 import '../features/billing/presentation/providers.dart';
 import '../features/notification/data/gateway_notification_repository.dart';
 import '../features/notification/presentation/providers.dart';
 import '../features/pharmacy/data/gateway_pharmacy_repository.dart';
 import '../features/pharmacy/presentation/providers.dart';
+import '../features/self_profile/data/gateway_self_profile_repository.dart';
+import '../features/self_profile/presentation/providers.dart';
 
 final _pharmacyAdapterProvider = Provider(
   (ref) => GatewayPharmacyRepository(ref.watch(apiClientProvider)),
@@ -55,6 +59,17 @@ final appOverrides = [
   paymentQueueRepositoryProvider.overrideWith(
     (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
   ),
+  scheduledPaymentRepositoryProvider.overrideWith(
+    (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
+  ),
+  scheduledPaymentRecoveryStoreProvider.overrideWith((ref) {
+    final accountId = ref.watch(workspaceAccessProvider)?.accountId;
+    if (accountId == null || !isBillingUuid(accountId)) return null;
+    return SecureScheduledPaymentRecoveryStore(
+      const FlutterSecureStorage(),
+      accountId: accountId,
+    );
+  }),
   accountRecoveryProvider.overrideWith(
     (ref) => GatewayAccountRecovery(ref.watch(apiClientProvider)),
   ),
@@ -108,6 +123,7 @@ final appOverrides = [
     return WorkspaceAccess(
       sessionIdentity: Object(),
       role: session.role.wire,
+      accountId: session.accountId,
       patientId: session.patientId,
       staffId: session.staffId,
     );
@@ -130,6 +146,9 @@ final appOverrides = [
   ),
   organizationRepositoryProvider.overrideWith(
     (ref) => GatewayOrganizationRepository(ref.watch(apiClientProvider)),
+  ),
+  selfProfileRepositoryProvider.overrideWith(
+    (ref) => GatewaySelfProfileRepository(ref.watch(apiClientProvider)),
   ),
   billingRepositoryProvider.overrideWith(
     (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),

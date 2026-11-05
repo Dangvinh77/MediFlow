@@ -161,7 +161,7 @@ class SavePatient {
     final email = draft.email?.trim();
     if (email != null &&
         email.isNotEmpty &&
-        (email.length > 100 ||
+        (email.length > 254 ||
             !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email))) {
       throw ArgumentError('Email không hợp lệ.');
     }

@@ -8,7 +8,7 @@ import type { PatientDTO } from "@/features/patient/types";
 const mocks = vi.hoisted(() => ({
   getById: vi.fn(), profileAccount: vi.fn(), provisionPatientAccount: vi.fn(), role: vi.fn(() => "NURSE"),
   session: vi.fn(() => "session-a"), subscribe: vi.fn(() => () => {}),
-  patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), mailDelivery: vi.fn(), resetPassword: vi.fn(), retryMail: vi.fn(), account: vi.fn(), updateAccountEmail: vi.fn(),
+  patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), mailDelivery: vi.fn(), resetPassword: vi.fn(), retryMail: vi.fn(), account: vi.fn(), updateAccountEmail: vi.fn(), updatePatientEmail: vi.fn(),
   router: { replace: vi.fn(), push: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
@@ -101,17 +101,18 @@ it("keeps the registration link when the backend reports an existing account", a
   await waitFor(() => expect(mocks.provisionPatientAccount).toHaveBeenCalledTimes(1));
 });
 
-it("refreshes the patient profile after an audited account email change", async () => {
-  mocks.role.mockReturnValue("ADMIN");
+it.each(["ADMIN", "NURSE"])("refreshes the patient profile after %s changes its account email", async (role) => {
+  mocks.role.mockReturnValue(role);
   const before = { ...patient, email: "patient@example.com" };
   const after = { ...patient, email: "corrected@example.com" };
   mocks.getById.mockReset().mockResolvedValueOnce(before).mockResolvedValue(after);
   const account = { accountId: "account-a", username: "patient@example.com", patientId: patient.maBenhNhan,
     staffId: null, role: "PATIENT", isActive: true, lastLoginAt: null, createdAt: "2026-11-04T00:00:00Z",
     updatedAt: "2026-11-04T00:00:00Z", mailDelivery: null };
-  mocks.profileAccount.mockResolvedValue({ account, profileEmail: "patient@example.com", emailSyncPending: false });
-  mocks.mailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
-  mocks.updateAccountEmail.mockResolvedValue(account);
+  mocks.profileAccount.mockResolvedValueOnce({ account, profileEmail: "patient@example.com", emailSyncPending: false })
+    .mockResolvedValue({ account: { ...account, username: "corrected@example.com" }, profileEmail: "corrected@example.com", emailSyncPending: false });
+  mocks.patientMailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  mocks.updatePatientEmail.mockResolvedValue({ ...account, username: "corrected@example.com" });
 
   render(await page());
   fireEvent.change(await screen.findByLabelText("Email đăng nhập mới"), { target: { value: "corrected@example.com" } });
@@ -120,7 +121,8 @@ it("refreshes the patient profile after an audited account email change", async 
 
   await waitFor(() => expect(mocks.getById).toHaveBeenCalledTimes(2));
   expect(await screen.findByText("corrected@example.com")).toBeVisible();
-  expect(mocks.updateAccountEmail).toHaveBeenCalledWith("account-a", "corrected@example.com", "Đã đối chiếu hồ sơ");
+  expect(mocks.updatePatientEmail).toHaveBeenCalledWith(patient.maBenhNhan, "corrected@example.com", "Đã đối chiếu hồ sơ");
+  expect(mocks.updateAccountEmail).not.toHaveBeenCalled();
 });
 
 it("rejects invalid identifiers before loading a patient or showing onboarding", async () => {

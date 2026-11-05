@@ -18,6 +18,86 @@ const prescriptionId = '10000000-0000-4000-8000-000000000008';
 const notificationId = '10000000-0000-4000-8000-000000000009';
 const eventId = '10000000-0000-4000-8000-000000000010';
 const departmentId = '10000000-0000-4000-8000-000000000011';
+const registrationId = '10000000-0000-4000-8000-000000000014';
+const reservationId = '10000000-0000-4000-8000-000000000015';
+const paymentOperationId = '10000000-0000-4000-8000-000000000016';
+
+Map<String, dynamic> scheduledPaymentRequestJson({
+  String registration = registrationId,
+  String paymentRequest = paymentRequestId,
+  String status = 'PARTIALLY_PAID',
+  String requestedAmount = '100.00',
+  String paidAmount = '25.00',
+  String remainingAmount = '75.00',
+}) => {
+  'paymentRequestId': paymentRequest,
+  'invoiceId': invoiceId,
+  'accountId': '10000000-0000-4000-8000-000000000012',
+  'registrationId': registration,
+  'reservationId': reservationId,
+  'reservationRevision': 4,
+  'patientId': patientId,
+  'departmentId': departmentId,
+  'sourceType': 'EXAM',
+  'sourceId': sourceId,
+  'careEpisodeType': 'OUTPATIENT_VISIT',
+  'careEpisodeId': episodeId,
+  'requestedAmount': requestedAmount,
+  'paidAmount': paidAmount,
+  'remainingAmount': remainingAmount,
+  'currency': 'VND',
+  'status': status,
+  'expiresAt': '2026-10-21T11:30:00Z',
+  'observedAt': '2026-10-21T10:30:00Z',
+};
+
+Map<String, dynamic> scheduledPaymentQueueItemJson() => {
+  'registrationId': registrationId,
+  'patientId': patientId,
+  'departmentId': departmentId,
+  'createdAt': '2026-10-21T10:00:00Z',
+  'expiresAt': '2026-10-21T11:30:00Z',
+};
+
+Map<String, dynamic> scheduledPaymentResultJson({
+  String status = 'COMPLETED',
+  String basis = 'PATIENT_PAYMENT',
+  String? quoteId,
+}) => {
+  'operation': {
+    'paymentOperationId': paymentOperationId,
+    'paymentRequestId': paymentRequestId,
+    'registrationId': registrationId,
+    'reservationId': reservationId,
+    'status': status,
+    'transactionId': status == 'COMPLETED' && basis == 'PATIENT_PAYMENT'
+        ? transactionId
+        : null,
+    'amount': '75.00',
+    'currency': 'VND',
+    'createdAt': '2026-10-21T10:30:00Z',
+    'updatedAt': '2026-10-21T10:31:00Z',
+    'basis': basis,
+    'quoteId': quoteId,
+    'completedAt': status == 'COMPLETED' ? '2026-10-21T10:31:00Z' : null,
+  },
+  'payment': status == 'COMPLETED' && basis == 'PATIENT_PAYMENT'
+      ? {
+          'transactionId': transactionId,
+          'accountId': '10000000-0000-4000-8000-000000000012',
+          'paymentRequestId': paymentRequestId,
+          'classification': 'SERVICE_PAYMENT',
+          'status': 'COMPLETED',
+          'amount': '75.00',
+          'currency': 'VND',
+          'paymentMethod': 'BANK_TRANSFER',
+          'completedAt': '2026-10-21T10:31:00Z',
+        }
+      : null,
+  'clearanceId': status == 'COMPLETED' && basis == 'ZERO_LIABILITY'
+      ? '10000000-0000-4000-8000-000000000017'
+      : null,
+};
 
 Map<String, dynamic> invoiceJson({
   String id = invoiceId,

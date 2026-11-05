@@ -8,6 +8,7 @@ import com.mediflow.patient.application.port.in.GetPatientUseCase;
 import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.in.CreatePatientUseCase;
 import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
+import com.mediflow.patient.application.port.out.PatientAccountOwnerLockPort;
 import com.mediflow.patient.application.port.in.DeletePatientUseCase;
 import com.mediflow.patient.domain.model.Gender;
 import com.mediflow.patient.infrastructure.config.SecurityConfig;
@@ -16,6 +17,7 @@ import com.mediflow.patient.infrastructure.web.CorrelationIdFilter;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -55,20 +57,51 @@ class PatientControllerWebTest {
     @MockBean ReadPatientIdentityUseCase lookup;
     @MockBean CreatePatientUseCase createPatient;
     @MockBean UpdatePatientUseCase updatePatient;
+    @MockBean PatientAccountOwnerLockPort patientAccountOwnerLock;
     @MockBean DeletePatientUseCase deletePatient;
     @MockBean com.mediflow.organization.application.port.in.IsPatientAccountLinkedUseCase accountLinks;
 
+    @BeforeEach
+    void executeProfileUpdatesWithinMockedOwnerLock() {
+        org.mockito.Mockito.doAnswer(invocation -> {
+            java.util.function.Supplier<?> action = invocation.getArgument(1);
+            return action.get();
+        }).when(patientAccountOwnerLock).withOwnerLock(org.mockito.ArgumentMatchers.any(UUID.class),
+                org.mockito.ArgumentMatchers.any(java.util.function.Supplier.class));
+    }
+
     @Test
-    void existingEmailChangesRequireAdminAndLinkedAccountUsesAuditedAccountRoute() throws Exception {
+    void nurseMayCorrectAnUnlinkedProfileEmailButLinkedEmailUsesTheAuditedAccountRoute() throws Exception {
         UUID id = UUID.randomUUID();
         when(patients.getById(id)).thenReturn(dto(id));
+        when(updatePatient.update(any(), any())).thenReturn(dto(id));
         String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"email\":\"corrected@example.com\"}";
         mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
                         .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
         when(accountLinks.isLinked(id)).thenReturn(true);
         mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("PATIENT_EMAIL_LINKED_ACCOUNT"));
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
                         .header("Authorization", bearer("access", "ADMIN", UUID.randomUUID().toString())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("PATIENT_EMAIL_LINKED_ACCOUNT"));
+        org.mockito.Mockito.verify(updatePatient).update(org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.argThat(request -> "corrected@example.com".equals(request.email())));
+        org.mockito.Mockito.verifyNoMoreInteractions(updatePatient);
+    }
+
+    @Test
+    void nurseCannotClearLinkedProfileEmailWithBlankValue() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(patients.getById(id)).thenReturn(dto(id));
+        when(accountLinks.isLinked(id)).thenReturn(true);
+        String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"email\":\"\"}";
+
+        mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error.code").value("PATIENT_EMAIL_LINKED_ACCOUNT"));
         org.mockito.Mockito.verifyNoInteractions(updatePatient);
@@ -81,11 +114,11 @@ class PatientControllerWebTest {
         when(updatePatient.update(any(), any())).thenReturn(dto(id));
         String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\",\"email\":\"%s\"}";
         mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("a@example.com"))
+                        .content(body.formatted("nurse-corrected@example.com"))
                         .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
                 .andExpect(status().isOk());
         mvc.perform(put("/api/v1/patients/{id}", id).contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("corrected@example.com"))
+                        .content(body.formatted("admin-corrected@example.com"))
                         .header("Authorization", bearer("access", "ADMIN", UUID.randomUUID().toString())))
                 .andExpect(status().isOk());
         verify(updatePatient, org.mockito.Mockito.times(2)).update(org.mockito.ArgumentMatchers.eq(id), any());

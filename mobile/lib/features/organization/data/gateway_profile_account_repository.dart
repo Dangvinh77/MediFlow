@@ -186,6 +186,29 @@ class GatewayProfileAccountRepository implements ProfileAccountRepository {
     }
   }
 
+  @override
+  Future<void> updatePatientEmail({
+    required String patientId,
+    required String email,
+    required String reason,
+  }) async {
+    _requireId(patientId, 'bệnh nhân');
+    final result = OrganizationDto.account(
+      await client.put('/v1/org/patient-accounts/$patientId/email', {
+        'email': email.trim().toLowerCase(),
+        'reason': reason.trim(),
+      }),
+    );
+    if (result.patientId?.toLowerCase() != patientId.toLowerCase() ||
+        result.staffId != null ||
+        result.role != 'PATIENT' ||
+        result.username.toLowerCase() != email.trim().toLowerCase()) {
+      throw const FormatException(
+        'Tài khoản trả về không khớp hồ sơ bệnh nhân.',
+      );
+    }
+  }
+
   static void _requireMessageId(String value) {
     if (value.isEmpty || value.contains(RegExp(r'[\r\n]'))) {
       throw ArgumentError('Mã email không hợp lệ.');

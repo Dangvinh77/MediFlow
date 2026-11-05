@@ -24,6 +24,7 @@ import '../features/auth/domain/session.dart';
 import '../features/billing/presentation/billing_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/report/presentation/report_page.dart';
+import '../features/self_profile/presentation/profile_page.dart';
 import 'app_shell.dart';
 import 'modules.dart';
 import 'support_page.dart';
@@ -72,8 +73,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (publicAuth) return '/';
       if ((path == '/appointments/reception' || path == '/patients/new') &&
-          ![UserRole.admin, UserRole.nurse].contains(session.role))
+          ![UserRole.admin, UserRole.nurse].contains(session.role)) {
         return '/forbidden';
+      }
       final module = modules.where((m) => m.matches(path)).firstOrNull;
       if (module != null && !module.allows(session.role)) return '/forbidden';
       if (path == '/pharmacy/drugs/new' ||
@@ -120,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/account/password',
             builder: (_, _) => const ChangePasswordPage(),
           ),
+          GoRoute(path: '/profile', builder: (_, _) => const SelfProfilePage()),
           GoRoute(
             path: '/appointments',
             builder: (context, _) => AppointmentPage(

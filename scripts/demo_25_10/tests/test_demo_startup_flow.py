@@ -13,7 +13,7 @@ SPEC.loader.exec_module(runner)
 
 
 class StartupFlowTest(unittest.TestCase):
-    def run_demo(self, persistent=True, reuse=True, fail=False, prepare=False, stop_initializing=False):
+    def run_demo(self, persistent=True, reuse=True, fail=False, prepare=False, report=False, stop_initializing=False):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
@@ -28,6 +28,7 @@ class StartupFlowTest(unittest.TestCase):
         runtime_module = SimpleNamespace(Workspace=Mock(return_value=workspace), WorkspaceLock=Mock(return_value=lock))
         calls = []
         processes = []
+        launch_environments = []
         def command(*args, **kwargs):
             calls.append(args)
             if args[:2] == ('docker', 'compose'):
@@ -43,6 +44,7 @@ class StartupFlowTest(unittest.TestCase):
             process = Mock(pid=41000 + len(processes))
             process.poll.return_value = None
             processes.append(process)
+            launch_environments.append(kwargs['env'])
             return process
         def initialize(options, evidence, containers, pg, rabbit, state):
             if stop_initializing:
@@ -55,14 +57,20 @@ class StartupFlowTest(unittest.TestCase):
             return '60123', '60124'
         ui = SimpleNamespace(DemoApi=Mock(), prepare=Mock(return_value={}), write_fixtures=Mock(), ZONE=runner.dt.timezone.utc)
         calendar = SimpleNamespace(prepare=Mock(), verify=Mock(), write_fixtures=Mock())
+        report_demo = SimpleNamespace(prepare=Mock(return_value={
+            'availableSyntheticPeriods': 2, 'accepted': True, 'acceptanceAddedThisRun': True}))
         if prepare:
             evidence = here / 'evidence/workspace'
             evidence.mkdir(parents=True)
             (evidence / 'calendar-fixtures.local.json').write_text('{"cached": true}')
             (evidence / 'ui-demo-journal.local.json').write_text('{"saved": true}')
+        if report:
+            (here / 'evidence/workspace').mkdir(parents=True, exist_ok=True)
         arguments = ['--persistent'] if persistent else []
         if prepare:
             arguments += ['--scheduling', '--prepare-ui-demo']
+        if report:
+            arguments += ['--scheduling', '--prepare-report-demo']
         with patch.object(runner, 'ROOT', root), patch.object(runner, 'HERE', here), \
                 patch.object(runner, 'parse_options', return_value=runner.parse_options(arguments)), \
                 patch.object(runner, 'command', side_effect=command), \
@@ -71,14 +79,16 @@ class StartupFlowTest(unittest.TestCase):
                 patch.object(runner, 'initialize_infrastructure', side_effect=initialize) as init, \
                 patch.object(runner.subprocess, 'Popen', side_effect=popen), \
                 patch.dict('sys.modules', {'demo_runtime': runtime_module, 'prepare_ui_demo': ui,
-                                          'prepare_demo_calendar': calendar}):
+                                          'prepare_demo_calendar': calendar,
+                                          'prepare_report_demo': report_demo}):
             if fail:
                 with self.assertRaisesRegex(RuntimeError, 'JVM launch failure'):
                     runner.main()
             else:
                 runner.main()
         return SimpleNamespace(root=root, here=here, calls=calls, processes=processes,
-                               workspace=workspace, lock=lock, initialize=init, ui=ui, calendar=calendar)
+                               launch_environments=launch_environments, workspace=workspace, lock=lock,
+                               initialize=init, ui=ui, calendar=calendar, report_demo=report_demo)
 
     def test_warm_start_skips_restore_and_preserves_both_containers(self):
         result = self.run_demo()
@@ -119,6 +129,16 @@ class StartupFlowTest(unittest.TestCase):
         result.calendar.verify.assert_called_once()
         self.assertEqual(json.loads((result.here / 'evidence/workspace/ui-demo-journal.local.json').read_text()), {'saved': True})
         self.assertEqual(result.ui.DemoApi.call_args_list[0].args[1], result.here / 'evidence/workspace/ui-demo-journal.local.json')
+
+    def test_report_demo_acceptance_gate_is_open_only_for_seed_then_support_restarts_closed(self):
+        result = self.run_demo(report=True)
+        result.report_demo.prepare.assert_called_once()
+        self.assertTrue(result.report_demo.prepare.call_args.kwargs['accept'])
+        self.assertEqual(result.launch_environments[6]['MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED'], 'true')
+        self.assertEqual(result.launch_environments[-1]['MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED'], 'false')
+        self.assertEqual(len(result.processes), 9)
+        result.processes[6].terminate.assert_called_once()
+        self.assertEqual(result.report_demo.prepare.call_args.args[1], result.here / 'evidence/workspace')
 
 
 if __name__ == '__main__':
