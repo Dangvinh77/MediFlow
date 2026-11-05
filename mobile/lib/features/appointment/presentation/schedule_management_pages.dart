@@ -765,7 +765,8 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
 /// ADMIN grants a manager the departments they may schedule. The whole list is
 /// sent on save, so an empty list revokes every department.
 class ManagerScopePanel extends ConsumerStatefulWidget {
-  const ManagerScopePanel({super.key});
+  const ManagerScopePanel({super.key, this.initialAccountId});
+  final String? initialAccountId;
 
   @override
   ConsumerState<ManagerScopePanel> createState() => _ManagerScopePanelState();
@@ -790,6 +791,7 @@ class _ManagerScopePanelState extends ConsumerState<ManagerScopePanel>
   void initState() {
     super.initState();
     _loadManagers();
+    if (widget.initialAccountId case final accountId?) _loadScope(accountId);
   }
 
   @override
@@ -954,7 +956,8 @@ class _ManagerScopePanelState extends ConsumerState<ManagerScopePanel>
 }
 
 class ScheduleManagementPage extends ConsumerWidget {
-  const ScheduleManagementPage({super.key});
+  const ScheduleManagementPage({super.key, this.managerAccountId});
+  final String? managerAccountId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -971,7 +974,7 @@ class ScheduleManagementPage extends ConsumerWidget {
         const SessionAdministrationPanel(),
         if (access!.role == 'ADMIN') ...[
           const Divider(height: 32),
-          const ManagerScopePanel(),
+          ManagerScopePanel(initialAccountId: managerAccountId),
         ],
       ],
     );

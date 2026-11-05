@@ -171,7 +171,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/appointments/schedule',
-            builder: (_, _) => const ScheduleManagementPage(),
+            builder: (_, state) => ScheduleManagementPage(
+              managerAccountId: state.uri.queryParameters['managerAccountId'],
+            ),
           ),
           GoRoute(
             path: '/appointments/department',

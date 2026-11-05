@@ -75,6 +75,17 @@ class Account {
   final bool active;
 }
 
+abstract interface class AccountDetailRepository {
+  Future<Account> account(String id);
+
+  /// [replaceActiveAccount] confirms reactivation over an owner's active account.
+  Future<Account> setAccountStatus(
+    String id,
+    bool active, {
+    bool replaceActiveAccount = false,
+  });
+}
+
 class DepartmentDraft {
   const DepartmentDraft({
     required this.name,
