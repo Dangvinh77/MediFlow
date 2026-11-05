@@ -298,7 +298,7 @@ try {
             Write-Host 'Gateway: http://127.0.0.1:28080.'
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
-            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
+            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true --dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true --dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
             if ($persistent) { $networkArguments += '--persistent' }

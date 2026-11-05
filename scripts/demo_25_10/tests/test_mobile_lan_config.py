@@ -31,5 +31,16 @@ class MobileLanConfigTest(unittest.TestCase):
         })
 
 
+    def test_every_demo_build_enables_the_exam_fee_workspace(self):
+        # Dart defines are compile-time, so a build path that omits them hides the tab for good.
+        for path in ("mobile/tool/run_web.ps1", ".github/workflows/mobile-ios-unsigned.yml",
+                     "scripts/demo_25_10/Demo-Launcher.ps1", "scripts/demo_25_10/Run-ClientChecks.ps1",
+                     "mobile/README.md"):
+            source = (ROOT / path).read_text(encoding="utf-8")
+            for flag in ("MEDIFLOW_SCHEDULING_UI_ENABLED", "MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED",
+                         "MEDIFLOW_ZERO_PAYABLE_UI_ENABLED"):
+                self.assertIn(f"--dart-define={flag}=true", source, f"{path} is missing {flag}")
+
+
 if __name__ == "__main__":
     unittest.main()

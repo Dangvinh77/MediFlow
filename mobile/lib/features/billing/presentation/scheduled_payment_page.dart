@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/paged_list.dart';
+import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/billing_models.dart';
 import '../domain/scheduled_payments.dart';
@@ -46,6 +47,14 @@ bool _closedWithoutPayment(Object error) =>
 
 const double _minQueueHeight = 300;
 
+String _localTime(String? raw) {
+  final value = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+  if (value == null) return '—';
+  String two(int number) => number.toString().padLeft(2, '0');
+  return '${two(value.hour)}:${two(value.minute)} '
+      '${two(value.day)}/${two(value.month)}/${value.year}';
+}
+
 class ScheduledPaymentQueuePage extends StatefulWidget {
   const ScheduledPaymentQueuePage({
     super.key,
@@ -65,7 +74,6 @@ class ScheduledPaymentQueuePage extends StatefulWidget {
 }
 
 class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
-  final _patientId = TextEditingController();
   final _registrationId = TextEditingController();
   String? _patientFilter;
   int _revision = 0;
@@ -74,27 +82,8 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
 
   @override
   void dispose() {
-    _patientId.dispose();
     _registrationId.dispose();
     super.dispose();
-  }
-
-  Future<void> _filterQueue() async {
-    final value = _patientId.text.trim();
-    if (value.isNotEmpty && !isBillingUuid(value)) {
-      setState(
-        () => _lookupError = const FormatException(
-          'Mã bệnh nhân phải là UUID hợp lệ.',
-        ),
-      );
-      return;
-    }
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _lookupError = null;
-      _patientFilter = value.isEmpty ? null : value;
-      _revision++;
-    });
   }
 
   Future<void> _lookupManual() async {
@@ -154,31 +143,24 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
           const SizedBox(height: 8),
           const Text('Chọn bệnh nhân trong hàng chờ để đối chiếu khoản phí.'),
           const SizedBox(height: 12),
-          TextField(
-            controller: _patientId,
-            keyboardType: TextInputType.text,
-            decoration: const InputDecoration(
-              labelText: 'Lọc theo mã bệnh nhân (UUID)',
-              border: OutlineInputBorder(),
-            ),
-            onSubmitted: (_) => _filterQueue(),
+          ReferencePicker(
+            kind: ReferenceKind.patient,
+            label: 'Tìm bệnh nhân',
+            value: _patientFilter,
+            onChanged: (id) => setState(() {
+              _lookupError = null;
+              _patientFilter = id;
+              _revision++;
+            }),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _filterQueue,
-                icon: const Icon(Icons.filter_alt_outlined),
-                label: const Text('Lọc hàng chờ'),
-              ),
-              TextButton.icon(
-                onPressed: () => setState(() => _revision++),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Cập nhật hàng chờ'),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _revision++),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Cập nhật hàng chờ'),
+            ),
           ),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
@@ -228,19 +210,19 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Bệnh nhân: ${item.patientId}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              ReferenceLabel(
+                kind: ReferenceKind.patient,
+                id: item.patientId,
+                label: 'Bệnh nhân',
               ),
               const SizedBox(height: 4),
-              Text(
-                'Khoa: ${item.departmentId}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              ReferenceLabel(
+                kind: ReferenceKind.department,
+                id: item.departmentId,
+                label: 'Khoa',
               ),
-              Text('Tạo lúc: ${item.createdAt}'),
-              Text('Hạn giữ chỗ: ${item.expiresAt}'),
+              Text('Tạo lúc: ${_localTime(item.createdAt)}'),
+              Text('Hạn giữ chỗ: ${_localTime(item.expiresAt)}'),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _lookupBusy
@@ -728,9 +710,22 @@ class _ScheduledPaymentCollectionPageState
         children: [
           Text('Phí khám', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          _detail('Mã đăng ký', request.registrationId),
-          _detail('Bệnh nhân', request.patientId),
-          _detail('Khoa', request.departmentId),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ReferenceLabel(
+              kind: ReferenceKind.patient,
+              id: request.patientId,
+              label: 'Bệnh nhân',
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ReferenceLabel(
+              kind: ReferenceKind.department,
+              id: request.departmentId,
+              label: 'Khoa',
+            ),
+          ),
           _detail(
             'Số dư Billing',
             '${request.remainingAmount.format()} ${request.currency}',
@@ -739,7 +734,7 @@ class _ScheduledPaymentCollectionPageState
             'Đã thu',
             '${request.paidAmount.format()} ${request.currency}',
           ),
-          _detail('Hạn giữ chỗ', request.expiresAt ?? '—'),
+          _detail('Hạn giữ chỗ', _localTime(request.expiresAt)),
           _detail('Trạng thái', _statusLabel(request.status)),
           if (widget.quoteEnabled) ...[
             const SizedBox(height: 12),
@@ -778,14 +773,17 @@ class _ScheduledPaymentCollectionPageState
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Tổng cộng'),
-                    subtitle: Text('Báo giá hết hạn: ${_quote!.expiresAt}'),
+                    subtitle: Text(
+                      'Báo giá hết hạn: ${_localTime(_quote!.expiresAt)}',
+                    ),
                     trailing: Text(_quote!.patientPayable.format()),
                   ),
                 ],
               ),
             if (_quote != null && _quoteExpired)
               const Text('Báo giá đã hết hạn. Hãy tải lại trước khi tiếp tục.'),
-            if (_quote != null &&
+            if (!_completed &&
+                _quote != null &&
                 _quote!.patientPayable.minorUnits !=
                     request.remainingAmount.minorUnits)
               const Padding(
@@ -982,6 +980,7 @@ class _ScheduledPaymentCollectionPageState
             tilePadding: EdgeInsets.zero,
             title: const Text('Thông tin đối soát khoản thu'),
             children: [
+              _detail('Mã đăng ký', request.registrationId),
               _detail('Mã yêu cầu', request.paymentRequestId),
               _detail('Mã hóa đơn', request.invoiceId),
               _detail('Mã tài khoản', request.accountId),

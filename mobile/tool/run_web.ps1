@@ -20,6 +20,9 @@ $defines = @(
 if ($OutpatientUi) {
     $defines += '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true'
     $defines += '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true'
+    $defines += '--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true'
+    $defines += '--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true'
+    $defines += '--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true'
 }
 Write-Host "Build flags: $($defines -join ' ')"
 Push-Location (Split-Path $PSScriptRoot -Parent)

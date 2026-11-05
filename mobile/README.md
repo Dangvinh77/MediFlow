@@ -71,7 +71,7 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ```powershell
 cd mobile
-flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
+flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true --dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true --dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
 ```
 
 Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
@@ -144,7 +144,7 @@ Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lị
 
 Billing follows the web task set by role: `ADMIN`/`CASHIER` can use the collection queue,
 optional exam-fee collection, payment history and refunds; `MANAGER` sees revenue reports.
-The exam-fee V2 client is disabled by default. Enable its mobile UI with
+The exam-fee V2 client is disabled by default; `tool/run_web.ps1 -Demo`, the demo launcher command and the iOS workflow enable it. Dart defines are compile-time, so a build without them cannot show the exam-fee tab. Enable its mobile UI with
 `--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true`; optional quotes use
 `--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true`, and zero-liability confirmation
 also requires `--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true`. These UI defines do not
