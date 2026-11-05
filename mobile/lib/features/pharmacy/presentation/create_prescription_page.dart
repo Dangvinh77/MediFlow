@@ -10,35 +10,305 @@ import '../domain/prescription.dart';
 import '../domain/prescription_commands.dart';
 import '../domain/prescribing_source.dart';
 import 'pharmacy_boundary.dart';
+import 'pharmacy_date_text.dart';
+import 'pharmacy_status_text.dart';
+import 'prescription_page.dart';
 import 'providers.dart';
 import 'prescription_source_fields.dart';
 
-class CreatePrescriptionPage extends ConsumerWidget {
-  const CreatePrescriptionPage({super.key, this.onCreated});
+/// Pharmacy-owned panel that the app root can place in the medical-record slot.
+class RecordPrescriptionPanel extends ConsumerStatefulWidget {
+  const RecordPrescriptionPanel({
+    super.key,
+    required this.recordId,
+    required this.patientId,
+    required this.canCreate,
+    this.onCreated,
+  });
+
+  final String recordId, patientId;
+  final bool canCreate;
   final ValueChanged<Prescription>? onCreated;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => PharmacyBoundary(
-    builder: (repository) {
-      if (ref.watch(pharmacyAccessProvider)?.canPrescribe != true) {
-        return const Center(child: Text('Bạn không có quyền kê đơn.'));
+  ConsumerState<RecordPrescriptionPanel> createState() =>
+      _RecordPrescriptionPanelState();
+}
+
+class _RecordPrescriptionPanelState
+    extends ConsumerState<RecordPrescriptionPanel> {
+  GlobalKey<_RecordPrescriptionResultsState> _resultsKey =
+      GlobalKey<_RecordPrescriptionResultsState>();
+  Object? _resultsIdentity;
+  bool _hasObservedResultsIdentity = false;
+
+  void _created(Prescription prescription) {
+    _resultsKey.currentState?._created(prescription);
+    widget.onCreated?.call(prescription);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentIdentity = ref.watch(pharmacyAccessProvider)?.sessionIdentity;
+    if (!_hasObservedResultsIdentity || currentIdentity != _resultsIdentity) {
+      _hasObservedResultsIdentity = true;
+      _resultsIdentity = currentIdentity;
+      _resultsKey = GlobalKey<_RecordPrescriptionResultsState>();
+    }
+    return PharmacyBoundary(
+      builder: (repository) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CreatePrescriptionPage(
+            key: ValueKey((widget.recordId, widget.patientId)),
+            initialPatientId: widget.patientId,
+            initialRecordId: widget.recordId,
+            canCreate: widget.canCreate,
+            embedded: true,
+            onCreated: _created,
+          ),
+          _RecordPrescriptionResults(
+            key: _resultsKey,
+            repository: repository,
+            recordId: widget.recordId,
+            patientId: widget.patientId,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordPrescriptionResults extends ConsumerStatefulWidget {
+  const _RecordPrescriptionResults({
+    super.key,
+    required this.repository,
+    required this.recordId,
+    required this.patientId,
+  });
+
+  final PharmacyRepository repository;
+  final String recordId, patientId;
+
+  @override
+  ConsumerState<_RecordPrescriptionResults> createState() =>
+      _RecordPrescriptionResultsState();
+}
+
+class _RecordPrescriptionResultsState
+    extends ConsumerState<_RecordPrescriptionResults> {
+  final List<Prescription> prescriptions = [];
+  Prescription? latestReceipt;
+  Object? error;
+  bool loading = false, hasMore = false;
+  int page = 0, generation = 0;
+  Object? identity;
+
+  @override
+  void initState() {
+    super.initState();
+    identity = ref.read(pharmacyAccessProvider)?.sessionIdentity;
+    Future.microtask(_load);
+  }
+
+  Future<void> _load({bool more = false}) async {
+    if (loading) return;
+    final accessIdentity = ref.read(pharmacyAccessProvider)?.sessionIdentity;
+    if (accessIdentity == null || accessIdentity != identity) return;
+    final ticket = ++generation;
+    final requestedPage = more ? page + 1 : 0;
+    setState(() {
+      loading = true;
+      error = null;
+      if (!more) {
+        page = 0;
+        hasMore = false;
       }
-      if (ref.watch(pharmacyModeProvider) != PharmacyMode.outpatient) {
-        return const Center(
-          child: Text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
-        );
-      }
-      final writer = ref.watch(outpatientPrescriptionWriterProvider);
-      return _CreatePrescription(
-        key: ObjectKey(writer),
-        repository: repository,
-        writer: writer,
-        sourceReader: repository is PrescribingSourceReader
-            ? repository as PrescribingSourceReader
-            : null,
-        onCreated: onCreated,
+    });
+    try {
+      final result = await SearchPrescriptions(widget.repository)(
+        patientId: widget.patientId,
+        page: requestedPage,
       );
-    },
+      if (!mounted ||
+          ticket != generation ||
+          ref.read(pharmacyAccessProvider)?.sessionIdentity != identity) {
+        return;
+      }
+      final matches = result.items.where(
+        (prescription) =>
+            prescription.patientId.toLowerCase() ==
+                widget.patientId.toLowerCase() &&
+            prescription.recordId?.toLowerCase() ==
+                widget.recordId.toLowerCase(),
+      );
+      final merged = <String, Prescription>{
+        if (more)
+          for (final item in prescriptions) item.id.toLowerCase(): item,
+        for (final item in matches) item.id.toLowerCase(): item,
+      };
+      final receipt = latestReceipt;
+      if (receipt != null &&
+          receipt.patientId.toLowerCase() == widget.patientId.toLowerCase() &&
+          receipt.recordId?.toLowerCase() == widget.recordId.toLowerCase()) {
+        merged[receipt.id.toLowerCase()] = receipt;
+      }
+      setState(() {
+        prescriptions
+          ..clear()
+          ..addAll(merged.values);
+        page = result.number;
+        hasMore = result.hasNext;
+        loading = false;
+      });
+    } catch (failure) {
+      if (mounted &&
+          ticket == generation &&
+          ref.read(pharmacyAccessProvider)?.sessionIdentity == identity) {
+        setState(() {
+          error = failure;
+          loading = false;
+        });
+      }
+    }
+  }
+
+  void _created(Prescription prescription) {
+    if (!mounted ||
+        ref.read(pharmacyAccessProvider)?.sessionIdentity != identity ||
+        prescription.patientId.toLowerCase() !=
+            widget.patientId.toLowerCase() ||
+        prescription.recordId?.toLowerCase() != widget.recordId.toLowerCase()) {
+      return;
+    }
+    setState(() {
+      latestReceipt = prescription;
+      prescriptions
+        ..removeWhere(
+          (item) => item.id.toLowerCase() == prescription.id.toLowerCase(),
+        )
+        ..insert(0, prescription);
+    });
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (loading && prescriptions.isEmpty)
+        const LinearProgressIndicator(
+          semanticsLabel: 'Đang tải đơn thuốc của hồ sơ',
+        ),
+      if (error != null)
+        PharmacyRequestError(error!, onRetry: loading ? null : _load),
+      if (error != null && prescriptions.isEmpty)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: loading ? null : _load,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tải lại đơn thuốc'),
+          ),
+        ),
+      if (!loading && error == null && prescriptions.isEmpty)
+        Text(
+          hasMore
+              ? 'Chưa thấy đơn thuốc của hồ sơ trong các trang đã tải.'
+              : 'Chưa có đơn thuốc gắn với hồ sơ này.',
+        ),
+      for (final prescription in prescriptions)
+        Card(
+          child: ListTile(
+            title: Text(
+              'Đơn thuốc · ${pharmacyDate(prescription.prescribedDate)}',
+            ),
+            subtitle: Text(
+              '${prescriptionStatusText(prescription.status)} · ${prescription.totalAmount} đồng\nMã đơn: ${prescription.id}',
+            ),
+            trailing: IconButton(
+              tooltip: 'Xem chi tiết đơn thuốc',
+              icon: const Icon(Icons.chevron_right),
+              onPressed: loading
+                  ? null
+                  : () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => PrescriptionDetailPage(
+                          prescriptionId: prescription.id,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      if (hasMore)
+        TextButton(
+          onPressed: loading ? null : () => _load(more: true),
+          child: const Text('Tải thêm đơn thuốc'),
+        ),
+    ],
   );
+}
+
+class CreatePrescriptionPage extends ConsumerWidget {
+  const CreatePrescriptionPage({
+    super.key,
+    this.onCreated,
+    this.initialPatientId,
+    this.initialRecordId,
+    this.canCreate = true,
+    this.embedded = false,
+  }) : assert((initialPatientId == null) == (initialRecordId == null));
+
+  final ValueChanged<Prescription>? onCreated;
+  final String? initialPatientId, initialRecordId;
+  final bool canCreate, embedded;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if ((initialPatientId == null) != (initialRecordId == null)) {
+      return const Center(
+        child: Text('Không thể kê đơn khi thiếu bệnh nhân hoặc hồ sơ nguồn.'),
+      );
+    }
+    return PharmacyBoundary(
+      builder: (repository) {
+        final access = ref.watch(pharmacyAccessProvider);
+        if (access?.canPrescribe != true) {
+          return const Center(child: Text('Bạn không có quyền kê đơn.'));
+        }
+        if (ref.watch(pharmacyModeProvider) != PharmacyMode.outpatient) {
+          return const Center(
+            child: Text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
+          );
+        }
+        if (initialRecordId != null && repository is! PrescribingSourceReader) {
+          return const Center(
+            child: Text('Chưa thể xác minh hồ sơ nguồn để kê đơn.'),
+          );
+        }
+        final writer = ref.watch(outpatientPrescriptionWriterProvider);
+        return _CreatePrescription(
+          key: ValueKey((
+            writer,
+            access!.sessionIdentity,
+            initialPatientId,
+            initialRecordId,
+          )),
+          repository: repository,
+          writer: writer,
+          sourceReader: repository is PrescribingSourceReader
+              ? repository as PrescribingSourceReader
+              : null,
+          onCreated: onCreated,
+          initialPatientId: initialPatientId,
+          initialRecordId: initialRecordId,
+          canCreate: canCreate,
+          embedded: embedded,
+        );
+      },
+    );
+  }
 }
 
 class _DraftLine {
@@ -63,11 +333,17 @@ class _CreatePrescription extends StatefulWidget {
     required this.writer,
     this.sourceReader,
     this.onCreated,
+    this.initialPatientId,
+    this.initialRecordId,
+    this.canCreate = true,
+    this.embedded = false,
   });
   final PharmacyRepository repository;
   final OutpatientPrescriptionWriter? writer;
   final PrescribingSourceReader? sourceReader;
   final ValueChanged<Prescription>? onCreated;
+  final String? initialPatientId, initialRecordId;
+  final bool canCreate, embedded;
   @override
   State<_CreatePrescription> createState() => _CreatePrescriptionState();
 }
@@ -326,7 +602,12 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
   );
 
   Future<void> _submit({bool retry = false}) async {
-    if (busy || widget.writer == null || created != null) return;
+    if ((!retry && !widget.canCreate) ||
+        busy ||
+        widget.writer == null ||
+        created != null) {
+      return;
+    }
     if (retry) {
       if (!retryAllowed || intent == null) return;
     } else {
@@ -437,6 +718,13 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
       });
       return;
     }
+    if (!retry && !widget.canCreate) {
+      setState(() {
+        busy = false;
+        intent = null;
+      });
+      return;
+    }
     try {
       final result = await widget.writer!.createPrescription(current);
       if (!mounted) return;
@@ -480,245 +768,292 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
 
   @override
   Widget build(BuildContext context) {
-    final locked = busy || intent != null || created != null;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Kê đơn ngoại trú',
-            style: Theme.of(context).textTheme.headlineSmall,
+    final locked =
+        busy || intent != null || created != null || !widget.canCreate;
+    final holdWorkspace =
+        intent != null && created == null && !rejected && confirmation == null;
+    if (!widget.canCreate && created == null && !holdWorkspace) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Text('Hồ sơ đã hoàn tất; đơn thuốc chỉ được xem.'),
+      );
+    }
+    final fixedSource = widget.initialRecordId != null;
+    final form = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Kê đơn ngoại trú',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        Text(
+          widget.sourceReader != null
+              ? 'Chọn bệnh nhân và hồ sơ khám. Hệ thống tự lấy thông tin kê đơn liên quan.'
+              : 'Chọn bệnh nhân, hồ sơ khám và bác sĩ theo thông tin đã được xác nhận. Kiểm tra đầy đủ lượt khám và nhóm thu trước khi tạo đơn.',
+        ),
+        if (widget.writer == null)
+          const Text(
+            'Chức năng tạo đơn hiện chưa sẵn sàng. Vui lòng thử lại sau.',
           ),
-          Text(
-            widget.sourceReader != null
-                ? 'Chọn bệnh nhân và hồ sơ khám. Hệ thống tự lấy thông tin kê đơn liên quan.'
-                : 'Chọn bệnh nhân, hồ sơ khám và bác sĩ theo thông tin đã được xác nhận. Kiểm tra đầy đủ lượt khám và nhóm thu trước khi tạo đơn.',
+        if (widget.sourceReader != null)
+          PrescriptionSourceFields(
+            reader: widget.sourceReader!,
+            locked: locked,
+            sourceLocked: fixedSource,
+            initialPatientId: widget.initialPatientId,
+            initialRecordId: widget.initialRecordId,
+            onChanged: _sourceChanged,
           ),
-          if (widget.writer == null)
-            const Text(
-              'Chức năng tạo đơn hiện chưa sẵn sàng. Vui lòng thử lại sau.',
-            ),
-          if (widget.sourceReader != null)
-            PrescriptionSourceFields(
-              reader: widget.sourceReader!,
-              locked: locked,
-              onChanged: _sourceChanged,
-            ),
-          for (final field in labels.entries.where(
-            (field) =>
-                widget.sourceReader == null || field.key == 'prescribedDate',
-          ))
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child:
-                  const {
-                    'patientId',
-                    'departmentId',
-                    'doctorId',
-                    'recordId',
-                    'careEpisodeId',
-                  }.contains(field.key)
-                  ? _referenceField(field, locked)
-                  : TextField(
-                      controller: fields[field.key],
-                      focusNode: focuses[field.key],
-                      enabled: !locked,
-                      decoration: InputDecoration(
-                        labelText: field.value,
-                        helperText: field.key == 'prescribedDate'
-                            ? 'Nhập theo dạng năm-tháng-ngày.'
-                            : null,
-                        errorText: errors[field.key],
-                      ),
+        for (final field in labels.entries.where(
+          (field) =>
+              widget.sourceReader == null || field.key == 'prescribedDate',
+        ))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child:
+                const {
+                  'patientId',
+                  'departmentId',
+                  'doctorId',
+                  'recordId',
+                  'careEpisodeId',
+                }.contains(field.key)
+                ? _referenceField(field, locked)
+                : TextField(
+                    controller: fields[field.key],
+                    focusNode: focuses[field.key],
+                    enabled: !locked,
+                    decoration: InputDecoration(
+                      labelText: field.value,
+                      helperText: field.key == 'prescribedDate'
+                          ? 'Nhập theo dạng năm-tháng-ngày.'
+                          : null,
+                      errorText: errors[field.key],
                     ),
-            ),
-          TextField(
-            controller: keyword,
-            focusNode: keywordFocus,
-            enabled: !locked,
-            onSubmitted: (_) => _search(),
-            decoration: const InputDecoration(labelText: 'Tìm thuốc để kê'),
+                  ),
           ),
-          OutlinedButton(
-            onPressed: locked || searching ? null : () => _search(),
-            child: const Text('Tìm trong danh mục'),
-          ),
-          if (searching)
-            const LinearProgressIndicator(semanticsLabel: 'Đang tìm thuốc'),
-          if (searchError != null) PharmacyRequestError(searchError!),
-          if (!searching && searchError == null && searched && drugs.isEmpty)
-            const Text('Không tìm thấy thuốc.'),
-          for (final drug in drugs)
-            Card(
-              child: ListTile(
-                title: Text(drug.name),
-                subtitle: Text(
-                  '${drug.unit} · Còn: ${drug.stockQuantity} · Giá tham khảo: ${drug.price} đồng',
-                ),
-                trailing: IconButton(
-                  tooltip: 'Chọn ${drug.name}',
-                  icon: const Icon(Icons.add),
-                  onPressed:
-                      locked || lines.any((line) => line.drug.id == drug.id)
-                      ? null
-                      : () {
-                          final line = _DraftLine(drug);
-                          setState(() => lines.add(line));
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-                            line.focus.requestFocus();
-                            if (line.focus.context != null) {
-                              Scrollable.ensureVisible(line.focus.context!);
-                            }
-                          });
-                        },
-                ),
+        TextField(
+          controller: keyword,
+          focusNode: keywordFocus,
+          enabled: !locked,
+          onSubmitted: (_) => _search(),
+          decoration: const InputDecoration(labelText: 'Tìm thuốc để kê'),
+        ),
+        OutlinedButton(
+          onPressed: locked || searching ? null : () => _search(),
+          child: const Text('Tìm trong danh mục'),
+        ),
+        if (searching)
+          const LinearProgressIndicator(semanticsLabel: 'Đang tìm thuốc'),
+        if (searchError != null) PharmacyRequestError(searchError!),
+        if (!searching && searchError == null && searched && drugs.isEmpty)
+          const Text('Không tìm thấy thuốc.'),
+        for (final drug in drugs)
+          Card(
+            child: ListTile(
+              title: Text(drug.name),
+              subtitle: Text(
+                '${drug.unit} · Còn: ${drug.stockQuantity} · Giá tham khảo: ${drug.price} đồng',
+              ),
+              trailing: IconButton(
+                tooltip: 'Chọn ${drug.name}',
+                icon: const Icon(Icons.add),
+                onPressed:
+                    locked || lines.any((line) => line.drug.id == drug.id)
+                    ? null
+                    : () {
+                        final line = _DraftLine(drug);
+                        setState(() => lines.add(line));
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          line.focus.requestFocus();
+                          if (line.focus.context != null) {
+                            Scrollable.ensureVisible(line.focus.context!);
+                          }
+                        });
+                      },
               ),
             ),
-          if (pages > 1)
-            Wrap(
-              spacing: 8,
-              children: [
-                TextButton(
-                  onPressed: locked || searching || page == 0
-                      ? null
-                      : () => _search(target: page - 1, submit: false),
-                  child: const Text('Trang thuốc trước'),
-                ),
-                TextButton(
-                  onPressed: locked || searching || page + 1 >= pages
-                      ? null
-                      : () => _search(target: page + 1, submit: false),
-                  child: const Text('Trang thuốc sau'),
-                ),
-              ],
-            ),
-          for (var i = 0; i < lines.length; i++)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(lines[i].drug.name),
-                    TextField(
-                      controller: lines[i].quantity,
-                      focusNode: lines[i].focus,
-                      enabled: !locked,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Số lượng dòng ${i + 1}',
-                        errorText:
-                            errors['lines.$i.quantity'] ?? errors['lines.$i'],
-                      ),
-                    ),
-                    TextField(
-                      controller: lines[i].dosage,
-                      focusNode: lines[i].dosageFocus,
-                      enabled: !locked,
-                      maxLength: 255,
-                      decoration: InputDecoration(
-                        labelText: 'Liều dùng dòng ${i + 1}',
-                        errorText: errors['lines.$i.dosage'],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: locked
-                          ? null
-                          : () {
-                              final removed = lines[i];
-                              setState(() => lines.remove(removed));
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                removed.dispose();
-                                if (!mounted) return;
-                                final target = lines.isEmpty
-                                    ? keywordFocus
-                                    : lines.last.focus;
-                                target.requestFocus();
-                                if (target.context != null) {
-                                  Scrollable.ensureVisible(target.context!);
-                                }
-                              });
-                            },
-                      child: Text('Bỏ dòng ${i + 1}'),
-                    ),
-                  ],
-                ),
+          ),
+        if (pages > 1)
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: locked || searching || page == 0
+                    ? null
+                    : () => _search(target: page - 1, submit: false),
+                child: const Text('Trang thuốc trước'),
               ),
-            ),
-          Focus(
-            focusNode: feedbackFocus,
-            child: Semantics(
-              liveRegion: true,
+              TextButton(
+                onPressed: locked || searching || page + 1 >= pages
+                    ? null
+                    : () => _search(target: page + 1, submit: false),
+                child: const Text('Trang thuốc sau'),
+              ),
+            ],
+          ),
+        for (var i = 0; i < lines.length; i++)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (errors['lines'] != null) Text(errors['lines']!),
-                  if (commandError != null) ...[
-                    PharmacyRequestError(commandError!),
-                    if (intent != null)
-                      const Text(
-                        'Chưa rõ đơn đã được tạo hay chưa. Vui lòng kiểm tra đơn trước khi gửi lần nữa.',
-                      ),
-                  ],
-                  if (created != null)
-                    const Text('Đã tạo đơn thuốc thành công.'),
+                  Text(lines[i].drug.name),
+                  TextField(
+                    controller: lines[i].quantity,
+                    focusNode: lines[i].focus,
+                    enabled: !locked,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Số lượng dòng ${i + 1}',
+                      errorText:
+                          errors['lines.$i.quantity'] ?? errors['lines.$i'],
+                    ),
+                  ),
+                  TextField(
+                    controller: lines[i].dosage,
+                    focusNode: lines[i].dosageFocus,
+                    enabled: !locked,
+                    maxLength: 255,
+                    decoration: InputDecoration(
+                      labelText: 'Liều dùng dòng ${i + 1}',
+                      errorText: errors['lines.$i.dosage'],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: locked
+                        ? null
+                        : () {
+                            final removed = lines[i];
+                            setState(() => lines.remove(removed));
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              removed.dispose();
+                              if (!mounted) return;
+                              final target = lines.isEmpty
+                                  ? keywordFocus
+                                  : lines.last.focus;
+                              target.requestFocus();
+                              if (target.context != null) {
+                                Scrollable.ensureVisible(target.context!);
+                              }
+                            });
+                          },
+                    child: Text('Bỏ dòng ${i + 1}'),
+                  ),
                 ],
               ),
             ),
           ),
-          if (intent == null)
-            FilledButton(
-              onPressed: busy || widget.writer == null ? null : () => _submit(),
-              child: const Text('Tạo đơn thuốc'),
+        Focus(
+          focusNode: feedbackFocus,
+          child: Semantics(
+            liveRegion: true,
+            child: Column(
+              children: [
+                if (errors['lines'] != null) Text(errors['lines']!),
+                if (commandError != null) ...[
+                  PharmacyRequestError(commandError!),
+                  if (intent != null)
+                    const Text(
+                      'Chưa rõ đơn đã được tạo hay chưa. Vui lòng kiểm tra đơn trước khi gửi lần nữa.',
+                    ),
+                ],
+                if (created != null)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Đã tạo đơn thuốc thành công.'),
+                      if (created!.recordId case final recordId?)
+                        ReferenceLabel(
+                          kind: ReferenceKind.record,
+                          id: recordId,
+                          label: 'Hồ sơ đơn thuốc',
+                        ),
+                      Text('Mã đơn thuốc: ${created!.id}'),
+                      Text(
+                        'Trạng thái: ${prescriptionStatusText(created!.status)}',
+                      ),
+                      Text(
+                        'Tổng tiền theo máy chủ: ${created!.totalAmount} đồng',
+                      ),
+                      Text('Số loại thuốc: ${created!.lines.length}'),
+                    ],
+                  ),
+              ],
             ),
-          if (intent != null && retryAllowed && created == null)
-            FilledButton(
-              onPressed: busy ? null : () => _submit(retry: true),
-              child: const Text('Thử gửi lại đơn này'),
-            ),
-          if (intent != null && rejected && created == null)
-            OutlinedButton(
-              onPressed: busy
-                  ? null
-                  : () {
-                      setState(() {
-                        intent = null;
-                        rejected = false;
-                        retryAllowed = false;
-                        commandError = null;
-                      });
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        final key = labels.keys
-                            .where(errors.containsKey)
-                            .firstOrNull;
-                        FocusNode target = focuses[key ?? 'recordId']!;
-                        if (key == null) {
-                          for (var i = 0; i < lines.length; i++) {
-                            if (errors.containsKey('lines.$i.quantity') ||
-                                errors.containsKey('lines.$i')) {
-                              target = lines[i].focus;
-                              break;
-                            }
-                            if (errors.containsKey('lines.$i.dosage')) {
-                              target = lines[i].dosageFocus;
-                              break;
-                            }
+          ),
+        ),
+        if (intent == null)
+          FilledButton(
+            onPressed: busy || widget.writer == null ? null : () => _submit(),
+            child: const Text('Tạo đơn thuốc'),
+          ),
+        if (intent != null && retryAllowed && created == null)
+          FilledButton(
+            onPressed: busy ? null : () => _submit(retry: true),
+            child: const Text('Thử gửi lại đơn này'),
+          ),
+        if (intent != null && rejected && created == null)
+          OutlinedButton(
+            onPressed: busy
+                ? null
+                : () {
+                    setState(() {
+                      intent = null;
+                      rejected = false;
+                      retryAllowed = false;
+                      commandError = null;
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      final key = labels.keys
+                          .where(errors.containsKey)
+                          .firstOrNull;
+                      FocusNode target = focuses[key ?? 'recordId']!;
+                      if (key == null) {
+                        for (var i = 0; i < lines.length; i++) {
+                          if (errors.containsKey('lines.$i.quantity') ||
+                              errors.containsKey('lines.$i')) {
+                            target = lines[i].focus;
+                            break;
+                          }
+                          if (errors.containsKey('lines.$i.dosage')) {
+                            target = lines[i].dosageFocus;
+                            break;
                           }
                         }
-                        target.requestFocus();
-                        if (target.context != null) {
-                          Scrollable.ensureVisible(target.context!);
-                        }
-                      });
-                    },
-              child: const Text('Sửa bản nháp bị từ chối'),
+                      }
+                      target.requestFocus();
+                      if (target.context != null) {
+                        Scrollable.ensureVisible(target.context!);
+                      }
+                    });
+                  },
+            child: const Text('Sửa bản nháp bị từ chối'),
+          ),
+        if (busy && confirmation == null)
+          const LinearProgressIndicator(semanticsLabel: 'Đang xử lý kê đơn'),
+      ],
+    );
+    final content = widget.embedded
+        ? Padding(padding: const EdgeInsets.all(16), child: form)
+        : SingleChildScrollView(padding: const EdgeInsets.all(16), child: form);
+    return PopScope(
+      canPop: !holdWorkspace,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && holdWorkspace) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Kết quả kê đơn chưa rõ. Thử lại cùng yêu cầu trước khi rời hồ sơ.',
+              ),
             ),
-          if (busy && confirmation == null)
-            const LinearProgressIndicator(semanticsLabel: 'Đang xử lý kê đơn'),
-        ],
-      ),
+          );
+        }
+      },
+      child: content,
     );
   }
 }

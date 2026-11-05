@@ -1,4 +1,12 @@
-enum ReferenceKind { patient, staff, doctor, department, appointment, record }
+enum ReferenceKind {
+  patient,
+  staff,
+  doctor,
+  department,
+  appointment,
+  record,
+  room,
+}
 
 class ReferenceOption {
   const ReferenceOption({required this.id, required this.name, this.detail});
@@ -35,7 +43,9 @@ bool canReadReference(String? role, ReferenceKind kind) => switch (kind) {
     'CASHIER',
     'PHARMACIST',
   ].contains(role),
-  ReferenceKind.department || ReferenceKind.doctor => const [
+  ReferenceKind.department ||
+  ReferenceKind.doctor ||
+  ReferenceKind.room => const [
     'ADMIN',
     'MANAGER',
     'DOCTOR',
@@ -50,6 +60,7 @@ bool canReadReference(String? role, ReferenceKind kind) => switch (kind) {
 };
 
 bool canSearchReference(String? role, ReferenceKind kind) => switch (kind) {
+  ReferenceKind.room => false,
   ReferenceKind.department || ReferenceKind.doctor => const [
     'ADMIN',
     'MANAGER',

@@ -1,5 +1,16 @@
 # Hoàn thiện toàn bộ mobile — 03/11/2026
 
+## Luồng hồ sơ và tiếp nhận — 04/11/2026
+
+Baseline `d9a1635b`: thêm lookup tài khoản theo hồ sơ; cấp/reset/gửi lại thư trong
+hồ sơ nhân sự và bệnh nhân theo đúng quyền; giữ yêu cầu chưa rõ kết quả theo phiên.
+Patient mirror trường `daLuuTru` từ backend và khóa thao tác cấp/reset/đăng ký khi
+đã lưu trữ. App ghép tài khoản và nút đăng ký khám vào hồ sơ; tạo hồ sơ mới từ tiếp
+nhận không yêu cầu tìm lại mã. Tiếp nhận native dùng V2 session/revision/capacity,
+tái khám và cùng idempotency key khi đối soát. Hồ sơ khám ghép kê đơn có khóa nguồn
+và danh sách đơn theo đúng hồ sơ. [Evidence và acceptance còn lại](evidence/2026-11-04-profile-workflows/README.md).
+Các dòng checkpoint cũ bên dưới giữ nguyên ý nghĩa lịch sử; chưa nghiệm thu toàn bộ V2 trên thiết bị thật.
+
 ## Sửa tương tác theo vai trò bệnh xá
 
 Đợt sửa trên baseline `3e28d96e`: tên và ngày sinh bệnh nhân qua minimal directory

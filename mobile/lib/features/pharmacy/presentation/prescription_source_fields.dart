@@ -12,9 +12,16 @@ class PrescriptionSourceFields extends ConsumerStatefulWidget {
     required this.reader,
     required this.locked,
     required this.onChanged,
-  });
+    this.sourceLocked = false,
+    this.initialPatientId,
+    this.initialRecordId,
+  }) : assert((initialPatientId == null) == (initialRecordId == null));
   final PrescribingSourceReader reader;
+
+  /// Locks this context while leaving an allowed server-supplied price choice editable.
+  final bool sourceLocked;
   final bool locked;
+  final String? initialPatientId, initialRecordId;
   final ValueChanged<OutpatientPrescriptionContext?> onChanged;
   @override
   ConsumerState<PrescriptionSourceFields> createState() => _SourceFieldsState();
@@ -28,8 +35,53 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
   bool loading = false, hasMore = false;
   Object? error;
 
+  bool get _hasFixedSource => widget.initialRecordId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    patientId = widget.initialPatientId;
+    recordId = widget.initialRecordId;
+    if (_hasFixedSource) {
+      Future.microtask(_loadFixedSource);
+    }
+  }
+
+  Future<void> _loadFixedSource() async {
+    final id = widget.initialRecordId;
+    final patient = widget.initialPatientId;
+    if (id == null || patient == null || widget.locked) return;
+    final ticket = ++generation;
+    setState(() {
+      loading = true;
+      error = null;
+      source = null;
+      priceCode = null;
+    });
+    widget.onChanged(null);
+    try {
+      final result = await widget.reader.prescribingSource(id);
+      if (!mounted || ticket != generation) return;
+      if (result.recordId.toLowerCase() != id.toLowerCase() ||
+          result.patientId.toLowerCase() != patient.toLowerCase()) {
+        throw const FormatException('Hồ sơ không thuộc bệnh nhân đã chọn.');
+      }
+      setState(() {
+        source = result;
+        priceCode = result.priceCodes.length == 1
+            ? result.priceCodes.single
+            : null;
+      });
+      widget.onChanged(priceCode == null ? null : result.context(priceCode!));
+    } catch (failure) {
+      if (mounted && ticket == generation) setState(() => error = failure);
+    } finally {
+      if (mounted && ticket == generation) setState(() => loading = false);
+    }
+  }
+
   Future<void> _patient(String? id) async {
-    if (widget.locked || id == patientId) return;
+    if (widget.locked || widget.sourceLocked || id == patientId) return;
     generation++;
     setState(() {
       patientId = id;
@@ -48,7 +100,9 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
 
   Future<void> _records({bool more = false}) async {
     final patient = patientId;
-    if (patient == null || widget.locked || loading) return;
+    if (patient == null || widget.locked || widget.sourceLocked || loading) {
+      return;
+    }
     final ticket = ++generation;
     final nextPage = more ? page + 1 : 0;
     setState(() {
@@ -85,7 +139,7 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
   }
 
   Future<void> _record(String id) async {
-    if (widget.locked) return;
+    if (widget.locked || widget.sourceLocked) return;
     final ticket = ++generation;
     final patient = patientId;
     setState(() {
@@ -126,15 +180,27 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      ReferencePicker(
-        kind: ReferenceKind.patient,
-        label: 'Bệnh nhân',
-        value: patientId,
-        required: true,
-        onChanged: widget.locked ? null : _patient,
-      ),
+      if (_hasFixedSource) ...[
+        ReferenceLabel(
+          kind: ReferenceKind.patient,
+          id: patientId!,
+          label: 'Bệnh nhân',
+        ),
+        ReferenceLabel(
+          kind: ReferenceKind.record,
+          id: recordId!,
+          label: 'Hồ sơ khám',
+        ),
+      ] else
+        ReferencePicker(
+          kind: ReferenceKind.patient,
+          label: 'Bệnh nhân',
+          value: patientId,
+          required: true,
+          onChanged: widget.locked || widget.sourceLocked ? null : _patient,
+        ),
       if (patientId == null) const Text('Chọn bệnh nhân để tải hồ sơ khám.'),
-      if (records.isNotEmpty)
+      if (!_hasFixedSource && records.isNotEmpty)
         InputDecorator(
           decoration: const InputDecoration(
             labelText: 'Hồ sơ khám',
@@ -159,7 +225,7 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
                           ),
                         )
                         .toList(),
-                    onChanged: widget.locked || loading
+                    onChanged: widget.locked || widget.sourceLocked || loading
                         ? null
                         : (id) {
                             if (id != null) _record(id);
@@ -169,7 +235,7 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
         ),
       if (hasMore)
         TextButton(
-          onPressed: widget.locked || loading
+          onPressed: widget.locked || widget.sourceLocked || loading
               ? null
               : () => _records(more: true),
           child: const Text('Tải thêm hồ sơ'),
@@ -186,7 +252,9 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
           onRetry: widget.locked
               ? null
               : () {
-                  if (recordId != null) {
+                  if (_hasFixedSource) {
+                    _loadFixedSource();
+                  } else if (recordId != null) {
                     _record(recordId!);
                   } else {
                     _records();

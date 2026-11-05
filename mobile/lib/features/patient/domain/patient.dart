@@ -13,6 +13,7 @@ class Patient {
     required this.insuranceNumber,
     required this.createdAt,
     required this.updatedAt,
+    required this.archived,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class Patient {
   final String? insuranceNumber;
   final String createdAt;
   final String updatedAt;
+  final bool archived;
 }
 
 class PatientDraft {

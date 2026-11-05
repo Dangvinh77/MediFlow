@@ -34,18 +34,19 @@ Appointment appointment({String reason = 'New session'}) => Appointment(
   reason: reason,
 );
 
-MedicalRecord record({String symptoms = 'Headache'}) => MedicalRecord(
-  id: recordId,
-  patientId: patientId,
-  doctorId: doctorId,
-  departmentId: departmentId,
-  examinationDate: '2026-10-22',
-  symptoms: symptoms,
-  appointmentId: appointmentId,
-  diagnoses: const [Diagnosis(id: diagnosisId, name: 'Tension headache')],
-  createdAt: '2026-10-22T08:00:00Z',
-  status: 'OPEN',
-);
+MedicalRecord record({String symptoms = 'Headache', String status = 'OPEN'}) =>
+    MedicalRecord(
+      id: recordId,
+      patientId: patientId,
+      doctorId: doctorId,
+      departmentId: departmentId,
+      examinationDate: '2026-10-22',
+      symptoms: symptoms,
+      appointmentId: appointmentId,
+      diagnoses: const [Diagnosis(id: diagnosisId, name: 'Tension headache')],
+      createdAt: '2026-10-22T08:00:00Z',
+      status: status,
+    );
 
 class AppointmentFake implements AppointmentRepository {
   Future<PageResult<Appointment>> Function(int page)? onSearch;
@@ -159,6 +160,7 @@ class ReferenceFake implements ReferenceReader {
           ReferenceKind.department => 'Clinic department',
           ReferenceKind.record => 'Medical record',
           ReferenceKind.appointment => 'Appointment',
+          ReferenceKind.room => 'Room',
         },
       );
   @override
@@ -196,6 +198,141 @@ Widget host({
 );
 
 void main() {
+  testWidgets(
+    'record detail places the injected prescription workspace before completion and locks completed records',
+    (tester) async {
+      var receivedCanCreate = false;
+      Widget prescriptionSlot(
+        BuildContext context,
+        MedicalRecord current, {
+        required bool canCreate,
+      }) {
+        receivedCanCreate = canCreate;
+        return Text('Prescription slot: $canCreate');
+      }
+
+      final records = MedicalRecordFake();
+      await tester.pumpWidget(
+        host(
+          child: MedicalRecordDetailPage(
+            recordId: recordId,
+            prescriptionWorkspaceBuilder: prescriptionSlot,
+          ),
+          records: records,
+          outpatientEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(receivedCanCreate, isTrue);
+      final detailScrollable = find.descendant(
+        of: find.byType(ListView).first,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Đơn thuốc'),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Đơn thuốc'), findsOneWidget);
+      expect(find.text('Prescription slot: true'), findsOneWidget);
+      await tester.ensureVisible(find.text('Hoàn tất hồ sơ khám'));
+      expect(
+        tester.getTopLeft(find.text('Prescription slot: true')).dy,
+        lessThan(tester.getTopLeft(find.text('Hoàn tất hồ sơ khám')).dy),
+      );
+
+      records.onGet = (_) async => record(status: 'COMPLETED');
+      await tester.pumpWidget(
+        host(
+          child: MedicalRecordDetailPage(
+            recordId: recordId,
+            prescriptionWorkspaceBuilder: prescriptionSlot,
+          ),
+          records: records,
+          outpatientEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(receivedCanCreate, isFalse);
+      expect(find.text('Prescription slot: false'), findsOneWidget);
+      expect(find.text('Hoàn tất hồ sơ khám'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'visit resolver forwards the prescription workspace builder with the exact record',
+    (tester) async {
+      MedicalRecord? receivedRecord;
+      Widget prescriptionSlot(
+        BuildContext context,
+        MedicalRecord current, {
+        required bool canCreate,
+      }) {
+        receivedRecord = current;
+        return Text('Resolved prescription: ${current.id}');
+      }
+
+      await tester.pumpWidget(
+        host(
+          child: MedicalRecordForVisitPage(
+            patientId: patientId,
+            visitId: appointmentId,
+            prescriptionWorkspaceBuilder: prescriptionSlot,
+          ),
+          records: MedicalRecordFake(),
+          outpatientEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(receivedRecord?.id, recordId);
+      final detailScrollable = find.descendant(
+        of: find.byType(ListView).first,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Resolved prescription: $recordId'),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Resolved prescription: $recordId'), findsOneWidget);
+    },
+  );
+
+  testWidgets('nurse cannot see or build the Pharmacy record workspace', (
+    tester,
+  ) async {
+    var calls = 0;
+    Widget prescriptionSlot(
+      BuildContext context,
+      MedicalRecord current, {
+      required bool canCreate,
+    }) {
+      calls++;
+      return const Text('Pharmacy record slot');
+    }
+
+    await tester.pumpWidget(
+      host(
+        child: MedicalRecordDetailPage(
+          recordId: recordId,
+          prescriptionWorkspaceBuilder: prescriptionSlot,
+        ),
+        role: 'NURSE',
+        records: MedicalRecordFake(),
+        outpatientEnabled: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(calls, 0);
+    expect(find.text('Đơn thuốc'), findsNothing);
+    expect(find.text('Pharmacy record slot'), findsNothing);
+  });
+
   testWidgets('symptom draft cannot cross a session change', (tester) async {
     final records = MedicalRecordFake();
     await tester.pumpWidget(

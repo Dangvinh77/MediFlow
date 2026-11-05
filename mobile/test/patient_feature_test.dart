@@ -24,6 +24,7 @@ Map<String, dynamic> patientJson({
   String id = patientId,
   String name = 'Nguyen Van An',
   String gender = 'M',
+  bool archived = false,
 }) => {
   'maBenhNhan': id,
   'hoTen': name,
@@ -36,9 +37,11 @@ Map<String, dynamic> patientJson({
   'bhytSo': '12-12345678-1',
   'createdAt': '2026-01-01T10:00:00Z',
   'updatedAt': '2026-01-02T10:00:00Z',
+  'daLuuTru': archived,
 };
 
-Patient samplePatient() => PatientDto.fromJson(patientJson());
+Patient samplePatient({bool archived = false}) =>
+    PatientDto.fromJson(patientJson(archived: archived));
 
 class PatientAdapter implements HttpClientAdapter {
   final requests = <RequestOptions>[];
@@ -153,6 +156,15 @@ Future<void> enterValidPatientDraft(WidgetTester tester) async {
 }
 
 void main() {
+  test('patient wire archive state is retained', () {
+    expect(PatientDto.fromJson(patientJson(archived: true)).archived, isTrue);
+    expect(PatientDto.fromJson(patientJson()).archived, isFalse);
+    expect(
+      () => PatientDto.fromJson(patientJson()..remove('daLuuTru')),
+      throwsFormatException,
+    );
+  });
+
   test('patient use case rejects impossible dates and missing identity before POST', () async {
     final repository = PatientStub();
     expect(
@@ -506,6 +518,127 @@ void main() {
     expect(find.textContaining(patientId), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'patient detail passes the loaded id to profile and registration slots',
+    (tester) async {
+      String? registeredPatientId;
+      final repository = PatientStub();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientRepositoryProvider.overrideWithValue(repository),
+            workspaceAccessProvider.overrideWithValue(
+              const WorkspaceAccess(
+                sessionIdentity: 'profile-slot-session',
+                role: 'NURSE',
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: PatientPage(
+                initialPatientId: patientId,
+                accountPanelBuilder: (_, patient, _) =>
+                    Text('Account panel for ${patient.id}'),
+                onRegisterPatient: (id) => registeredPatientId = id,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nguyen Van An'), findsOneWidget);
+      expect(find.text('Account panel for $patientId'), findsOneWidget);
+      expect(find.text('Tìm kiếm'), findsNothing);
+      await tester.tap(find.text('Đăng ký khám'));
+      expect(registeredPatientId, patientId);
+    },
+  );
+
+  testWidgets('archived patient profile hides outpatient registration', (
+    tester,
+  ) async {
+    final repository = PatientStub()
+      ..readAction = (_) async => samplePatient(archived: true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          patientRepositoryProvider.overrideWithValue(repository),
+          workspaceAccessProvider.overrideWithValue(
+            const WorkspaceAccess(
+              sessionIdentity: 'archived-profile-session',
+              role: 'NURSE',
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: PatientPage(
+              initialPatientId: patientId,
+              onRegisterPatient: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nguyen Van An'), findsOneWidget);
+    expect(find.text('Đăng ký khám'), findsNothing);
+  });
+
+  testWidgets(
+    'initial creation opens the new patient profile and registration action',
+    (tester) async {
+      const createdId = '22222222-2222-4222-8222-222222222222';
+      final created = PatientDto.fromJson(
+        patientJson(id: createdId, name: 'New reception patient'),
+      );
+      final repository = PatientStub()
+        ..createAction = (_) async {
+          return created;
+        }
+        ..readAction = (_) async {
+          return created;
+        };
+      String? registeredId;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientRepositoryProvider.overrideWithValue(repository),
+            workspaceAccessProvider.overrideWithValue(
+              const WorkspaceAccess(
+                sessionIdentity: 'initial-create-session',
+                role: 'NURSE',
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: PatientPage(
+                initiallyCreate: true,
+                accountPanelBuilder: (_, patient, _) =>
+                    Text('Account panel for ${patient.id}'),
+                onRegisterPatient: (id) => registeredId = id,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Tìm kiếm'), findsNothing);
+      await enterValidPatientDraft(tester);
+      await tester.tap(find.text('Tạo bệnh nhân'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('New reception patient'), findsOneWidget);
+      expect(find.text('Account panel for $createdId'), findsOneWidget);
+      await tester.tap(find.text('Đăng ký khám'));
+      expect(registeredId, createdId);
+    },
+  );
 
   testWidgets(
     'admin delete requires confirmation and reports a failed delete',

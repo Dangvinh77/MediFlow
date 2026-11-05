@@ -23,8 +23,9 @@ final outpatientUiEnabledProvider = Provider<bool>(
 );
 
 class AppointmentPage extends ConsumerStatefulWidget {
-  const AppointmentPage({super.key, this.onOpenRecord});
+  const AppointmentPage({super.key, this.onOpenRecord, this.onReception});
   final void Function(String patientId, String visitId)? onOpenRecord;
+  final VoidCallback? onReception;
   @override
   ConsumerState<AppointmentPage> createState() => _AppointmentPageState();
 }
@@ -89,7 +90,15 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                       }),
                 child: const Text('Bỏ lọc'),
               ),
-              if (canCreate)
+              if (canCreate &&
+                  ref.watch(outpatientUiEnabledProvider) &&
+                  widget.onReception != null)
+                FilledButton.icon(
+                  onPressed: widget.onReception,
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Đăng ký khám'),
+                ),
+              if (canCreate && !ref.watch(outpatientUiEnabledProvider))
                 FilledButton.icon(
                   onPressed: () async {
                     final saved = await Navigator.of(context).push<bool>(

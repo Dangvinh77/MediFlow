@@ -3,6 +3,10 @@ import '../domain/patient.dart';
 
 abstract final class PatientDto {
   static Patient fromJson(Map<String, dynamic> json) {
+    final archived = json['daLuuTru'];
+    if (archived is! bool) {
+      throw const FormatException('Dữ liệu daLuuTru không hợp lệ.');
+    }
     final gender = JsonReader.string(json, 'gioiTinh');
     if (!const {'M', 'F'}.contains(gender)) {
       throw const FormatException('Dữ liệu gioiTinh không hợp lệ.');
@@ -23,6 +27,7 @@ abstract final class PatientDto {
       insuranceNumber: JsonReader.optionalString(json, 'bhytSo'),
       createdAt: JsonReader.string(json, 'createdAt'),
       updatedAt: JsonReader.string(json, 'updatedAt'),
+      archived: archived,
     );
   }
 

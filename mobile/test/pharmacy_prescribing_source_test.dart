@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mediflow_mobile/core/domain/page_result.dart';
+import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
+import 'package:mediflow_mobile/features/pharmacy/data/pharmacy_dto.dart';
+import 'package:mediflow_mobile/features/pharmacy/domain/prescription.dart';
 import 'package:mediflow_mobile/features/pharmacy/domain/prescribing_source.dart';
 import 'package:mediflow_mobile/features/pharmacy/presentation/create_prescription_page.dart';
 
@@ -63,6 +67,385 @@ class PagedReferences extends ReferencePickerFake {
 }
 
 void main() {
+  testWidgets(
+    'record panel reads by the authoritative patient and shows only this record',
+    (tester) async {
+      final repository = SourceRepository()
+        ..prescriptionSearch = (_, _, _, page, size) async => PageResult(
+          items: [
+            PharmacyDto.prescription({
+              ...prescriptionJson(),
+              'prescriptionId': rxId,
+              'recordId': drugId,
+              'patientId': otherDrugId,
+            }),
+            PharmacyDto.prescription({
+              ...prescriptionJson(),
+              'prescriptionId': otherDrugId,
+              'recordId': rxId,
+              'patientId': otherDrugId,
+            }),
+          ],
+          number: page,
+          totalPages: 1,
+          totalElements: 2,
+        );
+      await tester.pumpWidget(
+        host(
+          repository,
+          ListView(
+            children: const [
+              RecordPrescriptionPanel(
+                recordId: drugId,
+                patientId: otherDrugId,
+                canCreate: false,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.prescriptionSearches.single.patientId, otherDrugId);
+      expect(repository.prescriptionSearches.single.page, 0);
+      expect(find.textContaining('Mã đơn: $rxId'), findsOneWidget);
+      expect(find.textContaining('Mã đơn: $otherDrugId'), findsNothing);
+      expect(find.text('Đơn thuốc · 20/10/2026'), findsOneWidget);
+      expect(find.textContaining('ACTIVE'), findsNothing);
+      expect(find.byTooltip('Xem chi tiết đơn thuốc'), findsOneWidget);
+      expect(find.text('Kê đơn ngoại trú'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('record panel drops prescription rows when the session changes', (
+    tester,
+  ) async {
+    final repository = SourceRepository()
+      ..prescriptionSearch = (_, patientId, _, page, _) async => PageResult(
+        items: [
+          PharmacyDto.prescription({
+            ...prescriptionJson(),
+            'recordId': drugId,
+            'patientId': patientId,
+          }),
+        ],
+        number: page,
+        totalPages: 1,
+        totalElements: 1,
+      );
+    Widget page(String identity) => host(
+      repository,
+      ListView(
+        children: const [
+          RecordPrescriptionPanel(
+            recordId: drugId,
+            patientId: otherDrugId,
+            canCreate: false,
+          ),
+        ],
+      ),
+      identity: identity,
+    );
+
+    await tester.pumpWidget(page('session-one'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Mã đơn: $rxId'), findsOneWidget);
+
+    repository.prescriptionSearch = (_, _, _, page, _) async => PageResult(
+      items: const [],
+      number: page,
+      totalPages: 1,
+      totalElements: 0,
+    );
+    await tester.pumpWidget(page('session-two'));
+    await tester.pumpAndSettle();
+
+    expect(repository.prescriptionSearches, hasLength(2));
+    expect(find.textContaining('Mã đơn: $rxId'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'record workspace preloads the exact source and locks patient and record',
+    (tester) async {
+      final repository = SourceRepository();
+      final references = PagedReferences();
+      await tester.pumpWidget(
+        host(
+          repository,
+          ListView(
+            children: const [
+              CreatePrescriptionPage(
+                initialPatientId: otherDrugId,
+                initialRecordId: drugId,
+                embedded: true,
+              ),
+            ],
+          ),
+          writer: Writer(),
+          referenceReader: references,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.reads, [drugId]);
+      expect(references.searches, isEmpty);
+      expect(find.byTooltip('Chọn Bệnh nhân'), findsNothing);
+      expect(find.byType(DropdownButton<String>), findsNothing);
+      expect(
+        find.text('Đã liên kết lượt khám ngoại trú từ hồ sơ.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('missing or closed record context cannot create a prescription', (
+    tester,
+  ) async {
+    final repository = SourceRepository()
+      ..load = (_) async => throw const FormatException(
+        'Hồ sơ đã đóng hoặc chưa có nguồn kê đơn ngoại trú hợp lệ.',
+      );
+    final writer = Writer();
+    await tester.pumpWidget(
+      host(
+        repository,
+        ListView(
+          children: const [
+            CreatePrescriptionPage(
+              initialPatientId: otherDrugId,
+              initialRecordId: drugId,
+              embedded: true,
+            ),
+          ],
+        ),
+        writer: writer,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Chưa đọc được thông tin.'), findsOneWidget);
+    await tap(tester, 'Tạo đơn thuốc');
+    expect(writer.intents, isEmpty);
+    expect(find.byTooltip('Chọn Bệnh nhân'), findsNothing);
+  });
+
+  testWidgets(
+    'embedded creation keeps the returned prescription receipt in the record',
+    (tester) async {
+      final writer = Writer()
+        ..send = (_) async => PharmacyDto.prescription({
+          ...prescriptionJson(),
+          'recordId': drugId,
+          'patientId': otherDrugId,
+          'doctorId': drugId,
+          'departmentId': otherDrugId,
+        });
+      var createdCallbacks = 0;
+      await tester.pumpWidget(
+        host(
+          SourceRepository(),
+          ListView(
+            children: [
+              CreatePrescriptionPage(
+                initialPatientId: otherDrugId,
+                initialRecordId: drugId,
+                embedded: true,
+                onCreated: (_) => createdCallbacks++,
+              ),
+            ],
+          ),
+          writer: writer,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tap(tester, 'Tìm trong danh mục');
+      final choose = find.byTooltip('Chọn Paracetamol 500 mg');
+      await tester.ensureVisible(choose);
+      await tester.tap(choose);
+      await tester.pumpAndSettle();
+      await tap(tester, 'Tạo đơn thuốc');
+      await tap(tester, 'Xác nhận kê đơn');
+      await pumpCommand(tester);
+
+      expect(createdCallbacks, 1);
+      expect(find.text('Đã tạo đơn thuốc thành công.'), findsOneWidget);
+      expect(find.text('Mã đơn thuốc: $rxId'), findsOneWidget);
+      expect(find.text('Tổng tiền theo máy chủ: 5000.5 đồng'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a late create receipt from a previous session is discarded', (
+    tester,
+  ) async {
+    final pending = Completer<Prescription>();
+    final writer = Writer()..send = (_) => pending.future;
+    final repository = SourceRepository();
+    var createdCallbacks = 0;
+    Widget page(String identity) => host(
+      repository,
+      ListView(
+        children: [
+          CreatePrescriptionPage(
+            initialPatientId: otherDrugId,
+            initialRecordId: drugId,
+            embedded: true,
+            onCreated: (_) => createdCallbacks++,
+          ),
+        ],
+      ),
+      writer: writer,
+      identity: identity,
+    );
+
+    await tester.pumpWidget(page('session-one'));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Tìm trong danh mục');
+    final choose = find.byTooltip('Chọn Paracetamol 500 mg');
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await tester.pumpAndSettle();
+    await tap(tester, 'Tạo đơn thuốc');
+    await tester.tap(find.text('Xác nhận kê đơn'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(writer.intents, hasLength(1));
+
+    await tester.pumpWidget(page('session-two'));
+    await tester.pumpAndSettle();
+    pending.complete(
+      PharmacyDto.prescription({
+        ...prescriptionJson(),
+        'recordId': drugId,
+        'patientId': otherDrugId,
+        'doctorId': drugId,
+        'departmentId': otherDrugId,
+      }),
+    );
+    await tester.pumpAndSettle();
+
+    expect(createdCallbacks, 0);
+    expect(find.text('Đã tạo đơn thuốc thành công.'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'unknown embedded create outcome blocks leaving and retries the same intent',
+    (tester) async {
+      var attempts = 0;
+      final writer = Writer()
+        ..send = (_) async {
+          attempts++;
+          if (attempts == 1) {
+            throw const ApiFailure('Unknown create outcome', status: 503);
+          }
+          return PharmacyDto.prescription({
+            ...prescriptionJson(),
+            'recordId': drugId,
+            'patientId': otherDrugId,
+            'doctorId': drugId,
+            'departmentId': otherDrugId,
+          });
+        };
+      final repository = SourceRepository();
+      final recordOpen = ValueNotifier(true);
+      await tester.pumpWidget(
+        host(
+          repository,
+          ValueListenableBuilder<bool>(
+            valueListenable: recordOpen,
+            builder: (context, canCreate, _) => ListView(
+              children: [
+                RecordPrescriptionPanel(
+                  recordId: drugId,
+                  patientId: otherDrugId,
+                  canCreate: canCreate,
+                ),
+              ],
+            ),
+          ),
+          writer: writer,
+        ),
+      );
+      final navigator = tester.state<NavigatorState>(
+        find.byType(Navigator).first,
+      );
+      navigator.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            key: const ValueKey('prescription-source-page'),
+            body: ValueListenableBuilder<bool>(
+              valueListenable: recordOpen,
+              builder: (context, canCreate, _) => ListView(
+                children: [
+                  RecordPrescriptionPanel(
+                    recordId: drugId,
+                    patientId: otherDrugId,
+                    canCreate: canCreate,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tap(tester, 'Tìm trong danh mục');
+      final choose = find.byTooltip('Chọn Paracetamol 500 mg');
+      await tester.ensureVisible(choose);
+      await tester.tap(choose);
+      await tester.pumpAndSettle();
+      await tap(tester, 'Tạo đơn thuốc');
+      await tap(tester, 'Xác nhận kê đơn');
+      await pumpCommand(tester);
+      final original = writer.intents.single;
+
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('prescription-source-page')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Chưa rõ đơn đã được tạo hay chưa.'),
+        findsOneWidget,
+      );
+      recordOpen.value = false;
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('prescription-source-page')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Chưa rõ đơn đã được tạo hay chưa.'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      final retryLabel = find.text('Thử gửi lại đơn này');
+      await tester.ensureVisible(retryLabel);
+      await tester.pumpAndSettle();
+      await tester.tap(retryLabel);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xác nhận kê đơn'));
+      await tester.pumpAndSettle();
+      await pumpCommand(tester);
+
+      expect(writer.intents, hasLength(2));
+      expect(identical(writer.intents.last, original), isTrue);
+      expect(writer.intents.last.key, original.key);
+      expect(find.text('Mã đơn thuốc: $rxId'), findsOneWidget);
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('prescription-source-page')),
+        findsNothing,
+      );
+      recordOpen.dispose();
+    },
+  );
+
   testWidgets(
     'one visible record is not auto-selected when another page exists',
     (tester) async {

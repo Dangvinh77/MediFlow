@@ -1,5 +1,11 @@
 # MediFlow Mobile — Outpatient Care Management
 
+Cập nhật luồng hồ sơ trên baseline `d9a1635b`: tài khoản nhân sự/bệnh nhân được quản lý
+ngay trong hồ sơ; điều dưỡng cấp/reset tài khoản bệnh nhân theo quyền. Tạo hồ sơ từ
+tiếp nhận mở thẳng hồ sơ mới để cấp tài khoản hoặc đăng ký khám. Tiếp nhận V2 có buổi
+khám/số chỗ, phiếu chờ thu tiền và tiếp nhận bệnh nhân tiếp theo; kê đơn được ghép vào
+hồ sơ khám qua app composition. [Phạm vi, kiểm tra và giới hạn nghiệm thu](docs/evidence/2026-11-04-profile-workflows/README.md).
+
 Đồng bộ 04/11/2026 với master `1ce0968e`: email login tối đa 254 ký tự, Quên mật khẩu và
 Đặt lại mật khẩu (dán liên kết/mã từ email), tạo tài khoản với mật khẩu do backend sinh,
 Lab cancellation lấy actor từ backend và sửa bố cục màn hình nhỏ/keyboard/large text.
