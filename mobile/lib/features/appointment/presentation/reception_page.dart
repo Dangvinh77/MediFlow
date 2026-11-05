@@ -6,6 +6,7 @@ import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/reception.dart';
+import 'outpatient_schedule_pages.dart';
 import 'appointment_page.dart';
 
 final receptionRepositoryProvider = Provider<ReceptionRepository>(
@@ -435,6 +436,19 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                       child: Text(
                         selected?.id == item.id ? 'Đã chọn buổi' : 'Chọn buổi',
                       ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => SessionRegistrationsPage(
+                            sessionId: item.id,
+                            title:
+                                '${item.date} · ${item.startTime}–${item.endTime}',
+                            canMarkArrival: true,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Xem phiếu của buổi'),
                     ),
                   ],
                 ),
