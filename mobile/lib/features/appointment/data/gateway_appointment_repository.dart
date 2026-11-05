@@ -104,6 +104,17 @@ class GatewayAppointmentRepository implements AppointmentRepository {
   }
 
   @override
+  Future<ScheduledExamReadiness> examReadiness(String registrationId) async {
+    _requireId(registrationId, 'registrationId');
+    return AppointmentDto.examReadiness(
+      await client.get(
+        '/v2/outpatient-registrations/${Uri.encodeComponent(registrationId)}',
+      ),
+      registrationId,
+    );
+  }
+
+  @override
   Future<Appointment> cancel(String appointmentId) async {
     _requireId(appointmentId, 'appointmentId');
     return _read(

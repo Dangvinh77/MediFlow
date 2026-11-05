@@ -221,13 +221,35 @@ void main() {
       '/api/v1/appointments/$appointmentId/start-exam',
     );
     expect(adapter.requests.last.data, {'emergencyOverride': null});
+    final appointmentData = adapter.data;
+    adapter.data = {
+      'registrationId': appointmentId,
+      'readyForExam': true,
+      'checkedInAt': '2026-10-22T08:00:00Z',
+    };
+    final readiness = await appointments.examReadiness(appointmentId);
+    expect(
+      adapter.requests.last.uri.path,
+      '/api/v2/outpatient-registrations/$appointmentId',
+    );
+    expect(readiness.readyForExam, isTrue);
+    expect(readiness.checkedInAt, '2026-10-22T08:00:00Z');
+    adapter.data = {
+      'registrationId': '10000000-0000-4000-8000-000000000999',
+      'readyForExam': true,
+    };
+    await expectLater(
+      appointments.examReadiness(appointmentId),
+      throwsFormatException,
+    );
+    adapter.data = appointmentData;
     await appointments.cancel(appointmentId);
     expect(
       adapter.requests.last.uri.path,
       '/api/v1/appointments/$appointmentId/status',
     );
     expect(adapter.requests.last.data, {'status': 'CANCELLED'});
-    expect(adapter.requests, hasLength(5));
+    expect(adapter.requests, hasLength(7));
   });
 
   test(
