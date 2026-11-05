@@ -30,20 +30,31 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockReset(); mocks.monthly.mockReset(); mocks.router.replace.mockReset();
     vi.spyOn(window.history, "pushState").mockImplementation(() => {});
   });
-  it("discovery fills year visibly and waits for explicit report submission", async () => {
+  it("opens on the newest accepted period when the URL has no explicit filters", async () => {
     mocks.query = "view=monthly";
-    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:department,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    mocks.monthly.mockResolvedValue({ ...zero, fromDate: "2025-01-01", toDate: "2025-12-31", departmentId: department });
+    render(<OutpatientReportWorkspace enabled />);
+    // Discovery then report read: two chained requests, slower under the parallel suite.
+    await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" }, { timeout: 5000 });
+    expect(mocks.available).toHaveBeenCalledTimes(1);
+    expect(mocks.monthly).toHaveBeenCalledTimes(1);
+    expect(mocks.monthly).toHaveBeenCalledWith(2025, department);
+    expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
+    expect(window.history.pushState).not.toHaveBeenCalled();
+  });
+  it("manual discovery still fills filters and waits for explicit submission", async () => {
+    mocks.query = "view=monthly&year=2024";
     mocks.monthly.mockReturnValue(new Promise(() => {}));
-    const view = render(<OutpatientReportWorkspace enabled />);
+    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    render(<OutpatientReportWorkspace enabled />);
+    expect(mocks.available).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", {name:"Tìm kỳ có dữ liệu"}));
     fireEvent.click(await screen.findByRole("button", {name:"Dùng kỳ này"}));
     expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
-    expect(mocks.monthly).not.toHaveBeenCalled();
+    expect(mocks.monthly).toHaveBeenCalledTimes(1);
     submit();
     expect(window.history.pushState).toHaveBeenCalledWith(null,"","/reports/outpatient?view=monthly&year=2025");
-    mocks.query = "view=monthly&year=2025";
-    view.rerender(<OutpatientReportWorkspace enabled />);
-    await waitFor(() => expect(mocks.monthly).toHaveBeenCalledWith(2025,undefined));
   });
   it("defaults closed even for a valid direct URL and makes no request", () => {
     render(<OutpatientReportWorkspace />);
@@ -51,9 +62,11 @@ describe("Outpatient report workspace", () => {
     expect(screen.queryByRole("button", { name: "Xem báo cáo" })).not.toBeInTheDocument();
     expect(mocks.daily).not.toHaveBeenCalled(); expect(mocks.monthly).not.toHaveBeenCalled();
   });
-  it("starts idle when enabled without explicit URL filters", () => {
-    mocks.query = ""; render(<OutpatientReportWorkspace enabled />);
-    expect(screen.getByRole("status")).toHaveTextContent("Chọn phạm vi");
+  it("stays idle without explicit URL filters when no accepted period exists", async () => {
+    mocks.query = ""; mocks.available.mockResolvedValue([]);
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    expect(screen.getByText("Chọn phạm vi để xem báo cáo ngoại trú đã đối soát.")).toBeVisible();
     expect(mocks.daily).not.toHaveBeenCalled(); expect(mocks.monthly).not.toHaveBeenCalled();
   });
   it("renders accepted zero periods with response currency, zone, scope and provenance", async () => {
