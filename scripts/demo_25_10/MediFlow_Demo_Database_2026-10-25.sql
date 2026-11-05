@@ -22143,5 +22143,44 @@ ALTER TABLE ONLY "public"."report_settlement_delivery"
 
 COMMIT;
 
+\connect mediflow_report
+-- Service line for the synthetic receipts (Report V30), derived from the Billing snapshot purposes.
+BEGIN;
+ALTER TABLE report_cash_receipt ADD COLUMN IF NOT EXISTS service_purpose VARCHAR(16);
+UPDATE report_cash_receipt SET service_purpose='EXAM' WHERE transaction_id IN (
+    '5b335fd0-8e7e-4e6c-a50d-055b60761004',
+    '075c6ca3-e177-4d19-99dd-90a104ba6afa',
+    '70ca44d3-6688-4c7e-a642-32bcf1e3df82',
+    '34c9e241-b38a-4db9-a4cc-cb0e1d13bf83',
+    '7966081b-1d91-489b-8014-0f63f4bef9bf',
+    '5c29fa51-f31a-4c9a-9156-d53072e03aea',
+    'c1bfaba9-f0fd-495a-809b-11ee962dd808',
+    '17ae358b-fd40-4102-9c70-8bcd9336a91b',
+    '8be2735e-f488-46fb-a53c-557ab41ba313',
+    'fb5e5d57-a473-4ff5-b91f-9f43373e7bd9',
+    '8ff69c0a-2f44-4e58-9df5-fbe7002e540f');
+UPDATE report_cash_receipt SET service_purpose='LAB_TEST' WHERE transaction_id IN (
+    'b25795f1-ddd3-4e44-93cf-9530857a3e14',
+    '7ac79606-f693-433a-8eff-db76456f1c5f',
+    'e267f33b-ce8a-411a-ae9b-565d2be4f953',
+    'fd635ddf-92f9-46a3-a03e-870fd6b8b768',
+    '21b1c40d-9e7b-4afa-83b8-ddaea7525fdb',
+    '5cbce0c2-b7f0-4f0d-9b7d-750591046f82');
+UPDATE report_cash_receipt SET service_purpose='PRESCRIPTION' WHERE transaction_id IN (
+    '38b9de1e-9879-4018-80a9-174de5fb74a9',
+    '70d93a17-4f4e-41d7-9415-5d3d7473db49',
+    '745743a1-4155-4d38-8b25-07e2743c477f',
+    '0f815c9a-87b0-4f45-a197-875a87489278',
+    '1ead6f0f-5f9b-4452-a49e-443959499d30',
+    'b776e451-fbad-429a-9ade-d326d00147cc',
+    'fdf60117-bde9-44e3-b942-221b0a87e8e2',
+    '36614840-4ab4-4743-aa55-4184a78b4b69',
+    'e7e7ea90-12ea-4a8a-bcf6-cd890f162d76',
+    'ba1f22d0-df0a-4cbb-b50f-50a5b548c418',
+    '4901db0a-68d3-491f-9886-ee5063d571d0',
+    'dc9b8682-7876-4c1c-a850-ad1b6be87d50',
+    '993fc579-5f30-423a-9e58-b682c7bdba89');
+COMMIT;
+
 \connect postgres
 \echo MediFlow synthetic demo import completed for all eight databases.

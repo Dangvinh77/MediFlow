@@ -36,9 +36,19 @@ public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort
         return email.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
+    @Override public String profileEmail(UUID patientId) {
+        return patients.getById(patientId).email();
+    }
+
     @Override public String displayName(UUID patientId) {
         var patient = patients.getById(patientId);
         return patient.daLuuTru() ? "" : patient.hoTen();
+    }
+
+    @Override public void requireActivePatient(UUID patientId) {
+        if (patients.getById(patientId).daLuuTru()) {
+            throw new InvalidAccountException("An archived patient profile cannot change account email");
+        }
     }
 
     @Override public void updateEmail(UUID patientId, String email) {

@@ -21,36 +21,44 @@ const recordId = '10000000-0000-4000-8000-000000000005';
 const diagnosisId = '10000000-0000-4000-8000-000000000006';
 const sourceOrderId = '10000000-0000-4000-8000-000000000007';
 
-Appointment appointment({String reason = 'New session'}) => Appointment(
+Appointment appointment({
+  String reason = 'New session',
+  String status = 'PENDING',
+  int careContractVersion = 0,
+  String? examClearanceId,
+}) => Appointment(
   id: appointmentId,
   patientId: patientId,
   doctorId: doctorId,
   departmentId: departmentId,
   date: '2026-10-22',
   time: '09:30:00',
-  status: 'PENDING',
+  status: status,
   createdAt: '2026-10-22T08:00:00Z',
-  careContractVersion: 0,
+  careContractVersion: careContractVersion,
+  examClearanceId: examClearanceId,
   reason: reason,
 );
 
-MedicalRecord record({String symptoms = 'Headache'}) => MedicalRecord(
-  id: recordId,
-  patientId: patientId,
-  doctorId: doctorId,
-  departmentId: departmentId,
-  examinationDate: '2026-10-22',
-  symptoms: symptoms,
-  appointmentId: appointmentId,
-  diagnoses: const [Diagnosis(id: diagnosisId, name: 'Tension headache')],
-  createdAt: '2026-10-22T08:00:00Z',
-  status: 'OPEN',
-);
+MedicalRecord record({String symptoms = 'Headache', String status = 'OPEN'}) =>
+    MedicalRecord(
+      id: recordId,
+      patientId: patientId,
+      doctorId: doctorId,
+      departmentId: departmentId,
+      examinationDate: '2026-10-22',
+      symptoms: symptoms,
+      appointmentId: appointmentId,
+      diagnoses: const [Diagnosis(id: diagnosisId, name: 'Tension headache')],
+      createdAt: '2026-10-22T08:00:00Z',
+      status: status,
+    );
 
 class AppointmentFake implements AppointmentRepository {
   Future<PageResult<Appointment>> Function(int page)? onSearch;
   Future<Appointment> Function(String id)? onGet;
-  int searches = 0;
+  Future<ScheduledExamReadiness> Function(String id)? onReadiness;
+  int searches = 0, starts = 0, readinessReads = 0;
   @override
   Future<PageResult<Appointment>> search({
     int page = 0,
@@ -82,7 +90,23 @@ class AppointmentFake implements AppointmentRepository {
   @override
   Future<Appointment> checkIn(String appointmentId) async => appointment();
   @override
-  Future<Appointment> startExam(String appointmentId) async => appointment();
+  Future<Appointment> startExam(String appointmentId) async {
+    starts++;
+    return appointment(status: 'IN_EXAM', careContractVersion: 2);
+  }
+
+  @override
+  Future<ScheduledExamReadiness> examReadiness(String registrationId) {
+    readinessReads++;
+    return onReadiness?.call(registrationId) ??
+        Future.value(
+          const ScheduledExamReadiness(
+            readyForExam: true,
+            checkedInAt: '2026-10-22T08:00:00Z',
+          ),
+        );
+  }
+
   @override
   Future<Appointment> cancel(String appointmentId) async => appointment();
 }
@@ -159,6 +183,7 @@ class ReferenceFake implements ReferenceReader {
           ReferenceKind.department => 'Clinic department',
           ReferenceKind.record => 'Medical record',
           ReferenceKind.appointment => 'Appointment',
+          ReferenceKind.room => 'Room',
         },
       );
   @override
@@ -196,6 +221,144 @@ Widget host({
 );
 
 void main() {
+  testWidgets(
+    'record detail places the injected prescription workspace before completion and locks completed records',
+    (tester) async {
+      var receivedCanCreate = false;
+      Widget prescriptionSlot(
+        BuildContext context,
+        MedicalRecord current, {
+        required bool canCreate,
+      }) {
+        receivedCanCreate = canCreate;
+        return Text('Prescription slot: $canCreate');
+      }
+
+      final records = MedicalRecordFake();
+      await tester.pumpWidget(
+        host(
+          child: MedicalRecordDetailPage(
+            recordId: recordId,
+            prescriptionWorkspaceBuilder: prescriptionSlot,
+          ),
+          records: records,
+          outpatientEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(receivedCanCreate, isTrue);
+      final detailScrollable = find.descendant(
+        of: find.byType(ListView).first,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Đơn thuốc'),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Đơn thuốc'), findsOneWidget);
+      expect(find.text('Prescription slot: true'), findsOneWidget);
+      await tester.ensureVisible(find.text('Hoàn tất hồ sơ khám'));
+      expect(
+        tester.getTopLeft(find.text('Prescription slot: true')).dy,
+        lessThan(tester.getTopLeft(find.text('Hoàn tất hồ sơ khám')).dy),
+      );
+
+      records.onGet = (_) async => record(status: 'COMPLETED');
+      // Updating a fake does not reload the mounted record; exercise its refresh action.
+      final refresh = find.text('Làm mới hồ sơ');
+      await tester.scrollUntilVisible(
+        refresh,
+        -200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.tap(refresh);
+      await tester.pumpAndSettle();
+      expect(receivedCanCreate, isFalse);
+      await tester.scrollUntilVisible(
+        find.text('Prescription slot: false'),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      expect(find.text('Prescription slot: false'), findsOneWidget);
+      expect(find.text('Hoàn tất hồ sơ khám'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'visit resolver forwards the prescription workspace builder with the exact record',
+    (tester) async {
+      MedicalRecord? receivedRecord;
+      Widget prescriptionSlot(
+        BuildContext context,
+        MedicalRecord current, {
+        required bool canCreate,
+      }) {
+        receivedRecord = current;
+        return Text('Resolved prescription: ${current.id}');
+      }
+
+      await tester.pumpWidget(
+        host(
+          child: MedicalRecordForVisitPage(
+            patientId: patientId,
+            visitId: appointmentId,
+            prescriptionWorkspaceBuilder: prescriptionSlot,
+          ),
+          records: MedicalRecordFake(),
+          outpatientEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(receivedRecord?.id, recordId);
+      final detailScrollable = find.descendant(
+        of: find.byType(ListView).first,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Resolved prescription: $recordId'),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Resolved prescription: $recordId'), findsOneWidget);
+    },
+  );
+
+  testWidgets('nurse cannot see or build the Pharmacy record workspace', (
+    tester,
+  ) async {
+    var calls = 0;
+    Widget prescriptionSlot(
+      BuildContext context,
+      MedicalRecord current, {
+      required bool canCreate,
+    }) {
+      calls++;
+      return const Text('Pharmacy record slot');
+    }
+
+    await tester.pumpWidget(
+      host(
+        child: MedicalRecordDetailPage(
+          recordId: recordId,
+          prescriptionWorkspaceBuilder: prescriptionSlot,
+        ),
+        role: 'NURSE',
+        records: MedicalRecordFake(),
+        outpatientEnabled: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(calls, 0);
+    expect(find.text('Đơn thuốc'), findsNothing);
+    expect(find.text('Pharmacy record slot'), findsNothing);
+  });
+
   testWidgets('symptom draft cannot cross a session change', (tester) async {
     final records = MedicalRecordFake();
     await tester.pumpWidget(
@@ -284,6 +447,99 @@ void main() {
     expect(find.text('Lý do: Current session appointment'), findsOneWidget);
     expect(find.text('Lý do: Old private appointment'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('scheduled exam start', () {
+    Appointment scheduled({String status = 'READY_FOR_EXAM'}) => appointment(
+      status: status,
+      careContractVersion: 2,
+      examClearanceId: 'clearance',
+    );
+
+    Future<List<(String, String)>> pumpDetail(
+      WidgetTester tester,
+      AppointmentFake appointments, {
+      String role = 'DOCTOR',
+    }) async {
+      final opened = <(String, String)>[];
+      await tester.pumpWidget(
+        host(
+          child: AppointmentDetailPage(
+            appointmentId: appointmentId,
+            onOpenRecord: (patient, visit) => opened.add((patient, visit)),
+          ),
+          appointments: appointments,
+          outpatientEnabled: true,
+          role: role,
+        ),
+      );
+      await tester.pumpAndSettle();
+      return opened;
+    }
+
+    testWidgets('a doctor starts a ready registration and opens its record', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()..onGet = (_) async => scheduled();
+      final opened = await pumpDetail(tester, appointments);
+
+      await tester.tap(find.text('Bắt đầu khám'));
+      await tester.pumpAndSettle();
+
+      expect(appointments.starts, 1);
+      expect(opened, [(patientId, appointmentId)]);
+    });
+
+    testWidgets('a doctor waits while the patient has not arrived', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()
+        ..onGet = ((_) async => scheduled())
+        ..onReadiness = (_) async => const ScheduledExamReadiness(
+          readyForExam: false,
+          checkedInAt: null,
+        );
+      await pumpDetail(tester, appointments);
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(find.textContaining('Chờ bệnh nhân đến quầy'), findsOneWidget);
+    });
+
+    testWidgets('a failed readiness read never offers the start action', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()
+        ..onGet = ((_) async => scheduled())
+        ..onReadiness = ((_) async => throw const ApiFailure('Gateway lỗi'));
+      await pumpDetail(tester, appointments);
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(
+        find.textContaining('Chưa kiểm tra được điều kiện khám'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an admin cannot start a scheduled registration', (
+      tester,
+    ) async {
+      final appointments = AppointmentFake()..onGet = (_) async => scheduled();
+      await pumpDetail(tester, appointments, role: 'ADMIN');
+
+      expect(find.text('Bắt đầu khám'), findsNothing);
+      expect(appointments.readinessReads, 0);
+    });
+
+    testWidgets('a completed visit still opens its record', (tester) async {
+      final appointments = AppointmentFake()
+        ..onGet = (_) async => scheduled(status: 'COMPLETED');
+      final opened = await pumpDetail(tester, appointments);
+
+      await tester.tap(find.text('Mở hồ sơ khám'));
+      await tester.pumpAndSettle();
+
+      expect(opened, [(patientId, appointmentId)]);
+    });
   });
 
   testWidgets('a new session cannot see a previous appointment detail', (

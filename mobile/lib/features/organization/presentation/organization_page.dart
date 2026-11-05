@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/domain/workspace_access.dart';
@@ -8,6 +9,7 @@ import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import 'access_boundary.dart';
 import '../domain/organization.dart';
+import 'account_detail_page.dart';
 import 'department_staff_pages.dart';
 
 class OrganizationPage extends StatelessWidget {
@@ -305,6 +307,7 @@ class _StaffSectionState extends State<StaffSection> {
               const LinearProgressIndicator()
             else
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _departmentId ?? '',
                 decoration: const InputDecoration(labelText: 'Khoa phòng'),
                 items: [
@@ -312,7 +315,11 @@ class _StaffSectionState extends State<StaffSection> {
                   for (final department in _departments!)
                     DropdownMenuItem(
                       value: department.id,
-                      child: Text(department.name),
+                      child: Text(
+                        department.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
                 onChanged: (value) => setState(
@@ -321,8 +328,9 @@ class _StaffSectionState extends State<StaffSection> {
                       : value,
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: _jobTitle ?? '',
               decoration: const InputDecoration(labelText: 'Chức danh'),
               items: [
@@ -331,12 +339,20 @@ class _StaffSectionState extends State<StaffSection> {
                   child: Text('Tất cả chức danh'),
                 ),
                 for (final title in staffJobTitles)
-                  DropdownMenuItem(value: title, child: Text(title)),
+                  DropdownMenuItem(
+                    value: title,
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
               onChanged: (value) => setState(
                 () => _jobTitle = value == null || value.isEmpty ? null : value,
               ),
             ),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               children: [
@@ -500,6 +516,7 @@ class _AccountPanelState extends State<_AccountPanel> {
         selectedId: _selectedAccount?.id,
         disabled: _saving,
         onSelect: _selectAccount,
+        onOpen: _openAccount,
       ),
       Card(
         child: Padding(
@@ -517,6 +534,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                 const Text(
                   'Tài khoản PATIENT gắn mã bệnh nhân; các vai trò khác gắn mã nhân viên.',
                 ),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _username,
                   keyboardType: TextInputType.emailAddress,
@@ -532,16 +550,26 @@ class _AccountPanelState extends State<_AccountPanel> {
                       ? 'Nhập email đăng nhập hợp lệ.'
                       : null,
                 ),
+                const SizedBox(height: 8),
                 const Text(
                   'Hệ thống tạo mật khẩu tạm và gửi hướng dẫn qua email. Không nhập hoặc chia sẻ mật khẩu tại đây.',
                 ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   key: const ValueKey('account-create-role'),
+                  isExpanded: true,
                   initialValue: _role,
                   decoration: const InputDecoration(labelText: 'Vai trò'),
                   items: [
                     for (final role in accountRoles)
-                      DropdownMenuItem(value: role, child: Text(role)),
+                      DropdownMenuItem(
+                        value: role,
+                        child: Text(
+                          role,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                   ],
                   onChanged: (value) => setState(() {
                     final nextRole = value ?? 'DOCTOR';
@@ -549,6 +577,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                     _role = nextRole;
                   }),
                 ),
+                const SizedBox(height: 12),
                 ReferencePicker(
                   kind: _role == 'PATIENT'
                       ? ReferenceKind.patient
@@ -558,6 +587,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                   required: true,
                   onChanged: (id) => setState(() => _ownerId.text = id ?? ''),
                 ),
+                const SizedBox(height: 12),
                 if (_uncertainCreate)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -600,10 +630,12 @@ class _AccountPanelState extends State<_AccountPanel> {
                     '${_selectedAccount!.role} · ${_selectedAccount!.active ? 'Đang hoạt động' : 'Đã khóa'}',
                   ),
                 ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<bool>(
                 key: ValueKey(
                   'account-status-${_selectedAccount?.id ?? 'none'}',
                 ),
+                isExpanded: true,
                 initialValue: _active,
                 decoration: const InputDecoration(labelText: 'Trạng thái'),
                 items: const [
@@ -614,6 +646,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                     ? null
                     : (value) => setState(() => _active = value ?? true),
               ),
+              const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _saving || _selectedAccount == null
                     ? null
@@ -687,6 +720,23 @@ class _AccountPanelState extends State<_AccountPanel> {
     }
   }
 
+  Future<void> _openAccount(Account account) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Chi tiết tài khoản')),
+          body: AccountDetailPage(
+            accountId: account.id,
+            onManagerScope: (id) =>
+                GoRouter.of(context)
+                    .go('/appointments/schedule?managerAccountId=$id'),
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() => _accountRevision++);
+  }
+
   void _selectAccount(Account account) {
     setState(() {
       _selectedAccount = account;
@@ -705,12 +755,14 @@ class _AccountDirectory extends StatefulWidget {
     required this.selectedId,
     required this.disabled,
     required this.onSelect,
+    required this.onOpen,
   });
   final OrganizationRepository repository;
   final int revision;
   final String? selectedId;
   final bool disabled;
   final ValueChanged<Account> onSelect;
+  final ValueChanged<Account> onOpen;
   @override
   State<_AccountDirectory> createState() => _AccountDirectoryState();
 }
@@ -823,28 +875,39 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
           TextField(
             key: const ValueKey('account-search'),
             controller: _keyword,
-            maxLength: 100,
+            maxLength: 254,
             enabled: !_loading && !widget.disabled,
             decoration: const InputDecoration(
               labelText: 'Email đăng nhập',
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             key: const ValueKey('account-search-role'),
+            isExpanded: true,
             initialValue: _roleFilter,
             decoration: const InputDecoration(labelText: 'Lọc vai trò'),
             items: [
               const DropdownMenuItem(value: '', child: Text('Tất cả')),
               for (final role in accountSearchRoles)
-                DropdownMenuItem(value: role, child: Text(role)),
+                DropdownMenuItem(
+                  value: role,
+                  child: Text(
+                    role,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
             onChanged: _loading || widget.disabled
                 ? null
                 : (value) => setState(() => _roleFilter = value ?? ''),
           ),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             key: const ValueKey('account-search-active'),
+            isExpanded: true,
             initialValue: _activeFilter,
             decoration: const InputDecoration(labelText: 'Lọc trạng thái'),
             items: const [
@@ -856,6 +919,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
                 ? null
                 : (value) => setState(() => _activeFilter = value ?? ''),
           ),
+          const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
             child: FilledButton.icon(
@@ -880,8 +944,19 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
               Card(
                 child: ListTile(
                   title: Text(account.username),
-                  subtitle: Text(
-                    '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                      ),
+                      TextButton(
+                        onPressed: widget.disabled
+                            ? null
+                            : () => widget.onOpen(account),
+                        child: const Text('Xem chi tiết'),
+                      ),
+                    ],
                   ),
                   trailing: TextButton(
                     onPressed: widget.disabled

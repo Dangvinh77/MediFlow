@@ -5,6 +5,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../domain/patient_exam_result.dart';
+import 'follow_up_recommendation_panel.dart';
 
 final patientExamResultsProvider = Provider<PatientExamResultsRepository>(
   (ref) =>
@@ -22,6 +23,9 @@ class MyExamResultsPage extends ConsumerWidget {
       );
     }
     final repository = ref.watch(patientExamResultsProvider);
+    final followUpEnabled =
+        ref.watch(appConfigProvider).scheduledPaymentsEnabled &&
+        ref.watch(followUpRecommendationRepositoryProvider) != null;
     return PagedList<PatientExamResult>(
       key: ValueKey((access!.sessionIdentity, repository)),
       load: ReadMyExamResults(repository).call,
@@ -47,6 +51,15 @@ class MyExamResultsPage extends ConsumerWidget {
             Text('Hướng xử trí: ${_disposition(result.disposition)}'),
             if (result.dispositionNote case final note?) Text(note),
             Text('Hoàn tất: ${result.completedAt}'),
+            if (followUpEnabled) ...[
+              const SizedBox(height: 12),
+              FollowUpRecommendationPanel(
+                key: ValueKey(result.id),
+                recordId: result.id,
+                canCreate: false,
+                patientView: true,
+              ),
+            ],
           ],
         ),
       ),

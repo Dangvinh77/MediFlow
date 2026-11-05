@@ -24,9 +24,9 @@ class ReportModuleUpgradePostgresTest {
         var before=jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE success ORDER BY installed_rank");
         var module=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
                 .locations("classpath:mediflow/report/db/migration").cleanDisabled(true).load();
-        assertThat(module.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(module.migrate().migrationsExecuted).isEqualTo(4);
         assertThat(module.validateWithResult().validationSuccessful).isTrue();
-        assertThat(jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE version NOT IN ('27','28','29') AND success ORDER BY installed_rank"))
+        assertThat(jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE version NOT IN ('27','28','29','30') AND success ORDER BY installed_rank"))
                 .containsExactlyElementsOf(before);
         assertThat(jdbc.queryForObject("SELECT visit_count FROM daily_visit_report WHERE report_id=?",Integer.class,legacy)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isZero();
@@ -38,7 +38,7 @@ class ReportModuleUpgradePostgresTest {
         assertThat(rollback.validateWithResult().validationSuccessful).isTrue();
         assertThat(rollback.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject("SELECT visit_count FROM daily_visit_report WHERE report_id=?",Integer.class,legacy)).isEqualTo(4);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success",Integer.class)).isEqualTo(26);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success",Integer.class)).isEqualTo(27);
     }
 
     @Test void v28UpgradeBackfillsStableOrderWithoutChangingCoverageOrCreatingReceipts() {
@@ -56,7 +56,7 @@ class ReportModuleUpgradePostgresTest {
 
         var upgrade=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
                 .schemas(schema).defaultSchema(schema).locations("classpath:db/migration").load();
-        assertThat(upgrade.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(upgrade.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage_acceptance",Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT acceptance_reference FROM report_outpatient_coverage WHERE coverage_id=?",String.class,lower))

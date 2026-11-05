@@ -1,0 +1,13 @@
+{
+  "status": "NOT_RECORDED",
+  "guide": "scripts/demo_25_10/DEMO_UI_TUNG_BUOC.md",
+  "chapters": [
+    {"id":"A","name":"Bệnh nhân mới: hồ sơ, tài khoản, khám, CBC, thuốc, nhận kết quả","status":"TODO"},
+    {"id":"B","name":"Bệnh nhân cũ khám đợt mới, dùng lại hồ sơ/tài khoản","status":"TODO"},
+    {"id":"C","name":"Tái khám từ lượt hoàn tất và khuyến nghị","status":"TODO"},
+    {"id":"patient-first-login","name":"Bệnh nhân mới tự đổi mật khẩu, xem kết quả và thông báo","status":"TODO"},
+    {"id":"admin","name":"Bổ nhiệm, lịch sử, miễn nhiệm, giữ chuyên môn bác sĩ","status":"TODO"},
+    {"id":"department-head","name":"Chuyển khu vực quản lý/khám, lưới tuần, tạo ca và buổi khám","status":"TODO"},
+    {"id":"alternate-calendar","name":"Lịch ba tháng và bác sĩ bổ sung","status":"TODO"}
+  ]
+}

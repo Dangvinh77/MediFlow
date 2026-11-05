@@ -9,6 +9,12 @@ import '../../../core/widgets/request_state.dart';
 import '../domain/patient.dart';
 import 'providers.dart';
 
+typedef PatientAccountPanelBuilder = Widget Function(
+  BuildContext context,
+  Patient patient,
+  WorkspaceAccess access,
+);
+
 bool _canRetry(Object? error) =>
     error is! FormatException &&
     error is! ArgumentError &&
@@ -42,18 +48,96 @@ class _PatientBoundary extends ConsumerWidget {
 }
 
 class PatientPage extends StatelessWidget {
-  const PatientPage({super.key});
+  const PatientPage({
+    super.key,
+    this.initialPatientId,
+    this.initiallyCreate = false,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
+
+  final String? initialPatientId;
+  final bool initiallyCreate;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
+
   @override
   Widget build(BuildContext context) => _PatientBoundary(
-    builder: (repository, access) =>
-        _PatientList(repository: repository, access: access),
+    builder: (repository, access) {
+      final patientId = initialPatientId;
+      if (patientId != null) {
+        return _PatientDetail(
+          key: ValueKey((patientId, access.sessionIdentity)),
+          repository: repository,
+          access: access,
+          patientId: patientId,
+          accountPanelBuilder: accountPanelBuilder,
+          onRegisterPatient: onRegisterPatient,
+        );
+      }
+      if (initiallyCreate) {
+        return _InitialPatientCreateFlow(
+          accountPanelBuilder: accountPanelBuilder,
+          onRegisterPatient: onRegisterPatient,
+        );
+      }
+      return _PatientList(
+        repository: repository,
+        access: access,
+        accountPanelBuilder: accountPanelBuilder,
+        onRegisterPatient: onRegisterPatient,
+      );
+    },
   );
 }
 
+class _InitialPatientCreateFlow extends StatefulWidget {
+  const _InitialPatientCreateFlow({
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
+
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
+
+  @override
+  State<_InitialPatientCreateFlow> createState() =>
+      _InitialPatientCreateFlowState();
+}
+
+class _InitialPatientCreateFlowState extends State<_InitialPatientCreateFlow> {
+  String? _createdPatientId;
+
+  @override
+  Widget build(BuildContext context) {
+    final createdPatientId = _createdPatientId;
+    if (createdPatientId != null) {
+      return PatientDetailPage(
+        patientId: createdPatientId,
+        accountPanelBuilder: widget.accountPanelBuilder,
+        onRegisterPatient: widget.onRegisterPatient,
+      );
+    }
+    return PatientEditorPage(
+      onSaved: () {},
+      onCreated: (patient) {
+        if (mounted) setState(() => _createdPatientId = patient.id);
+      },
+    );
+  }
+}
+
 class _PatientList extends StatefulWidget {
-  const _PatientList({required this.repository, required this.access});
+  const _PatientList({
+    required this.repository,
+    required this.access,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
   final PatientRepository repository;
   final WorkspaceAccess access;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
   @override
   State<_PatientList> createState() => _PatientListState();
 }
@@ -162,7 +246,11 @@ class _PatientListState extends State<_PatientList> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: const Text('Hồ sơ bệnh nhân')),
-          body: PatientDetailPage(patientId: id),
+          body: PatientDetailPage(
+            patientId: id,
+            accountPanelBuilder: widget.accountPanelBuilder,
+            onRegisterPatient: widget.onRegisterPatient,
+          ),
         ),
       ),
     );
@@ -183,8 +271,15 @@ class _PatientListState extends State<_PatientList> {
 }
 
 class PatientDetailPage extends StatelessWidget {
-  const PatientDetailPage({super.key, required this.patientId});
+  const PatientDetailPage({
+    super.key,
+    required this.patientId,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
+  });
   final String patientId;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
 
   @override
   Widget build(BuildContext context) => _PatientBoundary(
@@ -193,6 +288,8 @@ class PatientDetailPage extends StatelessWidget {
       repository: repository,
       access: access,
       patientId: patientId,
+      accountPanelBuilder: accountPanelBuilder,
+      onRegisterPatient: onRegisterPatient,
     ),
   );
 }
@@ -203,10 +300,14 @@ class _PatientDetail extends StatefulWidget {
     required this.repository,
     required this.access,
     required this.patientId,
+    this.accountPanelBuilder,
+    this.onRegisterPatient,
   });
   final PatientRepository repository;
   final WorkspaceAccess access;
   final String patientId;
+  final PatientAccountPanelBuilder? accountPanelBuilder;
+  final ValueChanged<String>? onRegisterPatient;
   @override
   State<_PatientDetail> createState() => _PatientDetailState();
 }
@@ -285,6 +386,8 @@ class _PatientDetailState extends State<_PatientDetail> {
           _PatientField('Email', patient.email),
           _PatientField('Địa chỉ', patient.address),
           _PatientField('Mã BHYT', patient.insuranceNumber),
+          if (widget.accountPanelBuilder case final builder?)
+            builder(context, patient, widget.access),
           _PatientField('Tạo lúc', patient.createdAt),
           _PatientField('Cập nhật', patient.updatedAt),
           if (_commandError != null) ...[
@@ -310,6 +413,16 @@ class _PatientDetailState extends State<_PatientDetail> {
                   onPressed: _deleting ? null : () => _confirmDelete(patient),
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('Xóa hồ sơ'),
+                ),
+              if (!patient.archived &&
+                  widget.onRegisterPatient != null &&
+                  const {'ADMIN', 'NURSE'}.contains(widget.access.role))
+                FilledButton.icon(
+                  onPressed: _deleting
+                      ? null
+                      : () => widget.onRegisterPatient!(patient.id),
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('Đăng ký khám'),
                 ),
             ],
           ),
@@ -414,9 +527,15 @@ class _PatientField extends StatelessWidget {
 }
 
 class PatientEditorPage extends StatelessWidget {
-  const PatientEditorPage({super.key, this.patientId, required this.onSaved});
+  const PatientEditorPage({
+    super.key,
+    this.patientId,
+    required this.onSaved,
+    this.onCreated,
+  });
   final String? patientId;
   final VoidCallback onSaved;
+  final ValueChanged<Patient>? onCreated;
   @override
   Widget build(BuildContext context) => _PatientBoundary(
     builder: (repository, access) {
@@ -429,6 +548,7 @@ class PatientEditorPage extends StatelessWidget {
           repository: repository,
           patientId: patientId,
           onSaved: onSaved,
+          onCreated: onCreated,
         ),
       );
     },
@@ -440,10 +560,12 @@ class _PatientForm extends StatefulWidget {
     required this.repository,
     required this.patientId,
     required this.onSaved,
+    this.onCreated,
   });
   final PatientRepository repository;
   final String? patientId;
   final VoidCallback onSaved;
+  final ValueChanged<Patient>? onCreated;
   @override
   State<_PatientForm> createState() => _PatientFormState();
 }
@@ -535,115 +657,134 @@ class _PatientFormState extends State<_PatientForm> {
     }
     return Form(
       key: _form,
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          TextFormField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Họ và tên *'),
-            maxLength: 100,
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Vui lòng nhập họ tên.'
-                : value.trim().length > 100
-                ? 'Họ tên tối đa 100 ký tự.'
-                : null,
-          ),
-          TextFormField(
-            controller: _birthDate,
-            readOnly: true,
-            decoration: const InputDecoration(labelText: 'Ngày sinh *'),
-            onTap: _pickBirthDate,
-            validator: (value) => isValidPatientBirthDate(value ?? '')
-                ? null
-                : 'Vui lòng chọn ngày sinh hợp lệ, không ở tương lai.',
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _gender,
-            decoration: const InputDecoration(labelText: 'Giới tính *'),
-            items: const [
-              DropdownMenuItem(value: 'M', child: Text('Nam')),
-              DropdownMenuItem(value: 'F', child: Text('Nữ')),
-            ],
-            onChanged: (value) => setState(() => _gender = value ?? 'M'),
-          ),
-          TextFormField(
-            controller: _identity,
-            decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
-            maxLength: 20,
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Vui lòng nhập số CCCD/CMND.'
-                : value.trim().length > 20
-                ? 'Tối đa 20 ký tự.'
-                : null,
-          ),
-          TextFormField(
-            controller: _phone,
-            decoration: const InputDecoration(labelText: 'Điện thoại'),
-            keyboardType: TextInputType.phone,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
-                ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
-                : null,
-          ),
-          TextFormField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    (value.trim().length > 100 ||
-                        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                            .hasMatch(value.trim()))
-                ? 'Email không hợp lệ.'
-                : null,
-          ),
-          TextFormField(
-            controller: _address,
-            decoration: const InputDecoration(labelText: 'Địa chỉ'),
-            maxLength: 255,
-            maxLines: 2,
-          ),
-          TextFormField(
-            controller: _insurance,
-            decoration: const InputDecoration(labelText: 'Mã BHYT'),
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    !RegExp(r'^\d{2}-\d{8}-\d$').hasMatch(value.trim())
-                ? 'Mã BHYT phải theo dạng 12-12345678-1.'
-                : null,
-          ),
-          if (_saveError != null) ...[
-            const SizedBox(height: 8),
-            RequestError(_saveError!),
-          ],
-          if (_uncertainCreate)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Họ và tên *'),
+              maxLength: 100,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Vui lòng nhập họ tên.'
+                  : value.trim().length > 100
+                  ? 'Họ tên tối đa 100 ký tự.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _birthDate,
+              readOnly: true,
+              decoration: const InputDecoration(labelText: 'Ngày sinh *'),
+              onTap: _pickBirthDate,
+              validator: (value) => isValidPatientBirthDate(value ?? '')
+                  ? null
+                  : 'Vui lòng chọn ngày sinh hợp lệ, không ở tương lai.',
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _gender,
+              decoration: const InputDecoration(labelText: 'Giới tính *'),
+              items: const [
+                DropdownMenuItem(value: 'M', child: Text('Nam')),
+                DropdownMenuItem(value: 'F', child: Text('Nữ')),
+              ],
+              onChanged: (value) => setState(() => _gender = value ?? 'M'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _identity,
+              decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
+              maxLength: 20,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Vui lòng nhập số CCCD/CMND.'
+                  : value.trim().length > 20
+                  ? 'Tối đa 20 ký tự.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phone,
+              decoration: const InputDecoration(labelText: 'Điện thoại'),
+              keyboardType: TextInputType.phone,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
+                  ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _email,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+              maxLength: 254,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      (value.trim().length > 254 ||
+                          !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                              .hasMatch(value.trim()))
+                  ? 'Email không hợp lệ.'
+                  : null,
+            ),
+            if (_editing)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Email của tài khoản đã cấp được đổi trong mục Tài khoản của hồ sơ. Nếu chưa có tài khoản, cập nhật email tại đây rồi cấp tài khoản.',
+                ),
               ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _address,
+              decoration: const InputDecoration(labelText: 'Địa chỉ'),
+              maxLength: 255,
+              maxLines: 2,
             ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _saving || _uncertainCreate ? null : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
-          ),
-          if (_uncertainCreate)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Quay lại danh sách để làm mới'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _insurance,
+              decoration: const InputDecoration(labelText: 'Mã BHYT'),
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      !RegExp(r'^\d{2}-\d{8}-\d$').hasMatch(value.trim())
+                  ? 'Mã BHYT phải theo dạng 12-12345678-1.'
+                  : null,
             ),
-        ],
+            if (_saveError != null) ...[
+              const SizedBox(height: 8),
+              RequestError(_saveError!),
+            ],
+            if (_uncertainCreate)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.',
+                ),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _saving || _uncertainCreate ? null : _save,
+              icon: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
+            ),
+            if (_uncertainCreate)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Quay lại danh sách để làm mới'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -680,12 +821,17 @@ class _PatientFormState extends State<_PatientForm> {
       insuranceNumber: _insurance.text,
     );
     try {
+      late final Patient savedPatient;
       if (_editing) {
-        await SavePatient(widget.repository).update(widget.patientId!, draft);
+        savedPatient = await SavePatient(widget.repository)
+            .update(widget.patientId!, draft);
       } else {
-        await SavePatient(widget.repository).create(draft);
+        savedPatient = await SavePatient(widget.repository).create(draft);
       }
-      if (mounted) widget.onSaved();
+      if (mounted) {
+        widget.onSaved();
+        if (!_editing) widget.onCreated?.call(savedPatient);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {

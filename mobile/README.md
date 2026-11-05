@@ -1,5 +1,11 @@
 # MediFlow Mobile — Outpatient Care Management
 
+Cập nhật luồng hồ sơ trên baseline `d9a1635b`: tài khoản nhân sự/bệnh nhân được quản lý
+ngay trong hồ sơ; điều dưỡng cấp/reset tài khoản bệnh nhân theo quyền. Tạo hồ sơ từ
+tiếp nhận mở thẳng hồ sơ mới để cấp tài khoản hoặc đăng ký khám. Tiếp nhận V2 có buổi
+khám/số chỗ, phiếu chờ thu tiền và tiếp nhận bệnh nhân tiếp theo; kê đơn được ghép vào
+hồ sơ khám qua app composition. [Phạm vi, kiểm tra và giới hạn nghiệm thu](docs/evidence/2026-11-04-profile-workflows/README.md).
+
 Đồng bộ 04/11/2026 với master `1ce0968e`: email login tối đa 254 ký tự, Quên mật khẩu và
 Đặt lại mật khẩu (dán liên kết/mã từ email), tạo tài khoản với mật khẩu do backend sinh,
 Lab cancellation lấy actor từ backend và sửa bố cục màn hình nhỏ/keyboard/large text.
@@ -21,14 +27,14 @@ Từ thư mục mobile, chạy:
 ./tool/run_web.ps1
 # Đổi địa chỉ khi cần:
 ./tool/run_web.ps1 -Port 4301 -Gateway http://127.0.0.1:8080
-# Demo: bật UI lệnh ngoại trú, Pharmacy V1 và báo cáo ngoại trú đã đối soát
+# Demo với backend scripts/run/start-backend.bat: bật UI lệnh ngoại trú + Pharmacy V1
 ./tool/run_web.ps1 -Demo -Gateway http://127.0.0.1:28080
 ```
 
 Riêng báo cáo có thể bật bằng `-ReportOutpatientUi`. Khi bật, màn báo cáo ưu tiên
-ngoại trú theo tháng. Bấm **Tìm kỳ có dữ liệu → Dùng kỳ này** để tải ngay kỳ
-đã đối soát; dữ liệu mô phỏng được ghi nhãn trên kết quả. Số liệu kỳ hiện tại
-chưa đối soát không được diễn giải thành hoạt động bằng 0.
+thống kê vận hành theo khoa; báo cáo ngoại trú đã đối soát nằm trong danh sách loại
+báo cáo. Bấm **Tìm kỳ có dữ liệu → Dùng kỳ này** để tải ngay kỳ đã đối soát.
+Dữ liệu mô phỏng giữ nhãn riêng; kỳ chưa đối soát không được coi là hoạt động bằng 0.
 
 Không có `-Demo` (hoặc `-OutpatientUi`, `-PharmacyMode outpatient`) thì app vẫn đọc dữ liệu
 nhưng các thao tác tiếp nhận/khám/kê đơn/xuất thuốc bị khóa.
@@ -46,9 +52,16 @@ flutter run -d <device-id> --dart-define=GATEWAY_URL=https://gateway.example.org
 flutter run -d <android-device-id> --dart-define=GATEWAY_URL=http://10.0.2.2:8080/api
 ```
 
+Với backend demo ngoại trú đã bật consumer/read gates, `tool/run_web.ps1 -Demo`
+bật cả `MEDIFLOW_OUTPATIENT_UI_ENABLED` và `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED`.
+Bản native cần truyền riêng hai `--dart-define=...=true` tương ứng. Report mở mặc định
+biểu đồ doanh thu khám/xét nghiệm/thuốc và lượt khám theo ngày, theo khoa. Đây là số liệu
+đã đồng bộ, chưa đối soát; số 0 không chứng minh không có hoạt động. Báo cáo đã đối soát
+vẫn cần phạm vi coverage hợp lệ và được chọn riêng trong loại báo cáo.
+
 - Android cần SDK và licenses (`flutter doctor --android-licenses`). Debug cho phép HTTP local; release dùng HTTPS. Signing scaffold hiện phục vụ phát triển, cần cấu hình riêng trước phát hành.
 - Điện thoại thật dùng địa chỉ Gateway truy cập được. HTTP LAN cần `--dart-define=ALLOW_INSECURE_HTTP=true` và vẫn chịu chính sách nền tảng; nên dùng HTTPS.
-- iOS cần macOS/Xcode. Bản Debug dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release/Profile dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
+- iOS cần macOS/Xcode. Bản Debug và Profile dùng `Runner/Info-Debug.plist`, có quyền mạng nội bộ và cho phép HTTP để demo bằng IP; Release dùng `Runner/Info.plist` với ATS mặc định. Cờ Dart không tự bỏ qua ATS. Khi iOS hỏi quyền Local Network, chọn cho phép.
 - Windows native cần Visual Studio Desktop development with C++, MSVC và CMake.
 - Web chạy trực tiếp bằng flutter run cần Gateway cho phép browser origin. Script proxy giải quyết cho local. SecureStorage web cần HTTPS hoặc localhost; đổi port là đổi browser origin.
 
@@ -56,23 +69,51 @@ SecureStorage lưu phiên theo Gateway. Phiên hết hạn/401 yêu cầu đăng
 
 ### Demo điện thoại cùng Wi-Fi với máy Windows
 
-1. Chạy `start-backend.bat` ở thư mục gốc. SMTP được nạp tự động từ `smtp.local.env`. Lần đầu chạy bằng **Run as administrator** để tạo/cập nhật firewall cho TCP 28080 và 3000, giới hạn LocalSubnet trên đúng adapter đang chọn. Không cần đổi loại mạng Windows đang dùng.
+1. Chạy `scripts/run/start-backend.bat` từ thư mục gốc (hoặc mở file trong `scripts/run`). SMTP được nạp tự động từ `smtp.local.env`. Lần đầu chạy bằng **Run as administrator** để tạo/cập nhật firewall cho TCP 28080 và 3000, giới hạn LocalSubnet trên đúng adapter đang chọn. Không cần đổi loại mạng Windows đang dùng.
 2. Chờ `READY`. Launcher in `Mobile Gateway: http://<IP-máy>:28080/api`. Cổng demo là **28080**, khác cổng 8080 của cách chạy dịch vụ thông thường.
-3. Chạy `start-frontend.bat` nếu cần mở web, mailbox hoặc link trong email trên điện thoại. Dùng URL IP cổng 3000 mà launcher in ra cho cả desktop và điện thoại để nút trong mailbox có cùng origin.
+3. Chạy `scripts/run/start-frontend.bat` nếu cần mở web, mailbox hoặc link trong email trên điện thoại. Dùng URL IP cổng 3000 mà launcher in ra cho cả desktop và điện thoại để nút trong mailbox có cùng origin.
 4. Trên máy có Flutter và thiết bị Android/iOS kết nối, thay IP bằng địa chỉ được in ở bước 2:
 
 ```powershell
 cd mobile
-flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
+flutter run --debug --dart-define=GATEWAY_URL=http://192.168.1.3:28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true --dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true --dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient
 ```
 
 Địa chỉ trên chỉ là ví dụ. Khi đổi Wi-Fi/IP, chạy lại launcher và build lại app với URL mới. Đăng nhập bằng **email** của tài khoản. Build iOS thực hiện trên Mac/Xcode, backend vẫn chạy trên máy Windows cùng Wi-Fi.
 
-Có thể chọn adapter bằng `start-backend.bat -LanAddress 192.168.1.3` và truyền cùng tham số cho `start-frontend.bat`. Dùng `-LocalOnly` ở cả hai launcher để chạy riêng trên máy. Các service/DB/broker nội bộ của demo vẫn bind loopback; mobile gọi Gateway.
+Có thể chọn adapter bằng `scripts/run/start-backend.bat -LanAddress 192.168.1.3` và truyền cùng tham số cho `scripts/run/start-frontend.bat`. Dùng `-LocalOnly` ở cả hai launcher để chạy riêng trên máy. Các service/DB/broker nội bộ của demo vẫn bind loopback; mobile gọi Gateway.
 
 Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-máy>:28080/actuator/health`. Nếu không kết nối được, kiểm tra cùng Wi-Fi, firewall đã được tạo và mạng không bật cách ly thiết bị/guest Wi-Fi. Quy tắc firewall có tên `MediFlow-Lan-Demo-28080` và `MediFlow-Lan-Demo-3000`.
 
 Thiết lập iOS Debug dựa trên [Apple ATS](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowsarbitraryloads) và [quyền mạng nội bộ](https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription). Đây là cấu hình demo HTTP; bản phát hành dùng Gateway HTTPS.
+
+## Build IPA chưa ký bằng GitHub Actions
+
+Workflow [Mobile iOS unsigned IPA](../.github/workflows/mobile-ios-unsigned.yml) dùng
+macOS/Xcode và Flutter **3.47.0**, không cần chứng chỉ hoặc Apple secrets. Workflow chạy
+khi push vào `master` hoặc mở/cập nhật PR có thay đổi `mobile/**` hay chính workflow.
+Cũng có thể vào **Actions → Mobile iOS unsigned IPA → Run workflow** để build thủ công.
+
+- `gateway_url`: URL Gateway kết thúc bằng `/api`. Nếu bỏ trống, lấy repository variable
+  `MOBILE_GATEWAY_URL`; nếu chưa đặt variable thì dùng `http://192.168.1.3:28080/api`.
+  Đặt variable tại **Settings → Secrets and variables → Actions → Variables**. URL này
+  được đóng gói vào app; IP backend đổi thì phải build lại. Không dùng localhost/cổng service.
+- `build_mode`: mặc định `profile`, mở được từ màn hình chính iPhone, dùng plist cho phép HTTP LAN
+  và có mô tả quyền Local Network. `debug` cũng dùng plist đó nhưng từ iOS 14 chỉ khởi động được
+  bằng Flutter tooling hoặc Xcode, mở từ icon sẽ báo lỗi. `release` yêu cầu Gateway HTTPS; workflow chặn Release với HTTP để tránh artifact không kết nối được.
+- Sau khi thành công, tải artifact `mediflow-ios-unsigned-<mode>-<run>` ở cuối trang run.
+  Bên trong có `mediflow-unsigned.ipa`, checksum SHA-256, `build-info.json` và hướng dẫn.
+  Artifact được giữ 14 ngày. Các feature gate ngoại trú/Report và Pharmacy outpatient đã bật.
+
+Workflow chạy mobile tests, build `flutter build ios --no-codesign`, rồi đóng gói
+`Payload/Runner.app` thành IPA. Không dùng `flutter build ipa --no-codesign` để mong có
+IPA tự động: Flutter bỏ qua bước export IPA khi tắt ký.
+
+**IPA này chưa ký, chưa cài trực tiếp lên iPhone và chưa đưa lên TestFlight được.**
+Muốn cài cần bước ký ứng dụng và provisioning profile phù hợp. Bản Debug/Profile chưa ký cũng
+không phải bản phát hành; workflow chưa cấu hình Apple signing hoặc upload App Store.
+Runner GitHub không cần kết nối tới IP LAN để biên dịch; backend chỉ cần truy cập được
+khi chạy app trên điện thoại cùng mạng. iOS runtime vẫn cần người dùng cấp Local Network.
 
 ## Phần hiện có và chia việc
 
@@ -105,6 +146,23 @@ Các giới hạn thực tế về Core reference permissions, Lab clearance và
 coverage nằm trong [runtime handoff](../docs/handoffs/HANDOFF-REVIEW3-RUNTIME-2026-10-22.md).
 
 Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lịch hẹn đọc `/v1/appointments`, lọc ngày/phân trang; Lab đọc `/v1/lab`, lọc trạng thái/phân trang. Có loading/empty/error/retry, correlation ID và bỏ qua phản hồi cũ. Lab hiển thị trạng thái nghiệp vụ riêng với thanh toán.
+
+Billing follows the web task set by role: `ADMIN`/`CASHIER` can use the collection queue,
+optional exam-fee collection, payment history and refunds; `MANAGER` sees revenue reports.
+The exam-fee V2 client is disabled by default; `tool/run_web.ps1 -Demo`, the demo launcher command and the iOS workflow enable it. Dart defines are compile-time, so a build without them cannot show the exam-fee tab. Enable its mobile UI with
+`--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true`; optional quotes use
+`--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true`, and zero-liability confirmation
+also requires `--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true`. These UI defines do not
+enable backend routes or grant access: Billing must enable `mediflow.billing.ledger.enabled`
+and `mediflow.billing.scheduled-payments.enabled`; quotes also require
+`mediflow.billing.outpatient-quotes.enabled`, and zero-liability confirmation requires
+`mediflow.billing.zero-payable-eligibility.enabled`. The cashier amount always comes from
+Billing, and uncertain commands keep their idempotency key in secure storage until reconciled.
+
+Mọi vai trò đã đăng nhập đều có thể mở hồ sơ cá nhân tại `/profile`. Nhân sự chỉ cập nhật
+số điện thoại và địa chỉ của chính mình; email đăng nhập chỉ do quản trị viên quản lý.
+Bệnh nhân xem hồ sơ của mình ở chế độ chỉ đọc. Màn hình này không thay thế chức năng
+quản lý tài khoản dành cho quản trị viên.
 
 Từ 2026-10-21, theo phân công bổ sung của người dùng, Vinh tiếp nhận hoàn thiện client
 Organization/Patient và Billing/Notification. Chi tiết phạm vi và bằng chứng kiểm tra của
@@ -147,3 +205,5 @@ không tự mở quyền shared hoặc mở thêm Notification cho Huy.
 ```
 
 Script kiểm tra format, analyzer, test ứng dụng và loader package, build web. Test doubles chỉ nằm trong test. Unit/widget test không thay kiểm tra đăng nhập/backend thật. Host Android/iOS/Windows đã scaffold; phải build với toolchain phù hợp trước khi xác nhận chạy native.
+
+Kiểm tra LAB/Report sau chỉnh giờ 04/11/2026: [UI, biểu đồ và kết quả nghiệm thu](../docs/acceptance/2026-11-04-lab-report/README.md).

@@ -2,6 +2,7 @@ import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/page_decoder.dart';
 import '../domain/drug.dart';
+import '../domain/pharmacy_outbox.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/pharmacy_identity.dart';
 import '../domain/prescription.dart';
@@ -17,9 +18,29 @@ class GatewayPharmacyRepository
         PharmacyIdentityReader,
         PrescribingSourceReader,
         OutpatientPrescriptionWriter,
-        PrescriptionDispenser {
+        PrescriptionDispenser,
+        PharmacyOutboxRepository {
   const GatewayPharmacyRepository(this.client);
   final ApiClient client;
+
+  @override
+  Future<PharmacyOutboxReplay> replayOutbox(String eventId) async {
+    final value = await client.post(
+      '/v1/pharmacy/admin/outbox/${Uri.encodeComponent(eventId)}/replay',
+      const {},
+    );
+    if (value is! Map<String, dynamic> ||
+        value['eventId'] is! String ||
+        value['replayed'] is! bool ||
+        (value['eventId'] as String).toLowerCase() != eventId.toLowerCase()) {
+      throw const FormatException('Kết quả khôi phục không khớp yêu cầu.');
+    }
+    return PharmacyOutboxReplay(
+      eventId: value['eventId'] as String,
+      replayed: value['replayed'] as bool,
+    );
+  }
+
   @override
   Future<PrescribingSource> prescribingSource(String recordId) async {
     if (!isPharmacyId(recordId)) throw ArgumentError('Mã hồ sơ không hợp lệ.');
@@ -201,5 +222,35 @@ class GatewayPharmacyRepository
       throw const FormatException('Mã đơn trả về không khớp.');
     }
     return rx;
+  }
+
+  @override
+  Future<PageResult<Prescription>> searchPrescriptions({
+    String? keyword,
+    String? patientId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (page < 0 || size < 1 || size > 100) {
+      throw ArgumentError('Trang hoặc kích thước trang không hợp lệ.');
+    }
+    if (patientId != null && !isPharmacyId(patientId)) {
+      throw ArgumentError('Mã bệnh nhân phải là UUID hợp lệ.');
+    }
+    final normalized = keyword?.trim();
+    final result = await client.get(
+      '/v1/pharmacy/prescriptions',
+      query: {
+        'page': page,
+        'size': size,
+        if (normalized != null && normalized.isNotEmpty) 'keyword': normalized,
+        if (patientId != null) 'patientId': patientId,
+        if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+      },
+    );
+    final json = PharmacyDto.object(result);
+    PharmacyDto.integer(json, 'size', minimum: 1);
+    return decodePage(json, PharmacyDto.prescription);
   }
 }

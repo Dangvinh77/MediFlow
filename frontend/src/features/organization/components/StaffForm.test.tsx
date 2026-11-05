@@ -113,7 +113,7 @@ describe("StaffForm", () => {
     expect(mocks.router.push).toHaveBeenCalledWith(`/organization/staff/${staffContractFixture.staffId}?notice=updated`);
     expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
   });
-  it("saves a staff profile before opening account creation with its returned UUID", async () => {
+  it("saves a staff profile and lands on that profile for account actions", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.createStaff.mockResolvedValue(staffContractFixture);
     render(<StaffForm />);
@@ -122,8 +122,9 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/^CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
     fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LICENSE-001" } });
-    fireEvent.click(screen.getByRole("button", { name: "Lưu và tạo tài khoản" }));
-    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/accounts/new?ownerType=staff&ownerId=${staffContractFixture.staffId}`));
+    expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo nhân sự" }));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/staff/${staffContractFixture.staffId}?notice=created`));
     expect(mocks.createStaff).toHaveBeenCalledTimes(1);
   });
   it("requires a doctor's license before sending any staff command", async () => {

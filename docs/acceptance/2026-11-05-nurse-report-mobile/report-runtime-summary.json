@@ -1,0 +1,61 @@
+{
+  "provenance": "SYNTHETIC-DISPOSABLE-REPORT-DEMO-ONLY",
+  "scope": {
+    "fromDate": "2024-01-01",
+    "toDate": "2024-12-31",
+    "departmentId": "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+    "zoneId": "Asia/Bangkok",
+    "currency": "VND"
+  },
+  "accepted": true,
+  "acceptanceAddedThisRun": true,
+  "availableSyntheticPeriods": 2,
+  "availablePeriods": [
+    {
+      "coverageId": "b13633f5-9d19-4bca-b5a3-f50f93036c39",
+      "fromDate": "2024-01-01",
+      "toDate": "2024-12-31",
+      "departmentId": "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+      "currency": "VND",
+      "zoneId": "Asia/Bangkok",
+      "sourceObservedAt": "2026-11-05T01:28:44.513658Z",
+      "reconciledAt": "2026-11-05T01:28:44.513658Z",
+      "syntheticData": true
+    },
+    {
+      "coverageId": "313d5b9a-28c8-4b9a-af17-15e9ec7f39c7",
+      "fromDate": "2025-01-01",
+      "toDate": "2025-12-31",
+      "departmentId": "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+      "currency": "VND",
+      "zoneId": "Asia/Bangkok",
+      "sourceObservedAt": "2026-10-24T15:34:39.584618Z",
+      "reconciledAt": "2026-10-24T15:34:39.814689Z",
+      "syntheticData": true
+    }
+  ],
+  "sourceRowCounts": {
+    "CLINICAL": 524,
+    "LAB": 262,
+    "PHARMACY": 798,
+    "BILLING_CASH": 1185,
+    "BILLING_REFUND": 40
+  },
+  "historicalMonthlyRows": 12,
+  "currentStatistics": {
+    "fromDate": "2026-09-01",
+    "toDate": "2026-11-05",
+    "currency": "VND",
+    "zoneId": "Asia/Bangkok",
+    "reconciled": false,
+    "totals": {
+      "completedVisits": 770,
+      "examRevenue": 116625000.0,
+      "labRevenue": 31080000.0,
+      "prescriptionRevenue": 44400000.0,
+      "unclassifiedRevenue": 0.0,
+      "refunds": 900000.0
+    }
+  },
+  "limitation": "Synthetic local rehearsal; SMTP mail health disabled for API verification. No real upstream completeness or mailbox delivery attested."
+}

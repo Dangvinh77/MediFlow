@@ -18,6 +18,7 @@ void main() {
     );
     expect(session.patientId, '10000000-0000-4000-8000-000000000001');
     expect(session.staffId, '10000000-0000-4000-8000-000000000002');
+    expect(session.accountId, isNull);
     final legacy = Session(
       accessToken: token({'sub': '10000000-0000-4000-8000-000000000001'}),
       refreshToken: 'r',
@@ -25,5 +26,6 @@ void main() {
     );
     expect(legacy.patientId, isNull);
     expect(legacy.staffId, isNull);
+    expect(legacy.accountId, '10000000-0000-4000-8000-000000000001');
   });
 }

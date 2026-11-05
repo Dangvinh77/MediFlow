@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/billing_models.dart';
+import '../domain/lab_quote_payment.dart';
 import '../domain/payment_queue.dart';
 import 'ledger_payment_page.dart';
 
@@ -11,9 +12,15 @@ class PaymentQueuePage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.queue,
+    this.labQuotes,
+    this.labRecovery,
+    this.labZeroEnabled = false,
   });
   final BillingRepository repository;
   final PaymentQueueRepository queue;
+  final LabQuotePaymentRepository? labQuotes;
+  final LabPaymentRecoveryStore? labRecovery;
+  final bool labZeroEnabled;
   @override
   State<PaymentQueuePage> createState() => _PaymentQueuePageState();
 }
@@ -29,6 +36,9 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
           appBar: AppBar(title: const Text('Thu tiền')),
           body: LedgerPaymentPage(
             repository: widget.repository,
+            labQuotes: widget.labQuotes,
+            labRecovery: widget.labRecovery,
+            labZeroEnabled: widget.labZeroEnabled,
             source: request == null
                 ? null
                 : PaymentRequestSource(

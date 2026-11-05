@@ -20,14 +20,16 @@ import { localReportDate } from "../validation";
 interface Props {
   initialQuery: OutpatientReportQuery;
   autoLoad: boolean;
+  /** No explicit URL filters: open on the newest accepted period instead of an empty "today". */
+  discoverLatest?: boolean;
   onQuerySubmit: (query: OutpatientReportQuery) => boolean;
 }
 
-export function OutpatientReportView({ initialQuery, autoLoad, onQuerySubmit }: Props) {
-  return <ReportSessionBoundary><OutpatientReportContent initialQuery={initialQuery} autoLoad={autoLoad} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
+export function OutpatientReportView({ initialQuery, autoLoad, discoverLatest = false, onQuerySubmit }: Props) {
+  return <ReportSessionBoundary><OutpatientReportContent initialQuery={initialQuery} autoLoad={autoLoad} discoverLatest={discoverLatest} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
 }
 
-function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Props) {
+function OutpatientReportContent({ initialQuery, autoLoad, discoverLatest = false, onQuerySubmit }: Props) {
   const { mode, fromDate: initialFrom, toDate: initialTo, year: initialYear, departmentId: initialDepartment } = initialQuery;
   const [fromDate, setFromDate] = useState(initialFrom);
   const [toDate, setToDate] = useState(initialTo);
@@ -42,6 +44,7 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
     ? reportApi.outpatientDaily(initialFrom, initialTo, initialDepartment)
     : reportApi.outpatientMonthly(initialYear, initialDepartment), [mode, initialFrom, initialTo, initialYear, initialDepartment]);
   const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && Object.keys(validateOutpatientQuery(initialQuery)).length === 0);
+  const [autoDiscover, setAutoDiscover] = useState(discoverLatest);
 
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -82,11 +85,14 @@ function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Prop
         <span>Để trống khoa để xem toàn bệnh viện.</span>
         <Button type="button" onClick={() => { setDepartmentId(""); setScopeReset(value => value + 1); setErrors({}); }}>Bỏ chọn khoa</Button>
       </div>
-      <OutpatientAvailablePeriods key={`${mode}:${departmentId}`} mode={mode} departmentId={departmentId.trim() || undefined} onSelect={period => {
+      <OutpatientAvailablePeriods key={`${mode}:${departmentId}`} mode={mode} departmentId={departmentId.trim() || undefined}
+        autoSelectLatest={autoDiscover} onSelect={(period, automatic) => {
         clear(); setFromDate(period.fromDate); setToDate(period.toDate); setYear(period.fromDate.slice(0,4));
         setDepartmentId(period.departmentId ?? ""); setScopeReset(value => value+1); setErrors({});
-        const query = { mode, fromDate: period.fromDate, toDate: period.toDate, year: Number(period.fromDate.slice(0, 4)), departmentId: period.departmentId ?? undefined };
-        if (onQuerySubmit(query)) return;
+        setAutoDiscover(false);
+        const query = { mode, fromDate: period.fromDate, toDate: period.toDate, year: Number(period.fromDate.slice(0, 4)),
+          departmentId: period.departmentId ?? undefined };
+          if (!automatic && onQuerySubmit(query)) return;
         setSubmittedQuery(query);
         load(() => mode === "daily" ? reportApi.outpatientDaily(query.fromDate, query.toDate, query.departmentId) : reportApi.outpatientMonthly(query.year, query.departmentId));
       }} />

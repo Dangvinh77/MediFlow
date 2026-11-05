@@ -73,6 +73,21 @@ class PatientWriteApplicationServiceTest {
     }
 
     @Test
+    void nullEmailOnProfileUpdatePreservesTheLatestPatientEmail() {
+        Patient patient = Patient.create("Nguyen Van A", LocalDate.of(1990, 1, 1), Gender.M,
+                "001", "Hanoi", "0900000000", "latest@example.com", null);
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
+
+        var dto = service.update(patient.patientId(), new UpdatePatientRequest(
+                "Nguyen Van B", patient.dateOfBirth(), patient.gender(), "Da Nang", null,
+                null, null, null, null));
+
+        assertThat(dto.email()).isEqualTo("latest@example.com");
+        assertThat(patient.email()).isEqualTo("latest@example.com");
+        verify(repository).save(patient);
+    }
+
+    @Test
     void correctsIdentityAndAllowsKeepingTheSameNumber() {
         Patient patient = Patient.create("A", LocalDate.of(1990, 1, 1), Gender.M,
                 "001", null, null, null, null);

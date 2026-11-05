@@ -27,11 +27,17 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
         <StatusBadge tone="success">Đã đối soát</StatusBadge>
       </div>
       {report.syntheticData === true && <p role="status" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Dữ liệu mô phỏng phục vụ minh họa; không phải hồ sơ hoặc giao dịch thực tế.</p>}
-      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        <div><dt className="text-muted-foreground">Dữ liệu nguồn cập nhật</dt><dd className="mt-1">{reportInstant(report.sourceObservedAt, report.zoneId)}</dd></div>
-        <div><dt className="text-muted-foreground">Đối soát lúc</dt><dd className="mt-1">{reportInstant(report.reconciledAt, report.zoneId)}</dd></div>
-      </dl>
-      <details className="mt-3 text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer py-3 focus-visible:outline-2 focus-visible:outline-primary">Mã đối soát</summary><p className="break-all">{report.coverageId}</p></details>
+      <details className="mt-4 rounded-lg border border-border px-3 text-sm">
+        <summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline-2 focus-visible:outline-primary">Nguồn và đối soát</summary>
+        <div className="pb-3 text-muted-foreground">
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div><dt>Dữ liệu nguồn cập nhật</dt><dd className="mt-1">{reportInstant(report.sourceObservedAt, report.zoneId)}</dd></div>
+            <div><dt>Đối soát lúc</dt><dd className="mt-1">{reportInstant(report.reconciledAt, report.zoneId)}</dd></div>
+          </dl>
+          <p className="mt-3">Mã đối soát</p>
+          <p className="break-all">{report.coverageId}</p>
+        </div>
+      </details>
       {report.periods.length > 0 && <>
         <section aria-label="Tổng kỳ đã chọn" className="mt-5">
           <h3 className="font-semibold">Tổng kỳ đã chọn</h3>
@@ -46,24 +52,34 @@ export function OutpatientReportResult({ report }: { report: OutpatientReportDTO
             </div>)}
           </dl>
         </section>
-        <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
-          <OutpatientTrendChart periods={report.periods} kind="cash" currency={report.currency} />
-          <OutpatientTrendChart periods={report.periods} kind="activity" currency={report.currency} />
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">Tiền thu ròng không phải doanh thu ghi nhận. Số lượng thuốc đã xuất được xem riêng trong chi tiết từng kỳ.</p>
+        <details className="mt-4 rounded-lg border border-border px-3">
+          <summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:outline-2 focus-visible:outline-primary">Xu hướng theo kỳ</summary>
+          <div className="pb-3">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+              <OutpatientTrendChart periods={report.periods} kind="cash" currency={report.currency} />
+              <OutpatientTrendChart periods={report.periods} kind="activity" currency={report.currency} />
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">Tiền thu ròng không phải doanh thu ghi nhận. Số lượng thuốc đã xuất được xem riêng trong chi tiết từng kỳ.</p>
+          </div>
+        </details>
       </>}
       {report.periods.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Báo cáo chưa có kỳ dữ liệu.</p> : (
         <ul aria-label="Các kỳ báo cáo" className="mt-4 space-y-4">
           {report.periods.map((period) => (
-            <li key={`${period.fromDate}/${period.toDate}`} className="rounded-lg border border-border p-4">
-              <h3 className="font-semibold">{period.fromDate === period.toDate ? formatLocalDate(period.fromDate) : `${formatLocalDate(period.fromDate)} – ${formatLocalDate(period.toDate)}`}</h3>
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
-                {([
-                  ["Lượt khám hoàn tất", period.completedVisits], ["Xét nghiệm", period.labTests],
-                  ["Đơn đã xuất", period.dispensedPrescriptions], ["Số lượng thuốc đã xuất", period.dispensedUnits],
-                  ["Tiền đã thu", period.cashReceived], ["Tiền đã hoàn", period.refunds], ["Tiền thu ròng", period.netCash],
-                ] as const).map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-lg font-semibold tabular-nums">{formatDecimal(value)}</dd></div>)}
-              </dl>
+            <li key={`${period.fromDate}/${period.toDate}`}>
+              <details className="rounded-lg border border-border px-3">
+                <summary className="min-h-11 cursor-pointer py-3 focus-visible:outline-2 focus-visible:outline-primary">
+                  <span className="block font-semibold">{period.fromDate === period.toDate ? formatLocalDate(period.fromDate) : `${formatLocalDate(period.fromDate)} – ${formatLocalDate(period.toDate)}`}</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">{period.completedVisits} lượt · {period.labTests} xét nghiệm · {period.dispensedPrescriptions} đơn · Thu ròng: {formatDecimal(period.netCash)} {report.currency}</span>
+                </summary>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pb-3 pt-4 sm:grid-cols-4 xl:grid-cols-7">
+                  {([
+                    ["Lượt khám hoàn tất", period.completedVisits], ["Xét nghiệm", period.labTests],
+                    ["Đơn đã xuất", period.dispensedPrescriptions], ["Số lượng thuốc đã xuất", period.dispensedUnits],
+                    ["Tiền đã thu", period.cashReceived], ["Tiền đã hoàn", period.refunds], ["Tiền thu ròng", period.netCash],
+                  ] as const).map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-lg font-semibold tabular-nums">{formatDecimal(value)}</dd></div>)}
+                </dl>
+              </details>
             </li>
           ))}
         </ul>

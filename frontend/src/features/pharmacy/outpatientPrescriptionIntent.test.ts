@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CreateOutpatientPrescriptionRequest } from "./types";
-import { prepareOutpatientPrescriptionIntent } from "./outpatientPrescriptionIntent";
+import {
+  clearRetainedOutpatientPrescriptionIntent,
+  getRetainedOutpatientPrescriptionIntent,
+  prepareOutpatientPrescriptionIntent,
+  retainOutpatientPrescriptionIntent,
+} from "./outpatientPrescriptionIntent";
 
 const firstKey = "00000000-0000-4000-8000-0000000000aa";
 const secondKey = "00000000-0000-4000-8000-0000000000bb";
@@ -80,5 +85,16 @@ describe("Outpatient prescription submitted intent", () => {
     expect(intent.request).toEqual(request());
     expect(intent.request).not.toHaveProperty("commandId");
     expect(intent.request).not.toHaveProperty("totalAmount");
+  });
+  it("retains an unresolved command only in the current session and clears it after reconciliation", () => {
+    const recordId = "00000000-0000-4000-8000-000000000001";
+    const command = prepareOutpatientPrescriptionIntent(request(), null, () => firstKey);
+    retainOutpatientPrescriptionIntent("session-a", recordId, command, "uncertain");
+    expect(getRetainedOutpatientPrescriptionIntent("session-a", recordId)).toEqual({ intent: command, state: "uncertain" });
+    expect(getRetainedOutpatientPrescriptionIntent("session-b", recordId)).toBeNull();
+    expect(getRetainedOutpatientPrescriptionIntent("session-a", recordId)).toBeNull();
+    retainOutpatientPrescriptionIntent("session-a", recordId, command, "uncertain");
+    clearRetainedOutpatientPrescriptionIntent("session-a", recordId, command.commandId);
+    expect(getRetainedOutpatientPrescriptionIntent("session-a", recordId)).toBeNull();
   });
 });

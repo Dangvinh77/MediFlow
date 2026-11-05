@@ -5,6 +5,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import 'pharmacy_request_error.dart';
 import 'pharmacy_date_text.dart';
+import 'pharmacy_status_text.dart';
 import '../domain/pharmacy_repository.dart';
 import '../domain/pharmacy_identity.dart';
 import 'pharmacy_identity_label.dart';
@@ -580,15 +581,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               'Thông tin người bệnh và bác sĩ được giới hạn theo quyền truy cập.',
             ),
           Text('Ngày kê đơn: ${pharmacyDate(result.prescribedDate)}'),
-          Text(
-            'Trạng thái đơn: ${switch (result.status) {
-              PrescriptionStatus.active => 'Có thể sử dụng',
-              PrescriptionStatus.fulfilled => 'Đã hoàn tất',
-              PrescriptionStatus.cancelled => 'Đã hủy',
-              PrescriptionStatus.expired => 'Hết hạn',
-              PrescriptionStatus.dispenseFailed => 'Xuất thuốc thất bại',
-            }}',
-          ),
+          Text('Trạng thái đơn: ${prescriptionStatusText(result.status)}'),
           Text(
             'Trạng thái xuất: ${switch (result.dispenseStatus) {
               DispenseStatus.pending => 'Chờ xuất',

@@ -15,15 +15,48 @@ Các đường dẫn sau đi qua Gateway, trả envelope `ApiResponse` và `Cach
 | POST `/api/v1/auth/reset-password` | Public, có giới hạn tần suất | `{token,newPassword}`; token một lần, hết hạn 30 phút và ràng buộc credential version |
 | POST `/api/v1/org/accounts` | ADMIN | `username` là email của staff được chọn, role phải khớp hồ sơ; hệ thống tự cấp mật khẩu; giữ Idempotency-Key |
 | POST `/api/v1/org/patient-accounts` | ADMIN/NURSE theo quyền tiếp nhận hiện có | `{patientId}` + Idempotency-Key; lấy email từ hồ sơ Patient, tự cấp mật khẩu |
+| PUT `/api/v1/org/patient-accounts/{patientId}/email` | ADMIN/NURSE | `{email,reason}`; chỉ resolve account PATIENT theo `patientId`, profile phải còn active; audit, thu hồi credential/recovery cũ, queue đồng bộ Patient và thông báo email cũ/mới |
 | PUT `/api/v1/org/accounts/{id}/password` | ADMIN | Không nhận mật khẩu do người gọi chọn; bắt buộc Idempotency-Key, trả `MailDelivery` |
 | GET `/api/v1/org/accounts/{id}/mail-delivery` | ADMIN | Trạng thái thư gần nhất, không trả nội dung hoặc mật khẩu |
 | POST `/api/v1/org/accounts/{id}/mail-delivery/{messageId}/retry` | ADMIN | Gửi lại đúng thư cũ, không thay mật khẩu lần nữa |
 | PUT `/api/v1/org/accounts/{id}/email` | ADMIN | `{email,reason}`; audit actor lấy từ principal, vô hiệu phiên/link cũ; cập nhật hồ sơ qua đúng context |
 
+Patient profile update khi body có trường `email` và Patient account issuance dùng cùng
+Organization transaction-scoped owner lock. Provision khóa trước khi đọc email authoritative
+từ Patient. Profile update khóa trước khi đọc email hiện tại/kiểm tra account; nó giữ lock tới
+khi Patient transaction riêng đã commit. Hai store và transaction manager vẫn độc lập; đây là
+điều phối local trong Core co-host, không phải cross-store join hoặc distributed transaction.
+Body bỏ qua hoặc đặt `email: null` giữ nguyên email mới nhất của hồ sơ.
+
+Account metadata theo hồ sơ dùng owner UUID, không tìm tài khoản bằng email:
+
+| Method/path | Quyền | Dữ liệu/hành vi |
+|---|---|---|
+| GET `/api/v1/org/profile-accounts/staff/{staffId}` | ADMIN | Xác nhận staff tồn tại; trả `{account,profileEmail,emailSyncPending}` |
+| GET `/api/v1/org/profile-accounts/patient/{patientId}` | ADMIN/NURSE | Xác nhận Patient tồn tại qua Patient use case; trả cùng shape |
+| PUT `/api/v1/org/patient-accounts/{patientId}/password` | ADMIN/NURSE | Body `{}` và `Idempotency-Key`; tạo credential tạm và trả `MailDelivery` |
+| GET `/api/v1/org/patient-accounts/{patientId}/mail-delivery` | ADMIN/NURSE | Trạng thái thư gần nhất của account Patient, không có nội dung thư |
+| POST `/api/v1/org/patient-accounts/{patientId}/mail-delivery/{messageId}/retry` | ADMIN/NURSE | Retry đúng message và chỉ khi email nhận thư còn khớp email hồ sơ/account hiện tại |
+
+`account` là `AccountResponse` sẵn có hoặc `null` khi profile chưa có account; `profileEmail`
+là email authoritative của hồ sơ. `emailSyncPending=true` khi account tồn tại và email hồ sơ
+khác username account sau trim, không phân biệt hoa thường. Lookup chọn account active trước,
+sau đó account mới nhất nếu chỉ còn lịch sử inactive; không tra bằng email. Account response
+không chứa password/hash và không có body thư. Patient reset xác nhận profile còn eligible,
+account đang active, role `PATIENT`, đúng `patientId`, và email profile/account đồng bộ. Một
+Idempotency-Key cùng actor/patient trả lại delivery gốc và không reset credential lần hai.
+Credential thay đổi, mail enqueue và audit actor/patient/target/action/correlation lưu trong
+cùng Organization transaction; patient UUID vẫn là bare reference vì Patient giữ store riêng.
+Email chưa đồng bộ phải được sửa qua luồng email-change phù hợp trước khi reset/retry; không
+báo thành công giả. Patient account chỉ được sửa theo `patientId` qua route scoped ADMIN/NURSE;
+staff email và route generic theo account ID vẫn chỉ ADMIN.
+
 `MailDelivery` gồm `messageId,status`; status public chỉ `PENDING,SENT,FAILED`.
 Kết quả cấp tài khoản thêm `mailDelivery`; không trả mật khẩu tạm qua API.
-Thay email của hồ sơ đã liên kết tài khoản qua API hồ sơ thông thường bị từ chối;
-non-ADMIN không sửa email hiện có. CCCD sửa không đổi email đăng nhập.
+ADMIN/NURSE có thể thêm hoặc sửa email Patient khi hồ sơ chưa liên kết tài khoản. Khi đã liên kết,
+API hồ sơ từ chối thay email với mọi role; dùng route patient-scoped ở trên để giữ audit, thu hồi
+credential/recovery, đồng bộ hồ sơ và thông báo. Staff email tiếp tục ADMIN-only. CCCD sửa không
+đổi email đăng nhập.
 
 Gateway có facade public chính xác từng method/path. Core chỉ nhận các yêu cầu
 khôi phục/mailbox nội bộ từ service token `gateway` tại `/api/v1/org/account-security/**`;
@@ -1146,3 +1179,23 @@ the acceptance reference and all five source references explicitly start `SYNTHE
 Older responses without this additive field remain readable by the clients. No source
 references or accepting actor are exposed. A compatible historical seed is discoverable
 only if its approval remains valid; discovery never accepts or restores seed data.
+
+
+## Provisional outpatient operations statistics (2026-11-04)
+
+`GET /api/v1/reports/outpatient/statistics?fromDate=<date>&toDate=<date>&departmentId=<UUID>`
+(ADMIN/MANAGER, same live department scope guard and gates as daily/monthly; at most 366 days)
+returns `fromDate`, `toDate`, `departmentId`, `currency`, `zoneId`, `reconciled=false`, `totals`,
+`days[]` (every requested date, zero-filled) and `departments[]`. Each figure set carries
+`completedVisits`, `examRevenue`, `labRevenue`, `prescriptionRevenue`, `unclassifiedRevenue` and
+`refunds`. Revenue is gross outpatient SERVICE_PAYMENT cash by service line; refunds are separate.
+
+These figures are read from Report's own projections without accepted coverage and are therefore
+never "reconciled"; clients must label them provisional and keep the reconciled report distinct.
+The service line is recorded at `payment.completed` consumption (Report V30 `service_purpose`):
+a prescription target is PRESCRIPTION, a Lab target is LAB_TEST, no target is EXAM. Receipts
+recorded earlier without a line are `unclassifiedRevenue`.
+
+Scheduled (V2 registration) EXAM requests are now enrolled in the Billing outpatient publication
+cohort with `record_id=registrationId` as source (Billing V33 widens the payload fence). Their
+`payment.completed` is published like V1 EXAM/LAB_TEST/PRESCRIPTION instead of being held.

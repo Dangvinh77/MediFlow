@@ -55,6 +55,7 @@ class Session {
   // Display/workflow hints only; Gateway validates the signed token and resource authority.
   String? get patientId => _referenceClaim('patientId');
   String? get staffId => _referenceClaim('staffId');
+  String? get accountId => _referenceClaim('sub');
   String? _referenceClaim(String key) {
     try {
       final claims = jsonDecode(

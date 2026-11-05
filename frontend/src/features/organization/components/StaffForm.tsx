@@ -33,7 +33,6 @@ function StaffFormWorkspace({ staffId }: Props) {
   const [profile, setProfile] = useState<StaffProfile>({ dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null });
   const mounted = useRef(true);
   const submitting = useRef(false);
-  const createAccountAfterSave = useRef(false);
   const savedProfile = useRef<{ fingerprint: string; session: string | null } | null>(null);
   const originalDepartment = useRef<string | null>(null);
   const unresolved = useRef<StaffSaveDraft | null>(null);
@@ -89,7 +88,6 @@ function StaffFormWorkspace({ staffId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
-    createAccountAfterSave.current = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-create-account") === "true";
     if (jobTitle === "DOCTOR" && !licenseNumber.trim()) {
       setError("Bác sĩ phải có số giấy phép hành nghề.");
       return;
@@ -189,9 +187,7 @@ function StaffFormWorkspace({ staffId }: Props) {
         const staff = await organizationApi.createStaff(body, creationIntent.key);
         creationIntent.settle();
         if (!mounted.current || getSessionKey() !== sessionToken) return;
-        markSaved(); router.push(createAccountAfterSave.current
-          ? `/organization/accounts/new?ownerType=staff&ownerId=${encodeURIComponent(staff.staffId)}`
-          : `/organization/staff/${staff.staffId}?notice=created`);
+        markSaved(); router.push(`/organization/staff/${staff.staffId}?notice=created`);
         completed = true;
       }
     } catch (cause: unknown) {
@@ -265,9 +261,9 @@ function StaffFormWorkspace({ staffId }: Props) {
       </FormSection>
       <FormSection title="Thông tin liên hệ" description="Thông tin liên lạc của nhân sự.">
         <Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Email" htmlFor="staff-email" hint="Nếu nhân viên đã có tài khoản, đổi email tại Quản lý tài khoản để lưu lý do và cập nhật email đăng nhập."><input id="staff-email" type="email" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Email" htmlFor="staff-email" hint="Sau khi lưu hồ sơ, quản lý tài khoản và email đăng nhập tại chi tiết hồ sơ nhân sự."><input id="staff-email" type="email" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing ? <Button type="submit" data-create-account="true" disabled={saving}>Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
   </form>;
 }

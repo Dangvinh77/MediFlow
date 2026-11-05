@@ -11,11 +11,19 @@ class AppModule {
     this.icon,
     this.roles, {
     this.implemented = false,
+    this.scheduling = false,
+    this.headOnly = false,
   });
   final String path, title, description, owner;
   final IconData icon;
   final List<UserRole> roles;
   final bool implemented;
+
+  /// Hidden unless the build enables the V2 scheduling workspaces.
+  final bool scheduling;
+
+  /// Shown to a doctor only while appointed head of a department.
+  final bool headOnly;
   bool allows(UserRole role) => roles.contains(role);
   bool matches(String location) =>
       location == path || location.startsWith('$path/');
@@ -57,6 +65,57 @@ const modules = [
     Icons.person_outline,
     [UserRole.admin, UserRole.doctor, UserRole.nurse],
     implemented: true,
+  ),
+  AppModule(
+    '/appointments/my-calendar',
+    'Lịch khám của tôi',
+    'Buổi khám và phiếu của bác sĩ',
+    'Vinh',
+    Icons.event_note_outlined,
+    [UserRole.doctor],
+    implemented: true,
+    scheduling: true,
+  ),
+  AppModule(
+    '/appointments/my-shifts',
+    'Lịch làm việc của tôi',
+    'Giờ và phòng được phân công',
+    'Vinh',
+    Icons.schedule_outlined,
+    [UserRole.doctor],
+    implemented: true,
+    scheduling: true,
+  ),
+  AppModule(
+    '/appointments/schedule',
+    'Quản lý buổi khám',
+    'Ca khám và phạm vi khoa',
+    'Vinh',
+    Icons.edit_calendar_outlined,
+    [UserRole.admin, UserRole.manager],
+    implemented: true,
+    scheduling: true,
+  ),
+  AppModule(
+    '/appointments/department',
+    'Quản lý khoa',
+    'Buổi khám và phân công bác sĩ',
+    'Vinh',
+    Icons.domain_outlined,
+    [UserRole.doctor],
+    implemented: true,
+    scheduling: true,
+    headOnly: true,
+  ),
+  AppModule(
+    '/appointments/my-registration',
+    'Phiếu khám của tôi',
+    'Tra cứu phiếu đăng ký khám',
+    'Vinh',
+    Icons.confirmation_number_outlined,
+    [UserRole.patient],
+    implemented: true,
+    scheduling: true,
   ),
   AppModule(
     '/appointments',
@@ -141,8 +200,18 @@ const modules = [
 bool isSupportChild(AppModule module) =>
     module.path == '/reports' || module.path == '/notifications';
 
-List<AppModule> visibleMainModules(UserRole role) => modules
-    .where((module) => !isSupportChild(module) && module.allows(role))
+List<AppModule> visibleMainModules(
+  UserRole role, {
+  bool schedulingEnabled = false,
+  bool headsDepartment = false,
+}) => modules
+    .where(
+      (module) =>
+          !isSupportChild(module) &&
+          module.allows(role) &&
+          (!module.scheduling || schedulingEnabled) &&
+          (!module.headOnly || headsDepartment),
+    )
     .toList();
 
 List<AppModule> visibleSupportModules(UserRole role) => modules

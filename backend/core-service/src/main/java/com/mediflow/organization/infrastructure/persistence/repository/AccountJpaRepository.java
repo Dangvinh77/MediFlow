@@ -20,6 +20,13 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, UUID>
             @org.springframework.data.repository.query.Param("staffId") UUID staffId,
             @org.springframework.data.repository.query.Param("patientId") UUID patientId);
 
+    @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where "
+            + "((:staffId is not null and a.staffId = :staffId) or (:patientId is not null and a.patientId = :patientId)) "
+            + "order by a.createdAt desc, a.accountId desc")
+    java.util.List<AccountEntity> findByOwner(
+            @org.springframework.data.repository.query.Param("staffId") UUID staffId,
+            @org.springframework.data.repository.query.Param("patientId") UUID patientId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select a from AccountEntity a where a.accountId = :id")
     Optional<AccountEntity> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") UUID id);

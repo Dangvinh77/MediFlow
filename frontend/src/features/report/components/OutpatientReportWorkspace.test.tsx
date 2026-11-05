@@ -7,6 +7,8 @@ import type { OutpatientReportDTO } from "../types";
 const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily: vi.fn(), monthly: vi.fn(), available: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => "/reports/outpatient", useSearchParams: () => new URLSearchParams(mocks.query) }));
 vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.daily, outpatientMonthly: mocks.monthly, availablePeriods: mocks.available } }));
+// The provisional statistics section has its own test; these cases cover the reconciled report only.
+vi.mock("./OutpatientStatisticsView", () => ({ OutpatientStatisticsView: () => <div role="region" aria-label="Thống kê tạm tính" /> }));
 import { OutpatientReportWorkspace } from "./OutpatientReportWorkspace";
 
 const department = "00000000-0000-4000-8000-000000000001";
@@ -30,19 +32,30 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockReset(); mocks.monthly.mockReset(); mocks.router.replace.mockReset();
     vi.spyOn(window.history, "pushState").mockImplementation(() => {});
   });
-  it("discovery opens the selected report without a second submission", async () => {
+  it("opens on the newest accepted period when the URL has no explicit filters", async () => {
     mocks.query = "view=monthly";
-    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:department,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    mocks.monthly.mockResolvedValue({ ...zero, fromDate: "2025-01-01", toDate: "2025-12-31", departmentId: department });
+    render(<OutpatientReportWorkspace enabled />);
+    // Discovery then report read: two chained requests, slower under the parallel suite.
+    await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" }, { timeout: 5000 });
+    expect(mocks.available).toHaveBeenCalledTimes(1);
+    expect(mocks.monthly).toHaveBeenCalledTimes(1);
+    expect(mocks.monthly).toHaveBeenCalledWith(2025, department);
+    expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
+    expect(window.history.pushState).not.toHaveBeenCalled();
+  });
+  it("manual discovery opens the selected report without a second submission", async () => {
+    mocks.query = "view=monthly&year=2024";
     mocks.monthly.mockReturnValue(new Promise(() => {}));
-    const view = render(<OutpatientReportWorkspace enabled />);
+    mocks.available.mockResolvedValue([{coverageId: zero.coverageId,fromDate:"2025-01-01",toDate:"2025-12-31",departmentId:null,currency:"VND",zoneId:"Asia/Bangkok",sourceObservedAt:zero.sourceObservedAt,reconciledAt:zero.reconciledAt,syntheticData:true}]);
+    render(<OutpatientReportWorkspace enabled />);
+    expect(mocks.available).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", {name:"Tìm kỳ có dữ liệu"}));
     fireEvent.click(await screen.findByRole("button", {name:"Dùng kỳ này"}));
     expect(screen.getByLabelText("Năm báo cáo")).toHaveValue(2025);
-    expect(mocks.monthly).not.toHaveBeenCalled();
+    expect(mocks.monthly).toHaveBeenCalledTimes(1);
     expect(window.history.pushState).toHaveBeenCalledWith(null,"","/reports/outpatient?view=monthly&year=2025");
-    mocks.query = "view=monthly&year=2025";
-    view.rerender(<OutpatientReportWorkspace enabled />);
-    await waitFor(() => expect(mocks.monthly).toHaveBeenCalledWith(2025,undefined));
   });
   it("defaults closed even for a valid direct URL and makes no request", () => {
     render(<OutpatientReportWorkspace />);
@@ -50,10 +63,31 @@ describe("Outpatient report workspace", () => {
     expect(screen.queryByRole("button", { name: "Xem báo cáo" })).not.toBeInTheDocument();
     expect(mocks.daily).not.toHaveBeenCalled(); expect(mocks.monthly).not.toHaveBeenCalled();
   });
-  it("starts idle when enabled without explicit URL filters", () => {
-    mocks.query = ""; render(<OutpatientReportWorkspace enabled />);
-    expect(screen.getByRole("status")).toHaveTextContent("Chọn phạm vi");
+  it("stays idle without explicit URL filters when no accepted period exists", async () => {
+    mocks.query = ""; mocks.available.mockResolvedValue([]);
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    fireEvent.click(screen.getByText("Báo cáo đã đối soát"));
+    expect(screen.getByText("Chọn phạm vi để xem báo cáo ngoại trú đã đối soát.")).toBeVisible();
     expect(mocks.daily).not.toHaveBeenCalled(); expect(mocks.monthly).not.toHaveBeenCalled();
+  });
+  it("keeps provisional statistics visible while the reconciled workspace opens on demand", async () => {
+    mocks.query = ""; mocks.available.mockResolvedValue([]);
+    render(<OutpatientReportWorkspace enabled />);
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    const summary = screen.getByText("Báo cáo đã đối soát");
+    const disclosure = summary.closest("details");
+    expect(disclosure).toBeInTheDocument();
+    expect(disclosure).not.toHaveAttribute("open");
+    expect(screen.getByRole("region", { name: "Thống kê tạm tính" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Xem báo cáo" })).not.toBeVisible();
+
+    fireEvent.click(summary);
+    expect(disclosure).toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Xem báo cáo" })).toBeVisible();
+    await screen.findByText(/Chưa tìm thấy kỳ phù hợp/);
+    expect(mocks.daily).not.toHaveBeenCalled();
+    expect(mocks.monthly).not.toHaveBeenCalled();
   });
   it("renders accepted zero periods with response currency, zone, scope and provenance", async () => {
     mocks.daily.mockResolvedValue({ ...zero, departmentId: department });
@@ -65,8 +99,10 @@ describe("Outpatient report workspace", () => {
     expect(within(result).getByText(/Phạm vi:/)).toBeVisible();
     expect(within(result).getByText("Tiền tệ: VND · Múi giờ: Asia/Bangkok")).toBeVisible();
     expect(within(result).getByText("Đã đối soát")).toBeVisible();
+    fireEvent.click(within(result).getByText("Nguồn và đối soát"));
     expect(within(result).getByText("Dữ liệu nguồn cập nhật").nextElementSibling).toHaveTextContent("07:00");
     const periods = within(result).getByRole("list", { name: "Các kỳ báo cáo" });
+    fireEvent.click(within(periods).getByText(/0 lượt · 0 xét nghiệm · 0 đơn/));
     expect(within(periods).getAllByRole("definition")).toHaveLength(7);
     for (const value of within(periods).getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "2024-03-01" } });
@@ -102,6 +138,7 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockResolvedValue({ ...zero, periods: [{ ...zero.periods[0], cashReceived: 100, refunds: 200, netCash: -125.5 }] });
     render(<OutpatientReportWorkspace enabled />);
     await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
+    fireEvent.click(screen.getByText(/Thu ròng: -125,5 VND/));
     expect(screen.getByText("Tiền thu ròng").nextElementSibling).toHaveTextContent("-125,5");
   });
   it("uses the monthly year contract and preserves all response periods", async () => {

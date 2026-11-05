@@ -1,6 +1,6 @@
-param([ValidateSet('all','preview','clean','remove-failure','engine-off','disappearing','inspect-failure','runner-shutdown')][string]$Case = 'all')
+param([ValidateSet('all','preview','clean','remove-failure','engine-off','disappearing','inspect-failure','runner-shutdown','orphans','orphan-preview','active-parent','reused-process','foreign-process','wrong-port','reused-parent')][string]$Case = 'all')
 if ($Case -eq 'all') {
-    foreach ($scenario in @('preview','clean','remove-failure','engine-off','disappearing','inspect-failure','runner-shutdown')) {
+    foreach ($scenario in @('preview','clean','remove-failure','engine-off','disappearing','inspect-failure','runner-shutdown','orphans','orphan-preview','active-parent','reused-process','foreign-process','wrong-port','reused-parent')) {
         & powershell.exe -NoProfile -File $PSCommandPath -Case $scenario
         if ($LASTEXITCODE -ne 0) { throw "Launcher check failed: $scenario" }
     }
@@ -19,6 +19,46 @@ $global:demoFixtureImages=@(
  @{Id='sha256:foreign';RepoTags=@('other-project:latest');Config=@{Labels=@{}}})
 if($Case -in @('disappearing','runner-shutdown')){
  $global:demoFixtureContainers[2].Image='sha256:foreign'
+}
+$global:demoFixtureStopped=[System.Collections.Generic.List[int]]::new()
+$global:demoFixtureProcesses=@()
+$global:demoFixtureListeners=@()
+$fixtureRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
+if($Case -in @('orphans','orphan-preview','active-parent','reused-process','foreign-process','wrong-port','reused-parent')){
+ $jar=Join-Path $fixtureRoot 'backend\core-service\target\core-service-0.0.1-SNAPSHOT.jar'
+ if($Case -eq 'foreign-process'){$jar=Join-Path ($fixtureRoot+'-other') 'backend\core-service\target\core-service-0.0.1-SNAPSHOT.jar'}
+ $global:demoFixtureProcesses=@([pscustomobject]@{ProcessId=41001;ParentProcessId=41000;Name='java.exe';CommandLine=('java -jar "'+$jar+'"');CreationDate=[datetime]'2026-11-04T08:00:00Z'})
+ $port=28089
+ if($Case -eq 'wrong-port'){$port=28082}
+ $global:demoFixtureListeners=@([pscustomobject]@{OwningProcess=41001;LocalPort=$port})
+ if($Case -in @('active-parent','reused-parent')){
+  $created=[datetime]'2026-11-04T07:59:00Z'
+  if($Case -eq 'reused-parent'){$created=[datetime]'2026-11-04T08:01:00Z'}
+  $global:demoFixtureProcesses+= [pscustomobject]@{ProcessId=41000;Name='python.exe';CreationDate=$created}
+ }
+}
+function global:Get-NetTCPConnection {param($State,$ErrorAction) return $global:demoFixtureListeners}
+function global:Get-CimInstance {
+ param($ClassName,$Filter,$ErrorAction)
+ if($Filter -match 'ProcessId\s*=\s*(\d+)'){
+  $requestedId=[int]$Matches[1]
+  return $global:demoFixtureProcesses | Where-Object {$_.ProcessId -eq $requestedId}
+ }
+ return $global:demoFixtureProcesses | Where-Object {$_.Name -eq 'java.exe'}
+}
+function global:Get-Process {
+ param($Id,$ErrorAction)
+ $item=$global:demoFixtureProcesses | Where-Object {$_.ProcessId -eq $Id}
+ if(-not $item){return}
+ $started=$item.CreationDate
+ if($Case -eq 'reused-process'){$started=$started.AddMinutes(1)}
+ return [pscustomobject]@{Id=$Id;StartTime=$started;Handle=123}
+}
+function global:Stop-Process {
+ param($InputObject,$ErrorAction)
+ $global:demoFixtureStopped.Add($InputObject.Id)
+ $global:demoFixtureProcesses=@($global:demoFixtureProcesses | Where-Object {$_.ProcessId -ne $InputObject.Id})
+ $global:demoFixtureListeners=@($global:demoFixtureListeners | Where-Object {$_.OwningProcess -ne $InputObject.Id})
 }
 $global:demoFixtureListingCount=0
 function global:docker {
@@ -60,11 +100,11 @@ function global:docker {
  throw "Unexpected Docker command: $key"
 }
 $launcher=Join-Path $PSScriptRoot '../Demo-Launcher.ps1'
-& $launcher -Action Clean -Preview:($Case -eq 'preview')
+& $launcher -Action Clean -Preview:($Case -in @('preview','orphan-preview'))
 $code=$LASTEXITCODE
-if($Case -in @('preview','engine-off')){
+if($Case -in @('preview','orphan-preview','engine-off')){
  if($global:demoFixtureOperations.Count -ne 0){throw 'Unexpected destructive operation'}
- if($Case -eq 'preview' -and $code -ne 0){throw 'Preview failed'}
+ if($Case -in @('preview','orphan-preview') -and $code -ne 0){throw 'Preview failed'}
  if($Case -eq 'engine-off' -and $code -ne 1){throw 'Engine-off failure not propagated'}
 }elseif($Case -eq 'inspect-failure'){
  if($code -ne 1 -or $global:demoFixtureOperations.Count -ne 0){throw 'Inspect daemon failure was masked'}
@@ -77,10 +117,14 @@ if($Case -in @('preview','engine-off')){
  if($code -ne 0 -or @(Compare-Object $expected @($global:demoFixtureOperations)).Count -ne 0){throw "Unexpected removal set: $($global:demoFixtureOperations -join '; ')"}
  if(@($global:demoFixtureContainers).Count -ne 1 -or $global:demoFixtureContainers[0].Id -ne 'foreign'){throw 'Foreign container was changed'}
 }
-if($Case -in @('clean','disappearing','runner-shutdown')){
+$expectedStops=0
+if($Case -in @('orphans','reused-parent')){$expectedStops=1}
+if($global:demoFixtureStopped.Count -ne $expectedStops){throw "Unexpected stopped processes: $($global:demoFixtureStopped -join ',')"}
+if($Case -in @('clean','disappearing','runner-shutdown','orphans','reused-parent')){
  $operationCount=$global:demoFixtureOperations.Count
  & $launcher -Action Clean
  if($LASTEXITCODE -ne 0 -or $global:demoFixtureOperations.Count -ne $operationCount){throw 'Repeated cleanup changed resources'}
+ if($global:demoFixtureStopped.Count -ne $expectedStops){throw 'Repeated cleanup stopped additional processes'}
 }
 Write-Host "PASS: $Case"
 exit 0

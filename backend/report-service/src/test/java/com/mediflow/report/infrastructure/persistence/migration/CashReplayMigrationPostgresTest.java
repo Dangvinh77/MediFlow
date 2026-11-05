@@ -27,10 +27,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.report.application.dto.command.carefinance.DecodedCareFinanceEvent;
 import com.mediflow.report.application.dto.response.CashReplayProgress.Status;
 import com.mediflow.report.application.mapper.BillingCashReceiptMapper;
-import com.mediflow.report.application.service.CashReceiptApplicationService;
 import com.mediflow.report.application.service.CashReplayApplicationService;
 import com.mediflow.report.infrastructure.messaging.carefinance.CareFinanceEnvelopeDecoder;
-import com.mediflow.report.infrastructure.persistence.adapter.CashReceiptPersistenceAdapter;
+import com.mediflow.report.infrastructure.persistence.adapter.CashSnapshotCodec;
 import com.mediflow.report.infrastructure.persistence.adapter.CashReplayPersistenceAdapter;
 
 /** Real additive V12 source upgrade; historical data is not fabricated or backfilled. */
@@ -56,10 +55,32 @@ class CashReplayMigrationPostgresTest {
         var payload = new LinkedHashMap<>(event.payload());
         payload.put("completedAt", "2026-10-04T18:30:00.123456789Z");
         var accepted = new DecodedCareFinanceEvent(event.metadata(), payload);
-        var live = new CashReceiptApplicationService(new CashReceiptPersistenceAdapter(jdbc, new ObjectMapper()),
-                new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")),
-                org.mockito.Mockito.mock(com.mediflow.report.application.port.in.ApplyCashRefundUseCase.class));
-        transactions.executeWithoutResult(status -> live.apply(accepted));
+        // Seed the released V12 schema through its original column contract. The current
+        // writer requires V30 and must not be used to manufacture historical upgrade input.
+        var receipt = new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")).map(accepted);
+        var codec = new CashSnapshotCodec(new ObjectMapper());
+        var metadata = accepted.metadata();
+        var envelope = new LinkedHashMap<String, Object>();
+        envelope.put("eventId", metadata.eventId().toString());
+        envelope.put("eventType", metadata.eventType());
+        envelope.put("version", metadata.version());
+        envelope.put("occurredAt", metadata.occurredAt().toString());
+        envelope.put("correlationId", metadata.correlationId());
+        envelope.put("producer", metadata.producer());
+        envelope.put("payload", accepted.payload());
+        jdbc.update("""
+                INSERT INTO report_cash_receipt(transaction_id,first_event_id,invoice_id,payment_request_id,
+                    account_id,patient_id,department_id,care_episode_type,care_episode_id,classification,
+                    amount,currency,payment_method,completed_at,completed_at_iso,business_date,report_zone,
+                    payload_fingerprint,fact_fingerprint) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, receipt.transactionId(), metadata.eventId(), receipt.invoiceId(), receipt.paymentRequestId(),
+                receipt.accountId(), receipt.patientId(), receipt.departmentId(), receipt.careEpisodeType(),
+                receipt.careEpisodeId(), receipt.classification().name(), receipt.amount(), receipt.currency(),
+                receipt.paymentMethod(), java.sql.Timestamp.from(receipt.completedAt()), receipt.completedAt().toString(),
+                java.sql.Date.valueOf(receipt.businessDate()), receipt.reportZone(), codec.evidenceFingerprint(payload),
+                codec.fingerprint(receipt));
+        jdbc.update("INSERT INTO report_cash_delivery(event_id,transaction_id,envelope_fingerprint) VALUES (?,?,?)",
+                metadata.eventId(), receipt.transactionId(), codec.evidenceFingerprint(envelope));
         // Literal sorted JSON is the pre-refactor V12 receipt fingerprint contract. This is not
         // calculated via the new codec, so accidental hash-format changes cannot pass both sides.
         String legacyJson = """

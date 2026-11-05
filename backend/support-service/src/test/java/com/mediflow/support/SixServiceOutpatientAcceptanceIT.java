@@ -343,6 +343,8 @@ class SixServiceOutpatientAcceptanceIT {
     }
     private static final String JWT_SECRET = "clinical-packaged-acceptance-shared-secret-0123456789";
     private static final String PASSWORD = "Acceptance-pass-2026";
+    private static final String BOOTSTRAP_ADMIN = "acceptance.admin";
+    private static final String SECURITY_MAIL_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
@@ -392,7 +394,12 @@ class SixServiceOutpatientAcceptanceIT {
                     Map.entry("SPRING_PROFILES_ACTIVE", "local"),
                     Map.entry("MEDIFLOW_DEMO_SEED_ENABLED", "false"),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED", "true"),
-                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", "acceptance.admin"),
+                    // Isolated demo mailbox captures generated credentials; never sends real email.
+                    Map.entry("MEDIFLOW_DEMO_MAILBOX_ENABLED", "true"),
+                    Map.entry("MEDIFLOW_SECURITY_MAIL_DISPATCH_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_SECURITY_MAIL_KEY", SECURITY_MAIL_KEY),
+                    Map.entry("MANAGEMENT_HEALTH_MAIL_ENABLED", "false"),
+                    Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME", email(BOOTSTRAP_ADMIN)),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD", PASSWORD),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER", "999999999901"),
                     Map.entry("MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME", "Isolated Acceptance Admin"),
@@ -488,20 +495,21 @@ class SixServiceOutpatientAcceptanceIT {
             processes.add(start("gateway", gatewayJar, gatewayPort, Map.of(
                     "MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     "--eureka.client.service-url.defaultZone=" + eurekaUrl,
-                    "--spring.profiles.active=outpatient-mvp"));
+                    "--spring.profiles.active=outpatient-mvp",
+                    "--mediflow.demo-mailbox.enabled=true"));
             awaitHealthy(gatewayPort, "gateway");
             awaitRegistered(eurekaPort, "GATEWAY", "gateway");
 
             String gateway = "http://127.0.0.1:" + gatewayPort;
-            String setupAdmin = login(gateway, "acceptance.admin");
+            String setupAdmin = login(gateway, BOOTSTRAP_ADMIN);
             String unique = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             UUID departmentId = UUID.fromString(data(post(gateway, "/api/v1/org/departments", setupAdmin,
                     "departmentName", "Acceptance Clinical " + unique,
                     "abbreviation", ("AC" + unique.substring(0, 4)).toUpperCase(Locale.ROOT),
                     "departmentType", "CLINICAL", "location", "Acceptance site")).path("departmentId").asText());
 
-            UUID doctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "assigned");
-            UUID otherDoctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "other");
+            UUID doctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "doctor");
+            UUID otherDoctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "other-doctor");
             UUID nurseId = createStaff(gateway, setupAdmin, departmentId, unique, "NURSE", "nurse");
             UUID cashierId = createStaff(gateway, setupAdmin, departmentId, unique, "CASHIER", "cashier");
             createAccount(gateway, setupAdmin, "doctor-" + unique, "DOCTOR", doctorId);
@@ -520,7 +528,7 @@ class SixServiceOutpatientAcceptanceIT {
                     "bhytSo", null)).path("maBenhNhan").asText());
             createPatientAccount(gateway, setupAdmin, "patient-" + unique, patientId);
             createPatientAccount(gateway, setupAdmin, "other-patient-" + unique, otherPatientId);
-            UUID managerId = createStaff(gateway, setupAdmin, departmentId, unique, "ADMINISTRATIVE", "manager");
+            UUID managerId = createStaff(gateway, setupAdmin, departmentId, unique, "MANAGER", "manager");
             createAccount(gateway, setupAdmin, "manager-" + unique, "MANAGER", managerId);
             JsonNode patientSession = loginSession(gateway, "patient-" + unique);
             var patientTokens = new PatientTokens(patientSession.path("accessToken").asText(),
@@ -702,9 +710,9 @@ class SixServiceOutpatientAcceptanceIT {
         recordCheck(checks, "assigned-doctor-cancel", result, 200);
         assertThat(data(result).path("releasedReservations").asInt()).isEqualTo(1);
         var manifest = object("gateway", gateway, "createdAt", Instant.now(), "unique", unique,
-                "accounts", Map.of("ADMIN", "admin-" + unique, "DOCTOR", "doctor-" + unique,
-                        "OTHER_DOCTOR", "other-doctor-" + unique, "PHARMACIST", "pharmacist-" + unique,
-                        "CASHIER", "cashier-" + unique, "NURSE", "nurse-" + unique),
+                "accounts", Map.of("ADMIN", email("admin-" + unique), "DOCTOR", email("doctor-" + unique),
+                        "OTHER_DOCTOR", email("other-doctor-" + unique), "PHARMACIST", email("pharmacist-" + unique),
+                        "CASHIER", email("cashier-" + unique), "NURSE", email("nurse-" + unique)),
                 "sourceRecord", record, "sourceOrder", source, "drug", drug, "prescriptionRequest", body,
                 "cancelledPrescriptionId", cancelledRx.path("prescriptionId").asText(), "roleChecks", checks,
                 "pricePolicy", "mediflow.billing.prescription-charges.allowed-price-codes=DRUG");
@@ -1017,7 +1025,7 @@ class SixServiceOutpatientAcceptanceIT {
         LocalDate day = LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
         int year = day.getYear();
         UUID staff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-admin");
-        UUID managerStaff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-manager");
+        UUID managerStaff = createStaff(gateway, bootstrap, department, unique, "MANAGER", "report-manager");
         String adminName = "report-admin-" + unique, managerName = "report-manager-" + unique;
         createAccount(gateway, bootstrap, adminName, "ADMIN", staff);
         createAccount(gateway, bootstrap, managerName, "MANAGER", managerStaff);
@@ -1107,8 +1115,8 @@ class SixServiceOutpatientAcceptanceIT {
                         "reportApplicationClock",calendarEnd,"systemAndJwtClocksUnchanged",true,
                         "approval",approval,"checks",checks)));
         Files.writeString(work.resolve("report-browser-manifest.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
-                object("gateway",gateway,"unique",unique,"ADMIN",adminName,"MANAGER",managerName,
-                        "DOCTOR","doctor-"+unique,"departmentId",department,"date",day,"year",year,
+                object("gateway",gateway,"unique",unique,"ADMIN",email(adminName),"MANAGER",email(managerName),
+                        "DOCTOR",email("doctor-"+unique),"departmentId",department,"date",day,"year",year,
                         "reportApplicationClock",calendarEnd,"dailyPath",daily,"monthlyPath",monthly)));
         if ("true".equals(System.getenv("MEDIFLOW_FE_REPORT_BROWSER_HOLD"))) {
             Path stopFile = work.resolve("report-browser-stop"); Files.deleteIfExists(stopFile);
@@ -1215,26 +1223,60 @@ class SixServiceOutpatientAcceptanceIT {
         return UUID.fromString(staff.path("staffId").asText());
     }
 
+    private static String email(String name) {
+        return name.contains("@") ? name : name + "@example.test";
+    }
+
     private void createAccount(String gateway, String adminToken, String username,
                                String role, UUID staffId) throws Exception {
-        post(gateway, "/api/v1/org/accounts", adminToken,
-                "username", username, "password", PASSWORD, "staffId", staffId.toString(),
-                "patientId", null, "role", role);
+        JsonNode account = data(post(gateway, "/api/v1/org/accounts", adminToken,
+                "username", email(username), "staffId", staffId.toString(),
+                "patientId", null, "role", role));
+        completeFirstLogin(gateway, email(username), account);
+    }
+
+    private void createPatientAccount(String gateway, String adminToken, String username, UUID patientId) throws Exception {
+        JsonNode account = data(post(gateway, "/api/v1/org/patient-accounts", adminToken,
+                "patientId", patientId.toString()));
+        assertThat(account.path("username").asText()).isEqualTo(email(username));
+        completeFirstLogin(gateway, email(username), account);
+    }
+
+    /** Reads the generated temporary password from the demo mailbox and replaces it, as a user would. */
+    private void completeFirstLogin(String gateway, String email, JsonNode account) throws Exception {
+        // Explicitly register only this generated fixture account in the isolated Organization
+        // demo registry. Mailbox access requires seed provenance, not an email suffix or a flag.
+        // This is credential fixture setup, never a business lookup across context databases.
+        UUID accountId = UUID.fromString(account.path("accountId").asText());
+        UUID messageId = UUID.fromString(account.path("mailDelivery").path("messageId").asText());
+        String seedKey = "six-service-acceptance-" + accountId;
+        JdbcTemplate organization = store("organization");
+        organization.update("INSERT INTO local_demo_seed_receipt(seed_key,entity_id) VALUES (?,?)", seedKey, accountId);
+        organization.update("INSERT INTO local_demo_mailbox_account(account_id,seed_key,synthetic_email) VALUES (?,?,?)",
+                accountId, seedKey, email);
+        organization.update("UPDATE security_mail_message SET demo_mailbox=true,status='SENT',sent_at=now() WHERE message_id=? AND account_id=?",
+                messageId, accountId);
+        JsonNode message = data(request(gateway, "GET",
+                "/api/v1/demo/mailbox/accounts/" + accountId + "/messages/" + messageId, null, null));
+        String temporary = message.path("textBody").asText().lines()
+                .filter(line -> line.startsWith("Mật khẩu tạm: ")).findFirst().orElseThrow()
+                .substring("Mật khẩu tạm: ".length());
+        String initial = loginSession(gateway, email, temporary).path("accessToken").asText();
+        successful(request(gateway, "PUT", "/api/v1/org/accounts/me/password", initial,
+                JSON.writeValueAsString(Map.of("currentPassword", temporary, "newPassword", PASSWORD))));
     }
 
     private String login(String gateway, String username) throws Exception {
         return loginSession(gateway, username).path("accessToken").asText();
     }
 
-    private void createPatientAccount(String gateway, String adminToken, String username, UUID patientId) throws Exception {
-        post(gateway, "/api/v1/org/accounts", adminToken,
-                "username", username, "password", PASSWORD, "staffId", null,
-                "patientId", patientId.toString(), "role", "PATIENT");
+    private JsonNode loginSession(String gateway, String username) throws Exception {
+        return loginSession(gateway, email(username), PASSWORD);
     }
 
-    private JsonNode loginSession(String gateway, String username) throws Exception {
+    private JsonNode loginSession(String gateway, String email, String password) throws Exception {
         HttpResponse<String> response = request(gateway, "POST", "/api/v1/auth/login", null,
-                JSON.writeValueAsString(Map.of("username", username, "password", PASSWORD)));
+                JSON.writeValueAsString(Map.of("username", email, "password", password)));
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         JsonNode session = JSON.readTree(response.body());
         assertThat(session.path("accessToken").asText()).isNotBlank();
@@ -1277,6 +1319,9 @@ class SixServiceOutpatientAcceptanceIT {
                 .timeout(Duration.ofSeconds(30)).header("Accept", "application/json");
         if (token != null) {
             builder.header("Authorization", "Bearer " + token);
+        }
+        if ("POST".equals(method) && List.of("/api/v1/org/accounts", "/api/v1/org/patient-accounts").contains(path)) {
+            builder.header("Idempotency-Key", UUID.randomUUID().toString());
         }
         if (body != null) {
             builder.header("Content-Type", "application/json");

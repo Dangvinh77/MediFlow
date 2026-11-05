@@ -11,7 +11,17 @@ import { isSaveOutcomeUnknown } from "../save-outcome";
 import type { MailDelivery } from "../types";
 
 const labels = { PENDING: "Đang chờ gửi", SENT: "Đã chuyển đến máy chủ email / hộp thư demo", FAILED: "Gửi email chưa thành công" };
-export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { accountId: string; username: string; onEmailChanged?: () => void }) {
+interface AdminAccountSecurityProps {
+  accountId: string;
+  username: string;
+  patientIdForMail?: string;
+  allowEmailChange?: boolean;
+  emailSyncPending?: boolean;
+  disablePasswordActions?: boolean;
+  onEmailChanged?: () => void;
+}
+
+export function AdminAccountSecurity({ accountId, username, patientIdForMail, allowEmailChange = true, emailSyncPending = false, disablePasswordActions = false, onEmailChanged }: AdminAccountSecurityProps) {
   const alive = useRef(true), lock = useRef(false);
   const [delivery, setDelivery] = useState<MailDelivery | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,13 +38,15 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
     let disposed = false;
     const session = getSessionKey();
     const revision = deliveryRevision.current;
-    Promise.resolve().then(() => organizationApi.mailDelivery(accountId)).then(result => { if (!disposed && getSessionKey() === session && deliveryRevision.current === revision) setDelivery(result); }).catch(cause => {
+    Promise.resolve().then(() => patientIdForMail
+      ? organizationApi.patientMailDelivery(patientIdForMail)
+      : organizationApi.mailDelivery(accountId)).then(result => { if (!disposed && getSessionKey() === session && deliveryRevision.current === revision) setDelivery(result); }).catch(cause => {
       if (!disposed && getSessionKey() === session && deliveryRevision.current === revision && !(cause instanceof ApiRequestError && cause.status === 404)) setError(cause instanceof Error ? cause.message : "Chưa đọc được trạng thái gửi thư.");
     });
     return () => { disposed = true; };
-  }, [accountId, attempt]);
+  }, [accountId, attempt, patientIdForMail]);
   async function action(kind: "reset" | "retry" | "email" | "checkEmail") {
-    if (lock.current || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail")) return;
+    if (lock.current || (disablePasswordActions && (kind === "reset" || kind === "retry")) || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail") || (!allowEmailChange && (kind === "email" || kind === "checkEmail"))) return;
     if (kind === "reset" && !unknown && !window.confirm(`Cấp mật khẩu tạm mới và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
     const session = getSessionKey();
     const current = () => alive.current && getSessionKey() === session;
@@ -43,24 +55,47 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
     let intent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     try {
       if (kind === "reset") {
-        intent = await prepareCreation("account", session, { accountId, purpose: "admin-password-reset" }, `password:${accountId}`);
+        intent = await prepareCreation("account", session, patientIdForMail
+          ? { patientId: patientIdForMail, purpose: "patient-password-reset" }
+          : { accountId, purpose: "admin-password-reset" }, `password:${patientIdForMail ?? accountId}`);
         if (!current()) { intent.cancelUnsent(); return; }
-        const result = await organizationApi.resetPassword(accountId, intent.key);
+        const result = patientIdForMail
+          ? await organizationApi.resetPatientPassword(patientIdForMail, intent.key)
+          : await organizationApi.resetPassword(accountId, intent.key);
         intent.settle();
         if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
       } else if (kind === "retry" && delivery) {
-        const result = await organizationApi.retryMail(accountId, delivery.messageId);
+        const result = patientIdForMail
+          ? await organizationApi.retryPatientMail(patientIdForMail, delivery.messageId)
+          : await organizationApi.retryMail(accountId, delivery.messageId);
         if (current()) { setDelivery(result); setNotice("Đã yêu cầu gửi lại đúng thư này; mật khẩu không bị đặt lại lần nữa."); }
       } else if (kind === "checkEmail") {
-        const result = await organizationApi.account(accountId);
+        const profile = patientIdForMail
+          ? await organizationApi.profileAccount("patient", patientIdForMail)
+          : null;
+        const result = patientIdForMail ? profile?.account : await organizationApi.account(accountId);
+        if (patientIdForMail && (!profile || typeof profile.emailSyncPending !== "boolean")) {
+          throw new Error("Chưa xác minh được trạng thái đồng bộ của hồ sơ bệnh nhân. Vui lòng tải lại hồ sơ.");
+        }
+        if (!result || (patientIdForMail && (result.accountId !== accountId || result.patientId !== patientIdForMail || result.staffId !== null || result.role !== "PATIENT"))) {
+          throw new Error("Chưa xác minh được tài khoản của bệnh nhân. Vui lòng tải lại hồ sơ.");
+        }
         if (current()) {
           if (result.username.toLowerCase() === email.trim().toLowerCase()) {
-            setEmailUnknown(false); setNotice("Đã xác nhận email đăng nhập mới."); onEmailChanged?.();
+            setEmailUnknown(false);
+            if (patientIdForMail && profile?.emailSyncPending) {
+              setNotice("Email đăng nhập đã khớp, nhưng hồ sơ vẫn chờ đồng bộ. Có thể lưu lại cùng email để gửi yêu cầu đồng bộ.");
+            } else {
+              setReason("");
+              setNotice("Đã xác nhận email đăng nhập mới.");
+            }
+            onEmailChanged?.();
           } else setNotice(`Email hiện tại là ${result.username}. Chưa xác nhận thay đổi; hãy kiểm tra lại sau.`);
         }
       } else if (kind === "email") {
-        await organizationApi.updateAccountEmail(accountId, email.trim(), reason.trim());
-        if (current()) { setReason(""); setNotice("Đã cập nhật email đăng nhập. Các phiên và link khôi phục cũ đã bị vô hiệu hóa."); onEmailChanged?.(); }
+        if (patientIdForMail) await organizationApi.updatePatientEmail(patientIdForMail, email.trim(), reason.trim());
+        else await organizationApi.updateAccountEmail(accountId, email.trim(), reason.trim());
+        if (current()) { setReason(""); setNotice(email.trim().toLowerCase() === username.toLowerCase() ? "Đã yêu cầu đồng bộ email hồ sơ theo email đăng nhập hiện tại." : "Đã cập nhật email đăng nhập. Các phiên và link khôi phục cũ đã bị vô hiệu hóa."); onEmailChanged?.(); }
       }
     } catch (cause) {
       intent?.settle(cause);
@@ -72,19 +107,21 @@ export function AdminAccountSecurity({ accountId, username, onEmailChanged }: { 
       }
     } finally { lock.current = false; if (current()) setBusy(false); }
   }
-  function submitEmail(event: FormEvent) { event.preventDefault(); if (email.trim() !== username && reason.trim()) void action("email"); }
+  const unchangedEmail = email.trim().toLowerCase() === username.toLowerCase();
+  function submitEmail(event: FormEvent) { event.preventDefault(); if ((!unchangedEmail || emailSyncPending) && reason.trim()) void action("email"); }
   return <section className="space-y-5 rounded-xl border border-border bg-surface p-5 sm:p-6">
     <h2 className="text-lg font-semibold">Bảo mật & gửi email tài khoản</h2>
     <p className="text-sm leading-6 text-muted-foreground">Sau khi xác minh người yêu cầu, bạn có thể cấp mật khẩu tạm và gửi hướng dẫn đến email đăng nhập. Email giả của seed được chuyển vào hộp thư demo.</p>
     {delivery ? <p role="status" className="rounded-lg bg-surface-muted p-3 text-sm">Trạng thái thư gần nhất: <strong>{labels[delivery.status]}</strong></p> : null}
     {notice ? <p role="status" className="text-sm leading-6 text-success">{notice}</p> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
+    {disablePasswordActions ? <p role="status" className="text-sm text-warning">Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh.</p> : null}
+    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
     {emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning">Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục.</p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}>Kiểm tra kết quả đổi email</Button></div> : null}
     {unknown ? <p className="text-sm text-warning">Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại.</p> : null}
-    <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
-      <h3 className="font-semibold">Đổi email đăng nhập</h3><p className="text-sm text-muted-foreground">Chỉ quản trị viên được thay đổi. Kiểm tra kỹ người sở hữu trước khi lưu.</p>
-      <fieldset disabled={busy || unknown || emailUnknown} className="grid gap-4 sm:grid-cols-2"><Field label="Email đăng nhập mới" htmlFor="admin-account-email"><input id="admin-account-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className={controlClassName} /></Field><Field label="Lý do thay đổi email" htmlFor="admin-email-reason"><input id="admin-email-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} className={controlClassName} /></Field><div><Button type="submit" disabled={email.trim() === username || !reason.trim()} loading={busy}>Lưu email mới</Button></div></fieldset>
-    </form>
+    {allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
+      <h3 className="font-semibold">Đổi email đăng nhập</h3><p className="text-sm text-muted-foreground">{patientIdForMail ? "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ." : "Chỉ quản trị viên được đổi email tại trang quản lý tài khoản."} Kiểm tra kỹ người sở hữu trước khi lưu.</p>
+      <fieldset disabled={busy || unknown || emailUnknown} className="grid gap-4 sm:grid-cols-2"><Field label="Email đăng nhập mới" htmlFor="admin-account-email"><input id="admin-account-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className={controlClassName} /></Field><Field label="Lý do thay đổi email" htmlFor="admin-email-reason"><input id="admin-email-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} className={controlClassName} /></Field><div><Button type="submit" disabled={(unchangedEmail && !emailSyncPending) || !reason.trim()} loading={busy}>Lưu email mới</Button></div></fieldset>
+    </form> : null}
   </section>;
 }

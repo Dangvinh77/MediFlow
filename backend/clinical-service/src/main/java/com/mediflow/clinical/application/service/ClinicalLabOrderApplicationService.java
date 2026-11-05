@@ -22,6 +22,7 @@ import com.mediflow.clinical.domain.model.MedicalRecordStatus;
 import java.time.Instant;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -39,6 +40,8 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
     private final ClinicalStaffAuthority staffAuthority;
     private final boolean outpatientMvpEnabled;
     private final boolean careFinanceV2Enabled;
+    /** Billing's LAB_TEST catalogue codes; empty keeps the historical accept-any behaviour. */
+    private final List<String> labPriceCodes;
     private final Clock clock;
 
     public ClinicalLabOrderApplicationService(AppointmentRepositoryPort appointments,
@@ -49,6 +52,8 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
                                               OutpatientMvpMode outpatientMvpMode,
                                               @Value("${mediflow.features.care-finance-v2.enabled:false}")
                                               boolean careFinanceV2Enabled,
+                                              @Value("${mediflow.clinical.lab-orders.price-codes:}")
+                                              List<String> labPriceCodes,
                                               @Qualifier("clinicalLabOrderClock") Clock clock) {
         this.appointments = appointments;
         this.records = records;
@@ -56,6 +61,8 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         this.staffAuthority = new ClinicalStaffAuthority(actors, staff);
         this.outpatientMvpEnabled = outpatientMvpMode.enabled();
         this.careFinanceV2Enabled = careFinanceV2Enabled;
+        this.labPriceCodes = labPriceCodes == null ? List.of()
+                : labPriceCodes.stream().map(String::trim).filter(code -> !code.isEmpty()).toList();
         this.clock = clock;
     }
 
@@ -69,6 +76,14 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         if (request.requestedDate() == null) {
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_INVALID",
                     "A Lab order date is required");
+        }
+        // Billing only learns the code asynchronously and dead-letters unknown ones, leaving a Lab
+        // test with no payment request. Reject here while the doctor can still correct it.
+        if (!labPriceCodes.isEmpty() && request.priceCode() != null && !request.priceCode().isBlank()
+                && !labPriceCodes.contains(request.priceCode())) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_PRICE_CODE_UNKNOWN",
+                    "Mã giá xét nghiệm không có trong bảng giá: " + request.priceCode().trim()
+                            + ". Mã hợp lệ: " + String.join(", ", labPriceCodes));
         }
 
         MedicalRecord record = records.findByIdForUpdate(recordId)

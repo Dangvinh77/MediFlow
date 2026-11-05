@@ -54,6 +54,16 @@ class AppointmentEdit {
   final String? reason;
 }
 
+/// Payment and arrival state of a V2 registration, read before a doctor starts.
+class ScheduledExamReadiness {
+  const ScheduledExamReadiness({
+    required this.readyForExam,
+    required this.checkedInAt,
+  });
+  final bool readyForExam;
+  final String? checkedInAt;
+}
+
 abstract interface class AppointmentRepository {
   Future<PageResult<Appointment>> search({
     int page = 0,
@@ -65,6 +75,7 @@ abstract interface class AppointmentRepository {
   Future<Appointment> update(String appointmentId, AppointmentEdit edit);
   Future<Appointment> checkIn(String appointmentId);
   Future<Appointment> startExam(String appointmentId);
+  Future<ScheduledExamReadiness> examReadiness(String registrationId);
   Future<Appointment> cancel(String appointmentId);
 }
 
@@ -157,12 +168,27 @@ bool canStartAppointment(
   Appointment appointment, {
   required String? role,
   required bool outpatientEnabled,
+  bool scheduledReady = false,
+}) {
+  if (!outpatientEnabled || appointment.status != 'READY_FOR_EXAM') {
+    return false;
+  }
+  if (appointment.careContractVersion >= 2) {
+    return role == 'DOCTOR' && scheduledReady;
+  }
+  return const {'ADMIN', 'DOCTOR'}.contains(role) &&
+      appointment.careContractVersion == 1 &&
+      appointment.examClearanceId?.trim().isNotEmpty == true;
+}
+
+/// Scheduled visits expose their start condition only on the V2 registration.
+bool needsScheduledReadiness(
+  Appointment appointment, {
+  required String? role,
 }) =>
-    outpatientEnabled &&
-    const {'ADMIN', 'DOCTOR'}.contains(role) &&
-    appointment.careContractVersion == 1 &&
-    appointment.status == 'READY_FOR_EXAM' &&
-    appointment.examClearanceId?.trim().isNotEmpty == true;
+    role == 'DOCTOR' &&
+    appointment.careContractVersion >= 2 &&
+    appointment.status == 'READY_FOR_EXAM';
 
 bool canCancelAppointment(Appointment appointment, {required String? role}) =>
     canEditAppointment(appointment, role: role);

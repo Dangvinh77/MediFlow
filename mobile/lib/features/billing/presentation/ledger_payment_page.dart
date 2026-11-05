@@ -7,6 +7,8 @@ import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/billing_commands.dart';
 import '../domain/billing_models.dart';
+import '../domain/lab_quote_payment.dart';
+import 'lab_quote_payment_panel.dart';
 
 String _uuidKey() {
   final random = Random.secure();
@@ -31,9 +33,21 @@ int? _minorUnits(String raw) {
 }
 
 class LedgerPaymentPage extends StatefulWidget {
-  const LedgerPaymentPage({super.key, required this.repository, this.source});
+  const LedgerPaymentPage({
+    super.key,
+    required this.repository,
+    this.source,
+    this.labQuotes,
+    this.labRecovery,
+    this.labZeroEnabled = false,
+  });
   final BillingRepository repository;
   final PaymentRequestSource? source;
+
+  /// Set both to collect lab fees from the Billing quote instead of a typed amount.
+  final LabQuotePaymentRepository? labQuotes;
+  final LabPaymentRecoveryStore? labRecovery;
+  final bool labZeroEnabled;
   @override
   State<LedgerPaymentPage> createState() => _LedgerPaymentPageState();
 }
@@ -55,7 +69,8 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
       _busy = false,
       _confirmed = false,
       _locked = false,
-      _reconciling = false;
+      _reconciling = false,
+      _labZeroConfirmed = false;
   int _generation = 0, _paymentRevision = 0;
 
   @override
@@ -272,6 +287,21 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
     }
   }
 
+  bool get _labQuoteFlow =>
+      _purpose == 'LAB_TEST' &&
+      widget.labQuotes != null &&
+      widget.labRecovery != null;
+
+  void _labPaid(LedgerPayment payment) {
+    final paymentRevision = ++_paymentRevision;
+    setState(() {
+      _receipt = payment;
+      _locked = true;
+    });
+    _showMessage('Billing đã ghi nhận giao dịch.');
+    _refreshAfterPayment(revision: paymentRevision);
+  }
+
   void _showMessage(String value) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   }
@@ -443,7 +473,27 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                 onPressed: _busy || _reconciling ? null : _nextCollection,
                 child: const Text('Thu khoản tiếp theo'),
               ),
-            if ((item.status == 'PENDING' || item.status == 'PARTIALLY_PAID') &&
+            if (_labZeroConfirmed)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text('Đã xác nhận nghĩa vụ 0 đồng.'),
+              ),
+            if (_labQuoteFlow &&
+                !_labZeroConfirmed &&
+                _receipt == null &&
+                (item.status == 'PENDING' || item.status == 'PARTIALLY_PAID'))
+              LabQuotePaymentPanel(
+                key: ValueKey(item.paymentRequestId),
+                paymentRequestId: item.paymentRequestId,
+                repository: widget.labQuotes!,
+                recoveryStore: widget.labRecovery!,
+                zeroEnabled: widget.labZeroEnabled,
+                onLockChange: (locked) => setState(() => _locked = locked),
+                onPaid: _labPaid,
+                onZeroConfirmed: () => setState(() => _labZeroConfirmed = true),
+              ),
+            if (!_labQuoteFlow &&
+                (item.status == 'PENDING' || item.status == 'PARTIALLY_PAID') &&
                 !(_locked && _receipt?.status == 'COMPLETED')) ...[
               const SizedBox(height: 16),
               TextField(

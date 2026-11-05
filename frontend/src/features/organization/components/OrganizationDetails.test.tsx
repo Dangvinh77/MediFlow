@@ -6,13 +6,14 @@ import { departmentContractFixture, staffContractFixture } from "../contract.fix
 
 const mocks = vi.hoisted(() => ({
   department: vi.fn(), staffMember: vi.fn(), staff: vi.fn(async () => ({ content: [] as StaffDTO[], totalPages: 0 })),
+  profileAccount: vi.fn(async () => ({ account: null, profileEmail: null, emailSyncPending: false })),
   getRole: vi.fn(() => "ADMIN"),
   getSessionKey: vi.fn<() => string | null>(() => "session-a"),
   router: { replace: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey, getRole: mocks.getRole, subscribeToAuthChanges: () => () => {} }));
-vi.mock("../api", () => ({ organizationApi: { department: mocks.department, staffMember: mocks.staffMember, staff: mocks.staff } }));
+vi.mock("../api", () => ({ organizationApi: { department: mocks.department, staffMember: mocks.staffMember, staff: mocks.staff, profileAccount: mocks.profileAccount } }));
 
 import { DepartmentDetail } from "./DepartmentDetail";
 import { StaffDetail } from "./StaffDetail";

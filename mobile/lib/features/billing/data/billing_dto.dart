@@ -1,5 +1,7 @@
 import '../../../core/network/json_reader.dart';
 import '../domain/billing_models.dart';
+import '../domain/lab_quote_payment.dart';
+import '../domain/scheduled_payments.dart';
 
 abstract final class BillingDto {
   static Map<String, dynamic> object(Object? value) {
@@ -56,6 +58,20 @@ abstract final class BillingDto {
     final fraction = (match.group(2) ?? '').padRight(2, '0');
     final cents = fraction.isEmpty ? 0 : int.parse(fraction);
     return Money(whole * 100 + cents);
+  }
+
+  static Money decimalMoney(Map<String, dynamic> json, String key) {
+    final value = JsonReader.string(json, key);
+    final match = RegExp(r'^(0|[1-9]\d*)(?:\.(\d{1,2}))?$').firstMatch(value);
+    if (match == null) {
+      throw FormatException('Số tiền $key không hợp lệ.');
+    }
+    final whole = int.tryParse(match.group(1)!);
+    if (whole == null || whole > 90071992547409) {
+      throw FormatException('Số tiền $key vượt giới hạn an toàn.');
+    }
+    final fraction = (match.group(2) ?? '').padRight(2, '0');
+    return Money(whole * 100 + (fraction.isEmpty ? 0 : int.parse(fraction)));
   }
 
   static String date(Map<String, dynamic> json, String key) {
@@ -124,6 +140,155 @@ abstract final class BillingDto {
       fees: List.unmodifiable(fees.map((item) => fee(object(item)))),
     );
   }
+
+  static ScheduledPaymentQueueItem scheduledPaymentQueueItem(
+    Map<String, dynamic> json,
+  ) => ScheduledPaymentQueueItem(
+    registrationId: uuid(json, 'registrationId'),
+    patientId: uuid(json, 'patientId'),
+    departmentId: uuid(json, 'departmentId'),
+    createdAt: instant(json, 'createdAt'),
+    expiresAt: instant(json, 'expiresAt'),
+  );
+
+  static RegistrationPaymentRequest scheduledPaymentRequest(Object? value) {
+    final json = object(value);
+    final request = RegistrationPaymentRequest(
+      paymentRequestId: uuid(json, 'paymentRequestId'),
+      invoiceId: uuid(json, 'invoiceId'),
+      accountId: uuid(json, 'accountId'),
+      registrationId: uuid(json, 'registrationId'),
+      reservationId: uuid(json, 'reservationId'),
+      reservationRevision: integer(json, 'reservationRevision', min: 1),
+      patientId: uuid(json, 'patientId'),
+      departmentId: uuid(json, 'departmentId'),
+      sourceType: JsonReader.string(json, 'sourceType'),
+      sourceId: uuid(json, 'sourceId'),
+      careEpisodeType: JsonReader.string(json, 'careEpisodeType'),
+      careEpisodeId: uuid(json, 'careEpisodeId'),
+      requestedAmount: decimalMoney(json, 'requestedAmount'),
+      paidAmount: decimalMoney(json, 'paidAmount'),
+      remainingAmount: decimalMoney(json, 'remainingAmount'),
+      currency: oneOf(json, 'currency', const {'VND'}),
+      status: oneOf(json, 'status', const {
+        'PENDING',
+        'PARTIALLY_PAID',
+        'PAID',
+        'EXPIRED',
+        'CANCELLED',
+      }),
+      expiresAt: optionalInstant(json, 'expiresAt'),
+      observedAt: instant(json, 'observedAt'),
+    );
+    if (request.paidAmount.minorUnits > request.requestedAmount.minorUnits ||
+        request.remainingAmount.minorUnits !=
+            request.requestedAmount.minorUnits -
+                request.paidAmount.minorUnits) {
+      throw const FormatException('Số dư khoản thu không khớp số đã thu.');
+    }
+    return request;
+  }
+
+  static OutpatientQuote outpatientQuote(Object? value) {
+    final json = object(value);
+    final lines = json['lines'];
+    if (lines is! List) {
+      throw const FormatException('Dữ liệu lines không hợp lệ.');
+    }
+    return OutpatientQuote(
+      quoteId: uuid(json, 'quoteId'),
+      paymentRequestId: uuid(json, 'paymentRequestId'),
+      patientId: uuid(json, 'patientId'),
+      careEpisodeType: JsonReader.string(json, 'careEpisodeType'),
+      careEpisodeId: uuid(json, 'careEpisodeId'),
+      currency: oneOf(json, 'currency', const {'VND'}),
+      lines: List.unmodifiable(
+        lines.map((value) {
+          final row = object(value);
+          return OutpatientQuoteLine(
+            sourceId: uuid(row, 'sourceId'),
+            sourceType: JsonReader.string(row, 'sourceType'),
+            priceCode: JsonReader.string(row, 'priceCode'),
+            catalogueVersion: JsonReader.string(row, 'catalogueVersion'),
+            policyVersion: JsonReader.string(row, 'policyVersion'),
+            description: JsonReader.string(row, 'description'),
+            quantity: JsonReader.string(row, 'quantity'),
+            unitPrice: decimalMoney(row, 'unitPrice'),
+            grossAmount: decimalMoney(row, 'grossAmount'),
+            supportRate: JsonReader.string(row, 'supportRate'),
+            supportAmount: decimalMoney(row, 'supportAmount'),
+            patientPayable: decimalMoney(row, 'patientPayable'),
+          );
+        }),
+      ),
+      grossAmount: decimalMoney(json, 'grossAmount'),
+      supportAmount: decimalMoney(json, 'supportAmount'),
+      patientPayable: decimalMoney(json, 'patientPayable'),
+      issuedAt: instant(json, 'issuedAt'),
+      expiresAt: instant(json, 'expiresAt'),
+    );
+  }
+
+  static ScheduledPaymentResult scheduledPaymentResult(Object? value) {
+    final json = object(value);
+    final operationJson = object(json['operation']);
+    final operation = ScheduledPaymentOperation(
+      paymentOperationId: uuid(operationJson, 'paymentOperationId'),
+      paymentRequestId: uuid(operationJson, 'paymentRequestId'),
+      registrationId: uuid(operationJson, 'registrationId'),
+      reservationId: uuid(operationJson, 'reservationId'),
+      status: oneOf(operationJson, 'status', const {
+        'PREPARING',
+        'COMPLETED',
+        'CLOSED_NOT_PAID',
+      }),
+      transactionId: optionalUuid(operationJson, 'transactionId'),
+      amount: JsonReader.string(operationJson, 'amount'),
+      currency: oneOf(operationJson, 'currency', const {'VND'}),
+      createdAt: instant(operationJson, 'createdAt'),
+      updatedAt: instant(operationJson, 'updatedAt'),
+      basis: oneOf(operationJson, 'basis', const {
+        'PATIENT_PAYMENT',
+        'ZERO_LIABILITY',
+      }),
+      quoteId: optionalUuid(operationJson, 'quoteId'),
+      completedAt: optionalInstant(operationJson, 'completedAt'),
+    );
+    final paymentValue = json['payment'];
+    final payment = paymentValue == null
+        ? null
+        : _scheduledLedgerPayment(object(paymentValue));
+    final clearanceId = optionalUuid(json, 'clearanceId');
+    if (operation.status == 'COMPLETED' &&
+            (operation.basis == 'PATIENT_PAYMENT' && payment == null ||
+                operation.basis == 'ZERO_LIABILITY' && clearanceId == null) ||
+        operation.status != 'COMPLETED' &&
+            (payment != null || clearanceId != null)) {
+      throw const FormatException('Kết quả thanh toán lịch khám không hợp lệ.');
+    }
+    return ScheduledPaymentResult(
+      operation: operation,
+      payment: payment,
+      clearanceId: clearanceId,
+    );
+  }
+
+  static ScheduledLedgerPayment _scheduledLedgerPayment(
+    Map<String, dynamic> json,
+  ) => ScheduledLedgerPayment(
+    transactionId: uuid(json, 'transactionId'),
+    accountId: uuid(json, 'accountId'),
+    paymentRequestId: uuid(json, 'paymentRequestId'),
+    classification: oneOf(json, 'classification', const {'SERVICE_PAYMENT'}),
+    status: oneOf(json, 'status', const {'COMPLETED'}),
+    amount: JsonReader.string(json, 'amount'),
+    currency: oneOf(json, 'currency', const {'VND'}),
+    paymentMethod: oneOf(json, 'paymentMethod', const {
+      'CASH',
+      'BANK_TRANSFER',
+    }),
+    completedAt: instant(json, 'completedAt'),
+  );
 
   static Fee fee(Map<String, dynamic> json) => Fee(
     id: uuid(json, 'feeId'),
@@ -209,6 +374,16 @@ abstract final class BillingDto {
       }),
       expiresAt: optionalInstant(json, 'expiresAt'),
       observedAt: instant(json, 'observedAt'),
+    );
+  }
+
+  static LabZeroLiabilityReceipt labZeroLiabilityReceipt(Object? value) {
+    final json = object(value);
+    return LabZeroLiabilityReceipt(
+      eligibilityOperationId: uuid(json, 'eligibilityOperationId'),
+      paymentRequestId: uuid(json, 'paymentRequestId'),
+      quoteId: uuid(json, 'quoteId'),
+      clearanceId: uuid(json, 'clearanceId'),
     );
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { getRole } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
@@ -13,18 +13,28 @@ import { ReportRequestFeedback } from "./ReportRequestFeedback";
 interface Props {
   departmentId?: string;
   mode: "daily" | "monthly";
-  onSelect: (period: OutpatientAvailablePeriodDTO) => void;
+  /** Discover on mount and hand the most recently accepted period to `onSelect` once. */
+  autoSelectLatest?: boolean;
+  onSelect: (period: OutpatientAvailablePeriodDTO, automatic?: boolean) => void;
 }
 
-export function OutpatientAvailablePeriods({ departmentId, mode, onSelect }: Props) {
+export function OutpatientAvailablePeriods({ departmentId, mode, autoSelectLatest = false, onSelect }: Props) {
   const request = useCallback(() => reportApi.availablePeriods(departmentId), [departmentId]);
-  const { state, load, retry } = useReportRequest(request, false);
   const needsDepartment = getRole() === "MANAGER" && !departmentId;
+  const { state, load, retry } = useReportRequest(request, autoSelectLatest && !needsDepartment);
   const periods = state.status === "success"
     ? state.data.filter(item => mode === "daily" || (
       item.fromDate.endsWith("-01-01") && item.toDate === `${item.fromDate.slice(0, 4)}-12-31`
     ))
     : [];
+  const latest = periods[0];
+  const autoSelected = useRef(false);
+  useEffect(() => {
+    // The server orders candidates by acceptance, newest first; only accepted coverage is listed.
+    if (!autoSelectLatest || autoSelected.current || !latest) return;
+    autoSelected.current = true;
+    onSelect(latest, true);
+  }, [autoSelectLatest, latest, onSelect]);
   return <section aria-label="Kỳ có dữ liệu đã đối soát" className="mt-4 space-y-3 rounded-xl border border-border bg-surface p-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="font-semibold">Kỳ có dữ liệu đã đối soát</h2>

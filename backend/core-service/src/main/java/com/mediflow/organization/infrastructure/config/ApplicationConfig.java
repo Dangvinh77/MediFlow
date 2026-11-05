@@ -14,6 +14,7 @@ import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
 import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
+import com.mediflow.organization.application.port.in.LookupProfileAccountUseCase;
 import com.mediflow.organization.application.port.in.ManageScheduleManagementScopeUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
@@ -37,6 +38,7 @@ import com.mediflow.organization.application.service.LookupDepartmentService;
 import com.mediflow.organization.application.service.LookupRoomService;
 import com.mediflow.organization.application.service.LookupStaffIdentityService;
 import com.mediflow.organization.application.service.LookupAccountIdentityService;
+import com.mediflow.organization.application.service.LookupProfileAccountService;
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
@@ -109,6 +111,13 @@ public class ApplicationConfig {
                         AccountRepository accountRepository,
                         StaffRepository staffRepository) {
                 return new LookupAccountIdentityService(accountRepository, staffRepository);
+        }
+
+        @Bean
+        public LookupProfileAccountUseCase lookupProfileAccountUseCase(
+                        AccountRepository accountRepository, StaffRepository staffRepository,
+                        com.mediflow.organization.application.port.out.PatientAccountIdentityPort patients) {
+                return new LookupProfileAccountService(accountRepository, staffRepository, patients);
         }
 
         @Bean

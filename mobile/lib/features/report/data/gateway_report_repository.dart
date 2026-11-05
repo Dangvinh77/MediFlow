@@ -99,9 +99,80 @@ class GatewayReportRepository implements ReportRepository {
     }).toList();
   }
 
+  OperationsFigures _figures(Object? row, String label) {
+    final m = _map(row);
+    final visits = _number(m, 'completedVisits');
+    if (visits < 0 || visits % 1 != 0) {
+      throw const FormatException('Số lượt khám không hợp lệ.');
+    }
+    double money(String key) {
+      final value = _number(m, key).toDouble();
+      if (value < 0) throw const FormatException('Số tiền không hợp lệ.');
+      return value;
+    }
+
+    return OperationsFigures(
+      label: label,
+      completedVisits: visits.toInt(),
+      examRevenue: money('examRevenue'),
+      labRevenue: money('labRevenue'),
+      prescriptionRevenue: money('prescriptionRevenue'),
+      unclassifiedRevenue: money('unclassifiedRevenue'),
+      refunds: money('refunds'),
+    );
+  }
+
+  @override
+  Future<OperationsStatistics> statistics(ReportQuery q) async {
+    q.validate();
+    if (q.kind != ReportKind.operations ||
+        (q.departmentId != null && !isReferenceId(q.departmentId!))) {
+      throw ArgumentError('Khoa phòng không hợp lệ.');
+    }
+    final m = _map(
+      await client.get(
+        '/v1/reports/outpatient/statistics',
+        query: {
+          'fromDate': q.from,
+          'toDate': q.to,
+          'departmentId': ?q.departmentId,
+        },
+      ),
+    );
+    final currency = m['currency'];
+    if (currency is! String || currency.isEmpty || m['reconciled'] != false) {
+      throw const FormatException('Thống kê vận hành không hợp lệ.');
+    }
+    String text(Object? row, String key) {
+      final value = _map(row)[key];
+      if (value is! String || value.isEmpty) {
+        throw const FormatException('Thống kê vận hành không hợp lệ.');
+      }
+      return value;
+    }
+
+    return OperationsStatistics(
+      from: q.from,
+      to: q.to,
+      currency: currency,
+      departmentId: m['departmentId'] as String?,
+      totals: _figures(m['totals'], 'Tổng'),
+      days: [
+        for (final day in _list(m, 'days')) _figures(day, text(day, 'date')),
+      ],
+      departments: [
+        for (final row in _list(m, 'departments'))
+          _figures(row, text(row, 'departmentId')),
+      ],
+    );
+  }
+
   @override
   Future<ReportData> read(ReportQuery q) async {
     q.validate();
+    if (q.kind == ReportKind.operations) {
+      throw ArgumentError('Dùng thống kê vận hành cho loại báo cáo này.');
+    }
     if (q.departmentId != null && !isReferenceId(q.departmentId!)) {
       throw ArgumentError('Khoa phòng không hợp lệ.');
     }
@@ -112,6 +183,7 @@ class GatewayReportRepository implements ReportRepository {
       ReportKind.topMedicines => 'top-medicines',
       ReportKind.outpatientDaily => 'outpatient/daily',
       ReportKind.outpatientMonthly => 'outpatient/monthly',
+      ReportKind.operations => 'outpatient/statistics',
     };
     final params = <String, dynamic>{
       if (q.departmentId != null) 'departmentId': q.departmentId,
@@ -125,6 +197,7 @@ class GatewayReportRepository implements ReportRepository {
         },
         ReportKind.outpatientDaily => {'fromDate': q.from, 'toDate': q.to},
         ReportKind.outpatientMonthly => {'year': from.year},
+        ReportKind.operations => {'fromDate': q.from, 'toDate': q.to},
       },
     };
     final raw = await client.get('/v1/reports/$path', query: params);

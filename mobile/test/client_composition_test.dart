@@ -97,7 +97,8 @@ void main() {
 
       container.read(routerProvider).go('/billing');
       await tester.pumpAndSettle();
-      expect(find.text('Khoản thu'), findsOneWidget);
+      expect(find.text('Xét nghiệm và thuốc'), findsWidgets);
+      expect(find.text('Lịch sử thu'), findsOneWidget);
       expect(find.text('Hoàn tiền'), findsOneWidget);
       container.read(routerProvider).go('/notifications');
       await tester.pumpAndSettle();

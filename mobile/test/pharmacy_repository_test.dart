@@ -89,6 +89,32 @@ void main() {
       expect(result.totalElements, 21);
     },
   );
+  test(
+    'prescription search uses exact patient scope and decodes the page',
+    () async {
+      adapter.data = {
+        ...pageJson(),
+        'content': [
+          {...prescriptionJson(), 'recordId': rxId, 'patientId': otherDrugId},
+        ],
+      };
+      final result = await repository.searchPrescriptions(
+        patientId: otherDrugId,
+        page: 1,
+        size: 10,
+      );
+      final request = adapter.requests.single;
+      expect(request.method, 'GET');
+      expect(request.uri.path, '/api/v1/pharmacy/prescriptions');
+      expect(request.uri.queryParameters, {
+        'patientId': otherDrugId,
+        'page': '1',
+        'size': '10',
+      });
+      expect(result.items.single.recordId, rxId);
+      expect(result.totalElements, 21);
+    },
+  );
   test('blank keyword is omitted and detail paths remain exact', () async {
     await repository.searchDrugs(keyword: ' ');
     expect(

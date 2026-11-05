@@ -2,6 +2,10 @@
 
 ## Project overview
 
+Windows demo launchers are grouped in [`scripts/run/`](scripts/run/).
+See [`HUONG_DAN.txt`](scripts/run/HUONG_DAN.txt) for backend/frontend startup,
+retained demo data, Wi-Fi access, stopping services and Docker cleanup.
+
 **MediFlow** is a distributed hospital information system designed to coordinate outpatient workflows, including patient registration, appointments, medical examinations, laboratory testing, prescriptions, billing, dispensing, reporting and in-app notifications. Inpatient care and surgery management are reserved for future development; their existing source and data are preserved.
 
 **Định hướng:** Hệ thống thông tin bệnh viện dựa trên microservices, tập trung quản lý khám chữa bệnh ngoại trú. MVP hướng tới phòng khám đa khoa có nhiều bộ phận hoặc khoa khám bệnh ngoại trú của bệnh viện. Phòng mạch nhỏ có thể dùng một phần chức năng; việc vận hành nhiều service và broker cần được cân nhắc theo nhu cầu. Đây là phạm vi thiết kế của đồ án, chưa phải xác nhận triển khai vận hành tại cơ sở y tế.

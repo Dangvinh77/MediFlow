@@ -4,24 +4,78 @@
 
 Tại thư mục source chính, mở Docker Desktop và chạy lần lượt:
 
-1. `start-backend.bat`: tự nạp `smtp.local.env`, chọn IP Wi-Fi/LAN, kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
-   chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch và lượt nguồn tái khám qua API.
+Các file BAT nằm trong [`../run/`](../run/). Có thể mở trực tiếp tại đó;
+hướng dẫn đầy đủ ở [`HUONG_DAN.txt`](../run/HUONG_DAN.txt). Các lệnh bên dưới tính từ gốc dự án.
+
+1. `scripts/run/start-backend.bat`: tự nạp `smtp.local.env`, chọn IP Wi-Fi/LAN, kiểm tra Docker/Java/Maven/Python, build JAR hiện tại rồi
+   chạy snapshot ngoại trú V2 cách ly, chuẩn bị lịch, Report demo có đối soát synthetic và lượt nguồn tái khám qua API.
    Chờ `READY` và giữ cửa sổ mở; đọc dòng `UI DATA` / `FOLLOW-UP SOURCE READY` hoặc `PARTIAL`.
-2. `start-frontend.bat`: cài dependencies theo lockfile và chạy web tại
+2. `scripts/run/start-frontend.bat`: cài dependencies theo lockfile và chạy web tại
    `http://<IP-máy>:3000`, nối Gateway nội bộ `http://127.0.0.1:28080`, bật các UI gates demo. Điện thoại dùng Gateway `http://<IP-máy>:28080/api`.
-3. `clean-docker.bat`: yêu cầu demo backend dừng qua stop file, xóa container MediFlow
+3. `scripts/run/clean-docker.bat`: yêu cầu demo backend dừng qua stop file, xóa container MediFlow
    và các image/tag dự án nhận diện được; image còn được container dự án khác dùng
-   được giữ lại. Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
+   được giữ lại. Đồng thời dừng Java demo còn sót sau khi cửa sổ khởi động bị đóng/lỗi,
+   giải phóng các cổng demo gây `WinError 10048`, kể cả khi chưa tạo được manifest.
+   Chỉ dừng tiến trình khớp đúng JAR trong repo, đúng cổng của dịch vụ và có tiến trình
+   cha đã thoát; kiểm tra lại thời điểm khởi động để tránh nhầm PID được Windows dùng lại.
+   Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
 
 Lần đầu chạy backend bằng **Run as administrator** để cho phép hai cổng demo 28080/3000 từ LocalSubnet trên đúng adapter. Nếu dùng nhiều card mạng, truyền `-LanAddress <IP>` cho cả backend/frontend; `-LocalOnly` giữ cả hai trên loopback. iOS/Android dùng hướng dẫn [mobile cùng Wi-Fi](../../mobile/README.md#demo-điện-thoại-cùng-wi-fi-với-máy-windows).
 
-Chạy `clean-docker.bat -Preview` để xem trước mà không thay đổi Docker hoặc tạo stop file.
+Chạy `scripts/run/clean-docker.bat -Preview` để xem trước các tiến trình/cổng và tài nguyên Docker
+sẽ dọn, không dừng tiến trình, thay đổi Docker hoặc tạo stop file.
 Các file dùng đường dẫn tương đối từ chính file `.bat`, không cần đặt working directory.
 Lỗi trả exit code 1 và giữ cửa sổ để đọc. Có thể đặt `MEDIFLOW_NO_PAUSE=1` khi tự động hóa.
 
 Yêu cầu Java 21, Maven, Python 3, Node/pnpm và Docker Compose v2 trên PATH.
-Backend dùng lại runner hiện có: dữ liệu demo là tạm thời, tự dừng/dọn sau hai giờ;
-lần chạy mới nạp lại snapshot. Launcher bổ sung lịch hôm nay/ngày mai bằng
+
+### Chạy nhanh và giữ dữ liệu giữa các lần chạy
+
+```powershell
+.\scripts/run/start-backend.bat -Fast
+.\scripts/run/stop-backend.bat
+.\scripts/run/start-backend.bat -Fast
+```
+
+`-Fast` lần đầu vẫn cần build và tạo dữ liệu. Những lần sau kiểm tra hash source,
+Maven inputs và cả tám JAR; chỉ bỏ Maven khi khớp bản build đã ghi nhận. Source/JAR
+thay đổi, JAR thiếu hoặc chưa có cache sẽ tự build lại. Không cần Maven trên PATH
+khi JAR đã được xác minh còn phù hợp. Mỗi bước in `TIMING` để đo riêng thời gian
+build, hạ tầng, khởi động ứng dụng và chuẩn bị dữ liệu UI.
+
+Database/broker riêng của checkout được giữ trong container; không nạp snapshot
+hay seed SQL lại khi tái sử dụng. Nhật ký tạo lịch/nguồn tái khám được giữ cùng dữ liệu
+ở `scripts/demo_25_10/evidence/workspace`. Lịch lớn được đọc và kiểm tra thay vì
+gửi lại toàn bộ lệnh tạo; dữ liệu UI hôm nay/ngày mai vẫn được làm mới qua API.
+Nếu lịch/nhân sự đã bị sửa hoặc hủy, bước kiểm tra báo lỗi để đối soát, không tự phục hồi.
+
+```powershell
+.\scripts/run/start-backend.bat -Rebuild
+.\scripts/run/start-backend.bat -ResetData
+.\scripts/run/start-backend.bat -Fast -StartupParallelism 1
+```
+
+- `-Rebuild`: bắt buộc build lại, vẫn giữ dữ liệu của workspace.
+- `-ResetData`: thay database/broker của workspace bằng snapshot mới và xóa nhật ký
+  chuẩn bị tương ứng. Hãy dừng backend trước; script từ chối khi cổng đang được dùng.
+  Chỉ thay container đã khớp ID và nhãn ownership, không đụng database dự án khác.
+- `-StartupParallelism 1`, `2` hoặc `3`: giới hạn số ứng dụng khởi động cùng lúc;
+  mặc định `2`. Eureka và Core chạy trước, Gateway sau cùng. Chỉ in `READY` sau
+  khi mọi dịch vụ khỏe và dữ liệu UI đã chuẩn bị/kiểm tra xong.
+- `scripts/run/stop-backend.bat`: yêu cầu runner dừng ứng dụng của phiên giữ dữ liệu; không xóa
+  database, broker hoặc image. Chạy lại bằng `-Fast`. Sau hai giờ, ứng dụng cũng tự
+  dừng nhưng dữ liệu workspace vẫn được giữ. Hai runner không được dùng workspace cùng lúc.
+
+Không dùng `scripts/run/clean-docker.bat` giữa các lần chạy nhanh: lệnh dọn này vẫn xóa container/
+image dự án. Nếu đã dọn hoặc lần restore đầu bị gián đoạn, chạy `-ResetData` để tạo
+lại workspace. Nếu seed SQL thay đổi, script cũng yêu cầu `-ResetData`.
+
+Không truyền các tùy chọn trên thì `scripts/run/start-backend.bat` giữ cách chạy demo sạch cũ:
+build lại, tạo database/broker mới và tự dọn sau hai giờ hoặc khi dừng. Phiên này
+không chuyển dữ liệu sang `-Fast`; đóng cửa sổ backend cũ trước khi đổi chế độ.
+`-Fast`, `-Rebuild`, `-ResetData` có thể đi cùng `-LocalOnly`/`-LanAddress`.
+
+Launcher bổ sung lịch hôm nay/ngày mai bằng
 `prepare_ui_demo.py`, sau đó `prepare_demo_calendar.py` thêm **10 nhân sự/khoa đang hoạt động**
 và lịch mọi ngày **01/11/2026–31/01/2027** cho các khoa lâm sàng.
 Mỗi ngày gồm **07:00–12:00 và 12:00–17:00**, mỗi buổi 40 chỗ, luân phiên sáu bác sĩ
@@ -53,7 +107,7 @@ python scripts/demo_25_10/prepare_demo_calendar.py
 Lượt nền của `demo.patient2` có khoản thu thật trong DB demo để làm nguồn tái khám;
 ba lượt bạn sẽ thao tác không được đăng ký trước. Không xóa journal khi gặp timeout.
 Lệnh calendar cần stack mới có bootstrap phòng; nếu báo thiếu phòng, khởi động lại
-bằng `start-backend.bat`. Chạy lại cùng stack không tạo trùng và không đặt lại mật khẩu;
+bằng `scripts/run/start-backend.bat`. Chạy lại cùng stack không tạo trùng và không đặt lại mật khẩu;
 thay đổi/hủy lịch hoặc tài khoản sau seed phải đối soát, script không tự mở lại.
 
 Kiểm tra an toàn file dọn (Docker giả lập, không xóa tài nguyên thật):
@@ -118,9 +172,14 @@ Run the packaged Lab acceptance separately from the full topology/Billing suite 
 this laptop: a concurrent rehearsal hit an Organization upstream deadline.
 
 The Gateway smoke logs in through the real synthetic ADMIN account and reads all
-six deployments. Report uses the snapshot's accepted closed day `2025-06-15` and
-department `9a6dd24a-1c1f-4122-9e31-7cfea345ec45`. An uncovered current period returns
-`404 REPORT_NOT_FOUND`; do not fabricate coverage or change SQL to make it appear.
+six deployments. The default Windows launcher layers deterministic Report projections,
+generates five synthetic export files, and uses the existing ADMIN preview/acceptance API
+for the closed 2024 annual general-clinic fixture. It then restarts Support with the
+acceptance gate disabled. The snapshot's existing 2025 annual synthetic acceptance stays
+valid, so the demo has at least two available synthetic historical periods. Report chart
+data from Sep–Nov 2026 is provisional. Direct import of the monolithic snapshot alone
+still contains only its 2025 accepted scope; see [REPORT_READINESS.md](REPORT_READINESS.md)
+for the companion SQL and explicit API preparation flow. Do not add coverage with SQL.
 
 After the web build, launch Next with the same UI gates:
 
@@ -199,6 +258,8 @@ Do not use the runner against a project/deployed database. Stop the stack with t
   presenter steps, gates, routes, errors and historical scenario IDs.
 - [SQL snapshot](MediFlow_Demo_Database_2026-10-25.sql): import with `psql`, empty
   isolated targets only. Do not reset delivery rows or edit clearance/state IDs.
+- [Report readiness and seed](REPORT_READINESS.md): deterministic Report companion data,
+  explicit five-export preview/acceptance workflow, and retained synthetic evidence paths.
 
 Topology health and snapshot restore smoke do not certify every refund, Pharmacy
 dispense or Report coverage workflow. The normal paid Lab acceptance specifically

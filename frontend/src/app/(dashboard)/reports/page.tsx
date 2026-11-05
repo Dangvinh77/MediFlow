@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { ReportWorkspace } from "@/features/report/components/ReportWorkspace";
@@ -12,14 +12,13 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const query = await searchParams;
-  if (process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true" && !query.view) {
-    redirect("/reports/outpatient?view=monthly");
-  }
+  const outpatientEnabled = process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true";
+  // In outpatient MVP the legacy aggregates stay empty; land on the reconciled outpatient report.
+  if (outpatientEnabled && !(await searchParams).view) redirect("/reports/outpatient");
   return (
     <RoleGate allowed={["ADMIN", "MANAGER"]}>
       <Suspense fallback={<PageShell title="Báo cáo"><p role="status" className="mt-6 text-sm text-muted-foreground">Đang tải báo cáo…</p></PageShell>}>
-        <ReportWorkspace outpatientEnabled={process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true"} />
+        <ReportWorkspace outpatientEnabled={outpatientEnabled} />
       </Suspense>
     </RoleGate>
   );

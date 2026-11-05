@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Local HTTP is allowed only in the Debug build for Wi-Fi demos. -->
+	<!-- Shared by Debug and Profile: local HTTP is for Wi-Fi demos only; Release keeps default ATS. -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>MediFlow kết nối máy chủ phòng khám trên cùng mạng Wi-Fi để chạy demo.</string>
 	<key>NSAppTransportSecurity</key>

@@ -23,6 +23,7 @@ class GatewayReferenceReader implements ReferenceReader {
       'appointmentDate',
     ),
     ReferenceKind.record => ('records', 'recordId', 'examinationDate'),
+    ReferenceKind.room => ('org/rooms', 'roomId', 'roomName'),
   };
 
   ReferenceOption _decode(ReferenceKind kind, Object? raw) {
@@ -50,6 +51,7 @@ class GatewayReferenceReader implements ReferenceReader {
         ReferenceKind.department => raw['abbreviation'] as String?,
         ReferenceKind.appointment => raw['reason'] as String?,
         ReferenceKind.record => raw['symptoms'] as String?,
+        ReferenceKind.room => null,
       },
     );
   }
@@ -58,9 +60,13 @@ class GatewayReferenceReader implements ReferenceReader {
   Future<ReferenceOption> read(ReferenceKind kind, String id) async {
     if (!isReferenceId(id)) throw ArgumentError('Định danh không hợp lệ.');
     final (path, _, _) = _fields(kind);
-    if (kind == ReferenceKind.department || kind == ReferenceKind.doctor) {
+    if (kind == ReferenceKind.department ||
+        kind == ReferenceKind.doctor ||
+        kind == ReferenceKind.room) {
       final labelKind = kind == ReferenceKind.department
           ? 'department'
+          : kind == ReferenceKind.room
+          ? 'room'
           : 'doctor';
       final raw = await client.get('/v1/org/care-labels/$labelKind/$id');
       if (raw is! Map ||
@@ -92,6 +98,9 @@ class GatewayReferenceReader implements ReferenceReader {
     int page = 0,
     String? scope,
   }) async {
+    if (kind == ReferenceKind.room) {
+      throw ArgumentError('Chọn phòng từ buổi khám.');
+    }
     if (page < 0 || (scope != null && !isReferenceId(scope))) {
       throw ArgumentError('Bộ lọc không hợp lệ.');
     }

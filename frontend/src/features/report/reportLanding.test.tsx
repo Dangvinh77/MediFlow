@@ -11,7 +11,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 describe("Report landing", () => {
   it("opens accepted outpatient statistics when the rollout is enabled", async () => {
     vi.stubEnv("MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED", "true");
-    await expect(ReportsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/reports/outpatient?view=monthly");
+    await expect(ReportsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/reports/outpatient");
   });
   it("preserves explicit legacy links and the disabled rollout", async () => {
     vi.stubEnv("MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED", "true");

@@ -53,6 +53,17 @@ public class BillingCashReceiptMapper {
                 at, at.atZone(reportZone).toLocalDate(), reportZone.getId());
     }
 
+    /**
+     * Service line of an already-mapped outpatient receipt, for operational statistics only:
+     * a prescription target is PRESCRIPTION, a Lab target is LAB_TEST, no target is EXAM.
+     * Deposits carry no service line and return {@code null}.
+     */
+    public static String servicePurpose(Map<String, Object> payload) {
+        if (!"SERVICE_PAYMENT".equals(payload.get("classification"))) return null;
+        if (payload.get("prescriptionId") != null) return "PRESCRIPTION";
+        return payload.get("labTestIds") instanceof java.util.List<?> tests && !tests.isEmpty() ? "LAB_TEST" : "EXAM";
+    }
+
     /** Validate producer evidence without turning these optional targets into care permission. */
     private static void validateOptionalTargets(Map<String, Object> payload) {
         UUID prescription = optionalUuid(payload, "prescriptionId");

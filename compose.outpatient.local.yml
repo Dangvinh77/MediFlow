@@ -8,6 +8,8 @@ services:
     environment:
       MEDIFLOW_CLINICAL_SCHEDULING_ENABLED: "true"
       MEDIFLOW_ADMISSION_REFERRAL_ENABLED: "false"
+      # Same LAB_TEST codes as billing.care-finance.prices below; others are rejected at order time.
+      MEDIFLOW_CLINICAL_LAB_PRICE_CODES: "LAB,LAB_CBC,LAB_GLUCOSE"
   billing-service:
     environment:
       MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_ENABLED: "true"

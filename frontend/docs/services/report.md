@@ -1,5 +1,10 @@
 # Frontend Service: Report
 
+2026-11-05 master synchronization retains the new operational statistics landing,
+latest accepted-period discovery and compact source/trend/period disclosures.
+Huy's additive accepted-period totals and immediate manual period selection remain
+available alongside those changes. The bare `/reports` now opens `/reports/outpatient`.
+
 2026-11-04 demo usability: with `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true`,
 the bare `/reports` landing opens `/reports/outpatient?view=monthly`.
 Explicit legacy views remain at `/reports?view=monthly` (or daily/medicines).
@@ -132,3 +137,14 @@ currency, timezone and provenance, and label explicitly synthetic evidence. Refu
 net cash negative; zero only describes accepted coverage. Units dispensed remain separate.
 UI/backend gates remain OFF by default; this implementation does not establish live source
 acceptance or enable the runtime after pull.
+
+## Provisional operations charts — 2026-11-04
+
+`/reports` opens the outpatient workspace when its UI gate is on. The page first loads this
+month's provisional statistics: totals, stacked daily revenue by exam/Lab/prescription, daily
+visits and per-department visits and revenue. They are labelled as not reconciled; the accepted
+report stays below. MANAGER chooses an authorized department before the read.
+
+The figures count only contributions already projected into Report. Missing events can leave gaps;
+zero does not establish no activity. Revenue means gross service receipts; refunds are separate.
+Receipts predating service classification stay visibly unclassified rather than being guessed.

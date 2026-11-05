@@ -86,6 +86,9 @@ mediflow:
     exam-price:
       default-code: ${MEDIFLOW_EXAM_PRICE_CODE:OUTPATIENT_EXAM}
       by-department: {}
+    lab-orders:
+      # Comma list mirroring Billing's LAB_TEST price catalogue. Empty accepts any code.
+      price-codes: ${MEDIFLOW_CLINICAL_LAB_PRICE_CODES:}
     outbox-poll-interval: ${MEDIFLOW_CLINICAL_OUTBOX_POLL_INTERVAL:1000}
     outbox-confirm-timeout: ${MEDIFLOW_CLINICAL_OUTBOX_CONFIRM_TIMEOUT:5s}
     outbox-max-retries: ${MEDIFLOW_CLINICAL_OUTBOX_MAX_RETRIES:5}

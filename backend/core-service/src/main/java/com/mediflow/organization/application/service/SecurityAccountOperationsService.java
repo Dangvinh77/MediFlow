@@ -5,6 +5,7 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.out.AccountRecoveryTokenStore;
 import com.mediflow.organization.application.port.out.AccountEmailChangeStore;
 import com.mediflow.organization.application.port.out.AccountRepository;
+import com.mediflow.organization.application.port.out.PatientAccountSecurityAuditStore;
 import com.mediflow.organization.application.port.out.PatientAccountIdentityPort;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.SecurityMailStore;
@@ -24,6 +25,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Comparator;
+import java.util.List;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
@@ -41,12 +44,14 @@ public class SecurityAccountOperationsService {
     private final SecurityMailStore mail;
     private final AccountRecoveryTokenStore recoveryTokens;
     private final AccountEmailChangeStore emailChanges;
+    private final PatientAccountSecurityAuditStore patientSecurityAudit;
     private final SecurityMailTemplate templates;
     private final String fromEmail;
 
     public SecurityAccountOperationsService(CreateAccountUseCase creator, AccountRepository accounts,
             StaffRepository staff, PatientAccountIdentityPort patients, PasswordHasher passwords,
             SecurityMailStore mail, AccountRecoveryTokenStore recoveryTokens, AccountEmailChangeStore emailChanges,
+            PatientAccountSecurityAuditStore patientSecurityAudit,
             SecurityMailTemplate templates,
             @Value("${mediflow.mail.from:noreply@mediflow.local}") String fromEmail) {
         this.creator = creator;
@@ -57,6 +62,7 @@ public class SecurityAccountOperationsService {
         this.mail = mail;
         this.recoveryTokens = recoveryTokens;
         this.emailChanges = emailChanges;
+        this.patientSecurityAudit = patientSecurityAudit;
         this.templates = templates;
         this.fromEmail = fromEmail;
     }
@@ -90,6 +96,38 @@ public class SecurityAccountOperationsService {
         if (prior.isPresent()) return prior.get();
         Account account = accounts.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+        return resetPasswordLocked(account, operation);
+    }
+
+    public MailDeliveryDTO resetPatientPassword(UUID actor, UUID patientId, String idempotencyKey,
+            UUID correlationId) {
+        if (patientId == null || correlationId == null) {
+            throw new IllegalArgumentException("Patient and correlation ids are required");
+        }
+        String operation = operationKey("patient-reset:" + patientId, actor, idempotencyKey);
+        mail.lockOperation(operation);
+        var prior = mail.byOperationKey(operation);
+        if (prior.isPresent()) return prior.get();
+
+        // The Patient use case enforces that the profile exists, is not archived, and has a
+        // deliverable profile email. Resolve the target by its owner UUID, never by email.
+        String profileEmail = patients.email(patientId);
+        Account linked = requirePatientAccount(patientId);
+        Account account = accounts.findByIdForUpdate(linked.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(linked.getAccountId()));
+        requirePatientOwner(account, patientId);
+        requireActivePatientAccount(account);
+        profileEmail = patients.email(patientId);
+        requireSynchronizedEmail(profileEmail, account);
+
+        MailDeliveryDTO delivery = resetPasswordLocked(account, operation);
+        patientSecurityAudit.record(PatientAccountSecurityAuditStore.Action.PATIENT_PASSWORD_RESET,
+                actor, patientId, account.getAccountId(), correlationId, operation);
+        return delivery;
+    }
+
+    private MailDeliveryDTO resetPasswordLocked(Account account, String operation) {
+        UUID accountId = account.getAccountId();
         if (account.getRole() == Role.SYSTEM) throw new InvalidAccountException("Service accounts cannot receive password resets");
         String email = normalizeEmail(account.getUsername());
         String temporaryPassword = randomPassword();
@@ -110,17 +148,105 @@ public class SecurityAccountOperationsService {
                         "MAIL_DELIVERY_NOT_FOUND", "No security email has been issued for this account"));
     }
 
+    public MailDeliveryDTO latestPatientDelivery(UUID patientId) {
+        // Read by owner id, while also confirming that the Patient profile itself still exists.
+        patients.profileEmail(patientId);
+        Account account = requirePatientAccount(patientId);
+        return latestDelivery(account.getAccountId());
+    }
+
     public MailDeliveryDTO retryDelivery(UUID accountId, UUID messageId) {
         return mail.retry(accountId, messageId);
     }
 
-    public Account changeEmail(UUID actor, UUID accountId, String requestedEmail, String reason) {
-        if (actor == null || reason == null || reason.isBlank() || reason.trim().length() > 500) {
-            throw new InvalidAccountException("An admin and a reason of at most 500 characters are required");
+    public MailDeliveryDTO retryPatientDelivery(UUID actor, UUID patientId, UUID messageId,
+            UUID correlationId) {
+        if (actor == null || patientId == null || messageId == null || correlationId == null) {
+            throw new IllegalArgumentException("Actor, patient, message, and correlation ids are required");
         }
+        Account linked = requirePatientAccount(patientId);
+        Account account = accounts.findByIdForUpdate(linked.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(linked.getAccountId()));
+        requirePatientOwner(account, patientId);
+        requireActivePatientAccount(account);
+        String profileEmail = patients.email(patientId);
+        requireSynchronizedEmail(profileEmail, account);
+        MailDeliveryDTO delivery = mail.retry(account.getAccountId(), messageId, account.getUsername());
+        patientSecurityAudit.record(PatientAccountSecurityAuditStore.Action.PATIENT_MAIL_RETRY,
+                actor, patientId, account.getAccountId(), correlationId, null);
+        return delivery;
+    }
+
+    private Account requirePatientAccount(UUID patientId) {
+        List<Account> linked = accounts.findByOwner(null, patientId);
+        Account account = linked.stream()
+                .sorted(Comparator.comparing(Account::isActive).reversed()
+                        .thenComparing(Account::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Account::getAccountId, Comparator.reverseOrder()))
+                .findFirst()
+                .orElseThrow(() -> new com.mediflow.common.exception.ResourceNotFoundException(
+                        "PATIENT_ACCOUNT_NOT_FOUND", "No account is linked to this patient profile"));
+        requirePatientOwner(account, patientId);
+        return account;
+    }
+
+    private static void requirePatientOwner(Account account, UUID patientId) {
+        if (account.getRole() != Role.PATIENT || !patientId.equals(account.getPatientId())
+                || account.getStaffId() != null) {
+            throw new InvalidAccountException("Target account is not linked to this patient profile");
+        }
+    }
+
+    private static void requireActivePatientAccount(Account account) {
+        if (!account.isActive() || !account.isEmailLoginEnabled()) {
+            throw new InvalidAccountException("An active patient email account is required for credential mail operations");
+        }
+    }
+
+    private static void requireSynchronizedEmail(String profileEmail, Account account) {
+        if (!isValidEmail(profileEmail) || !profileEmail.trim().equalsIgnoreCase(account.getUsername())) {
+            throw new InvalidAccountException("Patient account profile email must be synchronized before credential mail operations");
+        }
+    }
+
+    public Account changePatientEmail(UUID actor, UUID patientId, String requestedEmail, String reason) {
+        validateEmailChange(actor, reason);
+        if (patientId == null) throw new InvalidAccountException("A patient profile is required");
+        String newEmail = normalizeEmail(requestedEmail);
+        accounts.lockOwner(null, patientId);
+        patients.requireActivePatient(patientId);
+        Account linked = requirePatientAccount(patientId);
+        Account account = accounts.findByIdForUpdate(linked.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(linked.getAccountId()));
+        requirePatientOwner(account, patientId);
+        if (newEmail.equalsIgnoreCase(account.getUsername())) {
+            // A successful account change may be waiting on Patient's retryable sync queue.
+            // Re-submitting the account's current username is a repair request only when the
+            // authoritative profile still differs; it must not revoke credentials again.
+            if (!sameEmail(patients.profileEmail(patientId), newEmail)) {
+                emailChanges.queuePatientProfileSync(account.getAccountId(), patientId, newEmail);
+            }
+            return account;
+        }
+        return changeEmailLocked(actor, account, newEmail, reason.trim());
+    }
+
+    public Account changeEmail(UUID actor, UUID accountId, String requestedEmail, String reason) {
+        validateEmailChange(actor, reason);
         String newEmail = normalizeEmail(requestedEmail);
         Account account = accounts.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+        return changeEmailLocked(actor, account, newEmail, reason.trim());
+    }
+
+    private static void validateEmailChange(UUID actor, String reason) {
+        if (actor == null || reason == null || reason.isBlank() || reason.trim().length() > 500) {
+            throw new InvalidAccountException("A valid actor and a reason of at most 500 characters are required");
+        }
+    }
+
+    private Account changeEmailLocked(UUID actor, Account account, String newEmail, String reason) {
+        UUID accountId = account.getAccountId();
         if (account.getRole() == Role.SYSTEM) throw new InvalidAccountException("Service account email cannot be changed");
         String oldEmail = account.getUsername();
         if (newEmail.equalsIgnoreCase(oldEmail)) return account;
@@ -130,8 +256,7 @@ public class SecurityAccountOperationsService {
         Account saved = accounts.save(account);
         accounts.incrementCredentialVersion(accountId);
         recoveryTokens.invalidateUnused(accountId, Instant.now());
-        emailChanges.record(accountId, actor, isValidEmail(oldEmail) ? oldEmail : null,
-                newEmail, reason.trim());
+        emailChanges.record(accountId, actor, isValidEmail(oldEmail) ? oldEmail : null, newEmail, reason);
 
         if (account.getStaffId() != null) {
             Staff owner = staff.findByIdForUpdate(account.getStaffId())
@@ -242,6 +367,10 @@ public class SecurityAccountOperationsService {
             throw new InvalidAccountException("Hồ sơ chưa có email hợp lệ để đăng nhập và nhận mật khẩu");
         }
         return value.toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean sameEmail(String first, String second) {
+        return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
     }
 
     private static boolean isValidEmail(String value) {

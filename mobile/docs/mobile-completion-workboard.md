@@ -1,5 +1,34 @@
 # Hoàn thiện toàn bộ mobile — 03/11/2026
 
+## Chênh lệch web và mobile theo vai trò — 05/11/2026
+
+So từ endpoint web gọi với endpoint mobile gọi trên `master`, rồi đọc lại từng mục. Bảng này
+là phần còn thiếu, không phải toàn bộ tính năng. Inpatient vẫn hoãn; demo mailbox và outbox
+là công cụ vận hành, chưa tính vào phạm vi role nghiệp vụ.
+
+| Vai trò | Web có, mobile chưa có | Endpoint |
+|---|---|---|
+
+Không còn mục thiếu theo role trong bảng này. Chi tiết tài khoản và khôi phục outbox Dược đã có trên mobile.
+
+MANAGER và ADMIN đã có quản lý buổi khám, phạm vi quản lý lịch và bổ nhiệm trưởng khoa. Bác sĩ là trưởng khoa có màn Quản lý khoa theo `/v1/org/me/capabilities`.
+
+DOCTOR, NURSE và PATIENT đã đủ theo bảng này: lịch khám, lịch làm việc, đề xuất tái khám, phiếu theo buổi, ghi nhận đã đến và phiếu của bệnh nhân đã có trên mobile. Web chưa có thao tác hủy phiếu dù API có, nên mobile cũng chưa có.
+
+CASHIER đã đủ theo bảng này: thu xét nghiệm theo báo giá và xác nhận 0 đồng đã có trên mobile.
+Khi bật báo giá, khoản xét nghiệm chưa có báo giá bị chặn thu, giống web.
+
+## Luồng hồ sơ và tiếp nhận — 04/11/2026
+
+Baseline `d9a1635b`: thêm lookup tài khoản theo hồ sơ; cấp/reset/gửi lại thư trong
+hồ sơ nhân sự và bệnh nhân theo đúng quyền; giữ yêu cầu chưa rõ kết quả theo phiên.
+Patient mirror trường `daLuuTru` từ backend và khóa thao tác cấp/reset/đăng ký khi
+đã lưu trữ. App ghép tài khoản và nút đăng ký khám vào hồ sơ; tạo hồ sơ mới từ tiếp
+nhận không yêu cầu tìm lại mã. Tiếp nhận native dùng V2 session/revision/capacity,
+tái khám và cùng idempotency key khi đối soát. Hồ sơ khám ghép kê đơn có khóa nguồn
+và danh sách đơn theo đúng hồ sơ. [Evidence và acceptance còn lại](evidence/2026-11-04-profile-workflows/README.md).
+Các dòng checkpoint cũ bên dưới giữ nguyên ý nghĩa lịch sử; chưa nghiệm thu toàn bộ V2 trên thiết bị thật.
+
 ## Sửa tương tác theo vai trò bệnh xá
 
 Đợt sửa trên baseline `3e28d96e`: tên và ngày sinh bệnh nhân qua minimal directory

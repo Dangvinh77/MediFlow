@@ -64,6 +64,10 @@ class Reports implements ReportRepository {
   final pending = Completer<ReportData>();
   @override
   Future<ReportData> read(ReportQuery query) => pending.future;
+
+  @override
+  Future<OperationsStatistics> statistics(ReportQuery query) =>
+      throw UnimplementedError();
 }
 
 void main() {
@@ -108,11 +112,10 @@ void main() {
       final selector = tester.widget<DropdownButtonFormField<ReportKind>>(
         find.byType(DropdownButtonFormField<ReportKind>),
       );
-      expect(selector.initialValue, ReportKind.outpatientMonthly);
-      expect(find.text('Tìm kỳ có dữ liệu'), findsOneWidget);
+      expect(selector.initialValue, ReportKind.operations);
       expect(
         availableReportKinds(outpatientEnabled: true).first,
-        ReportKind.outpatientMonthly,
+        ReportKind.operations,
       );
     },
   );

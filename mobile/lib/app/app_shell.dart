@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/session_controller.dart';
+import '../core/providers.dart';
+import '../features/appointment/presentation/schedule_management_pages.dart';
 import 'modules.dart';
 
 class AppShell extends ConsumerWidget {
@@ -14,7 +16,14 @@ class AppShell extends ConsumerWidget {
     final session = ref.watch(sessionProvider).asData?.value;
     final accessible = session == null
         ? <AppModule>[]
-        : visibleMainModules(session.role);
+        : visibleMainModules(
+            session.role,
+            schedulingEnabled: ref
+                .watch(appConfigProvider)
+                .scheduledPaymentsEnabled,
+            headsDepartment:
+                ref.watch(headsDepartmentProvider).asData?.value ?? false,
+          );
     final selected = modules.where((m) => m.matches(location)).firstOrNull;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -24,11 +33,18 @@ class AppShell extends ConsumerWidget {
             title: Text(
               location == '/account/password'
                   ? 'Đổi mật khẩu'
+                  : location == '/profile'
+                  ? 'Hồ sơ cá nhân'
                   : selected?.title ?? 'MediFlow',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
+              IconButton(
+                tooltip: 'Hồ sơ cá nhân',
+                onPressed: () => context.go('/profile'),
+                icon: const Icon(Icons.account_circle_outlined),
+              ),
               IconButton(
                 tooltip: 'Đổi mật khẩu',
                 onPressed: () => context.go('/account/password'),
@@ -130,7 +146,16 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(sessionProvider).asData?.value?.role;
-    final available = role == null ? <AppModule>[] : visibleMainModules(role);
+    final available = role == null
+        ? <AppModule>[]
+        : visibleMainModules(
+            role,
+            schedulingEnabled: ref
+                .watch(appConfigProvider)
+                .scheduledPaymentsEnabled,
+            headsDepartment:
+                ref.watch(headsDepartmentProvider).asData?.value ?? false,
+          );
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [

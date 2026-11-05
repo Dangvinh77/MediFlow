@@ -1,5 +1,38 @@
 # Frontend Workboard
 
+## Email bệnh nhân và Report thu gọn — 2026-11-05
+
+Vinh / user-assigned task-scoped override cho Patient, Organization và Report.
+ADMIN/NURSE được bổ sung hoặc sửa email hồ sơ bệnh nhân chưa có tài khoản; sau đó
+cấp tài khoản tại chi tiết bệnh nhân. Khi đã có tài khoản, dùng lệnh email theo UUID
+bệnh nhân, có lý do, audit và đồng bộ hồ sơ; email nhân viên vẫn ADMIN-only.
+Khối báo cáo đã đối soát mặc định thu gọn, giữ mở trực tiếp bằng URL và có chi tiết
+nguồn/kỳ khi cần. Thống kê vận hành vẫn phân biệt với số liệu đã được chấp nhận.
+Kết quả kiểm tra và giới hạn dữ liệu tại
+[evidence 05/11](../../docs/acceptance/2026-11-05-nurse-report-mobile/README.md).
+
+## LAB / Report sau chỉnh giờ — 2026-11-04
+
+Vinh / user-assigned task-scoped override cho Report frontend và mobile. Thống kê
+vận hành tự tải tháng hiện tại, biểu đồ tiền thu khám/xét nghiệm/thuốc, lượt khám
+theo ngày và khoa. Phân biệt rõ số liệu tạm tính với báo cáo đã đối soát; không tự
+chấp nhận coverage hoặc suy diễn loại khoản thu lịch sử. Kiểm tra UI thật trên
+Gateway với dữ liệu demo cách ly, kèm [bằng chứng và giới hạn](../../docs/acceptance/2026-11-04-lab-report/README.md).
+
+## Hồ sơ tài khoản, khám và tiếp nhận — 2026-11-04
+
+Vinh / user-assigned task-scoped implementation trên baseline `d9a1635b`, gồm
+Organization/Patient/Pharmacy và shared app composition cho luồng người dùng đã yêu cầu.
+Khối tài khoản nằm trong hồ sơ nhân sự/bệnh nhân, lookup theo UUID chủ hồ sơ, cấp khi
+chưa có và reset/gửi lại thư theo quyền. ADMIN đổi email qua lệnh có audit trong hồ sơ;
+NURSE chỉ dùng API tài khoản bệnh nhân có giới hạn. Không hiển thị mật khẩu hoặc thân thư.
+Lưu form quay về hồ sơ; trạng thái đồng bộ email và owner detail được đọc lại.
+Tiếp nhận ưu tiên bệnh nhân, thu gọn lựa chọn nâng cao, khóa đăng ký sau thành công,
+có hành động tiếp nhận bệnh nhân tiếp theo giữ buổi khám đã cập nhật. Kê đơn ghép vào
+hồ sơ khám qua route composition và giữ kiểm tra nguồn từ backend.
+[Phạm vi và kết quả kiểm tra](../../docs/superpowers/plans/2026-11-04-profile-workflows-web-mobile.md).
+Các checkpoint bên dưới thuộc baseline cũ; không dùng số test cũ để nghiệm thu thay đổi mới.
+
 ## Phân công và blocker hiện hành — 2026-10-27
 
 Vinh phụ trách toàn bộ backend; frontend theo [ma trận canonical](../../docs/ai/15-frontend-ownership.md).

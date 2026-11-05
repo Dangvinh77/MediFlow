@@ -1,12 +1,17 @@
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/providers.dart';
 import '../../../core/widgets/request_state.dart';
+import '../../appointment/presentation/schedule_management_pages.dart';
 import '../domain/organization.dart';
+import '../domain/profile_account.dart';
 import 'access_boundary.dart';
+import 'profile_account_panel.dart';
 
 class DepartmentDetailPage extends StatelessWidget {
   const DepartmentDetailPage({super.key, required this.departmentId});
@@ -118,6 +123,19 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
               onPressed: () => _edit(department),
               icon: const Icon(Icons.edit_outlined),
               label: const Text('Chỉnh sửa khoa phòng'),
+            ),
+          if (widget.access.role == 'ADMIN' && department.type == 'CLINICAL')
+            Consumer(
+              builder: (context, ref, _) =>
+                  ref.watch(appConfigProvider).scheduledPaymentsEnabled
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: HeadAppointmentPanel(
+                        key: ValueKey(department.id),
+                        departmentId: department.id,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
         ],
       ),
@@ -262,94 +280,110 @@ class _DepartmentFormState extends State<_DepartmentForm> {
     }
     return Form(
       key: _form,
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          TextFormField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Tên khoa phòng *'),
-            maxLength: 100,
-            validator: (value) =>
-                value == null ||
-                    value.trim().isEmpty ||
-                    value.trim().length > 100
-                ? 'Tên khoa phòng phải có từ 1 đến 100 ký tự.'
-                : null,
-          ),
-          if (!_editing)
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             TextFormField(
-              controller: _abbreviation,
-              decoration: const InputDecoration(labelText: 'Mã viết tắt *'),
-              maxLength: 20,
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Tên khoa phòng *'),
+              maxLength: 100,
               validator: (value) =>
                   value == null ||
                       value.trim().isEmpty ||
-                      value.trim().length > 20
-                  ? 'Mã viết tắt phải có từ 1 đến 20 ký tự.'
+                      value.trim().length > 100
+                  ? 'Tên khoa phòng phải có từ 1 đến 100 ký tự.'
                   : null,
-            )
-          else
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Mã viết tắt (không đổi qua API hiện tại)',
+            ),
+            const SizedBox(height: 12),
+            if (!_editing)
+              TextFormField(
+                controller: _abbreviation,
+                decoration: const InputDecoration(labelText: 'Mã viết tắt *'),
+                maxLength: 20,
+                validator: (value) =>
+                    value == null ||
+                        value.trim().isEmpty ||
+                        value.trim().length > 20
+                    ? 'Mã viết tắt phải có từ 1 đến 20 ký tự.'
+                    : null,
+              )
+            else
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Mã viết tắt (không đổi qua API hiện tại)',
+                ),
+                child: Text(_loaded!.abbreviation),
               ),
-              child: Text(_loaded!.abbreviation),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Loại khoa phòng *'),
+              items: [
+                for (final type in departmentTypes)
+                  DropdownMenuItem(
+                    value: type,
+                    child: Text(
+                      type,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (value) =>
+                  setState(() => _type = value ?? departmentTypes.first),
             ),
-          DropdownButtonFormField<String>(
-            initialValue: _type,
-            decoration: const InputDecoration(labelText: 'Loại khoa phòng *'),
-            items: [
-              for (final type in departmentTypes)
-                DropdownMenuItem(value: type, child: Text(type)),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _location,
+              decoration: const InputDecoration(labelText: 'Địa điểm'),
+              maxLength: 255,
+            ),
+            const SizedBox(height: 12),
+            if (_editing) ...[
+              ReferencePicker(
+                kind: ReferenceKind.staff,
+                label: 'Trưởng khoa',
+                value: _headId.text.isEmpty ? null : _headId.text,
+                scope: widget.id,
+                onChanged: (id) => setState(() => _headId.text = id ?? ''),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Đang hoạt động'),
+                value: _active,
+                onChanged: (value) => setState(() => _active = value),
+              ),
             ],
-            onChanged: (value) =>
-                setState(() => _type = value ?? departmentTypes.first),
-          ),
-          TextFormField(
-            controller: _location,
-            decoration: const InputDecoration(labelText: 'Địa điểm'),
-            maxLength: 255,
-          ),
-          if (_editing) ...[
-            ReferencePicker(
-              kind: ReferenceKind.staff,
-              label: 'Trưởng khoa',
-              value: _headId.text.isEmpty ? null : _headId.text,
-              scope: widget.id,
-              onChanged: (id) => setState(() => _headId.text = id ?? ''),
+            if (_saveError != null) ...[
+              const SizedBox(height: 8),
+              RequestError(_saveError!),
+            ],
+            if (_uncertainCreate)
+              const Text(
+                'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _saving || _uncertainCreate ? null : _save,
+              icon: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(_editing ? 'Lưu khoa phòng' : 'Tạo khoa phòng'),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Đang hoạt động'),
-              value: _active,
-              onChanged: (value) => setState(() => _active = value),
-            ),
+            if (_uncertainCreate)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Quay lại danh sách'),
+              ),
           ],
-          if (_saveError != null) ...[
-            const SizedBox(height: 8),
-            RequestError(_saveError!),
-          ],
-          if (_uncertainCreate)
-            const Text(
-              'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
-            ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _saving || _uncertainCreate ? null : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(_editing ? 'Lưu khoa phòng' : 'Tạo khoa phòng'),
-          ),
-          if (_uncertainCreate)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Quay lại danh sách'),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -484,6 +518,22 @@ class _StaffDetailState extends State<_StaffDetail> {
           OrganizationField('Số chứng chỉ', staff.licenseNumber),
           OrganizationField('Điện thoại', staff.phoneNumber),
           OrganizationField('Email', staff.email),
+          if (widget.access.role == 'ADMIN')
+            ProfileAccountPanel(
+              key: ValueKey((
+                'staff-account',
+                widget.access.sessionIdentity,
+                staff.id,
+              )),
+              owner: ProfileAccountOwner.staff(
+                id: staff.id,
+                jobTitle: staff.jobTitle,
+                active: staff.active,
+              ),
+              access: widget.access,
+              profileEmail: staff.email,
+              onChanged: _load,
+            ),
           OrganizationField(
             'Trạng thái',
             staff.active ? 'Đang làm việc' : 'Ngừng hoạt động',
@@ -678,163 +728,184 @@ class _StaffFormState extends State<_StaffForm> {
     }
     return Form(
       key: _form,
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          TextFormField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Họ tên *'),
-            maxLength: 100,
-            validator: (value) =>
-                value == null ||
-                    value.trim().isEmpty ||
-                    value.trim().length > 100
-                ? 'Họ tên phải có từ 1 đến 100 ký tự.'
-                : null,
-          ),
-          if (!_editing || _departments != null)
-            DropdownButtonFormField<String>(
-              initialValue: _departmentId,
-              decoration: InputDecoration(
-                labelText: _editing ? 'Khoa phòng' : 'Khoa phòng *',
-              ),
-              items: [
-                for (final department in _departments ?? const <Department>[])
-                  DropdownMenuItem(
-                    value: department.id,
-                    child: Text(
-                      '${department.name}${department.active ? '' : ' (ngừng hoạt động)'}',
-                    ),
-                  ),
-              ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Họ tên *'),
+              maxLength: 100,
               validator: (value) =>
-                  !_editing && (value == null || !isOrganizationId(value))
-                  ? 'Chọn khoa phòng.'
+                  value == null ||
+                      value.trim().isEmpty ||
+                      value.trim().length > 100
+                  ? 'Họ tên phải có từ 1 đến 100 ký tự.'
                   : null,
-              onChanged: (value) => setState(() => _departmentId = value),
-            )
-          else
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Khoa phòng hiện tại',
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_loaded!.departmentId),
-                  if (_departmentError != null)
-                    RequestError(
-                      _departmentError!,
-                      onRetry: canRetryOrganization(_departmentError)
-                          ? _loadDepartments
-                          : null,
-                    ),
-                  if (_departmentError == null && _departments == null)
-                    const LinearProgressIndicator(),
-                ],
-              ),
             ),
-          DropdownButtonFormField<String>(
-            initialValue: _jobTitle,
-            decoration: const InputDecoration(labelText: 'Chức danh *'),
-            items: [
-              for (final title in staffJobTitles)
-                DropdownMenuItem(value: title, child: Text(title)),
-            ],
-            onChanged: (value) =>
-                setState(() => _jobTitle = value ?? staffJobTitles.first),
-          ),
-          TextFormField(
-            controller: _specialization,
-            decoration: const InputDecoration(labelText: 'Chuyên môn'),
-            maxLength: 100,
-          ),
-          TextFormField(
-            controller: _license,
-            decoration: const InputDecoration(labelText: 'Số chứng chỉ'),
-            maxLength: 50,
-          ),
-          TextFormField(
-            controller: _phone,
-            decoration: const InputDecoration(labelText: 'Điện thoại'),
-            keyboardType: TextInputType.phone,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
-                ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
-                : null,
-          ),
-          TextFormField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) =>
-                value != null &&
-                    value.trim().isNotEmpty &&
-                    (value.trim().length > 100 ||
-                        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                            .hasMatch(value.trim()))
-                ? 'Email không hợp lệ.'
-                : null,
-          ),
-          if (_savedProfile != null && _saveError != null)
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+            const SizedBox(height: 12),
+            if (!_editing || _departments != null)
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                initialValue: _departmentId,
+                decoration: InputDecoration(
+                  labelText: _editing ? 'Khoa phòng' : 'Khoa phòng *',
+                ),
+                items: [
+                  for (final department in _departments ?? const <Department>[])
+                    DropdownMenuItem(
+                      value: department.id,
+                      child: Text(
+                        '${department.name}${department.active ? '' : ' (ngừng hoạt động)'}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                validator: (value) =>
+                    !_editing && (value == null || !isOrganizationId(value))
+                    ? 'Chọn khoa phòng.'
+                    : null,
+                onChanged: (value) => setState(() => _departmentId = value),
+              )
+            else
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Khoa phòng hiện tại',
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Thông tin nhân viên đã được lưu; chuyển khoa chưa hoàn tất.',
-                    ),
-                    Text(_saveError.toString()),
-                    const Text(
-                      'Hãy xử lý điều kiện chuyển khoa rồi chỉ thử lại thao tác chuyển, không gửi lại phần cập nhật hồ sơ.',
-                    ),
+                    Text(_loaded!.departmentId),
+                    if (_departmentError != null)
+                      RequestError(
+                        _departmentError!,
+                        onRetry: canRetryOrganization(_departmentError)
+                            ? _loadDepartments
+                            : null,
+                      ),
+                    if (_departmentError == null && _departments == null)
+                      const LinearProgressIndicator(),
                   ],
                 ),
               ),
-            )
-          else if (_saveError != null)
-            RequestError(_saveError!),
-          if (_uncertainCreate)
-            const Text(
-              'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
-            ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed:
-                _saving ||
-                    _uncertainCreate ||
-                    (_savedProfile != null && _departmentError != null)
-                ? null
-                : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    _savedProfile == null
-                        ? Icons.save_outlined
-                        : Icons.swap_horiz,
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _jobTitle,
+              decoration: const InputDecoration(labelText: 'Chức danh *'),
+              items: [
+                for (final title in staffJobTitles)
+                  DropdownMenuItem(
+                    value: title,
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-            label: Text(
-              _savedProfile != null
-                  ? 'Chỉ thử chuyển khoa'
-                  : _editing
-                  ? 'Lưu thay đổi'
-                  : 'Tạo nhân viên',
+              ],
+              onChanged: (value) =>
+                  setState(() => _jobTitle = value ?? staffJobTitles.first),
             ),
-          ),
-          if (_uncertainCreate)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Quay lại danh sách'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _specialization,
+              decoration: const InputDecoration(labelText: 'Chuyên môn'),
+              maxLength: 100,
             ),
-        ],
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _license,
+              decoration: const InputDecoration(labelText: 'Số chứng chỉ'),
+              maxLength: 50,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phone,
+              decoration: const InputDecoration(labelText: 'Điện thoại'),
+              keyboardType: TextInputType.phone,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      !RegExp(r'^\d{10,15}$').hasMatch(value.trim())
+                  ? 'Số điện thoại phải gồm 10 đến 15 chữ số.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _email,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) =>
+                  value != null &&
+                      value.trim().isNotEmpty &&
+                      (value.trim().length > 100 ||
+                          !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                              .hasMatch(value.trim()))
+                  ? 'Email không hợp lệ.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            if (_savedProfile != null && _saveError != null)
+              Card(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Thông tin nhân viên đã được lưu; chuyển khoa chưa hoàn tất.',
+                      ),
+                      Text(_saveError.toString()),
+                      const Text(
+                        'Hãy xử lý điều kiện chuyển khoa rồi chỉ thử lại thao tác chuyển, không gửi lại phần cập nhật hồ sơ.',
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (_saveError != null)
+              RequestError(_saveError!),
+            if (_uncertainCreate)
+              const Text(
+                'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed:
+                  _saving ||
+                      _uncertainCreate ||
+                      (_savedProfile != null && _departmentError != null)
+                  ? null
+                  : _save,
+              icon: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      _savedProfile == null
+                          ? Icons.save_outlined
+                          : Icons.swap_horiz,
+                    ),
+              label: Text(
+                _savedProfile != null
+                    ? 'Chỉ thử chuyển khoa'
+                    : _editing
+                    ? 'Lưu thay đổi'
+                    : 'Tạo nhân viên',
+              ),
+            ),
+            if (_uncertainCreate)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Quay lại danh sách'),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/medical_record.dart';
+import 'follow_up_recommendation_panel.dart';
 
 final medicalRecordRepositoryProvider = Provider<MedicalRecordRepository>(
   (ref) => throw StateError(
@@ -18,9 +19,20 @@ final medicalRecordOutpatientUiEnabledProvider = Provider<bool>(
   ),
 );
 
+typedef MedicalRecordPrescriptionWorkspaceBuilder = Widget Function(
+  BuildContext context,
+  MedicalRecord record, {
+  required bool canCreate,
+});
+
 class MedicalRecordPage extends ConsumerStatefulWidget {
-  const MedicalRecordPage({super.key, this.onLabTestCreated});
+  const MedicalRecordPage({
+    super.key,
+    this.onLabTestCreated,
+    this.prescriptionWorkspaceBuilder,
+  });
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
+  final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
   @override
   ConsumerState<MedicalRecordPage> createState() => _MedicalRecordPageState();
 }
@@ -31,8 +43,10 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
     super.key,
     required this.patientId,
     required this.visitId,
+    this.prescriptionWorkspaceBuilder,
   });
   final String patientId, visitId;
+  final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
@@ -47,6 +61,7 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
       patientId: patientId,
       visitId: visitId,
       repository: ref.watch(medicalRecordRepositoryProvider),
+      prescriptionWorkspaceBuilder: prescriptionWorkspaceBuilder,
     );
   }
 }
@@ -57,9 +72,11 @@ class _VisitRecordResolver extends StatefulWidget {
     required this.patientId,
     required this.visitId,
     required this.repository,
+    this.prescriptionWorkspaceBuilder,
   });
   final String patientId, visitId;
   final MedicalRecordRepository repository;
+  final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
   @override
   State<_VisitRecordResolver> createState() => _VisitRecordResolverState();
 }
@@ -88,7 +105,10 @@ class _VisitRecordResolverState extends State<_VisitRecordResolver> {
     future: _record,
     builder: (context, snapshot) {
       if (snapshot.hasData) {
-        return MedicalRecordDetailPage(recordId: snapshot.data!.id);
+        return MedicalRecordDetailPage(
+          recordId: snapshot.data!.id,
+          prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
+        );
       }
       return Scaffold(
         appBar: AppBar(title: const Text('Hồ sơ của lượt khám')),
@@ -264,6 +284,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
             builder: (_) => MedicalRecordDetailPage(
               recordId: records[index].id,
               onLabTestCreated: widget.onLabTestCreated,
+              prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
             ),
           ),
         ),
@@ -563,9 +584,11 @@ class MedicalRecordDetailPage extends ConsumerStatefulWidget {
     super.key,
     required this.recordId,
     this.onLabTestCreated,
+    this.prescriptionWorkspaceBuilder,
   });
   final String recordId;
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
+  final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
   @override
   ConsumerState<MedicalRecordDetailPage> createState() =>
       _MedicalRecordDetailPageState();
@@ -709,6 +732,11 @@ class _MedicalRecordDetailPageState
       role: role,
       outpatientEnabled: outpatientEnabled,
     );
+    final canCreatePrescription =
+        outpatientEnabled && canEditMedicalRecord(record, role: role);
+    final prescriptionBuilder = const {'ADMIN', 'DOCTOR'}.contains(role)
+        ? widget.prescriptionWorkspaceBuilder
+        : null;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -820,6 +848,14 @@ class _MedicalRecordDetailPageState
             ),
           ),
         ),
+        if (record.status == 'COMPLETED' &&
+            ref.watch(appConfigProvider).scheduledPaymentsEnabled &&
+            ref.watch(followUpRecommendationRepositoryProvider) != null)
+          FollowUpRecommendationPanel(
+            key: ValueKey(record.id),
+            recordId: record.id,
+            canCreate: role == 'DOCTOR',
+          ),
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
         if (_uncertain)
@@ -860,6 +896,30 @@ class _MedicalRecordDetailPageState
             record: record,
             repository: ref.read(medicalRecordRepositoryProvider),
             onCreated: widget.onLabTestCreated,
+          ),
+        if (prescriptionBuilder case final buildWorkspace?)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Đơn thuốc',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  KeyedSubtree(
+                    key: ValueKey((record.id, _identity)),
+                    child: buildWorkspace(
+                      context,
+                      record,
+                      canCreate: canCreatePrescription,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         if (canComplete)
           _CompleteRecordCard(

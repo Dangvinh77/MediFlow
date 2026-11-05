@@ -191,6 +191,8 @@ services:
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
       SPRING_PROFILES_ACTIVE: outpatient-mvp
       MEDIFLOW_CARE_FINANCE_V2_ENABLED: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:-false}
+      # Must mirror Billing's LAB_TEST price catalogue; empty accepts any lab order price code.
+      MEDIFLOW_CLINICAL_LAB_PRICE_CODES: ${MEDIFLOW_CLINICAL_LAB_PRICE_CODES:-}
       MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED: ${MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED:-false}
     depends_on:
       postgres:

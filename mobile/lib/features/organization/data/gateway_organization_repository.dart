@@ -4,7 +4,8 @@ import '../../../core/network/page_decoder.dart';
 import '../domain/organization.dart';
 import 'organization_dto.dart';
 
-class GatewayOrganizationRepository implements OrganizationRepository {
+class GatewayOrganizationRepository
+    implements OrganizationRepository, AccountDetailRepository {
   const GatewayOrganizationRepository(this.client);
   final ApiClient client;
 
@@ -169,6 +170,33 @@ class GatewayOrganizationRepository implements OrganizationRepository {
         '/v1/org/accounts/$id/status',
         OrganizationDto.accountStatusBody(active),
       ),
+    );
+    _verifyId(id, result.id, 'tài khoản');
+    return result;
+  }
+
+  @override
+  Future<Account> account(String id) async {
+    _requireId(id);
+    final result = OrganizationDto.account(
+      await client.get('/v1/org/accounts/$id'),
+    );
+    _verifyId(id, result.id, 'tài khoản');
+    return result;
+  }
+
+  @override
+  Future<Account> setAccountStatus(
+    String id,
+    bool active, {
+    bool replaceActiveAccount = false,
+  }) async {
+    _requireId(id);
+    final result = OrganizationDto.account(
+      await client.put('/v1/org/accounts/$id/status', {
+        ...OrganizationDto.accountStatusBody(active),
+        if (replaceActiveAccount) 'replaceActiveAccount': true,
+      }),
     );
     _verifyId(id, result.id, 'tài khoản');
     return result;

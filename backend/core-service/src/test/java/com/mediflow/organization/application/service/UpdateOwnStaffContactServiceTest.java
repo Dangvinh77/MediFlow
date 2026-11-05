@@ -65,6 +65,10 @@ class UpdateOwnStaffContactServiceTest {
         assertThatThrownBy(() -> service.update(member.getStaffId(), member.getStaffId(), null,
                 "changed@example.test", null))
                 .isInstanceOf(com.mediflow.organization.domain.exception.OwnStaffContactAccessDeniedException.class);
+        assertThat(member.getEmail()).isEqualTo("a@example.test");
+        verify(staff, never()).save(any());
+        verifyNoInteractions(events);
+
         var result = service.update(member.getStaffId(), member.getStaffId(), null, null, null);
 
         assertThat(result.getEmail()).isEqualTo("a@example.test");

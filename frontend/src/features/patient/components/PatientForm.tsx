@@ -6,7 +6,6 @@ import { useEffect, useRef, useSyncExternalStore, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { getRole } from "@/lib/auth";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 import { FormSection } from "./RecordLayout";
 import { patientToday } from "../logic";
@@ -28,7 +27,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   const { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving, blocked, outcomeUnknown, error, fieldErrors, save, retry } = usePatientForm(patientId, markSaved);
   const errorSummary = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save((event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-create-account") === "true"); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save(); }
 
   if (loading) return <AsyncState kind="loading" message="Đang tải thông tin bệnh nhân…" />;
   if (error && editing && !loaded) return <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={retry} />;
@@ -48,12 +47,12 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
         </FormSection>
         <FormSection title="Liên hệ & bảo hiểm" description="Thông tin liên lạc và số bảo hiểm y tế, nếu có.">
           <Field label="Số điện thoại" error={fieldErrors.soDienThoai} htmlFor="patient-phone" hint="10 đến 15 chữ số."><input id="patient-phone" aria-invalid={Boolean(fieldErrors.soDienThoai)} aria-describedby={fieldErrors.soDienThoai ? "patient-phone-error" : "patient-phone-hint"} type="tel" autoComplete="tel" inputMode="numeric" pattern="[0-9]{10,15}" value={form.soDienThoai} onChange={(event) => set("soDienThoai", event.target.value)} className={controlClassName} /></Field>
-          <Field label="Email" error={fieldErrors.email} htmlFor="patient-email" hint={editing && getRole() !== "ADMIN" ? "Chỉ quản trị viên được thay đổi email." : editing ? "Nếu đã cấp tài khoản, đổi email tại Quản lý tài khoản để lưu lý do và cập nhật email đăng nhập." : "Email nhận hướng dẫn đăng nhập và khôi phục mật khẩu."}><input id="patient-email" readOnly={editing && getRole() !== "ADMIN"} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "patient-email-error" : undefined} type="email" autoComplete="email" maxLength={254} value={form.email} onChange={(event) => set("email", event.target.value)} className={controlClassName} /></Field>
+          <Field label="Email" error={fieldErrors.email} htmlFor="patient-email" hint={editing ? "Điều dưỡng hoặc quản trị viên có thể bổ sung email. Nếu đã có tài khoản, đổi email đăng nhập tại chi tiết bệnh nhân để đồng bộ hồ sơ." : "Email nhận hướng dẫn đăng nhập và khôi phục mật khẩu; quản lý tài khoản tại chi tiết bệnh nhân sau khi lưu."}><input id="patient-email" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "patient-email-error" : undefined} type="email" autoComplete="email" maxLength={254} value={form.email} onChange={(event) => set("email", event.target.value)} className={controlClassName} /></Field>
           <Field label="Số BHYT" error={fieldErrors.bhytSo} htmlFor="patient-insurance" hint="Không bắt buộc. Định dạng hiện tại: 01-12345678-9 (2 số-8 số-1 số, có dấu gạch nối)."><input id="patient-insurance" aria-invalid={Boolean(fieldErrors.bhytSo)} aria-describedby={fieldErrors.bhytSo ? "patient-insurance-error" : "patient-insurance-hint"} placeholder="01-12345678-9" pattern="[0-9]{2}-[0-9]{8}-[0-9]" value={form.bhytSo} onChange={(event) => set("bhytSo", event.target.value)} className={controlClassName} /></Field>
           <Field label="Địa chỉ" error={fieldErrors.diaChi} htmlFor="patient-address"><textarea id="patient-address" aria-invalid={Boolean(fieldErrors.diaChi)} aria-describedby={fieldErrors.diaChi ? "patient-address-error" : undefined} autoComplete="street-address" maxLength={255} rows={3} value={form.diaChi} onChange={(event) => set("diaChi", event.target.value)} className={controlClassName} /></Field>
         </FormSection>
       </fieldset>
-      <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button>{!editing && getRole() === "ADMIN" ? <Button type="submit" disabled={blocked} data-create-account="true">Lưu và tạo tài khoản</Button> : null}<Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
+      <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={blocked}>{editing ? "Lưu thay đổi" : "Tạo bệnh nhân"}</Button></div>
     </form>
   );
 }

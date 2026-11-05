@@ -22,7 +22,10 @@ Support composition does not grant write access to Notification, root build, Com
   [reliability](../../docs/plans/04-data-reliability.md) and the
   [historical Huy checkpoints](../../docs/handoffs/history/2026-10-22-huy-mvp-checkpoints.md) and
   [current registry](../../docs/handoffs/README.md).
-  New outpatient reads require accepted coverage; absence is not zero. Gates default OFF.
+  Reconciled outpatient reads require accepted coverage; absence is not zero. The explicitly
+  provisional `/outpatient/statistics` read reports only recorded local facts with
+  `reconciled=false`; zero means no recorded contribution, never complete source coverage.
+  See the 2026-11-04 operational statistics contract. Gates default OFF.
   Support must use the `lib` classifier and exclude the standalone Report application from scans;
   the library artifact alone does not establish multi-store/security composition readiness.
   Use qualified reportTransactionManager/reportJdbcTemplate/reportZoneId and explicit Report DS

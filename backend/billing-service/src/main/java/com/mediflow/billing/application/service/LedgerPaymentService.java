@@ -302,7 +302,8 @@ public class LedgerPaymentService {
         request.markPaid(now);
         repository.save(payment, request, operation.actorAccountId());
         repository.allocate(payment);
-        events.appendHeld(account.getAccountId(), new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed",
+        // Enrolled scheduled EXAM requests publish their cash fact to Report; others stay HELD.
+        events.appendForOutpatientRequest(account.getAccountId(), request.getPaymentRequestId(), new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed",
                 1, now, operation.correlationId(), "billing-service", new PaymentCompletedPayload(
                 payment.getTransactionId(), request.getInvoiceId(), request.getPaymentRequestId(), account.getAccountId(),
                 account.getPatientId(), account.getDepartmentId(), account.getCareEpisodeType().name(),

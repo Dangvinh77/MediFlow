@@ -108,10 +108,28 @@ class PharmacyStub implements PharmacyRepository {
   }
 
   final searches = <({String? keyword, int page, int size})>[];
+  final prescriptionSearches =
+      <
+        ({
+          String? keyword,
+          String? patientId,
+          String? status,
+          int page,
+          int size,
+        })
+      >[];
   final details = <String>[];
   Future<PageResult<Drug>> Function(String?, int, int)? search;
   Future<Drug> Function(String)? detail;
   Future<Prescription> Function(String)? prescription;
+  Future<PageResult<Prescription>> Function(
+    String?,
+    String?,
+    String?,
+    int,
+    int,
+  )?
+  prescriptionSearch;
   Future<Drug> Function(CreateDrug)? create;
   Future<Drug> Function(String, AdjustDrugStock)? adjust;
   final prescriptions = <String>[];
@@ -155,6 +173,32 @@ class PharmacyStub implements PharmacyRepository {
             ...prescriptionJson(),
             'prescriptionId': id,
           }),
+        );
+  }
+
+  @override
+  Future<PageResult<Prescription>> searchPrescriptions({
+    String? keyword,
+    String? patientId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  }) {
+    prescriptionSearches.add((
+      keyword: keyword,
+      patientId: patientId,
+      status: status,
+      page: page,
+      size: size,
+    ));
+    return prescriptionSearch?.call(keyword, patientId, status, page, size) ??
+        Future.value(
+          const PageResult(
+            items: <Prescription>[],
+            number: 0,
+            totalPages: 0,
+            totalElements: 0,
+          ),
         );
   }
 }
