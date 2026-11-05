@@ -3,6 +3,9 @@ class AppConfig {
     String gatewayUrl, {
     bool allowInsecureHttp = false,
     this.pharmacyMode = 'unavailable',
+    this.scheduledPaymentsEnabled = false,
+    this.outpatientQuotesEnabled = false,
+    this.zeroPayableEnabled = false,
   }) {
     final uri = Uri.tryParse(gatewayUrl);
     if (uri == null ||
@@ -42,8 +45,21 @@ class AppConfig {
       'PHARMACY_MODE',
       defaultValue: 'unavailable',
     ),
+    scheduledPaymentsEnabled: const bool.fromEnvironment(
+      'MEDIFLOW_SCHEDULING_UI_ENABLED',
+    ),
+    outpatientQuotesEnabled: const bool.fromEnvironment(
+      'MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED',
+    ),
+    zeroPayableEnabled:
+        const bool.fromEnvironment('MEDIFLOW_SCHEDULING_UI_ENABLED') &&
+        const bool.fromEnvironment('MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED') &&
+        const bool.fromEnvironment('MEDIFLOW_ZERO_PAYABLE_UI_ENABLED'),
   );
 
   late final String baseUrl;
   final String pharmacyMode;
+  final bool scheduledPaymentsEnabled;
+  final bool outpatientQuotesEnabled;
+  final bool zeroPayableEnabled;
 }

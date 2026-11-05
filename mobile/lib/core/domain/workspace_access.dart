@@ -3,6 +3,7 @@ class WorkspaceAccess {
   const WorkspaceAccess({
     required this.sessionIdentity,
     required this.role,
+    this.accountId,
     this.patientId,
     this.staffId,
   });
@@ -10,5 +11,5 @@ class WorkspaceAccess {
   /// Opaque identity of the current authenticated session; never a patient ID.
   final Object sessionIdentity;
   final String role;
-  final String? patientId, staffId;
+  final String? accountId, patientId, staffId;
 }

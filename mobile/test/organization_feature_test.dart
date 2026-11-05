@@ -493,6 +493,18 @@ void main() {
       expect(find.text('Tài khoản'), findsOneWidget);
       await tester.tap(find.text('Tài khoản'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text(
+          'Tài khoản PATIENT gắn mã bệnh nhân; các vai trò khác gắn mã nhân viên.',
+        ),
+        300,
+        scrollable: find
+            .ancestor(
+              of: find.byKey(const ValueKey('account-search')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.text('Tạo tài khoản'), findsWidgets);
       expect(
         find.textContaining('API hiện không cung cấp danh sách tài khoản.'),
@@ -722,7 +734,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tester.drag(find.byType(ListView).last, const Offset(0, -700));
+      await tester.drag(find.byType(Scrollable).last, const Offset(0, -700));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Chỉ thử chuyển khoa'));
       await tester.pumpAndSettle();

@@ -199,156 +199,327 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        'Thống kê hoạt động',
-        style: Theme.of(context).textTheme.headlineSmall,
+  bool get isReconciledReport =>
+      kind == ReportKind.outpatientDaily ||
+      kind == ReportKind.outpatientMonthly;
+
+  String get selectedPeriodSummary => kind == ReportKind.outpatientMonthly
+      ? 'Năm ${from.text.length >= 4 ? from.text.substring(0, 4) : from.text}'
+      : '${from.text} → ${to.text}';
+
+  List<Widget> dateFilters() => [
+    TextField(
+      controller: from,
+      readOnly: true,
+      onTap: () => date(from),
+      decoration: InputDecoration(
+        labelText: switch (kind) {
+          ReportKind.daily => 'Ngày báo cáo',
+          ReportKind.monthly => 'Chọn tháng',
+          ReportKind.outpatientMonthly => 'Chọn năm',
+          _ => 'Từ ngày',
+        },
+        suffixIcon: const Icon(Icons.calendar_month),
       ),
-      const SizedBox(height: 16),
-      DropdownButtonFormField<ReportKind>(
-        initialValue: kind,
-        items: [
-          for (final k in availableReportKinds(
-            outpatientEnabled: widget.outpatientEnabled,
-          ))
-            DropdownMenuItem(value: k, child: Text(reportTitles[k]!)),
-        ],
-        onChanged: loading
-            ? null
-            : (k) {
-                kind = k!;
-                changed();
-              },
-        decoration: const InputDecoration(labelText: 'Loại báo cáo'),
-      ),
+    ),
+    if (kind == ReportKind.topMedicines ||
+        kind == ReportKind.outpatientDaily ||
+        kind == ReportKind.operations) ...[
       const SizedBox(height: 12),
       TextField(
-        controller: from,
+        controller: to,
         readOnly: true,
-        onTap: () => date(from),
-        decoration: InputDecoration(
-          labelText: switch (kind) {
-            ReportKind.daily => 'Ngày báo cáo',
-            ReportKind.monthly => 'Chọn tháng',
-            ReportKind.outpatientMonthly => 'Chọn năm',
-            _ => 'Từ ngày',
-          },
-          suffixIcon: const Icon(Icons.calendar_month),
+        onTap: () => date(to),
+        decoration: const InputDecoration(
+          labelText: 'Đến ngày',
+          suffixIcon: Icon(Icons.calendar_month),
         ),
       ),
-      if (kind == ReportKind.topMedicines ||
-          kind == ReportKind.outpatientDaily ||
-          kind == ReportKind.operations) ...[
-        const SizedBox(height: 12),
-        TextField(
-          controller: to,
-          readOnly: true,
-          onTap: () => date(to),
-          decoration: const InputDecoration(
-            labelText: 'Đến ngày',
-            suffixIcon: Icon(Icons.calendar_month),
-          ),
-        ),
-      ],
-      ReferencePicker(
-        kind: ReferenceKind.department,
-        label: 'Khoa phòng (tất cả nếu bỏ trống)',
-        value: department,
-        onChanged: loading
-            ? null
-            : (v) {
-                department = v;
-                changed();
-              },
-      ),
-      const SizedBox(height: 12),
-      if (kind == ReportKind.outpatientDaily ||
-          kind == ReportKind.outpatientMonthly)
-        AvailableReportPeriods(
-          key: ValueKey('$kind:$department'),
-          repository: widget.repository,
-          departmentId: department,
-          monthly: kind == ReportKind.outpatientMonthly,
-          needsDepartment: widget.needsDepartment && department == null,
-          onSelect: (period) {
-            from.text = period.from;
-            to.text = period.to;
-            department = period.departmentId;
+    ],
+  ];
+
+  Widget departmentFilter() => ReferencePicker(
+    kind: ReferenceKind.department,
+    label: 'Khoa phòng (tất cả nếu bỏ trống)',
+    value: department,
+    onChanged: loading
+        ? null
+        : (value) {
+            department = value;
             changed();
           },
-        ),
-      FilledButton.icon(
-        onPressed: loading ? null : load,
-        icon: const Icon(Icons.bar_chart),
-        label: const Text('Xem báo cáo'),
-      ),
-      if (loading)
-        const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      if (error != null) RequestError(error!, onRetry: load),
-      if (operations != null) ...[
-        const SizedBox(height: 24),
-        OperationsStatisticsView(operations!),
-      ],
-      if (data != null) ...[
-        const SizedBox(height: 24),
-        Text(data!.title, style: Theme.of(context).textTheme.titleLarge),
-        if (data!.departmentId != null)
-          ReferenceLabel(
-            kind: ReferenceKind.department,
-            id: data!.departmentId!,
-            label: 'Khoa',
+  );
+
+  Widget availablePeriods() => AvailableReportPeriods(
+    key: ValueKey('$kind:$department'),
+    repository: widget.repository,
+    departmentId: department,
+    monthly: kind == ReportKind.outpatientMonthly,
+    needsDepartment: widget.needsDepartment && department == null,
+    onSelect: (period) {
+      from.text = period.from;
+      to.text = period.to;
+      department = period.departmentId;
+      changed();
+    },
+  );
+
+  String outpatientPeriodSummary(ReportRow row, String currency) {
+    String value(String key) =>
+        row.metrics[key] == null ? '—' : _number(row.metrics[key]!);
+    return '${value('Lượt khám hoàn tất')} lượt · '
+        '${value('Xét nghiệm')} xét nghiệm · '
+        '${value('Đơn đã cấp')} đơn · '
+        'Thu ròng: ${value('Thu ròng')} $currency';
+  }
+
+  Widget reconciledResult(BuildContext context, ReportData report) {
+    final synthetic = report.note?.startsWith('Dữ liệu mô phỏng') ?? false;
+    final currency = report.currency ?? '—';
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(report.title, style: text.titleLarge),
+                    const Chip(
+                      avatar: Icon(Icons.verified_outlined, size: 18),
+                      label: Text('Đã đối soát'),
+                    ),
+                    if (synthetic)
+                      const Chip(
+                        avatar: Icon(Icons.science_outlined, size: 18),
+                        label: Text('Dữ liệu mô phỏng'),
+                      ),
+                  ],
+                ),
+                Text('${report.rows.length} kỳ · $currency'),
+                if (report.departmentId != null)
+                  ReferenceLabel(
+                    kind: ReferenceKind.department,
+                    id: report.departmentId!,
+                    label: 'Khoa',
+                  ),
+              ],
+            ),
           ),
-        if (data!.note != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(data!.note!),
+        ),
+        if (report.note != null)
+          Card(
+            child: ExpansionTile(
+              title: const Text('Nguồn và đối soát'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(report.note!),
+                  ),
+                ),
+              ],
+            ),
           ),
-        if (data!.currency != null && data!.rows.isNotEmpty)
-          OutpatientStatistics(data!),
-        if (data!.rows.isEmpty)
+        if (report.rows.isNotEmpty)
+          Card(
+            child: ExpansionTile(
+              title: const Text('Xu hướng đã đối soát'),
+              subtitle: const Text('Mở để xem dòng tiền và hoạt động theo kỳ'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: OutpatientStatistics(report),
+                ),
+              ],
+            ),
+          ),
+        if (report.rows.isEmpty)
           const Padding(
-            padding: EdgeInsets.all(24),
+            padding: EdgeInsets.all(16),
             child: Text('Chưa có số liệu trong khoảng đã chọn.'),
           ),
-        for (final row in data!.rows)
+        for (final row in report.rows)
           Card(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    row.title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const Divider(),
-                  for (final metric in row.metrics.entries)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(metric.key)),
-                          Text(
-                            _number(metric.value),
-                            style: Theme.of(context).textTheme.titleMedium,
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: ExpansionTile(
+              title: Text(row.title),
+              subtitle: Text(outpatientPeriodSummary(row, currency)),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    children: [
+                      for (final metric in row.metrics.entries)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(metric.key)),
+                              Text(
+                                _number(metric.value),
+                                style: text.titleMedium,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
       ],
-    ],
-  );
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filters = dateFilters();
+    final departmentInput = departmentFilter();
+    final isOutpatient = isReconciledReport;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Thống kê hoạt động',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<ReportKind>(
+          initialValue: kind,
+          isExpanded: true,
+          items: [
+            for (final k in availableReportKinds(
+              outpatientEnabled: widget.outpatientEnabled,
+            ))
+              DropdownMenuItem(
+                value: k,
+                child: Text(
+                  reportTitles[k]!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: loading
+              ? null
+              : (k) {
+                  kind = k!;
+                  changed();
+                },
+          decoration: const InputDecoration(labelText: 'Loại báo cáo'),
+        ),
+        const SizedBox(height: 8),
+        if (isOutpatient)
+          Card(
+            child: ExpansionTile(
+              key: ValueKey('reconciled-filters-$kind'),
+              title: const Text('Bộ lọc đối soát'),
+              subtitle: Text(
+                '$selectedPeriodSummary · ${widget.needsDepartment && department == null
+                    ? 'Chọn khoa được phân quyền'
+                    : department == null
+                    ? 'Toàn viện'
+                    : 'Theo khoa đã chọn'}',
+              ),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                ...filters,
+                const SizedBox(height: 12),
+                departmentInput,
+                const SizedBox(height: 12),
+                availablePeriods(),
+              ],
+            ),
+          )
+        else ...[
+          ...filters,
+          const SizedBox(height: 12),
+          departmentInput,
+        ],
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: loading ? null : load,
+          icon: const Icon(Icons.bar_chart),
+          label: const Text('Xem báo cáo'),
+        ),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (error != null) RequestError(error!, onRetry: load),
+        if (operations != null) ...[
+          const SizedBox(height: 24),
+          OperationsStatisticsView(operations!),
+        ],
+        if (data != null && isOutpatient) ...[
+          const SizedBox(height: 12),
+          reconciledResult(context, data!),
+        ],
+        if (data != null && !isOutpatient) ...[
+          const SizedBox(height: 24),
+          Text(data!.title, style: Theme.of(context).textTheme.titleLarge),
+          if (data!.departmentId != null)
+            ReferenceLabel(
+              kind: ReferenceKind.department,
+              id: data!.departmentId!,
+              label: 'Khoa',
+            ),
+          if (data!.note != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(data!.note!),
+            ),
+          if (data!.rows.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Chưa có số liệu trong khoảng đã chọn.'),
+            ),
+          for (final row in data!.rows)
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row.title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Divider(),
+                    for (final metric in row.metrics.entries)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(metric.key)),
+                            Text(
+                              _number(metric.value),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
   String _number(num value) => value
       .toStringAsFixed(value % 1 == 0 ? 0 : 2)
       .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');

@@ -55,8 +55,39 @@ class ProfileAccountStub implements ProfileAccountRepository {
   ProfileMailDelivery? latestDelivery;
   final resetKeys = <String>[];
   final issueKeys = <String>[];
-  int profileReads = 0, patientIssues = 0;
+  int profileReads = 0, patientIssues = 0, patientEmailAttempts = 0;
   Future<ProfileMailDelivery> Function(String key)? resetPatientAction;
+  bool failNextPatientEmailBeforeApply = false;
+  final emailChanges = <(String, String, String)>[];
+
+  @override
+  Future<void> updatePatientEmail({
+    required String patientId,
+    required String email,
+    required String reason,
+  }) async {
+    patientEmailAttempts++;
+    if (failNextPatientEmailBeforeApply) {
+      failNextPatientEmailBeforeApply = false;
+      throw const ApiFailure('Lost response');
+    }
+    emailChanges.add((patientId, email, reason));
+    snapshot = ProfileAccountSnapshot(
+      account: Account(
+        id: accountId,
+        username: email,
+        staffId: null,
+        patientId: patientId,
+        role: 'PATIENT',
+        active: true,
+        lastLoginAt: null,
+        createdAt: '2026-11-01T10:00:00Z',
+        updatedAt: '2026-11-01T10:00:00Z',
+      ),
+      profileEmail: email,
+      emailSyncPending: false,
+    );
+  }
 
   @override
   Future<ProfileAccountSnapshot> patientProfile(String id) async {
@@ -182,6 +213,8 @@ class ProfileAccountAdapter implements HttpClientAdapter {
         'messageId': 'mail-1',
         'status': 'PENDING',
       },
+      'PUT /api/v1/org/patient-accounts/$patientId/email' =>
+        patientAccount ?? (accountJson()..['username'] = 'updated@example.org'),
       'GET /api/v1/org/patient-accounts/$patientId/mail-delivery' => {
         'messageId': 'mail-1',
         'status': 'FAILED',
@@ -206,6 +239,203 @@ class ProfileAccountAdapter implements HttpClientAdapter {
 }
 
 void main() {
+  test(
+    'patient email command validates owner and normalizes the wire email',
+    () async {
+      final adapter = ProfileAccountAdapter();
+      final client = ApiClient(
+        AppConfig('http://localhost:8080/api'),
+        dio: Dio()..httpClientAdapter = adapter,
+        token: () => 'token',
+      );
+      addTearDown(client.close);
+      final repository = GatewayProfileAccountRepository(client);
+      await UpdatePatientLoginEmail(repository).call(
+        patientId: patientId,
+        email: ' Updated@Example.org ',
+        reason: ' Patient verified ',
+      );
+      expect(
+        adapter.requests.single.uri.path,
+        '/api/v1/org/patient-accounts/$patientId/email',
+      );
+      expect(adapter.requests.single.data, {
+        'email': 'updated@example.org',
+        'reason': 'Patient verified',
+      });
+      adapter.patientAccount = accountJson()..['patientId'] = staffId;
+      await expectLater(
+        repository.updatePatientEmail(
+          patientId: patientId,
+          email: 'updated@example.org',
+          reason: 'Verified',
+        ),
+        throwsFormatException,
+      );
+    },
+  );
+  for (final repair in [false, true]) {
+    testWidgets(
+      repair
+          ? 'nurse repairs a mismatched patient profile email'
+          : 'nurse changes patient login email with an audited reason',
+      (tester) async {
+        final repository = ProfileAccountStub()
+          ..snapshot = ProfileAccountSnapshot(
+            account: sampleAccount(),
+            profileEmail: repair
+                ? 'legacy@example.org'
+                : 'patient01@example.org',
+            emailSyncPending: repair,
+          );
+        const access = WorkspaceAccess(
+          sessionIdentity: 'patient-email-session',
+          role: 'NURSE',
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileAccountRepositoryProvider.overrideWithValue(repository),
+              workspaceAccessProvider.overrideWithValue(access),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: ProfileAccountPanel(
+                    owner: ProfileAccountOwner.patient(id: patientId),
+                    access: access,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.widgetWithText(TextField, 'Email đăng nhập mới'),
+          findsOneWidget,
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Email đăng nhập mới'),
+          repair ? 'patient01@example.org' : 'updated@example.org',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Lý do thay đổi email'),
+          'Bệnh nhân xác nhận',
+        );
+        final save = find.text('Lưu email mới');
+        await tester.pump();
+        await tester.ensureVisible(save);
+        await tester.tap(save);
+        await tester.pumpAndSettle();
+        expect(repository.emailChanges, [
+          (
+            patientId,
+            repair ? 'patient01@example.org' : 'updated@example.org',
+            'Bệnh nhân xác nhận',
+          ),
+        ]);
+        expect(
+          repository.snapshot.account?.username,
+          repair ? 'patient01@example.org' : 'updated@example.org',
+        );
+        expect(
+          find.textContaining(
+            repair ? 'Đã yêu cầu đồng bộ' : 'Đã cập nhật email đăng nhập',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  }
+
+  testWidgets(
+    'uncertain same-username repair can be safely resubmitted after lookup',
+    (tester) async {
+      final repository = ProfileAccountStub()
+        ..snapshot = ProfileAccountSnapshot(
+          account: sampleAccount(),
+          profileEmail: 'legacy@example.org',
+          emailSyncPending: true,
+        )
+        ..failNextPatientEmailBeforeApply = true;
+      const access = WorkspaceAccess(
+        sessionIdentity: 'patient-email-repair-session',
+        role: 'NURSE',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            profileAccountRepositoryProvider.overrideWithValue(repository),
+            workspaceAccessProvider.overrideWithValue(access),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ProfileAccountPanel(
+                  owner: ProfileAccountOwner.patient(id: patientId),
+                  access: access,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Email đăng nhập mới'),
+        'patient01@example.org',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Lý do thay đổi email'),
+        'Đã xác minh lại email',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.text('Lưu email mới'));
+      await tester.tap(find.text('Lưu email mới'));
+      await tester.pumpAndSettle();
+      expect(repository.patientEmailAttempts, 1);
+      expect(
+        find.textContaining('Chưa xác nhận được kết quả đổi email'),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(find.text('Kiểm tra kết quả đổi email'));
+      await tester.tap(find.text('Kiểm tra kết quả đổi email'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Chưa xác nhận đồng bộ'),
+        findsOneWidget,
+      );
+      expect(find.text('Đã xác nhận email đăng nhập mới.'), findsNothing);
+      expect(find.text('Lưu email mới'), findsOneWidget);
+      expect(
+        tester
+            .widget<ButtonStyleButton>(
+              find.ancestor(
+                of: find.text('Cấp mật khẩu tạm qua email'),
+                matching: find.byWidgetPredicate(
+                  (widget) => widget is ButtonStyleButton,
+                ),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.ensureVisible(find.text('Lưu email mới'));
+      await tester.tap(find.text('Lưu email mới'));
+      await tester.pumpAndSettle();
+      expect(repository.patientEmailAttempts, 2);
+      expect(repository.emailChanges, [
+        (patientId, 'patient01@example.org', 'Đã xác minh lại email'),
+      ]);
+      expect(repository.snapshot.emailSyncPending, isFalse);
+      expect(find.textContaining('Đã yêu cầu đồng bộ'), findsOneWidget);
+    },
+  );
+
   test(
     'profile DTO distinguishes a missing account from a pending email sync',
     () {
