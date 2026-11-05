@@ -59,6 +59,7 @@ export interface PrescriptionLineRequest {
   drugId: string;
   quantity: number;
   dosage?: string | null;
+  note?: string | null;
 }
 
 export interface CreatePrescriptionRequest {
@@ -93,6 +94,7 @@ export interface PrescriptionLineDTO {
   unitPrice: number;
   dosage: string | null;
   lineTotal: number;
+  note: string | null;
 }
 
 export interface PrescriptionDTO {

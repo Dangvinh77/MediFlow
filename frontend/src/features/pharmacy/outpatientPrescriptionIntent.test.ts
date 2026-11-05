@@ -62,6 +62,7 @@ describe("Outpatient prescription submitted intent", () => {
   });
   it("does not allocate a different key merely because object properties have another order", () => {
     const original = prepareOutpatientPrescriptionIntent(request(), null, () => firstKey);
+    expect(prepareOutpatientPrescriptionIntent({ ...request(), lines: [{ ...request().lines[0], note: "Uống đủ" }] }, null, () => firstKey).request.lines[0].note).toBe("Uống đủ");
     const reordered = { ...request(), lines: [{ dosage: "Sau ăn", quantity: 2, drugId: request().lines[0].drugId }] };
     const makeKey = vi.fn();
     expect(prepareOutpatientPrescriptionIntent(reordered, original, makeKey)).toBe(original);

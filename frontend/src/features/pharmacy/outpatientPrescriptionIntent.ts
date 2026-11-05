@@ -81,6 +81,7 @@ function snapshot(request: CreateOutpatientPrescriptionRequest): SubmittedReques
       drugId: line.drugId,
       quantity: line.quantity,
       ...(line.dosage !== undefined ? { dosage: line.dosage } : {}),
+      ...(line.note !== undefined ? { note: line.note } : {}),
     }))),
     careContractVersion: request.careContractVersion,
     careContext: request.careContext,

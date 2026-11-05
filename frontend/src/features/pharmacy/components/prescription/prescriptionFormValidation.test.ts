@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyPrescriptionForm, hasCreatePrescriptionErrors, toCreatePrescriptionRequest, validateCreatePrescriptionForm } from "./prescriptionFormValidation";
+import { createEmptyPrescriptionForm, createPrescriptionLine, hasCreatePrescriptionErrors, toCreatePrescriptionRequest, validateCreatePrescriptionForm } from "./prescriptionFormValidation";
 
 const id = "00000000-0000-4000-8000-0000000000ab";
 function valid() {
   const values = createEmptyPrescriptionForm();
   return { ...values, recordId: id, patientId: id, doctorId: id, departmentId: id, prescribedDate: "2024-02-29",
-    lines: [{ ...values.lines[0], drugId: id, quantity: "2", dosage: "Sau ăn" }] };
+    lines: [{ ...createPrescriptionLine(), drugId: id, quantity: "2", dosage: "Sau ăn" }] };
 }
 
 describe("Legacy prescription validation and wire intent", () => {

@@ -60,7 +60,7 @@ function mapPrescriptionValidationDetails(
 ): OutpatientPrescriptionValidationErrors {
   const fields: OutpatientPrescriptionValidationErrors["fields"] = {};
   const lineErrors: Record<string, CreatePrescriptionValidationErrors["lines"][string]> = {};
-  const lineFieldPattern = /^lines(?:\[(\d+)\]|\.(\d+))\.(drugId|quantity|dosage)$/;
+  const lineFieldPattern = /^lines(?:\[(\d+)\]|\.(\d+))\.(drugId|quantity|dosage|note)$/;
 
   for (const detail of details) {
     const match = lineFieldPattern.exec(detail.field);
@@ -272,29 +272,29 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
       .find(name => errors.fields[name] && (mode === "outpatient" || (name !== "careEpisodeId" && name !== "priceCode")));
     const lineKey = values.lines.find(line => Object.values(errors.lines[line.rowKey] ?? {}).some(Boolean))?.rowKey;
     const lineField = lineKey
-      ? (["drugId", "quantity", "dosage"] as const).find(name => errors.lines[lineKey]?.[name])
+      ? (["drugId", "quantity", "dosage", "note"] as const).find(name => errors.lines[lineKey]?.[name])
       : undefined;
     focusTarget.current = field
       ? mode === "legacy" && field === "departmentId" ? "doctorId" : field
       : lineKey && lineField
         ? `${lineField}-${lineKey}`
-        : errors.lineList ? "prescription-add-line" : undefined;
+        : errors.lineList ? "prescription-drug-keyword" : undefined;
   }
 
-  function addLine() {
-    if (locked) return;
-    const line = createPrescriptionLine();
-    focusTarget.current = `drugId-${line.rowKey}`;
+  function addLine(drug: DrugDTO): string | null {
+    if (locked || values.lines.some(line => line.drugId === drug.drugId)) return null;
+    const line = createPrescriptionLine(drug);
     setValues(current => ({ ...current, lines: [...current.lines, line] }));
     setValidationErrors(current => ({ ...current, lineList: undefined }));
+    return line.rowKey;
   }
 
   function removeLine(rowKey: string) {
-    if (locked || values.lines.length <= 1) return;
+    if (locked) return;
     const index = values.lines.findIndex(line => line.rowKey === rowKey);
     if (index < 0) return;
     const next = values.lines[index + 1] ?? values.lines[index - 1];
-    focusTarget.current = `drugId-${next.rowKey}`;
+    focusTarget.current = next ? `quantity-${next.rowKey}` : "prescription-drug-keyword";
     setValues(current => ({ ...current, lines: current.lines.filter(line => line.rowKey !== rowKey) }));
     setValidationErrors(current => {
       const lines = { ...current.lines };
@@ -463,7 +463,7 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
                     {context.data.priceCodes.map(code => <option key={code} value={code}>{code}</option>)}
                   </select>
                 </Field>}
-                <p className="text-muted-foreground">Lượt khám và thông tin thu tiền đã được hệ thống cung cấp. Giá từng thuốc lấy từ danh mục thuốc.</p>
+                <p className="text-muted-foreground">Lượt khám và thông tin thu tiền đã được hệ thống cung cấp.</p>
               </div>}
           </div>}
         </div>
@@ -508,7 +508,6 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
           setValidationErrors({ fields: {}, lines: {} }); setFormError(null);
         }}>Đã kiểm tra đơn cũ, bắt đầu đơn mới</Button>}
         <Link href="/pharmacy/prescriptions" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu đơn thuốc</Link>
-        <p className="text-sm text-muted-foreground">Giá chính thức được xác định khi tạo đơn.</p>
       </div>
     </form>
   );

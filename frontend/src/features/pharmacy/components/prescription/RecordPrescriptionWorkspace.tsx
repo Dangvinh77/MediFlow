@@ -103,7 +103,7 @@ function WorkspaceContent({ recordId, patientId, canCreate, mode }: RecordPrescr
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="font-medium">{formatDate(rx.prescribedDate)}</span>
               <StatusBadge tone={prescriptionStatusPresentation[rx.status].tone}>{prescriptionStatusPresentation[rx.status].label}</StatusBadge>
-              <span className="ml-auto tabular-nums text-muted-foreground">{formatVnd(rx.totalAmount)}</span>
+              {!canCreate && <span className="ml-auto tabular-nums text-muted-foreground">{formatVnd(rx.totalAmount)}</span>}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{rx.lines.map(line => `${line.drugName || "Thuốc trong đơn"} × ${line.quantity}`).join(" · ")}</p>
           </Link>
