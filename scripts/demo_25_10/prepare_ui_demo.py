@@ -59,8 +59,9 @@ def validate_manifest(manifest):
 
 
 class DemoApi:
-    def __init__(self, gateway, journal):
+    def __init__(self, gateway, journal, cancel_file=None):
         self.gateway, self.journal = gateway, journal
+        self.cancel_file = cancel_file
         self.state = json.loads(journal.read_text(encoding='utf-8')) if journal.exists() else {}
         self.tokens, self.claims = {}, {}
 
@@ -70,6 +71,8 @@ class DemoApi:
         temporary.replace(self.journal)
 
     def call(self, role, method, path, body=None, expected=(200,), stage=None, journal_omit=()):
+        if self.cancel_file and self.cancel_file.exists():
+            raise InterruptedError('Demo preparation stopped by request')
         command = None
         if stage:
             # Fixed public demo credentials are supplied in memory on each retry, never saved.

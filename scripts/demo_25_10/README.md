@@ -11,17 +11,68 @@ Tại thư mục source chính, mở Docker Desktop và chạy lần lượt:
    `http://<IP-máy>:3000`, nối Gateway nội bộ `http://127.0.0.1:28080`, bật các UI gates demo. Điện thoại dùng Gateway `http://<IP-máy>:28080/api`.
 3. `clean-docker.bat`: yêu cầu demo backend dừng qua stop file, xóa container MediFlow
    và các image/tag dự án nhận diện được; image còn được container dự án khác dùng
-   được giữ lại. Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
+   được giữ lại. Đồng thời dừng Java demo còn sót sau khi cửa sổ khởi động bị đóng/lỗi,
+   giải phóng các cổng demo gây `WinError 10048`, kể cả khi chưa tạo được manifest.
+   Chỉ dừng tiến trình khớp đúng JAR trong repo, đúng cổng của dịch vụ và có tiến trình
+   cha đã thoát; kiểm tra lại thời điểm khởi động để tránh nhầm PID được Windows dùng lại.
+   Không xóa volume, không prune toàn máy. Dừng frontend bằng `Ctrl+C`.
 
 Lần đầu chạy backend bằng **Run as administrator** để cho phép hai cổng demo 28080/3000 từ LocalSubnet trên đúng adapter. Nếu dùng nhiều card mạng, truyền `-LanAddress <IP>` cho cả backend/frontend; `-LocalOnly` giữ cả hai trên loopback. iOS/Android dùng hướng dẫn [mobile cùng Wi-Fi](../../mobile/README.md#demo-điện-thoại-cùng-wi-fi-với-máy-windows).
 
-Chạy `clean-docker.bat -Preview` để xem trước mà không thay đổi Docker hoặc tạo stop file.
+Chạy `clean-docker.bat -Preview` để xem trước các tiến trình/cổng và tài nguyên Docker
+sẽ dọn, không dừng tiến trình, thay đổi Docker hoặc tạo stop file.
 Các file dùng đường dẫn tương đối từ chính file `.bat`, không cần đặt working directory.
 Lỗi trả exit code 1 và giữ cửa sổ để đọc. Có thể đặt `MEDIFLOW_NO_PAUSE=1` khi tự động hóa.
 
 Yêu cầu Java 21, Maven, Python 3, Node/pnpm và Docker Compose v2 trên PATH.
-Backend dùng lại runner hiện có: dữ liệu demo là tạm thời, tự dừng/dọn sau hai giờ;
-lần chạy mới nạp lại snapshot. Launcher bổ sung lịch hôm nay/ngày mai bằng
+
+### Chạy nhanh và giữ dữ liệu giữa các lần chạy
+
+```powershell
+.\start-backend.bat -Fast
+.\stop-backend.bat
+.\start-backend.bat -Fast
+```
+
+`-Fast` lần đầu vẫn cần build và tạo dữ liệu. Những lần sau kiểm tra hash source,
+Maven inputs và cả tám JAR; chỉ bỏ Maven khi khớp bản build đã ghi nhận. Source/JAR
+thay đổi, JAR thiếu hoặc chưa có cache sẽ tự build lại. Không cần Maven trên PATH
+khi JAR đã được xác minh còn phù hợp. Mỗi bước in `TIMING` để đo riêng thời gian
+build, hạ tầng, khởi động ứng dụng và chuẩn bị dữ liệu UI.
+
+Database/broker riêng của checkout được giữ trong container; không nạp snapshot
+hay seed SQL lại khi tái sử dụng. Nhật ký tạo lịch/nguồn tái khám được giữ cùng dữ liệu
+ở `scripts/demo_25_10/evidence/workspace`. Lịch lớn được đọc và kiểm tra thay vì
+gửi lại toàn bộ lệnh tạo; dữ liệu UI hôm nay/ngày mai vẫn được làm mới qua API.
+Nếu lịch/nhân sự đã bị sửa hoặc hủy, bước kiểm tra báo lỗi để đối soát, không tự phục hồi.
+
+```powershell
+.\start-backend.bat -Rebuild
+.\start-backend.bat -ResetData
+.\start-backend.bat -Fast -StartupParallelism 1
+```
+
+- `-Rebuild`: bắt buộc build lại, vẫn giữ dữ liệu của workspace.
+- `-ResetData`: thay database/broker của workspace bằng snapshot mới và xóa nhật ký
+  chuẩn bị tương ứng. Hãy dừng backend trước; script từ chối khi cổng đang được dùng.
+  Chỉ thay container đã khớp ID và nhãn ownership, không đụng database dự án khác.
+- `-StartupParallelism 1`, `2` hoặc `3`: giới hạn số ứng dụng khởi động cùng lúc;
+  mặc định `2`. Eureka và Core chạy trước, Gateway sau cùng. Chỉ in `READY` sau
+  khi mọi dịch vụ khỏe và dữ liệu UI đã chuẩn bị/kiểm tra xong.
+- `stop-backend.bat`: yêu cầu runner dừng ứng dụng của phiên giữ dữ liệu; không xóa
+  database, broker hoặc image. Chạy lại bằng `-Fast`. Sau hai giờ, ứng dụng cũng tự
+  dừng nhưng dữ liệu workspace vẫn được giữ. Hai runner không được dùng workspace cùng lúc.
+
+Không dùng `clean-docker.bat` giữa các lần chạy nhanh: lệnh dọn này vẫn xóa container/
+image dự án. Nếu đã dọn hoặc lần restore đầu bị gián đoạn, chạy `-ResetData` để tạo
+lại workspace. Nếu seed SQL thay đổi, script cũng yêu cầu `-ResetData`.
+
+Không truyền các tùy chọn trên thì `start-backend.bat` giữ cách chạy demo sạch cũ:
+build lại, tạo database/broker mới và tự dọn sau hai giờ hoặc khi dừng. Phiên này
+không chuyển dữ liệu sang `-Fast`; đóng cửa sổ backend cũ trước khi đổi chế độ.
+`-Fast`, `-Rebuild`, `-ResetData` có thể đi cùng `-LocalOnly`/`-LanAddress`.
+
+Launcher bổ sung lịch hôm nay/ngày mai bằng
 `prepare_ui_demo.py`, sau đó `prepare_demo_calendar.py` thêm **10 nhân sự/khoa đang hoạt động**
 và lịch mọi ngày **01/11/2026–31/01/2027** cho các khoa lâm sàng.
 Mỗi ngày gồm **07:00–12:00 và 12:00–17:00**, mỗi buổi 40 chỗ, luân phiên sáu bác sĩ

@@ -1,5 +1,7 @@
 @echo off
 setlocal
+rem Clean also stops orphan demo JVMs holding this repository's demo ports.
+rem Use -Preview to review process and Docker cleanup without making changes.
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\demo_25_10\Demo-Launcher.ps1" -Action Clean %*
 set "DEMO_EXIT=%ERRORLEVEL%"
 echo.

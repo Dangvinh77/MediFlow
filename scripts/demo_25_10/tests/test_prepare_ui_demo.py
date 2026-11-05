@@ -12,6 +12,20 @@ demo = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(demo)
 
 
+class CancellationTest(unittest.TestCase):
+    def test_stop_request_prevents_another_preparation_write(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            stop = root / 'stop'
+            stop.touch()
+            api = demo.DemoApi('http://127.0.0.1:28080', root / 'journal.json', stop)
+            with patch.object(demo.urllib.request, 'urlopen') as request:
+                with self.assertRaises(InterruptedError):
+                    api.call('admin', 'POST', '/api/v2/consultation-sessions', {}, stage='fixture')
+                request.assert_not_called()
+            self.assertFalse((root / 'journal.json').exists())
+
+
 class FakeApi:
     def __init__(self):
         self.state, self.claims, self.calls, self.sessions = {}, {}, [], []
