@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/domain/workspace_access.dart';
@@ -8,6 +9,7 @@ import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import 'access_boundary.dart';
 import '../domain/organization.dart';
+import 'account_detail_page.dart';
 import 'department_staff_pages.dart';
 
 class OrganizationPage extends StatelessWidget {
@@ -514,6 +516,7 @@ class _AccountPanelState extends State<_AccountPanel> {
         selectedId: _selectedAccount?.id,
         disabled: _saving,
         onSelect: _selectAccount,
+        onOpen: _openAccount,
       ),
       Card(
         child: Padding(
@@ -717,6 +720,23 @@ class _AccountPanelState extends State<_AccountPanel> {
     }
   }
 
+  Future<void> _openAccount(Account account) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Chi tiết tài khoản')),
+          body: AccountDetailPage(
+            accountId: account.id,
+            onManagerScope: (id) =>
+                GoRouter.of(context)
+                    .go('/appointments/schedule?managerAccountId=$id'),
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() => _accountRevision++);
+  }
+
   void _selectAccount(Account account) {
     setState(() {
       _selectedAccount = account;
@@ -735,12 +755,14 @@ class _AccountDirectory extends StatefulWidget {
     required this.selectedId,
     required this.disabled,
     required this.onSelect,
+    required this.onOpen,
   });
   final OrganizationRepository repository;
   final int revision;
   final String? selectedId;
   final bool disabled;
   final ValueChanged<Account> onSelect;
+  final ValueChanged<Account> onOpen;
   @override
   State<_AccountDirectory> createState() => _AccountDirectoryState();
 }
@@ -922,8 +944,19 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
               Card(
                 child: ListTile(
                   title: Text(account.username),
-                  subtitle: Text(
-                    '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                      ),
+                      TextButton(
+                        onPressed: widget.disabled
+                            ? null
+                            : () => widget.onOpen(account),
+                        child: const Text('Xem chi tiết'),
+                      ),
+                    ],
                   ),
                   trailing: TextButton(
                     onPressed: widget.disabled

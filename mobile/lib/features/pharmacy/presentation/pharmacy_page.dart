@@ -7,6 +7,7 @@ import 'pharmacy_request_error.dart';
 import 'pharmacy_date_text.dart';
 import '../domain/drug.dart';
 import '../domain/pharmacy_repository.dart';
+import 'pharmacy_outbox_page.dart';
 import 'providers.dart';
 import 'pharmacy_boundary.dart';
 import 'drug_forms.dart';
@@ -61,6 +62,18 @@ class PharmacyPage extends ConsumerWidget {
                     ),
                   ),
                 )
+          : null,
+      onOutbox:
+          ref.watch(pharmacyAccessProvider)?.role == 'ADMIN' &&
+              ref.watch(pharmacyOutboxRepositoryProvider) != null
+          ? () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Khôi phục đồng bộ')),
+                  body: const PharmacyOutboxPage(),
+                ),
+              ),
+            )
           : null,
       onLookup:
           onLookupPrescription ??
@@ -119,12 +132,14 @@ class _DrugCatalog extends StatefulWidget {
     required this.onLookup,
     this.onCreate,
     this.onPrescribe,
+    this.onOutbox,
   });
   final PharmacyRepository repository;
   final ValueChanged<String> onOpenDrug;
   final VoidCallback onLookup;
   final VoidCallback? onCreate;
   final VoidCallback? onPrescribe;
+  final VoidCallback? onOutbox;
   @override
   State<_DrugCatalog> createState() => _DrugCatalogState();
 }
@@ -221,6 +236,11 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                       onPressed: widget.onLookup,
                       child: const Text('Tra cứu đơn'),
                     ),
+                    if (widget.onOutbox != null)
+                      OutlinedButton(
+                        onPressed: widget.onOutbox,
+                        child: const Text('Khôi phục đồng bộ'),
+                      ),
                     FilledButton.icon(
                       onPressed: _search,
                       icon: const Icon(Icons.search),

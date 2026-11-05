@@ -43,6 +43,8 @@ import '../features/appointment/data/gateway_schedule_management_repository.dart
 import '../features/appointment/presentation/schedule_management_pages.dart';
 import '../features/medical_record/data/gateway_follow_up_recommendation_repository.dart';
 import '../features/medical_record/presentation/follow_up_recommendation_panel.dart';
+import '../features/organization/presentation/account_detail_page.dart';
+import '../features/pharmacy/presentation/pharmacy_outbox_page.dart';
 import '../features/pharmacy/data/gateway_pharmacy_repository.dart';
 import '../features/pharmacy/presentation/providers.dart';
 import '../features/self_profile/data/gateway_self_profile_repository.dart';
@@ -118,6 +120,12 @@ final appOverrides = [
   ),
   labWorkflowProvider.overrideWith(
     (ref) => GatewayLabWorkflow(ref.watch(apiClientProvider)),
+  ),
+  pharmacyOutboxRepositoryProvider.overrideWith(
+    (ref) => ref.watch(_pharmacyAdapterProvider),
+  ),
+  accountDetailRepositoryProvider.overrideWith(
+    (ref) => GatewayOrganizationRepository(ref.watch(apiClientProvider)),
   ),
   pharmacyRepositoryProvider.overrideWith(
     (ref) => ref.watch(_pharmacyAdapterProvider),
