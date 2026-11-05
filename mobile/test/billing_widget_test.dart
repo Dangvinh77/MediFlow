@@ -9,6 +9,7 @@ import 'package:mediflow_mobile/core/domain/page_result.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/features/billing/domain/billing_models.dart';
+import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 import 'package:mediflow_mobile/features/billing/domain/scheduled_payments.dart';
 import 'package:mediflow_mobile/features/billing/data/billing_dto.dart';
 import 'package:mediflow_mobile/features/billing/presentation/billing_page.dart';
@@ -57,6 +58,39 @@ Future<void> ensureFinderVisible(
   }
 }
 
+extension on WidgetTester {
+  Future<void> pumpScoped(Widget child) =>
+      pumpWidget(ProviderScope(child: child));
+}
+
+class BillingReferences implements ReferenceReader {
+  @override
+  Future<ReferenceOption> read(ReferenceKind kind, String id) async =>
+      ReferenceOption(
+        id: id,
+        name: kind == ReferenceKind.patient ? 'Nguyễn Văn An' : 'Khoa Nội',
+      );
+
+  @override
+  Future<ReferencePage> search(
+    ReferenceKind kind, {
+    String query = '',
+    int page = 0,
+    String? scope,
+  }) async =>
+      ReferencePage([ReferenceOption(id: patientId, name: 'Nguyễn Văn An')]);
+}
+
+Widget scheduledReferenceHost(Widget child) => ProviderScope(
+  overrides: [
+    workspaceAccessProvider.overrideWithValue(
+      WorkspaceAccess(sessionIdentity: Object(), role: 'CASHIER'),
+    ),
+    referenceReaderProvider.overrideWithValue(BillingReferences()),
+  ],
+  child: MaterialApp(home: Scaffold(body: child)),
+);
+
 Future<void> enterField(WidgetTester tester, String label, String value) async {
   if (label == 'Mã bệnh nhân (UUID)' ||
       label == 'Mã nguồn (sourceId)' ||
@@ -102,6 +136,7 @@ class ScheduledBillingFake extends Fake implements ScheduledPaymentRepository {
     this.resultStatus = 'PREPARING',
     this.quote,
     this.quoteError,
+    this.queueItems = const [],
     Map<String, dynamic>? requestJson,
   }) : request = BillingDto.scheduledPaymentRequest(
          requestJson ?? scheduledPaymentRequestJson(),
@@ -111,6 +146,8 @@ class ScheduledBillingFake extends Fake implements ScheduledPaymentRepository {
   final Object? firstPayError, firstZeroError;
   final String resultStatus;
   final RegistrationPaymentRequest request;
+  final List<ScheduledPaymentQueueItem> queueItems;
+  String? lastQueuePatientId;
   OutpatientQuote? quote;
   Object? quoteError;
   final payments =
@@ -136,12 +173,15 @@ class ScheduledBillingFake extends Fake implements ScheduledPaymentRepository {
   Future<PageResult<ScheduledPaymentQueueItem>> scheduledPaymentQueue({
     String? patientId,
     int page = 0,
-  }) async => PageResult(
-    items: const [],
-    number: page,
-    totalPages: 1,
-    totalElements: 0,
-  );
+  }) async {
+    lastQueuePatientId = patientId;
+    return PageResult(
+      items: queueItems,
+      number: page,
+      totalPages: 1,
+      totalElements: queueItems.length,
+    );
+  }
 
   @override
   Future<RegistrationPaymentRequest> scheduledPaymentRequestByRegistration(
@@ -378,13 +418,83 @@ void main() {
   );
 
   testWidgets(
+    'scheduled queue shows names and local times instead of raw IDs',
+    (tester) async {
+      final repository = ScheduledBillingFake(
+        queueItems: const [
+          ScheduledPaymentQueueItem(
+            registrationId: registrationId,
+            patientId: patientId,
+            departmentId: departmentId,
+            createdAt: '2026-11-05T03:27:51Z',
+            expiresAt: '2026-11-05T03:42:51Z',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        scheduledReferenceHost(
+          ScheduledPaymentQueuePage(
+            repository: repository,
+            recoveryStore: MemoryScheduledPaymentRecoveryStore(),
+            quoteEnabled: false,
+            zeroPayableEnabled: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Nguyễn Văn An'), findsOneWidget);
+      expect(find.textContaining('Khoa Nội'), findsOneWidget);
+      expect(find.textContaining(patientId), findsNothing);
+      expect(find.textContaining(departmentId), findsNothing);
+      expect(find.textContaining('2026-11-05T'), findsNothing);
+      expect(find.text('Lọc theo mã bệnh nhân (UUID)'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('a completed exam fee does not report a quote mismatch', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final repository = ScheduledBillingFake(
+      resultStatus: 'COMPLETED',
+      quote: examQuote(
+        quoteId: '10000000-0000-4000-8000-000000000022',
+        payable: const Money(7500),
+        support: const Money(2500),
+        supportRate: '0.25',
+      ),
+      requestJson: scheduledPaymentRequestJson(),
+    );
+    await tester.pumpWidget(
+      scheduledReferenceHost(
+        ScheduledPaymentCollectionPage(
+          repository: repository,
+          recoveryStore: MemoryScheduledPaymentRecoveryStore(),
+          request: repository.request,
+          quoteEnabled: true,
+          zeroPayableEnabled: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Thu phí khám'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('không khớp'), findsNothing);
+    expect(find.textContaining(patientId), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
     'scheduled queue search scrolls into view on a narrow keyboard-height viewport',
     (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
+      await tester.pumpScoped(
         MaterialApp(
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context)
@@ -434,7 +544,7 @@ void main() {
         readGate: readGate,
       );
       final request = repository.request;
-      await tester.pumpWidget(
+      await tester.pumpScoped(
         MaterialApp(
           home: Scaffold(
             body: ScheduledPaymentCollectionPage(
@@ -497,7 +607,7 @@ void main() {
         ),
       );
       final recoveryStore = MemoryScheduledPaymentRecoveryStore();
-      await tester.pumpWidget(
+      await tester.pumpScoped(
         MaterialApp(
           home: Scaffold(
             body: ScheduledPaymentCollectionPage(
@@ -545,7 +655,7 @@ void main() {
         remainingAmount: '75.00',
       ),
     );
-    await tester.pumpWidget(
+    await tester.pumpScoped(
       MaterialApp(
         home: Scaffold(
           body: ScheduledPaymentCollectionPage(
@@ -606,7 +716,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(page(const ValueKey('zero-first')));
+      await tester.pumpScoped(page(const ValueKey('zero-first')));
       await tester.pumpAndSettle();
       final confirmZero = find.text('Xác nhận nghĩa vụ 0 đồng');
       expect(confirmZero, findsOneWidget);
@@ -624,7 +734,7 @@ void main() {
         status: 404,
         code: 'OUTPATIENT_QUOTE_NOT_FOUND',
       );
-      await tester.pumpWidget(page(const ValueKey('zero-reopened')));
+      await tester.pumpScoped(page(const ValueKey('zero-reopened')));
       await tester.pumpAndSettle();
       expect(find.text('Gửi lại đúng yêu cầu đã khóa'), findsOneWidget);
       await tester.tap(find.text('Gửi lại đúng yêu cầu đã khóa'));
@@ -642,7 +752,7 @@ void main() {
       useTallViewport(tester);
       final repository = ScheduledBillingFake(resultStatus: 'CLOSED_NOT_PAID');
       final recoveryStore = MemoryScheduledPaymentRecoveryStore();
-      await tester.pumpWidget(
+      await tester.pumpScoped(
         MaterialApp(
           home: Scaffold(
             body: ScheduledPaymentCollectionPage(
@@ -678,7 +788,7 @@ void main() {
         ),
       );
       final recoveryStore = MemoryScheduledPaymentRecoveryStore();
-      await tester.pumpWidget(
+      await tester.pumpScoped(
         MaterialApp(
           home: Scaffold(
             body: ScheduledPaymentCollectionPage(
