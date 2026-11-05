@@ -31,6 +31,7 @@ import '../features/organization/data/gateway_organization_repository.dart';
 import '../features/organization/data/gateway_profile_account_repository.dart';
 import '../features/organization/presentation/providers.dart';
 import '../features/billing/data/gateway_billing_repository.dart';
+import '../features/billing/data/secure_lab_payment_recovery_store.dart';
 import '../features/billing/data/secure_scheduled_payment_recovery_store.dart';
 import '../features/billing/domain/billing_models.dart';
 import '../features/billing/presentation/providers.dart';
@@ -59,6 +60,17 @@ final appOverrides = [
   paymentQueueRepositoryProvider.overrideWith(
     (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
   ),
+  labQuotePaymentRepositoryProvider.overrideWith(
+    (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
+  ),
+  labPaymentRecoveryStoreProvider.overrideWith((ref) {
+    final accountId = ref.watch(workspaceAccessProvider)?.accountId;
+    if (accountId == null || !isBillingUuid(accountId)) return null;
+    return SecureLabPaymentRecoveryStore(
+      const FlutterSecureStorage(),
+      accountId: accountId,
+    );
+  }),
   scheduledPaymentRepositoryProvider.overrideWith(
     (ref) => GatewayBillingRepository(ref.watch(apiClientProvider)),
   ),

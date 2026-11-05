@@ -7,10 +7,8 @@ import '../domain/scheduled_payments.dart';
 
 class SecureScheduledPaymentRecoveryStore
     implements ScheduledPaymentRecoveryStore {
-  SecureScheduledPaymentRecoveryStore(
-    this.storage, {
-    required String accountId,
-  }) : accountId = accountId.toLowerCase() {
+  SecureScheduledPaymentRecoveryStore(this.storage, {required String accountId})
+    : accountId = accountId.toLowerCase() {
     if (!isBillingUuid(this.accountId)) {
       throw ArgumentError.value(
         accountId,
@@ -122,8 +120,7 @@ class SecureScheduledPaymentRecoveryStore
         !_validPositiveMoney(command.amount) ||
         command.currency != 'VND' ||
         !const {'CASH', 'BANK_TRANSFER'}.contains(command.paymentMethod) ||
-        command.paymentMethod == 'CASH' &&
-            command.providerReference != null ||
+        command.paymentMethod == 'CASH' && command.providerReference != null ||
         command.paymentMethod == 'BANK_TRANSFER' &&
             (command.providerReference == null ||
                 command.providerReference!.trim().isEmpty ||

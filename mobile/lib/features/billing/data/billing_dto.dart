@@ -1,5 +1,6 @@
 import '../../../core/network/json_reader.dart';
 import '../domain/billing_models.dart';
+import '../domain/lab_quote_payment.dart';
 import '../domain/scheduled_payments.dart';
 
 abstract final class BillingDto {
@@ -373,6 +374,16 @@ abstract final class BillingDto {
       }),
       expiresAt: optionalInstant(json, 'expiresAt'),
       observedAt: instant(json, 'observedAt'),
+    );
+  }
+
+  static LabZeroLiabilityReceipt labZeroLiabilityReceipt(Object? value) {
+    final json = object(value);
+    return LabZeroLiabilityReceipt(
+      eligibilityOperationId: uuid(json, 'eligibilityOperationId'),
+      paymentRequestId: uuid(json, 'paymentRequestId'),
+      quoteId: uuid(json, 'quoteId'),
+      clearanceId: uuid(json, 'clearanceId'),
     );
   }
 

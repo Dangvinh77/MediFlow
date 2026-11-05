@@ -72,13 +72,30 @@ class _BillingWorkspace extends ConsumerWidget {
     final refunds = ref.watch(outpatientRefundRepositoryProvider);
     final canOperate = role == 'ADMIN' || role == 'CASHIER';
     final canReport = role == 'ADMIN' || role == 'MANAGER';
+    final labQuotes = quoteEnabled
+        ? ref.watch(labQuotePaymentRepositoryProvider)
+        : null;
+    final labRecovery = quoteEnabled
+        ? ref.watch(labPaymentRecoveryStoreProvider)
+        : null;
     final tabs = <Widget>[], pages = <Widget>[];
     if (canOperate) {
       tabs.add(const Tab(text: 'Xét nghiệm và thuốc'));
       pages.add(
         queue == null
-            ? LedgerPaymentPage(repository: repository)
-            : PaymentQueuePage(repository: repository, queue: queue),
+            ? LedgerPaymentPage(
+                repository: repository,
+                labQuotes: labQuotes,
+                labRecovery: labRecovery,
+                labZeroEnabled: zeroPayableEnabled,
+              )
+            : PaymentQueuePage(
+                repository: repository,
+                queue: queue,
+                labQuotes: labQuotes,
+                labRecovery: labRecovery,
+                labZeroEnabled: zeroPayableEnabled,
+              ),
       );
       if (scheduledEnabled &&
           scheduledRepository != null &&
