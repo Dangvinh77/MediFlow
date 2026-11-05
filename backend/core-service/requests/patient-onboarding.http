@@ -1,7 +1,11 @@
 @gateway = http://localhost:8080
 @nurseToken = replace-with-nurse-access-token
+@adminToken = replace-with-admin-access-token
 @patientId = 00000000-0000-4000-8000-000000000001
+@staffId = 00000000-0000-4000-8000-000000000002
+@patientMessageId = 00000000-0000-4000-8000-000000000003
 @issuanceKey = patient-onboarding-example-001
+@resetKey = patient-reset-example-001
 
 ### Nurse issues PATIENT only; repeat exact key/body to recover an uncertain response
 POST {{gateway}}/api/v1/org/patient-accounts
@@ -18,3 +22,27 @@ Idempotency-Key: {{issuanceKey}}
 Content-Type: application/json
 
 {"patientId":"{{patientId}}","role":"ADMIN"}
+
+### ADMIN reads the account linked by Staff UUID
+GET {{gateway}}/api/v1/org/profile-accounts/staff/{{staffId}}
+Authorization: Bearer {{adminToken}}
+
+### NURSE reads the account linked by Patient UUID
+GET {{gateway}}/api/v1/org/profile-accounts/patient/{{patientId}}
+Authorization: Bearer {{nurseToken}}
+
+### NURSE requests a system-generated patient password reset
+PUT {{gateway}}/api/v1/org/patient-accounts/{{patientId}}/password
+Authorization: Bearer {{nurseToken}}
+Idempotency-Key: {{resetKey}}
+Content-Type: application/json
+
+{}
+
+### NURSE checks latest patient credential-mail delivery status
+GET {{gateway}}/api/v1/org/patient-accounts/{{patientId}}/mail-delivery
+Authorization: Bearer {{nurseToken}}
+
+### NURSE retries one failed patient mail delivery
+POST {{gateway}}/api/v1/org/patient-accounts/{{patientId}}/mail-delivery/{{patientMessageId}}/retry
+Authorization: Bearer {{nurseToken}}

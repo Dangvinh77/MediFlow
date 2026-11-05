@@ -95,6 +95,12 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/org/accounts/{id}/mail-delivery", HttpMethod.GET, Roles.ADMIN),
             rule("/api/v1/org/accounts/{id}/mail-delivery/{messageId}/retry", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/patient-accounts", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/org/profile-accounts/staff/{staffId}", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v1/org/profile-accounts/patient/{patientId}", HttpMethod.GET, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/org/patient-accounts/{patientId}/password", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/org/patient-accounts/{patientId}/mail-delivery", HttpMethod.GET, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/org/patient-accounts/{patientId}/mail-delivery/{messageId}/retry", HttpMethod.POST,
+                    Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/org/accounts", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/accounts/{id}/status", HttpMethod.PUT, Roles.ADMIN),
 

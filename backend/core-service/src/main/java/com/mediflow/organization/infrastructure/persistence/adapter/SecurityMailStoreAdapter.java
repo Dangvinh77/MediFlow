@@ -106,6 +106,23 @@ public class SecurityMailStoreAdapter implements SecurityMailStore {
     }
 
     @Override
+    public MailDeliveryDTO retry(UUID accountId, UUID messageId, String expectedRecipient) {
+        jdbc.update("""
+                UPDATE security_mail_message SET status='PENDING',attempts=0,next_attempt_at=now(),
+                    lease_until=NULL,last_failure_code=NULL
+                WHERE account_id=? AND message_id=? AND recipient_email=? AND status='FAILED'
+                  AND encrypted_content IS NOT NULL AND content_expires_at>now()
+                """, accountId, messageId, expectedRecipient);
+        return jdbc.query("""
+                SELECT message_id,status FROM security_mail_message
+                WHERE account_id=? AND message_id=? AND recipient_email=?
+                """, (rs, index) -> new MailDeliveryDTO(rs.getObject("message_id", UUID.class), status(rs.getString("status"))),
+                accountId, messageId, expectedRecipient).stream().findFirst()
+                .orElseThrow(() -> new com.mediflow.common.exception.ResourceNotFoundException(
+                        "MAIL_DELIVERY_NOT_FOUND", "Mail delivery record was not found"));
+    }
+
+    @Override
     public List<QueuedMessage> claimDue(int limit) {
         jdbc.update("""
                 UPDATE security_mail_message SET encrypted_content=NULL,

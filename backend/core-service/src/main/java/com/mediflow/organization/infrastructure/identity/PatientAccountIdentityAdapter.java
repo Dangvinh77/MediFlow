@@ -36,6 +36,10 @@ public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort
         return email.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
+    @Override public String profileEmail(UUID patientId) {
+        return patients.getById(patientId).email();
+    }
+
     @Override public String displayName(UUID patientId) {
         var patient = patients.getById(patientId);
         return patient.daLuuTru() ? "" : patient.hoTen();

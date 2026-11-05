@@ -31,6 +31,13 @@ class CareRouteAuthorizationTest {
     static Stream<Arguments> matrix() {
         List<MatrixRow> rows = List.of(
                 new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/staff/" + ID, Set.of("ADMIN")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/patient/" + ID, Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/patient-accounts/" + ID + "/password", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/org/patient-accounts/" + ID + "/mail-delivery", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts/" + ID
+                        + "/mail-delivery/00000000-0000-0000-0000-000000000002/retry", Set.of("ADMIN", "NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/accounts/" + ID + "/password", Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/org/accounts", Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/accounts/" + ID + "/email", Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/accounts/" + ID + "/mail-delivery", Set.of("ADMIN")),
@@ -117,6 +124,16 @@ class CareRouteAuthorizationTest {
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/appointments/" + ID + "/check-in", "ADMIN", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/surgery/cases/" + ID + "/schedule", "ADMIN", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/surgery/cases/" + ID + "/evidence", "ADMIN", false);
+        for (String role : ROLES) {
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT,
+                    "/api/v1/org/accounts/" + ID + "/password", role, "ADMIN".equals(role));
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST,
+                    "/api/v1/org/patient-accounts/" + ID + "/password", role, false);
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET,
+                    "/api/v1/org/patient-accounts/" + ID + "/mail-delivery/extra", role, false);
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST,
+                    "/api/v1/org/patient-accounts/" + ID + "/mail-delivery/retry", role, false);
+        }
     }
 
     static Stream<Arguments> unsupportedPrescriptionCommands() {

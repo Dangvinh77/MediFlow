@@ -14,14 +14,20 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.UUID;
 import com.mediflow.organization.application.dto.response.MailDeliveryDTO;
+import com.mediflow.organization.application.service.SecurityAccountOperationsService;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/api/v1/org/patient-accounts")
 public class PatientAccountController {
     private final ProvisionPatientAccountService accounts;
+    private final SecurityAccountOperationsService securityOperations;
     private final CorrelationIdProvider correlation;
-    public PatientAccountController(ProvisionPatientAccountService accounts, CorrelationIdProvider correlation) {
-        this.accounts = accounts; this.correlation = correlation;
+    public PatientAccountController(ProvisionPatientAccountService accounts,
+            SecurityAccountOperationsService securityOperations, CorrelationIdProvider correlation) {
+        this.accounts = accounts;
+        this.securityOperations = securityOperations;
+        this.correlation = correlation;
     }
 
     public record Request(@NotNull UUID patientId) {
@@ -45,5 +51,38 @@ public class PatientAccountController {
                 .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .body(ApiResponse.ok(new IssuedAccount(account.getAccountId(), account.getPatientId(),
                         account.getUsername(), account.isMustChangePassword(), provisioned.mailDelivery()), correlation.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/{patientId}/password")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> resetPassword(@PathVariable UUID patientId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody JsonNode request, Authentication authentication) {
+        if (request == null || !request.isObject() || request.size() != 0) {
+            throw new IllegalArgumentException("Patient reset does not accept a caller-supplied password");
+        }
+        var delivery = securityOperations.resetPatientPassword(UUID.fromString(authentication.getName()),
+                patientId, idempotencyKey, correlation.currentOrCreate());
+        return noStore(delivery);
+    }
+
+    @GetMapping("/{patientId}/mail-delivery")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> latestDelivery(@PathVariable UUID patientId) {
+        return noStore(securityOperations.latestPatientDelivery(patientId));
+    }
+
+    @PostMapping("/{patientId}/mail-delivery/{messageId}/retry")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    public ResponseEntity<ApiResponse<MailDeliveryDTO>> retryMail(@PathVariable UUID patientId,
+            @PathVariable UUID messageId, Authentication authentication) {
+        var delivery = securityOperations.retryPatientDelivery(UUID.fromString(authentication.getName()),
+                patientId, messageId, correlation.currentOrCreate());
+        return noStore(delivery);
+    }
+
+    private ResponseEntity<ApiResponse<MailDeliveryDTO>> noStore(MailDeliveryDTO delivery) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.ok(delivery, correlation.currentOrCreate().toString()));
     }
 }

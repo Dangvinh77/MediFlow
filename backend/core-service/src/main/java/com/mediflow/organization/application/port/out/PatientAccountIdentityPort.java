@@ -8,6 +8,9 @@ public interface PatientAccountIdentityPort {
 
     String email(UUID patientId);
 
+    /** Reads the authoritative profile email as stored, without issuance eligibility rules. */
+    String profileEmail(UUID patientId);
+
     String displayName(UUID patientId);
 
     /** Synchronizes account email through Patient's public write use case. */
