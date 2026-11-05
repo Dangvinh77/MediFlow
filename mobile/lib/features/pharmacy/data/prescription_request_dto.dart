@@ -18,6 +18,7 @@ abstract final class PrescriptionRequestDto {
               'drugId': line.drugId,
               'quantity': line.quantity,
               'dosage': line.dosage,
+              if (line.note != null) 'note': line.note,
             },
           )
           .toList(),

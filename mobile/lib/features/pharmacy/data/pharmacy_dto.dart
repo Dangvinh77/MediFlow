@@ -150,6 +150,8 @@ abstract final class PharmacyDto {
           unitPrice: money(line, 'unitPrice'),
           dosage: optionalText(line, 'dosage'),
           lineTotal: money(line, 'lineTotal'),
+          // Absent on servers older than the note migration.
+          note: line.containsKey('note') ? optionalText(line, 'note') : null,
         );
       }).toList(),
       status: prescriptionStatus(json),

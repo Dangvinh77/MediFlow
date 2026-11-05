@@ -41,10 +41,11 @@ class RequestedPrescriptionLine {
     required this.drugId,
     required this.quantity,
     this.dosage,
+    this.note,
   });
   final String drugId;
   final int quantity;
-  final String? dosage;
+  final String? dosage, note;
 }
 
 class CreateOutpatientPrescription {
@@ -75,7 +76,13 @@ class CreateOutpatientPrescription {
           line.quantity > 2147483647 ||
           (line.dosage?.length ?? 0) > 255) {
         result['lines.$i'] =
-            'Thuốc hợp lệ, số lượng 1–2147483647, liều dùng tối đa 255 ký tự.';
+            'Thuốc hợp lệ, số lượng 1–2147483647, cách dùng tối đa 255 ký tự.';
+      }
+      if (line.dosage?.trim().isEmpty ?? true) {
+        result['lines.$i.dosage'] = 'Chọn cách dùng cho thuốc này.';
+      }
+      if ((line.note?.length ?? 0) > 500) {
+        result['lines.$i.note'] = 'Ghi chú tối đa 500 ký tự.';
       }
     }
     return result;

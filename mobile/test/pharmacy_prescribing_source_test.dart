@@ -266,6 +266,9 @@ void main() {
       await tester.ensureVisible(choose);
       await tester.tap(choose);
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Chỉ tối'));
+      await tester.pumpAndSettle();
+      await tap(tester, 'Áp dụng');
       await tap(tester, 'Tạo đơn thuốc');
       await tap(tester, 'Xác nhận kê đơn');
       await pumpCommand(tester);
@@ -273,7 +276,7 @@ void main() {
       expect(createdCallbacks, 1);
       expect(find.text('Đã tạo đơn thuốc thành công.'), findsOneWidget);
       expect(find.text('Mã đơn thuốc: $rxId'), findsOneWidget);
-      expect(find.text('Tổng tiền theo máy chủ: 5000.5 đồng'), findsOneWidget);
+      expect(find.textContaining('đồng'), findsNothing);
     },
   );
 
@@ -307,6 +310,9 @@ void main() {
     await tester.ensureVisible(choose);
     await tester.tap(choose);
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Chỉ tối'));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Áp dụng');
     await tap(tester, 'Tạo đơn thuốc');
     final confirm = find.ancestor(
       of: find.text('Xác nhận kê đơn'),
@@ -402,6 +408,9 @@ void main() {
       await tester.ensureVisible(choose);
       await tester.tap(choose);
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Chỉ tối'));
+      await tester.pumpAndSettle();
+      await tap(tester, 'Áp dụng');
       await tap(tester, 'Tạo đơn thuốc');
       await tap(tester, 'Xác nhận kê đơn');
       await pumpCommand(tester);
@@ -496,6 +505,9 @@ void main() {
       await tester.ensureVisible(choose);
       await tester.tap(choose);
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Chỉ tối'));
+      await tester.pumpAndSettle();
+      await tap(tester, 'Áp dụng');
       await tap(tester, 'Tạo đơn thuốc');
       await tap(tester, 'Xác nhận kê đơn');
       await pumpCommand(tester);
