@@ -41,7 +41,9 @@ try {
             Checked flutter @('test', 'test', 'packages/mediflow_loader/test')
             Checked flutter @('build', 'web', '--dart-define=GATEWAY_URL=http://localhost:4300/api',
                 '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true',
-                '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true', '--dart-define=PHARMACY_MODE=outpatient')
+                '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true',
+                '--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true', '--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true', '--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true',
+                '--dart-define=PHARMACY_MODE=outpatient')
         } finally { Pop-Location }
     }
     "PASS: $Client checks and web build; native devices and business runtime are separate checks." |

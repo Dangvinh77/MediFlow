@@ -86,6 +86,9 @@ jobs:
             "--dart-define=ALLOW_INSECURE_HTTP=$ALLOW_INSECURE_HTTP" \
             --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true \
             --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true \
+            --dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true \
+            --dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true \
+            --dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true \
             --dart-define=PHARMACY_MODE=outpatient
       - name: Package unsigned IPA and build information
         run: |

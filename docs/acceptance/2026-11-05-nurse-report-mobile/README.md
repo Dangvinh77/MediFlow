@@ -65,9 +65,9 @@ Fresh runs on the final tree, based on `c586e274`:
 | Core + Gateway Maven | 2,386 passed (477 + 1,909), 0 failed, 0 skipped |
 | Frontend Vitest | 1,385 passed across 156 files |
 | Frontend TypeScript, production build, affected lint | Passed |
-| Flutter tests | 487 passed |
+| Flutter tests | 489 passed |
 | Flutter analyze | No errors or warnings; one existing `info` in an unchanged Pharmacy file |
-| Python demo tools | 68 passed |
+| Python demo tools | 69 passed |
 
 One earlier full Vitest run failed a focus assertion in the unchanged
 `DoctorWorkShiftsWorkspace.ux.test.tsx`; it passed 5 of 5 isolated runs and the next full run. It is load-sensitive
@@ -99,6 +99,20 @@ with 503 `ORG_LOOKUP_UNAVAILABLE` because credential mail cannot be encrypted. A
 test key was used, with `MANAGEMENT_HEALTH_MAIL_ENABLED=false`. Mail was queued only; delivery
 to a real mailbox was not verified.
 
-Mobile behaviour was verified by widget tests, including 320 px, 1.45 text scale and keyboard
-height. It was not run on a physical device or against the live Gateway. The exam-fee tab
-stays hidden unless the `MEDIFLOW_SCHEDULING_UI_ENABLED` dart-define is set.
+## Mobile exam-fee flow
+
+The Flutter web build ran against the same kind of live stack at phone width. A NURSE
+registration appeared in the CASHIER "Phí khám" queue, and the cashier collected 50,000 VND
+in cash; the request ended "Đã thanh toán" with a transaction ID.
+
+The tab is compile-time gated, so a build without the dart-defines cannot show it. Every demo
+build path now passes them, and a Python test keeps it that way: `tool/run_web.ps1 -Demo`,
+the iOS workflow, the launcher command, `Run-ClientChecks.ps1` and the README command.
+
+This run also found and fixed raw UUIDs and UTC times in the queue and collection screens, a
+UUID-only patient filter, and a false "không khớp" warning after a completed payment.
+
+The exam-fee queue only lists requests whose 15-minute hold has not expired.
+
+Other mobile behaviour was verified by widget tests, including 320 px, 1.45 text scale and
+keyboard height. Nothing was run on a physical device.
