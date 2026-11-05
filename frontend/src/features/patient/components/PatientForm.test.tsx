@@ -65,6 +65,18 @@ describe("PatientForm", () => {
     expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();
   });
 
+  it("lets a nurse add an email to an existing patient before issuing an account", async () => {
+    mocks.getRole.mockReturnValue("NURSE");
+    mocks.getById.mockResolvedValue({ ...patientContractFixture, email: null });
+    mocks.update.mockResolvedValue({ ...patientContractFixture, email: "patient@example.com" });
+    render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByDisplayValue(patientContractFixture.hoTen);
+    expect(screen.getByLabelText("Email")).not.toHaveAttribute("readonly");
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "patient@example.com" } });
+    submit();
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(patientContractFixture.maBenhNhan, expect.objectContaining({ email: "patient@example.com" })));
+  });
+
   it("requires a reason for identity correction before sending the update", async () => {
     mocks.getById.mockResolvedValue(patientContractFixture);
     render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);

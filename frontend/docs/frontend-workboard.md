@@ -1,5 +1,16 @@
 # Frontend Workboard
 
+## Email bệnh nhân và Report thu gọn — 2026-11-05
+
+Vinh / user-assigned task-scoped override cho Patient, Organization và Report.
+ADMIN/NURSE được bổ sung hoặc sửa email hồ sơ bệnh nhân chưa có tài khoản; sau đó
+cấp tài khoản tại chi tiết bệnh nhân. Khi đã có tài khoản, dùng lệnh email theo UUID
+bệnh nhân, có lý do, audit và đồng bộ hồ sơ; email nhân viên vẫn ADMIN-only.
+Khối báo cáo đã đối soát mặc định thu gọn, giữ mở trực tiếp bằng URL và có chi tiết
+nguồn/kỳ khi cần. Thống kê vận hành vẫn phân biệt với số liệu đã được chấp nhận.
+Kết quả kiểm tra và giới hạn dữ liệu tại
+[evidence 05/11](../../docs/acceptance/2026-11-05-nurse-report-mobile/README.md).
+
 ## LAB / Report sau chỉnh giờ — 2026-11-04
 
 Vinh / user-assigned task-scoped override cho Report frontend và mobile. Thống kê

@@ -39,6 +39,8 @@ export const organizationApi = {
     api.get<import("./types").MailDelivery>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/mail-delivery`),
   retryPatientMail: (patientId: string, messageId: string) =>
     api.post<import("./types").MailDelivery>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/mail-delivery/${encodeURIComponent(messageId)}/retry`, {}),
+  updatePatientEmail: (patientId: string, email: string, reason: string) =>
+    api.put<AccountDTO>(`/v1/org/patient-accounts/${encodeURIComponent(patientId)}/email`, { email, reason }),
   updateOwnContact: (staffId: string, body: { phoneNumber: string | null; email?: string | null; address: string | null }) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/contact`, body),
   careLabel: (kind: "doctor" | "department" | "room", id: string) =>

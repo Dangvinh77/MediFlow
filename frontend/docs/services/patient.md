@@ -18,6 +18,15 @@
 
 ## Current UI baseline
 
+As of 2026-11-05, ADMIN/NURSE can add or correct an unlinked patient's email in the
+profile form, then issue an account from the detail. A linked patient uses the
+scoped account email command with an audited reason:
+`PUT /api/v1/org/patient-accounts/{patientId}/email`. The detail reloads the login
+and profile synchronization state after success. Archived profiles remain read-only.
+A mismatched profile can be corrected or synchronized again with the verified
+current login email and a reason; issuance and credential mail remain blocked
+until synchronization is confirmed. Staff email changes remain ADMIN-only.
+
 `/patients` contains paged search and detail. `ADMIN`/`NURSE` can create and update patients;
 `ADMIN` can archive after explicit confirmation; records and historical references are retained. ADMIN/NURSE can correct `soCmnd` on the existing
 patient UUID; changing CCCD or birth date requires an audited reason (maximum 500 characters).

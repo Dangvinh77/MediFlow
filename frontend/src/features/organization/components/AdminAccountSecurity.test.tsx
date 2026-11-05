@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { ApiRequestError } from "@/lib/api";
-const mocks = vi.hoisted(() => ({ account: vi.fn(), resetPassword: vi.fn(), mailDelivery: vi.fn(), retryMail: vi.fn(), updateAccountEmail: vi.fn(), patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), session: "a" }));
+const mocks = vi.hoisted(() => ({ account: vi.fn(), profileAccount: vi.fn(), updatePatientEmail: vi.fn(), resetPassword: vi.fn(), mailDelivery: vi.fn(), retryMail: vi.fn(), updateAccountEmail: vi.fn(), patientMailDelivery: vi.fn(), resetPatientPassword: vi.fn(), retryPatientMail: vi.fn(), session: "a" }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: () => mocks.session }));
 import { AdminAccountSecurity } from "./AdminAccountSecurity";
@@ -12,6 +12,76 @@ beforeEach(() => {
   mocks.mailDelivery.mockResolvedValue({ messageId: "mail-1", status: "FAILED" });
 });
 afterEach(() => vi.unstubAllGlobals());
+it("corrects patient login email through the patient-scoped command", async () => {
+  mocks.patientMailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  mocks.updatePatientEmail.mockResolvedValue({ username: "new@example.com" });
+  const saved = vi.fn();
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" patientIdForMail="patient-a" onEmailChanged={saved} />);
+  fireEvent.change(screen.getByLabelText("Email đăng nhập mới"), { target: { value: "new@example.com" } });
+  fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Bệnh nhân xác nhận" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
+  await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+  expect(mocks.updatePatientEmail).toHaveBeenCalledExactlyOnceWith("patient-a", "new@example.com", "Bệnh nhân xác nhận");
+  expect(mocks.updateAccountEmail).not.toHaveBeenCalled();
+});
+
+it("reconciles uncertain patient email writes using patient profile lookup", async () => {
+  mocks.patientMailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  mocks.updatePatientEmail.mockRejectedValueOnce(new Error("Lost response"));
+  mocks.profileAccount.mockResolvedValue({ emailSyncPending: false, account: { accountId: "account-a", patientId: "patient-a", staffId: null, role: "PATIENT", username: "new@example.com" } });
+  const saved = vi.fn();
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" patientIdForMail="patient-a" onEmailChanged={saved} />);
+  fireEvent.change(screen.getByLabelText("Email đăng nhập mới"), { target: { value: "new@example.com" } });
+  fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Bệnh nhân xác nhận" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết quả đổi email" }));
+  await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+  expect(mocks.profileAccount).toHaveBeenCalledWith("patient", "patient-a");
+  expect(mocks.account).not.toHaveBeenCalled();
+});
+
+it("keeps an uncertain patient email command blocked when lookup returns another owner", async () => {
+  mocks.patientMailDelivery.mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  mocks.updatePatientEmail.mockRejectedValueOnce(new Error("Lost response"));
+  mocks.profileAccount.mockResolvedValue({ emailSyncPending: false, account: { accountId: "account-a", patientId: "other-patient", staffId: null, role: "PATIENT", username: "new@example.com" } });
+  const saved = vi.fn();
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" patientIdForMail="patient-a" onEmailChanged={saved} />);
+  fireEvent.change(screen.getByLabelText("Email đăng nhập mới"), { target: { value: "new@example.com" } });
+  fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Bệnh nhân xác nhận" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết quả đổi email" }));
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Chưa xác minh"));
+  expect(saved).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+});
+
+it("does not treat an unchanged username as proof that an uncertain sync repair was queued", async () => {
+  mocks.updatePatientEmail.mockRejectedValueOnce(new Error("Lost response"));
+  mocks.profileAccount.mockResolvedValue({
+    emailSyncPending: true,
+    account: { accountId: "account-a", patientId: "patient-a", staffId: null, role: "PATIENT", username: "patient@example.com" },
+  });
+  const saved = vi.fn();
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" patientIdForMail="patient-a" emailSyncPending disablePasswordActions onEmailChanged={saved} />);
+  fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Đã xác minh lại email" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết quả đổi email" }));
+
+  expect(await screen.findByText(/hồ sơ vẫn chờ đồng bộ/i)).toBeVisible();
+  expect(screen.queryByText("Đã xác nhận email đăng nhập mới.")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Lưu email mới" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(saved).toHaveBeenCalledOnce();
+
+  fireEvent.click(screen.getByRole("button", { name: "Lưu email mới" }));
+  await waitFor(() => expect(mocks.updatePatientEmail).toHaveBeenCalledTimes(2));
+  expect(mocks.updatePatientEmail).toHaveBeenNthCalledWith(1, "patient-a", "patient@example.com", "Đã xác minh lại email");
+  expect(mocks.updatePatientEmail).toHaveBeenNthCalledWith(2, "patient-a", "patient@example.com", "Đã xác minh lại email");
+});
+
 it.each([new Error("Lost response"), new ApiRequestError("Malformed response", 200)])("reconciles an uncertain email write before allowing another security change (%s)", async cause => {
   const saved = vi.fn();
   mocks.updateAccountEmail.mockRejectedValueOnce(cause);

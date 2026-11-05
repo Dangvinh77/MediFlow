@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { OutpatientReportResult } from "./OutpatientReportResult";
 import type { OutpatientReportDTO } from "../types";
@@ -9,13 +9,33 @@ const report: OutpatientReportDTO = {
     { fromDate: "2025-01-02", toDate: "2025-01-02", completedVisits: 0, labTests: 0, dispensedPrescriptions: 0, dispensedUnits: 0, cashReceived: 0, refunds: 0, netCash: 0 }],
 };
 describe("outpatient statistics", () => {
-  it("plots separate cash and activity trends including negative net cash and zero periods", () => {
+  it("keeps trends, evidence and exact period metrics available through compact disclosures", () => {
     render(<OutpatientReportResult report={report} />);
+    const trends = screen.getByText("Xu hướng theo kỳ").closest("details");
+    expect(trends).toBeInTheDocument();
+    expect(trends).not.toHaveAttribute("open");
+    expect(screen.getByRole("img", { name: /Dòng tiền ngoại trú/ })).not.toBeVisible();
+    expect(screen.getByRole("img", { name: /Hoạt động ngoại trú/ })).not.toBeVisible();
+
+    fireEvent.click(screen.getByText("Xu hướng theo kỳ"));
     expect(screen.getByRole("img", { name: /Dòng tiền ngoại trú/ })).toBeVisible();
     expect(screen.getByRole("img", { name: /Hoạt động ngoại trú/ })).toBeVisible();
-    expect(screen.getAllByText("Tiền thu ròng")[0].nextElementSibling).toHaveTextContent("-20");
     expect(screen.getByText(/Tiền thu ròng không phải doanh thu/)).toBeVisible();
-    expect(screen.getByRole("list", {name:"Các kỳ báo cáo"})).toBeInTheDocument();
+
+    const periods = screen.getByRole("list", { name: "Các kỳ báo cáo" });
+    const firstPeriod = within(periods).getByText("1 lượt · 2 xét nghiệm · 3 đơn · Thu ròng: -20 VND");
+    expect(firstPeriod).toBeVisible();
+    const dispensedUnits = within(periods).getAllByText("Số lượng thuốc đã xuất");
+    expect(dispensedUnits[0]).not.toBeVisible();
+    expect(dispensedUnits[1]).not.toBeVisible();
+    fireEvent.click(firstPeriod);
+    expect(within(periods).getAllByText("Số lượng thuốc đã xuất")[0]).toBeVisible();
+    expect(within(periods).getAllByText("Tiền đã hoàn")[0].nextElementSibling).toHaveTextContent("20");
+
+    const evidence = screen.getByText("Nguồn và đối soát").closest("details");
+    expect(evidence).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Nguồn và đối soát"));
+    expect(screen.getByText("Mã đối soát")).toBeVisible();
   });
   it("does not draw an uncovered report as zero activity", () => {
     render(<OutpatientReportResult report={{...report, covered:false}} />);

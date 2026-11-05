@@ -153,7 +153,14 @@ data has sample values. See Core README for transaction, adoption and date-confl
 
 ## Self-contact update — 2026-10-25
 
-The personal staff profile allows the signed staff owner to edit email, phone and address through
+Current email policy (2026-11-05): staff self-contact permits phone/address changes;
+changing a staff email requires ADMIN through audited account management. Patient
+account email changes are separately available to ADMIN/NURSE through
+`PUT /api/v1/org/patient-accounts/{patientId}/email`, resolved by patient ownership.
+The profile account panel uses that scoped command, including uncertain-outcome
+verification; NURSE does not gain access to generic account administration.
+
+The personal staff profile allows the signed staff owner to edit phone and address through
 `PUT /api/v1/org/staff/{id}/contact`. All seven staff roles may use this for their own profile;
 job, identity, qualifications and department remain administrator-managed. The form guards dirty
 navigation and duplicate submission, ignores stale session responses and does not retry writes
