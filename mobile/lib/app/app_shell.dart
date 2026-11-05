@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/session_controller.dart';
 import '../core/providers.dart';
+import '../features/appointment/presentation/schedule_management_pages.dart';
 import 'modules.dart';
 
 class AppShell extends ConsumerWidget {
@@ -20,6 +21,8 @@ class AppShell extends ConsumerWidget {
             schedulingEnabled: ref
                 .watch(appConfigProvider)
                 .scheduledPaymentsEnabled,
+            headsDepartment:
+                ref.watch(headsDepartmentProvider).asData?.value ?? false,
           );
     final selected = modules.where((m) => m.matches(location)).firstOrNull;
     return LayoutBuilder(
@@ -150,6 +153,8 @@ class HomePage extends ConsumerWidget {
             schedulingEnabled: ref
                 .watch(appConfigProvider)
                 .scheduledPaymentsEnabled,
+            headsDepartment:
+                ref.watch(headsDepartmentProvider).asData?.value ?? false,
           );
     return ListView(
       padding: const EdgeInsets.all(24),

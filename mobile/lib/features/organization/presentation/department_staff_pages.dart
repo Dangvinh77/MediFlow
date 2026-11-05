@@ -1,10 +1,13 @@
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/providers.dart';
 import '../../../core/widgets/request_state.dart';
+import '../../appointment/presentation/schedule_management_pages.dart';
 import '../domain/organization.dart';
 import '../domain/profile_account.dart';
 import 'access_boundary.dart';
@@ -120,6 +123,19 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
               onPressed: () => _edit(department),
               icon: const Icon(Icons.edit_outlined),
               label: const Text('Chỉnh sửa khoa phòng'),
+            ),
+          if (widget.access.role == 'ADMIN' && department.type == 'CLINICAL')
+            Consumer(
+              builder: (context, ref, _) =>
+                  ref.watch(appConfigProvider).scheduledPaymentsEnabled
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: HeadAppointmentPanel(
+                        key: ValueKey(department.id),
+                        departmentId: department.id,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
         ],
       ),

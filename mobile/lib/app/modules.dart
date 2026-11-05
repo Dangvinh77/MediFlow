@@ -12,6 +12,7 @@ class AppModule {
     this.roles, {
     this.implemented = false,
     this.scheduling = false,
+    this.headOnly = false,
   });
   final String path, title, description, owner;
   final IconData icon;
@@ -20,6 +21,9 @@ class AppModule {
 
   /// Hidden unless the build enables the V2 scheduling workspaces.
   final bool scheduling;
+
+  /// Shown to a doctor only while appointed head of a department.
+  final bool headOnly;
   bool allows(UserRole role) => roles.contains(role);
   bool matches(String location) =>
       location == path || location.startsWith('$path/');
@@ -81,6 +85,27 @@ const modules = [
     [UserRole.doctor],
     implemented: true,
     scheduling: true,
+  ),
+  AppModule(
+    '/appointments/schedule',
+    'Quản lý buổi khám',
+    'Ca khám và phạm vi khoa',
+    'Vinh',
+    Icons.edit_calendar_outlined,
+    [UserRole.admin, UserRole.manager],
+    implemented: true,
+    scheduling: true,
+  ),
+  AppModule(
+    '/appointments/department',
+    'Quản lý khoa',
+    'Buổi khám và phân công bác sĩ',
+    'Vinh',
+    Icons.domain_outlined,
+    [UserRole.doctor],
+    implemented: true,
+    scheduling: true,
+    headOnly: true,
   ),
   AppModule(
     '/appointments/my-registration',
@@ -178,12 +203,14 @@ bool isSupportChild(AppModule module) =>
 List<AppModule> visibleMainModules(
   UserRole role, {
   bool schedulingEnabled = false,
+  bool headsDepartment = false,
 }) => modules
     .where(
       (module) =>
           !isSupportChild(module) &&
           module.allows(role) &&
-          (!module.scheduling || schedulingEnabled),
+          (!module.scheduling || schedulingEnabled) &&
+          (!module.headOnly || headsDepartment),
     )
     .toList();
 

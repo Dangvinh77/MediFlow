@@ -8,10 +8,8 @@ là công cụ vận hành, chưa tính vào phạm vi role nghiệp vụ.
 
 | Vai trò | Web có, mobile chưa có | Endpoint |
 |---|---|---|
-| MANAGER | Quản lý buổi khám; tổng quan khoa; lịch toàn khoa; buổi khám và phòng; phân công ca | `/v2/consultation-sessions/**`, `/v2/org/consultation-rooms`, `/v2/doctor-work-shifts/**` |
-| ADMIN | Như MANAGER; phạm vi quản lý lịch; bổ nhiệm trưởng khoa | `/v2/org/accounts/{id}/schedule-management-scope`, `/v2/org/departments/{id}/head-appointments` |
 
-Bác sĩ được giao làm trưởng khoa cũng cần capabilities từ `/v1/org/me/capabilities`.
+MANAGER và ADMIN đã có quản lý buổi khám, phạm vi quản lý lịch và bổ nhiệm trưởng khoa. Bác sĩ là trưởng khoa có màn Quản lý khoa theo `/v1/org/me/capabilities`.
 
 DOCTOR, NURSE và PATIENT đã đủ theo bảng này: lịch khám, lịch làm việc, đề xuất tái khám, phiếu theo buổi, ghi nhận đã đến và phiếu của bệnh nhân đã có trên mobile. Web chưa có thao tác hủy phiếu dù API có, nên mobile cũng chưa có.
 
