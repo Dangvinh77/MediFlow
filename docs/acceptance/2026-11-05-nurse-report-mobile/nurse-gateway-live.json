@@ -1,0 +1,121 @@
+{
+  "provenance": "SYNTHETIC-DISPOSABLE-REHEARSAL",
+  "gateway": "loopback rehearsal",
+  "at": "2026-11-05T08:56:25.355753",
+  "steps": [
+    {
+      "step": "nurse creates patient without email",
+      "status": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "nurse adds email before issuance",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "nurse issues account after adding email",
+      "status": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "ok": true,
+      "detail": "live.256dceb1@example.test"
+    },
+    {
+      "step": "profile PUT cannot change linked email",
+      "status": 422,
+      "expected": [
+        400,
+        409,
+        422
+      ],
+      "ok": true,
+      "detail": "{'code': 'PATIENT_EMAIL_LINKED_ACCOUNT', 'message': 'Đổi email đăng nhập trong phần quản lý tài khoản', 'details': []}"
+    },
+    {
+      "step": "blank email cannot clear linked email",
+      "status": 422,
+      "expected": [
+        400,
+        409,
+        422
+      ],
+      "ok": true,
+      "detail": "{'code': 'PATIENT_EMAIL_LINKED_ACCOUNT', 'message': 'Đổi email đăng nhập trong phần quản lý tài khoản', 'details': []}"
+    },
+    {
+      "step": "reason required",
+      "status": 400,
+      "expected": 400,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "nurse corrects linked login email",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "detail": "live.256dceb1.fixed@example.test"
+    },
+    {
+      "step": "cashier denied",
+      "status": 403,
+      "expected": 403,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "nurse reads account state",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "detail": "{\"account\": {\"accountId\": \"405c9915-c3e7-4cd8-a921-73db343d03d8\", \"username\": \"live.256dceb1.fixed@example.test\", \"staffId\": null, \"patientId\": \"1fc8314e-175d-4b8f-996b-e0270de2e9fb\", \"role\": \"PATIENT"
+    },
+    {
+      "step": "profile email synced",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "detail": "live.256dceb1.fixed@example.test"
+    },
+    {
+      "step": "nurse denied on staff email route",
+      "status": 403,
+      "expected": 403,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "staff id via patient route refused",
+      "status": 404,
+      "expected": [
+        400,
+        404,
+        409,
+        422
+      ],
+      "ok": true,
+      "detail": "{'code': 'PATIENT_NOT_FOUND', 'message': 'Patient not found: fce28819-5333-4faf-a0ff-42f7f155f36b', 'details': []}"
+    },
+    {
+      "step": "existing login email conflict",
+      "status": 422,
+      "expected": [
+        400,
+        409,
+        422
+      ],
+      "ok": true,
+      "detail": "{'code': 'ACCOUNT_INVALID', 'message': 'Email is already linked to another account', 'details': []}"
+    }
+  ]
+}
