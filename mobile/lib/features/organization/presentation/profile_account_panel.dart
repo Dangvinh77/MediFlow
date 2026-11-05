@@ -783,8 +783,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             _intents.emailOutcomeUnknown = false;
             _intents.pendingEmailTarget = null;
             _emailEdited = true;
-            _notice =
-                'Chưa xác nhận đồng bộ. Có thể gửi lại yêu cầu đồng bộ cùng email.';
+            _notice = 'Chưa xác nhận đồng bộ. Có thể gửi lại yêu cầu đồng bộ cùng email.';
           });
         } else {
           setState(() {

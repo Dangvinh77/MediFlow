@@ -5,6 +5,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/medical_record.dart';
+import 'follow_up_recommendation_panel.dart';
 
 final medicalRecordRepositoryProvider = Provider<MedicalRecordRepository>(
   (ref) => throw StateError(
@@ -847,6 +848,14 @@ class _MedicalRecordDetailPageState
             ),
           ),
         ),
+        if (record.status == 'COMPLETED' &&
+            ref.watch(appConfigProvider).scheduledPaymentsEnabled &&
+            ref.watch(followUpRecommendationRepositoryProvider) != null)
+          FollowUpRecommendationPanel(
+            key: ValueKey(record.id),
+            recordId: record.id,
+            canCreate: role == 'DOCTOR',
+          ),
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
         if (_uncertain)

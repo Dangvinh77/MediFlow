@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/session_controller.dart';
+import '../core/providers.dart';
 import 'modules.dart';
 
 class AppShell extends ConsumerWidget {
@@ -14,7 +15,12 @@ class AppShell extends ConsumerWidget {
     final session = ref.watch(sessionProvider).asData?.value;
     final accessible = session == null
         ? <AppModule>[]
-        : visibleMainModules(session.role);
+        : visibleMainModules(
+            session.role,
+            schedulingEnabled: ref
+                .watch(appConfigProvider)
+                .scheduledPaymentsEnabled,
+          );
     final selected = modules.where((m) => m.matches(location)).firstOrNull;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -137,7 +143,14 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(sessionProvider).asData?.value?.role;
-    final available = role == null ? <AppModule>[] : visibleMainModules(role);
+    final available = role == null
+        ? <AppModule>[]
+        : visibleMainModules(
+            role,
+            schedulingEnabled: ref
+                .watch(appConfigProvider)
+                .scheduledPaymentsEnabled,
+          );
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [

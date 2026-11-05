@@ -37,6 +37,10 @@ import '../features/billing/domain/billing_models.dart';
 import '../features/billing/presentation/providers.dart';
 import '../features/notification/data/gateway_notification_repository.dart';
 import '../features/notification/presentation/providers.dart';
+import '../features/appointment/data/gateway_outpatient_schedule_repository.dart';
+import '../features/appointment/presentation/outpatient_schedule_pages.dart';
+import '../features/medical_record/data/gateway_follow_up_recommendation_repository.dart';
+import '../features/medical_record/presentation/follow_up_recommendation_panel.dart';
 import '../features/pharmacy/data/gateway_pharmacy_repository.dart';
 import '../features/pharmacy/presentation/providers.dart';
 import '../features/self_profile/data/gateway_self_profile_repository.dart';
@@ -50,6 +54,13 @@ final _pharmacyAdapterProvider = Provider(
 final appOverrides = [
   profileAccountRepositoryProvider.overrideWith(
     (ref) => GatewayProfileAccountRepository(ref.watch(apiClientProvider)),
+  ),
+  outpatientScheduleRepositoryProvider.overrideWith(
+    (ref) => GatewayOutpatientScheduleRepository(ref.watch(apiClientProvider)),
+  ),
+  followUpRecommendationRepositoryProvider.overrideWith(
+    (ref) =>
+        GatewayFollowUpRecommendationRepository(ref.watch(apiClientProvider)),
   ),
   receptionRepositoryProvider.overrideWith(
     (ref) => GatewayReceptionRepository(ref.watch(apiClientProvider)),

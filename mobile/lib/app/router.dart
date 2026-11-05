@@ -7,6 +7,7 @@ import '../features/auth/presentation/account_recovery_page.dart';
 import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/appointment/presentation/appointment_page.dart';
+import '../features/appointment/presentation/outpatient_schedule_pages.dart';
 import '../features/appointment/presentation/reception_page.dart';
 import '../features/lab/presentation/lab_page.dart';
 import '../features/lab/presentation/my_lab_results_page.dart';
@@ -31,6 +32,23 @@ import 'support_page.dart';
 
 class _RouterRefresh extends ChangeNotifier {
   void refresh() => notifyListeners();
+}
+
+void _openVisitRecord(BuildContext context, String patientId, String visitId) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => MedicalRecordForVisitPage(
+        patientId: patientId,
+        visitId: visitId,
+        prescriptionWorkspaceBuilder: (context, record, {required canCreate}) =>
+            RecordPrescriptionPanel(
+              recordId: record.id,
+              patientId: record.patientId,
+              canCreate: canCreate,
+            ),
+      ),
+    ),
+  );
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -127,24 +145,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/appointments',
             builder: (context, _) => AppointmentPage(
               onReception: () => context.go('/appointments/reception'),
-              onOpenRecord: (patientId, visitId) {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => MedicalRecordForVisitPage(
-                      patientId: patientId,
-                      visitId: visitId,
-                      prescriptionWorkspaceBuilder:
-                          (context, record, {required canCreate}) =>
-                              RecordPrescriptionPanel(
-                                recordId: record.id,
-                                patientId: record.patientId,
-                                canCreate: canCreate,
-                              ),
+              onOpenRecord: (patientId, visitId) =>
+                  _openVisitRecord(context, patientId, visitId),
+            ),
+          ),
+          GoRoute(
+            path: '/appointments/my-calendar',
+            builder: (context, _) => DoctorCalendarPage(
+              onOpenRegistration: (context, registrationId) =>
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => AppointmentDetailPage(
+                        appointmentId: registrationId,
+                        onOpenRecord: (patientId, visitId) =>
+                            _openVisitRecord(context, patientId, visitId),
+                      ),
                     ),
                   ),
-                );
-              },
             ),
+          ),
+          GoRoute(
+            path: '/appointments/my-shifts',
+            builder: (_, _) => const DoctorWorkShiftsPage(),
+          ),
+          GoRoute(
+            path: '/appointments/my-registration',
+            builder: (_, _) => const PatientRegistrationsPage(),
           ),
           GoRoute(
             path: '/appointments/reception',
