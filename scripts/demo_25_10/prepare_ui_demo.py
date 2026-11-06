@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent
 ZONE = dt.timezone(dt.timedelta(hours=7))
 SEED_LOGIN_EMAILS = {
     'admin': 'demo.staff01@example.test',
+    'manager': 'demo.staff02@example.test',
     'nurse': 'demo.staff04@example.test',
     'doctor': 'demo.staff03@example.test',
     'cashier': 'demo.staff19@example.test',

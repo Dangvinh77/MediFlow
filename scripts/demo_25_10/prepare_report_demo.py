@@ -20,6 +20,7 @@ from prepare_ui_demo import ApiError, SEED_LOGIN_EMAILS
 HERE = Path(__file__).resolve().parent
 ZONE = dt.timezone(dt.timedelta(hours=7))
 ADMIN_USERNAME = SEED_LOGIN_EMAILS["admin"]
+MANAGER_USERNAME = SEED_LOGIN_EMAILS["manager"]
 ACCEPTANCE_REQUEST_ID = uuid.uuid5(seed_data.NAMESPACE, "acceptance:2024:general-clinic")
 ACCEPTANCE_REFERENCE = "SYNTHETIC-DEMO-REPORT-2024:" + seed_data.DEPARTMENT_IDS[0]
 DAILY_SAMPLE_DATE = dt.date(2024, 6, 17)
@@ -51,6 +52,20 @@ def _export_bytes(document):
 def _available(api):
     query = urllib.parse.urlencode({"departmentId": seed_data.DEPARTMENT_IDS[0]})
     return api.call("admin", "GET", "/api/v1/reports/outpatient/available-periods?" + query)
+
+
+def assign_manager_department(api):
+    """Give demo.manager Internal Medicine through the ADMIN scope API; its table is Core-migrated."""
+    department_id = seed_data.DEPARTMENT_IDS[0]
+    api.login("manager", MANAGER_USERNAME)
+    path = "/api/v2/org/accounts/" + api.claims["manager"]["sub"] + "/schedule-management-scope"
+    current = api.call("admin", "GET", path)
+    if department_id in current.get("departmentIds", []):
+        return current
+    return api.call("admin", "PUT", path,
+                    {"expectedRevision": current["revision"], "departmentIds": [department_id],
+                     "reason": "Gan khoa phu trach cho tai khoan quan ly demo"},
+                    expected=(200, 201), stage="report-demo-manager-scope")
 
 
 def _coverage_preview(api, path):
@@ -95,6 +110,7 @@ def prepare(api, evidence, accept=False, now=None):
                                  "exportSha256": digest, "rowCount": len(records)}
 
     api.login("admin", ADMIN_USERNAME)
+    assign_manager_department(api)
     scope = urllib.parse.urlencode({"fromDate": seed_data.HISTORICAL_FROM.isoformat(),
                                     "toDate": seed_data.HISTORICAL_TO.isoformat(),
                                     "departmentId": seed_data.DEPARTMENT_IDS[0]})

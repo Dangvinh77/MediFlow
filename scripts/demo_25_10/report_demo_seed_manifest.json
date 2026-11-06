@@ -6,8 +6,18 @@
       "toDate": "2024-12-31",
       "departmentId": "9a6dd24a-1c1f-4122-9e31-7cfea345ec45"
     },
+    "provisionalComparisonStatistics": {
+      "fromDate": "2025-01-01",
+      "toDate": "2025-12-31",
+      "departments": [
+        "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
+        "601fc45a-d78b-4821-a309-c3bc0169fa03",
+        "c68138a8-fcb3-4ec2-b10a-50c3f38076a4",
+        "6f1627e2-6faf-4162-9c67-9363492d187a"
+      ]
+    },
     "provisionalCurrentStatistics": {
-      "fromDate": "2026-09-01",
+      "fromDate": "2026-01-01",
       "toDate": "2026-11-05",
       "departments": [
         "9a6dd24a-1c1f-4122-9e31-7cfea345ec45",
@@ -18,29 +28,34 @@
     }
   },
   "counts": {
-    "completedVisits": 2864,
-    "operationalFacts": 8592,
-    "receipts": 6444,
-    "refunds": 216
+    "completedVisits": 6618,
+    "operationalFacts": 18764,
+    "receipts": 13723,
+    "refunds": 504
   },
   "periods": {
     "2024": {
-      "completedVisits": 2096,
-      "receipts": 4716,
-      "refunds": 160
+      "completedVisits": 2172,
+      "receipts": 4478,
+      "refunds": 166
+    },
+    "2025": {
+      "completedVisits": 2345,
+      "receipts": 4857,
+      "refunds": 178
     },
     "2026": {
-      "completedVisits": 768,
-      "receipts": 1728,
-      "refunds": 56
+      "completedVisits": 2101,
+      "receipts": 4388,
+      "refunds": 160
     }
   },
   "revenueVnd": {
-    "EXAM": "429600000.00",
-    "LAB_TEST": "114560000.00",
-    "PRESCRIPTION": "165320000.00"
+    "EXAM": "1159546000.00",
+    "LAB_TEST": "268959000.00",
+    "PRESCRIPTION": "633414000.00"
   },
-  "refundsVnd": "3311000.00",
+  "refundsVnd": "13134600.00",
   "reconciled": false,
   "acceptedCoverageAdded": false
 }
