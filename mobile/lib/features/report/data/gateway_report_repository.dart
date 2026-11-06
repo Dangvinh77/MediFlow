@@ -47,6 +47,25 @@ class GatewayReportRepository implements ReportRepository {
   }
 
   @override
+  Future<String?> headDepartmentId() async {
+    final rows = _map(
+      await client.get('/v1/org/me/capabilities'),
+    )['managementDepartments'];
+    if (rows == null) return null;
+    if (rows is! List) {
+      throw const FormatException('Phản hồi quyền quản lý khoa không hợp lệ.');
+    }
+    for (final row in rows) {
+      final department = _map(row);
+      if (department['appointmentId'] is String &&
+          department['departmentId'] is String) {
+        return department['departmentId'] as String;
+      }
+    }
+    return null;
+  }
+
+  @override
   Future<List<AvailableReportPeriod>> availablePeriods({
     String? departmentId,
   }) async {

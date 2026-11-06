@@ -21,7 +21,10 @@ const _day = OperationsFigures(
 );
 
 class _Reports implements ReportRepository {
+  _Reports({this.head});
+  final String? head;
   int readCalls = 0;
+  final queries = <ReportQuery>[];
   final operations = const OperationsStatistics(
     from: '2026-11-01',
     to: '2026-11-05',
@@ -63,38 +66,65 @@ class _Reports implements ReportRepository {
   }
 
   @override
-  Future<OperationsStatistics> statistics(ReportQuery query) async =>
-      operations;
+  Future<OperationsStatistics> statistics(ReportQuery query) async {
+    queries.add(query);
+    return operations;
+  }
+
+  @override
+  Future<String?> headDepartmentId() async => head;
 }
 
-Widget _host(_Reports reports, {double textScale = 1}) => ProviderScope(
-  overrides: [
-    workspaceAccessProvider.overrideWithValue(
-      WorkspaceAccess(
-        sessionIdentity: 'report-test',
-        role: 'ADMIN',
-        staffId: otherDrugId,
+Widget _host(_Reports reports, {double textScale = 1, String role = 'ADMIN'}) =>
+    ProviderScope(
+      overrides: [
+        workspaceAccessProvider.overrideWithValue(
+          WorkspaceAccess(
+            sessionIdentity: 'report-test',
+            role: role,
+            staffId: otherDrugId,
+          ),
+        ),
+        reportRepositoryProvider.overrideWithValue(reports),
+        referenceReaderProvider.overrideWithValue(
+          ReferencePickerFake({
+            for (final kind in ReferenceKind.values)
+              kind: [const ReferenceOption(id: otherDrugId, name: 'Khoa Nội')],
+          }),
+        ),
+      ],
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const Scaffold(body: ReportPage(outpatientEnabled: true)),
       ),
-    ),
-    reportRepositoryProvider.overrideWithValue(reports),
-    referenceReaderProvider.overrideWithValue(
-      ReferencePickerFake({
-        for (final kind in ReferenceKind.values)
-          kind: [const ReferenceOption(id: otherDrugId, name: 'Khoa Nội')],
-      }),
-    ),
-  ],
-  child: MaterialApp(
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(context)
-          .copyWith(textScaler: TextScaler.linear(textScale)),
-      child: child!,
-    ),
-    home: const Scaffold(body: ReportPage(outpatientEnabled: true)),
-  ),
-);
+    );
 
 void main() {
+  testWidgets('a department head reads their own department with no picker', (
+    tester,
+  ) async {
+    final reports = _Reports(head: otherDrugId);
+    await tester.pumpWidget(_host(reports, role: 'DOCTOR'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReferencePicker), findsNothing);
+    expect(find.textContaining('Khoa phụ trách'), findsOneWidget);
+    expect(reports.queries.single.departmentId, otherDrugId);
+  });
+
+  testWidgets('a doctor who heads no department is told so', (tester) async {
+    final reports = _Reports();
+    await tester.pumpWidget(_host(reports, role: 'DOCTOR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Báo cáo khoa chỉ dành cho trưởng khoa.'), findsOneWidget);
+    expect(reports.queries, isEmpty);
+  });
+
   testWidgets('report selector fits a narrow screen with large text', (
     tester,
   ) async {

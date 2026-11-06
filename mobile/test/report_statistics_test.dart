@@ -29,26 +29,25 @@ class Reports implements ReportRepository {
   Future<ReportData> read(ReportQuery query) => throw UnimplementedError();
 
   @override
+  Future<String?> headDepartmentId() async => null;
+
+  @override
   Future<OperationsStatistics> statistics(ReportQuery query) =>
       throw UnimplementedError();
 }
 
 void main() {
-  Widget discovery(
-    Reports repo,
-    ValueChanged<AvailableReportPeriod> select, {
-    bool departmentHead = false,
-  }) => MaterialApp(
-    home: Scaffold(
-      body: AvailableReportPeriods(
-        repository: repo,
-        departmentId: null,
-        monthly: true,
-        needsDepartment: departmentHead,
-        onSelect: select,
-      ),
-    ),
-  );
+  Widget discovery(Reports repo, ValueChanged<AvailableReportPeriod> select) =>
+      MaterialApp(
+        home: Scaffold(
+          body: AvailableReportPeriods(
+            repository: repo,
+            departmentId: null,
+            monthly: true,
+            onSelect: select,
+          ),
+        ),
+      );
 
   testWidgets(
     'discovery is explicit and selection applies the labelled synthetic range',
@@ -68,27 +67,17 @@ void main() {
     },
   );
 
-  testWidgets(
-    'department head must select department and obsolete discovery cannot commit',
-    (tester) async {
-      final repo = Reports();
-      await tester.pumpWidget(
-        discovery(repo, (_) => fail('obsolete selection'), departmentHead: true),
-      );
-      await tester.tap(find.text('Tìm kỳ có dữ liệu'));
-      expect(repo.calls, 0);
-      await tester.pumpWidget(
-        discovery(repo, (_) => fail('obsolete selection')),
-      );
-      await tester.tap(find.text('Tìm kỳ có dữ liệu'));
-      await tester.pump();
-      await tester.pumpWidget(const MaterialApp(home: Text('New scope')));
-      repo.pending.complete([period]);
-      await tester.pumpAndSettle();
-      expect(find.text('Dùng kỳ này'), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
+  testWidgets('obsolete discovery cannot commit', (tester) async {
+    final repo = Reports();
+    await tester.pumpWidget(discovery(repo, (_) => fail('obsolete selection')));
+    await tester.tap(find.text('Tìm kỳ có dữ liệu'));
+    await tester.pump();
+    await tester.pumpWidget(const MaterialApp(home: Text('New scope')));
+    repo.pending.complete([period]);
+    await tester.pumpAndSettle();
+    expect(find.text('Dùng kỳ này'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'separate cash and activity charts render negative net and accepted zero',

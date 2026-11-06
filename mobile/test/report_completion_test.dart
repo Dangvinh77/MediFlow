@@ -8,6 +8,32 @@ import 'package:mediflow_mobile/features/report/domain/report.dart';
 import 'pharmacy_fixtures.dart';
 
 void main() {
+  test('only an active appointment counts as heading a department', () async {
+    final adapter = PharmacyHttpAdapter()
+      ..data = {
+        'managementDepartments': [
+          {'departmentId': drugId, 'appointmentId': null},
+          {'departmentId': otherDrugId, 'appointmentId': drugId},
+        ],
+      };
+    final client = ApiClient(
+      AppConfig('http://localhost:8080/api'),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    addTearDown(client.close);
+    final reader = GatewayReportRepository(client);
+
+    expect(await reader.headDepartmentId(), otherDrugId);
+    expect(adapter.requests.single.path, 'v1/org/me/capabilities');
+
+    adapter.data = {
+      'managementDepartments': [
+        {'departmentId': drugId, 'appointmentId': null},
+      ],
+    };
+    expect(await reader.headDepartmentId(), isNull);
+  });
+
   test(
     'discovery uses gateway scope and rejects malformed acceptance metadata',
     () async {

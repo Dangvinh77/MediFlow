@@ -66,6 +66,9 @@ class Reports implements ReportRepository {
   Future<ReportData> read(ReportQuery query) => pending.future;
 
   @override
+  Future<String?> headDepartmentId() async => null;
+
+  @override
   Future<OperationsStatistics> statistics(ReportQuery query) =>
       throw UnimplementedError();
 }
