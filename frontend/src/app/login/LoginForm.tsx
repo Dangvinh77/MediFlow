@@ -3,7 +3,9 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { mustChangePassword } from "@/lib/session";
+import { PulseLine } from "@/components/brand/PulseLine";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { MediFlowMark } from "@mediflow/loader";
 import Link from "next/link";
 import { accountSecurityApi } from "@/features/organization/security-api";
 import {
@@ -78,10 +80,17 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
   }
 
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <div className="absolute right-6 top-6">
+    <main className="relative min-h-screen lg:grid lg:grid-cols-2">
+      <div className="absolute right-4 top-4 z-10">
         <ThemeToggle />
       </div>
+      <section aria-label="MediFlow" className="flex flex-col items-center overflow-hidden rounded-b-[2rem] bg-brand-deep pb-2 pt-12 text-center text-white lg:justify-center lg:rounded-none lg:pb-0 lg:pt-0">
+        <MediFlowMark size={60} tone="on-brand" />
+        <p className="mt-4 text-3xl font-extrabold tracking-tight">MediFlow</p>
+        <p className="mt-1 text-sm text-white/70">Quản lý khám ngoại trú</p>
+        <PulseLine />
+      </section>
+      <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-6 py-8 lg:min-h-screen">
       <h1 className="text-2xl font-bold">Đăng nhập MediFlow</h1>
       <p className="mt-3 text-sm text-muted-foreground">
         Bệnh nhân đăng nhập khi cần xem kết quả khám, xét nghiệm và thông báo tái khám.
@@ -124,6 +133,7 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
         </button>
       </form>
       <div className="mt-5 flex flex-wrap justify-between gap-4 text-sm font-medium text-primary"><Link href="/forgot-password" className="underline">Quên mật khẩu?</Link>{demoMailboxEnabled ? <Link href="/demo-mailbox" className="underline">Hộp thư demo</Link> : null}</div>
+      </div>
     </main>
   );
 }

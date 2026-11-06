@@ -1,5 +1,6 @@
 "use client";
 
+import { MediFlowMark } from "@mediflow/loader";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/roles";
@@ -60,24 +61,24 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
           type="button"
           aria-label="Đóng điều hướng"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-950/45 lg:hidden"
+          className="fixed inset-0 z-40 bg-brand-deep/60 lg:hidden"
         />
       ) : null}
       <aside
         aria-label="Điều hướng nghiệp vụ"
         className={`${open ? "visible translate-x-0" : "invisible -translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 lg:visible lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:w-60 lg:translate-x-0`}
       >
-        <div className="flex min-h-[4.5rem] items-center gap-3 border-b border-border px-5">
-          <span className="grid size-9 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">MF</span>
+        <div className="flex min-h-[4.5rem] items-center gap-3 bg-brand-deep px-5 text-white">
+          <MediFlowMark size={36} tone="on-brand" />
           <div>
             <p className="font-semibold tracking-tight">MediFlow</p>
-            <p className="text-xs text-muted-foreground">Chăm sóc ngoại trú</p>
+            <p className="text-xs text-white/70">Chăm sóc ngoại trú</p>
           </div>
           <button
             type="button"
             aria-label="Đóng điều hướng"
             onClick={onClose}
-            className="ml-auto grid size-10 place-items-center rounded-lg text-xl text-muted-foreground hover:bg-surface-muted lg:hidden"
+            className="ml-auto grid size-10 place-items-center rounded-lg text-xl text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:hidden"
           >
             <span aria-hidden="true">×</span>
           </button>

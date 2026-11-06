@@ -1,49 +1,64 @@
 @import "tailwindcss";
+@source "../../packages/mediflow-loader/src";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Palette mirrors mobile/lib/core/theme (app_theme.dart + medical_colors.dart).
+   Change a colour on both clients together so web and mobile stay one product. */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --brand-deep: #083f45;
+  --brand-scrub: #0f766e;
+  --brand-pulse: #2dd4bf;
+  --mark-cross: #0f766e;
+  --mark-trace: #ffffff;
+
+  --background: #f1f7f7;
+  --foreground: #0f2c30;
   --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
-  --control-border: #64748b;
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
+  --surface-muted: #e6f0f0;
+  --muted-foreground: #4a6467;
+  --border: #d5e4e4;
+  --control-border: #7e9a9c;
+  --primary: #0f766e;
+  --primary-hover: #0b5f59;
   --primary-foreground: #ffffff;
-  --danger: #b91c1c;
+  --danger: #c02a37;
   --danger-foreground: #ffffff;
-  --warning: #a16207;
-  --warning-foreground: #422006;
-  --success: #15803d;
+  --warning: #9a5200;
+  --warning-foreground: #ffffff;
+  --success: #17754a;
   --success-foreground: #ffffff;
-  --info: #1d4ed8;
+  --info: #1d5fc4;
   --info-foreground: #ffffff;
 }
 
 html.dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --surface: #1e293b;
-  --surface-muted: #273449;
-  --muted-foreground: #cbd5e1;
-  --border: #475569;
-  --control-border: #94a3b8;
-  --primary: #93c5fd;
-  --primary-hover: #bfdbfe;
-  --primary-foreground: #0f172a;
-  --danger: #f87171;
-  --danger-foreground: #450a0a;
-  --warning: #facc15;
-  --warning-foreground: #422006;
-  --success: #4ade80;
-  --success-foreground: #052e16;
-  --info: #60a5fa;
-  --info-foreground: #172554;
+  --mark-cross: #ffffff;
+  --mark-trace: #0f766e;
+
+  --background: #0a1d21;
+  --foreground: #e3f0f0;
+  --surface: #0e2529;
+  --surface-muted: #163136;
+  --muted-foreground: #a3bdbf;
+  --border: #23434a;
+  --control-border: #5c7c80;
+  --primary: #5eddcb;
+  --primary-hover: #8feadb;
+  --primary-foreground: #04302f;
+  --danger: #ff8a8f;
+  --danger-foreground: #4a0a10;
+  --warning: #f2b35e;
+  --warning-foreground: #2e1a00;
+  --success: #5ad19a;
+  --success-foreground: #06301f;
+  --info: #8db8f7;
+  --info-foreground: #08274f;
 }
 
 @theme inline {
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-scrub: var(--brand-scrub);
+  --color-brand-pulse: var(--brand-pulse);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
@@ -64,6 +79,47 @@ html.dark {
   --color-info-foreground: var(--info-foreground);
   --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Courier New", Courier, monospace;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.875rem;
+  --animate-mediflow-beat: mediflow-beat var(--mediflow-beat-duration, 1.5s) ease-in-out infinite;
+  --animate-mediflow-beat-soft: mediflow-beat-soft var(--mediflow-beat-duration, 1.5s) ease-in-out infinite;
+  --animate-mediflow-trace: mediflow-trace var(--mediflow-beat-duration, 1.5s) linear infinite;
+  --animate-mediflow-halo: mediflow-halo var(--mediflow-beat-duration, 1.5s) ease-out infinite;
+  --animate-mediflow-reveal: mediflow-reveal 1.5s cubic-bezier(0.65, 0, 0.35, 1) both;
+
+  /* One lub-dub per cycle, peaking as the trace highlight crosses the QRS spike. */
+  @keyframes mediflow-beat {
+    0%, 24% { transform: scale(1); }
+    36% { transform: scale(1.12); }
+    46% { transform: scale(0.98); }
+    56% { transform: scale(1.07); }
+    70%, 100% { transform: scale(1); }
+  }
+
+  /* The same rhythm without any size change, for prefers-reduced-motion. */
+  @keyframes mediflow-beat-soft {
+    0%, 24% { opacity: 1; }
+    36% { opacity: 0.55; }
+    46% { opacity: 1; }
+    56% { opacity: 0.7; }
+    70%, 100% { opacity: 1; }
+  }
+
+  @keyframes mediflow-trace {
+    from { stroke-dashoffset: 30; }
+    to { stroke-dashoffset: -100; }
+  }
+
+  @keyframes mediflow-halo {
+    0%, 30% { transform: scale(1); opacity: 0; }
+    36% { transform: scale(1.02); opacity: 0.35; }
+    72%, 100% { transform: scale(1.26); opacity: 0; }
+  }
+
+  @keyframes mediflow-reveal {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+  }
 }
 
 body {

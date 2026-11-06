@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="MediFlow">
+  <path fill="#FFFFFF" d="M42 0H58a9 9 0 0 1 9 9V33H91a9 9 0 0 1 9 9V58a9 9 0 0 1-9 9H67V91a9 9 0 0 1-9 9H42a9 9 0 0 1-9-9V67H9a9 9 0 0 1-9-9V42a9 9 0 0 1 9-9H33V9a9 9 0 0 1 9-9Z"/>
+  <path fill="none" stroke="#0F766E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M10 50H36L44 38L54 62L62 50H90"/>
+</svg>
