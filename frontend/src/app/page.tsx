@@ -1,3 +1,4 @@
+import { MediFlowMark } from "@mediflow/loader";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -15,7 +16,7 @@ export default function Home() {
     <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
         <div className="flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">MF</span>
+          <MediFlowMark size={44} />
           <div>
             <p className="text-xl font-semibold tracking-tight">MediFlow</p>
             <p className="text-sm text-muted-foreground">Hospital workspace</p>

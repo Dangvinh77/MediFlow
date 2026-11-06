@@ -19,6 +19,8 @@ All HTTP gateway-only /api/* qua lib/api.ts; no raw fetch/service ports.
 DTO exact wire, shared envelopes lib/types.ts. UI role hiding không là security.
 Tailwind utilities và semantic theme tokens trong globals.css/theme source; không hard-coded
 brand palette mới, component library/CSS-in-JS/data-fetch library ngoài rule hiện có.
+Palette light/dark mirror mobile/lib/core/theme; đổi màu thì đổi cả hai client. Logo: MediFlowMark
+(@mediflow/loader) trong React, file tĩnh ở frontend/public/brand.
 Giữ mẫu Huy đã chốt ở frontend/docs/designs, không redesign vì giảm backend scope.
 
 Loading/error/empty/retry/validation/permission states; abort/ignore stale requests, không

@@ -18,7 +18,7 @@ export function AsyncState(props: AsyncStateProps) {
         aria-busy="true"
         className="flex items-center gap-3 py-6 text-sm text-muted-foreground"
       >
-        <MediFlowLoader size={36} label={props.message} />
+        <MediFlowLoader className="flex flex-col items-center" size={36} label={props.message} />
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   title: "MediFlow",
   description: "Hệ thống quản lý bệnh viện MediFlow",
 };
+
+export const viewport: Viewport = { themeColor: "#083F45" };
 
 export default function RootLayout({
   children,
