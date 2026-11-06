@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 import type { PageResult } from "@/lib/types";
+import { AsyncState } from "./AsyncState";
 import { Button } from "./Button";
 
 interface Props<T> {
@@ -26,7 +27,7 @@ function ResultsPage<T>({ load, render, empty }: Props<T>) {
   }, [load, page, retry]);
   function changePage(next: number) { setState({}); setPage(next); }
   if (state.error) return <div className="space-y-3"><p role="alert">{state.error}</p><Button onClick={() => { setState({}); setRetry(value => value + 1); }}>Thử lại</Button></div>;
-  if (!state.data) return <p role="status">Đang tải kết quả…</p>;
+  if (!state.data) return <AsyncState kind="loading" message="Đang tải kết quả…" />;
   return <div className="space-y-5">
     {state.data.content.length ? state.data.content.map(render) : <p role="status">{empty}</p>}
     <nav aria-label="Phân trang kết quả" className="flex items-center gap-4">

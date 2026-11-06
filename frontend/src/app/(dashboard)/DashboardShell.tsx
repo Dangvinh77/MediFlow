@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { AsyncState } from "@/components/ui/AsyncState";
+import { FullScreenLoader } from "@/components/ui/FullScreenLoader";
 import { DashboardReferences } from "./_components/DashboardReferences";
 import {
   getRole,
@@ -63,7 +65,7 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
   }
 
   if (!authorized) {
-    return <main className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Đang kiểm tra đăng nhập…</main>;
+    return <FullScreenLoader label="Đang kiểm tra đăng nhập…" />;
   }
 
   if (passwordChangeRequired) {
@@ -71,7 +73,7 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
       <div className="mb-8 flex items-center justify-between gap-4"><span className="font-semibold">MediFlow</span><button type="button" onClick={onLogout} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Đăng xuất</button></div>
       <h1 className="text-2xl font-semibold">Đổi mật khẩu để tiếp tục</h1>
       <p className="mt-3 max-w-prose text-sm text-muted-foreground">Tài khoản đang sử dụng mật khẩu ban đầu. Bạn cần đặt mật khẩu riêng trước khi sử dụng hệ thống. Nếu thoát lúc này, lần đăng nhập tiếp theo vẫn cần đổi mật khẩu.</p>
-      {pathname === "/organization/security" ? children : <p role="status" className="mt-6 text-sm text-muted-foreground">Đang mở trang đổi mật khẩu…</p>}
+      {pathname === "/organization/security" ? children : <AsyncState kind="loading" message="Đang mở trang đổi mật khẩu…" />}
     </main>;
   }
 

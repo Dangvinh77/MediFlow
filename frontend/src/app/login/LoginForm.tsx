@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { mustChangePassword } from "@/lib/session";
 import { PulseLine } from "@/components/brand/PulseLine";
+import { FullScreenLoader } from "@/components/ui/FullScreenLoader";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MediFlowMark } from "@mediflow/loader";
 import Link from "next/link";
@@ -30,6 +31,9 @@ function landingPage(schedulingEnabled: boolean) {
   }
 }
 
+// How long the full-screen loader holds after a successful sign-in, before entering the system.
+const SIGN_IN_HOLD_MS = 1000;
+
 const getAuthSnapshot = (): boolean => isAuthenticated();
 const getServerAuthSnapshot = (): boolean | null => null;
 
@@ -52,17 +56,19 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
   }, []);
 
   useEffect(() => {
-    if (authenticated) {
-      router.replace(landingPage(schedulingEnabled));
+    if (!authenticated) return;
+    const enter = () => router.replace(landingPage(schedulingEnabled));
+    // `loading` survives a successful submit, so this tells a fresh sign-in from a restored session.
+    if (!loading) {
+      enter();
+      return;
     }
-  }, [authenticated, router, schedulingEnabled]);
+    const hold = setTimeout(enter, SIGN_IN_HOLD_MS);
+    return () => clearTimeout(hold);
+  }, [authenticated, loading, router, schedulingEnabled]);
 
   if (authenticated !== false) {
-    return (
-      <main className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 text-muted-foreground">
-        Đang kiểm tra phiên đăng nhập…
-      </main>
-    );
+    return <FullScreenLoader label={loading ? "Đang vào hệ thống…" : "Đang kiểm tra phiên đăng nhập…"} />;
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -71,10 +77,8 @@ export function LoginForm({ schedulingEnabled = false }: { schedulingEnabled?: b
     setLoading(true);
     try {
       await login(username, password);
-      router.replace(landingPage(schedulingEnabled));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
-    } finally {
       setLoading(false);
     }
   }

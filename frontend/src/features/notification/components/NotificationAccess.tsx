@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
+import { AsyncState } from "@/components/ui/AsyncState";
 import type { Role } from "@/lib/roles";
 
 export type NotificationPermission = "lookup" | "detail" | "send";
@@ -20,7 +21,7 @@ export function NotificationDenied({ message, correlationId }: { message: string
 export function NotificationAccess({ permission, children }: { permission: NotificationPermission; children: ReactNode }) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
-  if (role === null) return <p role="status" className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
+  if (role === null) return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
   if (!roles[permission].includes(role)) return <p role="alert" className="mt-6 text-sm text-danger">Bạn không có quyền thực hiện thao tác thông báo này.</p>;
   // Drop private results, drafts and pending callbacks on any session change.
   return <Fragment key={`${role}:${token}`}>{children}</Fragment>;
