@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/domain/workspace_access.dart';
@@ -165,7 +166,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
         ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: MediFlowLoader())
               : _error != null
               ? SingleChildScrollView(
                   child: RequestError(

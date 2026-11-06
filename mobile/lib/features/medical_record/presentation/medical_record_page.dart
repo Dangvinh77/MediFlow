@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/widgets/medical_ui.dart';
 
@@ -119,7 +120,7 @@ class _VisitRecordResolverState extends State<_VisitRecordResolver> {
                 error: snapshot.error!,
                 onRetry: () => setState(() => _record = _resolve()),
               )
-            : const Center(child: CircularProgressIndicator()),
+            : const Center(child: MediFlowLoader()),
       );
     },
   );
@@ -258,7 +259,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
   }
 
   Widget _buildResults() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: MediFlowLoader());
     if (_error != null) {
       return _RetryMessage(
         error: _error!,
@@ -707,7 +708,7 @@ class _MedicalRecordDetailPageState
       body: !_canRead
           ? const Center(child: Text('Bạn không có quyền xem hồ sơ khám.'))
           : _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MediFlowLoader())
           : _error != null && _record == null
           ? _RetryMessage(error: _error!, onRetry: _load)
           : _record == null

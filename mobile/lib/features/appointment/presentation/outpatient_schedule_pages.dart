@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/follow_up_recommendation.dart';
 import '../../../core/network/api_failure.dart';
@@ -130,7 +131,7 @@ class _DoctorCalendarPageState extends ConsumerState<DoctorCalendarPage> {
             final calendar = snapshot.data;
             if (calendar == null ||
                 snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: MediFlowLoader());
             }
             if (calendar.sessions.isEmpty) {
               return const Text('Không có buổi khám trong khoảng này.');
@@ -274,7 +275,7 @@ class _DoctorWorkShiftsPageState extends ConsumerState<DoctorWorkShiftsPage> {
             final shifts = snapshot.data;
             if (shifts == null ||
                 snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: MediFlowLoader());
             }
             if (shifts.isEmpty) {
               return const Text('Không có ca làm việc trong khoảng này.');

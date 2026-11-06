@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
@@ -404,7 +405,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: MediFlowLoader()),
             ),
           if (_error != null)
             RequestError(

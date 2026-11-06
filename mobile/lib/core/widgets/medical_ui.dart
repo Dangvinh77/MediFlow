@@ -2,63 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/medical_colors.dart';
 
-/// The MediFlow mark: a clinical cross with a monitor trace through it.
-class MediFlowMark extends StatelessWidget {
-  const MediFlowMark({super.key, this.size = 40, this.cross = Colors.white});
-  final double size;
-  final Color cross;
-
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: CustomPaint(size: Size.square(size), painter: _MarkPainter(cross)),
-  );
-}
-
-class _MarkPainter extends CustomPainter {
-  const _MarkPainter(this.cross);
-  final Color cross;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width;
-    final arm = s * 0.34;
-    final radius = Radius.circular(s * 0.09);
-    final fill = Paint()..color = cross;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(s / 2, s / 2), width: arm, height: s),
-        radius,
-      ),
-      fill,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(s / 2, s / 2), width: s, height: arm),
-        radius,
-      ),
-      fill,
-    );
-    final trace = Path()
-      ..moveTo(s * 0.1, s * 0.5)
-      ..lineTo(s * 0.36, s * 0.5)
-      ..lineTo(s * 0.44, s * 0.38)
-      ..lineTo(s * 0.54, s * 0.62)
-      ..lineTo(s * 0.62, s * 0.5)
-      ..lineTo(s * 0.9, s * 0.5);
-    canvas.drawPath(
-      trace,
-      Paint()
-        ..color = MediFlowBrand.scrub
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.07
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_MarkPainter oldDelegate) => oldDelegate.cross != cross;
-}
+export 'package:mediflow_loader/mediflow_loader.dart' show MediFlowMark;
 
 /// A monitor trace that draws itself once when it appears, then holds. This
 /// is the app's single piece of unprompted motion, and it is skipped when the

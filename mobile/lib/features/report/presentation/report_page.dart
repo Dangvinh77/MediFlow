@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
@@ -460,7 +461,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         if (loading)
           const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: MediFlowLoader()),
           ),
         if (error != null) RequestError(error!, onRetry: load),
         if (operations != null) ...[

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../domain/page_result.dart';
 import '../theme/medical_colors.dart';
@@ -70,7 +71,7 @@ class _PagedListState<T> extends State<PagedList<T>> {
     }
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải dữ liệu'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải dữ liệu'),
       );
     }
     final page = _page!;

@@ -2,6 +2,7 @@ import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
@@ -82,7 +83,7 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: MediFlowLoader());
     if (_error != null) {
       return SingleChildScrollView(
         child: RequestError(
@@ -265,7 +266,7 @@ class _DepartmentFormState extends State<_DepartmentForm> {
   @override
   Widget build(BuildContext context) {
     if (_editing && _loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MediFlowLoader());
     }
     if (_editing && _loadError != null) {
       return SingleChildScrollView(
@@ -490,7 +491,7 @@ class _StaffDetailState extends State<_StaffDetail> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: MediFlowLoader());
     if (_error != null) {
       return SingleChildScrollView(
         child: RequestError(
@@ -695,7 +696,7 @@ class _StaffFormState extends State<_StaffForm> {
   @override
   Widget build(BuildContext context) {
     if (_editing && _loadingStaff) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MediFlowLoader());
     }
     if (_editing && _staffError != null) {
       return SingleChildScrollView(
@@ -709,7 +710,7 @@ class _StaffFormState extends State<_StaffForm> {
       return const Center(child: Text('Không thể tải hồ sơ nhân viên.'));
     }
     if (!_editing && _loadingDepartments) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MediFlowLoader());
     }
     if (!_editing && _departmentError != null) {
       return SingleChildScrollView(

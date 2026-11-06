@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/medical_colors.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
@@ -225,9 +226,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
       );
     }
     if (_loading && _profile == null) {
-      return const _AccountPanelCard(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const _AccountPanelCard(child: Center(child: MediFlowLoader()));
     }
     if (_loadError != null && _profile == null) {
       return _AccountPanelCard(

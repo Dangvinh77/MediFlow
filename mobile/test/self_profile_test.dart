@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 import 'package:mediflow_mobile/app/app.dart';
 import 'package:mediflow_mobile/features/auth/domain/session.dart';
 import 'package:mediflow_mobile/features/auth/presentation/session_controller.dart';
@@ -330,7 +331,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Hồ sơ cá nhân'));
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(MediFlowLoader), findsOneWidget);
 
     await container.read(sessionProvider.notifier).signOut();
     await tester.pumpAndSettle();
