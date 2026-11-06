@@ -22,6 +22,9 @@ MEDIFLOW MOBILE - HƯỚNG DẪN TEST UI VÀ CHẠY DEMO TRÊN WINDOWS
 - Chạy:
     .\tool\run_dev.ps1 -Demo -Gateway http://127.0.0.1:28080
 - Lần chạy đầu mất khoảng 2 phút. Chrome tự mở app.
+- Terminal chạy bằng quyền Administrator: Flutter không mở được Chrome, nên
+  script tự chuyển sang web-server. Khi thấy "is being served at", tự mở
+  http://localhost:4300 trên trình duyệt. Hot reload vẫn hoạt động.
 - Nhấn F12, rồi Ctrl+Shift+M, chọn mẫu iPhone và tải lại trang.
 - Thử thêm khổ nhỏ khoảng 360 x 640 để tìm lỗi tràn chữ.
 - Cổng 4300 đang bận thì đổi cổng: -Port 4301 (đổi cổng là đổi origin,

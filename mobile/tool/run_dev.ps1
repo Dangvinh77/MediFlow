@@ -14,7 +14,9 @@ param(
     # -Demo enables the outpatient UI and PHARMACY_MODE=outpatient, as run_web.ps1 does.
     [switch]$Demo,
     [ValidateSet('unavailable', 'outpatient', 'legacy')]
-    [string]$PharmacyMode = 'unavailable'
+    [string]$PharmacyMode = 'unavailable',
+    # Serve without launching Chrome and open the URL yourself. Automatic when elevated.
+    [switch]$WebServer
 )
 $ErrorActionPreference = 'Stop'
 
@@ -85,7 +87,18 @@ try {
 
         $defines += "--dart-define=GATEWAY_URL=http://localhost:$Port/api"
         Write-Host "Build flags: $($defines -join ' ')"
-        & flutter run -d chrome --web-port $Port @defines
+
+        # Chrome started by an elevated shell relaunches itself de-elevated and exits,
+        # so flutter never sees its DevTools line and reports "Failed to launch browser".
+        $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+        $elevated = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        if ($elevated -or $WebServer) {
+            if ($elevated) { Write-Host 'Elevated shell: Flutter cannot launch Chrome, using web-server.' }
+            Write-Host "Open http://localhost:$Port in your browser to attach the app."
+            & flutter run -d web-server --web-port $Port @defines
+        } else {
+            & flutter run -d chrome --web-port $Port @defines
+        }
     } else {
         $device = Start-AndroidEmulator
         $builder = [UriBuilder]$gatewayUri
