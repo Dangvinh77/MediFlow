@@ -498,6 +498,28 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tạo buổi khám từ giờ làm việc'), findsOneWidget);
     });
+
+    testWidgets('the department report is a tab for the head department', (
+      tester,
+    ) async {
+      useTall(tester);
+      await tester.pumpWidget(
+        host(
+          DepartmentManagementPage(
+            reportBuilder: (departmentId) => Text('report:$departmentId'),
+          ),
+          role: 'DOCTOR',
+          repository: repository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Báo cáo khoa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Báo cáo khoa'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('report:'), findsOneWidget);
+    });
   });
 
   group('shifts', () {

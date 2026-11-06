@@ -125,7 +125,4 @@ abstract interface class ReportRepository {
   Future<List<AvailableReportPeriod>> availablePeriods({String? departmentId});
   Future<ReportData> read(ReportQuery query);
   Future<OperationsStatistics> statistics(ReportQuery query);
-
-  /// The department this account currently heads, or null when it heads none.
-  Future<String?> headDepartmentId();
 }

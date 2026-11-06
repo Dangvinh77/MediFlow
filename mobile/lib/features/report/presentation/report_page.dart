@@ -66,77 +66,32 @@ Object reportDisplayError(Object error, ReportKind kind) {
 class ReportPage extends ConsumerWidget {
   const ReportPage({
     super.key,
+    this.lockedDepartmentId,
     this.outpatientEnabled = const bool.fromEnvironment(
       'MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED',
     ),
   });
+
+  /// Set for a department head; they read this department and no other.
+  final String? lockedDepartmentId;
   final bool outpatientEnabled;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
-    if (access == null || !const ['ADMIN', 'DOCTOR'].contains(access.role)) {
+    final allowed =
+        access != null &&
+        (access.role == 'ADMIN' ||
+            (access.role == 'DOCTOR' && lockedDepartmentId != null));
+    if (!allowed) {
       return const Center(child: Text('Bạn không có quyền xem báo cáo.'));
     }
-    final repository = ref.watch(reportRepositoryProvider);
-    if (access.role == 'DOCTOR') {
-      return _DepartmentHeadReport(
-        key: ObjectKey(access.sessionIdentity),
-        repository: repository,
-        outpatientEnabled: outpatientEnabled,
-      );
-    }
     return _ReportWorkspace(
-      key: ObjectKey(access.sessionIdentity),
-      repository: repository,
+      key: ValueKey((access.sessionIdentity, lockedDepartmentId)),
+      repository: ref.watch(reportRepositoryProvider),
       outpatientEnabled: outpatientEnabled,
+      lockedDepartmentId: lockedDepartmentId,
     );
   }
-}
-
-/// A head reads only the department they currently head, so nothing here lets them pick another.
-class _DepartmentHeadReport extends StatefulWidget {
-  const _DepartmentHeadReport({
-    super.key,
-    required this.repository,
-    required this.outpatientEnabled,
-  });
-  final ReportRepository repository;
-  final bool outpatientEnabled;
-  @override
-  State<_DepartmentHeadReport> createState() => _DepartmentHeadReportState();
-}
-
-class _DepartmentHeadReportState extends State<_DepartmentHeadReport> {
-  late Future<String?> department = widget.repository.headDepartmentId();
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<String?>(
-    future: department,
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return RequestError(
-          reportDisplayError(snapshot.error!, ReportKind.operations),
-          onRetry: () =>
-              setState(() => department = widget.repository.headDepartmentId()),
-        );
-      }
-      if (snapshot.connectionState != ConnectionState.done) {
-        return const Center(child: MediFlowLoader());
-      }
-      final id = snapshot.data;
-      if (id == null) {
-        return const Center(
-          child: Text('Báo cáo khoa chỉ dành cho trưởng khoa.'),
-        );
-      }
-      return _ReportWorkspace(
-        key: ValueKey(id),
-        repository: widget.repository,
-        outpatientEnabled: widget.outpatientEnabled,
-        lockedDepartmentId: id,
-      );
-    },
-  );
 }
 
 class _ReportWorkspace extends StatefulWidget {

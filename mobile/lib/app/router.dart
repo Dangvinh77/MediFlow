@@ -174,7 +174,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/appointments/department',
-            builder: (_, _) => const DepartmentManagementPage(),
+            builder: (_, _) => DepartmentManagementPage(
+              reportBuilder: (departmentId) =>
+                  ReportPage(lockedDepartmentId: departmentId),
+            ),
           ),
           GoRoute(
             path: '/appointments/my-registration',

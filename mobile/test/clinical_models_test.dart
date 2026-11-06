@@ -77,9 +77,17 @@ void main() {
       containsAll(['/reports', '/notifications']),
     );
     expect(visibleSupportModules(UserRole.doctor), isEmpty);
+    expect(
+      modules.singleWhere((m) => m.path == '/reports').allows(UserRole.doctor),
+      isFalse,
+    );
     expect(visibleSupportModules(UserRole.patient).map((m) => m.path), [
       '/notifications',
     ]);
     expect(visibleSupportModules(UserRole.doctor), isEmpty);
+    expect(
+      modules.singleWhere((m) => m.path == '/reports').allows(UserRole.doctor),
+      isFalse,
+    );
   });
 }

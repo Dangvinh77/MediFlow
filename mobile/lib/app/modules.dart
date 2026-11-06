@@ -170,12 +170,7 @@ const modules = [
     'Hàng đợi xét nghiệm',
     'Vinh',
     Icons.science_outlined,
-    [
-      UserRole.admin,
-      UserRole.doctor,
-      UserRole.nurse,
-      UserRole.labTech,
-    ],
+    [UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.labTech],
     implemented: true,
     accent: Wayfinding.lab,
   ),
@@ -225,7 +220,7 @@ const modules = [
     'Thống kê hoạt động',
     'Vinh',
     Icons.bar_chart_outlined,
-    [UserRole.admin, UserRole.doctor],
+    [UserRole.admin],
     implemented: true,
     accent: Wayfinding.support,
   ),
@@ -248,9 +243,8 @@ List<AppModule> visibleMainModules(
     )
     .toList();
 
-/// A department head opens Report from department management, never the support hub.
 List<AppModule> visibleSupportModules(UserRole role) => modules
-    .where((module) => isSupportChild(module) && module.allows(role) && role != UserRole.doctor)
+    .where((module) => isSupportChild(module) && module.allows(role))
     .toList();
 
 /// Bottom-bar order: the work a role does most comes first.

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/providers.dart';
@@ -778,16 +777,17 @@ class ScheduleManagementPage extends ConsumerWidget {
     }
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: [
-        const SessionAdministrationPanel(),
-      ],
+      children: [const SessionAdministrationPanel()],
     );
   }
 }
 
 /// Workspace of a doctor appointed department head.
 class DepartmentManagementPage extends ConsumerStatefulWidget {
-  const DepartmentManagementPage({super.key});
+  const DepartmentManagementPage({super.key, this.reportBuilder});
+
+  /// Builds the department report; the composition root owns that feature.
+  final Widget Function(String departmentId)? reportBuilder;
 
   @override
   ConsumerState<DepartmentManagementPage> createState() =>
@@ -837,8 +837,9 @@ class _DepartmentManagementPageState
           );
         }
         final departmentId = _departmentId ?? departments.first.id;
+        final report = widget.reportBuilder;
         return DefaultTabController(
-          length: 3,
+          length: report == null ? 3 : 4,
           child: Column(
             children: [
               if (departments.length > 1)
@@ -860,20 +861,13 @@ class _DepartmentManagementPageState
                     onChanged: (value) => setState(() => _departmentId = value),
                   ),
                 ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => GoRouter.of(context).go('/reports'),
-                  icon: const Icon(Icons.bar_chart_outlined),
-                  label: const Text('Báo cáo khoa'),
-                ),
-              ),
-              const TabBar(
+              TabBar(
                 isScrollable: true,
                 tabs: [
-                  Tab(text: 'Tổng quan khoa'),
-                  Tab(text: 'Buổi khám & phòng'),
-                  Tab(text: 'Lịch làm việc bác sĩ'),
+                  const Tab(text: 'Tổng quan khoa'),
+                  const Tab(text: 'Buổi khám & phòng'),
+                  const Tab(text: 'Lịch làm việc bác sĩ'),
+                  if (report != null) const Tab(text: 'Báo cáo khoa'),
                 ],
               ),
               Expanded(
@@ -902,6 +896,7 @@ class _DepartmentManagementPageState
                         DepartmentShiftsPanel(departmentId: departmentId),
                       ],
                     ),
+                    if (report != null) report(departmentId),
                   ],
                 ),
               ),
