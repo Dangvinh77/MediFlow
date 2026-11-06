@@ -1874,7 +1874,9 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
             if (_loadError != null)
               RequestError(_loadError!, onRetry: _load)
             else if (current == null)
-              const Text('Đang tải bổ nhiệm…')
+              const Center(
+                child: MediFlowLoader(semanticLabel: 'Đang tải bổ nhiệm'),
+              )
             else ...[
               if (current.staffId case final staffId?)
                 ReferenceLabel(

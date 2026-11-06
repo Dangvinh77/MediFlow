@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/session_controller.dart';
+import '../features/auth/presentation/sign_in_splash.dart';
 import 'router.dart';
 
 class MediFlowApp extends ConsumerWidget {
@@ -16,6 +17,7 @@ class MediFlowApp extends ConsumerWidget {
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
       routerConfig: ref.watch(routerProvider),
+      builder: (_, child) => SignInSplash(child: child!),
     );
   }
 }
