@@ -1,5 +1,12 @@
 # Frontend Service: Report
 
+2026-11-06 yearly dashboard: `/reports/outpatient` is now titled "Báo cáo" and opens on a
+calendar-year dashboard read from `GET /v1/reports/outpatient/statistics` (the existing 366-day
+limit covers a full year). Tabs: "Tổng quan năm" and "So sánh hai năm"; a comparison against a
+running year uses the same period so both years have equal days. MANAGER scope comes from
+`/v1/org/me/capabilities` and is fixed; the reconciled disclosure and the legacy link stay
+ADMIN-only. Department revenue moved here from `/billing/revenue`, which is now ADMIN-only.
+
 2026-11-05 master synchronization retains the new operational statistics landing,
 latest accepted-period discovery and compact source/trend/period disclosures.
 Huy's additive accepted-period totals and immediate manual period selection remain

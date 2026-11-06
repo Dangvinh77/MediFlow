@@ -36,9 +36,11 @@ describe("MVP dashboard navigation", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("lets managers reach the department revenue report without typing a URL", () => {
+  it("gives managers department revenue inside Reports, with no billing entry", () => {
     render(<DashboardSidebar role="MANAGER" open={false} onClose={vi.fn()} />);
-    expect(screen.getByRole("link", { name: /Doanh thu theo khoa/ })).toHaveAttribute("href", "/billing/revenue");
+    expect(screen.getByRole("link", { name: /Báo cáo.*Doanh thu/ })).toHaveAttribute("href", "/reports");
+    expect(screen.queryByRole("link", { name: /Doanh thu theo khoa/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Viện phí")).not.toBeInTheDocument();
   });
 
   it("exposes no business routes without a role", () => {

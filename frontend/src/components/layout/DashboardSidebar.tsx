@@ -30,9 +30,8 @@ const navigation: readonly NavigationItem[] = [
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
   { group: "Viện phí", href: "/billing/payment-requests", activePath: "/billing", label: "Thu ngân", eyebrow: "Khoản thu, hóa đơn & hoàn tiền", roles: ["ADMIN", "CASHIER"] },
-  { group: "Viện phí", href: "/billing/revenue", label: "Doanh thu theo khoa", eyebrow: "Báo cáo cho quản lý", roles: ["MANAGER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
-  { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
+  { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Doanh thu & chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
 ];
 
 interface DashboardSidebarProps {

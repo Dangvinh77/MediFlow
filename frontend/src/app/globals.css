@@ -29,6 +29,12 @@
   --success-foreground: #ffffff;
   --info: #1d5fc4;
   --info-foreground: #ffffff;
+
+  /* Chart hues are validated against each surface; status colours stay reserved for status. */
+  --chart-1: #008c7a;
+  --chart-2: #2563c9;
+  --chart-3: #d9730d;
+  --chart-neutral: #9db3b5;
 }
 
 html.dark {
@@ -53,6 +59,11 @@ html.dark {
   --success-foreground: #06301f;
   --info: #8db8f7;
   --info-foreground: #08274f;
+
+  --chart-1: #129a87;
+  --chart-2: #6188dd;
+  --chart-3: #c97a2a;
+  --chart-neutral: #5c7c80;
 }
 
 @theme inline {
@@ -77,6 +88,10 @@ html.dark {
   --color-success-foreground: var(--success-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-neutral: var(--chart-neutral);
   --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Courier New", Courier, monospace;
   --radius-lg: 0.75rem;

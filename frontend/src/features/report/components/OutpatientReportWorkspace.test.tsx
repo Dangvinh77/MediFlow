@@ -7,8 +7,8 @@ import type { OutpatientReportDTO } from "../types";
 const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily: vi.fn(), monthly: vi.fn(), available: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => "/reports/outpatient", useSearchParams: () => new URLSearchParams(mocks.query) }));
 vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.daily, outpatientMonthly: mocks.monthly, availablePeriods: mocks.available } }));
-// The provisional statistics section has its own test; these cases cover the reconciled report only.
-vi.mock("./OutpatientStatisticsView", () => ({ OutpatientStatisticsView: () => <div role="region" aria-label="Thống kê tạm tính" /> }));
+// The yearly dashboard has its own test; these cases cover the reconciled report only.
+vi.mock("./ReportDashboard", () => ({ ReportDashboard: () => <div role="region" aria-label="Thống kê tạm tính" /> }));
 import { OutpatientReportWorkspace } from "./OutpatientReportWorkspace";
 
 const department = "00000000-0000-4000-8000-000000000001";
