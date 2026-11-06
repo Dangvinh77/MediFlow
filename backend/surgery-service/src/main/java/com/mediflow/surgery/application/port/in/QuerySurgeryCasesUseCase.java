@@ -12,7 +12,7 @@ public interface QuerySurgeryCasesUseCase {
     SurgeryCaseDetails detail(UUID caseId, Viewer viewer, String correlationId);
     PageResult<SurgeryCaseBoardItem> list(Filter filter, Viewer viewer, String correlationId);
 
-    enum ReadRole { ADMIN, MANAGER, DOCTOR, NURSE }
+    enum ReadRole { ADMIN, DOCTOR, NURSE }
     /** Role and identities must be constructed from verified authentication, never HTTP parameters. */
     record Viewer(UUID accountId, UUID staffId, ReadRole role) {
         public Viewer {

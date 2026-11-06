@@ -98,7 +98,7 @@ class JwtAuthFilterTest {
                 "/api/v1/reports/top-medicines",
                 "/api/v1/reports/financial/daily",
                 "/api/v1/reports/operations/daily")
-                .flatMap(path -> Stream.of("ADMIN", "MANAGER")
+                .flatMap(path -> Stream.of("ADMIN", "DOCTOR")
                         .map(role -> Arguments.of(path, role)));
     }
 

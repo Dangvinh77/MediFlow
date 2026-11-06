@@ -116,7 +116,7 @@ class BillingPaymentQueueGatewayWebTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"PATIENT", "SYSTEM", "DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH", "MANAGER"})
+    @ValueSource(strings = {"PATIENT", "SYSTEM", "DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH"})
     void forbiddenRoles_neverReachBilling(String role) {
         String token = tokens.issueAccessToken(UUID.randomUUID(), role, null, null,
                 Roles.PATIENT.equals(role) ? UUID.randomUUID() : null);

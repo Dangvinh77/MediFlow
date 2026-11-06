@@ -5,7 +5,6 @@ export const ROLES = {
   PHARMACIST: "PHARMACIST",
   CASHIER: "CASHIER",
   LAB_TECH: "LAB_TECH",
-  MANAGER: "MANAGER",
   PATIENT: "PATIENT",
   SYSTEM: "SYSTEM",
 } as const;

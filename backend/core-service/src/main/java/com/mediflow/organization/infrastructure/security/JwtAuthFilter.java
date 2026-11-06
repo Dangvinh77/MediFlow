@@ -40,7 +40,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             Roles.PHARMACIST,
             Roles.CASHIER,
             Roles.LAB_TECH,
-            Roles.MANAGER,
             Roles.PATIENT);
     private static final Set<String> HUMAN_IDENTITY_CLAIMS = Set.of(
             JwtClaims.STAFF_ID,

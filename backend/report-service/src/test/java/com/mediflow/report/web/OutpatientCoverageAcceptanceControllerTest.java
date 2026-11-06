@@ -60,7 +60,7 @@ class OutpatientCoverageAcceptanceControllerTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.fingerprint").value("a".repeat(64)))
                 .andExpect(header().string("Cache-Control","no-store"));
     }
-    @ParameterizedTest @ValueSource(strings={"MANAGER","DOCTOR","NURSE","PHARMACIST","CASHIER","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","CASHIER","PATIENT","SYSTEM"})
     void readRolesCannotApproveOrInspectSourceWitness(String role) throws Exception {
         mvc.perform(post(PREFIX+"/acceptances").header("Authorization",access(role))
                 .contentType("application/json").content(mapper.writeValueAsString(request()))).andExpect(status().isForbidden());

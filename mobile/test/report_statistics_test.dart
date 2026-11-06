@@ -37,14 +37,14 @@ void main() {
   Widget discovery(
     Reports repo,
     ValueChanged<AvailableReportPeriod> select, {
-    bool manager = false,
+    bool departmentHead = false,
   }) => MaterialApp(
     home: Scaffold(
       body: AvailableReportPeriods(
         repository: repo,
         departmentId: null,
         monthly: true,
-        needsDepartment: manager,
+        needsDepartment: departmentHead,
         onSelect: select,
       ),
     ),
@@ -69,11 +69,11 @@ void main() {
   );
 
   testWidgets(
-    'manager must select department and obsolete discovery cannot commit',
+    'department head must select department and obsolete discovery cannot commit',
     (tester) async {
       final repo = Reports();
       await tester.pumpWidget(
-        discovery(repo, (_) => fail('obsolete selection'), manager: true),
+        discovery(repo, (_) => fail('obsolete selection'), departmentHead: true),
       );
       await tester.tap(find.text('Tìm kỳ có dữ liệu'));
       expect(repo.calls, 0);

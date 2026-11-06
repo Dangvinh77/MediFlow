@@ -32,7 +32,7 @@ public class RevenueController {
 
     /** Doanh thu đã thanh toán gom theo khoa trong khoảng ngày. {@code departmentId} bỏ trống = mọi khoa. */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<RevenueByDeptDTO>>> revenueByDepartment(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,

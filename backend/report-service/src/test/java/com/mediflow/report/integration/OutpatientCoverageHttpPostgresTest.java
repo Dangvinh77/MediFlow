@@ -85,7 +85,7 @@ class OutpatientCoverageHttpPostgresTest {
         assertThat(provisional.getStatusCode().value()).isEqualTo(200);
         assertThat(provisional.getBody().at("/data/reconciled").asBoolean()).isFalse();
         assertThat(call(HttpMethod.GET,root+"/statistics"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
-        assertThat(call(HttpMethod.GET,root+"/coverage/preview"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
+        assertThat(call(HttpMethod.GET,root+"/coverage/preview"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         var response=call(HttpMethod.GET,root+"/coverage/preview"+query,"ADMIN",null);
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         var snapshot=mapper.treeToValue(response.getBody().get("data"),Snapshot.class);
@@ -94,7 +94,7 @@ class OutpatientCoverageHttpPostgresTest {
         var date=LocalDate.of(2026,10,1);
         var request=new AcceptOutpatientCoverageRequest(UUID.randomUUID(),date,date,null,"Asia/Bangkok","VND",proofs,
                 Instant.parse("2026-10-02T00:00:00Z"),Instant.parse("2026-10-02T01:00:00Z"),"SYNTHETIC_APPROVAL_ONLY",snapshot.fingerprint());
-        assertThat(call(HttpMethod.POST,root+"/coverage/acceptances","MANAGER",request).getStatusCode().value()).isEqualTo(403);
+        assertThat(call(HttpMethod.POST,root+"/coverage/acceptances","DOCTOR",request).getStatusCode().value()).isEqualTo(403);
         var approved=call(HttpMethod.POST,root+"/coverage/acceptances","ADMIN",request);
         assertThat(approved.getStatusCode().value()).isEqualTo(200);
         assertThat(approved.getBody().at("/data/acceptedBy").asText()).isEqualTo(actor.toString());
@@ -105,14 +105,14 @@ class OutpatientCoverageHttpPostgresTest {
             assertThat(report.getStatusCode().value()).isEqualTo(200);
             assertThat(report.getBody().at("/data/covered").asBoolean()).isTrue();
         }
-        assertThat(call(HttpMethod.GET,root+"/daily"+query,"MANAGER",null).getStatusCode().value()).isEqualTo(403);
+        assertThat(call(HttpMethod.GET,root+"/daily"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         assertThat(call(HttpMethod.GET,root+"/daily"+query,"DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         var available=call(HttpMethod.GET,root+"/available-periods","ADMIN",null);
         assertThat(available.getStatusCode().value()).isEqualTo(200);
         assertThat(available.getBody().at("/data/0/coverageId").asText()).isEqualTo(approved.getBody().at("/data/coverageId").asText());
         assertThat(available.getBody().at("/data/0/fromDate").asText()).isEqualTo("2026-10-01");
         assertThat(available.getBody().at("/data/0/syntheticData").asBoolean()).isFalse();
-        assertThat(call(HttpMethod.GET,root+"/available-periods","MANAGER",null).getStatusCode().value()).isEqualTo(403);
+        assertThat(call(HttpMethod.GET,root+"/available-periods","DOCTOR",null).getStatusCode().value()).isEqualTo(403);
         jdbc.update("UPDATE report_outpatient_coverage SET local_evidence_fingerprint=?", "f".repeat(64));
         assertThat(call(HttpMethod.GET,root+"/available-periods","ADMIN",null).getBody().get("data").size()).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isOne();

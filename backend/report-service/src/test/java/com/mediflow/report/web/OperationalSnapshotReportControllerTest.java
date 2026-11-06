@@ -84,7 +84,7 @@ class OperationalSnapshotReportControllerTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR"})
     void operations_eachAuthorizedRole_canReadBothAggregateRoutes(String role) throws Exception {
         UUID department = UUID.randomUUID();
         var response = new OperationalSnapshotReportDTO(date, date, department, UUID.randomUUID(),
@@ -125,13 +125,13 @@ class OperationalSnapshotReportControllerTest {
 
     @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
         UUID department=UUID.randomUUID();
-        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
-        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/reports/operations/daily?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/reports/operations/surgery?from=2026-10-02&to=2026-10-02&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         verifyNoInteractions(reader);

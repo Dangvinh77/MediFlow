@@ -180,7 +180,7 @@ void main() {
       expect(repository.creations, isEmpty);
     },
   );
-  for (final role in ['PHARMACIST', 'PATIENT', 'MANAGER']) {
+  for (final role in ['PHARMACIST', 'PATIENT']) {
     testWidgets('$role cannot open prescription creation', (tester) async {
       final writer = Writer();
       await tester.pumpWidget(

@@ -329,7 +329,7 @@ class SurgeryCancellationRabbitIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT revoked_at>=granted_at FROM FINANCIAL_CLEARANCE",Boolean.class)).isTrue();
         assertThat(reads.get(caseId()).refundsDue().getFirst().amount()).isEqualByComparingTo("100");
     }
-    @ParameterizedTest @ValueSource(strings = {"DOCTOR","MANAGER","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"DOCTOR","PATIENT","SYSTEM"})
     void get_refundDue_wrongRoleOrServiceCredential_denied(String role) throws Exception {
         issue("admission", false); cancellations.receive(cancellationDecoder.decode("surgery.cancelled", SurgeryCancellationContractTest.fixture("admission")));
         var response = http.exchange("/api/v1/billing/surgery-cancellations/" + caseId() + "/refunds-due", HttpMethod.GET,

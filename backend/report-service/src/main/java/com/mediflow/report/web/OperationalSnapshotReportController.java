@@ -24,7 +24,7 @@ public class OperationalSnapshotReportController {
     private final ReadOperationalSnapshotUseCase reader;
     public OperationalSnapshotReportController(ReadOperationalSnapshotUseCase reader) { this.reader = reader; }
     @GetMapping("/daily")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OperationalSnapshotReportDTO> daily(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -32,7 +32,7 @@ public class OperationalSnapshotReportController {
         return ApiResponse.ok(reader.daily(from, to, departmentId), request.getHeader(JwtClaims.HEADER_CORRELATION_ID));
     }
     @GetMapping("/surgery")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OperationalSnapshotReportDTO> surgery(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,

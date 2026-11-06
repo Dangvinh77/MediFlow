@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/page_result.dart';
@@ -726,12 +725,7 @@ class _AccountPanelState extends State<_AccountPanel> {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Chi tiết tài khoản')),
-          body: AccountDetailPage(
-            accountId: account.id,
-            onManagerScope: (id) =>
-                GoRouter.of(context)
-                    .go('/appointments/schedule?managerAccountId=$id'),
-          ),
+          body: AccountDetailPage(accountId: account.id),
         ),
       ),
     );

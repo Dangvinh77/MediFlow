@@ -8,7 +8,7 @@ import { ReportDepartmentProvider } from "./ReportDepartmentName";
 
 export function canReadReports() {
   const role = getRole();
-  return role === "ADMIN" || role === "MANAGER";
+  return role === "ADMIN" || role === "DOCTOR";
 }
 
 /** Keep Report's private query drafts and results within the session that requested them. */
@@ -16,6 +16,6 @@ export function ReportSessionBoundary({ children }: { children: ReactNode }) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   if (role === null) return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
-  if (role !== "ADMIN" && role !== "MANAGER") return <p role="alert" className="mt-6 text-sm text-danger">Bạn không có quyền xem báo cáo.</p>;
+  if (role !== "ADMIN" && role !== "DOCTOR") return <p role="alert" className="mt-6 text-sm text-danger">Bạn không có quyền xem báo cáo.</p>;
   return <Fragment key={`${role}:${token}`}><ReportDepartmentProvider>{children}</ReportDepartmentProvider></Fragment>;
 }

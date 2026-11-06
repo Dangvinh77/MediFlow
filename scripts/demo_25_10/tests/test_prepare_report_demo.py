@@ -18,7 +18,8 @@ PREP_SPEC.loader.exec_module(prep)
 from prepare_ui_demo import ApiError
 
 
-MANAGER_ACCOUNT = '52977f14-bb6e-4a6f-8474-edae4aeb9879'
+HEAD_STAFF = '52977f14-bb6e-4a6f-8474-edae4aeb9879'
+HEAD_DEPARTMENT = '9a6dd24a-1c1f-4122-9e31-7cfea345ec45'
 
 
 class FakeApi:
@@ -27,18 +28,20 @@ class FakeApi:
         self.calls = []
         self.logins = []
         self.accepted = []
-        self.claims = {'manager': {'sub': MANAGER_ACCOUNT}}
-        self.manager_departments = []
+        self.claims = {'doctor': {'staffId': HEAD_STAFF}}
+        self.head = None
 
     def login(self, role, username):
         self.logins.append((role, username))
 
     def call(self, role, method, path, body=None, **kwargs):
         self.calls.append((role, method, path, body))
-        if path.endswith('/schedule-management-scope'):
+        if path == '/api/v1/org/staff/' + HEAD_STAFF:
+            return {'departmentId': HEAD_DEPARTMENT}
+        if path.endswith('/head-appointments'):
             if method == 'PUT':
-                self.manager_departments = body['departmentIds']
-            return {'revision': 0, 'departmentIds': self.manager_departments}
+                self.head = body['staffId']
+            return {'revision': 0, 'staffId': self.head}
         if path.startswith('/api/v1/reports/outpatient/coverage/preview'):
             sources = {
                 name: {'rowCount': len(seed.export_records(seed.build_seed(), name)), 'fingerprint': 'a' * 64}
@@ -71,15 +74,15 @@ class FakeApi:
 
 
 class PrepareReportDemoTest(unittest.TestCase):
-    def test_manager_department_is_assigned_once_through_the_admin_api(self):
+    def test_the_seeded_doctor_is_appointed_head_once_through_the_admin_api(self):
         api = FakeApi()
-        prep.assign_manager_department(api)
-        prep.assign_manager_department(api)
+        prep.appoint_department_head(api)
+        prep.appoint_department_head(api)
         writes = [call for call in api.calls if call[1] == 'PUT']
         self.assertEqual(len(writes), 1)
         self.assertEqual(writes[0][0], 'admin')
-        self.assertIn(MANAGER_ACCOUNT, writes[0][2])
-        self.assertEqual(writes[0][3]['departmentIds'], [seed.DEPARTMENT_IDS[0]])
+        self.assertIn(HEAD_DEPARTMENT, writes[0][2])
+        self.assertEqual(writes[0][3]['staffId'], HEAD_STAFF)
 
     def test_default_preview_writes_five_explicit_synthetic_exports_without_accepting(self):
         api = FakeApi()

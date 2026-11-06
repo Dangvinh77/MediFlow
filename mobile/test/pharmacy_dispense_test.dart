@@ -169,7 +169,7 @@ void main() {
       },
     );
   }
-  for (final role in ['DOCTOR', 'PATIENT', 'MANAGER']) {
+  for (final role in ['DOCTOR', 'PATIENT']) {
     testWidgets('$role has no dispense action', (tester) async {
       final dispenser = Dispenser();
       await tester.pumpWidget(

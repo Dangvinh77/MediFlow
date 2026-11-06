@@ -35,11 +35,11 @@ function DashboardContent() {
   const [now] = useState(() => new Date());
   const currentYear = now.getFullYear();
   const { tab, baseYear, compareYear, departmentId } = readDashboardQuery(new URLSearchParams(rawQuery), currentYear);
-  const isManager = getRole() === "MANAGER";
+  const isDepartmentHead = getRole() === "DOCTOR";
   const capabilities = useCapabilities();
   const assigned = capabilities.data?.managementDepartments ?? [];
   // The shell only loads capabilities for doctors; a manager's fixed department is read here.
-  useEffect(() => { if (isManager) void refreshCapabilities(); }, [isManager]);
+  useEffect(() => { if (isDepartmentHead) void refreshCapabilities(); }, [isDepartmentHead]);
 
   function update(changes: Record<string, string | null>) {
     const next = new URLSearchParams(rawQuery);
@@ -48,10 +48,10 @@ function DashboardContent() {
   }
 
   // The URL can name any department, but a manager only ever reads one of their own.
-  const managerDepartment = assigned.find(item => item.departmentId === departmentId) ?? assigned[0];
-  const scope = isManager ? managerDepartment?.departmentId : isUuid(departmentId) ? departmentId : undefined;
+  const headDepartment = assigned.find(item => item.departmentId === departmentId) ?? assigned[0];
+  const scope = isDepartmentHead ? headDepartment?.departmentId : isUuid(departmentId) ? departmentId : undefined;
   const years = yearOptions(currentYear);
-  const showResult = !isManager || !!scope;
+  const showResult = !isDepartmentHead || !!scope;
 
   return <section aria-label="Bảng điều khiển báo cáo" className="mt-6 min-w-0 space-y-4">
     <nav aria-label="Kiểu xem báo cáo" className="flex flex-wrap gap-x-6 border-b border-border">
@@ -69,7 +69,7 @@ function DashboardContent() {
           {years.filter(year => year !== baseYear).map(year => <option key={year} value={year}>{year}</option>)}
         </select>
       </Field>}
-      {isManager
+      {isDepartmentHead
         ? assigned.length > 1
           ? <Field label="Khoa phụ trách" htmlFor={`${id}-department`}>
               <select id={`${id}-department`} className={controlClassName} value={scope} onChange={event => update({ dept: event.target.value })}>
@@ -80,7 +80,7 @@ function DashboardContent() {
               <p className="text-sm font-medium text-foreground">Khoa phụ trách</p>
               <p className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm font-medium">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-muted-foreground"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-                {managerDepartment?.departmentName ?? (capabilities.error ? "Chưa xác định được khoa" : "Đang xác định khoa…")}
+                {headDepartment?.departmentName ?? (capabilities.error ? "Chưa xác định được khoa" : "Đang xác định khoa…")}
               </p>
             </div>
         : <Field label="Khoa (tùy chọn)" htmlFor={`${id}-department`} hint="Để trống để xem toàn viện.">
@@ -88,8 +88,8 @@ function DashboardContent() {
               onValueChange={value => update({ dept: value })} placeholder="Tìm khoa theo tên" />
           </Field>}
     </div>
-    {isManager && capabilities.error && <p role="alert" className="text-sm text-danger">{capabilities.error}</p>}
-    {isManager && capabilities.data && !assigned.length && <p role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">Tài khoản chưa được gán khoa phụ trách. Vui lòng liên hệ quản trị viên.</p>}
+    {isDepartmentHead && capabilities.error && <p role="alert" className="text-sm text-danger">{capabilities.error}</p>}
+    {isDepartmentHead && capabilities.data && !assigned.length && <p role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">Tài khoản chưa được gán khoa phụ trách. Vui lòng liên hệ quản trị viên.</p>}
     {showResult && <DashboardResult key={`${tab}:${baseYear}:${compareYear}:${scope ?? ""}`} tab={tab} baseYear={baseYear} compareYear={compareYear} departmentId={scope} now={now} />}
     <p className="text-xs text-muted-foreground">Số liệu tạm tính từ các nghiệp vụ đã ghi nhận, có thể cập nhật chậm. Doanh thu là tiền đã thu, chưa trừ hoàn tiền.</p>
   </section>;

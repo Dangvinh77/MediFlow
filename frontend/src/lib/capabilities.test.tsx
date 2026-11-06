@@ -36,7 +36,7 @@ it("clears a previously granted department when live authority is revoked", asyn
 });
 it("rejects capabilities belonging to a different role", async () => {
  storeSession({role:"DOCTOR",accessToken:"a",refreshToken:"r"});
- vi.mocked(api.get).mockResolvedValue({role:"MANAGER",managementDepartments:[{departmentId:"d"}]});
+ vi.mocked(api.get).mockResolvedValue({role:"NURSE",managementDepartments:[{departmentId:"d"}]});
  const {result}=renderHook(()=>useCapabilities());
  await act(async()=>{await refreshCapabilities();});
  expect(result.current.data).toBeNull(); expect(result.current.error).toMatch(/không khớp/);

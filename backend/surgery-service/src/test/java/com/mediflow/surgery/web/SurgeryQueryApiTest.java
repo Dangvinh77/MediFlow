@@ -31,7 +31,7 @@ class SurgeryQueryApiTest {
     @Autowired MockMvc mvc;
     @MockBean QuerySurgeryCasesUseCase queries;
 
-    @ParameterizedTest @ValueSource(strings = {"ADMIN","MANAGER","DOCTOR","NURSE"})
+    @ParameterizedTest @ValueSource(strings = {"ADMIN","DOCTOR","NURSE"})
     void boardAllowsOnlyDocumentedReaders(String role) throws Exception {
         when(queries.list(any(),any(),anyString())).thenReturn(PageResult.empty(PageQuery.of(0,20)));
         mvc.perform(get("/api/v1/surgery/cases").header("Authorization","Bearer " + token(role)))

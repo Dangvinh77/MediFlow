@@ -18,7 +18,7 @@ function statistics(fromDate: string, toDate: string): OutpatientStatisticsDTO {
   return { fromDate, toDate, departmentId: null, currency: "VND", zoneId: "Asia/Bangkok", reconciled: false, totals: figures, days: [{ ...figures, date }], departments: [{ ...figures, departmentId: department }, { ...figures, departmentId: other }] };
 }
 const managerCapabilities = (departments: { departmentId: string; departmentName: string }[]) => ({
-  data: { accountId: "a", staffId: "s", role: "MANAGER", canPracticeAsDoctor: false, observedAt: "", managementDepartments: departments.map(item => ({ ...item, appointmentId: null, revision: 1 })) },
+  data: { accountId: "a", staffId: "s", role: "DOCTOR", canPracticeAsDoctor: false, observedAt: "", managementDepartments: departments.map(item => ({ ...item, appointmentId: null, revision: 1 })) },
   error: null, loading: false,
 });
 
@@ -53,7 +53,7 @@ describe("Report dashboard", () => {
   });
 
   it("fixes a department head to their one department with no way to pick another", async () => {
-    storeSession({ accessToken: "t", refreshToken: "t", role: "MANAGER" });
+    storeSession({ accessToken: "t", refreshToken: "t", role: "DOCTOR" });
     mocks.capabilities = managerCapabilities([{ departmentId: department, departmentName: "Khoa Nội" }]);
     mocks.query = `dept=${other}`;
     render(<ReportDashboard />);
@@ -66,7 +66,7 @@ describe("Report dashboard", () => {
   });
 
   it("offers a manager with several departments only those departments", async () => {
-    storeSession({ accessToken: "t", refreshToken: "t", role: "MANAGER" });
+    storeSession({ accessToken: "t", refreshToken: "t", role: "DOCTOR" });
     mocks.capabilities = managerCapabilities([{ departmentId: department, departmentName: "Khoa Nội" }, { departmentId: other, departmentName: "Khoa Nhi" }]);
     render(<ReportDashboard />);
     await screen.findByLabelText("Tổng hợp năm");
@@ -74,7 +74,7 @@ describe("Report dashboard", () => {
   });
 
   it("makes no read for a manager without an assigned department", () => {
-    storeSession({ accessToken: "t", refreshToken: "t", role: "MANAGER" });
+    storeSession({ accessToken: "t", refreshToken: "t", role: "DOCTOR" });
     mocks.capabilities = managerCapabilities([]);
     render(<ReportDashboard />);
     expect(mocks.statistics).not.toHaveBeenCalled();

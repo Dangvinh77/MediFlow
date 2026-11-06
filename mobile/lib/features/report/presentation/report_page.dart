@@ -74,14 +74,14 @@ class ReportPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
-    if (access == null || !const ['ADMIN', 'MANAGER'].contains(access.role)) {
+    if (access == null || !const ['ADMIN', 'DOCTOR'].contains(access.role)) {
       return const Center(child: Text('Bạn không có quyền xem báo cáo.'));
     }
     return _ReportWorkspace(
       key: ObjectKey(access.sessionIdentity),
       repository: ref.watch(reportRepositoryProvider),
       outpatientEnabled: outpatientEnabled,
-      needsDepartment: access.role == 'MANAGER',
+      needsDepartment: access.role == 'DOCTOR',
     );
   }
 }

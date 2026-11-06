@@ -22,7 +22,7 @@ class BillingPage extends ConsumerWidget {
     if (access == null || repository == null) {
       return const Center(child: Text('Chức năng Viện phí chưa sẵn sàng.'));
     }
-    if (!const {'ADMIN', 'CASHIER', 'MANAGER'}.contains(access.role)) {
+    if (!const {'ADMIN', 'CASHIER'}.contains(access.role)) {
       return const Center(child: Text('Bạn không có quyền xem Viện phí.'));
     }
     final config = ref.watch(appConfigProvider);
@@ -71,7 +71,7 @@ class _BillingWorkspace extends ConsumerWidget {
     final queue = ref.watch(paymentQueueRepositoryProvider);
     final refunds = ref.watch(outpatientRefundRepositoryProvider);
     final canOperate = role == 'ADMIN' || role == 'CASHIER';
-    final canReport = role == 'ADMIN' || role == 'MANAGER';
+    final canReport = role == 'ADMIN';
     final labQuotes = quoteEnabled
         ? ref.watch(labQuotePaymentRepositoryProvider)
         : null;

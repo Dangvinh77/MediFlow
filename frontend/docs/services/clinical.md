@@ -55,7 +55,7 @@ this session validates build only by explicit user instruction.
 ## Historical UI baseline
 
 - `/appointments`: paged appointment list with department/date filters through
-  `GET /v1/appointments`; UI roles `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`. ADMIN, DOCTOR, and NURSE
+  `GET /v1/appointments`; UI roles `ADMIN`, `DOCTOR`, `NURSE`. ADMIN, DOCTOR, and NURSE
   can open `/appointments/{appointmentId}` backed by `GET /v1/appointments/{id}`.
 - `/appointments/new`: ADMIN and NURSE can create through `POST /v1/appointments` using UUID
   references. Patient/doctor/department selectors remain blocked on their owner contracts.

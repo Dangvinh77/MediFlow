@@ -45,7 +45,7 @@ class SurgeryLifecycleApiTest {
     @MockBean CompleteSurgeryUseCase completion;
 
     @ParameterizedTest @CsvSource({"ADMIN,readiness/evaluate","DOCTOR,readiness/evaluate",
-            "ADMIN,schedule/finalize","MANAGER,schedule/finalize","DOCTOR,schedule/finalize",
+            "ADMIN,schedule/finalize","DOCTOR,schedule/finalize",
             "ADMIN,start","DOCTOR,start","ADMIN,complete","DOCTOR,complete"})
     void permittedRoleDelegatesTrustedIdentity(String role,String suffix) throws Exception {
         var response=outcome("APPLIED",List.of());
@@ -69,8 +69,8 @@ class SurgeryLifecycleApiTest {
         for(String suffix:suffixes()) request(suffix,role,body(suffix)).andExpect(status().isForbidden());
         verifyNoInteractions(readiness,scheduling,starting,completion);
     }
-    @Test void managerCannotAssertClinicalTransitions() throws Exception {
-        for(String suffix:new String[]{"readiness/evaluate","start","complete"}) request(suffix,"MANAGER",body(suffix)).andExpect(status().isForbidden());
+    @Test void nonClinicalRoleCannotAssertClinicalTransitions() throws Exception {
+        for(String suffix:new String[]{"readiness/evaluate","start","complete"}) request(suffix,"CASHIER",body(suffix)).andExpect(status().isForbidden());
         verifyNoInteractions(readiness,scheduling,starting,completion);
     }
     @ParameterizedTest @ValueSource(strings={"financialOverride","financialClearanceValid","emergency","ready","actorId","role","status"})

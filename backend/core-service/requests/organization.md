@@ -43,7 +43,7 @@ The Organization Service owns:
 | `staff_id`       | UUID         | Primary key                                                                           |
 | `full_name`      | VARCHAR(100) | Staff member's full name                                                              |
 | `department_id`  | UUID         | Foreign key to `DEPARTMENT`                                                           |
-| `job_title`      | ENUM         | `DOCTOR`, `NURSE`, `TECHNICIAN`, `PHARMACIST`, `CASHIER`, `MANAGER`, `ADMINISTRATIVE` |
+| `job_title`      | ENUM         | `DOCTOR`, `NURSE`, `TECHNICIAN`, `PHARMACIST`, `CASHIER`, `ADMINISTRATIVE` |
 | `specialization` | VARCHAR(100) | Optional specialization                                                               |
 | `license_number` | VARCHAR(50)  | Optional professional/practising license                                              |
 | `phone_number`   | VARCHAR(15)  | Phone number                                                                          |
@@ -61,7 +61,7 @@ The Organization Service owns:
 | `password_hash` | VARCHAR(255) | BCrypt password hash                                                                            |
 | `staff_id`      | UUID         | Foreign key to `STAFF`, nullable                                                                |
 | `patient_id`    | UUID         | Bare UUID reference to `patient-service`, required only for `PATIENT` accounts                 |
-| `role`          | ENUM         | `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, `SYSTEM` |
+| `role`          | ENUM         | `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `PATIENT`, `SYSTEM` |
 | `is_active`     | BOOLEAN      | Whether the account can log in                                                                  |
 | `last_login_at` | TIMESTAMPTZ  | Nullable                                                                                        |
 | `created_at`    | TIMESTAMPTZ  | Creation timestamp                                                                              |
@@ -99,7 +99,6 @@ NURSE
 TECHNICIAN
 PHARMACIST
 CASHIER
-MANAGER
 ADMINISTRATIVE
 ```
 
@@ -119,7 +118,6 @@ NURSE
 PHARMACIST
 CASHIER
 LAB_TECH
-MANAGER
 PATIENT
 SYSTEM
 ```
@@ -160,12 +158,12 @@ Swagger UI:
 
 | Method | Path                                                | Roles                         |
 | ------ | --------------------------------------------------- | ----------------------------- |
-| GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, MANAGER, DOCTOR, NURSE |
-| GET    | `/api/v1/org/departments/{id}`                      | ADMIN, MANAGER, DOCTOR, NURSE |
+| GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, DOCTOR, NURSE |
+| GET    | `/api/v1/org/departments/{id}`                      | ADMIN, DOCTOR, NURSE |
 | POST   | `/api/v1/org/departments`                           | ADMIN                         |
 | PUT    | `/api/v1/org/departments/{id}`                      | ADMIN                         |
-| GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, MANAGER, DOCTOR, NURSE |
-| GET    | `/api/v1/org/staff/{id}`                            | ADMIN, MANAGER, DOCTOR, NURSE |
+| GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, DOCTOR, NURSE |
+| GET    | `/api/v1/org/staff/{id}`                            | ADMIN, DOCTOR, NURSE |
 | POST   | `/api/v1/org/staff`                                 | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |

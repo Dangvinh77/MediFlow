@@ -36,7 +36,7 @@ public class DepartmentHeadController {
 
     @GetMapping("/api/v1/org/me/capabilities")
     @PreAuthorize(
-            "hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH')")
+            "hasAnyRole('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH')")
     public ResponseEntity<ApiResponse<OwnCapabilities>> capabilities(
             Authentication authentication,
             @RequestHeader(value = "X-Correlation-Id", required = false) String correlation) {

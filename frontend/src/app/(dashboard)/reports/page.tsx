@@ -17,7 +17,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   // In outpatient MVP the legacy aggregates stay empty; land on the reconciled outpatient report.
   if (outpatientEnabled && !(await searchParams).view) redirect("/reports/outpatient");
   return (
-    <RoleGate allowed={["ADMIN", "MANAGER"]}>
+    <RoleGate allowed={["ADMIN", "DOCTOR"]}>
       <Suspense fallback={<PageShell title="Báo cáo"><AsyncState kind="loading" message="Đang tải báo cáo…" /></PageShell>}>
         <ReportWorkspace outpatientEnabled={outpatientEnabled} />
       </Suspense>

@@ -57,7 +57,7 @@ remain explicit; workspaces remount by session and discard old completions.
 
 The create form selects a staff or patient profile, never an editable role. Staff job title
 maps DOCTOR→DOCTOR, NURSE→NURSE, TECHNICIAN→LAB_TECH, PHARMACIST→PHARMACIST,
-CASHIER→CASHIER, MANAGER→MANAGER, ADMINISTRATIVE→ADMIN (explicit user decision).
+CASHIER→CASHIER, ADMINISTRATIVE→ADMIN (explicit user decision).
 Patient profiles use PATIENT. Staff lookup must finish successfully before submission.
 
 The live Core contract adds ADMIN GET `/api/v1/org/accounts/{accountId}` (existing
@@ -75,7 +75,7 @@ Personal profile no longer renders “Định danh tài khoản” or “Thông 
 `/organization` gives ADMIN the existing department/staff/account management workspace;
 other human roles see their own profile. `/organization/profile` is available through the
 shared header (explicit user delegation for `DashboardHeader.tsx` and its test).
-MANAGER/DOCTOR/NURSE retain the public work directory at `/organization/directory`.
+DOCTOR/NURSE retain the public work directory at `/organization/directory`.
 Personal profiles are read-only and link to the existing `/organization/security` password form.
 
 No new HTTP endpoint or wire field: the profile selects `staffId` from the access token and

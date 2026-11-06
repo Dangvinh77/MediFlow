@@ -25,7 +25,7 @@ Two additive routes are ADMIN-only, human access JWT with valid exp:
 | POST `/api/v1/reports/outpatient/coverage/acceptances` | Body below; 200 approval receipt, including on exact idempotent retry. ADMIN actor is the canonical UUID from the signed subject, acceptedAt is server time. No body actor/time override. |
 
 Both use ApiResponse and correlation, with `Cache-Control: no-store` on successful responses.
-MANAGER may read accepted reports, but may not inspect source witnesses or approve coverage.
+A department head may read accepted reports of their department, but may not inspect source witnesses or approve coverage.
 Invalid body/scope/times/proof yields 400 REPORT_VALIDATION_ERROR. Changed inputs, pending/invalid
 facts, mismatched source witnesses or changed reuse of a requestId yields 409 REPORT_COVERAGE_CONFLICT.
 No automatic fallback or zero-fill follows an error. Source locks have a 2s acquisition timeout
@@ -64,7 +64,7 @@ and remaining source reconciliation. FE uses Gateway only.
 5. Within a single transaction, Report serializes approvals, freezes only its three local evidence
    tables, rereads inputs, compares overall and per-source fingerprints/counts, and inserts coverage
    plus audit receipt together. There is no producer command, event replay, notification or money effect.
-6. Read the daily report with ADMIN/MANAGER. Monthly reads require an accepted complete calendar year;
+6. Read the daily report with ADMIN/department head. Monthly reads require an accepted complete calendar year;
    a one-day approval does not authorize that year. Missing/wrong scope remains 404 REPORT_NOT_FOUND.
    Retain requestId, coverageId, approved evidence references and correlation; never retain bearer tokens.
 
@@ -123,8 +123,8 @@ Report Failsafe: 5 tests, 0 failures, 0 errors, 0 skipped
 
 The five new suites contribute 33 tests: approval service 11, gate configuration 5, PostgreSQL 4,
 signed HTTP/PostgreSQL 1 and controller/security 12. The HTTP case uses the real JWT filter,
-Spring transaction proxy and PostgreSQL: absent coverage 404, MANAGER approval denied, ADMIN
-approval succeeds, exact retry has one effect, ADMIN/MANAGER read successfully and DOCTOR is denied.
+Spring transaction proxy and PostgreSQL: absent coverage 404, doctor approval denied, ADMIN
+approval succeeds, exact retry has one effect, ADMIN/department head read successfully and a non-head DOCTOR is denied.
 The reviewed source proofs in these tests are explicitly synthetic fixtures.
 
 Packaging verifies both standalone and plain-library artifacts, all 25 SQL files byte-for-byte

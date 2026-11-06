@@ -13,7 +13,7 @@ function view(id: string | null = first) {
   return <ReportSessionBoundary><ReportDepartmentName id={id} /><ReportDepartmentName id={id} showId={false} /></ReportSessionBoundary>;
 }
 describe("Report department display", () => {
-  beforeEach(() => { mocks.get.mockReset(); localStorage.clear(); storeSession({ accessToken: "manager", refreshToken: "refresh", role: "MANAGER" }); });
+  beforeEach(() => { mocks.get.mockReset(); localStorage.clear(); storeSession({ accessToken: "manager", refreshToken: "refresh", role: "DOCTOR" }); });
   it("shares the authorized name request between filter and report scope", async () => {
     mocks.get.mockResolvedValue({ departmentId: first, departmentName: "Khoa Nội" });
     render(view());
@@ -54,7 +54,7 @@ describe("Report department display", () => {
     mocks.get.mockResolvedValueOnce({ departmentId: first, departmentName: "Tên phiên cũ" }).mockResolvedValue({ departmentId: first, departmentName: "Tên phiên mới" });
     render(view());
     expect(await screen.findAllByText("Tên phiên cũ")).toHaveLength(2);
-    act(() => storeSession({ accessToken: "new", refreshToken: "refresh-new", role: "MANAGER" }));
+    act(() => storeSession({ accessToken: "new", refreshToken: "refresh-new", role: "DOCTOR" }));
     expect(screen.queryByText("Tên phiên cũ")).not.toBeInTheDocument();
     expect(await screen.findAllByText("Tên phiên mới")).toHaveLength(2);
   });

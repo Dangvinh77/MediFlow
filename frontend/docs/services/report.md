@@ -1,9 +1,13 @@
 # Frontend Service: Report
 
+2026-11-07 role change: MANAGER is gone. An appointed department head (role `DOCTOR`) reads this
+report from the department-management workspace, fixed to their department; the backend guard
+requires an active appointment, so other doctors get 403. Older dated notes below keep the old name.
+
 2026-11-06 yearly dashboard: `/reports/outpatient` is now titled "Báo cáo" and opens on a
 calendar-year dashboard read from `GET /v1/reports/outpatient/statistics` (the existing 366-day
 limit covers a full year). Tabs: "Tổng quan năm" and "So sánh hai năm"; a comparison against a
-running year uses the same period so both years have equal days. MANAGER scope comes from
+running year uses the same period so both years have equal days. Department-head scope comes from
 `/v1/org/me/capabilities` and is fixed; the reconciled disclosure and the legacy link stay
 ADMIN-only. Department revenue moved here from `/billing/revenue`, which is now ADMIN-only.
 

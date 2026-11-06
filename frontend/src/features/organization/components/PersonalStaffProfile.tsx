@@ -12,7 +12,7 @@ import { DetailSection, RecordIdentity } from "./RecordLayout";
 import { OwnStaffDepartment } from "./OwnStaffDepartment";
 import { OwnStaffContactForm } from "./OwnStaffContactForm";
 
-const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", MANAGER: "Quản lý", ADMINISTRATIVE: "Hành chính" };
+const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", ADMINISTRATIVE: "Hành chính" };
 
 /** Mounted by the profile route with the current session and signed staff claim as its key. */
 export function PersonalStaffProfile({ staffId }: { staffId: string }) {

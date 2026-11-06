@@ -223,7 +223,6 @@ String? profileAccountRoleForJobTitle(String? jobTitle) => switch (jobTitle) {
   'TECHNICIAN' => 'LAB_TECH',
   'PHARMACIST' => 'PHARMACIST',
   'CASHIER' => 'CASHIER',
-  'MANAGER' => 'MANAGER',
   'ADMINISTRATIVE' => 'ADMIN',
   _ => null,
 };

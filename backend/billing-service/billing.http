@@ -74,7 +74,7 @@ Content-Type: application/json
   "paymentMethod": "TRANSFER"
 }
 
-### Doanh thu theo khoa + khoảng ngày (role ADMIN/MANAGER)
+### Doanh thu theo khoa + khoảng ngày (role ADMIN)
 GET {{host}}/api/v1/billing/revenue?departmentId=00000000-0000-0000-0000-000000000000&fromDate=2026-08-01&toDate=2026-08-14
 Authorization: Bearer {{token}}
 

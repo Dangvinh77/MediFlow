@@ -126,7 +126,7 @@ class SurgeryCreationApiTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "MANAGER", "PATIENT"})
+    @ValueSource(strings = {"NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
     void create_nonClinicalRole_isForbiddenBeforeUseCase(String role) throws Exception {
         perform(validBody(), role, canonicalKey())
                 .andExpect(status().isForbidden())

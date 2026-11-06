@@ -61,7 +61,7 @@ public class ConsultationSessionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> create(
             @Valid @RequestBody ConsultationSessionCreateRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -75,7 +75,7 @@ public class ConsultationSessionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> update(
             @PathVariable UUID id, @Valid @RequestBody ConsultationSessionUpdateRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -85,7 +85,7 @@ public class ConsultationSessionController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> status(
             @PathVariable UUID id, @Valid @RequestBody ConsultationSessionStatusRequest request,
             @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
@@ -95,7 +95,7 @@ public class ConsultationSessionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','NURSE','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<ConsultationSessionDTO>>> search(
             @RequestParam UUID departmentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -120,7 +120,7 @@ public class ConsultationSessionController {
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionSummary>> summary(@RequestParam UUID departmentId,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate toDate,HttpServletRequest request) {
@@ -129,7 +129,7 @@ public class ConsultationSessionController {
     }
 
     @GetMapping("/{id}/registrations")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','NURSE','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<RegistrationSummary>>> registrations(
             @PathVariable UUID id, @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size, HttpServletRequest request) {

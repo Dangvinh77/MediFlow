@@ -31,7 +31,7 @@ describe("PrescriptionLookup", () => {
     await user.click(screen.getByRole("button", { name: "Tra cứu" }));
     expect(mocks.push).toHaveBeenCalledWith("/pharmacy/prescriptions/" + id);
   });
-  it.each(["MANAGER", "NURSE", "CASHIER"] as Role[])("does not offer lookup to %s", (role) => {
+  it.each(["NURSE", "CASHIER"] as Role[])("does not offer lookup to %s", (role) => {
     mocks.role = role; render(<PrescriptionLookup />);
     expect(within(screen.getByRole("alert")).queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tra cứu" })).not.toBeInTheDocument();

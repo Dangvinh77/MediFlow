@@ -31,7 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final String ROLE_PREFIX = "ROLE_";
     private static final Set<String> HUMAN_ROLES = Set.of(
             Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
-            Roles.CASHIER, Roles.LAB_TECH, Roles.MANAGER, Roles.PATIENT);
+            Roles.CASHIER, Roles.LAB_TECH, Roles.PATIENT);
 
     private final SecretKey signingKey;
 

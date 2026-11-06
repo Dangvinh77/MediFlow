@@ -108,7 +108,6 @@ describe("Appointment list filters and request lifecycle", () => {
     ["ADMIN", true, true],
     ["DOCTOR", false, true],
     ["NURSE", true, true],
-    ["MANAGER", false, false],
   ])("shows only actions allowed for %s", async (role, canCreate, canView) => {
     mocks.role = role;
     mocks.search.mockResolvedValue({ ...emptyPage, content: [appointment], totalPages: 1, totalElements: 1 });

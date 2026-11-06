@@ -13,7 +13,5 @@ public enum JobTitle {
 
     CASHIER,
 
-    MANAGER,
-
     ADMINISTRATIVE
 }

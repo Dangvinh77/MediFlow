@@ -42,7 +42,7 @@ class AdmissionSettlementPreviewControllerTest {
                 .andExpect(jsonPath("$.data.snapshotOnly").value(true)).andExpect(jsonPath("$.data.finalSettlement").value(false))
                 .andExpect(jsonPath("$.data.patientId").doesNotExist()).andExpect(jsonPath("$.data.balance").value(0));
     }
-    @ParameterizedTest @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH", "PATIENT", "SYSTEM"})
     void get_otherRoles_deniedBeforeReadingMoney(String role) throws Exception {
         mvc.perform(get(url()).with(user("other").roles(role))).andExpect(status().isForbidden()); verifyNoInteractions(preview);
     }

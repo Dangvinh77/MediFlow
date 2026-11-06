@@ -25,7 +25,7 @@ public class CareLabelController {
     }
 
     @GetMapping("/{kind}/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','PATIENT')")
     public ResponseEntity<ApiResponse<CareLabelDTO>> read(@PathVariable String kind, @PathVariable UUID id) {
         return labels.read(kind, id).map(label -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(ApiResponse.ok(label, correlationIds.currentOrCreate().toString())))

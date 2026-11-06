@@ -189,7 +189,7 @@ class SurgeryPreopMutationApiTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"MANAGER", "PATIENT", "PHARMACIST", "CASHIER", "LAB_TECH"})
+    @ValueSource(strings = {"PATIENT", "PHARMACIST", "CASHIER", "LAB_TECH"})
     void mutation_forbiddenRole_neverReachesUseCase(String role) throws Exception {
         performChecklist(checklistBody(), role, IDEMPOTENCY_KEY)
                 .andExpect(status().isForbidden());

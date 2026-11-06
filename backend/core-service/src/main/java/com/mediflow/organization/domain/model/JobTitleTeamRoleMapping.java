@@ -22,7 +22,7 @@ public final class JobTitleTeamRoleMapping {
                     "ASSISTANT_SURGEON",
                     "ANESTHESIOLOGIST");
             case NURSE -> List.of("OR_NURSE");
-            case TECHNICIAN, PHARMACIST, CASHIER, MANAGER, ADMINISTRATIVE -> List.of();
+            case TECHNICIAN, PHARMACIST, CASHIER, ADMINISTRATIVE -> List.of();
         };
     }
 }

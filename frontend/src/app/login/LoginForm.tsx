@@ -23,7 +23,6 @@ function landingPage(schedulingEnabled: boolean) {
     case "CASHIER": return schedulingEnabled ? "/billing/scheduled-payments" : "/billing/payment-requests";
     case "LAB_TECH": return "/lab";
     case "PHARMACIST": return "/pharmacy";
-    case "MANAGER": return schedulingEnabled ? "/appointments/schedule" : "/reports";
     case "DOCTOR": return schedulingEnabled ? "/appointments/my-calendar" : "/appointments";
     case "NURSE": return schedulingEnabled ? "/appointments/reception" : "/appointments";
     case "ADMIN": return "/organization";

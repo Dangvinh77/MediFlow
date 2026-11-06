@@ -100,12 +100,12 @@ public class LocalDemoSeedTest {
         assertThat(departments).allSatisfy(row -> assertThat(row.getProfile().description()).isNotBlank());
         assertThat(staff).allSatisfy(row -> assertThat(row.getProfile().qualification()).isNotBlank());
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(10);
+        assertThat(accounts).hasSize(9);
         assertThat(accounts.stream().filter(a -> a.getRole() == Role.PATIENT).map(Account::getPatientId))
                 .containsExactly(patients.get(0).maBenhNhan(), patients.get(1).maBenhNhan());
-        assertThat(count(orgJdbc)).isEqualTo(40);
+        assertThat(count(orgJdbc)).isEqualTo(39);
         assertThat(count(patientJdbc)).isEqualTo(10);
-        assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(10);
+        assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(9);
         assertThat(orgJdbc.queryForObject("select synthetic_email from local_demo_mailbox_account where seed_key='account-demo.admin'", String.class))
                 .isEqualTo("demo.staff01@example.test");
     }
@@ -132,7 +132,7 @@ public class LocalDemoSeedTest {
         clearInvocations(createDepartment, createStaff, createPatient, createAccount);
         runSeed();
         verifyNoInteractions(createDepartment, createStaff, createPatient, createAccount);
-        assertThat(count(orgJdbc)).isEqualTo(40);
+        assertThat(count(orgJdbc)).isEqualTo(39);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 
@@ -173,7 +173,7 @@ public class LocalDemoSeedTest {
         doAnswer(call -> addPatient(call.getArgument(0))).when(createPatient).create(any());
         runSeed();
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(10);
+        assertThat(accounts).hasSize(9);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 

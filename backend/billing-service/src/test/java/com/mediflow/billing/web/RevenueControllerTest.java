@@ -38,7 +38,7 @@ class RevenueControllerTest {
     private QueryRevenueUseCase queryRevenueUseCase;
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "ADMIN")
     void revenueByDepartment_returnsGroupedRevenue() throws Exception {
         UUID departmentId = UUID.randomUUID();
         LocalDate from = LocalDate.of(2026, 8, 1);
@@ -55,7 +55,7 @@ class RevenueControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "ADMIN")
     void revenueByDepartment_departmentIdOmitted_meansAllDepartments() throws Exception {
         LocalDate from = LocalDate.of(2026, 8, 1);
         LocalDate to = LocalDate.of(2026, 8, 31);
@@ -66,6 +66,13 @@ class RevenueControllerTest {
                         .param("toDate", to.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void revenueByDepartment_departmentHeadsUseScopedReports() throws Exception {
+        mockMvc.perform(get(BASE_PATH).param("fromDate", "2026-08-01").param("toDate", "2026-08-31"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

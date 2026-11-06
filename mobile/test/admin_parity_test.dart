@@ -238,34 +238,8 @@ void main() {
       expect(find.text('Khóa tài khoản'), findsOneWidget);
     });
 
-    testWidgets('a manager account links to its scope', (tester) async {
-      repository.current = sampleAccount(role: 'MANAGER', staff: null);
-      final opened = <String>[];
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workspaceAccessProvider.overrideWithValue(
-              const WorkspaceAccess(sessionIdentity: 's', role: 'ADMIN'),
-            ),
-            accountDetailRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: AccountDetailPage(
-                accountId: accountId,
-                onManagerScope: opened.add,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Mở phạm vi quản lý lịch'));
-      expect(opened, [accountId]);
-    });
-
     testWidgets('other roles cannot open account detail', (tester) async {
-      await tester.pumpWidget(accountHost(repository, role: 'MANAGER'));
+      await tester.pumpWidget(accountHost(repository, role: 'DOCTOR'));
       await tester.pumpAndSettle();
 
       expect(find.text('Bạn không có quyền xem tài khoản.'), findsOneWidget);

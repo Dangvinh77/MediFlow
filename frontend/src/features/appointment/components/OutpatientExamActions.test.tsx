@@ -96,7 +96,6 @@ describe("outpatient appointment actions", () => {
     ["ADMIN", pendingAppointment, true],
     ["NURSE", pendingAppointment, true],
     ["DOCTOR", pendingAppointment, false],
-    ["MANAGER", pendingAppointment, false],
     ["NURSE", { ...pendingAppointment, status: "READY_FOR_EXAM" }, false],
     ["NURSE", { ...pendingAppointment, careContractVersion: 1 }, false],
   ] as const)("offers check-in only to an authorized role on legacy pending appointments", (role, appointment, allowed) => {
@@ -112,7 +111,6 @@ describe("outpatient appointment actions", () => {
     ["ADMIN", readyAppointment, true],
     ["DOCTOR", readyAppointment, true],
     ["NURSE", readyAppointment, false],
-    ["MANAGER", readyAppointment, false],
     ["DOCTOR", { ...readyAppointment, status: "AWAITING_PAYMENT" }, false],
     ["DOCTOR", { ...readyAppointment, careContractVersion: 0 }, false],
     ["DOCTOR", { ...readyAppointment, examClearanceId: null }, false],

@@ -31,7 +31,7 @@ class OwnStaffDepartmentControllerTest {
     @MockBean GetOwnStaffDepartmentUseCase profiles;
 
     @ParameterizedTest
-    @ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"})
+    @ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"})
     void ownUnitIsMinimalNoStoreAndDoesNotGrantForeignUnitAccess(String role) throws Exception {
         UUID own = UUID.randomUUID();
         UUID unit = UUID.randomUUID();

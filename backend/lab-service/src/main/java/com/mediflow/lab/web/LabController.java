@@ -42,7 +42,7 @@ public class LabController {
     private final CorrelationIdProvider correlationIds;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE', 'LAB_TECH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH')")
     public ResponseEntity<ApiResponse<PageResult<LabTestDTO>>> search(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) LabTestStatus status,

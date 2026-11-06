@@ -20,7 +20,7 @@ interface Props {
 
 export function OutpatientAvailablePeriods({ departmentId, mode, autoSelectLatest = false, onSelect }: Props) {
   const request = useCallback(() => reportApi.availablePeriods(departmentId), [departmentId]);
-  const needsDepartment = getRole() === "MANAGER" && !departmentId;
+  const needsDepartment = getRole() === "DOCTOR" && !departmentId;
   const { state, load, retry } = useReportRequest(request, autoSelectLatest && !needsDepartment);
   const periods = state.status === "success"
     ? state.data.filter(item => mode === "daily" || (

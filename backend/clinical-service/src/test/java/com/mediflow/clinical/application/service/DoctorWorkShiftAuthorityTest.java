@@ -29,7 +29,7 @@ class DoctorWorkShiftAuthorityTest {
     final ConsultationSessionApplicationService schedules=new ConsultationSessionApplicationService(sessions,authority,actors,correlations,commands,Clock.fixed(now,ZoneOffset.UTC));
     final DoctorWorkShiftApplicationService service=new DoctorWorkShiftApplicationService(shifts,sessions,schedules,commands,Clock.fixed(now,ZoneOffset.UTC));
     @BeforeEach void setup(){when(correlations.currentOrCreate()).thenReturn(correlation);}
-    @ParameterizedTest @ValueSource(strings={"ADMIN","MANAGER","DOCTOR"})
+    @ParameterizedTest @ValueSource(strings={"ADMIN","DOCTOR"})
     void managementUsesActualSignedRoleAndCurrentCoreScope(String role) {
         when(actors.current()).thenReturn(new ActorIdentity(account,staff,null,role));
         grant(role,true,staff,department);
@@ -44,7 +44,7 @@ class DoctorWorkShiftAuthorityTest {
         var body=new DoctorWorkShiftCreateRequest(staff,department,room,day,LocalTime.of(8,0),LocalTime.of(11,0));
         grant("DOCTOR",false,staff,department);
         assertThatThrownBy(()->service.create(body,"key")).isInstanceOf(ForbiddenOperationException.class);
-        grant("MANAGER",true,staff,department);
+        grant("NURSE",true,staff,department);
         assertThatThrownBy(()->service.create(body,"key")).isInstanceOf(ForbiddenOperationException.class);
         grant("DOCTOR",true,UUID.randomUUID(),department);
         assertThatThrownBy(()->service.create(body,"key")).isInstanceOf(ForbiddenOperationException.class);

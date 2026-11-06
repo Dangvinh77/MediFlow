@@ -45,13 +45,13 @@ class SupportSecurityTest {
 
     @Test void managerRequiresCurrentDepartmentScopeAndCannotBorrowNotificationRoles() throws Exception {
         UUID actor = UUID.randomUUID(), department = UUID.randomUUID();
-        String bearer = "Bearer " + Jwts.builder().subject(actor.toString()).claim("role", "MANAGER")
+        String bearer = "Bearer " + Jwts.builder().subject(actor.toString()).claim("role", "DOCTOR")
                 .claim("type", "access").expiration(Date.from(Instant.now().plusSeconds(120)))
                 .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
         mvc.perform(get("/api/v1/reports/daily?date=2026-10-17").header("Authorization", bearer))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(reports, authority);
-        when(authority.permits(eq(actor), eq("MANAGER"), eq(department), eq(bearer), nullable(String.class)))
+        when(authority.permits(eq(actor), eq("DOCTOR"), eq(department), eq(bearer), nullable(String.class)))
                 .thenReturn(true, false);
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(get("/api/v1/reports/daily?date=2026-10-17&departmentId=" + department)
@@ -68,12 +68,12 @@ class SupportSecurityTest {
     @Test void unavailableAuthorityCannotBroadenRolesAndAdminRetainsHospitalRead() throws Exception {
         when(authority.permits(any(), anyString(), any(), anyString(), nullable(String.class)))
                 .thenThrow(new IllegalStateException("Core unavailable"));
-        for (String role : new String[]{"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"}) {
+        for (String role : new String[]{"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"}) {
             mvc.perform(get("/api/v1/reports/daily?date=2026-10-17&departmentId=" + UUID.randomUUID())
                             .header("Authorization", token(role, "access"))).andExpect(status().isForbidden());
         }
         verifyNoInteractions(reports);
-        verify(authority).permits(any(), eq("MANAGER"), any(), anyString(), nullable(String.class));
+        verify(authority).permits(any(), eq("DOCTOR"), any(), anyString(), nullable(String.class));
         verifyNoMoreInteractions(authority);
         mvc.perform(get("/api/v1/reports/daily?date=2026-10-17").header("Authorization", token("ADMIN", "access")))
                 .andExpect(status().isOk());

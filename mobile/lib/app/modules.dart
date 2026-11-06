@@ -68,7 +68,7 @@ const modules = [
     'Nhân sự và khoa phòng',
     'Vinh',
     Icons.groups_outlined,
-    [UserRole.admin, UserRole.manager, UserRole.doctor, UserRole.nurse],
+    [UserRole.admin, UserRole.doctor, UserRole.nurse],
     implemented: true,
     accent: Wayfinding.organization,
   ),
@@ -109,10 +109,10 @@ const modules = [
   AppModule(
     '/appointments/schedule',
     'Quản lý buổi khám',
-    'Ca khám và phạm vi khoa',
+    'Lập buổi khám của các khoa',
     'Vinh',
     Icons.edit_calendar_outlined,
-    [UserRole.admin, UserRole.manager],
+    [UserRole.admin],
     implemented: true,
     scheduling: true,
     accent: Wayfinding.appointment,
@@ -149,7 +149,7 @@ const modules = [
     'Tiếp nhận ngoại trú',
     'Vinh',
     Icons.calendar_month_outlined,
-    [UserRole.admin, UserRole.manager, UserRole.doctor, UserRole.nurse],
+    [UserRole.admin, UserRole.doctor, UserRole.nurse],
     implemented: true,
     accent: Wayfinding.appointment,
   ),
@@ -172,7 +172,6 @@ const modules = [
     Icons.science_outlined,
     [
       UserRole.admin,
-      UserRole.manager,
       UserRole.doctor,
       UserRole.nurse,
       UserRole.labTech,
@@ -196,7 +195,7 @@ const modules = [
     'Hóa đơn và thanh toán',
     'Vinh',
     Icons.receipt_long_outlined,
-    [UserRole.admin, UserRole.cashier, UserRole.manager],
+    [UserRole.admin, UserRole.cashier],
     implemented: true,
     accent: Wayfinding.billing,
   ),
@@ -206,7 +205,7 @@ const modules = [
     'Báo cáo và thông báo',
     'Vinh',
     Icons.support_agent_outlined,
-    [UserRole.admin, UserRole.manager, UserRole.nurse, UserRole.patient],
+    [UserRole.admin, UserRole.nurse, UserRole.patient],
     implemented: true,
     accent: Wayfinding.support,
   ),
@@ -226,7 +225,7 @@ const modules = [
     'Thống kê hoạt động',
     'Vinh',
     Icons.bar_chart_outlined,
-    [UserRole.admin, UserRole.manager],
+    [UserRole.admin, UserRole.doctor],
     implemented: true,
     accent: Wayfinding.support,
   ),
@@ -249,8 +248,9 @@ List<AppModule> visibleMainModules(
     )
     .toList();
 
+/// A department head opens Report from department management, never the support hub.
 List<AppModule> visibleSupportModules(UserRole role) => modules
-    .where((module) => isSupportChild(module) && module.allows(role))
+    .where((module) => isSupportChild(module) && module.allows(role) && role != UserRole.doctor)
     .toList();
 
 /// Bottom-bar order: the work a role does most comes first.
@@ -283,6 +283,5 @@ String roleLabel(UserRole role) => switch (role) {
   UserRole.pharmacist => 'Dược sĩ',
   UserRole.cashier => 'Thu ngân',
   UserRole.labTech => 'Kỹ thuật viên xét nghiệm',
-  UserRole.manager => 'Quản lý',
   UserRole.patient => 'Bệnh nhân',
 };

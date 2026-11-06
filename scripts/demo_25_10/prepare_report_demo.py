@@ -20,7 +20,7 @@ from prepare_ui_demo import ApiError, SEED_LOGIN_EMAILS
 HERE = Path(__file__).resolve().parent
 ZONE = dt.timezone(dt.timedelta(hours=7))
 ADMIN_USERNAME = SEED_LOGIN_EMAILS["admin"]
-MANAGER_USERNAME = SEED_LOGIN_EMAILS["manager"]
+DOCTOR_USERNAME = SEED_LOGIN_EMAILS["doctor"]
 ACCEPTANCE_REQUEST_ID = uuid.uuid5(seed_data.NAMESPACE, "acceptance:2024:general-clinic")
 ACCEPTANCE_REFERENCE = "SYNTHETIC-DEMO-REPORT-2024:" + seed_data.DEPARTMENT_IDS[0]
 DAILY_SAMPLE_DATE = dt.date(2024, 6, 17)
@@ -54,18 +54,21 @@ def _available(api):
     return api.call("admin", "GET", "/api/v1/reports/outpatient/available-periods?" + query)
 
 
-def assign_manager_department(api):
-    """Give demo.manager Internal Medicine through the ADMIN scope API; its table is Core-migrated."""
-    department_id = seed_data.DEPARTMENT_IDS[0]
-    api.login("manager", MANAGER_USERNAME)
-    path = "/api/v2/org/accounts/" + api.claims["manager"]["sub"] + "/schedule-management-scope"
+def appoint_department_head(api):
+    """Appoint the seeded doctor head of their own department so they get the fixed-department report."""
+    api.login("doctor", DOCTOR_USERNAME)
+    doctor_id = api.claims["doctor"]["staffId"]
+    department_id = api.call("admin", "GET", "/api/v1/org/staff/" + doctor_id)["departmentId"]
+    path = "/api/v2/org/departments/" + department_id + "/head-appointments"
     current = api.call("admin", "GET", path)
-    if department_id in current.get("departmentIds", []):
+    if current.get("staffId") == doctor_id:
         return current
+    if current.get("staffId"):
+        raise RuntimeError("Department already has a different head; do not replace it automatically")
     return api.call("admin", "PUT", path,
-                    {"expectedRevision": current["revision"], "departmentIds": [department_id],
-                     "reason": "Gan khoa phu trach cho tai khoan quan ly demo"},
-                    expected=(200, 201), stage="report-demo-manager-scope")
+                    {"expectedRevision": current["revision"], "staffId": doctor_id,
+                     "reason": "Bo nhiem truong khoa cho demo bao cao"},
+                    stage="report-demo-department-head")
 
 
 def _coverage_preview(api, path):
@@ -110,7 +113,7 @@ def prepare(api, evidence, accept=False, now=None):
                                  "exportSha256": digest, "rowCount": len(records)}
 
     api.login("admin", ADMIN_USERNAME)
-    assign_manager_department(api)
+    appoint_department_head(api)
     scope = urllib.parse.urlencode({"fromDate": seed_data.HISTORICAL_FROM.isoformat(),
                                     "toDate": seed_data.HISTORICAL_TO.isoformat(),
                                     "departmentId": seed_data.DEPARTMENT_IDS[0]})

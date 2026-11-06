@@ -27,7 +27,7 @@ public class DoctorWorkShiftController {
         this.shifts=shifts;this.correlations=correlations;
     }
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<DoctorWorkShiftDTO>>> search(@RequestParam UUID departmentId,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -44,25 +44,25 @@ public class DoctorWorkShiftController {
         return ResponseEntity.ok(ApiResponse.ok(shifts.mine(fromDate,toDate),correlations.currentOrCreate().toString()));
     }
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<DoctorWorkShiftDTO>> create(@Valid @RequestBody DoctorWorkShiftCreateRequest body,
             @RequestHeader("Idempotency-Key") String key,@RequestHeader("X-Correlation-Id") String correlation) {
         correlation(correlation);return result(shifts.create(body,key));
     }
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<DoctorWorkShiftDTO>> update(@PathVariable UUID id,@Valid @RequestBody DoctorWorkShiftUpdateRequest body,
             @RequestHeader("Idempotency-Key") String key,@RequestHeader("X-Correlation-Id") String correlation) {
         correlation(correlation);return result(shifts.update(id,body,key));
     }
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<DoctorWorkShiftDTO>> cancel(@PathVariable UUID id,@Valid @RequestBody DoctorWorkShiftCancelRequest body,
             @RequestHeader("Idempotency-Key") String key,@RequestHeader("X-Correlation-Id") String correlation) {
         correlation(correlation);return result(shifts.cancel(id,body,key));
     }
     @PostMapping("/{id}/consultation-sessions")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<ConsultationSessionDTO>> session(@PathVariable UUID id,@Valid @RequestBody ConsultationSessionCreateRequest body,
             @RequestHeader("Idempotency-Key") String key,@RequestHeader("X-Correlation-Id") String correlation) {
         correlation(correlation);return result(shifts.createSession(id,body,key));

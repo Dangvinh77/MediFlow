@@ -15,7 +15,7 @@ import { isRequestSessionCurrent } from "../request-session";
 import type { JobTitle, StaffDTO } from "../types";
 
 const getServerRole = () => null;
-const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", MANAGER: "Quản lý", ADMINISTRATIVE: "Hành chính" };
+const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", ADMINISTRATIVE: "Hành chính" };
 
 export function StaffDetail({ staffId, notice }: { staffId: string; notice?: "created" | "updated" }) {
   return <StaffDetailWorkspace key={staffId} staffId={staffId} notice={notice} />;

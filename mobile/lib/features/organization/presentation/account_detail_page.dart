@@ -21,7 +21,6 @@ const _roleLabels = {
   'PHARMACIST': 'Dược sĩ',
   'CASHIER': 'Thu ngân',
   'LAB_TECH': 'Kỹ thuật viên xét nghiệm',
-  'MANAGER': 'Quản lý',
   'PATIENT': 'Bệnh nhân',
   'SYSTEM': 'Hệ thống',
 };
@@ -39,11 +38,9 @@ class AccountDetailPage extends ConsumerStatefulWidget {
   const AccountDetailPage({
     super.key,
     required this.accountId,
-    this.onManagerScope,
   });
 
   final String accountId;
-  final ValueChanged<String>? onManagerScope;
 
   @override
   ConsumerState<AccountDetailPage> createState() => _AccountDetailPageState();
@@ -170,16 +167,6 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
       children: [
         Text(account.username, style: Theme.of(context).textTheme.titleLarge),
         Text(_roleLabels[account.role] ?? account.role),
-        if (account.role == 'MANAGER' && widget.onManagerScope != null) ...[
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton(
-              onPressed: () => widget.onManagerScope!(account.id),
-              child: const Text('Mở phạm vi quản lý lịch'),
-            ),
-          ),
-        ],
         const SizedBox(height: 12),
         _field('Trạng thái', account.active ? 'Đang hoạt động' : 'Đã khóa'),
         if (account.staffId case final staffId?)

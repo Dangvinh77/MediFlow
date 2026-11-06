@@ -8,7 +8,7 @@ vi.mock("@/components/theme/ThemeToggle", () => ({ ThemeToggle: () => null }));
 import LoginPage from "./page";
 afterEach(() => { act(() => clearSession()); vi.clearAllMocks(); vi.unstubAllEnvs(); });
 describe("role-aware login landing", () => {
-  it.each(["PATIENT", "ADMIN", "MANAGER", "NURSE", "DOCTOR", "CASHIER", "LAB_TECH", "PHARMACIST"] as const)("forces %s with the initial password to change it after reopening login", async role => {
+  it.each(["PATIENT", "ADMIN", "NURSE", "DOCTOR", "CASHIER", "LAB_TECH", "PHARMACIST"] as const)("forces %s with the initial password to change it after reopening login", async role => {
     const accessToken = `header.${btoa(JSON.stringify({ mustChangePassword: true }))}.signature`;
     act(() => storeSession({ accessToken, refreshToken: "r", role }));
     const view = render(<LoginPage />);
@@ -33,8 +33,7 @@ describe("role-aware login landing", () => {
 
 it.each([
   ["DOCTOR", "/appointments/my-calendar"], ["NURSE", "/appointments/reception"],
-  ["CASHIER", "/billing/scheduled-payments"], ["MANAGER", "/appointments/schedule"],
-  ["PATIENT", "/appointments/my-registration"], ["ADMIN", "/organization"],
+  ["CASHIER", "/billing/scheduled-payments"], ["PATIENT", "/appointments/my-registration"], ["ADMIN", "/organization"],
 ] as const)("opens the current work queue for %s when scheduling is enabled", async (role, destination) => {
   vi.stubEnv("MEDIFLOW_SCHEDULING_UI_ENABLED", "true");
   act(() => storeSession({ accessToken: "test", refreshToken: "r", role }));

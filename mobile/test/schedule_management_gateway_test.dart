@@ -111,31 +111,5 @@ void main() {
       adapter.requests.last.headers['Idempotency-Key'],
       create.idempotencyKey,
     );
-
-    final replace = ScheduleCommand.replaceScope(
-      const SchedulingScope(
-        accountId: _account,
-        revision: 2,
-        departmentIds: [],
-      ),
-      const [_department],
-      'Cấp quyền',
-    );
-    await repository.execute(replace);
-    await repository.execute(replace);
-    expect(adapter.requests.last.method, 'PUT');
-    expect(
-      adapter.requests.last.uri.path,
-      '/api/v2/org/accounts/$_account/schedule-management-scope',
-    );
-    expect(adapter.requests.last.data, {
-      'expectedRevision': 2,
-      'departmentIds': [_department],
-      'reason': 'Cấp quyền',
-    });
-    expect(
-      adapter.requests[adapter.requests.length - 2].headers['Idempotency-Key'],
-      adapter.requests.last.headers['Idempotency-Key'],
-    );
   });
 }

@@ -26,7 +26,7 @@ public class OwnStaffContactController {
     }
 
     @PutMapping("/{id}/contact")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH') and "
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH') and "
             + "authentication.details instanceof T(com.mediflow.organization.infrastructure.security.StaffIdentityDetails) "
             + "and authentication.details.staffId == #id")
     public ResponseEntity<ApiResponse<StaffResponse>> update(@PathVariable UUID id,

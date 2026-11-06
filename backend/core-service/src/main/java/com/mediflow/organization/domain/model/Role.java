@@ -14,8 +14,6 @@ public enum Role {
 
     LAB_TECH,
 
-    MANAGER,
-
     PATIENT,
 
     SYSTEM

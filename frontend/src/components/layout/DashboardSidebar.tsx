@@ -18,20 +18,20 @@ interface NavigationItem {
 const navigation: readonly NavigationItem[] = [
   { group: "Kết quả của tôi", href: "/records/mine", label: "Kết quả khám của tôi", eyebrow: "Chẩn đoán & tái khám", roles: ["PATIENT"] },
   { group: "Kết quả của tôi", href: "/lab/mine", label: "Kết quả xét nghiệm", eyebrow: "Chỉ số & kết luận", roles: ["PATIENT"] },
-  { group: "Tổ chức & bệnh nhân", href: "/organization", label: "Tổ chức", eyebrow: "Nhân sự & khoa", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
+  { group: "Tổ chức & bệnh nhân", href: "/organization", label: "Tổ chức", eyebrow: "Nhân sự & khoa", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Tổ chức & bệnh nhân", href: "/patients", label: "Bệnh nhân", eyebrow: "Hồ sơ định danh", roles: ["ADMIN", "DOCTOR", "NURSE"] },
-  { group: "Khám ngoại trú", href: "/appointments", label: "Lịch hẹn", eyebrow: "Tiếp nhận ngoại trú", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
-  { group: "Khám ngoại trú", href: "/appointments/schedule", label: "Quản lý buổi khám", eyebrow: "Ca khám & phạm vi khoa", roles: ["ADMIN", "MANAGER"], scheduling: true },
+  { group: "Khám ngoại trú", href: "/appointments", label: "Lịch hẹn", eyebrow: "Tiếp nhận ngoại trú", roles: ["ADMIN", "DOCTOR", "NURSE"] },
+  { group: "Khám ngoại trú", href: "/appointments/schedule", label: "Quản lý buổi khám", eyebrow: "Ca khám & phạm vi khoa", roles: ["ADMIN"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/reception", label: "Tiếp nhận ca khám", eyebrow: "Giữ chỗ & kiểm tra thu", roles: ["ADMIN", "NURSE"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/my-shifts", label: "Lịch làm việc của tôi", eyebrow: "Giờ & phòng được phân công", roles: ["DOCTOR"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/my-calendar", label: "Lịch khám của tôi", eyebrow: "Lịch bác sĩ", roles: ["DOCTOR"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/my-registration", label: "Phiếu khám của tôi", eyebrow: "Tra cứu phiếu cá nhân", roles: ["PATIENT"], scheduling: true },
   { group: "Khám ngoại trú", href: "/records", label: "Hồ sơ khám", eyebrow: "Chẩn đoán & kết luận", roles: ["ADMIN", "DOCTOR", "NURSE"] },
-  { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"] },
+  { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
   { group: "Viện phí", href: "/billing/payment-requests", activePath: "/billing", label: "Thu ngân", eyebrow: "Khoản thu, hóa đơn & hoàn tiền", roles: ["ADMIN", "CASHIER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
-  { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Doanh thu & chỉ số vận hành", roles: ["ADMIN", "MANAGER"] },
+  { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Doanh thu & chỉ số vận hành", roles: ["ADMIN"] },
 ];
 
 interface DashboardSidebarProps {
@@ -49,6 +49,7 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
     { group: "Quản lý khoa", href: "/appointments/department/calendar", label: "Lịch toàn khoa", eyebrow: "Theo ngày & tuần", roles: ["DOCTOR"] },
     { group: "Quản lý khoa", href: "/appointments/department/sessions", label: "Buổi khám & phòng", eyebrow: "Sức chứa & trạng thái", roles: ["DOCTOR"] },
     { group: "Quản lý khoa", href: "/appointments/department/shifts", label: "Lịch làm việc bác sĩ", eyebrow: "Phân công giờ & phòng", roles: ["DOCTOR"] },
+    { group: "Quản lý khoa", href: "/reports/outpatient", label: "Báo cáo khoa", eyebrow: "Doanh thu & lượt khám của khoa", roles: ["DOCTOR"] },
   ] : role ? navigation.filter((item) => item.roles.includes(role) && (!item.scheduling || schedulingEnabled)) : [];
 
   const activeHref = visibleNavigation.filter(item => pathname === (item.activePath ?? item.href) || pathname.startsWith(`${item.activePath ?? item.href}/`)).sort((a, b) => (b.activePath ?? b.href).length - (a.activePath ?? a.href).length)[0]?.href;

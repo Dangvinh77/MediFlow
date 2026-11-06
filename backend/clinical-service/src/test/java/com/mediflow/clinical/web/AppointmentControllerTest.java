@@ -92,7 +92,7 @@ class AppointmentControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "DOCTOR")
     void search_passesFiltersAndPageQuery() throws Exception {
         UUID departmentId = UUID.randomUUID();
         LocalDate date = LocalDate.now().plusDays(1);

@@ -24,7 +24,6 @@ export type JobTitle =
   | "TECHNICIAN"
   | "PHARMACIST"
   | "CASHIER"
-  | "MANAGER"
   | "ADMINISTRATIVE";
 
 export interface DepartmentDTO extends DepartmentProfile {
@@ -86,7 +85,7 @@ export interface MailDelivery { messageId: string; status: "PENDING" | "SENT" | 
 
 export type AccountRole =
   | "ADMIN" | "DOCTOR" | "NURSE" | "PHARMACIST" | "CASHIER"
-  | "LAB_TECH" | "MANAGER" | "PATIENT" | "SYSTEM";
+  | "LAB_TECH" | "PATIENT" | "SYSTEM";
 
 export interface AccountDTO {
   mailDelivery?: MailDelivery | null;

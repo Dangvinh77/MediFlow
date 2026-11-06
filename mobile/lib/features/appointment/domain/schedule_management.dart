@@ -87,22 +87,6 @@ class DepartmentSummary {
   final int held, paymentLocked, confirmed, consumed;
 }
 
-class SchedulingScope {
-  const SchedulingScope({
-    required this.accountId,
-    required this.revision,
-    required this.departmentIds,
-  });
-  final String accountId;
-  final int revision;
-  final List<String> departmentIds;
-}
-
-class ManagerAccount {
-  const ManagerAccount({required this.id, required this.username});
-  final String id, username;
-}
-
 class HeadAppointmentTerm {
   const HeadAppointmentTerm({
     required this.staffId,
@@ -287,20 +271,6 @@ class ScheduleCommand {
     ),
   );
 
-  factory ScheduleCommand.replaceScope(
-    SchedulingScope scope,
-    List<String> departmentIds,
-    String reason,
-  ) => ScheduleCommand._(
-    'PUT',
-    '/v2/org/accounts/${Uri.encodeComponent(scope.accountId)}/schedule-management-scope',
-    {
-      'expectedRevision': scope.revision,
-      'departmentIds': [...departmentIds]..sort(),
-      'reason': reason,
-    },
-  );
-
   factory ScheduleCommand.replaceHead(
     HeadAppointment current, {
     required String? staffId,
@@ -339,8 +309,6 @@ abstract interface class ScheduleManagementRepository {
   /// Departments the signed-in doctor currently heads.
   Future<List<ManagedDepartment>> managementDepartments();
   Future<List<ManagedDepartment>> activeDepartments();
-  Future<List<ManagerAccount>> managerAccounts();
-  Future<SchedulingScope> scope(String accountId);
   Future<HeadAppointment> headAppointment(String departmentId);
   Future<void> execute(ScheduleCommand command);
 }

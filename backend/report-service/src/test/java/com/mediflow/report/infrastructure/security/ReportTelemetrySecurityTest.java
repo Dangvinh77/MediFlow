@@ -39,7 +39,7 @@ class ReportTelemetrySecurityTest {
                 .andExpect(status().isOk());
     }
 
-    @ParameterizedTest @ValueSource(strings = {"MANAGER", "DOCTOR", "PATIENT", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"DOCTOR", "PATIENT", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "SYSTEM"})
     void optIn_otherRolesRemainDeniedForListAndDetail(String role) throws Exception {
         mvc.perform(get("/actuator/metrics").with(user("user").roles(role))).andExpect(status().isForbidden());
         mvc.perform(get("/actuator/metrics/report.admission.pending").with(user("user").roles(role)))

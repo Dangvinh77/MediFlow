@@ -36,7 +36,7 @@ class PrescriptionAdjustmentControllerTest {
                 .andExpect(jsonPath("$.data.status").value("APPLIED"))
                 .andExpect(jsonPath("$.data.refundsDue[0].amount").value(750));
     }
-    @ParameterizedTest @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "LAB_TECH", "PATIENT", "SYSTEM"})
     void get_otherRole_deniedBeforeLedgerRead(String role) throws Exception {
         mvc.perform(get(url()).with(user("other").roles(role))).andExpect(status().isForbidden()); verifyNoInteractions(adjustments);
     }

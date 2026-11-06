@@ -88,7 +88,7 @@ describe.each(["department", "staff"] as const)("Organization %s detail lifecycl
 });
 
 describe("Staff directory privacy", () => {
-  it.each(["MANAGER", "DOCTOR", "NURSE"])("hides personal fields for %s even if the payload contains them", async (role) => {
+  it.each(["DOCTOR", "NURSE"])("hides personal fields for %s even if the payload contains them", async (role) => {
     mocks.getRole.mockReturnValue(role);
     mocks.staffMember.mockResolvedValue({ ...staffContractFixture,
       identityNumber: "012345678901", licenseNumber: "PRIVATE-LICENSE",

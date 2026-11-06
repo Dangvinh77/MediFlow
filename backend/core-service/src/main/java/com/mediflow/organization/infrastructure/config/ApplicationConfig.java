@@ -25,7 +25,6 @@ import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.application.port.out.StaffCreationReceiptRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
-import com.mediflow.organization.application.port.out.ScheduleManagementScopeEventPublisher;
 import com.mediflow.organization.application.port.out.SchedulingAuthorityRepository;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService;
 import com.mediflow.organization.application.service.CreateAccountService;
@@ -59,10 +58,8 @@ public class ApplicationConfig {
 
         @Bean
         public ManageScheduleManagementScopeUseCase manageScheduleManagementScopeUseCase(
-                        SchedulingAuthorityRepository repository,
-                        ScheduleManagementScopeEventPublisher events) {
-                return new ScheduleManagementScopeService(repository, events,
-                                java.time.Clock.systemUTC());
+                        SchedulingAuthorityRepository repository) {
+                return new ScheduleManagementScopeService(repository, java.time.Clock.systemUTC());
         }
 
         @Bean

@@ -66,7 +66,7 @@ public class DepartmentController {
         }
 
         @GetMapping
-        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
         public ResponseEntity<ApiResponse<List<DepartmentResponse>>> getAllDepartments(
                         @RequestParam(name = "activeOnly", required = false) Boolean activeOnly) {
                 List<DepartmentResponse> response = getDepartmentUseCase.getAllDepartments().stream()
@@ -79,7 +79,7 @@ public class DepartmentController {
         }
 
         @GetMapping("/{id}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
         public ResponseEntity<ApiResponse<DepartmentResponse>> getDepartmentById(
                         @PathVariable UUID id) {
                 Department department = getDepartmentUseCase.getDepartmentById(id);

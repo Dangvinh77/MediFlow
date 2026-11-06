@@ -24,7 +24,7 @@ public class ReportScopeGuard {
             return false;
         }
         String role = authentication.getAuthorities().stream().map(a -> a.getAuthority())
-                .filter(a -> a.equals("ROLE_MANAGER") || a.equals("ROLE_DOCTOR")).findFirst().orElse(null);
+                .filter(a -> a.equals("ROLE_DOCTOR")).findFirst().orElse(null);
         if (role == null) return false;
         try {
             UUID actor = UUID.fromString(authentication.getName());

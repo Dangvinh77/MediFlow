@@ -273,14 +273,7 @@ public class OutpatientRegistrationApplicationService {
         }
         switch (actor.role()) {
             case "ADMIN", "NURSE" -> requireActiveActor(actor, session.configuration().departmentId());
-            case "MANAGER" -> {
-                SchedulingAuthoritySnapshot snapshot = requireActiveActor(actor, session.configuration().departmentId());
-                if (!Boolean.TRUE.equals(snapshot.canManageSchedules())) {
-                    throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED",
-                            "Manager is not assigned to this department");
-                }
-            }
-            case "DOCTOR" -> requireAssignedDoctor(actor, session);
+            case "DOCTOR" -> requireSessionDoctorOrDepartmentHead(actor, session);
             default -> throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED",
                     "Actor role cannot view session registrations");
         }
@@ -522,6 +515,15 @@ public class OutpatientRegistrationApplicationService {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor staff association is not active");
         }
         return snapshot;
+    }
+
+    private void requireSessionDoctorOrDepartmentHead(ActorIdentity actor, ConsultationSession session) {
+        if (actor.staffId() != null && actor.staffId().equals(session.configuration().doctorId())) {
+            requireAssignedDoctor(actor, session);
+            return;
+        }
+        SchedulingAuthoritySnapshot snapshot = requireActiveActor(actor, session.configuration().departmentId());
+        if (!Boolean.TRUE.equals(snapshot.canManageSchedules())) notFoundRegistration();
     }
 
     private void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {

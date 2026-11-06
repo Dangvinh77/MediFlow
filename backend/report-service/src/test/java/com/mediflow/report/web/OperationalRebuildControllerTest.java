@@ -168,7 +168,7 @@ class OperationalRebuildControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
     void rebuild_nonAdminRole_returns403BeforeUseCases(String role) throws Exception {
         String bearer = "Bearer " + token(role);
         mvc.perform(post(PATH).header("Authorization", bearer)).andExpect(status().isForbidden());

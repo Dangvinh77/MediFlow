@@ -887,7 +887,7 @@ class LedgerPaymentIntegrationTest {
         var original = payments.complete(request, command("paid", "100"), actor, "paid");
         String path = "/api/v1/billing/transactions/" + original.transactionId() + "/refunds";
         assertThat(http.postForEntity(path, refundCommand("http", "20"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        for (String role : List.of("DOCTOR", "NURSE", "MANAGER", "PATIENT", "PHARMACIST", "LAB_TECH")) {
+        for (String role : List.of("DOCTOR", "NURSE", "PATIENT", "PHARMACIST", "LAB_TECH")) {
             assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), headers(role)), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         }
         assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), serviceHeaders("refresh", "CASHIER", actor.toString(), 60)), String.class)

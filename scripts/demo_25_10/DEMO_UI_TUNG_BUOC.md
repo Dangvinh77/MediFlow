@@ -561,13 +561,13 @@ không cần đăng nhập để các quầy tiếp tục xử lý.
 Nếu A chưa đăng nhập được thì không dùng account B/C để chứng minh đã xem kết quả
 của A. Ghi nhận phần portal A chưa thực hiện; thông báo vẫn được lưu theo patient.
 
-## 15. HUY / ADMIN hoặc MANAGER — Report cuối luồng
+## 15. HUY / ADMIN hoặc trưởng khoa — Report cuối luồng
 
-**Người trình bày: Huy · Service: Report (Support) · Vai UI: ADMIN/MANAGER.**
+**Người trình bày: Huy · Service: Report (Support) · Vai UI: ADMIN/trưởng khoa.**
 
 1. Đăng xuất PATIENT → đăng nhập ADMIN bằng email seed trong mục 1.3.
 2. Mở **http://127.0.0.1:3000/reports/outpatient**.
-3. Chọn **Theo ngày**; nếu dùng MANAGER, chọn khoa đã được cấp quyền trước.
+3. Chọn **Theo ngày**; trưởng khoa chỉ thấy khoa của mình.
 4. Tại **Kỳ có dữ liệu đã đối soát**, bấm **Tìm kỳ có dữ liệu** → đối chiếu khoa,
    phạm vi ngày, tiền tệ, dữ liệu mô phỏng → **Dùng kỳ này** → **Xem báo cáo**.
 5. Trình bày các số liệu lượt khám, Lab, cấp thuốc, thu và hoàn tiền mà UI thực sự

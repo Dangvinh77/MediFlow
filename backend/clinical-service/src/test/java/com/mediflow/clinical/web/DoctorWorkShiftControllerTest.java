@@ -44,7 +44,7 @@ class DoctorWorkShiftControllerTest {
         mvc.perform(get(PATH).with(user("actor").roles(role)).param("departmentId",DEPT.toString()).param("fromDate","2026-11-02").param("toDate","2026-11-02"))
                 .andExpect(status().isForbidden()); verifyNoInteractions(shifts);
     }
-    @ParameterizedTest @ValueSource(strings={"ADMIN","MANAGER","DOCTOR"})
+    @ParameterizedTest @ValueSource(strings={"ADMIN","DOCTOR"})
     void managementTransportRolesReachLiveAuthorityService(String role) throws Exception {
         when(shifts.search(any(),any(),any(),any())).thenReturn(PageResult.of(List.of(),0,0,20));
         mvc.perform(get(PATH).with(user("actor").roles(role)).param("departmentId",DEPT.toString()).param("fromDate","2026-11-02").param("toDate","2026-11-02"))

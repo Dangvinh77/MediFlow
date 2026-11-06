@@ -67,7 +67,7 @@ public class ConsultationSessionApplicationService {
 
     public IdempotentCommandPort.Result<ConsultationSessionDTO> create(
             ConsultationSessionCreateRequest request, String idempotencyKey) {
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
+        ActorIdentity actor = requireHumanActor("ADMIN", "DOCTOR");
         requireScheduleScope(actor, request.departmentId());
         requireEligible(request.doctorId(), request.departmentId(), request.roomId());
         requireIdempotencyKey(idempotencyKey);
@@ -86,7 +86,7 @@ public class ConsultationSessionApplicationService {
     public IdempotentCommandPort.Result<ConsultationSessionDTO> update(
             UUID sessionId, ConsultationSessionUpdateRequest request, String idempotencyKey) {
         ConsultationSession visible = read(sessionId);
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
+        ActorIdentity actor = requireHumanActor("ADMIN", "DOCTOR");
         requireScheduleScope(actor, visible.configuration().departmentId());
         if (!visible.configuration().departmentId().equals(request.departmentId())) {
             throw new BusinessRuleException("SCHEDULE_INELIGIBLE", "A session cannot move to another department");
@@ -117,7 +117,7 @@ public class ConsultationSessionApplicationService {
     public IdempotentCommandPort.Result<ConsultationSessionDTO> changeStatus(
             UUID sessionId, ConsultationSessionStatusRequest request, String idempotencyKey) {
         ConsultationSession visible = read(sessionId);
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "DOCTOR");
+        ActorIdentity actor = requireHumanActor("ADMIN", "DOCTOR");
         requireScheduleScope(actor, visible.configuration().departmentId());
         if (request.status() == ConsultationSessionStatus.OPEN) {
             var config = visible.configuration();
@@ -137,7 +137,7 @@ public class ConsultationSessionApplicationService {
 
     public PageResult<ConsultationSessionDTO> search(UUID departmentId, LocalDate fromDate, LocalDate toDate,
             PageQuery page) {
-        ActorIdentity actor = requireHumanActor("ADMIN", "MANAGER", "NURSE", "DOCTOR");
+        ActorIdentity actor = requireHumanActor("ADMIN", "NURSE", "DOCTOR");
         if (departmentId == null || fromDate == null || toDate == null || fromDate.isAfter(toDate)
                 || ChronoUnit.DAYS.between(fromDate, toDate) > 30) {
             throw new BusinessRuleException("INVALID_REQUEST", "A valid session date range of at most 31 days is required");
@@ -147,7 +147,7 @@ public class ConsultationSessionApplicationService {
     }
 
     public ConsultationSessionSummary summary(UUID departmentId, LocalDate fromDate, LocalDate toDate) {
-        ActorIdentity actor=requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        ActorIdentity actor=requireHumanActor("ADMIN","DOCTOR");
         requireScheduleScope(actor,departmentId);
         if (fromDate==null || toDate==null || fromDate.isAfter(toDate) || ChronoUnit.DAYS.between(fromDate,toDate)>30)
             throw new BusinessRuleException("INVALID_REQUEST","A date range of at most 31 days is required");
@@ -217,10 +217,10 @@ public class ConsultationSessionApplicationService {
                 || !Boolean.TRUE.equals(snapshot.accountActive()) || !Boolean.TRUE.equals(snapshot.departmentActive())) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor has no current scheduling scope");
         }
-        if (("MANAGER".equals(actor.role()) || "DOCTOR".equals(actor.role())) && (!Boolean.TRUE.equals(snapshot.staffActive())
+        if ("DOCTOR".equals(actor.role()) && (!Boolean.TRUE.equals(snapshot.staffActive())
                 || actor.staffId() == null || !actor.staffId().equals(snapshot.staffId())
                 || !Boolean.TRUE.equals(snapshot.canManageSchedules()))) {
-            throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Manager is not assigned to this department");
+            throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Doctor is not the head of this department");
         }
         if ("ADMIN".equals(actor.role()) && !Boolean.TRUE.equals(snapshot.canManageSchedules())) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Administrator has no scheduling authority");

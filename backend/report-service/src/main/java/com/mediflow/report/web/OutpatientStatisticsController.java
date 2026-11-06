@@ -24,7 +24,7 @@ public class OutpatientStatisticsController {
     }
 
     @GetMapping("/statistics")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OutpatientStatisticsDTO> statistics(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,

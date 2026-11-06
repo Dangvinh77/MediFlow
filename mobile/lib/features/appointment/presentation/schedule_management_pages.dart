@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/providers.dart';
@@ -138,7 +139,7 @@ class _RangeFilter extends StatelessWidget {
 }
 
 /// Lists and changes sessions. Doctors heading a department get a fixed one;
-/// managers and admins pick a department and Core enforces their scope.
+/// admins pick a department and Core enforces the scope.
 class SessionAdministrationPanel extends ConsumerStatefulWidget {
   const SessionAdministrationPanel({super.key, this.fixedDepartmentId});
   final String? fixedDepartmentId;
@@ -763,207 +764,13 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
   }
 }
 
-/// ADMIN grants a manager the departments they may schedule. The whole list is
-/// sent on save, so an empty list revokes every department.
-class ManagerScopePanel extends ConsumerStatefulWidget {
-  const ManagerScopePanel({super.key, this.initialAccountId});
-  final String? initialAccountId;
-
-  @override
-  ConsumerState<ManagerScopePanel> createState() => _ManagerScopePanelState();
-}
-
-class _ManagerScopePanelState extends ConsumerState<ManagerScopePanel>
-    with ScheduleCommandRunner {
-  final _reason = TextEditingController();
-  List<ManagerAccount>? _managers;
-  List<ManagedDepartment> _departments = const [];
-  SchedulingScope? _scope;
-  Set<String> _selected = {};
-  String? _accountId;
-  Object? _error;
-  bool _loading = false;
-  String? _notice;
-
-  ScheduleManagementRepository get _repository =>
-      ref.read(scheduleManagementRepositoryProvider);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadManagers();
-    if (widget.initialAccountId case final accountId?) _loadScope(accountId);
-  }
-
-  @override
-  void dispose() {
-    _reason.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadManagers() async {
-    setState(() => _error = null);
-    try {
-      final managers = await _repository.managerAccounts();
-      if (mounted) setState(() => _managers = managers);
-    } catch (error) {
-      if (mounted) setState(() => _error = friendlyScheduleError(error));
-    }
-  }
-
-  Future<void> _loadScope(String accountId) async {
-    setState(() {
-      _accountId = accountId;
-      _loading = true;
-      _error = null;
-      _scope = null;
-      _notice = null;
-    });
-    try {
-      final results = await Future.wait([
-        _repository.scope(accountId),
-        _repository.activeDepartments(),
-      ]);
-      if (!mounted) return;
-      final scope = results[0] as SchedulingScope;
-      setState(() {
-        _scope = scope;
-        _selected = {...scope.departmentIds};
-        _departments = results[1] as List<ManagedDepartment>;
-      });
-    } catch (error) {
-      if (mounted) setState(() => _error = friendlyScheduleError(error));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _afterSave() async {
-    _reason.clear();
-    final accountId = _accountId!;
-    await _loadScope(accountId);
-    if (mounted) setState(() => _notice = 'Đã lưu phạm vi quản lý lịch.');
-  }
-
-  Future<void> _save() async {
-    final scope = _scope;
-    final reason = _reason.text.trim();
-    if (scope == null || reason.isEmpty) return;
-    if (await runCommand(
-      _repository,
-      ScheduleCommand.replaceScope(scope, _selected.toList(), reason),
-    )) {
-      await _afterSave();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final managers = _managers;
-    final scope = _scope;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Phạm vi của quản lý lịch',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Chỉ quản lý đang hoạt động mới được cấp khoa. Danh sách khoa được gửi toàn bộ khi lưu.',
-        ),
-        const SizedBox(height: 8),
-        if (managers == null && _error == null)
-          const LinearProgressIndicator()
-        else if (managers != null)
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _accountId,
-            decoration: const InputDecoration(labelText: 'Tài khoản quản lý'),
-            items: [
-              for (final manager in managers)
-                DropdownMenuItem(
-                  value: manager.id,
-                  child: Text(
-                    manager.username,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
-            onChanged: commandLocked
-                ? null
-                : (value) {
-                    if (value != null) _loadScope(value);
-                  },
-          ),
-        if (_loading) const LinearProgressIndicator(),
-        if (_error != null) RequestError(_error!),
-        if (scope != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Phiên bản phạm vi: ${scope.revision} · Đã chọn ${_selected.length} khoa',
-          ),
-          for (final department in _departments)
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(department.name),
-              value: _selected.contains(department.id),
-              onChanged: commandLocked
-                  ? null
-                  : (checked) => setState(() {
-                      if (checked == true) {
-                        _selected.add(department.id);
-                      } else {
-                        _selected.remove(department.id);
-                      }
-                    }),
-            ),
-          TextField(
-            controller: _reason,
-            enabled: !commandLocked,
-            maxLength: 500,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Lý do cấp hoặc thu hồi quyền',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          ...commandFeedback(
-            onResend: () async {
-              if (await runCommand(_repository, pendingCommand!)) {
-                await _afterSave();
-              }
-            },
-          ),
-          if (pendingCommand == null)
-            FilledButton(
-              onPressed: commandBusy || _reason.text.trim().isEmpty
-                  ? null
-                  : _save,
-              child: Text(
-                _selected.isEmpty ? 'Thu hồi toàn bộ phạm vi' : 'Lưu phạm vi',
-              ),
-            ),
-        ],
-        if (_notice != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(_notice!),
-          ),
-      ],
-    );
-  }
-}
-
 class ScheduleManagementPage extends ConsumerWidget {
-  const ScheduleManagementPage({super.key, this.managerAccountId});
-  final String? managerAccountId;
+  const ScheduleManagementPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
-    if (!const {'ADMIN', 'MANAGER'}.contains(access?.role)) {
+    if (access?.role != 'ADMIN') {
       return const Center(child: Text('Bạn không có quyền quản lý buổi khám.'));
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
@@ -973,10 +780,6 @@ class ScheduleManagementPage extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       children: [
         const SessionAdministrationPanel(),
-        if (access!.role == 'ADMIN') ...[
-          const Divider(height: 32),
-          ManagerScopePanel(initialAccountId: managerAccountId),
-        ],
       ],
     );
   }
@@ -1057,6 +860,14 @@ class _DepartmentManagementPageState
                     onChanged: (value) => setState(() => _departmentId = value),
                   ),
                 ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => GoRouter.of(context).go('/reports'),
+                  icon: const Icon(Icons.bar_chart_outlined),
+                  label: const Text('Báo cáo khoa'),
+                ),
+              ),
               const TabBar(
                 isScrollable: true,
                 tabs: [

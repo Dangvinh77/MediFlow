@@ -18,8 +18,6 @@ import type {
   RegistrationDTO,
   RegistrationSummary,
   RevisionCommand,
-  SchedulingScopeCommand,
-  SchedulingScopeSnapshot,
   UpdateAppointmentRequest,
 } from "./types";
 
@@ -106,10 +104,6 @@ export const appointmentApi = {
     const query = new URLSearchParams({ departmentId, page: String(page), size: String(size) });
     return api.get<PageResult<ConsultationRoomSummary>>(`/v2/org/consultation-rooms?${query}`);
   },
-  scheduleManagementScope: (accountId: string) =>
-    api.get<SchedulingScopeSnapshot>(`/v2/org/accounts/${encodeURIComponent(accountId)}/schedule-management-scope`),
-  replaceScheduleManagementScope: (accountId: string, body: SchedulingScopeCommand, options: SchedulingCommandOptions) =>
-    api.put<SchedulingScopeSnapshot>(`/v2/org/accounts/${encodeURIComponent(accountId)}/schedule-management-scope`, body, options),
   listConsultationSessions: (params: ConsultationSessionSearchParams) => {
     const query = new URLSearchParams({ departmentId: params.departmentId });
     if (params.fromDate) query.set("fromDate", params.fromDate);

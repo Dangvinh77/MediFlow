@@ -16,20 +16,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SchedulingRouteAuthorizationTest {
     private final RouteAuthorizationFilter filter = new RouteAuthorizationFilter(
             new GatewayErrorResponseWriter(new ObjectMapper().findAndRegisterModules()));
-    private static final List<String> ROLES = List.of("ADMIN", "MANAGER", "NURSE", "DOCTOR",
+    private static final List<String> ROLES = List.of("ADMIN", "NURSE", "DOCTOR",
             "CASHIER", "LAB_TECH", "PHARMACIST", "PATIENT", "SYSTEM");
 
     @Test
     void humanSchedulingRoutesHaveExactRolesAndMethods() {
-        check("GET", "/api/v2/org/accounts/123/schedule-management-scope", "ADMIN");
-        check("PUT", "/api/v2/org/accounts/123/schedule-management-scope", "ADMIN");
-        check("GET", "/api/v2/org/consultation-rooms", "ADMIN", "MANAGER", "DOCTOR");
-        check("POST", "/api/v2/consultation-sessions", "ADMIN", "MANAGER", "DOCTOR");
-        check("PUT", "/api/v2/consultation-sessions/123", "ADMIN", "MANAGER", "DOCTOR");
-        check("PUT", "/api/v2/consultation-sessions/123/status", "ADMIN", "MANAGER", "DOCTOR");
-        check("GET", "/api/v2/consultation-sessions", "ADMIN", "MANAGER", "NURSE", "DOCTOR");
+        check("GET", "/api/v2/org/consultation-rooms", "ADMIN", "DOCTOR");
+        check("POST", "/api/v2/consultation-sessions", "ADMIN", "DOCTOR");
+        check("PUT", "/api/v2/consultation-sessions/123", "ADMIN", "DOCTOR");
+        check("PUT", "/api/v2/consultation-sessions/123/status", "ADMIN", "DOCTOR");
+        check("GET", "/api/v2/consultation-sessions", "ADMIN", "NURSE", "DOCTOR");
         check("GET", "/api/v2/consultation-sessions/mine", "DOCTOR");
-        check("GET", "/api/v2/consultation-sessions/123/registrations", "ADMIN", "MANAGER", "NURSE", "DOCTOR");
+        check("GET", "/api/v2/consultation-sessions/123/registrations", "ADMIN", "NURSE", "DOCTOR");
         check("POST", "/api/v2/outpatient-registrations", "ADMIN", "NURSE");
         check("GET", "/api/v2/outpatient-registrations/mine", "PATIENT");
         check("GET", "/api/v2/outpatient-registrations/follow-up-sources", "ADMIN", "NURSE");
@@ -50,18 +48,18 @@ class SchedulingRouteAuthorizationTest {
 
     @Test
     void departmentHeadAndDoctorShiftRoutesExposeOnlyTheirHumanContracts() {
-        check("GET", "/api/v2/consultation-sessions/summary", "ADMIN", "MANAGER", "DOCTOR");
+        check("GET", "/api/v2/consultation-sessions/summary", "ADMIN", "DOCTOR");
         check("PUT", "/api/v2/consultation-sessions/summary");
         check("PUT", "/api/v2/consultation-sessions/mine");
-        check("GET", "/api/v1/org/me/capabilities", "ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH");
+        check("GET", "/api/v1/org/me/capabilities", "ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH");
         check("GET", "/api/v2/org/departments/123/head-appointments", "ADMIN");
         check("PUT", "/api/v2/org/departments/123/head-appointments", "ADMIN");
-        check("GET", "/api/v2/doctor-work-shifts", "ADMIN", "MANAGER", "DOCTOR");
-        check("POST", "/api/v2/doctor-work-shifts", "ADMIN", "MANAGER", "DOCTOR");
+        check("GET", "/api/v2/doctor-work-shifts", "ADMIN", "DOCTOR");
+        check("POST", "/api/v2/doctor-work-shifts", "ADMIN", "DOCTOR");
         check("GET", "/api/v2/doctor-work-shifts/mine", "DOCTOR");
-        check("PUT", "/api/v2/doctor-work-shifts/123", "ADMIN", "MANAGER", "DOCTOR");
-        check("PUT", "/api/v2/doctor-work-shifts/123/cancel", "ADMIN", "MANAGER", "DOCTOR");
-        check("POST", "/api/v2/doctor-work-shifts/123/consultation-sessions", "ADMIN", "MANAGER", "DOCTOR");
+        check("PUT", "/api/v2/doctor-work-shifts/123", "ADMIN", "DOCTOR");
+        check("PUT", "/api/v2/doctor-work-shifts/123/cancel", "ADMIN", "DOCTOR");
+        check("POST", "/api/v2/doctor-work-shifts/123/consultation-sessions", "ADMIN", "DOCTOR");
         check("POST", "/api/v1/org/me/capabilities");
         check("DELETE", "/api/v2/doctor-work-shifts/123");
         check("GET", "/api/v2/doctor-work-shifts/123/cancel/extra");
@@ -86,7 +84,7 @@ class SchedulingRouteAuthorizationTest {
 
     @Test
     void careLabelsAllowOnlyHumanReadsWithoutOpeningStaffProfiles() {
-        check("GET", "/api/v1/org/care-labels/doctor/123", "ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT");
+        check("GET", "/api/v1/org/care-labels/doctor/123", "ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT");
         for (String method : List.of("POST", "PUT", "DELETE", "PATCH")) check(method, "/api/v1/org/care-labels/doctor/123");
         check("GET", "/api/v1/org/care-labels/doctor/123/extra");
     }

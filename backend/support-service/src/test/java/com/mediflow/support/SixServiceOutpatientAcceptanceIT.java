@@ -84,7 +84,7 @@ class SixServiceOutpatientAcceptanceIT {
                 POSTGRES.getUsername(), POSTGRES.getPassword()));
     }
 
-    private record PatientTokens(String own, String other, String manager, String refresh) { }
+    private record PatientTokens(String own, String other, String staff, String refresh) { }
     private record WelcomeReceipt(UUID patientId, com.rabbitmq.client.GetResponse original,
             Map<String, Object> notification, Map<String, Object> marker) { }
 
@@ -158,7 +158,7 @@ class SixServiceOutpatientAcceptanceIT {
         String noticePath = "/api/v1/notifications/" + notice;
         assertThat(request(gateway, "GET", noticePath, patientToken, null).statusCode()).isEqualTo(200);
         assertThat(request(gateway, "GET", noticePath, patientTokens.other(), null).statusCode()).isEqualTo(403);
-        assertThat(request(gateway, "GET", noticePath, patientTokens.manager(), null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", noticePath, patientTokens.staff(), null).statusCode()).isEqualTo(403);
         assertThat(request(gateway, "GET", noticePath, patientTokens.refresh(), null).statusCode()).isEqualTo(401);
         assertThat(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drugId + "/fake/nested", admin, null).statusCode()).isEqualTo(403);
         JsonNode registry = JSON.readTree(HTTP.send(HttpRequest.newBuilder(URI.create(eureka + "apps"))
@@ -528,11 +528,11 @@ class SixServiceOutpatientAcceptanceIT {
                     "bhytSo", null)).path("maBenhNhan").asText());
             createPatientAccount(gateway, setupAdmin, "patient-" + unique, patientId);
             createPatientAccount(gateway, setupAdmin, "other-patient-" + unique, otherPatientId);
-            UUID managerId = createStaff(gateway, setupAdmin, departmentId, unique, "MANAGER", "manager");
-            createAccount(gateway, setupAdmin, "manager-" + unique, "MANAGER", managerId);
+            UUID otherStaffId = createStaff(gateway, setupAdmin, departmentId, unique, "CASHIER", "other-staff");
+            createAccount(gateway, setupAdmin, "other-staff-" + unique, "CASHIER", otherStaffId);
             JsonNode patientSession = loginSession(gateway, "patient-" + unique);
             var patientTokens = new PatientTokens(patientSession.path("accessToken").asText(),
-                    login(gateway, "other-patient-" + unique), login(gateway, "manager-" + unique),
+                    login(gateway, "other-patient-" + unique), login(gateway, "other-staff-" + unique),
                     patientSession.path("refreshToken").asText());
             assertThat(patientTokens.refresh()).isNotBlank();
 
@@ -1025,11 +1025,9 @@ class SixServiceOutpatientAcceptanceIT {
         LocalDate day = LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
         int year = day.getYear();
         UUID staff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-admin");
-        UUID managerStaff = createStaff(gateway, bootstrap, department, unique, "MANAGER", "report-manager");
-        String adminName = "report-admin-" + unique, managerName = "report-manager-" + unique;
+        String adminName = "report-admin-" + unique;
         createAccount(gateway, bootstrap, adminName, "ADMIN", staff);
-        createAccount(gateway, bootstrap, managerName, "MANAGER", managerStaff);
-        String admin = login(gateway, adminName), manager = login(gateway, managerName);
+        String admin = login(gateway, adminName);
         String scope = "&departmentId=" + department;
         String daily = "/api/v1/reports/outpatient/daily?fromDate=" + day + "&toDate=" + day + scope;
         String monthly = "/api/v1/reports/outpatient/monthly?year=" + year + scope;
@@ -1093,11 +1091,11 @@ class SixServiceOutpatientAcceptanceIT {
                 "expectedFingerprint",snapshot[0].path("fingerprint").asText());
         String approvalBytes = JSON.writeValueAsString(approval);
         String approvalPath = "/api/v1/reports/outpatient/coverage/acceptances";
-        recordCheck(checks,"manager-cannot-approve",request(gateway,"POST",approvalPath,manager,approvalBytes),403);
+        recordCheck(checks,"doctor-cannot-approve",request(gateway,"POST",approvalPath,doctor,approvalBytes),403);
         HttpResponse<String> accepted = request(gateway,"POST",approvalPath,admin,approvalBytes);
         recordCheck(checks,"admin-accepts-reviewed-test-scenario",accepted,200);
         assertThat(data(request(gateway,"POST",approvalPath,admin,approvalBytes))).isEqualTo(data(accepted));
-        for (String token : List.of(admin,manager)) {
+        for (String token : List.of(admin)) {
             HttpResponse<String> result = request(gateway,"GET",daily,token,null);
             recordCheck(checks,"authorized-daily",result,200);
             JsonNode period = data(result).path("periods").get(0);
@@ -1115,7 +1113,7 @@ class SixServiceOutpatientAcceptanceIT {
                         "reportApplicationClock",calendarEnd,"systemAndJwtClocksUnchanged",true,
                         "approval",approval,"checks",checks)));
         Files.writeString(work.resolve("report-browser-manifest.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
-                object("gateway",gateway,"unique",unique,"ADMIN",email(adminName),"MANAGER",email(managerName),
+                object("gateway",gateway,"unique",unique,"ADMIN",email(adminName),
                         "DOCTOR",email("doctor-"+unique),"departmentId",department,"date",day,"year",year,
                         "reportApplicationClock",calendarEnd,"dailyPath",daily,"monthlyPath",monthly)));
         if ("true".equals(System.getenv("MEDIFLOW_FE_REPORT_BROWSER_HOLD"))) {

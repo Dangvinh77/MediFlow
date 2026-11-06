@@ -11,7 +11,6 @@ abstract final class SelfProfileDto {
       'TECHNICIAN',
       'PHARMACIST',
       'CASHIER',
-      'MANAGER',
       'ADMINISTRATIVE',
     }.contains(jobTitle)) {
       throw const FormatException('Dữ liệu jobTitle không hợp lệ.');

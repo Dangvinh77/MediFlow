@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default function OutpatientReportsPage() {
   return (
-    <RoleGate allowed={["ADMIN", "MANAGER"]}>
+    <RoleGate allowed={["ADMIN", "DOCTOR"]}>
       <Suspense fallback={<PageShell title="Báo cáo"><AsyncState kind="loading" message="Đang tải báo cáo…" /></PageShell>}>
         <OutpatientReportWorkspace enabled={process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true"} />
       </Suspense>

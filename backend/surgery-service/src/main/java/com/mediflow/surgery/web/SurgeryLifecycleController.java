@@ -51,7 +51,7 @@ public class SurgeryLifecycleController {
     }
 
     @PostMapping("/{surgeryCaseId}/schedule/finalize")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ApiResponse<SurgeryCommandOutcome> finalizeSchedule(@PathVariable UUID surgeryCaseId,
             @Valid @RequestBody SurgeryLifecycleRequest request,
             @RequestHeader("Idempotency-Key") @NotBlank @Size(max=160) String key,

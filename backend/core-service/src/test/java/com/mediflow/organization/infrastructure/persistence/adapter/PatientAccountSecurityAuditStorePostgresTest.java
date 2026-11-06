@@ -59,7 +59,7 @@ class PatientAccountSecurityAuditStorePostgresTest {
                 actorId, patientId, targetId, correlationId, operationKey);
 
         assertThat(jdbc.queryForObject("SELECT version FROM " + SCHEMA + ".flyway_schema_history "
-                + "WHERE success=true ORDER BY installed_rank DESC LIMIT 1", String.class)).isEqualTo("17");
+                + "WHERE success=true ORDER BY installed_rank DESC LIMIT 1", String.class)).isEqualTo("18");
         assertThat(jdbc.queryForMap("""
                 SELECT actor_account_id,patient_id,target_account_id,operation,correlation_id
                 FROM patient_account_security_audit WHERE operation_key=?

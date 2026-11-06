@@ -31,7 +31,7 @@ public class DoctorWorkShiftApplicationService {
     }
     public PageResult<DoctorWorkShiftDTO> search(UUID departmentId, LocalDate fromDate, LocalDate toDate, PageQuery page) {
         range(fromDate,toDate);
-        var actor=schedules.requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        var actor=schedules.requireHumanActor("ADMIN","DOCTOR");
         schedules.requireScheduleScope(actor,departmentId);
         return shifts.search(departmentId,fromDate,toDate,page).map(DoctorWorkShiftApplicationService::dto);
     }
@@ -41,7 +41,7 @@ public class DoctorWorkShiftApplicationService {
         return shifts.findByDoctor(doctorId,fromDate,toDate).stream().map(DoctorWorkShiftApplicationService::dto).toList();
     }
     public IdempotentCommandPort.Result<DoctorWorkShiftDTO> create(DoctorWorkShiftCreateRequest request,String key) {
-        var actor=schedules.requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        var actor=schedules.requireHumanActor("ADMIN","DOCTOR");
         schedules.requireScheduleScope(actor,request.departmentId());
         schedules.requireEligible(request.doctorId(),request.departmentId(),request.roomId());
         key(key);
@@ -52,7 +52,7 @@ public class DoctorWorkShiftApplicationService {
     }
     public IdempotentCommandPort.Result<DoctorWorkShiftDTO> update(UUID id,DoctorWorkShiftUpdateRequest request,String key) {
         var visible=read(id);
-        var actor=schedules.requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        var actor=schedules.requireHumanActor("ADMIN","DOCTOR");
         schedules.requireScheduleScope(actor,visible.configuration().departmentId());
         if (!visible.configuration().departmentId().equals(request.departmentId()))
             throw new BusinessRuleException("SCHEDULE_INELIGIBLE","Shift department cannot change");
@@ -70,7 +70,7 @@ public class DoctorWorkShiftApplicationService {
     }
     public IdempotentCommandPort.Result<DoctorWorkShiftDTO> cancel(UUID id,DoctorWorkShiftCancelRequest request,String key) {
         var visible=read(id);
-        var actor=schedules.requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        var actor=schedules.requireHumanActor("ADMIN","DOCTOR");
         schedules.requireScheduleScope(actor,visible.configuration().departmentId());
         key(key);
         return commands.execute(actor.accountId().toString(),"PUT",PATH+"/"+id+"/cancel",key,hash(request),DoctorWorkShiftDTO.class,
@@ -83,7 +83,7 @@ public class DoctorWorkShiftApplicationService {
     }
     public IdempotentCommandPort.Result<ConsultationSessionDTO> createSession(UUID id,ConsultationSessionCreateRequest request,String key) {
         var visible=read(id);
-        var actor=schedules.requireHumanActor("ADMIN","MANAGER","DOCTOR");
+        var actor=schedules.requireHumanActor("ADMIN","DOCTOR");
         schedules.requireScheduleScope(actor,visible.configuration().departmentId());
         schedules.requireEligible(request.doctorId(),request.departmentId(),request.roomId());
         key(key);

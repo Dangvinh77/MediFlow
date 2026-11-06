@@ -17,7 +17,7 @@ import { SaveOutcomeRecovery } from "./SaveOutcomeRecovery";
 import type { DepartmentDTO, JobTitle, StaffProfile } from "../types";
 
 interface Props { staffId?: string }
-const jobs: { value: JobTitle; label: string }[] = [{ value: "DOCTOR", label: "Bác sĩ" }, { value: "NURSE", label: "Điều dưỡng" }, { value: "TECHNICIAN", label: "Kỹ thuật viên" }, { value: "PHARMACIST", label: "Dược sĩ" }, { value: "CASHIER", label: "Thu ngân" }, { value: "MANAGER", label: "Quản lý" }, { value: "ADMINISTRATIVE", label: "Hành chính" }];
+const jobs: { value: JobTitle; label: string }[] = [{ value: "DOCTOR", label: "Bác sĩ" }, { value: "NURSE", label: "Điều dưỡng" }, { value: "TECHNICIAN", label: "Kỹ thuật viên" }, { value: "PHARMACIST", label: "Dược sĩ" }, { value: "CASHIER", label: "Thu ngân" }, { value: "ADMINISTRATIVE", label: "Hành chính" }];
 
 export function StaffForm({ staffId }: Props) {
   return <StaffFormWorkspace key={staffId ?? "new"} staffId={staffId} />;

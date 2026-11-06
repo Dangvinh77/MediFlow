@@ -42,7 +42,7 @@ Content-Type: application/json
 GET {{host}}/api/v1/inpatient/admissions/{{admissionId}}
 Authorization: Bearer {{token}}
 
-### GET /admissions — ADMIN, MANAGER, DOCTOR, NURSE, CASHIER
+### GET /admissions — ADMIN, DOCTOR, NURSE, CASHIER
 GET {{host}}/api/v1/inpatient/admissions?departmentId=88888888-8888-4888-8888-888888888888&patientId=77777777-7777-4777-8777-777777777777&status=AWAITING_BED&from=2026-09-01&to=2026-09-30&page=0&size=20
 Authorization: Bearer {{token}}
 
@@ -157,7 +157,7 @@ Content-Type: application/json
   "lyDo": "Referral withdrawn before admission"
 }
 
-### POST /beds — ADMIN, MANAGER
+### POST /beds — ADMIN
 POST {{host}}/api/v1/inpatient/beds
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -170,7 +170,7 @@ Content-Type: application/json
   "loaiGiuong": "STANDARD"
 }
 
-### PUT /beds/{id} — ADMIN, MANAGER
+### PUT /beds/{id} — ADMIN
 PUT {{host}}/api/v1/inpatient/beds/{{bedId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -181,6 +181,6 @@ Content-Type: application/json
   "active": true
 }
 
-### GET /beds — ADMIN, MANAGER, DOCTOR, NURSE
+### GET /beds — ADMIN, DOCTOR, NURSE
 GET {{host}}/api/v1/inpatient/beds?departmentId=88888888-8888-4888-8888-888888888888&wardCode=A&status=AVAILABLE&page=0&size=20
 Authorization: Bearer {{token}}

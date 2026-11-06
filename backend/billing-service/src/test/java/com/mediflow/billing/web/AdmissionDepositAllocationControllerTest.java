@@ -37,7 +37,7 @@ class AdmissionDepositAllocationControllerTest {
                 .contentType("application/json").content(body())).andExpect(status().isCreated());
         verify(service).allocate(new AllocateAdmissionDepositCommand(account,original,actor,"key",Map.of(charge,new BigDecimal("80.00"))));
     }
-    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","MANAGER","LAB_TECH","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","LAB_TECH","PATIENT","SYSTEM"})
     void otherRolesDeniedBeforeAllocation(String role) throws Exception {
         mvc.perform(post(url()).with(user(actor.toString()).roles(role)).header("Idempotency-Key","key")
                 .contentType("application/json").content(body())).andExpect(status().isForbidden());

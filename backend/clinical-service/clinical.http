@@ -245,7 +245,7 @@ Content-Type: application/json
   "priority": "URGENT",
   "emergency": false
 }
-### Doctor work assignments (scheduling feature enabled). ADMIN/legacy MANAGER/live DOCTOR head.
+### Doctor work assignments (scheduling feature enabled). ADMIN/live DOCTOR head.
 ### The signed role remains DOCTOR. Core authority revalidated on every department management request.
 @shiftId = 00000000-0000-0000-0000-000000000021
 

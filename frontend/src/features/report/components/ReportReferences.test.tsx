@@ -25,7 +25,7 @@ async function select() {
 function submit() { fireEvent.submit(screen.getByLabelText("Ngày báo cáo").closest("form")!); }
 describe("Report shared department selection", () => {
   beforeEach(() => {
-    vi.clearAllMocks(); localStorage.clear(); storeSession({ accessToken: "manager", refreshToken: "refresh", role: "MANAGER" });
+    vi.clearAllMocks(); localStorage.clear(); storeSession({ accessToken: "manager", refreshToken: "refresh", role: "DOCTOR" });
     mocks.daily.mockResolvedValue({ reportDate: "2024-02-29", departmentId: department, visitCount: 1, labCount: 0, prescriptionCount: 0, revenue: 0 });
   });
   it("clears outpatient department selection and its visible label before submitting whole-hospital scope", async () => {

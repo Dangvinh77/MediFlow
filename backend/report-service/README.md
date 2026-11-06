@@ -16,7 +16,7 @@ Standalone launcher của Report/Notification là compatibility/rollback; mặc 
 ## Current report authorization — 2026-11-02
 
 Human report reads keep their existing endpoint roles. ADMIN retains hospital scope;
-MANAGER must name a department currently assigned by Core. Existing deferred operational
+A DOCTOR must name the department they currently head, as confirmed by Core. Existing deferred operational
 DOCTOR reads also require a current department head appointment. Feature/profile gates remain unchanged.
 Report forwards the locally verified access bearer to Core's public
 `GET /api/v1/org/me/capabilities`, validates the account/role/staff/envelope and current scope,
@@ -31,7 +31,7 @@ Ordinary Core 4xx actor denials do not count as outages; 429, server and transpo
 Core `observedAt` must be within thirty seconds of the local clock; keep service clocks synchronized.
 Correlation is forwarded, and bearer values are never included in credential diagnostics.
 Global financial coverage and opt-in aggregate telemetry have no department-scoped source;
-MANAGER cannot read them. ADMIN capability/coverage/telemetry behavior is retained.
+Department heads cannot read them. ADMIN capability/coverage/telemetry behavior is retained.
 
 ## Product scope — 2026-10-17
 
@@ -75,7 +75,7 @@ to `report.outpatient-v1.q`, with a durable `report.outpatient-v1.dlq`. Invalid/
 facts go to DLQ, not ACK-drop; transient storage errors get bounded retry. Existing operation
 receipts/cash/refund kernels remain authoritative, including original-linked early-refund recovery.
 
-New ADMIN/MANAGER reads require `mediflow.report.outpatient-read.enabled` AND global care-finance-v2:
+New ADMIN/department-head reads require `mediflow.report.outpatient-read.enabled` AND global care-finance-v2:
 `GET /api/v1/reports/outpatient/daily?fromDate&toDate&departmentId` and
 `GET /api/v1/reports/outpatient/monthly?year&departmentId`. At most 366 complete calendar days,
 years 2000–2100, configured Report zone, VND. Periods carry visits/Lab/Rx/units, cashReceived,
@@ -133,7 +133,7 @@ No existing developer database is modified. Broader R-04.5.2 remains OPEN.
 Current 2026-10-11 supported release: V25 implements finite five-metric publication, exact local
 catch-up/final fence, provenance/row reconciliation, immutable acceptance/audit, expected-pointer
 switch and rollback. New capability/coverage/bounded rebuild/publish management APIs are ADMIN-only
-(coverage additionally MANAGER), separately gated by `MEDIFLOW_CARE_FINANCE_V2` AND
+(coverage stays ADMIN-only), separately gated by `MEDIFLOW_CARE_FINANCE_V2` AND
 `MEDIFLOW_REPORT_FINANCIAL_PUBLICATION_ENABLED`, both false. Missing historical periods stay
 unavailable; no transaction is fabricated. Unsupported correction/replacement facts reject before
 effects; new refunds after an APPLIED final account require a future original-allocation earned
@@ -212,7 +212,7 @@ Swagger UI: http://localhost:8088/swagger-ui.html
   `payment.failed`, `prescription.filled` on durable `report.q`; poison deliveries are retried a
   bounded number of times and routed to `report.dlq`.
 
-HTTP endpoints (T09) are available at `/api/v1/reports` for `ADMIN` and `MANAGER` roles. JWT is
+HTTP endpoints (T09) are available at `/api/v1/reports` for `ADMIN` and the `DOCTOR` heading the requested department. JWT is
 re-verified locally, and all responses use the common `ApiResponse` envelope.
 
 Topic exchange `mediflow.events`; see
@@ -259,7 +259,7 @@ PostgreSQL pending/reload/rollback/race/upgrade tests run with Docker; see the p
 
 V10 adds an **empty-by-default** accepted-coverage publication table for immutable operational replay
 snapshots. Two aggregate-only GET routes (`/operations/daily`, `/operations/surgery`) exist only with
-`care-finance-v2=true`; ADMIN/MANAGER/DOCTOR are permitted directly. Legacy finance roles and routes
+`care-finance-v2=true`; ADMIN/DOCTOR are permitted directly. Legacy finance roles and routes
 do not change. Invalid periods return 400 `REPORT_VALIDATION_ERROR`; unavailable coverage returns
 404 `REPORT_NOT_FOUND`, never invented zeros. Zero-fill is allowed only inside explicit accepted
 date/timezone/metric coverage for a VERIFIED generation. DTOs include generationId, reconciledAt,
@@ -328,7 +328,7 @@ zero-fill behavior, or the default-closed outpatient report acceptance gate.
 
 `GET /api/v1/reports/outpatient/available-periods` discovers up to 20 recently accepted ranges
 in the configured zone/VND and revalidates them through the current reader. ADMIN may discover
-recent scopes; MANAGER must supply an authorized department. An empty list is not zero activity.
+recent scopes; a department head must supply their department. An empty list is not zero activity.
 Daily/monthly results now expose explicit `syntheticData` provenance. All read gates stay OFF by
 default. See the [exact additive contract](../../docs/plans/03-contracts.md#accepted-outpatient-period-discovery-2026-11-03)
 and the requests in `report.http`. No coverage acceptance, seed restore or producer write occurs.

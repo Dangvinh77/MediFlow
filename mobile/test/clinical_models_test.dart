@@ -76,9 +76,7 @@ void main() {
       visibleSupportModules(UserRole.admin).map((m) => m.path),
       containsAll(['/reports', '/notifications']),
     );
-    expect(visibleSupportModules(UserRole.manager).map((m) => m.path), [
-      '/reports',
-    ]);
+    expect(visibleSupportModules(UserRole.doctor), isEmpty);
     expect(visibleSupportModules(UserRole.patient).map((m) => m.path), [
       '/notifications',
     ]);

@@ -11,7 +11,7 @@ describe("Personal profile navigation", () => {
     expect(screen.getByRole("link", { name: "Sang Quản lý khoa" })).toHaveAttribute("href", "/appointments/department");
     expect(screen.getByText("Bác sĩ")).toBeInTheDocument();
   });
-  it.each<Role>(["ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"])("offers the profile for %s", (role) => {
+  it.each<Role>(["ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"])("offers the profile for %s", (role) => {
     render(<DashboardHeader role={role} onLogout={vi.fn()} onOpenNavigation={vi.fn()} />);
     expect(screen.getByText("Hồ sơ cá nhân")).not.toBeVisible();
     fireEvent.click(screen.getByText("Tài khoản"));

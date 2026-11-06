@@ -32,7 +32,7 @@ public class ReportCapabilityController {
         return ApiResponse.ok(capabilities.capabilities(), http.getHeader(JwtClaims.HEADER_CORRELATION_ID));
     }
     @GetMapping("/coverage")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, null)")
+    @PreAuthorize("hasRole('ADMIN') and @reportScopeGuard.permits(authentication, null)")
     public ApiResponse<ReportCoverageDTO> coverage(@RequestParam LocalDate from, @RequestParam LocalDate to, HttpServletRequest http) {
         return ApiResponse.ok(capabilities.coverage(from, to, "VND", reportZone), http.getHeader(JwtClaims.HEADER_CORRELATION_ID));
     }

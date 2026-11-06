@@ -31,10 +31,10 @@ class CoreReportAuthorityAdapterTest {
             var adapter=new CoreReportAuthorityAdapter(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(1)).build(),
                     new ObjectMapper(),()->java.net.URI.create("http://127.0.0.1:"+server.getAddress().getPort()),breaker,Duration.ofMillis(500));
             long started=System.nanoTime();
-            assertThat(adapter.permits(UUID.randomUUID(),"MANAGER",UUID.randomUUID(),"Bearer verified",null)).isFalse();
+            assertThat(adapter.permits(UUID.randomUUID(),"DOCTOR",UUID.randomUUID(),"Bearer verified",null)).isFalse();
             assertThat(Duration.ofNanos(System.nanoTime()-started)).isLessThan(Duration.ofSeconds(2));
             assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
-            assertThat(adapter.permits(UUID.randomUUID(),"MANAGER",UUID.randomUUID(),"Bearer verified",null)).isFalse();
+            assertThat(adapter.permits(UUID.randomUUID(),"DOCTOR",UUID.randomUUID(),"Bearer verified",null)).isFalse();
             assertThat(requests.get()).isEqualTo(1);
         } finally { server.stop(0); }
     }
@@ -48,9 +48,9 @@ class CoreReportAuthorityAdapterTest {
         envelope.put("success",true).putNull("error").put("timestamp",java.time.Instant.now().toString());
         var data=envelope.putObject("data");
         data.put("accountId",currentActor.toString()).put("staffId",UUID.randomUUID().toString())
-                .put("role","MANAGER").put("observedAt",java.time.Instant.now().toString());
+                .put("role","DOCTOR").put("observedAt",java.time.Instant.now().toString());
         data.putArray("managementDepartments").addObject().put("departmentId",department.toString())
-                .put("departmentName","Cardiology").putNull("appointmentId").put("revision",0);
+                .put("departmentName","Cardiology").put("appointmentId",UUID.randomUUID().toString()).put("revision",0);
         byte[] valid=envelope.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         server.createContext("/api/v1/org/me/capabilities",exchange->{
             int status=requests.incrementAndGet()<=5?403:200;
@@ -66,10 +66,10 @@ class CoreReportAuthorityAdapterTest {
             var adapter=new CoreReportAuthorityAdapter(HttpClient.newHttpClient(),mapper,
                     ()->java.net.URI.create("http://127.0.0.1:"+server.getAddress().getPort()),breaker,Duration.ofSeconds(2));
             for(int attempt=0;attempt<5;attempt++) {
-                assertThat(adapter.permits(revokedActor,"MANAGER",department,"Bearer revoked",null)).isFalse();
+                assertThat(adapter.permits(revokedActor,"DOCTOR",department,"Bearer revoked",null)).isFalse();
             }
             assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
-            assertThat(adapter.permits(currentActor,"MANAGER",department,"Bearer current",null)).isTrue();
+            assertThat(adapter.permits(currentActor,"DOCTOR",department,"Bearer current",null)).isTrue();
             assertThat(requests.get()).isEqualTo(6);
         } finally { server.stop(0); }
     }

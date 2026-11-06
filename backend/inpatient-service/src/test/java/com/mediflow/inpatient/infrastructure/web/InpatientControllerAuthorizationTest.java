@@ -35,7 +35,7 @@ class InpatientControllerAuthorizationTest {
                 Map.entry("GET /api/v1/inpatient/admissions/{id}",
                         "hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'CASHIER')"),
                 Map.entry("GET /api/v1/inpatient/admissions",
-                        "hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE', 'CASHIER')"),
+                        "hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'CASHIER')"),
                 Map.entry("PUT /api/v1/inpatient/admissions/{id}/bed", "hasAnyRole('ADMIN', 'NURSE')"),
                 Map.entry("PUT /api/v1/inpatient/admissions/{id}/bed/transfer",
                         "hasAnyRole('ADMIN', 'NURSE')"),
@@ -55,10 +55,10 @@ class InpatientControllerAuthorizationTest {
                         "hasAnyRole('ADMIN', 'CASHIER')"),
                 Map.entry("POST /api/v1/inpatient/admissions/{id}/cancel",
                         "hasAnyRole('ADMIN', 'DOCTOR')"),
-                Map.entry("POST /api/v1/inpatient/beds", "hasAnyRole('ADMIN', 'MANAGER')"),
-                Map.entry("PUT /api/v1/inpatient/beds/{id}", "hasAnyRole('ADMIN', 'MANAGER')"),
+                Map.entry("POST /api/v1/inpatient/beds", "hasRole('ADMIN')"),
+                Map.entry("PUT /api/v1/inpatient/beds/{id}", "hasRole('ADMIN')"),
                 Map.entry("GET /api/v1/inpatient/beds",
-                        "hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")));
+                        "hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")));
     }
 
     private static boolean isHttpHandler(Method method) {

@@ -40,7 +40,7 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSnapshot);
   const authorized = token === undefined ? null : Boolean(token?.trim());
   const capabilities = useCapabilities();
-  const management = pathname.startsWith("/appointments/department");
+  const management = pathname.startsWith("/appointments/department") || pathname.startsWith("/reports");
   const canManage = role === "DOCTOR" && capabilities.data?.role === "DOCTOR" && capabilities.data.managementDepartments.length > 0;
   useEffect(() => {
     if (!authorized || passwordChangeRequired || role !== "DOCTOR" || !schedulingEnabled) return;

@@ -23,7 +23,7 @@ export default async function LabPage({ searchParams }: { searchParams: Promise<
       title="Xét nghiệm"
       description="Hàng đợi xét nghiệm theo khoa, trạng thái và đợt chăm sóc."
     >
-      <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"]}>
+      <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"]}>
         <LabTable key={`${episodeType}:${episodeId}:${status}:${departmentId}:${page}`} initialEpisodeId={episodeId} initialEpisodeType={episodeType} initialStatus={status} initialDepartmentId={departmentId} initialPage={page} outpatientEnabled={outpatientUiEnabled()} />
       </RoleGate>
     </PageShell>

@@ -33,7 +33,7 @@ describe("Patient validation and wire mapping", () => {
     expect(patientFailure(cause, true).outcomeUnknown).toBe(true);
     expect(patientFailure(cause).outcomeUnknown).toBe(false);
   });
-  it.each(["DOCTOR", "PATIENT", "CASHIER", "PHARMACIST", "MANAGER", "SYSTEM", null] as const)("blocks writes for %s", (role) => {
+  it.each(["DOCTOR", "PATIENT", "CASHIER", "PHARMACIST", "SYSTEM", null] as const)("blocks writes for %s", (role) => {
     expect(patientPermissions(role).write).toBe(false);
     expect(patientPermissions(role).delete).toBe(false);
   });

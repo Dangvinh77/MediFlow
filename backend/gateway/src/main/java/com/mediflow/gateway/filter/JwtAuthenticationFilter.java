@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final Set<String> HUMAN_ROLES = Set.of(
             Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
-            Roles.CASHIER, Roles.LAB_TECH, Roles.MANAGER, Roles.PATIENT);
+            Roles.CASHIER, Roles.LAB_TECH, Roles.PATIENT);
     private static final UUID INVALID_UUID = new UUID(0L, 0L);
     private final JwtTokenService jwt;
     private final GatewayErrorResponseWriter errors;

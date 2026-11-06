@@ -50,7 +50,6 @@ public class StaffEntity {
      *
      * DOCTOR
      * NURSE
-     * MANAGER
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "job_title", nullable = false, length = 20)

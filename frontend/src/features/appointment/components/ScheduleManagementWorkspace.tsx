@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { getSessionKey } from "@/lib/session";
 import { CommandIntentError, prepareCommandIntent } from "@/lib/command-intent";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -11,7 +10,6 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { sessionStatusLabels } from "../presentation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatLocalDate } from "@/lib/format";
-import { api } from "@/lib/api";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { formatScheduleObservedAt, initialScheduleDate } from "../schedule-presentation";
 import { ScheduleDateInput } from "./ScheduleDateInput";
@@ -25,8 +23,6 @@ import type {
   ConsultationSessionDTO,
   ConsultationSessionStatusCommand,
   ConsultationSessionUpdate,
-  SchedulingScopeCommand,
-  SchedulingScopeSnapshot,
 } from "../types";
 
 interface WorkspaceError { message: string; correlationId: string | null; uncertain?: boolean }
@@ -40,82 +36,6 @@ function errorFrom(cause: unknown, fallback: string): WorkspaceError {
 function outcomeUnknown(cause: unknown): boolean {
   return cause instanceof CommandIntentError || !(cause instanceof ApiRequestError)
     || cause.status < 400 || cause.status === 408 || cause.status >= 500;
-}
-
-function ScopeAdministration({ initialManagerAccountId = "" }: { initialManagerAccountId?: string }) {
-  const [accountId, setAccountId] = useState(initialManagerAccountId);
-  const [scope, setScope] = useState<SchedulingScopeSnapshot | null>(null);
-  const [departments, setDepartments] = useState<{ departmentId: string; departmentName: string }[]>([]);
-  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
-  const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<WorkspaceError | null>(null);
-  const [lastCommand, setLastCommand] = useState<{ accountId: string; body: SchedulingScopeCommand } | null>(null);
-
-  async function loadScope() {
-    if (!accountId.trim() || loading) return;
-    setLoading(true); setError(null); setScope(null); setDepartments([]); setSelectedDepartmentIds([]);
-    try {
-      const [snapshot, departmentList] = await Promise.all([
-        appointmentApi.scheduleManagementScope(accountId.trim()), api.get<{ departmentId: string; departmentName: string }[]>("/v1/org/departments?activeOnly=true"),
-      ]);
-      setScope(snapshot); setSelectedDepartmentIds(snapshot.departmentIds); setDepartments(departmentList);
-    } catch (cause) {
-      setError(errorFrom(cause, "Không thể tải phạm vi quản lý lịch."));
-    } finally { setLoading(false); }
-  }
-
-  async function saveScope(command: { accountId: string; body: SchedulingScopeCommand }) {
-    if (saving) return;
-    setSaving(true); setError(null); setLastCommand(command);
-    try {
-      const intent = await prepareCommandIntent(`schedule-scope:${command.accountId}`, getSessionKey(), command.body);
-      const result = await appointmentApi.replaceScheduleManagementScope(command.accountId, command.body, {
-        idempotencyKey: intent.key, correlationId: intent.correlationId,
-      });
-      intent.settle(); setScope(result); setSelectedDepartmentIds(result.departmentIds); setError(null);
-    } catch (cause) {
-      if (!(cause instanceof CommandIntentError)) {
-        try { const intent = await prepareCommandIntent(`schedule-scope:${command.accountId}`, getSessionKey(), command.body); intent.settle(cause); } catch { /* Keep unresolved intent locked. */ }
-      }
-      setError({ ...errorFrom(cause, "Không thể cập nhật phạm vi quản lý lịch."), uncertain: outcomeUnknown(cause) });
-    } finally { setSaving(false); }
-  }
-
-  function toggleDepartment(departmentId: string, checked: boolean) {
-    setSelectedDepartmentIds(current => checked ? [...new Set([...current, departmentId])] : current.filter(id => id !== departmentId));
-  }
-
-  function submitScope() {
-    if (!scope || !reason.trim() || selectedDepartmentIds.length > 100) return;
-    void saveScope({ accountId: scope.accountId, body: {
-      expectedRevision: scope.revision,
-      departmentIds: [...selectedDepartmentIds].sort(),
-      reason: reason.trim(),
-    } });
-  }
-
-  const retryCommand = error?.uncertain ? lastCommand : null;
-  return <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
-    <div><h2 className="text-lg font-semibold">Phạm vi của quản lý lịch</h2><p className="mt-1 text-sm text-muted-foreground">Chỉ quản lý đang hoạt động mới được cấp khoa. Danh sách khoa được gửi toàn bộ khi lưu; danh sách rỗng thu hồi quyền.</p></div>
-    <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void loadScope(); }}>
-      <label className="flex-1 space-y-1 text-sm font-medium">Tài khoản quản lý
-        <ReferenceInput kind="account" value={accountId} onValueChange={value => { setAccountId(value); setScope(null); setError(null); }} aria-label="Tài khoản quản lý" disabled={loading || saving || Boolean(retryCommand)} />
-      </label>
-      <Button type="submit" loading={loading}>Tải phạm vi</Button>
-    </form>
-    {error && !retryCommand ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadScope()} /> : null}
-    {scope ? <div className="space-y-4 border-t border-border pt-4">
-      <p className="text-sm text-muted-foreground">Phiên bản phạm vi: {scope.revision} · Đã chọn {selectedDepartmentIds.length} khoa</p>
-      {departments.length ? <fieldset disabled={saving || Boolean(retryCommand)} className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"><legend className="mb-2 text-sm font-medium">Khoa được phép quản lý</legend>{departments.filter(item => item.departmentId).map(department => <label key={department.departmentId} className="flex min-h-11 items-center gap-3 rounded-lg border border-border px-3 text-sm"><input type="checkbox" checked={selectedDepartmentIds.includes(department.departmentId)} onChange={event => toggleDepartment(department.departmentId, event.target.checked)} />{department.departmentName}</label>)}</fieldset> : <p role="status" className="text-sm text-muted-foreground">Không có khoa đang hoạt động.</p>}
-      <label className="block space-y-1 text-sm font-medium" htmlFor="schedule-scope-reason">Lý do cấp hoặc thu hồi quyền
-        <textarea id="schedule-scope-reason" value={reason} maxLength={500} onChange={event => setReason(event.target.value)} disabled={saving || Boolean(retryCommand)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
-      </label>
-      {error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><p>{error.message}</p>{error.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: {error.correlationId}</p> : null}{retryCommand ? <p className="mt-2">Kết quả chưa xác định. Gửi lại cùng danh sách và lý do để giữ nguyên khóa idempotency.</p> : null}</div> : null}
-      <Button type="button" loading={saving} disabled={Boolean(retryCommand) ? false : !reason.trim()} onClick={() => retryCommand ? void saveScope(retryCommand) : submitScope()}>{retryCommand ? "Gửi lại cùng yêu cầu" : selectedDepartmentIds.length ? "Lưu phạm vi" : "Thu hồi toàn bộ phạm vi"}</Button>
-    </div> : null}
-  </section>;
 }
 
 type SessionMutation =
@@ -318,8 +238,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   </section>;
 }
 
-export function ScheduleManagementWorkspace({ enabled, initialManagerAccountId = "" }: { enabled: boolean; initialManagerAccountId?: string }) {
-  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
+export function ScheduleManagementWorkspace({ enabled }: { enabled: boolean }) {
   if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Quản lý lịch khám V2 chưa được mở.</p>;
-  return <div className="space-y-6"><SessionAdministration />{role === "ADMIN" ? <details id="manager-scope" open={initialManagerAccountId ? true : undefined} className="scroll-mt-20 rounded-xl border border-border bg-surface p-4"><summary className="cursor-pointer font-medium">Quản trị quyền lập lịch</summary><ScopeAdministration key={initialManagerAccountId} initialManagerAccountId={initialManagerAccountId} /></details> : null}</div>;
+  return <div className="space-y-6"><SessionAdministration /></div>;
 }

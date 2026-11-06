@@ -3,7 +3,7 @@
 @patientToken = replace-with-signed-patient-access-token
 @notificationId = 00000000-0000-0000-0000-000000000001
 
-### Existing Report API through Gateway -> Support (ADMIN/MANAGER)
+### Existing Report API through Gateway -> Support (ADMIN/department head)
 GET {{gateway}}/api/v1/reports/daily?date=2026-10-17
 Authorization: Bearer {{managerToken}}
 
@@ -11,6 +11,6 @@ Authorization: Bearer {{managerToken}}
 GET {{gateway}}/api/v1/notifications/{{notificationId}}
 Authorization: Bearer {{patientToken}}
 
-### Report role must not grant Notification access (MANAGER -> 403)
+### Report access must not grant Notification access (department head -> 403)
 GET {{gateway}}/api/v1/notifications/{{notificationId}}
 Authorization: Bearer {{managerToken}}

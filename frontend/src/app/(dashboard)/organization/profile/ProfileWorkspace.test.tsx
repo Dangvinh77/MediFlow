@@ -49,7 +49,7 @@ describe("Role-specific organization workspace", () => {
     expect(mocks.patient).not.toHaveBeenCalled();
   });
 
-  it.each<Role>(["MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"])("gives %s only their personal record on entry", async (role) => {
+  it.each<Role>(["DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"])("gives %s only their personal record on entry", async (role) => {
     signIn(role);
     render(<OrganizationWorkspace />);
     expect(await screen.findByRole("heading", { name: staffContractFixture.fullName })).toBeVisible();

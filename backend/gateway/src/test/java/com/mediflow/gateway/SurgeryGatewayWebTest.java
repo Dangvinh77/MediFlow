@@ -121,7 +121,7 @@ class SurgeryGatewayWebTest {
             }
         }
         int allowedCalls = REQUESTS.get();
-        for (String role : new String[] {Roles.MANAGER, Roles.NURSE, Roles.PHARMACIST, Roles.CASHIER,
+        for (String role : new String[] {Roles.NURSE, Roles.PHARMACIST, Roles.CASHIER,
                 Roles.LAB_TECH, Roles.PATIENT}) {
             String token = tokens.issueAccessToken(UUID.randomUUID(), role,
                     null, null, Roles.PATIENT.equals(role) ? UUID.randomUUID() : null);
