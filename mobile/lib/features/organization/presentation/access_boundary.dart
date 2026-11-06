@@ -26,7 +26,7 @@ class OrganizationBoundary extends ConsumerWidget {
     if (access == null) {
       return const Center(child: Text('Phiên đăng nhập chưa sẵn sàng.'));
     }
-    if (!const {'ADMIN', 'MANAGER', 'DOCTOR', 'NURSE'}.contains(access.role)) {
+    if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
       return const Center(
         child: Text('Bạn không có quyền xem thông tin tổ chức.'),
       );

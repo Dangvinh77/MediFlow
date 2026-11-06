@@ -1,5 +1,19 @@
 # Frontend Workboard
 
+## Bỏ role Quản lý — 2026-11-07
+
+Trưởng khoa (DOCTOR có bổ nhiệm) thay MANAGER: mục "Báo cáo khoa" nằm trong khu Quản lý khoa,
+`/reports` thuộc workspace này; `/appointments/schedule` chỉ còn ADMIN và bỏ khối cấp phạm vi.
+Ghi chú có ngày cũ hơn bên dưới vẫn giữ tên MANAGER như lịch sử.
+
+## Dashboard báo cáo theo năm — 2026-11-06
+
+Vinh / user-assigned task-scoped override cho Report, Billing route doanh thu và sidebar.
+MANAGER đọc doanh thu trong trang Báo cáo với khoa cố định theo phạm vi tài khoản; mục
+"Doanh thu theo khoa" rời nhóm Viện phí, `/billing/revenue` chỉ còn ADMIN. Dashboard có
+tổng quan năm và so sánh hai năm; khối đã đối soát chỉ còn cho ADMIN. Chi tiết tại
+[Report guide](services/report.md).
+
 ## Email bệnh nhân và Report thu gọn — 2026-11-05
 
 Vinh / user-assigned task-scoped override cho Patient, Organization và Report.

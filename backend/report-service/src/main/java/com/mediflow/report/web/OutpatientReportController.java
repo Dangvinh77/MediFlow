@@ -22,16 +22,16 @@ public class OutpatientReportController {
     private final ReadOutpatientReportUseCase reader;
     public OutpatientReportController(ReadOutpatientReportUseCase reader){this.reader=reader;}
     @GetMapping("/available-periods")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<java.util.List<com.mediflow.report.application.dto.response.OutpatientAvailablePeriodDTO>> availablePeriods(
             @RequestParam(required=false) UUID departmentId, HttpServletRequest request) {
         return ApiResponse.ok(reader.availablePeriods(departmentId), correlation(request));
     }
-    @GetMapping("/daily") @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @GetMapping("/daily") @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OutpatientReportDTO> daily(@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)LocalDate toDate,@RequestParam(required=false)UUID departmentId,
             HttpServletRequest request){return ApiResponse.ok(reader.daily(fromDate,toDate,departmentId),correlation(request));}
-    @GetMapping("/monthly") @PreAuthorize("hasAnyRole('ADMIN','MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @GetMapping("/monthly") @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     public ApiResponse<OutpatientReportDTO> monthly(@RequestParam @Min(2000) @Max(2100)int year,
             @RequestParam(required=false)UUID departmentId,HttpServletRequest request){
         return ApiResponse.ok(reader.monthly(year,departmentId),correlation(request));

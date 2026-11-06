@@ -54,8 +54,8 @@ class SupportPackagedAcceptanceIT {
             assertThat(response.statusCode()).isEqualTo(201);
             id = UUID.fromString(mapper.readTree(response.body()).path("data").path("notificationId").asText());
             assertThat(send(port, "GET", "/api/v1/reports/daily?date=2026-10-17", null, SupportSecurityTest.token("ADMIN", "access")).statusCode()).isEqualTo(200);
-            // Organization-wide reads stay ADMIN-only; a MANAGER must name a department it may access.
-            assertThat(send(port, "GET", "/api/v1/reports/daily?date=2026-10-17", null, SupportSecurityTest.token("MANAGER", "access")).statusCode()).isEqualTo(403);
+            // Organization-wide reads stay ADMIN-only; a department head must name a department it may access.
+            assertThat(send(port, "GET", "/api/v1/reports/daily?date=2026-10-17", null, SupportSecurityTest.token("DOCTOR", "access")).statusCode()).isEqualTo(403);
         } finally { stop(process); }
         process = start(jar, port, "restart");
         try {

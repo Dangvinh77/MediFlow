@@ -35,7 +35,7 @@ Tài khoản mẫu: demo.admin và demo.doctor, mật khẩu demo công khai `Me
 
 1. Dùng admin mở lại khoa, nhập lý do và xác nhận Miễn nhiệm. Kiểm lịch sử giữ nhiệm kỳ đã kết thúc.
 2. Quay về phiên bác sĩ cũ: request quản lý mới bị từ chối, quyền/menu được cập nhật; bác sĩ vẫn xem lịch chính chủ và làm nghiệp vụ chuyên môn theo phân công. Không cần đổi role hoặc chờ token hết hạn.
-3. DOCTOR chưa được bổ nhiệm, NURSE và LAB_TECH không được vào quản lý bằng cách dán URL; trưởng khoa không được quản lý khoa khác. Tài khoản MANAGER cũ giữ nhánh quyền lịch đã được cấp, không tự thành bác sĩ hoặc trưởng khoa.
+3. DOCTOR chưa được bổ nhiệm, NURSE và LAB_TECH không được vào quản lý bằng cách dán URL; trưởng khoa không được quản lý khoa khác. Tài khoản MANAGER cũ đã bị khóa từ migration V18; quản lý khoa chỉ đến từ bổ nhiệm trưởng khoa.
 
 Kiểm chứng bằng API với token bác sĩ cũ có thể chạy trên phiên disposable mới:
 

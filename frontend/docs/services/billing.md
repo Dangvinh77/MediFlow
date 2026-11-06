@@ -70,7 +70,7 @@ prescription-adjustment refund lookup. Lộc's own 2026-10-19 parallel implement
 `/billing/prescription-adjustments`) duplicated this exact business function and was removed on
 2026-10-22 to avoid two components doing the same job; see the frontend workboard for the decision.
 
-Revenue remains ADMIN/MANAGER; outbox replay remains ADMIN only. Replay feedback distinguishes
+Revenue is ADMIN-only; department heads read scoped revenue in Report; outbox replay remains ADMIN only. Replay feedback distinguishes
 `replayed: false` and successful requeue from downstream processing. Invoice/refund/payment UI is
 ADMIN/CASHIER, with backend authorization authoritative.
 

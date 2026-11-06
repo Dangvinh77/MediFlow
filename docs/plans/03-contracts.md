@@ -189,7 +189,7 @@ Các phần revisit, chính sách hỗ trợ/zero payable và Report vẫn theo 
 | Staff/khoa/phòng đủ điều kiện | Core cung cấp identity và eligibility; Clinical gọi REST bằng service credential | Missing khác unavailable; backend kiểm lại khi tạo/đổi lịch |
 | Lịch khám và giữ suất | Clinical owns schedule/slot/reservation, revision, capacity, expiry, actor | Giữ suất local atomic; không hai người lấy cùng suất cuối; không đọc DB Core |
 | Lịch cá nhân ngày/tuần | Clinical lấy doctor/staff identity từ signed actor, lọc khoảng ngày theo timezone nghiệp vụ | DOCTOR không đổi doctorId trên URL/body để đọc lịch cá nhân người khác; PATIENT không đọc danh sách bệnh nhân |
-| Quản lý lịch theo khoa | Clinical kiểm ADMIN hoặc MANAGER và phạm vi khoa authoritative | Không có phạm vi MANAGER thì deny; phòng/bác sĩ chồng giờ bị chặn tại backend |
+| Quản lý lịch theo khoa | Clinical kiểm ADMIN hoặc trưởng khoa đang được bổ nhiệm | Không có bổ nhiệm thì deny; phòng/bác sĩ chồng giờ bị chặn tại backend |
 | Đăng ký tại quầy | Clinical nhận patient, loại lượt, lịch, nguồn tái khám nếu có | Một intent/idempotency key; nguồn tái khám đúng patient; đã có mặt cùng intent |
 | Quote sau hỗ trợ | Billing owns item mapping, policy version, gross/support/patient payable, currency, expiry | Giá server snapshot; replay cùng intent trả cùng quote; input khác báo conflict |
 | Thu tiền và giữ suất | Clinical/Billing trao reservation identity/revision và payment operation | Có quyền giữ ổn định trước nhận thu; expiry/cancel không cắt ngang payment chưa rõ kết quả |
@@ -305,7 +305,7 @@ không public human API. Giữ ApiResponse/PageResult và correlation như sourc
   correlation ID. Audit values are private persistence data; no public audit endpoint is added.
 - `PUT /api/v1/org/staff/{id}/contact` accepts only `phoneNumber`, `email`, `address`
   (nullable, omitted values clear the corresponding contact value; full replacement of these
-  three fields). ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH must match the signed
+  three fields). ADMIN/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH must match the signed
   `staffId`, including ADMIN. PATIENT/SYSTEM and absent/foreign staff identity are denied.
   Full administrator staff editing remains ADMIN-only. Identity, job, department, licence,
   qualifications and account permissions cannot be changed through self-contact updates.
@@ -481,7 +481,7 @@ không đổi default mode/gates. Đây là consumer contract acceptance, chưa 
 
 ## RBAC
 
-Role constants giữ ADMIN, DOCTOR, NURSE, PHARMACIST, CASHIER, LAB_TECH, MANAGER, PATIENT, SYSTEM.
+Role constants giữ ADMIN, DOCTOR, NURSE, PHARMACIST, CASHIER, LAB_TECH, PATIENT, SYSTEM.
 Role không tự thay clinical authority. Mọi endpoint có @PreAuthorize theo live manifest.
 Human APIs chỉ signed access tokens; refresh/service không dùng thay human. PATIENT ownership
 kiểm trong use case; internal-only lookups cần authenticated service subject/scope. Secrets external.
@@ -590,34 +590,23 @@ Các service không được mở cổng trực tiếp cho UI để vượt Gate
 
 ### A.3. Authority và phòng — Core, owner Hoàng Anh
 
-MVP dùng danh sách khoa quản lý được ADMIN cấp **theo accountId** trong Core, revision và audit riêng.
-Không lấy departmentHeadId hoặc staff.departmentId làm quyền MANAGER. ADMIN toàn phòng khám;
-MANAGER account active + staff active + assignment của khoa active; không assignment thì deny.
-ADMIN grant không tự đổi role: danh sách scope legacy này dành cho account MANAGER. DOCTOR được bổ nhiệm trưởng khoa dùng authority bổ nhiệm riêng, giữ currentRole=DOCTOR; xem phụ lục trưởng khoa bên dưới.
+Quyền quản lý khoa chỉ đến từ bổ nhiệm trưởng khoa trong Core; DOCTOR giữ currentRole=DOCTOR, xem
+phụ lục trưởng khoa bên dưới. Không lấy departmentHeadId hoặc staff.departmentId làm quyền. ADMIN toàn
+phòng khám. Role MANAGER và API `schedule-management-scope` đã bị gỡ ngày 07/11/2026.
 
 | Method/path TARGET | Caller/role | Request → data |
 |---|---|---|
-| `GET /api/v2/org/accounts/{id}/schedule-management-scope` | ADMIN | ScopeSnapshot; không cho MANAGER đọc quyền account khác |
-| `PUT /api/v2/org/accounts/{id}/schedule-management-scope` | ADMIN | ScopeCommand → ScopeSnapshot; idempotent, replace toàn bộ list |
 | `GET /api/v2/org/scheduling-authority?actorAccountId=&departmentId=` | Service subject clinical-service, role SYSTEM, type service | SchedulingAuthority; snapshot current account/staff/khoa/assignment |
 | `GET /api/v2/org/current-doctor-authority?actorAccountId=` | clinical-service/SYSTEM/service | CurrentDoctorAuthority; xác minh lịch cá nhân kể cả ngày/tuần chưa có ca |
 | `GET /api/v2/org/consultation-eligibility?doctorId=&departmentId=&roomId=` | clinical-service/SYSTEM/service | ConsultationEligibility; kiểm các identity cùng snapshot Core |
-| `GET /api/v2/org/consultation-rooms?departmentId=&page=&size=` | ADMIN/MANAGER | PageResult<RoomSummary>; Core kiểm scope, chỉ active CONSULTATION rooms |
-
-`ScopeCommand={expectedRevision,departmentIds,reason}`; lần đầu expectedRevision=0, revision mới=1;
-departmentIds là array UUID duy nhất, [] là thu hồi toàn bộ; reason 1–500, tối đa 100 khoa.
-Core từ chối unknown/inactive khoa, cấp list nonempty cho account không active MANAGER hoặc staff không hợp lệ
-bằng 422 SCHEDULE_INELIGIBLE. List [] được phép thu hồi cả khi account đã inactive/đổi role.
-Read account chưa có assignment trả revision=0, departmentIds=[]; account không tồn tại
-trả 404. ScopeSnapshot={accountId,revision,departmentIds,updatedAt,updatedByAccountId}; hai audit fields
-null chỉ ở snapshot revision=0. Update/revoke và outbox/audit/receipt cùng transaction Core.
+| `GET /api/v2/org/consultation-rooms?departmentId=&page=&size=` | ADMIN/trưởng khoa | PageResult<RoomSummary>; Core kiểm scope, chỉ active CONSULTATION rooms |
 
 `SchedulingAuthority={actorAccountId,accountExists,accountActive,currentRole,staffId,staffActive,
 departmentId,departmentActive,canManageSchedules,scopeRevision,observedAt}`. currentRole/staffId null
-khi không có account/association; scopeRevision=0 nếu chưa có assignment. Subject Clinical không được
+khi không có account/association; scopeRevision=0 nếu khoa chưa có lịch sử bổ nhiệm hoặc actor là ADMIN. Subject Clinical không được
 chuyển accountId người khác từ human body vào authority call: account lấy từ verified access principal.
 Clinical so currentRole với signed role; mismatch deny, không tự nâng role. Account ADMIN active có thể
-canManageSchedules=true mà staffId null; MANAGER bắt buộc staffId và staffActive=true.
+canManageSchedules=true mà staffId null; DOCTOR bắt buộc staffId và staffActive=true.
 
 `CurrentDoctorAuthority={actorAccountId,accountExists,accountActive,currentRole,staffId,staffActive,
 departmentId,departmentActive,observedAt}`. Core lấy departmentId từ association staff hiện tại,
@@ -646,12 +635,12 @@ Thu hồi quyền chặn các command sau khi Core trả revision mới; không 
 
 | Method/path TARGET | Role và scope | Input → data |
 |---|---|---|
-| `POST /api/v2/consultation-sessions` | ADMIN/MANAGER có scope khoa | SessionCreate → SessionDTO; 201 + Location |
-| `PUT /api/v2/consultation-sessions/{id}` | ADMIN/MANAGER scoped | SessionUpdate → SessionDTO; 200 |
-| `PUT /api/v2/consultation-sessions/{id}/status` | ADMIN/MANAGER scoped | SessionStatusCommand → SessionDTO; 200 |
-| `GET /api/v2/consultation-sessions` | ADMIN/MANAGER/NURSE | departmentId bắt buộc, fromDate/toDate, page/size; PageResult<SessionDTO> |
+| `POST /api/v2/consultation-sessions` | ADMIN/trưởng khoa của khoa | SessionCreate → SessionDTO; 201 + Location |
+| `PUT /api/v2/consultation-sessions/{id}` | ADMIN/trưởng khoa của khoa | SessionUpdate → SessionDTO; 200 |
+| `PUT /api/v2/consultation-sessions/{id}/status` | ADMIN/trưởng khoa của khoa | SessionStatusCommand → SessionDTO; 200 |
+| `GET /api/v2/consultation-sessions` | ADMIN/NURSE/trưởng khoa | departmentId bắt buộc, fromDate/toDate, page/size; PageResult<SessionDTO> |
 | `GET /api/v2/consultation-sessions/mine` | DOCTOR | weekStart thứ Hai hoặc date, đúng một trong hai; DoctorCalendar |
-| `GET /api/v2/consultation-sessions/{id}/registrations` | ADMIN/MANAGER scoped/NURSE/assigned DOCTOR | page/size; PageResult<RegistrationSummary> |
+| `GET /api/v2/consultation-sessions/{id}/registrations` | ADMIN/NURSE/assigned DOCTOR/trưởng khoa của khoa | page/size; PageResult<RegistrationSummary> |
 
 SessionCreate={doctorId,departmentId,roomId,sessionDate,startTime,endTime,breaks,capacity}.
 breaks là array không null, có thể [], tối đa 20 phần tử; mỗi phần tử={startTime,endTime}. Capacity integer 1–200
@@ -676,14 +665,14 @@ available=capacity-held-paymentLocked-confirmed-consumed, không âm. Cancellati
 trả capacity sau khi lease/outcome đã được xử lý; completed vẫn chiếm consumed, không cộng lần hai.
 
 List giới hạn khoảng ngày tối đa 31 ngày; fromDate≤toDate. ADMIN/NURSE đọc khoa được chỉ định,
-MANAGER chỉ assignment; NURSE không có quyền tạo/sửa ca. Directory chỉ cho chọn, mutation recheck server.
+trưởng khoa chỉ khoa của mình; NURSE không có quyền tạo/sửa ca. Directory chỉ cho chọn, mutation recheck server.
 DoctorCalendar={doctorId,fromDate,toDate,timezone,sessions}; sessions là list SessionDTO tối đa 7 ngày,
 weekStart là thứ Hai theo Asia/Ho_Chi_Minh, date là 1 ngày. Không nhận doctorId query kể cả trùng mình.
 Actor staffId từ signed credential; thiếu identity hoặc inactive thì deny. Không có buổi → sessions=[],
 provider lỗi → 503. Week response không chứa danh sách người bệnh/diagnoses.
 
 RegistrationSummary={registrationId,patientId,visitType,status,checkedInAt,queueNumber,readyForExam}.
-DOCTOR chỉ đọc registrations của session được phân công; không nhận doctorId body. MANAGER chỉ xem
+DOCTOR đọc registrations của session được phân công; không nhận doctorId body. Trưởng khoa xem
 tóm tắt vận hành, không tự mở quyền xem hồ sơ khám. Họ tên cần directory tối thiểu đã kiểm quyền,
 không lấy từ bảng khác của Core hoặc mở broad patient endpoint cho mọi role.
 
@@ -1096,7 +1085,7 @@ Ship Core with V14, Gateway and the web client together; old binaries do not enf
 
 `GET /api/v1/org/care-labels/{kind}/{id}` nhận `kind=doctor|department|room`, trả
 `ApiResponse<{id: UUID, label: string}>`, `Cache-Control: no-store`. Cho tám human roles
-ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH/PATIENT; không cho SYSTEM.
+ADMIN/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH/PATIENT; không cho SYSTEM.
 Chỉ trả tên bác sĩ (JobTitle.DOCTOR), khoa hoặc phòng CONSULTATION; không trả email,
 điện thoại hay hồ sơ nhân viên. Không tồn tại/khác loại trả 404; loại không hỗ trợ trả 400.
 Tên lịch sử có thể đọc khi danh mục ngừng hoạt động; tên không chứng minh quyền đặt khám.
@@ -1127,7 +1116,7 @@ Phạm vi triển khai và evidence theo [thiết kế đã duyệt](../superpow
 
 ### Core: bổ nhiệm, capabilities và authority hiện hành
 
-- `GET /api/v1/org/me/capabilities`: staff human roles ADMIN/MANAGER/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH; không PATIENT/SYSTEM. Data `{accountId,staffId,role,canPracticeAsDoctor,managementDepartments:[{departmentId,departmentName,appointmentId,revision}],observedAt}`. appointmentId nullable chỉ cho legacy MANAGER scope. Một grant ở FE không thay authority của request BE.
+- `GET /api/v1/org/me/capabilities`: staff human roles ADMIN/DOCTOR/NURSE/PHARMACIST/CASHIER/LAB_TECH; không PATIENT/SYSTEM. Data `{accountId,staffId,role,canPracticeAsDoctor,managementDepartments:[{departmentId,departmentName,appointmentId,revision}],observedAt}`. appointmentId nullable chỉ cho legacy MANAGER scope. Một grant ở FE không thay authority của request BE.
 - `GET /api/v2/org/departments/{id}/head-appointments`: ADMIN đọc snapshot/lịch sử.
 - `PUT /api/v2/org/departments/{id}/head-appointments`: ADMIN, Idempotency-Key và X-Correlation-Id. Body `{expectedRevision,staffId,reason}`, staffId=null miễn nhiệm. Snapshot `{departmentId,revision,appointmentId,staffId,accountId,updatedAt,updatedByAccountId,history:[{appointmentId,staffId,accountId,startedAt,endedAt}]}`; current fields nullable, history=[]/revision=0 trước command đầu.
 - Snapshot revision và immutable audit/receipt/outbox commit cùng bổ nhiệm. Exact retry trả receipt ban đầu, Idempotency-Replayed:true; cùng key khác body -> IDEMPOTENCY_CONFLICT. Revision cũ -> HEAD_REVISION_CONFLICT. Eligibility không hợp lệ -> HEAD_INELIGIBLE. Không tự bổ nhiệm từ departmentHeadId cũ; trường đó là projection tương thích, không phải authority độc lập.
@@ -1137,7 +1126,7 @@ Phạm vi triển khai và evidence theo [thiết kế đã duyệt](../superpow
 
 ### Clinical: ca làm việc tách khỏi buổi nhận bệnh nhân
 
-Gate scheduling-v2 giữ như hợp đồng hiện tại. Quản lý ca: ADMIN/MANAGER/DOCTOR, trong đó MANAGER/DOCTOR luôn kiểm authority khoa hiện hành. Bác sĩ đọc lịch chính chủ bằng current-doctor-authority.
+Gate scheduling-v2 giữ như hợp đồng hiện tại. Quản lý ca: ADMIN/DOCTOR, trong đó DOCTOR luôn kiểm authority khoa hiện hành. Bác sĩ đọc lịch chính chủ bằng current-doctor-authority.
 
 | Method/path | Data |
 |---|---|
@@ -1156,7 +1145,7 @@ Session tạo từ ca phải cùng bác sĩ/khoa/phòng/ngày, nằm trong giờ
 
 Gateway cho DOCTOR tiếp cận collection management sessions và commands theo exact method/path; Clinical vẫn bắt buộc authority quản lý khoa, own-calendar/registrations vẫn theo phân công thực tế. Bổ nhiệm không cấp đọc/sửa mọi bệnh án hoặc quyền Lab/Pharmacy/Billing/Report.
 
-`GET /api/v2/consultation-sessions/summary?departmentId=&fromDate=&toDate=`: ADMIN/MANAGER/DOCTOR với quyền quản lý khoa hiện hành. Data `{departmentId,fromDate,toDate,openSessionCount,stoppedSessionCount,cancelledSessionCount,capacity,heldCount,paymentLockedCount,confirmedCount,consumedCount,availableCount,observedAt}` tổng hợp server toàn khoa/khoảng đã chọn, không chỉ một trang. Seat totals loại CANCELLED; counts trạng thái giữ riêng. Đây là snapshot vận hành Clinical, không phải báo cáo tài chính đã đối soát.
+`GET /api/v2/consultation-sessions/summary?departmentId=&fromDate=&toDate=`: ADMIN/DOCTOR với quyền quản lý khoa hiện hành. Data `{departmentId,fromDate,toDate,openSessionCount,stoppedSessionCount,cancelledSessionCount,capacity,heldCount,paymentLockedCount,confirmedCount,consumedCount,availableCount,observedAt}` tổng hợp server toàn khoa/khoảng đã chọn, không chỉ một trang. Seat totals loại CANCELLED; counts trạng thái giữ riêng. Đây là snapshot vận hành Clinical, không phải báo cáo tài chính đã đối soát.
 
 
 ## Accepted outpatient period discovery (2026-11-03)
@@ -1164,7 +1153,7 @@ Gateway cho DOCTOR tiếp cận collection management sessions và commands theo
 `GET /api/v1/reports/outpatient/available-periods?departmentId=<UUID>` returns the usual
 ApiResponse envelope containing a list of `coverageId`, `fromDate`, `toDate`, `departmentId`
 (nullable hospital scope), `currency`, `zoneId`, `sourceObservedAt`, `reconciledAt`, and
-`syntheticData`. ADMIN may omit the department to discover recent scopes. MANAGER must
+`syntheticData`. ADMIN may omit the department to discover recent scopes. A department head must
 supply a currently authorized department, with the same live scope guard as daily/monthly.
 Both outpatient read gates and the outpatient profile still apply; defaults stay OFF.
 
@@ -1184,7 +1173,7 @@ only if its approval remains valid; discovery never accepts or restores seed dat
 ## Provisional outpatient operations statistics (2026-11-04)
 
 `GET /api/v1/reports/outpatient/statistics?fromDate=<date>&toDate=<date>&departmentId=<UUID>`
-(ADMIN/MANAGER, same live department scope guard and gates as daily/monthly; at most 366 days)
+(ADMIN/department-head DOCTOR, same live department scope guard and gates as daily/monthly; at most 366 days)
 returns `fromDate`, `toDate`, `departmentId`, `currency`, `zoneId`, `reconciled=false`, `totals`,
 `days[]` (every requested date, zero-filled) and `departments[]`. Each figure set carries
 `completedVisits`, `examRevenue`, `labRevenue`, `prescriptionRevenue`, `unclassifiedRevenue` and

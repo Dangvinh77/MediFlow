@@ -131,7 +131,7 @@ describe("Lab queue request lifecycle", () => {
     });
   });
 
-  it.each([["LAB_TECH", true], ["MANAGER", false]])("applies list detail visibility for %s", async (role, canView) => {
+  it.each([["LAB_TECH", true], ["PATIENT", false]])("applies list detail visibility for %s", async (role, canView) => {
     mocks.role = role;
     mocks.search.mockResolvedValue({ ...page, content: [labTest], totalPages: 1, totalElements: 1 });
     render(<LabTable />);

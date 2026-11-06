@@ -41,9 +41,9 @@ public class ReportController {
     }
 
     @GetMapping("/daily")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     @Operation(summary = "Daily operational report",
-            description = "Returns zero counters when no row exists. Null departmentId means hospital scope for ADMIN; MANAGER requires a current assigned department.")
+            description = "Returns zero counters when no row exists. Null departmentId means hospital scope for ADMIN; a department head requires their own department.")
     public ResponseEntity<ApiResponse<DailyReportDTO>> daily(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) UUID departmentId,
@@ -53,7 +53,7 @@ public class ReportController {
     }
 
     @GetMapping("/monthly")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     @Operation(summary = "Monthly revenue report",
             description = "Daily details include every calendar day, zero-filled where absent.")
     public ResponseEntity<ApiResponse<MonthlyReportDTO>> monthly(
@@ -66,7 +66,7 @@ public class ReportController {
     }
 
     @GetMapping("/top-medicines")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') and @reportScopeGuard.permits(authentication, #departmentId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and @reportScopeGuard.permits(authentication, #departmentId)")
     @Operation(summary = "Top dispensed medicines",
             description = "Inclusive date range. limit defaults to 10 and is capped at 50.")
     public ResponseEntity<ApiResponse<java.util.List<TopMedicineDTO>>> topMedicines(

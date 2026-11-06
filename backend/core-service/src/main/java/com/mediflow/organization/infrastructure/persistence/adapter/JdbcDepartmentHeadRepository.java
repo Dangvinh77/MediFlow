@@ -250,17 +250,6 @@ FROM account a LEFT JOIN staff s ON s.staff_id=a.staff_id LEFT JOIN department d
     private List<OwnCapabilities.ManagementDepartment> management(
             UUID id, String role, boolean active) {
         if (!active) return List.of();
-        if ("MANAGER".equals(role))
-            return jdbc.query(
-                    """
-SELECT d.department_id,d.department_name,s.revision FROM schedule_management_scope s
-JOIN schedule_management_scope_department sd ON sd.account_id=s.account_id
-JOIN department d ON d.department_id=sd.department_id AND d.is_active WHERE s.account_id=? ORDER BY d.department_name,d.department_id
-""",
-                    (r, n) ->
-                            new OwnCapabilities.ManagementDepartment(
-                                    r.getObject(1, UUID.class), r.getString(2), null, r.getLong(3)),
-                    id);
         if (!"DOCTOR".equals(role)) return List.of();
         return jdbc.query(
                 """

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { buildOutpatientQuery, readOutpatientQuery } from "../outpatientQuery";
-import { OutpatientReportView } from "./OutpatientReportView";
-import { OutpatientStatisticsView } from "./OutpatientStatisticsView";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
+import { buildOutpatientQuery, readOutpatientQuery } from "../outpatientQuery";
+import { dashboardParams } from "../dashboardQuery";
+import { OutpatientReportView } from "./OutpatientReportView";
+import { ReportDashboard } from "./ReportDashboard";
 
 function ReportDisclosure({
   initiallyOpen,
@@ -41,7 +43,7 @@ function ReportDisclosure({
 
 export function OutpatientReportWorkspace({ enabled = false }: { enabled?: boolean }) {
   if (!enabled) return (
-    <PageShell title="Báo cáo ngoại trú">
+    <PageShell title="Báo cáo">
       <p role="status" className="mt-6 rounded-xl border border-border bg-surface p-5 text-muted-foreground">Báo cáo ngoại trú chưa sẵn sàng. Vui lòng liên hệ quản trị viên.</p>
       <Link href="/reports" className="mt-4 inline-flex min-h-11 items-center text-primary underline">Về trang báo cáo</Link>
     </PageShell>
@@ -52,7 +54,12 @@ export function OutpatientReportWorkspace({ enabled = false }: { enabled?: boole
 function EnabledOutpatientWorkspace() {
   const params = useSearchParams();
   const pathname = usePathname();
-  const rawQuery = params.toString();
+  // Only ADMIN still reaches the reconciled report; a department head reads the yearly dashboard.
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
+  const reportParams = new URLSearchParams(params.toString());
+  dashboardParams.forEach(name => reportParams.delete(name));
+  const dashboardQuery = new URLSearchParams(params.toString());
+  const rawQuery = reportParams.toString();
   const { query, explicit, autoLoad } = readOutpatientQuery(new URLSearchParams(rawQuery));
   const periodSummary = explicit
     ? query.mode === "daily"
@@ -61,13 +68,16 @@ function EnabledOutpatientWorkspace() {
     : "Kỳ gần nhất có dữ liệu";
   function navigate(next: string) {
     if (next === rawQuery) return false;
-    window.history.pushState(null, "", `${pathname}?${next}`);
+    const merged = new URLSearchParams(next);
+    dashboardParams.forEach(name => { const value = dashboardQuery.get(name); if (value) merged.set(name, value); });
+    window.history.pushState(null, "", `${pathname}?${merged}`);
     return true;
   }
   return (
-    <PageShell title="Báo cáo ngoại trú" description="Doanh thu khám, xét nghiệm, thuốc và lượt khám theo khoa; báo cáo đã đối soát bên dưới.">
-      <Link href="/reports?view=monthly" className="mt-3 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác (nguồn cũ)</Link>
-      <OutpatientStatisticsView />
+    <PageShell title="Báo cáo" description="Doanh thu, lượt khám và cơ cấu dịch vụ theo năm; đổi năm để xem biểu đồ tương ứng hoặc so sánh hai năm.">
+      <ReportDashboard />
+      {role === "ADMIN" && <>
+      <Link href="/reports?view=monthly" className="mt-6 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác (nguồn cũ)</Link>
       <ReportDisclosure
         key={rawQuery}
         initiallyOpen={rawQuery.length > 0}
@@ -89,6 +99,7 @@ function EnabledOutpatientWorkspace() {
           <OutpatientReportView key={rawQuery} initialQuery={query} autoLoad={autoLoad} discoverLatest={!explicit} onQuerySubmit={(submitted) => navigate(buildOutpatientQuery(new URLSearchParams(rawQuery), submitted))} />
         </div>
       </ReportDisclosure>
+      </>}
     </PageShell>
   );
 }

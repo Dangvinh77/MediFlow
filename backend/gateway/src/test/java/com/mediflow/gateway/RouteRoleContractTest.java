@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /** Frozen downstream controller guards; unpublished endpoints stay denied, including deferred work. */
 class RouteRoleContractTest {
-    private static final List<String> ROLES = List.of("ADMIN", "MANAGER", "DOCTOR", "NURSE",
+    private static final List<String> ROLES = List.of("ADMIN", "DOCTOR", "NURSE",
             "LAB_TECH", "PHARMACIST", "CASHIER", "PATIENT", "SYSTEM");
     private final RouteAuthorizationFilter filter = new RouteAuthorizationFilter(
             new GatewayErrorResponseWriter(new ObjectMapper().findAndRegisterModules()));

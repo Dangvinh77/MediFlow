@@ -64,7 +64,7 @@ class GlobalExceptionHandlerTest {
     private OutpatientRegistrationApplicationService registrations;
 
     @ParameterizedTest
-    @CsvSource({"MANAGER,fromDate,false", "MANAGER,toDate,false", "MANAGER,fromDate,true",
+    @CsvSource({"DOCTOR,fromDate,false", "DOCTOR,toDate,false", "DOCTOR,fromDate,true",
             "NURSE,fromDate,false", "NURSE,toDate,false", "NURSE,fromDate,true"})
     void missingSessionDate_returns400WithFieldAndCorrelation(String role, String missing, boolean both) throws Exception {
         var request = get("/api/v2/consultation-sessions")
@@ -135,7 +135,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "DOCTOR")
     void upstreamFailure_returns503Envelope() throws Exception {
         when(manageAppointmentUseCase.search(any(), any(), any()))
                 .thenThrow(new UpstreamUnavailableException(
@@ -164,7 +164,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "DOCTOR")
     void malformedDate_returns400Envelope() throws Exception {
         mockMvc.perform(get(BASE_PATH).param("appointmentDate", "not-a-date"))
                 .andExpect(status().isBadRequest())

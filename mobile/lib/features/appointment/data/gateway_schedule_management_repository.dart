@@ -136,39 +136,6 @@ class GatewayScheduleManagementRepository
   }
 
   @override
-  Future<List<ManagerAccount>> managerAccounts() async {
-    final result = decodePage(
-      await client.get(
-        '/v1/org/accounts',
-        query: {'role': 'MANAGER', 'active': true, 'page': 0, 'size': 100},
-      ),
-      (json) => ManagerAccount(
-        id: JsonReader.string(json, 'accountId'),
-        username: JsonReader.string(json, 'username'),
-      ),
-    );
-    return result.items;
-  }
-
-  @override
-  Future<SchedulingScope> scope(String accountId) async {
-    final json = _object(
-      await client.get(
-        '/v2/org/accounts/${Uri.encodeComponent(accountId)}/schedule-management-scope',
-      ),
-    );
-    final ids = json['departmentIds'];
-    if (ids is! List) {
-      throw const FormatException('Phản hồi phạm vi quản lý không hợp lệ.');
-    }
-    return SchedulingScope(
-      accountId: JsonReader.string(json, 'accountId'),
-      revision: _int(json, 'revision'),
-      departmentIds: [for (final id in ids) id as String],
-    );
-  }
-
-  @override
   Future<HeadAppointment> headAppointment(String departmentId) async {
     final json = _object(
       await client.get(

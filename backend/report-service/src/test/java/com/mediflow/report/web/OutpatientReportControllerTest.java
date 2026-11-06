@@ -36,7 +36,7 @@ class OutpatientReportControllerTest {
         verify(reader).availablePeriods(null);
     }
     @Test void discoveryRejectsUnscopedManagerAndCashier() throws Exception {
-        for (String role : List.of("MANAGER", "CASHIER", "PATIENT")) {
+        for (String role : List.of("DOCTOR", "CASHIER", "PATIENT")) {
             mvc.perform(get("/api/v1/reports/outpatient/available-periods").with(user("test").roles(role)))
                     .andExpect(status().isForbidden());
         }
@@ -78,18 +78,18 @@ class OutpatientReportControllerTest {
 
     @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
         UUID department=UUID.randomUUID();
-        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
-        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes"))).andExpect(status().isForbidden());
         verifyNoInteractions(reader);
     }
 
     @Test void managerWithCurrentAssignedDepartmentCanReadBothRoutes() throws Exception {
         UUID department=UUID.randomUUID();
-        when(authority.permits(eq(ReportScopeTestSupport.ACCOUNT),eq("MANAGER"),eq(department),anyString(),any())).thenReturn(true);
-        String token=ReportScopeTestSupport.bearer("MANAGER","test-secret-must-have-at-least-32-bytes");
+        when(authority.permits(eq(ReportScopeTestSupport.ACCOUNT),eq("DOCTOR"),eq(department),anyString(),any())).thenReturn(true);
+        String token=ReportScopeTestSupport.bearer("DOCTOR","test-secret-must-have-at-least-32-bytes");
         mvc.perform(get("/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-01&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/reports/outpatient/monthly?year=2026&departmentId="+department).header("Authorization",token)).andExpect(status().isOk());
         mvc.perform(get("/api/v1/reports/outpatient/available-periods?departmentId="+department).header("Authorization",token)).andExpect(status().isOk());

@@ -40,7 +40,7 @@ public class AppointmentController {
     private final CorrelationIdProvider correlationIds;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     public ResponseEntity<ApiResponse<PageResult<AppointmentDTO>>> search(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false)

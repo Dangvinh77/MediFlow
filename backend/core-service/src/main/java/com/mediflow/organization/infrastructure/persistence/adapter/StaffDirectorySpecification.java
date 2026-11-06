@@ -21,7 +21,7 @@ final class StaffDirectorySpecification {
     private static final String PLAIN = "a".repeat(17) + "e".repeat(11) + "i".repeat(5) + "o".repeat(17) + "u".repeat(11) + "y".repeat(5) + "d";
     private static final Map<JobTitle, String> TITLES = Map.of(
             JobTitle.DOCTOR, "bac si", JobTitle.NURSE, "dieu duong", JobTitle.TECHNICIAN, "ky thuat vien",
-            JobTitle.PHARMACIST, "duoc si", JobTitle.CASHIER, "thu ngan", JobTitle.MANAGER, "quan ly", JobTitle.ADMINISTRATIVE, "hanh chinh");
+            JobTitle.PHARMACIST, "duoc si", JobTitle.CASHIER, "thu ngan", JobTitle.ADMINISTRATIVE, "hanh chinh");
 
     private StaffDirectorySpecification() { }
 

@@ -31,7 +31,7 @@ class CareLabelControllerTest {
     @MockBean GetCareLabelUseCase labels;
 
     @ParameterizedTest
-    @ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
+    @ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
     void returnsOnlyDisplayIdentityForHumanRoles(String role) throws Exception {
         UUID id = UUID.randomUUID();
         when(labels.read("doctor", id)).thenReturn(java.util.Optional.of(new CareLabelDTO(id, "Bác sĩ Nguyễn An")));

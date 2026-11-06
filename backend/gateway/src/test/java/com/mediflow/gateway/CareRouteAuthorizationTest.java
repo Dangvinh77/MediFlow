@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Edge policy only; actual JWT/service verification is exercised by the web suites. */
 class CareRouteAuthorizationTest {
     private static final String ID = "00000000-0000-0000-0000-000000000001";
-    private static final List<String> ROLES = List.of("ADMIN", "MANAGER", "DOCTOR", "NURSE",
+    private static final List<String> ROLES = List.of("ADMIN", "DOCTOR", "NURSE",
             "LAB_TECH", "PHARMACIST", "CASHIER", "PATIENT", "SYSTEM");
     private final RouteAuthorizationFilter filter = new RouteAuthorizationFilter(
             new GatewayErrorResponseWriter(new ObjectMapper().findAndRegisterModules()));
@@ -36,7 +36,7 @@ class CareRouteAuthorizationTest {
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/patient/" + ID, Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID, Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID + "/contact",
-                        Set.of("ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH")),
+                        Set.of("ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/patient-accounts/" + ID + "/password", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/patient-accounts/" + ID + "/mail-delivery", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/org/patient-accounts/" + ID
@@ -58,10 +58,10 @@ class CareRouteAuthorizationTest {
                 new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/cancel", Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/dispense", Set.of("ADMIN", "PHARMACIST")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/admin/outbox/" + ID + "/replay", Set.of("ADMIN")),
-                new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases", Set.of("ADMIN","MANAGER","DOCTOR","NURSE")),
-                new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases/" + ID, Set.of("ADMIN","MANAGER","DOCTOR","NURSE")),
-                new MatrixRow(HttpMethod.PUT, "/api/v1/surgery/cases/" + ID + "/schedule", Set.of("ADMIN","MANAGER","DOCTOR")),
-                new MatrixRow(HttpMethod.GET, "/api/v1/lab", Set.of("ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases", Set.of("ADMIN","DOCTOR","NURSE")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases/" + ID, Set.of("ADMIN","DOCTOR","NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/surgery/cases/" + ID + "/schedule", Set.of("ADMIN","DOCTOR")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/lab", Set.of("ADMIN", "DOCTOR", "NURSE", "LAB_TECH")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/lab/" + ID, Set.of("ADMIN", "DOCTOR", "NURSE", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/lab/" + ID + "/start", Set.of("ADMIN", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/lab/" + ID + "/cancel", Set.of("ADMIN", "DOCTOR", "LAB_TECH")),

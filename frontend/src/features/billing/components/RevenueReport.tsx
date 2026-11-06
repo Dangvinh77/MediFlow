@@ -82,7 +82,7 @@ export function RevenueReport() {
 
   return (
     <section className="mt-6">
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         <Field label="Từ ngày" htmlFor="revenue-from-date" required>
           <input id="revenue-from-date" required type="date" max={toDate || undefined} value={fromDate} onChange={(event) => setFromDate(event.target.value)} className={controlClassName} />
         </Field>
@@ -92,7 +92,7 @@ export function RevenueReport() {
         <Field label="Khoa (tuỳ chọn)" htmlFor="revenue-department-id" hint="Để trống xem mọi khoa, hoặc gõ vài chữ rồi bấm 'Tìm' và chọn 1 khoa trong danh sách hiện ra.">
           <ReferenceInput kind="department" id="revenue-department-id" value={departmentId} onValueChange={(selectedId) => setDepartmentId(selectedId)} placeholder="UUID khoa" className={controlClassName} />
         </Field>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2 sm:mt-[1.625rem]">
           <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
           <Button type="button" disabled={loading} onClick={() => router.back()}>Quay lại</Button>
         </div>

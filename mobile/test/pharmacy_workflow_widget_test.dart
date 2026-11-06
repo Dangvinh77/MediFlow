@@ -72,7 +72,7 @@ Future<void> fillCreate(WidgetTester tester) async {
 }
 
 void main() {
-  for (final role in ['DOCTOR', 'PATIENT', 'MANAGER']) {
+  for (final role in ['DOCTOR', 'PATIENT']) {
     testWidgets('$role cannot directly mount create or stock command', (
       tester,
     ) async {

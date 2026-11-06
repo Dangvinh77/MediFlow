@@ -121,15 +121,14 @@ void main() {
       );
       session.replace(
         const Session(
-          accessToken: 'manager',
+          accessToken: 'admin',
           refreshToken: 'r',
-          role: UserRole.manager,
+          role: UserRole.admin,
         ),
       );
       container.read(routerProvider).go('/billing');
       await tester.pumpAndSettle();
       expect(find.text('Báo cáo'), findsWidgets);
-      expect(find.text('Khoản thu'), findsNothing);
     },
   );
 }

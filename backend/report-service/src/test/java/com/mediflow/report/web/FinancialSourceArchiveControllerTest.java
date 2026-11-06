@@ -56,7 +56,7 @@ class FinancialSourceArchiveControllerTest {
                 .andExpect(jsonPath("$.data.acceptanceReference").doesNotExist());
         verify(archives).restoreArchive(aryEq(bytes),eq(actor));
     }
-    @ParameterizedTest @ValueSource(strings={"MANAGER","DOCTOR","NURSE","PHARMACIST","CASHIER","LAB_TECH","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","CASHIER","LAB_TECH","PATIENT","SYSTEM"})
     void archive_nonAdmin_cannotReadEvidenceOrRestore(String role) throws Exception {
         mvc.perform(get(PATH+"/"+UUID.randomUUID()).with(user(UUID.randomUUID().toString()).roles(role))).andExpect(status().isForbidden());
         mvc.perform(post(PATH).contentType(MediaType.APPLICATION_OCTET_STREAM).content("private")

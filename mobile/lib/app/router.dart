@@ -170,13 +170,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/appointments/schedule',
-            builder: (_, state) => ScheduleManagementPage(
-              managerAccountId: state.uri.queryParameters['managerAccountId'],
-            ),
+            builder: (_, _) => const ScheduleManagementPage(),
           ),
           GoRoute(
             path: '/appointments/department',
-            builder: (_, _) => const DepartmentManagementPage(),
+            builder: (_, _) => DepartmentManagementPage(
+              reportBuilder: (departmentId) =>
+                  ReportPage(lockedDepartmentId: departmentId),
+            ),
           ),
           GoRoute(
             path: '/appointments/my-registration',

@@ -46,19 +46,19 @@ Giữ evidence commit/flags/IDs, request/response redacted, ảnh UI và số ef
 | WF-T17 | DOCTOR hoàn tất khi có chỉ định bắt buộc pending, race tạo mới | Bị chặn hoặc có quyết định hủy/hoãn hợp lệ; không bỏ qua bằng timeout |
 | WF-T18 | PHARMACIST cấp thuốc không hỗ trợ | Đúng server price/reservation; thu đủ rồi cấp; một stock effect |
 | WF-T19 | Hủy khám đã thu 50.000 với gross 100.000/support 50.000 | Nếu duyệt hoàn toàn bộ thì actual refund 50.000; không hoàn phần hỗ trợ |
-| WF-T20 | MANAGER xem Report sau khám/Lab/tái khám/refund/replay | Đúng số lượt; hỗ trợ riêng, cash/net cash đúng, không double count |
+| WF-T20 | Trưởng khoa xem Report sau khám/Lab/tái khám/refund/replay | Đúng số lượt; hỗ trợ riêng, cash/net cash đúng, không double count |
 | WF-T21 | PATIENT đọc phiếu/thông báo; đổi bác sĩ và replay | Chỉ dữ liệu của mình, pending không gọi confirmed; không thông báo trùng |
 | WF-T22 | Sai role, refresh/service token vào human API, Core/Billing unavailable | Deny/fail closed; không fallback bằng client claims hoặc state cũ |
-| WF-T23 | ADMIN/MANAGER tạo buổi khám, phòng/bác sĩ chồng giờ, khoa ngoài phạm vi | Lịch hợp lệ được tạo; chồng giờ/ngoài phạm vi bị chặn; thiếu nguồn phạm vi không cho quyền mặc định |
+| WF-T23 | ADMIN/trưởng khoa tạo buổi khám, phòng/bác sĩ chồng giờ, khoa ngoài phạm vi | Lịch hợp lệ được tạo; chồng giờ/ngoài phạm vi bị chặn; thiếu nguồn phạm vi không cho quyền mặc định |
 | WF-T24 | DOCTOR mở lịch ngày và chọn một lượt | Chỉ lịch của mình, đúng khoa/phòng/giờ, khám mới/tái khám và trạng thái; chờ thu không bắt đầu khám |
 | WF-T25 | DOCTOR xem tuần qua biên tháng/năm, chọn buổi mở ngày | Thứ Hai–Chủ nhật theo Asia/Ho_Chi_Minh; không mất/lặp buổi ở biên; số giữ tạm/xác nhận/trống đúng |
 | WF-T26 | DOCTOR thay doctorId để xem lịch khác hoặc gửi command sửa/xóa ca | Backend từ chối; không chỉ ẩn nút; bàn giao lượt khám không tự cho xem mọi lịch cá nhân của bác sĩ cũ |
-| WF-T27 | MANAGER ngừng nhận buổi đã có người thanh toán | Chặn đăng ký mới, giữ phiếu cũ và audit; thay bác sĩ/giờ phải xử lý xác nhận và thông báo |
+| WF-T27 | Trưởng khoa ngừng nhận buổi đã có người thanh toán | Chặn đăng ký mới, giữ phiếu cũ và audit; thay bác sĩ/giờ phải xử lý xác nhận và thông báo |
 | WF-T28 | Lịch trống/lỗi tải, lượt đã khám, suất hết hạn khi tải lại | Empty khác error; completed không giải phóng suất để vượt định mức; refresh không tính hai lần |
 
 Từng happy path tối thiểu thực hiện: NURSE đăng ký → CASHIER thu phí khám → DOCTOR khám →
 DOCTOR chỉ định → CASHIER thu Lab → LAB_TECH thực hiện/kết quả → DOCTOR đọc/kết luận/lời hẹn →
-CASHIER thu thuốc nếu có → PHARMACIST cấp → MANAGER đối soát → PATIENT xem thông báo.
+CASHIER thu thuốc nếu có → PHARMACIST cấp → ADMIN đối soát → PATIENT xem thông báo.
 Sau đó đăng ký tái khám với nguồn vừa hoàn tất. Nếu thiếu UI/API ở bước nào, đánh BLOCKED với
 gap cụ thể; không đánh PASS từ việc chỉ kiểm tra health hoặc tồn tại controller.
 

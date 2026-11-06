@@ -200,7 +200,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             placeholder="Chọn khoa yêu cầu"
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div> : null}
         <div>
@@ -211,7 +211,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             id="lab-status"
             value={status}
             onChange={(event) => setStatus(event.target.value as LabTestStatus | "")}
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <option value="">Mọi trạng thái</option>
             {LAB_STATUSES.map((value) => (
@@ -232,7 +232,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             disabled={episodeScoped}
             value={episodeType}
             onChange={(event) => setEpisodeType(event.target.value as LabCareEpisodeType | "")}
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <option value="">Mọi loại</option>
             <option value="OUTPATIENT_VISIT">Ngoại trú</option>
@@ -249,7 +249,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             placeholder="UUID đợt chăm sóc"
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
-            className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
         </div>
@@ -257,7 +257,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+          className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           Lọc
         </button>
@@ -265,7 +265,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
           type="button"
           onClick={onReset}
           disabled={loading}
-          className="min-h-12 rounded-lg border border-border bg-surface px-4 py-2 font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+          className="min-h-11 rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           Tất cả
         </button>

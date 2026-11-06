@@ -48,7 +48,7 @@ behavioral regression tests remain open; this session validates build only by us
 
 `/lab` renders a paged queue from `GET /v1/lab` with department, status and exact episode filters.
 It displays all six live lifecycle states separately from payment state. UI roles mirror the
-controller and corrected Gateway matrix: `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`, and `LAB_TECH`.
+controller and corrected Gateway matrix: `ADMIN`, `DOCTOR`, `NURSE`, and `LAB_TECH`.
 
 `/lab/{testId}` renders the exact live detail DTO, including care episode, clearance, result
 revision, textual results and conclusion. It is available to `ADMIN`, `DOCTOR`, `NURSE`, and

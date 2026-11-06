@@ -28,7 +28,7 @@ public class SurgeryScheduleController {
     public SurgeryScheduleController(PrepareSurgeryScheduleUseCase scheduling) { this.scheduling = scheduling; }
 
     @PutMapping("/{surgeryCaseId}/schedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ApiResponse<PrepareSurgeryScheduleResponse> prepare(@PathVariable UUID surgeryCaseId,
             @Valid @RequestBody PrepareSurgeryScheduleRequest request,
             @RequestHeader("Idempotency-Key") @NotBlank @Size(max = 160) String key,

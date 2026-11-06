@@ -1,11 +1,8 @@
 package com.mediflow.organization.web.controller;
 
 import com.mediflow.common.api.PageResult;
-import com.mediflow.organization.application.dto.request.ScheduleManagementScopeCommand;
 import com.mediflow.organization.application.dto.response.ConsultationEligibility;
 import com.mediflow.organization.application.dto.response.CurrentDoctorAuthority;
-import com.mediflow.organization.application.dto.response.ScheduleManagementScopeCommandResult;
-import com.mediflow.organization.application.dto.response.ScheduleManagementScopeSnapshot;
 import com.mediflow.organization.application.dto.response.SchedulingAuthority;
 import com.mediflow.organization.application.port.in.ManageScheduleManagementScopeUseCase;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
@@ -55,56 +52,12 @@ class ScheduleManagementScopeControllerTest {
     @MockBean ManageScheduleManagementScopeUseCase authority;
 
     @Test
-    void adminScopeUpdate_echoesCorrelationAndReplayMetadata() throws Exception {
-        UUID adminId = UUID.randomUUID();
-        UUID managerId = UUID.randomUUID();
-        UUID departmentId = UUID.randomUUID();
-        String correlation = "trace-c01-admin-grant";
-        var snapshot = new ScheduleManagementScopeSnapshot(managerId, 1,
-                List.of(departmentId), Instant.parse("2026-10-26T03:00:00Z"), adminId);
-        when(authority.replaceScope(eq(adminId), eq(Role.ADMIN), eq(managerId), any(),
-                eq("scope-01"), eq(correlation)))
-                .thenReturn(new ScheduleManagementScopeCommandResult(snapshot, true, 200, null));
-
-        mvc.perform(put("/api/v2/org/accounts/{id}/schedule-management-scope", managerId)
-                        .header("Authorization", token("access", "ADMIN", adminId.toString(), 30))
-                        .header("Idempotency-Key", "scope-01")
-                        .header("X-Correlation-Id", correlation)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"expectedRevision\":0,\"departmentIds\":[\"" + departmentId
-                                + "\"],\"reason\":\"Approved\"}"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Idempotency-Replayed", "true"))
-                .andExpect(header().string("X-Correlation-Id", correlation))
-                .andExpect(jsonPath("$.data.accountId").value(managerId.toString()))
-                .andExpect(jsonPath("$.data.revision").value(1))
-                .andExpect(jsonPath("$.data.departmentIds[0]").value(departmentId.toString()))
-                .andExpect(jsonPath("$.correlationId").value(correlation));
-
-        verify(authority).replaceScope(eq(adminId), eq(Role.ADMIN), eq(managerId), any(),
-                eq("scope-01"), eq(correlation));
-    }
-
-    @Test
-    void unknownScopeCommandField_isRejectedBeforeUseCase() throws Exception {
-        UUID adminId = UUID.randomUUID();
-        mvc.perform(put("/api/v2/org/accounts/{id}/schedule-management-scope", UUID.randomUUID())
-                        .header("Authorization", token("access", "ADMIN", adminId.toString(), 30))
-                        .header("Idempotency-Key", "scope-01")
-                        .header("X-Correlation-Id", "trace-c01-unknown")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"expectedRevision\":0,\"departmentIds\":[],\"reason\":\"Revoke\",\"extra\":true}"))
-                .andExpect(status().isBadRequest());
-        verifyNoInteractions(authority);
-    }
-
-    @Test
     void internalAuthorityRequiresClinicalServiceTokenAndExactWireProjection() throws Exception {
         UUID actorId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
         String correlation = "trace-clinical-auth-01";
         when(authority.getSchedulingAuthority(actorId, departmentId)).thenReturn(
-                new SchedulingAuthority(actorId, true, true, "MANAGER", UUID.randomUUID(), true,
+                new SchedulingAuthority(actorId, true, true, "DOCTOR", UUID.randomUUID(), true,
                         departmentId, true, true, 3, Instant.parse("2026-10-26T03:00:00Z")));
 
         mvc.perform(get("/api/v2/org/scheduling-authority")
@@ -115,7 +68,7 @@ class ScheduleManagementScopeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Correlation-Id", correlation))
                 .andExpect(jsonPath("$.data.actorAccountId").value(actorId.toString()))
-                .andExpect(jsonPath("$.data.currentRole").value("MANAGER"))
+                .andExpect(jsonPath("$.data.currentRole").value("DOCTOR"))
                 .andExpect(jsonPath("$.data.departmentActive").value(true))
                 .andExpect(jsonPath("$.data.canManageSchedules").value(true))
                 .andExpect(jsonPath("$.data.scopeRevision").value(3))

@@ -168,7 +168,7 @@ describe("Notification patient history", () => {
     expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
   });
-  it.each(["DOCTOR", "PHARMACIST", "MANAGER", null] as const)("blocks role %s before mounting a reader", role => {
+  it.each(["DOCTOR", "PHARMACIST", null] as const)("blocks role %s before mounting a reader", role => {
     mocks.role = role; render(<NotificationLookup />);
     expect(screen.queryByLabelText("Bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
   });

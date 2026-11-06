@@ -28,14 +28,14 @@ describe("dashboard directory contracts", () => {
     expect(result.items.map(item => item.id)).toEqual(["doctor-id"]);
   });
 
-  it("offers active Manager accounts only to ADMIN for scheduling scope assignment", async () => {
-    vi.mocked(organizationApi.accounts).mockResolvedValue({ content: [{ accountId: "account-id", username: "clinic.manager", role: "MANAGER", isActive: true }], number: 0, totalPages: 1 } as never);
+  it("offers account search only to ADMIN", async () => {
+    vi.mocked(organizationApi.accounts).mockResolvedValue({ content: [{ accountId: "account-id", username: "clinic.doctor", role: "DOCTOR", isActive: true }], number: 0, totalPages: 1 } as never);
     const directory = createReferenceDirectory("ADMIN");
     expect(directory.canSearch("account")).toBe(true);
-    const result = await directory.search("account", "manager", 0);
-    expect(organizationApi.accounts).toHaveBeenCalledWith({ keyword: "manager", role: "MANAGER", active: true, page: 0 });
-    expect(result.items).toEqual([{ id: "account-id", label: "clinic.manager · MANAGER" }]);
-    expect(createReferenceDirectory("MANAGER").canSearch("account")).toBe(false);
+    const result = await directory.search("account", "clinic", 0);
+    expect(organizationApi.accounts).toHaveBeenCalledWith({ keyword: "clinic", active: true, page: 0 });
+    expect(result.items).toEqual([{ id: "account-id", label: "clinic.doctor · DOCTOR" }]);
+    expect(createReferenceDirectory("DOCTOR").canSearch("account")).toBe(false);
   });
 });
 

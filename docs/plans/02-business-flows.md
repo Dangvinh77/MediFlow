@@ -29,15 +29,14 @@ không dùng mô tả thiết kế làm bằng chứng chức năng đã chạy.
 Y tá trong MVP kiêm tiếp nhận; không tự chẩn đoán hoặc tự chỉ định xét nghiệm/thuốc.
 Y tá ghi nhu cầu, hướng dẫn chuyên khoa theo quy trình phòng khám; trường hợp chưa rõ cần
 bác sĩ/người có chuyên môn hỗ trợ. Thu ngân xác nhận thu/hoàn; bác sĩ quyết định chuyên môn;
-LAB_TECH tiếp nhận mẫu/thực hiện/trả kết quả; PHARMACIST cấp thuốc. ADMIN vận hành,
-MANAGER theo dõi và quản lý lịch theo quyền cụ thể đã được cấp. Không coi role là quyền
+LAB_TECH tiếp nhận mẫu/thực hiện/trả kết quả; PHARMACIST cấp thuốc. ADMIN vận hành toàn viện;
+bác sĩ được bổ nhiệm trưởng khoa quản lý lịch và báo cáo của khoa mình. Không coi role là quyền
 thực hiện mọi hành động chuyên môn; endpoint và authority phải được nghiệm thu riêng.
 
 ## 3. Lịch khám và phân công bác sĩ
 
 Chi tiết wire TARGET cho lịch/giữ suất nằm ở [03 phụ lục A](03-contracts.md#opd-scheduling-v2).
-ADMIN cấp danh sách khoa quản lý cho account MANAGER tại Core; khoa công tác hoặc chức danh
-trưởng khoa không tự cấp quyền. Phiếu PREBOOKED đã thu có thể CONFIRMED nhưng vẫn cần ghi nhận
+Quyền quản lý khoa đến từ bổ nhiệm trưởng khoa do ADMIN thực hiện tại Core; khoa công tác không tự cấp quyền. Phiếu PREBOOKED đã thu có thể CONFIRMED nhưng vẫn cần ghi nhận
 đã đến trước bắt đầu khám. Slice đầu thu đủ số tiền dương; hỗ trợ BHYT/tái khám/zero payable
 vẫn theo các bước riêng bên dưới, chưa được chứng nhận bởi schema của slice lịch khám.
 
@@ -60,16 +59,16 @@ không phải thời lượng khám. Một suất là một chỗ trong buổi; 
 
 | Use case | Role đích | Thao tác và kết quả |
 |---|---|---|
-| SCH-01 Quản lý buổi khám | ADMIN/MANAGER được phân quyền | Chọn ngày, bác sĩ, khoa, phòng, giờ, khoảng nghỉ và sức chứa; kiểm eligibility/chồng lịch rồi mở nhận |
-| SCH-02 Điều chỉnh/ngừng nhận | ADMIN/MANAGER được phân quyền | Xem phiếu bị ảnh hưởng, ghi lý do; ngừng nhận mới không tự hủy phiếu cũ |
+| SCH-01 Quản lý buổi khám | ADMIN/trưởng khoa của khoa đó | Chọn ngày, bác sĩ, khoa, phòng, giờ, khoảng nghỉ và sức chứa; kiểm eligibility/chồng lịch rồi mở nhận |
+| SCH-02 Điều chỉnh/ngừng nhận | ADMIN/trưởng khoa của khoa đó | Xem phiếu bị ảnh hưởng, ghi lý do; ngừng nhận mới không tự hủy phiếu cũ |
 | SCH-03 Tra cứu suất để tiếp nhận | NURSE | Lọc ngày/khoa, xem buổi còn suất và giữ một chỗ; backend kiểm lại trước ghi |
 | SCH-04 Xem lịch cá nhân theo ngày | DOCTOR | Mặc định hôm nay, xem các buổi của mình, khoa/phòng, giờ và danh sách người bệnh theo trạng thái |
 | SCH-05 Xem lịch cá nhân theo tuần | DOCTOR | Tuần từ thứ Hai đến Chủ nhật theo giờ Việt Nam; xem buổi khám và mức sử dụng, chọn buổi mở chi tiết ngày |
 | SCH-06 Xem phiếu của bản thân | PATIENT | Xem bác sĩ, khoa/phòng, khung giờ và số thứ tự trên phiếu của mình khi API đã hỗ trợ |
 
 Role trong bảng là thiết kế cần triển khai @PreAuthorize và authority tương ứng, không tự mở
-quyền endpoint hiện tại. MANAGER chỉ quản lý khoa/phạm vi đã được giao trong dữ liệu quyền;
-chưa có nguồn phạm vi thì từ chối command quản lý, không coi MANAGER mặc định quản lý mọi khoa.
+quyền endpoint hiện tại. Trưởng khoa chỉ quản lý khoa đang được bổ nhiệm;
+không có bổ nhiệm còn hiệu lực thì từ chối command quản lý.
 ADMIN quản lý toàn phòng khám theo quyền vận hành. NURSE không tự sửa lịch hoặc sức chứa.
 
 Màn hình ngày tách **buổi nhận khám** với **danh sách lượt đã đăng ký**. Bác sĩ xem khám mới/
@@ -166,8 +165,8 @@ emergency override đã có, không mở thêm cấp cứu/nội trú để hoà
 
 ### 4.1. Tiếp nhận lần đầu và tài khoản bệnh nhân — chốt 27/10/2026
 
-NURSE kiêm tiếp nhận, hiển thị là “Tiếp nhận / Điều dưỡng”; MANAGER giữ trách nhiệm quản lý
-lịch theo phạm vi đã cấp. Không thêm role mới cho slice này. Người bệnh đến lần đầu điền
+NURSE kiêm tiếp nhận, hiển thị là “Tiếp nhận / Điều dưỡng”; trưởng khoa giữ trách nhiệm quản lý
+lịch của khoa mình. Không thêm role mới cho slice này. Người bệnh đến lần đầu điền
 phiếu giấy; NURSE đối chiếu định danh, tìm hồ sơ trước rồi nhập thông tin vào hệ thống.
 Chỉ tạo hồ sơ mới khi đã xác minh chưa có hồ sơ phù hợp; giữ patientId cho các lần sau.
 
@@ -490,6 +489,16 @@ Giữ state machines của mode được dùng; không free-form status PATCH đ
 từ signed credential, không từ request fields untrusted. UTC Instant cho facts, zone cấu hình
 cho report date; UUID/money precision không đổi. Có history và correlation, không log PII/token.
 
+
+## Bỏ role Quản lý — 07/11/2026
+
+User chốt: bệnh viện không có chức danh quản lý riêng. ADMIN là cấp quản lý toàn viện, bác sĩ được bổ
+nhiệm trưởng khoa là cấp quản lý từng khoa. Role và chức danh MANAGER cùng cơ chế cấp khoa theo tài
+khoản (`schedule_management_scope`) đã bị gỡ. Trưởng khoa thay chỗ MANAGER ở Báo cáo, luôn trong phạm
+vi khoa đang được bổ nhiệm. Trưởng khoa không có quyền bổ nhiệm, phân quyền, chỉnh giá, hoàn tiền hoặc
+duyệt kho, và không xem báo cáo toàn viện hay so sánh với khoa khác. Chưa có phó khoa/ủy quyền; khoa
+cận lâm sàng và Dược không có bổ nhiệm trưởng khoa trong MVP. Migration V18 khóa tài khoản MANAGER cũ,
+không nâng quyền ai; ADMIN quyết định kích hoạt lại với role phù hợp.
 
 ## Trưởng khoa và ca làm việc bác sĩ — 01/11/2026
 

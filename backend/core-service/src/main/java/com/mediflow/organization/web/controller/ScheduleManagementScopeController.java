@@ -3,11 +3,9 @@ package com.mediflow.organization.web.controller;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.common.security.JwtClaims;
-import com.mediflow.organization.application.dto.request.ScheduleManagementScopeCommand;
 import com.mediflow.organization.application.dto.response.ConsultationEligibility;
 import com.mediflow.organization.application.dto.response.CurrentDoctorAuthority;
 import com.mediflow.organization.application.dto.response.RoomSummary;
-import com.mediflow.organization.application.dto.response.ScheduleManagementScopeSnapshot;
 import com.mediflow.organization.application.port.in.ManageScheduleManagementScopeUseCase;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.domain.model.Role;
@@ -17,16 +15,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletResponse;
-import java.net.URI;
 import java.util.UUID;
 
 /** V2 Core authority endpoints used by scheduling staff and Clinical's internal client. */
@@ -40,37 +34,6 @@ public class ScheduleManagementScopeController {
             CorrelationIdProvider correlationIds) {
         this.authority = authority;
         this.correlationIds = correlationIds;
-    }
-
-    @GetMapping("/accounts/{id}/schedule-management-scope")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<ScheduleManagementScopeSnapshot>> getScope(@PathVariable UUID id,
-            Authentication authentication,
-            @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId,
-            HttpServletResponse response) {
-        String requestCorrelationId = resolveCorrelation(correlationId);
-        response.setHeader(JwtClaims.HEADER_CORRELATION_ID, requestCorrelationId);
-        return ResponseEntity.ok()
-                .body(ApiResponse.ok(authority.getScope(accountId(authentication),
-                        signedRole(authentication), id), requestCorrelationId));
-    }
-
-    @PutMapping("/accounts/{id}/schedule-management-scope")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<ScheduleManagementScopeSnapshot>> replaceScope(
-            @PathVariable UUID id,
-            @Valid @RequestBody ScheduleManagementScopeCommand command,
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestHeader(JwtClaims.HEADER_CORRELATION_ID) String correlationId,
-            Authentication authentication,
-            HttpServletResponse response) {
-        response.setHeader(JwtClaims.HEADER_CORRELATION_ID, correlationId);
-        var result = authority.replaceScope(accountId(authentication), signedRole(authentication), id,
-                command, idempotencyKey, correlationId);
-        ResponseEntity.BodyBuilder resultResponse = ResponseEntity.status(result.status());
-        if (result.location() != null) resultResponse.location(URI.create(result.location()));
-        if (result.replayed()) resultResponse.header("Idempotency-Replayed", "true");
-        return resultResponse.body(ApiResponse.ok(result.snapshot(), correlationId));
     }
 
     @GetMapping("/scheduling-authority")
@@ -116,7 +79,7 @@ public class ScheduleManagementScopeController {
     }
 
     @GetMapping("/consultation-rooms")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<ApiResponse<PageResult<RoomSummary>>> listConsultationRooms(
             @RequestParam UUID departmentId,
             @RequestParam(defaultValue = "0") int page,

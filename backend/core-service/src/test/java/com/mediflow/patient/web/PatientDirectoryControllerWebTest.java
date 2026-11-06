@@ -62,7 +62,7 @@ class PatientDirectoryControllerWebTest {
         assertThat(json.readTree(detail.getResponse().getContentAsString()).at("/data").size()).isEqualTo(3);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"PATIENT", "NURSE", "MANAGER", "SYSTEM"})
+    @ParameterizedTest @ValueSource(strings = {"PATIENT", "NURSE", "SYSTEM"})
     void deniesRolesOutsideTheCareStaffDirectory(String role) throws Exception {
         mvc.perform(get("/api/v1/patients/directory/search").header("Authorization", bearer(role)))
                 .andExpect(status().isForbidden());

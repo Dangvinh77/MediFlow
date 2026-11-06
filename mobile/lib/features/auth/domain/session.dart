@@ -7,7 +7,6 @@ enum UserRole {
   pharmacist('PHARMACIST'),
   cashier('CASHIER'),
   labTech('LAB_TECH'),
-  manager('MANAGER'),
   patient('PATIENT');
 
   const UserRole(this.wire);

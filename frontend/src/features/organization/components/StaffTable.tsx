@@ -22,7 +22,6 @@ const jobTitleLabels: Record<JobTitle, string> = {
   TECHNICIAN: "Kỹ thuật viên",
   PHARMACIST: "Dược sĩ",
   CASHIER: "Thu ngân",
-  MANAGER: "Quản lý",
   ADMINISTRATIVE: "Hành chính",
 };
 

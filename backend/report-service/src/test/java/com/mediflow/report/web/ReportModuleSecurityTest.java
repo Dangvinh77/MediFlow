@@ -33,7 +33,7 @@ class ReportModuleSecurityTest {
     @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
     void missingOrExpiredAccessToken_neverReachesOutpatientReads(boolean expired) throws Exception {
         var builder = io.jsonwebtoken.Jwts.builder().subject(java.util.UUID.randomUUID().toString())
-                .claim("type", "access").claim("role", "MANAGER");
+                .claim("type", "access").claim("role", "DOCTOR");
         if (expired) builder.expiration(java.util.Date.from(java.time.Instant.now().minusSeconds(60)));
         String token = builder.signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
                 "isolated-report-module-test-secret-at-least-32-bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8))).compact();
@@ -45,7 +45,7 @@ class ReportModuleSecurityTest {
     }
 
     @Test void reportChainDoesNotClaimAnotherContextsUrl() throws Exception {
-        mvc.perform(get("/api/v1/notifications/probe").with(user("manager").roles("MANAGER")))
+        mvc.perform(get("/api/v1/notifications/probe").with(user("manager").roles("DOCTOR")))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(reader);
     }
@@ -60,7 +60,7 @@ class ReportModuleSecurityTest {
 
     @Test void reportManagerWithoutDepartmentCannotReadHospitalScope() throws Exception {
         mvc.perform(get("/api/v1/reports/outpatient/monthly").param("year", "2025")
-                        .with(user("manager").roles("MANAGER"))).andExpect(status().isForbidden());
+                        .with(user("manager").roles("DOCTOR"))).andExpect(status().isForbidden());
     }
 
     /** Local host boundary probe, not Notification implementation/acceptance. */

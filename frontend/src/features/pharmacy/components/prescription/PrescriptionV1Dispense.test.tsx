@@ -46,7 +46,7 @@ describe("V1 dispense uses the locked runtime mode and server command authority"
     mocks.get.mockResolvedValue({ ...rx, paymentConfirmed: true }); await open();
     expect(screen.queryByText("Đã xác nhận thanh toán")).not.toBeInTheDocument();
   });
-  it.each(["DOCTOR", "NURSE", "PATIENT", "CASHIER", "MANAGER", "LAB_TECH", "SYSTEM"] as const)("never grants %s a V1 dispense control", async role => {
+  it.each(["DOCTOR", "NURSE", "PATIENT", "CASHIER", "LAB_TECH", "SYSTEM"] as const)("never grants %s a V1 dispense control", async role => {
     mocks.role = role; render(<PrescriptionDetail prescriptionId={id} mode="outpatient" />);
     if (role === "DOCTOR") await screen.findByRole("heading", { name: "Chi tiết đơn thuốc" });
     else await screen.findByRole("alert");

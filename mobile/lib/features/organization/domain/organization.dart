@@ -7,7 +7,6 @@ const staffJobTitles = [
   'TECHNICIAN',
   'PHARMACIST',
   'CASHIER',
-  'MANAGER',
   'ADMINISTRATIVE',
 ];
 const accountRoles = [
@@ -17,7 +16,6 @@ const accountRoles = [
   'PHARMACIST',
   'CASHIER',
   'LAB_TECH',
-  'MANAGER',
   'PATIENT',
 ];
 const accountSearchRoles = [...accountRoles, 'SYSTEM'];

@@ -96,7 +96,6 @@ class GatewayWebTest {
                 "/api/v1/reports/financial/source-archives/" + id,
                 "/api/v1/reports/operations/rebuilds/" + id)) {
             expectDownstreamUnavailable(HttpMethod.GET, path, Roles.ADMIN);
-            expectForbidden(HttpMethod.GET, path, Roles.MANAGER);
             expectForbidden(HttpMethod.GET, path, Roles.DOCTOR);
             expectForbidden(HttpMethod.GET, path + "/extra", Roles.ADMIN);
             expectForbidden(HttpMethod.POST, path, Roles.ADMIN);
@@ -109,10 +108,11 @@ class GatewayWebTest {
                             "report-service", Roles.SYSTEM, UUID.randomUUID().toString())))
                     .exchange().expectStatus().isForbidden();
         }
-        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/financial/coverage", Roles.MANAGER);
-        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/outpatient/daily", Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/financial/coverage", Roles.ADMIN);
+        expectForbidden(HttpMethod.GET, "/api/v1/reports/financial/coverage", Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/outpatient/daily", Roles.DOCTOR);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/operations/daily", Roles.DOCTOR);
-        expectForbidden(HttpMethod.GET, "/api/v1/reports/financial/daily", Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/financial/daily", Roles.DOCTOR);
         expectForbidden(HttpMethod.GET, "/api/v1/reports/unknown", Roles.ADMIN);
     }
 
@@ -120,7 +120,7 @@ class GatewayWebTest {
     void outpatientDiscoveryUsesExactReadRolesAndRejectsOtherMethods() {
         String path = "/api/v1/reports/outpatient/available-periods";
         expectDownstreamUnavailable(HttpMethod.GET, path, Roles.ADMIN);
-        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.DOCTOR);
         expectForbidden(HttpMethod.GET, path, Roles.CASHIER);
         expectForbidden(HttpMethod.GET, path, Roles.PATIENT);
         expectForbidden(HttpMethod.POST, path, Roles.ADMIN);
@@ -132,9 +132,8 @@ class GatewayWebTest {
     void outpatientStatisticsUsesExactReadRolesAndRejectsOtherMethods() {
         String path = "/api/v1/reports/outpatient/statistics";
         expectDownstreamUnavailable(HttpMethod.GET, path, Roles.ADMIN);
-        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, path, Roles.DOCTOR);
         expectForbidden(HttpMethod.GET, path, Roles.CASHIER);
-        expectForbidden(HttpMethod.GET, path, Roles.DOCTOR);
         expectForbidden(HttpMethod.POST, path, Roles.ADMIN);
         webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();
     }
@@ -152,14 +151,14 @@ class GatewayWebTest {
         String nurse = jwt.issueAccessToken(UUID.randomUUID(), Roles.NURSE);
         String doctor = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
         String technician = jwt.issueAccessToken(UUID.randomUUID(), Roles.LAB_TECH);
-        String manager = jwt.issueAccessToken(UUID.randomUUID(), Roles.MANAGER);
+        String cashier = jwt.issueAccessToken(UUID.randomUUID(), Roles.CASHIER);
         String id = UUID.randomUUID().toString();
         webTestClient.put().uri("/api/v1/appointments/" + id + "/start-exam")
                 .header(HttpHeaders.AUTHORIZATION, bearer(nurse)).exchange().expectStatus().isForbidden();
         webTestClient.put().uri("/api/v1/appointments/" + id + "/check-in")
                 .header(HttpHeaders.AUTHORIZATION, bearer(doctor)).exchange().expectStatus().isForbidden();
         webTestClient.get().uri("/api/v1/lab/" + id)
-                .header(HttpHeaders.AUTHORIZATION, bearer(manager)).exchange().expectStatus().isForbidden();
+                .header(HttpHeaders.AUTHORIZATION, bearer(cashier)).exchange().expectStatus().isForbidden();
         webTestClient.get().uri("/api/v1/lab/" + id)
                 .header(HttpHeaders.AUTHORIZATION, bearer(technician)).exchange()
                 .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
@@ -347,17 +346,18 @@ class GatewayWebTest {
     }
 
     @Test
-    void reportOperations_doctorCanRouteButLegacyRevenueRemainsForbidden() {
+    void reportOperations_doctorRoutesToTheDepartmentGuardButUnknownPathsStayForbidden() {
         String doctorToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
         for (String path : new String[] {"/api/v1/reports/operations/daily",
-                "/api/v1/reports/operations/surgery"}) {
+                "/api/v1/reports/operations/surgery", "/api/v1/reports/daily", "/api/v1/reports/monthly",
+                "/api/v1/reports/top-medicines"}) {
             webTestClient.get().uri(path)
                     .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
                     .exchange().expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
                     .expectBody().jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
         }
-        for (String path : new String[] {"/api/v1/reports/daily", "/api/v1/reports/monthly",
-                "/api/v1/reports/top-medicines", "/api/v1/reports/operations/daily/private"}) {
+        for (String path : new String[] {"/api/v1/reports/operations/daily/private",
+                "/api/v1/reports/financial/coverage", "/api/v1/billing/revenue"}) {
             webTestClient.get().uri(path)
                     .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
                     .exchange().expectStatus().isForbidden();
@@ -419,7 +419,7 @@ class GatewayWebTest {
         expectDownstreamUnavailable(HttpMethod.POST, correctionPath, Roles.NURSE);
 
         expectForbidden(HttpMethod.POST, correctionPath, Roles.CASHIER);
-        expectForbidden(HttpMethod.POST, correctionPath, Roles.MANAGER);
+        expectForbidden(HttpMethod.POST, correctionPath, Roles.CASHIER);
         expectForbidden(HttpMethod.POST, correctionPath, Roles.LAB_TECH);
 
         expectForbidden(HttpMethod.GET, correctionPath, Roles.DOCTOR);
@@ -459,13 +459,13 @@ class GatewayWebTest {
         expectForbidden(HttpMethod.POST,
                 "/api/v1/surgery/cases/" + caseId + "/preop", Roles.NURSE);
         expectForbidden(HttpMethod.POST,
-                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.MANAGER);
+                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.CASHIER);
         expectForbidden(HttpMethod.POST,
                 "/api/v1/surgery/cases/" + caseId + "/preop", Roles.PATIENT);
         expectForbidden(HttpMethod.POST,
                 "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.NURSE);
         expectForbidden(HttpMethod.POST,
-                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.MANAGER);
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.CASHIER);
         expectForbidden(HttpMethod.POST,
                 "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.PATIENT);
 
@@ -501,7 +501,7 @@ class GatewayWebTest {
         UUID testId = UUID.randomUUID();
 
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.ADMIN);
-        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.DOCTOR);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.DOCTOR);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.NURSE);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.LAB_TECH);
@@ -510,7 +510,7 @@ class GatewayWebTest {
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.DOCTOR);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.NURSE);
         expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.LAB_TECH);
-        expectForbidden(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.MANAGER);
+        expectForbidden(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.CASHIER);
 
         expectDownstreamUnavailable(HttpMethod.PUT,
                 "/api/v1/lab/" + testId + "/start", Roles.ADMIN);
@@ -519,7 +519,7 @@ class GatewayWebTest {
         expectForbidden(HttpMethod.PUT,
                 "/api/v1/lab/" + testId + "/start", Roles.DOCTOR);
         expectForbidden(HttpMethod.PUT,
-                "/api/v1/lab/" + testId + "/start", Roles.MANAGER);
+                "/api/v1/lab/" + testId + "/start", Roles.CASHIER);
 
         expectDownstreamUnavailable(HttpMethod.PUT,
                 "/api/v1/lab/" + testId + "/cancel", Roles.ADMIN);
@@ -530,7 +530,7 @@ class GatewayWebTest {
         expectForbidden(HttpMethod.PUT,
                 "/api/v1/lab/" + testId + "/cancel", Roles.NURSE);
         expectForbidden(HttpMethod.PUT,
-                "/api/v1/lab/" + testId + "/cancel", Roles.MANAGER);
+                "/api/v1/lab/" + testId + "/cancel", Roles.CASHIER);
 
         expectDownstreamUnavailable(HttpMethod.PUT,
                 "/api/v1/lab/" + testId + "/status", Roles.LAB_TECH);

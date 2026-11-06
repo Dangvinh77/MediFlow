@@ -352,17 +352,14 @@ Future<void> openLedger(WidgetTester tester, BillingStub repository) async {
 }
 
 void main() {
-  testWidgets('MANAGER can see revenue without cashier mutations', (
-    tester,
-  ) async {
+  testWidgets('ADMIN can see revenue', (tester) async {
     useTallViewport(tester);
     final repository = BillingStub();
-    await tester.pumpWidget(billingHost(repository, role: 'MANAGER'));
+    await tester.pumpWidget(billingHost(repository, role: 'ADMIN'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Báo cáo'));
     await tester.pumpAndSettle();
     expect(find.text('Doanh thu theo khoa'), findsOneWidget);
-    expect(find.text('Tra cứu hóa đơn'), findsNothing);
-    expect(find.text('Tra cứu khoản thu'), findsNothing);
-    expect(find.text('Hoàn tiền đơn thuốc'), findsNothing);
     await tester.tap(find.text('Xem báo cáo'));
     await tester.pumpAndSettle();
     expect(repository.completedPayments, isEmpty);
@@ -407,13 +404,6 @@ void main() {
       await tester.tap(scheduledTab);
       await tester.pumpAndSettle();
       expect(find.text('Thu phí khám'), findsOneWidget);
-
-      await tester.pumpWidget(
-        billingHost(BillingStub(), role: 'MANAGER', schedulingEnabled: true),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Phí khám'), findsNothing);
-      expect(find.text('Doanh thu theo khoa'), findsOneWidget);
     },
   );
 

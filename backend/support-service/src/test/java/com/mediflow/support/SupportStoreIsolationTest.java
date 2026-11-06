@@ -98,7 +98,7 @@ class SupportStoreIsolationTest {
         UUID id = (UUID) notice.get("notification_id");
         assertThat(get("/api/v1/notifications/" + id, SupportSecurityTest.token("PATIENT", "access")).getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(get("/api/v1/notifications/" + id, SupportSecurityTest.token("PATIENT", "access", UUID.randomUUID())).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(get("/api/v1/notifications/" + id, SupportSecurityTest.token("MANAGER", "access")).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(get("/api/v1/notifications/" + id, SupportSecurityTest.token("DOCTOR", "access")).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test void notificationFailureDeadLettersWithoutRollingBackReportAndOriginalBytesRecover() throws Exception {

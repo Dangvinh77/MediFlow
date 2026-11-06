@@ -7,7 +7,6 @@ import { useEffect, useRef } from "react";
 
 const roleLabels: Partial<Record<Role, string>> = {
   ADMIN: "Quản trị viên",
-  MANAGER: "Quản lý",
   DOCTOR: "Bác sĩ",
   NURSE: "Điều dưỡng",
   LAB_TECH: "Kỹ thuật viên xét nghiệm",

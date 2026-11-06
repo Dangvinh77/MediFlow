@@ -130,11 +130,11 @@ migrations/outbound bytes/producer activation changed. Execution ledger (histori
 
 | Method/path beneath `/api/v1/surgery/cases` | Roles | Behavior |
 |---|---|---|
-| GET base path | ADMIN, MANAGER, DOCTOR, NURSE | Bounded, stable board projection |
+| GET base path | ADMIN, DOCTOR, NURSE | Bounded, stable board projection |
 | GET `/{id}` | Same four roles | Redacted detail, planned versus actual, readiness snapshot |
 | POST `/{id}/preop` | ADMIN, DOCTOR | REQUESTED → PREOP with receipt/revision |
 | POST `/{id}/cancel` | ADMIN, DOCTOR | Pre-start only, exact booked revision release |
-| PUT `/{id}/schedule` | ADMIN, MANAGER, DOCTOR | Prepare/replace a draft, never automatically READY or reserved |
+| PUT `/{id}/schedule` | ADMIN, DOCTOR | Prepare/replace a draft, never automatically READY or reserved |
 
 All routes require verified human access tokens and the business gate. Mutation bodies contain
 expected revisions and business input only; actors come from signed identity. Unknown fields such as
@@ -143,7 +143,7 @@ Matching replay returns the original outcome; different intent conflicts. Accoun
 IDs. Gateway enforcement is a separate Hoàng Anh-owned acceptance gate, not certified by these local
 controller tests. Examples: [surgery.http](surgery.http).
 
-ADMIN/MANAGER read across departments. DOCTOR/NURSE require signed `staffId` and fresh active
+ADMIN reads across departments. DOCTOR/NURSE require signed `staffId` and fresh active
 Organization authority; scope is its current department, not a filter or JWT department. Foreign
 detail is opaque 404; foreign department filter is empty. Dependency outage/stale authority is 503,
 not a successful empty board. Detail omits indication/narrative, signatures, evidence IDs and
@@ -291,7 +291,7 @@ claimed. Framework-free cross-command tests complement, not replace, that databa
 Selection and fresh verification (historical document retired; outside MVP scope).
 
 Gated POST paths: `/{id}/readiness/evaluate`, `/{id}/schedule/finalize`, `/{id}/start`, `/{id}/complete`
-under `/api/v1/surgery/cases`. ADMIN/DOCTOR may use clinical commands; finalize also permits MANAGER.
+under `/api/v1/surgery/cases`. ADMIN/DOCTOR may use clinical commands; finalize stays with the same roles.
 Requests require expected case/schedule revisions and `Idempotency-Key`. JWT supplies actor identity.
 Unknown `ready`, clearance, financial/emergency override, actor, role and amount fields are rejected,
 including for ADMIN. Guard denial returns explicit state and `blockingReasons`, not a clinical success.

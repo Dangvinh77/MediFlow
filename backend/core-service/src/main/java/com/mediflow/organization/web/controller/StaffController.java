@@ -145,7 +145,7 @@ public class StaffController {
         }
 
         @GetMapping
-        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
         public ResponseEntity<ApiResponse<PageResult<StaffResponse>>> getAllStaff(
                         @RequestParam(name = "departmentId", required = false) UUID departmentId,
                         @RequestParam(name = "jobTitle", required = false) JobTitle jobTitle,
@@ -194,7 +194,7 @@ public class StaffController {
         }
 
         @GetMapping("/{id}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE') or "
+        @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE') or "
                         + "(hasAnyRole('PHARMACIST', 'CASHIER', 'LAB_TECH') and "
                         + "authentication.details instanceof T(com.mediflow.organization.infrastructure.security.StaffIdentityDetails) "
                         + "and authentication.details.staffId == #id)")

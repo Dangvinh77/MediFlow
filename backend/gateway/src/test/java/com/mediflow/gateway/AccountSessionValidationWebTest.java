@@ -102,7 +102,7 @@ class AccountSessionValidationWebTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
+    @ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT"})
     void defaultPasswordAllowsOnlyOwnPasswordChangeEvenIfClaimIsMissing(String role) {
         UUID staffId = role.equals("PATIENT") ? null : staff;
         UUID patientId = role.equals("PATIENT") ? UUID.randomUUID() : null;

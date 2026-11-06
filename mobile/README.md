@@ -167,7 +167,7 @@ coverage nằm trong [runtime handoff](../docs/handoffs/HANDOFF-REVIEW3-RUNTIME-
 Có đăng nhập thật, đăng xuất, lưu phiên, menu/route theo role. Lịch hẹn đọc `/v1/appointments`, lọc ngày/phân trang; Lab đọc `/v1/lab`, lọc trạng thái/phân trang. Có loading/empty/error/retry, correlation ID và bỏ qua phản hồi cũ. Lab hiển thị trạng thái nghiệp vụ riêng với thanh toán.
 
 Billing follows the web task set by role: `ADMIN`/`CASHIER` can use the collection queue,
-optional exam-fee collection, payment history and refunds; `MANAGER` sees revenue reports.
+optional exam-fee collection, payment history and refunds; `ADMIN` sees revenue reports; an appointed department head reads their department's report in the Báo cáo khoa tab of department management.
 The exam-fee V2 client is disabled by default; `tool/run_web.ps1 -Demo`, the demo launcher command and the iOS workflow enable it. Dart defines are compile-time, so a build without them cannot show the exam-fee tab. Enable its mobile UI with
 `--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true`; optional quotes use
 `--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true`, and zero-liability confirmation

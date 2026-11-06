@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Danh mục giường | MediFlow" };
 export default function InpatientBedsPage() {
   return (
     <PageShell title="Danh mục giường" description="Theo dõi giường theo khoa, khu và trạng thái vận hành.">
-      <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE"]}>
+      <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
         <BedTable />
       </RoleGate>
     </PageShell>

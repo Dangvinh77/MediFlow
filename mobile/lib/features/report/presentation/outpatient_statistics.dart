@@ -196,12 +196,11 @@ class AvailableReportPeriods extends StatefulWidget {
     required this.repository,
     required this.departmentId,
     required this.monthly,
-    required this.needsDepartment,
     required this.onSelect,
   });
   final ReportRepository repository;
   final String? departmentId;
-  final bool monthly, needsDepartment;
+  final bool monthly;
   final ValueChanged<AvailableReportPeriod> onSelect;
   @override
   State<AvailableReportPeriods> createState() => _AvailableReportPeriodsState();
@@ -240,11 +239,9 @@ class _AvailableReportPeriodsState extends State<AvailableReportPeriods> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       OutlinedButton(
-        onPressed: loading || widget.needsDepartment ? null : load,
+        onPressed: loading ? null : load,
         child: Text(loading ? 'Đang tìm kỳ báo cáo…' : 'Tìm kỳ có dữ liệu'),
       ),
-      if (widget.needsDepartment)
-        const Text('Chọn khoa được phân quyền trước khi tìm kỳ báo cáo.'),
       if (failed)
         const Text(
           'Chưa tìm được kỳ báo cáo. Kiểm tra quyền truy cập và thử lại.',

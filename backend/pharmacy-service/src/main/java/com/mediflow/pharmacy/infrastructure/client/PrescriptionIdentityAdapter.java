@@ -21,7 +21,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /** Reads only producer-owned REST identities before ALL stock/receipt transactions. */
 public final class PrescriptionIdentityAdapter implements PrescriptionIdentityPort {
-    private static final Set<String> JOBS = Set.of("DOCTOR", "NURSE", "TECHNICIAN", "PHARMACIST", "CASHIER", "MANAGER", "ADMINISTRATIVE");
+    private static final Set<String> JOBS = Set.of("DOCTOR", "NURSE", "TECHNICIAN", "PHARMACIST", "CASHIER", "ADMINISTRATIVE");
     private final PharmacyPatientFeignClient patients;
     private final PharmacyOrganizationFeignClient organization;
     private final Clock clock;

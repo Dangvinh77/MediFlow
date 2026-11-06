@@ -9,7 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { getSessionKey } from "@/lib/auth";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
-const jobs = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", MANAGER: "Quản lý", ADMINISTRATIVE: "Hành chính" };
+const jobs = { DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên", PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", ADMINISTRATIVE: "Hành chính" };
 import type { DepartmentDTO, StaffDTO } from "../types";
 
 export function DepartmentPeople({ department }: { department: DepartmentDTO }) {

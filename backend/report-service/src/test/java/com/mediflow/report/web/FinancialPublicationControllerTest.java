@@ -115,7 +115,7 @@ class FinancialPublicationControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
     void publication_nonAdmin_cannotPublishOrRollback(String role) throws Exception {
         mvc.perform(post(PATH)
                         .contentType(MediaType.APPLICATION_JSON)

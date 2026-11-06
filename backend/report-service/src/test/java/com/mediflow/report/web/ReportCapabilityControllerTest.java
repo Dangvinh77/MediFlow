@@ -85,7 +85,7 @@ class ReportCapabilityControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
     void capabilityEndpoints_nonFinanceRole_returns403(String role) throws Exception {
         mvc.perform(get(PATH + "/capabilities")
                         .with(user("00000000-0000-4000-8000-000000000001").roles(role)))

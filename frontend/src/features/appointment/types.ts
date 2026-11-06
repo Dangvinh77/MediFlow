@@ -67,20 +67,6 @@ export interface ConsultationBreak {
   endTime: string;
 }
 
-export interface SchedulingScopeSnapshot {
-  accountId: string;
-  revision: number;
-  departmentIds: string[];
-  updatedAt: string | null;
-  updatedByAccountId: string | null;
-}
-
-export interface SchedulingScopeCommand {
-  expectedRevision: number;
-  departmentIds: string[];
-  reason: string;
-}
-
 export interface ConsultationRoomSummary {
   roomId: string;
   departmentId: string;

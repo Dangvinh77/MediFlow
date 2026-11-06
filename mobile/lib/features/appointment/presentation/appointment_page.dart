@@ -44,7 +44,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access == null) return const _SignInRequired();
-    if (!const {'ADMIN', 'MANAGER', 'DOCTOR', 'NURSE'}.contains(access.role)) {
+    if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
       return const Center(child: Text('Bạn không có quyền xem lịch hẹn.'));
     }
     final findAppointments = ref.watch(findAppointmentsProvider);

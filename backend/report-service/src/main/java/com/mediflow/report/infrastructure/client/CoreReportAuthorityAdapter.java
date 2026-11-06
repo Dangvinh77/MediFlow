@@ -72,8 +72,8 @@ public final class CoreReportAuthorityAdapter implements CurrentReportAuthorityP
             UUID id = UUID.fromString(scope.path("departmentId").asText());
             if (!scope.path("revision").isIntegralNumber() || !scope.path("revision").canConvertToLong()
                     || scope.path("revision").asLong() < 0 || !scope.path("departmentName").isTextual()) return false;
-            // MANAGER assignments carry no appointment; DOCTOR scope comes from an active head appointment.
-            if ("DOCTOR".equals(role)) UUID.fromString(scope.path("appointmentId").asText());
+            // A DOCTOR's department scope exists only through an active head appointment.
+            UUID.fromString(scope.path("appointmentId").asText());
             if (department.equals(id)) permitted = true;
         }
         return permitted;

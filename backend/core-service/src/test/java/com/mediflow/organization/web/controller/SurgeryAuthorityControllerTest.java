@@ -65,7 +65,7 @@ class SurgeryAuthorityControllerTest {
         UUID actor=UUID.randomUUID();
         UUID dept=UUID.randomUUID();
         String body="{\"expectedRevision\":0,\"roomCode\":\"OR-1\",\"roomName\":\"Room\",\"departmentId\":\""+dept+"\",\"active\":true,\"reason\":\"Reviewed\"}";
-        for(String role:new String[]{"DOCTOR","NURSE","MANAGER","PATIENT"}) {
+        for(String role:new String[]{"DOCTOR","NURSE","PATIENT"}) {
             mvc.perform(post("/api/v1/org/operating-rooms").contentType("application/json").content(body)
                     .header("Authorization", token("access", role, actor.toString(),
                             "PATIENT".equals(role) ? UUID.randomUUID().toString() : null)))

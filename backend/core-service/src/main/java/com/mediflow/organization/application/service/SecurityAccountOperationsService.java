@@ -410,7 +410,6 @@ public class SecurityAccountOperationsService {
             case TECHNICIAN -> Role.LAB_TECH;
             case PHARMACIST -> Role.PHARMACIST;
             case CASHIER -> Role.CASHIER;
-            case MANAGER -> Role.MANAGER;
             case ADMINISTRATIVE -> Role.ADMIN;
         };
     }

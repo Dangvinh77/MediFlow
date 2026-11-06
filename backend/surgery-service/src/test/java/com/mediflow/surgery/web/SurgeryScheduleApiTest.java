@@ -41,7 +41,7 @@ class SurgeryScheduleApiTest {
     @MockBean com.mediflow.surgery.application.port.in.BeginPreopUseCase preop;
     @MockBean com.mediflow.surgery.application.port.in.CancelSurgeryUseCase cancel;
 
-    @ParameterizedTest @ValueSource(strings={"ADMIN","MANAGER","DOCTOR"})
+    @ParameterizedTest @ValueSource(strings={"ADMIN","DOCTOR"})
     void allowedSchedulersReceiveOnlyDraftOutcome(String role) throws Exception {
         when(scheduling.prepare(any())).thenReturn(new SurgeryCommandOutcome("PREPARE_SCHEDULE",CASE,2,
                 UUID.randomUUID(),1,"DRAFT",Instant.parse("2026-10-05T08:00:00Z"),false));

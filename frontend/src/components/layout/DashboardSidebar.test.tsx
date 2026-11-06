@@ -36,9 +36,17 @@ describe("MVP dashboard navigation", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("lets managers reach the department revenue report without typing a URL", () => {
-    render(<DashboardSidebar role="MANAGER" open={false} onClose={vi.fn()} />);
-    expect(screen.getByRole("link", { name: /Doanh thu theo khoa/ })).toHaveAttribute("href", "/billing/revenue");
+  it("gives a department head their report inside department management, not the clinical menu", () => {
+    const { rerender } = render(<DashboardSidebar role="DOCTOR" open={false} onClose={vi.fn()} managementWorkspace />);
+    expect(screen.getByRole("link", { name: /Báo cáo khoa/ })).toHaveAttribute("href", "/reports/outpatient");
+    expect(screen.queryByRole("link", { name: /Doanh thu theo khoa/ })).not.toBeInTheDocument();
+    rerender(<DashboardSidebar role="DOCTOR" open={false} onClose={vi.fn()} />);
+    expect(screen.queryByRole("link", { name: /Báo cáo/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps the hospital-wide report with ADMIN", () => {
+    render(<DashboardSidebar role="ADMIN" open={false} onClose={vi.fn()} />);
+    expect(screen.getByRole("link", { name: /Báo cáo.*Doanh thu/ })).toHaveAttribute("href", "/reports");
   });
 
   it("exposes no business routes without a role", () => {

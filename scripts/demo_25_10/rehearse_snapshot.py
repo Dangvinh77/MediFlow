@@ -334,8 +334,9 @@ def main():
             from prepare_report_demo import prepare as prepare_report
             report_api = DemoApi(manifest['gateway'], evidence / 'report-demo-journal.local.json', evidence / 'stop')
             report_evidence = prepare_report(report_api, evidence, accept=True)
-            if report_evidence['availableSyntheticPeriods'] < 2:
-                raise RuntimeError("Expected at least two currently valid synthetic historical Report periods")
+            # The chart seed's 2025 rows supersede the snapshot's small 2025 coverage on purpose.
+            if not report_evidence['accepted']:
+                raise RuntimeError("Expected the accepted synthetic 2024 Report period")
             print("REPORT DEMO READY: " + str(report_evidence['availableSyntheticPeriods'])
                   + " accepted synthetic periods; source evidence: "
                   + str(evidence / 'report-demo-acceptance.local.json'), flush=True)

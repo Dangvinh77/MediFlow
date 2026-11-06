@@ -204,7 +204,7 @@ void main() {
   test('staff department reads also use the signed staff owner', () async {
     final repository = SelfProfileStub();
     final department = await ReadOwnStaffDepartment(repository)(
-      sessionFor(UserRole.manager, staffIdClaim: staffId),
+      sessionFor(UserRole.doctor, staffIdClaim: staffId),
     );
 
     expect(department, 'Khoa Nội');

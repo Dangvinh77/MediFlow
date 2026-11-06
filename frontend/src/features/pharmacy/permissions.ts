@@ -64,7 +64,6 @@ export const pharmacyCapabilities = {
   NURSE: noCapabilities,
   CASHIER: noCapabilities,
   LAB_TECH: noCapabilities,
-  MANAGER: noCapabilities,
   PATIENT: noCapabilities,
   SYSTEM: noCapabilities,
 } satisfies Record<Role, PharmacyCapabilities>;

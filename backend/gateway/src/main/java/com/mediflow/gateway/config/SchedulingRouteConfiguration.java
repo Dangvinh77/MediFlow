@@ -14,7 +14,6 @@ public class SchedulingRouteConfiguration {
     RouteLocator schedulingRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("scheduling-core", route -> route.path(
-                        "/api/v2/org/accounts/*/schedule-management-scope",
                         "/api/v2/org/consultation-rooms",
                         "/api/v2/org/departments/*/head-appointments").uri("lb://core-service"))
                 .route("scheduling-clinical", route -> route.path(

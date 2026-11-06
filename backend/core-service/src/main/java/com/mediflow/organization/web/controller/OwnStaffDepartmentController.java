@@ -27,7 +27,7 @@ public class OwnStaffDepartmentController {
     }
 
     @GetMapping("/{id}/department")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH') and "
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH') and "
             + "authentication.details instanceof T(com.mediflow.organization.infrastructure.security.StaffIdentityDetails) "
             + "and authentication.details.staffId == #id")
     public ResponseEntity<ApiResponse<StaffDepartmentDTO>> read(@PathVariable UUID id, Authentication authentication) {

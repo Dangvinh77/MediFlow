@@ -64,10 +64,10 @@ class OutpatientStatisticsControllerTest {
     @Test
     void managerNeedsCurrentAssignedDepartment() throws Exception {
         UUID department = UUID.randomUUID();
-        String token = ReportScopeTestSupport.bearer("MANAGER", SECRET);
+        String token = ReportScopeTestSupport.bearer("DOCTOR", SECRET);
         String path = "/api/v1/reports/outpatient/statistics?fromDate=2026-11-04&toDate=2026-11-04";
         mvc.perform(get(path).header("Authorization", token)).andExpect(status().isForbidden());
-        when(authority.permits(eq(ReportScopeTestSupport.ACCOUNT), eq("MANAGER"), eq(department), anyString(), any()))
+        when(authority.permits(eq(ReportScopeTestSupport.ACCOUNT), eq("DOCTOR"), eq(department), anyString(), any()))
                 .thenReturn(true);
         mvc.perform(get(path + "&departmentId=" + department).header("Authorization", token)).andExpect(status().isOk());
         verify(reader).statistics(DAY, DAY, department);

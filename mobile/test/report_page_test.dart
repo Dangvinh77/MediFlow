@@ -22,6 +22,7 @@ const _day = OperationsFigures(
 
 class _Reports implements ReportRepository {
   int readCalls = 0;
+  final queries = <ReportQuery>[];
   final operations = const OperationsStatistics(
     from: '2026-11-01',
     to: '2026-11-05',
@@ -63,16 +64,23 @@ class _Reports implements ReportRepository {
   }
 
   @override
-  Future<OperationsStatistics> statistics(ReportQuery query) async =>
-      operations;
+  Future<OperationsStatistics> statistics(ReportQuery query) async {
+    queries.add(query);
+    return operations;
+  }
 }
 
-Widget _host(_Reports reports, {double textScale = 1}) => ProviderScope(
+Widget _host(
+  _Reports reports, {
+  double textScale = 1,
+  String role = 'ADMIN',
+  String? lockedDepartmentId,
+}) => ProviderScope(
   overrides: [
     workspaceAccessProvider.overrideWithValue(
       WorkspaceAccess(
         sessionIdentity: 'report-test',
-        role: 'ADMIN',
+        role: role,
         staffId: otherDrugId,
       ),
     ),
@@ -90,11 +98,41 @@ Widget _host(_Reports reports, {double textScale = 1}) => ProviderScope(
           .copyWith(textScaler: TextScaler.linear(textScale)),
       child: child!,
     ),
-    home: const Scaffold(body: ReportPage(outpatientEnabled: true)),
+    home: Scaffold(
+      body: ReportPage(
+        outpatientEnabled: true,
+        lockedDepartmentId: lockedDepartmentId,
+      ),
+    ),
   ),
 );
 
 void main() {
+  testWidgets('a department head reads their own department with no picker', (
+    tester,
+  ) async {
+    final reports = _Reports();
+    await tester.pumpWidget(
+      _host(reports, role: 'DOCTOR', lockedDepartmentId: otherDrugId),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReferencePicker), findsNothing);
+    expect(find.textContaining('Khoa phụ trách'), findsOneWidget);
+    expect(reports.queries.single.departmentId, otherDrugId);
+  });
+
+  testWidgets('a doctor outside department management cannot read reports', (
+    tester,
+  ) async {
+    final reports = _Reports();
+    await tester.pumpWidget(_host(reports, role: 'DOCTOR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bạn không có quyền xem báo cáo.'), findsOneWidget);
+    expect(reports.queries, isEmpty);
+  });
+
   testWidgets('report selector fits a narrow screen with large text', (
     tester,
   ) async {

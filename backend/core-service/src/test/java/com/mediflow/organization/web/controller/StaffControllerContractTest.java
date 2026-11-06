@@ -48,7 +48,7 @@ import io.jsonwebtoken.security.Keys;
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class StaffControllerContractTest {
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "MANAGER"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE"})
     void directorySearchPreservesRolesAndPrivacy(String role) throws Exception {
         when(getStaffUseCase.searchDirectory(null, null, "Đặng", true, "ADMIN".equals(role), com.mediflow.common.api.PageQuery.of(1, 20)))
                 .thenReturn(PageResult.empty(com.mediflow.common.api.PageQuery.of(1, 20)));
@@ -423,7 +423,7 @@ class StaffControllerContractTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE"})
     void staffReads_onlyAdminReceivesPersonalInformation(String role) throws Exception {
         var staff = com.mediflow.organization.domain.model.Staff.create(
                 "Directory Person", DEPARTMENT_ID,
@@ -456,7 +456,7 @@ class StaffControllerContractTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH"})
     void signedStaffIdentityCanReadOwnPrivateProfile(String role) throws Exception {
         var staff = com.mediflow.organization.domain.model.Staff.create("My Profile", DEPARTMENT_ID,
                 com.mediflow.organization.domain.model.JobTitle.DOCTOR,
@@ -469,7 +469,7 @@ class StaffControllerContractTest {
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.data.identityNumber").value("012345678901"))
                 .andExpect(jsonPath("$.data.email").value("mine@example.test"));
-        if (List.of("MANAGER", "DOCTOR", "NURSE").contains(role)) {
+        if (List.of("DOCTOR", "NURSE").contains(role)) {
             when(getStaffUseCase.search(org.mockito.ArgumentMatchers.isNull(),
                     org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any()))
                     .thenReturn(PageResult.of(List.of(staff), 1, 0, 20));

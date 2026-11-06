@@ -324,24 +324,24 @@ class FollowUpRegistrationAcceptanceTest {
     }
 
     @Test
-    void managerWithoutCurrentScheduleAssignmentCannotReadSessionRegistrationSummaries() {
+    void doctorWhoIsNeitherAssignedNorHeadCannotReadSessionRegistrationSummaries() {
         PageQuery page = PageQuery.of(0, 20);
-        when(actors.current()).thenReturn(new ActorIdentity(ACTOR_ACCOUNT_ID, ACTOR_STAFF_ID, null, "MANAGER"));
+        when(actors.current()).thenReturn(new ActorIdentity(ACTOR_ACCOUNT_ID, ACTOR_STAFF_ID, null, "DOCTOR"));
         when(authority.authority(eq(ACTOR_ACCOUNT_ID), eq(DEPARTMENT_ID), anyString()))
                 .thenReturn(managerAuthority(false));
         when(registrations.findBySession(TARGET_SESSION_ID, page)).thenReturn(PageResult.of(List.of(), 0, 0, 20));
 
         assertThatThrownBy(() -> service.sessionRegistrations(TARGET_SESSION_ID, page))
-                .isInstanceOf(ForbiddenOperationException.class)
-                .hasFieldOrPropertyWithValue("code", "SCHEDULING_SCOPE_DENIED");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasFieldOrPropertyWithValue("code", "RESOURCE_NOT_FOUND");
 
         verify(registrations, never()).findBySession(TARGET_SESSION_ID, page);
     }
 
     @Test
-    void managerWithCurrentScheduleAssignmentCanReadSessionRegistrationSummaries() {
+    void departmentHeadCanReadSessionRegistrationSummaries() {
         PageQuery page = PageQuery.of(0, 20);
-        when(actors.current()).thenReturn(new ActorIdentity(ACTOR_ACCOUNT_ID, ACTOR_STAFF_ID, null, "MANAGER"));
+        when(actors.current()).thenReturn(new ActorIdentity(ACTOR_ACCOUNT_ID, ACTOR_STAFF_ID, null, "DOCTOR"));
         when(authority.authority(eq(ACTOR_ACCOUNT_ID), eq(DEPARTMENT_ID), anyString()))
                 .thenReturn(managerAuthority(true));
         when(registrations.findBySession(TARGET_SESSION_ID, page)).thenReturn(PageResult.of(List.of(), 0, 0, 20));
@@ -365,7 +365,7 @@ class FollowUpRegistrationAcceptanceTest {
     }
 
     private SchedulingAuthoritySnapshot managerAuthority(boolean canManageSchedules) {
-        return new SchedulingAuthoritySnapshot(ACTOR_ACCOUNT_ID, true, true, "MANAGER", ACTOR_STAFF_ID,
+        return new SchedulingAuthoritySnapshot(ACTOR_ACCOUNT_ID, true, true, "DOCTOR", ACTOR_STAFF_ID,
                 true, DEPARTMENT_ID, true, canManageSchedules, 3L, NOW);
     }
 

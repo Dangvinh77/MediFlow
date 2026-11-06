@@ -23,6 +23,5 @@ class JobTitleTeamRoleMappingTest {
     @Test
     void nonClinicalTitles_areNotEligible() {
         assertThat(JobTitleTeamRoleMapping.rolesFor(JobTitle.TECHNICIAN)).isEqualTo(List.of());
-        assertThat(JobTitleTeamRoleMapping.rolesFor(JobTitle.MANAGER)).isEqualTo(List.of());
     }
 }

@@ -82,7 +82,7 @@ class ReportCoverageGatewayWebTest {
         String correlation = UUID.randomUUID().toString();
         String uri = PREVIEW + "?fromDate=2026-10-01&toDate=2026-10-02&departmentId=" + UUID.randomUUID();
         request(HttpMethod.GET, uri, bearer).header("X-Correlation-Id", correlation)
-                .header("X-User-Id", UUID.randomUUID().toString()).header("X-User-Role", Roles.MANAGER)
+                .header("X-User-Id", UUID.randomUUID().toString()).header("X-User-Role")
                 .exchange().expectStatus().isOk()
                 .expectHeader().valueEquals("Cache-Control", "no-store")
                 .expectHeader().valueEquals("X-Correlation-Id", correlation)
@@ -109,7 +109,7 @@ class ReportCoverageGatewayWebTest {
 
     @Test
     void otherRolesWrongMethodsAndNestedPathsNeverReachSupport() {
-        for (String role : List.of(Roles.MANAGER, Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
+        for (String role : List.of(Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
                 Roles.LAB_TECH, Roles.CASHIER, Roles.PATIENT)) {
             String bearer = "Bearer " + tokens.issueAccessToken(UUID.randomUUID(), role,
                     null, null, Roles.PATIENT.equals(role) ? UUID.randomUUID() : null);

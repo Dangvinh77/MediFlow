@@ -32,7 +32,7 @@ class FinalAdmissionSettlementControllerTest {
         mvc.perform(post(url()).with(user(actor.toString()).roles(role)).header("Idempotency-Key","key")).andExpect(status().isCreated());
         verify(service).finalizeAdmission(new FinalizeAdmissionCommand(account,actor,"key"));
     }
-    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","MANAGER","LAB_TECH","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","LAB_TECH","PATIENT","SYSTEM"})
     void otherRoleCannotFinalize(String role)throws Exception {
         mvc.perform(post(url()).with(user(actor.toString()).roles(role)).header("Idempotency-Key","key")).andExpect(status().isForbidden());verifyNoInteractions(service);
     }

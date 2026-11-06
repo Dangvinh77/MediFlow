@@ -93,7 +93,7 @@ class ReportControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "DOCTOR")
     void monthly_manager_deniesHospitalScope() throws Exception {
         mockMvc.perform(get(BASE_PATH + "/monthly").param("month", "2").param("year", "2028"))
                 .andExpect(status().isForbidden());

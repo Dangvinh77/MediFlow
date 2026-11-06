@@ -108,7 +108,7 @@ class _LabPageState extends ConsumerState<LabPage> {
                       id: item.patientId,
                       label: 'Bệnh nhân',
                     ),
-                    if (access != null && access.role != 'MANAGER')
+                    if (access != null)
                       TextButton.icon(
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(

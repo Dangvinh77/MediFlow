@@ -19,7 +19,7 @@ export function ReportDepartmentProvider({ children }: { children: ReactNode }) 
     const role = getRole();
     const cache = new Map<string, Promise<Result>>();
     return (id: string, attempt: number) => {
-      if (!session || getSessionKey() !== session || getRole() !== role || (role !== "ADMIN" && role !== "MANAGER")) return Promise.resolve({ error: "Không có quyền tra cứu tên khoa" });
+      if (!session || getSessionKey() !== session || getRole() !== role || (role !== "ADMIN" && role !== "DOCTOR")) return Promise.resolve({ error: "Không có quyền tra cứu tên khoa" });
       const key = `${id.toLowerCase()}:${attempt}`;
       let request = cache.get(key);
       if (!request) {

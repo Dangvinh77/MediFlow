@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function BillingRevenuePage() {
   return (
     <PageShell title="Doanh thu theo khoa" description="Doanh thu đã thanh toán, gộp theo khoa trong khoảng ngày.">
-      <RoleGate allowed={["ADMIN", "MANAGER"]}>
+      <RoleGate allowed={["ADMIN"]}>
         <RevenueReport />
       </RoleGate>
     </PageShell>

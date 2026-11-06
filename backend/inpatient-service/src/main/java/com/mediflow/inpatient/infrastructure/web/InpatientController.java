@@ -92,7 +92,7 @@ public class InpatientController {
     }
 
     @GetMapping("/admissions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'CASHIER')")
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<PageResult<AdmissionDTO>>> searchAdmissions(
             @RequestParam(required = false) UUID departmentId,
@@ -200,7 +200,7 @@ public class InpatientController {
     }
 
     @PostMapping("/beds")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BedDTO>> createBed(@Valid @RequestBody CreateBedRequest request) {
         BedDTO created = beds.create(request, actorIdentity.currentStaffId(), correlationId());
         return ResponseEntity.created(URI.create("/api/v1/inpatient/beds/" + created.maGiuong()))
@@ -208,7 +208,7 @@ public class InpatientController {
     }
 
     @PutMapping("/beds/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BedDTO>> updateBed(
             @PathVariable UUID id, @Valid @RequestBody UpdateBedRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
@@ -216,7 +216,7 @@ public class InpatientController {
     }
 
     @GetMapping("/beds")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<PageResult<BedDTO>>> searchBeds(
             @RequestParam(required = false) UUID departmentId,

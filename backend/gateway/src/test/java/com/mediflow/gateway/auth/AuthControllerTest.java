@@ -254,7 +254,7 @@ class AuthControllerTest {
                         .body("{\"success\":true,\"data\":{"
                                 + "\"exists\":true,\"active\":true,"
                                 + "\"accountId\":\"" + accountId + "\","
-                                + "\"role\":\"MANAGER\","
+                                + "\"role\":\"DOCTOR\","
                                 + "\"staffId\":\"" + currentStaffId + "\","
                                 + "\"departmentId\":\"" + currentDepartmentId + "\","
                                 + "\"patientId\":null},\"error\":null,"
@@ -269,7 +269,7 @@ class AuthControllerTest {
         var body = (com.mediflow.gateway.auth.AuthDtos.RefreshResponse) response.getBody();
         assertThat(body).isNotNull();
         var access = jwt.parse(body.accessToken());
-        assertThat(access.get(JwtClaims.ROLE, String.class)).isEqualTo("MANAGER");
+        assertThat(access.get(JwtClaims.ROLE, String.class)).isEqualTo("DOCTOR");
         assertThat(access.get(JwtClaims.STAFF_ID, String.class)).isEqualTo(currentStaffId.toString());
         assertThat(access.get(JwtClaims.DEPARTMENT_ID, String.class))
                 .isEqualTo(currentDepartmentId.toString());

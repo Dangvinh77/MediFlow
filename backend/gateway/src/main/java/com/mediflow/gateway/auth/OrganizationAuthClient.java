@@ -37,7 +37,6 @@ public class OrganizationAuthClient {
             Roles.PHARMACIST,
             Roles.CASHIER,
             Roles.LAB_TECH,
-            Roles.MANAGER,
             Roles.PATIENT);
 
     private final WebClient client;

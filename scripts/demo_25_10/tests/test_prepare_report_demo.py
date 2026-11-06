@@ -18,18 +18,30 @@ PREP_SPEC.loader.exec_module(prep)
 from prepare_ui_demo import ApiError
 
 
+HEAD_STAFF = '52977f14-bb6e-4a6f-8474-edae4aeb9879'
+HEAD_DEPARTMENT = '9a6dd24a-1c1f-4122-9e31-7cfea345ec45'
+
+
 class FakeApi:
     def __init__(self, pending=None):
         self.pending = pending
         self.calls = []
         self.logins = []
         self.accepted = []
+        self.claims = {'doctor': {'staffId': HEAD_STAFF}}
+        self.head = None
 
     def login(self, role, username):
         self.logins.append((role, username))
 
     def call(self, role, method, path, body=None, **kwargs):
         self.calls.append((role, method, path, body))
+        if path == '/api/v1/org/staff/' + HEAD_STAFF:
+            return {'departmentId': HEAD_DEPARTMENT}
+        if path.endswith('/head-appointments'):
+            if method == 'PUT':
+                self.head = body['staffId']
+            return {'revision': 0, 'staffId': self.head}
         if path.startswith('/api/v1/reports/outpatient/coverage/preview'):
             sources = {
                 name: {'rowCount': len(seed.export_records(seed.build_seed(), name)), 'fingerprint': 'a' * 64}
@@ -48,16 +60,30 @@ class FakeApi:
             return {'coverageId': 'coverage-id', 'from': '2024-01-01', 'to': '2024-12-31',
                     'departmentId': seed.DEPARTMENT_IDS[0], 'acceptanceReference': body['acceptanceReference']}
         if path.startswith('/api/v1/reports/outpatient/daily'):
-            return {'covered': True, 'periods': [{'completedVisits': 2, 'cashReceived': 230000, 'refunds': 30000}]}
+            fixture = seed.build_seed()
+            visits = sum(visit.department_id == seed.DEPARTMENT_IDS[0] and visit.business_date == prep.DAILY_SAMPLE_DATE
+                         for visit in fixture.visits)
+            return {'covered': True, 'periods': [{'completedVisits': visits, 'cashReceived': 230000, 'refunds': 30000}]}
         if path.startswith('/api/v1/reports/outpatient/monthly'):
             return {'covered': True, 'periods': [{} for _ in range(12)]}
         if path.startswith('/api/v1/reports/outpatient/statistics'):
-            return {'reconciled': False, 'totals': {'completedVisits': 768},
+            current = sum(visit.business_date.year == seed.CURRENT_TO.year for visit in seed.build_seed().visits)
+            return {'reconciled': False, 'totals': {'completedVisits': current},
                     'days': [{}], 'departments': [{} for _ in seed.DEPARTMENT_IDS]}
         raise AssertionError('Unexpected API path: ' + path)
 
 
 class PrepareReportDemoTest(unittest.TestCase):
+    def test_the_seeded_doctor_is_appointed_head_once_through_the_admin_api(self):
+        api = FakeApi()
+        prep.appoint_department_head(api)
+        prep.appoint_department_head(api)
+        writes = [call for call in api.calls if call[1] == 'PUT']
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(writes[0][0], 'admin')
+        self.assertIn(HEAD_DEPARTMENT, writes[0][2])
+        self.assertEqual(writes[0][3]['staffId'], HEAD_STAFF)
+
     def test_default_preview_writes_five_explicit_synthetic_exports_without_accepting(self):
         api = FakeApi()
         with tempfile.TemporaryDirectory() as temporary:
@@ -70,7 +96,7 @@ class PrepareReportDemoTest(unittest.TestCase):
             self.assertEqual(result['availableSyntheticPeriods'], 1)
             proof = json.loads((source_dir / 'CLINICAL.json').read_text(encoding='utf-8'))
             self.assertTrue(proof['provenance'].startswith('SYNTHETIC-DEMO-'))
-        self.assertEqual(api.logins, [('admin', prep.SEED_LOGIN_EMAILS['admin'])])
+        self.assertEqual(api.logins[0], ('admin', prep.SEED_LOGIN_EMAILS['admin']))
 
     def test_explicit_accept_posts_reviewed_counts_then_verifies_reads_and_period_list(self):
         api = FakeApi()

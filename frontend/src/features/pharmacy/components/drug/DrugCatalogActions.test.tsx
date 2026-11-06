@@ -10,7 +10,7 @@ describe("DrugCatalogActions", () => {
     mocks.role = role; render(<DrugCatalogActions />);
     expect(screen.getByRole("link", { name: /Thêm thuốc/ })).toHaveAttribute("href", "/pharmacy/drugs/new");
   });
-  it.each(["DOCTOR", "MANAGER", null] as (Role | null)[])("does not offer inventory mutations to %s", role => {
+  it.each(["DOCTOR", null] as (Role | null)[])("does not offer inventory mutations to %s", role => {
     mocks.role = role; render(<DrugCatalogActions />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });

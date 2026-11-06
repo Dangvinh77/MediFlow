@@ -60,7 +60,7 @@ class PaymentRequestQueueControllerTest {
             .andExpect(jsonPath("$.data.size").value(100)).andExpect(jsonPath("$.correlationId").isNotEmpty());
         verify(queue).find(patient,episode,PaymentRequestSourcePurpose.PRESCRIPTION,PageQuery.of(-1,500));
     }
-    @ParameterizedTest @ValueSource(strings={"PATIENT","DOCTOR","NURSE","LAB_TECH","PHARMACIST","MANAGER"})
+    @ParameterizedTest @ValueSource(strings={"PATIENT","DOCTOR","NURSE","LAB_TECH","PHARMACIST"})
     void otherHumanRolesCannotBrowse(String role) throws Exception {
         http.perform(get(PATH).header("Authorization","Bearer "+access(role))).andExpect(status().isForbidden());
         verifyNoInteractions(queue);

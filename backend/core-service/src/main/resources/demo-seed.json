@@ -125,7 +125,7 @@
       "fullName": "Trần Quản Lý Demo",
       "identityNumber": "999880000002",
       "departmentKey": "department-03",
-      "jobTitle": "MANAGER",
+      "jobTitle": "ADMINISTRATIVE",
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800002",
@@ -544,14 +544,6 @@
       "password": "MediFlowDemo@2026",
       "role": "ADMIN",
       "staffKey": "staff-01",
-      "patientKey": null
-    },
-    {
-      "key": "account-demo.manager",
-      "username": "demo.manager",
-      "password": "MediFlowDemo@2026",
-      "role": "MANAGER",
-      "staffKey": "staff-02",
       "patientKey": null
     },
     {

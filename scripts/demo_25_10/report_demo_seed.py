@@ -35,9 +35,40 @@ PATIENT_IDS = (
 CASHIER_ACCOUNT_ID = "abf7ead1-1581-40e7-b08c-3b2ecc10e64f"
 HISTORICAL_FROM = date(2024, 1, 1)
 HISTORICAL_TO = date(2024, 12, 31)
-CURRENT_FROM = date(2026, 9, 1)
+# A full 2025 lets the dashboard compare two closed years with the running year. Its rows are
+# provisional chart samples; they invalidate the snapshot's small accepted 2025 coverage (see
+# REPORT_READINESS.md) rather than joining it.
+COMPARISON_FROM = date(2025, 1, 1)
+COMPARISON_TO = date(2025, 12, 31)
+CURRENT_FROM = date(2026, 1, 1)
 # Fixed through the date of this demo refresh; current rows are operational chart samples only.
 CURRENT_TO = date(2026, 11, 5)
+WINDOWS = ((HISTORICAL_FROM, HISTORICAL_TO), (COMPARISON_FROM, COMPARISON_TO), (CURRENT_FROM, CURRENT_TO))
+BASE_DAILY_VISITS = Decimal("2.1")
+# Lunar New Year closures leave a visible gap in the calendar heatmap.
+HOLIDAYS = ((date(2024, 2, 8), date(2024, 2, 14)), (date(2025, 1, 27), date(2025, 2, 2)),
+            (date(2026, 2, 16), date(2026, 2, 20)))
+# Visit volume, exam price and per-year growth differ so department comparisons have a shape.
+DEPARTMENT_PROFILES = {
+    DEPARTMENT_IDS[0]: {"volume": Decimal("1.30"), "exam": 150000, "lab_rate": 3, "rx_rate": 4,
+                        "growth": {2024: "1.00", 2025: "1.12", 2026: "1.24"},
+                        "season": ("1.10", "0.80", "1.00", "0.95", "0.90", "0.95",
+                                   "1.00", "1.05", "1.10", "1.15", "1.20", "1.15")},
+    DEPARTMENT_IDS[1]: {"volume": Decimal("1.05"), "exam": 130000, "lab_rate": 4, "rx_rate": 5,
+                        "growth": {2024: "1.00", 2025: "1.18", 2026: "1.10"},
+                        "season": ("1.30", "0.95", "1.25", "1.10", "0.85", "0.70",
+                                   "0.70", "0.80", "1.05", "1.20", "1.30", "1.35")},
+    DEPARTMENT_IDS[2]: {"volume": Decimal("0.70"), "exam": 250000, "lab_rate": 2, "rx_rate": 6,
+                        "growth": {2024: "1.00", 2025: "1.06", 2026: "1.30"},
+                        "season": ("1.25", "0.85", "1.05", "0.95", "0.90", "0.85",
+                                   "0.85", "0.90", "0.95", "1.05", "1.15", "1.30")},
+    DEPARTMENT_IDS[3]: {"volume": Decimal("0.85"), "exam": 170000, "lab_rate": 5, "rx_rate": 3,
+                        "growth": {2024: "1.00", 2025: "0.94", 2026: "1.08"},
+                        "season": ("1.00", "1.05", "1.30", "1.20", "0.90", "0.80",
+                                   "0.75", "0.85", "1.25", "1.30", "1.05", "0.95")},
+}
+WEEKDAY_LOAD = ("1.25", "1.10", "1.00", "0.90", "0.75")
+PRICE_GROWTH = {2024: Decimal("1.00"), 2025: Decimal("1.05"), 2026: Decimal("1.11")}
 
 
 @dataclass(frozen=True)
@@ -98,6 +129,29 @@ def _workdays(start, end):
         day += timedelta(days=1)
 
 
+def _is_holiday(day):
+    return any(start <= day <= end for start, end in HOLIDAYS)
+
+
+def _unit(label):
+    """Deterministic pseudo-random fraction in [0, 1); stable across runs and machines."""
+    return Decimal(int(_fingerprint(label)[:8], 16)) / Decimal(2 ** 32)
+
+
+def _daily_visits(department_id, day):
+    """Seasonal, weekday-weighted load, rounded by a stable draw so totals stay smooth."""
+    profile = DEPARTMENT_PROFILES[department_id]
+    load = (BASE_DAILY_VISITS * profile["volume"] * Decimal(profile["growth"][day.year])
+            * Decimal(profile["season"][day.month - 1]) * Decimal(WEEKDAY_LOAD[day.weekday()]))
+    return int(load + _unit(f"load:{department_id}:{day}"))
+
+
+def _money(amount, year):
+    """Round a scaled list price to the nearest thousand VND."""
+    thousands = (Decimal(amount) * PRICE_GROWTH[year] / 1000).quantize(Decimal("1"))
+    return (thousands * 1000).quantize(Decimal("0.01"))
+
+
 def _instant(day, minute_offset=0):
     # Nine o'clock in Asia/Bangkok is 02:00 UTC; adding the offset stays in the same local day.
     return datetime.combine(day, time(2, 0), timezone.utc) + timedelta(minutes=minute_offset)
@@ -125,16 +179,18 @@ def _operational(source_type, source_id, metric_type, department_id, episode_id,
 
 
 def build_seed():
-    """Return the same 2024 acceptance fixture and 2026 chart rows on every call."""
+    """Return the same 2024 acceptance fixture and 2025-2026 chart rows on every call."""
     visits, receipts, refunds, operational = [], [], [], []
     receipt_by_visit = {}
     global_sequence = 0
-    windows = ((HISTORICAL_FROM, HISTORICAL_TO, 2), (CURRENT_FROM, CURRENT_TO, 4))
 
-    for start, end, visits_per_department in windows:
+    for start, end in WINDOWS:
         for business_date in _workdays(start, end):
+            if _is_holiday(business_date):
+                continue
             for department_index, department_id in enumerate(DEPARTMENT_IDS):
-                for within_day in range(visits_per_department):
+                profile = DEPARTMENT_PROFILES[department_id]
+                for within_day in range(_daily_visits(department_id, business_date)):
                     sequence = global_sequence
                     global_sequence += 1
                     episode_id = _id(f"episode:{business_date}:{department_id}:{within_day}")
@@ -146,13 +202,14 @@ def build_seed():
                         "COMPLETED_VISITS", department_id, episode_id, business_date, "1", category,
                         "clinical:" + episode_id, 0))
 
-                    charges = [("EXAM", Decimal("150000.00"))]
-                    if (sequence + business_date.day) % 2 == 0:
-                        charges.append(("LAB_TEST", Decimal("80000.00")))
+                    year = business_date.year
+                    charges = [("EXAM", _money(profile["exam"], year))]
+                    if (sequence + business_date.day) % profile["lab_rate"] == 0:
+                        charges.append(("LAB_TEST", _money(80000 + (sequence % 3) * 45000, year)))
                         operational.append(_operational("LAB_RESULT", _id("lab:" + episode_id), "LAB_TESTS",
                             department_id, episode_id, business_date, "1", None, "lab:" + episode_id, 25))
-                    if (sequence + business_date.day) % 4 != 0:
-                        charges.append(("PRESCRIPTION", Decimal(40000 + (sequence % 4) * 25000).quantize(Decimal("0.01"))))
+                    if (sequence + business_date.day) % profile["rx_rate"] != 0:
+                        charges.append(("PRESCRIPTION", _money(60000 + (sequence % 4) * 40000, year)))
                         dispense_id = _id("dispense:" + episode_id)
                         operational.append(_operational("DISPENSE", dispense_id, "DISPENSED_PRESCRIPTIONS",
                             department_id, episode_id, business_date, "1", None, "rx-count:" + episode_id, 50))
@@ -172,7 +229,8 @@ def build_seed():
     # A partial cashier refund about every thirteen visits. Refund dates are the next
     # weekday after a two-day processing window, and remain inside their source window.
     for visit in visits:
-        start, end = (HISTORICAL_FROM, HISTORICAL_TO) if visit.business_date.year == 2024 else (CURRENT_FROM, CURRENT_TO)
+        end = next(window_end for window_start, window_end in WINDOWS
+                   if window_start <= visit.business_date <= window_end)
         if visit.sequence % 13 != 0:
             continue
         candidates = receipt_by_visit[visit.source_id]
@@ -206,6 +264,8 @@ def summarize(seed):
         "windows": {
             "historicalReviewFixture": {"fromDate": HISTORICAL_FROM.isoformat(),
                                          "toDate": HISTORICAL_TO.isoformat(), "departmentId": DEPARTMENT_IDS[0]},
+            "provisionalComparisonStatistics": {"fromDate": COMPARISON_FROM.isoformat(),
+                                                 "toDate": COMPARISON_TO.isoformat(), "departments": list(DEPARTMENT_IDS)},
             "provisionalCurrentStatistics": {"fromDate": CURRENT_FROM.isoformat(),
                                               "toDate": CURRENT_TO.isoformat(), "departments": list(DEPARTMENT_IDS)},
         },

@@ -855,7 +855,6 @@ String _roleName(String role) => switch (role) {
   'PHARMACIST' => 'Dược sĩ',
   'CASHIER' => 'Thu ngân',
   'LAB_TECH' => 'Kỹ thuật viên xét nghiệm',
-  'MANAGER' => 'Quản lý',
   'PATIENT' => 'Bệnh nhân',
   'SYSTEM' => 'Hệ thống',
   _ => role,

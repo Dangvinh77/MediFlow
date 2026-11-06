@@ -53,12 +53,6 @@ describe("schedule management", () => {
     mocks.rooms.mockResolvedValue({ content: [{ roomId: "room-id", departmentId: "department-id", roomName: "Phòng khám 1", roomType: "CONSULTATION" }], totalElements: 1, totalPages: 1, number: 0, size: 50 });
   });
 
-  it("prefills a linked manager without writing scope on entry", async () => {
-    render(<ScheduleManagementWorkspace enabled initialManagerAccountId="00000000-0000-4000-8000-000000000123" />);
-    expect(screen.getByLabelText("Tài khoản quản lý")).toHaveValue("00000000-0000-4000-8000-000000000123");
-    expect(mocks.replaceScope).not.toHaveBeenCalled();
-  });
-
   it("puts schedule browsing before the separate create controls and access administration", () => {
     render(<ScheduleManagementWorkspace enabled />);
     expect(screen.getByRole("heading", { name: "Buổi trong bộ lọc" }).compareDocumentPosition(screen.getByRole("heading", { name: "Tạo buổi khám", hidden: true })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -127,21 +121,4 @@ describe("schedule management", () => {
     expect(appointmentApi.consultationRooms).not.toHaveBeenCalled();
   });
 
-  it("replaces a manager's scheduling scope using its current revision", async () => {
-    const user = userEvent.setup();
-    mocks.scope.mockResolvedValue({ accountId: "manager-id", revision: 2, departmentIds: [], updatedAt: null, updatedByAccountId: null });
-    mocks.departments.mockResolvedValue([{ departmentId: "department-id", departmentName: "Khoa Ngoại" }]);
-    mocks.replaceScope.mockResolvedValue({ accountId: "manager-id", revision: 3, departmentIds: ["department-id"], updatedAt: "2026-10-26T04:00:00Z", updatedByAccountId: "admin-id" });
-    render(<ScheduleManagementWorkspace enabled />);
-    await user.click(screen.getByText("Quản trị quyền lập lịch"));
-    await user.type(screen.getByLabelText("Tài khoản quản lý"), "manager-id");
-    await user.click(screen.getByRole("button", { name: "Tải phạm vi" }));
-    await user.click(await screen.findByLabelText("Khoa Ngoại"));
-    await user.type(screen.getByLabelText("Lý do cấp hoặc thu hồi quyền"), "Phân công lịch khoa Ngoại");
-    await user.click(screen.getByRole("button", { name: "Lưu phạm vi" }));
-    await waitFor(() => expect(mocks.replaceScope).toHaveBeenCalledTimes(1));
-    expect(mocks.replaceScope.mock.calls[0][0]).toBe("manager-id");
-    expect(mocks.replaceScope.mock.calls[0][1]).toEqual({ expectedRevision: 2, departmentIds: ["department-id"], reason: "Phân công lịch khoa Ngoại" });
-    expect(mocks.replaceScope.mock.calls[0][2].idempotencyKey).toBeTruthy();
-  });
 });

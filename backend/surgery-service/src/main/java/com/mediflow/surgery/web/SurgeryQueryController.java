@@ -23,7 +23,7 @@ public class SurgeryQueryController {
     public SurgeryQueryController(QuerySurgeryCasesUseCase queries) { this.queries = queries; }
 
     @GetMapping("/{surgeryCaseId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     public ApiResponse<SurgeryCaseDetails> detail(@PathVariable UUID surgeryCaseId,
             Authentication authentication, HttpServletRequest request) {
         String correlation = correlation(request);
@@ -31,7 +31,7 @@ public class SurgeryQueryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     public ApiResponse<PageResult<SurgeryCaseBoardItem>> list(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) @jakarta.validation.constraints.Pattern(
@@ -54,7 +54,7 @@ public class SurgeryQueryController {
                 || !(authentication.getDetails() instanceof SurgeryAuthenticationDetails identity)
                 || !account.equals(identity.accountId())) throw new AccessDeniedException("Verified identity required");
         var role = authentication.getAuthorities().stream().map(authority -> authority.getAuthority())
-                .filter(value -> value.matches("ROLE_(ADMIN|MANAGER|DOCTOR|NURSE)"))
+                .filter(value -> value.matches("ROLE_(ADMIN|DOCTOR|NURSE)"))
                 .findFirst().orElseThrow(() -> new AccessDeniedException("Surgery reader role required"));
         return new QuerySurgeryCasesUseCase.Viewer(account, identity.staffId(),
                 QuerySurgeryCasesUseCase.ReadRole.valueOf(role.substring(5)));

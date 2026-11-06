@@ -28,7 +28,7 @@ export function Pagination({
         disabled={previousDisabled}
         aria-disabled={previousDisabled}
         onClick={() => onPageChange(page - 1)}
-        className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+        className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
         Trang trước
       </button>
@@ -43,7 +43,7 @@ export function Pagination({
         disabled={nextDisabled}
         aria-disabled={nextDisabled}
         onClick={() => onPageChange(page + 1)}
-        className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
+        className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
         Trang sau
       </button>

@@ -11,7 +11,7 @@ export default function AppointmentsPage() {
       title="Lịch hẹn"
       description="Danh sách 20 lịch hẹn gần nhất trong hệ thống."
     >
-      <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE"]}>
+      <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
         <AppointmentTable />
       </RoleGate>
     </PageShell>

@@ -47,7 +47,6 @@ bool canReadReference(String? role, ReferenceKind kind) => switch (kind) {
   ReferenceKind.doctor ||
   ReferenceKind.room => const [
     'ADMIN',
-    'MANAGER',
     'DOCTOR',
     'NURSE',
     'LAB_TECH',
@@ -56,14 +55,13 @@ bool canReadReference(String? role, ReferenceKind kind) => switch (kind) {
     'PATIENT',
   ].contains(role),
   ReferenceKind.record => const ['ADMIN', 'DOCTOR', 'NURSE'].contains(role),
-  _ => const ['ADMIN', 'MANAGER', 'DOCTOR', 'NURSE'].contains(role),
+  _ => const ['ADMIN', 'DOCTOR', 'NURSE'].contains(role),
 };
 
 bool canSearchReference(String? role, ReferenceKind kind) => switch (kind) {
   ReferenceKind.room => false,
   ReferenceKind.department || ReferenceKind.doctor => const [
     'ADMIN',
-    'MANAGER',
     'DOCTOR',
     'NURSE',
   ].contains(role),

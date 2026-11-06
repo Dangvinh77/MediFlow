@@ -162,7 +162,7 @@ describe("Organization browse and actions", () => {
     expect(screen.getByRole("link", { name: "Thêm nhân sự" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Quản lý tài khoản" })).toBeVisible();
 
-    mocks.getRole.mockReturnValue("MANAGER");
+    mocks.getRole.mockReturnValue("DOCTOR");
     view.rerender(<OrganizationAdminActions />);
     expect(screen.queryByRole("link", { name: "Thêm khoa" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Quản lý tài khoản" })).not.toBeInTheDocument();

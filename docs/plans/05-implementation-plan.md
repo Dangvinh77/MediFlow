@@ -112,7 +112,7 @@ Pharmacy caller vẫn theo handoff của Huy đã đăng ký, không chuyển th
 Owner: Huy/Report, Lộc/Notification. Dependency: M6-03.
 
 - [ ] M6-06.1 Compose Report/Notification API, tách datasource/tx/queue/listener budgets.
-- [ ] M6-06.2 Giữ JWT human types, ADMIN/MANAGER/report roles và PATIENT ownership.
+- [ ] M6-06.2 Giữ JWT human types, ADMIN/trưởng khoa/report roles và PATIENT ownership.
 - [ ] M6-06.3 Arch tests deny Report producer DB/Feign/contact repository coupling.
 - [ ] M6-06.4 Test package/startup và một module timeout không chiếm toàn worker pool.
 

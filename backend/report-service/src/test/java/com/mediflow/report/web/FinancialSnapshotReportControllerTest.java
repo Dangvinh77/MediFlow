@@ -45,7 +45,7 @@ class FinancialSnapshotReportControllerTest {
         return new FinancialSnapshotReportDTO(date,date,department,"VND","Asia/Bangkok",UUID.randomUUID(),instant,instant,instant,true,
                 List.of(new FinancialSnapshotReportDTO.Period(date,date,new BigDecimal("60.00"),new BigDecimal("60.00"),BigDecimal.ZERO,BigDecimal.ZERO,new BigDecimal("40.00"))));
     }
-    @ParameterizedTest @ValueSource(strings={"ADMIN","MANAGER"})
+    @ParameterizedTest @ValueSource(strings={"ADMIN","DOCTOR"})
     void financial_eachAuthorizedRole_bothRoutesExposeOnlyFiveMetricsAndAsOfEvidence(String role) throws Exception {
         UUID department=UUID.randomUUID(); var result=response(department);
         when(reader.daily(date,date,department)).thenReturn(result); when(reader.monthly(2026,department)).thenReturn(result);
@@ -112,11 +112,11 @@ class FinancialSnapshotReportControllerTest {
 
     @Test void currentScopeIsRequiredOnEveryRoute() throws Exception {
         UUID department=UUID.randomUUID();
-        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026").header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
         when(authority.permits(any(),anyString(),any(),anyString(),any())).thenReturn(false);
-        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("MANAGER","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/daily?from=2026-10-10&to=2026-10-10&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/reports/financial/monthly?year=2026&departmentId="+department).header("Authorization",ReportScopeTestSupport.bearer("DOCTOR","financial-test-secret-at-least-32-bytes"))).andExpect(status().isForbidden());
         verifyNoInteractions(reader);
     }
 }

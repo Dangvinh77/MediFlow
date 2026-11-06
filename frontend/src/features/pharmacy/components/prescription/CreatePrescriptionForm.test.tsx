@@ -34,7 +34,7 @@ describe("CreatePrescriptionForm", () => {
     mocks.doctor.mockReset().mockResolvedValue({ staffId: id, departmentId: id, jobTitle: "DOCTOR", active: true });
     mocks.create.mockReset(); mocks.context.mockReset(); mocks.createOutpatient.mockReset(); mocks.router.replace.mockReset();
   });
-  it.each(["PHARMACIST", "MANAGER", null] as const)("does not read catalog or create with role %s", role => {
+  it.each(["PHARMACIST", null] as const)("does not read catalog or create with role %s", role => {
     mocks.role = role; render(<CreatePrescriptionForm mode="legacy" />);
     expect(screen.queryByRole("button", { name: "Tạo đơn thuốc" })).not.toBeInTheDocument(); expect(mocks.search).not.toHaveBeenCalled();
   });

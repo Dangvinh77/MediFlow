@@ -21,11 +21,33 @@ class ReportDemoSeedTest(unittest.TestCase):
         departments = {visit.department_id for visit in self.seed.visits}
         dates = {visit.business_date for visit in self.seed.visits if visit.business_date.year == 2026}
 
-        self.assertEqual(months, {'2026-09', '2026-10', '2026-11'})
+        self.assertEqual(months, {f'2026-{month:02d}' for month in range(1, 12)})
         self.assertEqual(departments, set(seed_module.DEPARTMENT_IDS))
-        self.assertGreaterEqual(len(dates), 40)
+        self.assertGreaterEqual(len(dates), 200)
         self.assertGreaterEqual(sum(visit.business_date.year == 2026 for visit in self.seed.visits), 600)
         self.assertTrue(all(day.weekday() < 5 for day in dates))
+
+    def test_years_have_distinct_seasonal_and_department_shapes_for_comparison(self):
+        def monthly(year, department):
+            counts = {}
+            for visit in self.seed.visits:
+                if visit.business_date.year == year and visit.department_id == department:
+                    counts[visit.business_date.month] = counts.get(visit.business_date.month, 0) + 1
+            return counts
+
+        for department in seed_module.DEPARTMENT_IDS:
+            for year in (2024, 2025):
+                counts = monthly(year, department)
+                self.assertEqual(set(counts), set(range(1, 13)))
+                self.assertGreaterEqual(max(counts.values()), min(counts.values()) * 1.3)
+            self.assertNotEqual(monthly(2024, department), monthly(2025, department))
+        general = seed_module.DEPARTMENT_IDS[0]
+        self.assertGreater(sum(monthly(2025, general).values()), sum(monthly(2024, general).values()))
+        ent = seed_module.DEPARTMENT_IDS[3]
+        self.assertLess(sum(monthly(2025, ent).values()), sum(monthly(2024, ent).values()))
+
+    def test_no_visit_falls_on_a_lunar_new_year_closure(self):
+        self.assertFalse(any(seed_module._is_holiday(visit.business_date) for visit in self.seed.visits))
 
     def test_receipts_are_classified_and_link_to_their_visit(self):
         self.assertEqual({receipt.service_purpose for receipt in self.seed.receipts},
@@ -67,7 +89,7 @@ class ReportDemoSeedTest(unittest.TestCase):
         self.assertEqual(manifest['counts']['refunds'], len(self.seed.refunds))
         self.assertEqual({key: Decimal(value) for key, value in manifest['revenueVnd'].items()}, totals)
         self.assertEqual(Decimal(manifest['refundsVnd']), refund_total)
-        self.assertEqual(set(manifest['periods']), {'2024', '2026'})
+        self.assertEqual(set(manifest['periods']), {'2024', '2025', '2026'})
         self.assertFalse(manifest['reconciled'])
         self.assertFalse(manifest['acceptedCoverageAdded'])
 

@@ -74,10 +74,10 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
       <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={chosen?.id === value && !containsUuid(chosen.label) ? chosen.label : undefined} value={chosen?.id === value ? (containsUuid(chosen.label) ? `Đã chọn ${referenceNames[kind] ?? "tham chiếu"}` : chosen.label) : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
         generation.current++; setBusy(false); setChosen(null); setQuery(event.target.value); setResult(null); setError(null); onValueChange("");
       }} />
-      <button type="button" aria-label="Tìm lựa chọn" disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-border px-3 text-sm text-primary disabled:opacity-50">{busy ? "Đang tìm…" : "Tìm"}</button>
+      <button type="button" aria-label="Tìm lựa chọn" disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-control-border px-3 text-sm text-primary transition-colors hover:border-primary hover:bg-surface-muted disabled:opacity-50">{busy ? "Đang tìm…" : "Tìm"}</button>
     </div>
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {result ? <div aria-live="polite" className="absolute left-0 top-full z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-lg border border-border bg-surface p-2 shadow-lg">
+    {result ? <div aria-live="polite" className="animate-dropdown-in absolute left-0 top-full z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-lg motion-reduce:animate-none">
       <button type="button" onClick={() => { generation.current++; setResult(null); pickerRef.current?.querySelector("input")?.focus(); }} className="mb-1 min-h-11 w-full rounded px-3 text-right text-xs text-muted-foreground hover:bg-surface-muted">Đóng danh sách</button>
       {result.hint ? <p className="mb-2 text-xs text-muted-foreground">{result.hint}</p> : null}
       {!result.items.length ? <p className="text-sm text-muted-foreground">Không có kết quả phù hợp.</p> : <ul className="max-h-60 overflow-y-auto">{result.items.map(option => <li key={option.id}><button type="button" disabled={props.disabled} onClick={() => {

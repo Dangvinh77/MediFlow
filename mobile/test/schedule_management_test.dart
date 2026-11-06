@@ -135,18 +135,6 @@ class FakeManagement implements ScheduleManagementRepository {
   ];
 
   @override
-  Future<List<ManagerAccount>> managerAccounts() async => const [
-    ManagerAccount(id: account, username: 'manager@example.test'),
-  ];
-
-  @override
-  Future<SchedulingScope> scope(String accountId) async => SchedulingScope(
-    accountId: accountId,
-    revision: 7,
-    departmentIds: const [],
-  );
-
-  @override
   Future<HeadAppointment> headAppointment(String departmentId) async => head;
 
   @override
@@ -207,12 +195,11 @@ void main() {
     ];
 
     test('management menus follow the web roles', () {
-      expect(paths(UserRole.manager), contains('/appointments/schedule'));
       expect(paths(UserRole.admin), contains('/appointments/schedule'));
       expect(paths(UserRole.doctor), isNot(contains('/appointments/schedule')));
       expect(paths(UserRole.nurse), isNot(contains('/appointments/schedule')));
       expect(
-        paths(UserRole.manager, scheduling: false),
+        paths(UserRole.admin, scheduling: false),
         isNot(contains('/appointments/schedule')),
       );
     });
@@ -227,7 +214,7 @@ void main() {
         contains('/appointments/department'),
       );
       expect(
-        paths(UserRole.manager, heads: true),
+        paths(UserRole.nurse, heads: true),
         isNot(contains('/appointments/department')),
       );
     });
@@ -276,17 +263,7 @@ void main() {
       expect(command.body['sessionDate'], '2026-11-05');
     });
 
-    test('scope lists are sorted and dismissal sends a null staff', () {
-      final scope = ScheduleCommand.replaceScope(
-        const SchedulingScope(
-          accountId: account,
-          revision: 7,
-          departmentIds: [],
-        ),
-        ['b', 'a'],
-        'Cấp quyền',
-      );
-      expect(scope.body['departmentIds'], ['a', 'b']);
+    test('dismissal sends a null staff', () {
       final head = ScheduleCommand.replaceHead(
         const HeadAppointment(
           departmentId: department,
@@ -444,7 +421,7 @@ void main() {
             departmentId: department,
             initialDate: DateTime(2026, 11, 5),
           ),
-          role: 'MANAGER',
+          role: 'ADMIN',
           repository: repository,
         ),
       );
@@ -458,28 +435,17 @@ void main() {
   });
 
   group('management pages', () {
-    testWidgets('only admins get the manager scope', (tester) async {
+    testWidgets('admins plan sessions across departments', (tester) async {
       useTall(tester);
       await tester.pumpWidget(
         host(
           const ScheduleManagementPage(),
-          role: 'MANAGER',
+          role: 'ADMIN',
           repository: repository,
         ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Lập và quản lý buổi khám'), findsOneWidget);
-      expect(find.text('Phạm vi của quản lý lịch'), findsNothing);
-
-      await tester.pumpWidget(
-        host(
-          const ScheduleManagementPage(),
-          role: 'ADMIN',
-          repository: FakeManagement(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Phạm vi của quản lý lịch'), findsOneWidget);
     });
 
     testWidgets('other roles cannot open schedule management', (tester) async {
@@ -531,6 +497,28 @@ void main() {
       await tester.tap(find.text('Lịch làm việc bác sĩ').first);
       await tester.pumpAndSettle();
       expect(find.text('Tạo buổi khám từ giờ làm việc'), findsOneWidget);
+    });
+
+    testWidgets('the department report is a tab for the head department', (
+      tester,
+    ) async {
+      useTall(tester);
+      await tester.pumpWidget(
+        host(
+          DepartmentManagementPage(
+            reportBuilder: (departmentId) => Text('report:$departmentId'),
+          ),
+          role: 'DOCTOR',
+          repository: repository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Báo cáo khoa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Báo cáo khoa'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('report:'), findsOneWidget);
     });
   });
 
@@ -680,7 +668,7 @@ void main() {
       ProviderScope(
         overrides: [
           workspaceAccessProvider.overrideWithValue(
-            const WorkspaceAccess(sessionIdentity: 's', role: 'MANAGER'),
+            const WorkspaceAccess(sessionIdentity: 's', role: 'ADMIN'),
           ),
           referenceReaderProvider.overrideWithValue(References()),
           scheduleManagementRepositoryProvider.overrideWithValue(repository),

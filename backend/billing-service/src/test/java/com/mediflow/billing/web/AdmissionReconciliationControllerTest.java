@@ -30,7 +30,7 @@ class AdmissionReconciliationControllerTest {
                 .andExpect(status().isCreated());
         verify(service).reconcile(new com.mediflow.billing.application.dto.command.ReconcileAdmissionCommand(account,actor,"key-1"));
     }
-    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","MANAGER","LAB_TECH","PATIENT","SYSTEM"})
+    @ParameterizedTest @ValueSource(strings={"DOCTOR","NURSE","PHARMACIST","LAB_TECH","PATIENT","SYSTEM"})
     void reconcile_otherRoles_deniedBeforeWriting(String role) throws Exception {
         mvc.perform(post(url()).with(user(actor.toString()).roles(role)).header("Idempotency-Key","key"))
                 .andExpect(status().isForbidden()); verifyNoInteractions(service);

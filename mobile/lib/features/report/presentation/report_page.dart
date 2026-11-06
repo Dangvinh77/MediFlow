@@ -66,22 +66,30 @@ Object reportDisplayError(Object error, ReportKind kind) {
 class ReportPage extends ConsumerWidget {
   const ReportPage({
     super.key,
+    this.lockedDepartmentId,
     this.outpatientEnabled = const bool.fromEnvironment(
       'MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED',
     ),
   });
+
+  /// Set for a department head; they read this department and no other.
+  final String? lockedDepartmentId;
   final bool outpatientEnabled;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
-    if (access == null || !const ['ADMIN', 'MANAGER'].contains(access.role)) {
+    final allowed =
+        access != null &&
+        (access.role == 'ADMIN' ||
+            (access.role == 'DOCTOR' && lockedDepartmentId != null));
+    if (!allowed) {
       return const Center(child: Text('Bạn không có quyền xem báo cáo.'));
     }
     return _ReportWorkspace(
-      key: ObjectKey(access.sessionIdentity),
+      key: ValueKey((access.sessionIdentity, lockedDepartmentId)),
       repository: ref.watch(reportRepositoryProvider),
       outpatientEnabled: outpatientEnabled,
-      needsDepartment: access.role == 'MANAGER',
+      lockedDepartmentId: lockedDepartmentId,
     );
   }
 }
@@ -91,10 +99,11 @@ class _ReportWorkspace extends StatefulWidget {
     super.key,
     required this.repository,
     required this.outpatientEnabled,
-    required this.needsDepartment,
+    this.lockedDepartmentId,
   });
   final ReportRepository repository;
-  final bool outpatientEnabled, needsDepartment;
+  final bool outpatientEnabled;
+  final String? lockedDepartmentId;
   @override
   State<_ReportWorkspace> createState() => _ReportWorkspaceState();
 }
@@ -115,7 +124,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       to = TextEditingController(
         text: DateTime.now().toIso8601String().substring(0, 10),
       );
-  String? department;
+  late String? department = widget.lockedDepartmentId;
   ReportData? data;
   OperationsStatistics? operations;
   Object? error;
@@ -124,7 +133,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
   @override
   void initState() {
     super.initState();
-    if (kind == ReportKind.operations && !widget.needsDepartment) {
+    if (kind == ReportKind.operations) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) load();
       });
@@ -155,9 +164,6 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         departmentId: department,
       );
       if (kind == ReportKind.operations) {
-        if (widget.needsDepartment && department == null) {
-          throw ArgumentError('Chọn khoa được phân quyền.');
-        }
         final result = await widget.repository.statistics(query);
         if (mounted && current == generation) {
           setState(() => operations = result);
@@ -243,28 +249,33 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
     ],
   ];
 
-  Widget departmentFilter() => ReferencePicker(
-    kind: ReferenceKind.department,
-    label: 'Khoa phòng (tất cả nếu bỏ trống)',
-    value: department,
-    onChanged: loading
-        ? null
-        : (value) {
-            department = value;
-            changed();
-          },
-  );
+  Widget departmentFilter() => widget.lockedDepartmentId != null
+      ? ReferenceLabel(
+          kind: ReferenceKind.department,
+          id: widget.lockedDepartmentId!,
+          label: 'Khoa phụ trách',
+        )
+      : ReferencePicker(
+          kind: ReferenceKind.department,
+          label: 'Khoa phòng (tất cả nếu bỏ trống)',
+          value: department,
+          onChanged: loading
+              ? null
+              : (value) {
+                  department = value;
+                  changed();
+                },
+        );
 
   Widget availablePeriods() => AvailableReportPeriods(
     key: ValueKey('$kind:$department'),
     repository: widget.repository,
     departmentId: department,
     monthly: kind == ReportKind.outpatientMonthly,
-    needsDepartment: widget.needsDepartment && department == null,
     onSelect: (period) {
       from.text = period.from;
       to.text = period.to;
-      department = period.departmentId;
+      department = widget.lockedDepartmentId ?? period.departmentId;
       changed();
       load();
     },
@@ -431,8 +442,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
               key: ValueKey('reconciled-filters-$kind'),
               title: const Text('Bộ lọc đối soát'),
               subtitle: Text(
-                '$selectedPeriodSummary · ${widget.needsDepartment && department == null
-                    ? 'Chọn khoa được phân quyền'
+                '$selectedPeriodSummary · ${widget.lockedDepartmentId != null
+                    ? 'Khoa phụ trách'
                     : department == null
                     ? 'Toàn viện'
                     : 'Theo khoa đã chọn'}',

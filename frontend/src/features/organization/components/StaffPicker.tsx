@@ -6,8 +6,7 @@ import { organizationApi } from "../api";
 import type { JobTitle } from "../types";
 const jobTitleLabels: Record<JobTitle, string> = {
   DOCTOR: "Bác sĩ", NURSE: "Điều dưỡng", TECHNICIAN: "Kỹ thuật viên",
-  PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", MANAGER: "Quản lý",
-  ADMINISTRATIVE: "Hành chính",
+  PHARMACIST: "Dược sĩ", CASHIER: "Thu ngân", ADMINISTRATIVE: "Hành chính",
 };
 export function StaffPicker({ value, onChange, departmentId, jobTitle, disabled = false, id = "doctorId", label = "Bác sĩ", required = false }: {
   value: string; onChange: (id: string) => void; departmentId?: string; jobTitle?: JobTitle; disabled?: boolean; id?: string; label?: string; required?: boolean;

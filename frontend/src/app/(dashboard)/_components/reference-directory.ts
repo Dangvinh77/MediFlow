@@ -11,7 +11,7 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
   const labels = new Map<string, Promise<string | null>>();
   const clinicalReader = role !== null && ["ADMIN", "DOCTOR", "NURSE"].includes(role);
   const minimalPatientReader = role === "CASHIER" || role === "LAB_TECH" || role === "PHARMACIST";
-  const orgReader = clinicalReader || role === "MANAGER";
+  const orgReader = clinicalReader;
   const canSearch = (kind: string) => kind === "account" ? role === "ADMIN"
     : kind === "patient" ? clinicalReader || minimalPatientReader
       : kind === "record" ? clinicalReader
@@ -38,7 +38,7 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         return { items: save(kind, items.slice(page * 20, (page + 1) * 20)), hasMore: items.length > (page + 1) * 20 };
       }
       if (kind === "account") {
-        const result = await organizationApi.accounts({ keyword: query, role: "MANAGER", active: true, page });
+        const result = await organizationApi.accounts({ keyword: query, active: true, page });
         return {
           items: save(kind, result.content.map(item => ({ id: item.accountId, label: `${item.username} · ${item.role}` }))),
           hasMore: result.number + 1 < result.totalPages,

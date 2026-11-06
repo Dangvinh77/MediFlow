@@ -46,7 +46,7 @@ export function ReportRequestFeedback({ state, idle, loading, onRetry, submitted
           {state.correlationId && <p className="break-all text-xs text-muted-foreground">Mã theo dõi: {state.correlationId}</p>}
           <div className="flex flex-wrap items-center gap-4">
             <Button type="button" onClick={onRetry}>Thử lại</Button>
-            {(getRole() === "ADMIN" || getRole() === "MANAGER") && <Link href="/appointments" className="inline-flex min-h-11 items-center font-semibold text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Đối chiếu lịch hẹn</Link>}
+            {(getRole() === "ADMIN" || getRole() === "DOCTOR") && <Link href="/appointments" className="inline-flex min-h-11 items-center font-semibold text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Đối chiếu lịch hẹn</Link>}
           </div>
         </div> : state.forbidden ? (
           <div role="alert" className="mt-5 rounded-xl border border-danger/40 bg-surface p-4 text-sm">

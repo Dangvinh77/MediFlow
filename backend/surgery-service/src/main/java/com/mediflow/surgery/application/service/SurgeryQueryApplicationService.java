@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** ADMIN/MANAGER see all departments; clinicians use current Organization staff authority. */
+/** ADMIN sees all departments; clinicians use current Organization staff authority. */
 public class SurgeryQueryApplicationService implements QuerySurgeryCasesUseCase {
     private static final Duration AUTHORITY_MAX_AGE = Duration.ofSeconds(30);
     private static final Duration FUTURE_TOLERANCE = Duration.ofSeconds(5);
@@ -85,7 +85,7 @@ public class SurgeryQueryApplicationService implements QuerySurgeryCasesUseCase 
 
     private UUID scope(Viewer viewer, String correlationId) {
         if (viewer == null) throw new IllegalArgumentException("Verified reader required");
-        if (viewer.role() == ReadRole.ADMIN || viewer.role() == ReadRole.MANAGER) return null;
+        if (viewer.role() == ReadRole.ADMIN) return null;
         if (viewer.staffId() == null) throw denied();
         var staff = organization.findStaff(viewer.staffId(), correlationId);
         Instant now = clock.now();

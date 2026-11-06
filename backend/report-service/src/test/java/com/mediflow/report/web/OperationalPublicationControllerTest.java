@@ -122,7 +122,7 @@ class OperationalPublicationControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"MANAGER", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
+    @ValueSource(strings = {"DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH", "PATIENT", "SYSTEM"})
     void publication_nonAdminRole_returns403BeforeUseCase(String role) throws Exception {
         mvc.perform(post(PATH)
                         .contentType(MediaType.APPLICATION_JSON)

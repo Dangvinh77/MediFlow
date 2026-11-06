@@ -60,7 +60,7 @@ public class AccountManagementController {
     }
 
     @PutMapping("/me/password")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','PATIENT')")
     public ResponseEntity<ApiResponse<Boolean>> changePassword(Authentication authentication,
             @Valid @RequestBody ChangePasswordRequest request) {
         accounts.changePassword(UUID.fromString(authentication.getName()), request.currentPassword(), request.newPassword());

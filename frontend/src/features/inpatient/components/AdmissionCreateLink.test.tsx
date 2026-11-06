@@ -13,7 +13,7 @@ describe("AdmissionCreateLink", () => {
     );
   });
 
-  it.each<Array<Role | null>>([["MANAGER"], ["NURSE"], ["CASHIER"], [null]])(
+  it.each<Array<Role | null>>([["NURSE"], ["CASHIER"], [null]])(
     "hides the create action from %s",
     (role) => {
       const { container } = render(<AdmissionCreateLink role={role} />);

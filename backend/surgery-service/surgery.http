@@ -63,7 +63,7 @@ X-Correlation-Id: {{correlationId}}
   "plannedItems": [{"itemCode": "{{plannedItemCode}}", "priceCode": "{{priceCode}}", "quantity": 1}]
 }
 
-### Chuẩn bị/đổi lịch nháp — ADMIN/MANAGER/DOCTOR; không reserve, không READY
+### Chuẩn bị/đổi lịch nháp — ADMIN/DOCTOR; không reserve, không READY
 ### Đổi ca READY/SCHEDULED sẽ invalidate về PREOP và release booking cũ, phải đánh giá/chốt lại
 PUT {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/schedule
 Authorization: Bearer {{token}}
@@ -80,7 +80,7 @@ X-Correlation-Id: {{correlationId}}
   "team": [{"staffId": "{{surgeonId}}", "role": "PRIMARY_SURGEON"}]
 }
 
-### Chi tiết ca — ADMIN/MANAGER toàn khoa; DOCTOR/NURSE khoa hiện tại từ Organization
+### Chi tiết ca — ADMIN toàn khoa; DOCTOR/NURSE khoa hiện tại từ Organization
 GET {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}
 Authorization: Bearer {{token}}
 X-Correlation-Id: {{correlationId}}
@@ -166,7 +166,7 @@ X-Correlation-Id: {{correlationId}}
   "expectedScheduleRevision": {{scheduleRevision}}
 }
 
-### Finalize — ADMIN/MANAGER/DOCTOR; READY + current DRAFT, reserve resources; không phải PUT lịch nháp.
+### Finalize — ADMIN/DOCTOR; READY + current DRAFT, reserve resources; không phải PUT lịch nháp.
 POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/schedule/finalize
 Authorization: Bearer {{token}}
 Content-Type: application/json
