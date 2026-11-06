@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -394,7 +395,7 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
   }
 
   if (role === null) {
-    return <p className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
+    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
   }
 
   if (!capabilities.canCreatePrescription) {

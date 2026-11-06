@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/session";
 import { CommandIntentError, prepareCommandIntent } from "@/lib/command-intent";
+import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { formatInstant, formatLocalDate } from "@/lib/format";
@@ -106,7 +107,7 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
   }
 
   if (!enabled) return null;
-  if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><p role="status" className="text-sm text-muted-foreground">Đang tải đề xuất tái khám…</p></section>;
+  if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><AsyncState kind="loading" message="Đang tải đề xuất tái khám…" /></section>;
   if (state.status === "error") return <section className="border-t border-border py-5 text-sm text-danger"><p role="alert">{state.error.message}</p>{state.error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.error.correlationId}</p></details> : null}<Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}>Tải lại đề xuất</Button></section>;
   if (state.status === "loaded") {
     const recommendation = state.recommendation;

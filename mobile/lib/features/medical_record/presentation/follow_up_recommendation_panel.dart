@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/follow_up_recommendation.dart';
 import '../../../core/network/api_failure.dart';
@@ -156,7 +157,9 @@ class _FollowUpRecommendationPanelState
           ),
           const SizedBox(height: 8),
           if (_loading)
-            const Text('Đang tải đề xuất tái khám…')
+            const Center(
+              child: MediFlowLoader(semanticLabel: 'Đang tải đề xuất tái khám'),
+            )
           else if (_loadError != null)
             RequestError(_loadError!, onRetry: _load)
           else if (_recommendation case final recommendation?)

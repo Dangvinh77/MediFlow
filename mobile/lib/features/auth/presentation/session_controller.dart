@@ -6,6 +6,7 @@ import '../../../core/providers.dart';
 import '../domain/auth_repository.dart';
 import '../domain/session.dart';
 import 'providers.dart';
+import 'sign_in_splash.dart';
 export 'providers.dart' show authRepositoryProvider;
 
 final sessionProvider = AsyncNotifierProvider<SessionController, Session?>(
@@ -41,6 +42,7 @@ class SessionController extends AsyncNotifier<Session?> {
       if (!ref.mounted || generation != _generation) return;
       await repository.save(session);
       if (!ref.mounted || generation != _generation) return;
+      ref.read(signInSplashProvider.notifier).show();
       state = AsyncData(session);
     } catch (error, stack) {
       if (ref.mounted && generation == _generation) {

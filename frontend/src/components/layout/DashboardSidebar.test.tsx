@@ -7,6 +7,10 @@ const route = vi.hoisted(() => ({ pathname: "/pharmacy/drugs/123" }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 
 describe("MVP dashboard navigation", () => {
+  it("draws the brand mark in the theme colours", () => {
+    const { container } = render(<DashboardSidebar role="ADMIN" open={false} onClose={vi.fn()} />);
+    expect(container.querySelector("[data-mediflow-mark]")).toHaveAttribute("data-mediflow-mark", "theme");
+  });
   it("gives patients their own result pages without staff workspaces", () => {
     render(<DashboardSidebar role="PATIENT" open={false} onClose={vi.fn()} />);
     expect(screen.getByRole("link", { name: /Kết quả khám của tôi/ })).toHaveAttribute("href", "/records/mine");

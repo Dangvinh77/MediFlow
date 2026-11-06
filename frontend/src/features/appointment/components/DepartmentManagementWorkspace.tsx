@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useCapabilities } from "@/lib/capabilities";
 import { DepartmentOperationsSummary } from "./DepartmentOperationsSummary";
 import { SessionAdministration } from "./ScheduleManagementWorkspace";
@@ -8,7 +9,7 @@ import { DoctorWorkShiftsWorkspace } from "./DoctorWorkShiftsWorkspace";
 export function DepartmentManagementWorkspace({ enabled, shifts = false, sessions = false, initialDate }: { enabled: boolean; shifts?: boolean; sessions?: boolean; initialDate?: string }) {
   const capabilities = useCapabilities();
   if (!enabled) return <p role="status">Quản lý lịch chưa được bật.</p>;
-  if (!capabilities.data && !capabilities.error) return <p role="status">Đang kiểm tra bổ nhiệm hiện hành…</p>;
+  if (!capabilities.data && !capabilities.error) return <AsyncState kind="loading" message="Đang kiểm tra bổ nhiệm hiện hành…" />;
   if (capabilities.error) return <p role="alert">{capabilities.error}</p>;
   const departments = capabilities.data?.role === "DOCTOR" ? capabilities.data.managementDepartments : [];
   if (!departments.length) return <p role="alert">Tài khoản không có bổ nhiệm trưởng khoa đang hiệu lực.</p>;

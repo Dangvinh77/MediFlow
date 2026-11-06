@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -89,7 +90,7 @@ function WorkspaceContent({ recordId, patientId, canCreate, mode }: RecordPrescr
   const created = () => setRevision(value => value + 1);
 
   return <div className="mt-3 space-y-4">
-    {result.status === "loading" && <p role="status" className="text-sm text-muted-foreground">Đang tải đơn thuốc…</p>}
+    {result.status === "loading" && <AsyncState kind="loading" message="Đang tải đơn thuốc…" />}
 
     {result.message && <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p>{result.message}</p>

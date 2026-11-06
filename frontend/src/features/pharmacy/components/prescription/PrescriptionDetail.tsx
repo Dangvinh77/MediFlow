@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 import { PharmacyIdentity } from "../PharmacyIdentity";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -242,7 +243,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
       }`}>{actionFeedback.message}</p>
   );
 
-  if (role === null) return <p className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
+  if (role === null) return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
   if (!canRead) {
     return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Tài khoản của bạn không có quyền xem đơn thuốc.</p>;
   }

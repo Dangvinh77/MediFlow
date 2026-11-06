@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -75,7 +76,7 @@ function ListContent({ initialQuery }: { initialQuery: string }) {
       <Button type="button" variant="secondary" disabled={result?.forbidden} onClick={() => setRetry(current => current + 1)}>Làm mới</Button>
     </div>
     <p className="text-sm text-muted-foreground">Tìm tên và chọn bệnh nhân để xem các đơn của người đó. Ngày sinh giúp phân biệt người trùng tên.</p>
-    {!result && <p role="status">Đang tải đơn thuốc…</p>}
+    {!result && <AsyncState kind="loading" message="Đang tải đơn thuốc…" />}
     {result?.error && <div role="alert" className="rounded-lg border border-danger/40 p-4 text-danger">{result.error}
       {!result.forbidden && <Button type="button" variant="secondary" onClick={() => setRetry(current => current + 1)}>Thử lại</Button>}
     </div>}

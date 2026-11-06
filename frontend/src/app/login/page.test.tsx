@@ -1,5 +1,6 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { api, ApiRequestError } from "@/lib/api";
 import { clearSession, storeSession } from "@/lib/session";
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -39,4 +40,33 @@ it.each([
   act(() => storeSession({ accessToken: "test", refreshToken: "r", role }));
   render(<LoginPage />);
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith(destination));
+});
+
+describe("full-screen sign-in loader", () => {
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+  function submit() {
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lab@mediflow.test" } });
+    fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: "secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+  }
+  it("holds the loader for one second before entering the system", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(api, "postRaw").mockResolvedValue({ accessToken: "test", refreshToken: "r", role: "LAB_TECH" });
+    submit();
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    const loader = screen.getByRole("status", { name: "Đang vào hệ thống…" });
+    expect(loader.parentElement).toHaveClass("fixed", "inset-0", "items-center", "justify-center");
+    await act(() => vi.advanceTimersByTimeAsync(999));
+    expect(router.replace).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(router.replace).toHaveBeenCalledWith("/lab");
+  });
+  it("returns to the form without a hold when sign-in fails", async () => {
+    vi.spyOn(api, "postRaw").mockRejectedValue(new ApiRequestError("Unauthorized", 401));
+    submit();
+    expect(await screen.findByText("Đăng nhập thất bại — sai tài khoản hoặc mật khẩu.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đăng nhập" })).toBeEnabled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
 });

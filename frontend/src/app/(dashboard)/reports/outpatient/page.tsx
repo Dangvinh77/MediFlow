@@ -1,3 +1,4 @@
+import { AsyncState } from "@/components/ui/AsyncState";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default function OutpatientReportsPage() {
   return (
     <RoleGate allowed={["ADMIN", "MANAGER"]}>
-      <Suspense fallback={<PageShell title="Báo cáo ngoại trú"><p role="status" className="mt-6 text-sm text-muted-foreground">Đang tải báo cáo…</p></PageShell>}>
+      <Suspense fallback={<PageShell title="Báo cáo ngoại trú"><AsyncState kind="loading" message="Đang tải báo cáo…" /></PageShell>}>
         <OutpatientReportWorkspace enabled={process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true"} />
       </Suspense>
     </RoleGate>

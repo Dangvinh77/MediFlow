@@ -44,6 +44,7 @@ export function MediFlowLoader({
 
   return (
     <div
+      aria-busy="true"
       aria-label={label ?? "Loading"}
       aria-live="polite"
       className={className}

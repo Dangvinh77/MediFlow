@@ -14,11 +14,9 @@ export function AsyncState(props: AsyncStateProps) {
   if (props.kind === "loading") {
     return (
       <div
-        role="status"
-        aria-busy="true"
-        className="flex items-center gap-3 py-6 text-sm text-muted-foreground"
+        className="flex w-full justify-center py-10 text-sm text-muted-foreground"
       >
-        <MediFlowLoader className="flex flex-col items-center" size={36} label={props.message} />
+        <MediFlowLoader className="flex flex-col items-center" size={48} label={props.message} />
       </div>
     );
   }

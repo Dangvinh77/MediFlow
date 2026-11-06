@@ -1,3 +1,4 @@
+import { AsyncState } from "@/components/ui/AsyncState";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -17,7 +18,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   if (outpatientEnabled && !(await searchParams).view) redirect("/reports/outpatient");
   return (
     <RoleGate allowed={["ADMIN", "MANAGER"]}>
-      <Suspense fallback={<PageShell title="Báo cáo"><p role="status" className="mt-6 text-sm text-muted-foreground">Đang tải báo cáo…</p></PageShell>}>
+      <Suspense fallback={<PageShell title="Báo cáo"><AsyncState kind="loading" message="Đang tải báo cáo…" /></PageShell>}>
         <ReportWorkspace outpatientEnabled={outpatientEnabled} />
       </Suspense>
     </RoleGate>

@@ -69,7 +69,7 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
         className={`${open ? "visible translate-x-0" : "invisible -translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 lg:visible lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:w-60 lg:translate-x-0`}
       >
         <div className="flex min-h-[4.5rem] items-center gap-3 bg-brand-deep px-5 text-white">
-          <MediFlowMark size={36} tone="on-brand" />
+          <MediFlowMark size={36} />
           <div>
             <p className="font-semibold tracking-tight">MediFlow</p>
             <p className="text-xs text-white/70">Chăm sóc ngoại trú</p>
