@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -136,7 +137,7 @@ function CreateDrugFormContent() {
   }
 
   if (role === null) {
-    return <p className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
+    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
   }
 
   if (!capabilities.canCreateDrug) {

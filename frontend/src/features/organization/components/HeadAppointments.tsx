@@ -1,4 +1,5 @@
 "use client";
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
 import { getSessionKey } from "@/lib/session";
@@ -81,7 +82,7 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
     <h2 className="text-lg font-semibold">Bổ nhiệm trưởng khoa</h2>
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {success ? <p role="status" className="text-sm text-success">{success}</p> : null}
-    {!snapshot ? <><p role="status">Đang tải bổ nhiệm…</p>{error ? <Button onClick={() => { setError(""); setAttempt(value => value + 1); }}>Tải lại bổ nhiệm</Button> : null}</> : <>
+    {!snapshot ? <><AsyncState kind="loading" message="Đang tải bổ nhiệm…" />{error ? <Button onClick={() => { setError(""); setAttempt(value => value + 1); }}>Tải lại bổ nhiệm</Button> : null}</> : <>
       <p className="text-sm">Trưởng khoa đương nhiệm</p>
       {snapshot.staffId ? <ReferenceText kind="doctor" value={snapshot.staffId} /> : <p className="text-sm text-muted-foreground">Chưa có trưởng khoa đương nhiệm.</p>}
       <p className="text-xs text-muted-foreground">Phiên bản {snapshot.revision}</p>

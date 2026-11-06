@@ -1,3 +1,4 @@
+import { AsyncState } from "@/components/ui/AsyncState";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -15,7 +16,7 @@ export default function PrescriptionLookupPage() {
       description="Xem thuốc đã kê, tình trạng thanh toán và cấp phát."
     >
       <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
-        <Suspense fallback={<p role="status" className="mt-6">Đang tải danh sách đơn thuốc…</p>}>
+        <Suspense fallback={<AsyncState kind="loading" message="Đang tải danh sách đơn thuốc…" />}>
           <PrescriptionList />
         </Suspense>
       </RoleGate>

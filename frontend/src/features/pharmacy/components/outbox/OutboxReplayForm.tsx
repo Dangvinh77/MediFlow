@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { controlClassName } from "@/components/ui/Field";
@@ -196,11 +197,7 @@ function OutboxReplayFormContent() {
   }
 
   if (role === null) {
-    return (
-      <p role="status" className="mt-6 text-sm text-muted-foreground">
-        Đang kiểm tra quyền…
-      </p>
-    );
+    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
   }
 
   if (!capabilities.canReplayOutbox) {

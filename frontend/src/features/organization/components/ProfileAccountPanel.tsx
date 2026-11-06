@@ -1,5 +1,6 @@
 "use client";
 
+import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -96,7 +97,7 @@ function ProfileAccountWorkspace({ ownerType, ownerId, profileActive = true, job
   }
 
   if (role !== "ADMIN" && !(ownerType === "patient" && role === "NURSE")) return null;
-  if (lookup.status === "loading") return <section className="mt-6 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Tài khoản hồ sơ</h2><p role="status" className="mt-2 text-sm text-muted-foreground">Đang kiểm tra tài khoản…</p></section>;
+  if (lookup.status === "loading") return <section className="mt-6 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Tài khoản hồ sơ</h2><AsyncState kind="loading" message="Đang kiểm tra tài khoản…" /></section>;
   if (lookup.status === "error") return <section className="mt-6 space-y-3 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Tài khoản hồ sơ</h2><p role="alert" className="text-sm text-danger">{lookup.message}</p><Button type="button" onClick={() => setAttempt(value => value + 1)}>Thử tải lại tài khoản</Button></section>;
 
   const { account, profileEmail, emailSyncPending } = lookup.value;
