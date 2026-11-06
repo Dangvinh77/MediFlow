@@ -107,12 +107,12 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
       <h2 className="text-lg font-semibold">Bộ lọc lịch khám</h2>
       <p className="mt-1 text-sm text-muted-foreground">Lịch được tải theo tài khoản bác sĩ đang đăng nhập.</p>
       <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void loadCalendar(); }}>
-        <label className="space-y-1 text-sm font-medium" htmlFor="doctor-calendar-view">Chế độ lịch
-          <select id="doctor-calendar-view" value={view} onChange={event => setView(event.target.value as "day" | "week")} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
+        <label className="text-sm font-medium" htmlFor="doctor-calendar-view"><span className="mb-1 block">Chế độ lịch</span>
+          <select id="doctor-calendar-view" value={view} onChange={event => setView(event.target.value as "day" | "week")} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
             <option value="day">Theo ngày</option><option value="week">Theo tuần</option>
           </select>
         </label>
-        <ScheduleDateInput label="Ngày tham chiếu" id="doctor-calendar-date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+        <ScheduleDateInput label="Ngày tham chiếu" id="doctor-calendar-date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal" />
         <Button type="submit" loading={loading}>Tải lịch của tôi</Button>
       </form>
       {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadCalendar()} /> : null}

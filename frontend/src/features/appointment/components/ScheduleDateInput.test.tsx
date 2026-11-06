@@ -9,7 +9,7 @@ it("keeps the ISO wire value and accessible name while explaining the selected V
   expect(input).toHaveValue("2026-11-04");
   expect(input).toBeRequired();
   expect(input).toHaveAccessibleDescription(/04\/11\/2026.*ngày\/tháng\/năm/);
-  expect(screen.getByText(/Đã chọn: 04\/11\/2026/)).toBeVisible();
+  expect(screen.getByText("04/11/2026")).toBeVisible();
   fireEvent.change(input,{target:{value:"2026-11-05"}});
   expect(change).toHaveBeenCalledTimes(1);
 });

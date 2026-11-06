@@ -32,7 +32,7 @@ export function AsyncState(props: AsyncStateProps) {
           <button
             type="button"
             onClick={props.onRetry}
-            className="min-h-12 rounded-lg border border-danger/40 px-4 py-2 font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger sm:min-h-10"
+            className="min-h-12 rounded-lg border border-danger/40 px-4 py-2 font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
           >
             Thử lại
           </button>

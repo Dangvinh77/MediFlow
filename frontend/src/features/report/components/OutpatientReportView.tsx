@@ -73,13 +73,13 @@ function OutpatientReportContent({ initialQuery, autoLoad, discoverLatest = fals
           setFromDate(localReportDate(start)); setToDate(localReportDate(end)); setErrors({});
         }}>{label}</Button>)}
       </div>}
-      <form ref={form} onSubmit={submit} noValidate className="grid items-end gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
+      <form ref={form} onSubmit={submit} noValidate className="grid items-start gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
         {mode === "daily" ? <>
           <Field label="Từ ngày" htmlFor={`${id}-fromDate`} error={errors.fromDate}><input {...inputProps("fromDate")} type="date" min="2000-01-01" max="2100-12-31" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setErrors({}); }} /></Field>
           <Field label="Đến ngày" htmlFor={`${id}-toDate`} error={errors.toDate}><input {...inputProps("toDate")} type="date" min="2000-01-01" max="2100-12-31" value={toDate} onChange={(event) => { setToDate(event.target.value); setErrors({}); }} /></Field>
         </> : <Field label="Năm báo cáo" htmlFor={`${id}-year`} error={errors.year}><input {...inputProps("year")} type="number" min={2000} max={2100} step={1} value={year} onChange={(event) => { setYear(event.target.value); setErrors({}); }} /></Field>}
         <Field label="Khoa (tùy chọn)" htmlFor={`${id}-departmentId`} error={errors.departmentId}><ReferenceInput key={scopeReset} kind="department" {...inputProps("departmentId")} value={departmentId} onValueChange={(id) => { setDepartmentId(id); setErrors({}); }} placeholder="Tìm khoa theo tên" />{departmentId.trim() && <ReportDepartmentName id={departmentId.trim()} showId={false} />}</Field>
-        <Button type="submit" variant="primary" loading={state.status === "loading"}>Xem báo cáo</Button>
+        <Button type="submit" variant="primary" loading={state.status === "loading"} className="sm:mt-[1.625rem]">Xem báo cáo</Button>
       </form>
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span>Để trống khoa để xem toàn bệnh viện.</span>

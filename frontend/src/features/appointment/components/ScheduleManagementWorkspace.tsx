@@ -196,12 +196,12 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
     <p className="text-sm text-muted-foreground">Để tra cứu, chọn khoa và đủ hai ngày bắt buộc. Định dạng ngày, giờ trong ô nhập theo trình duyệt.</p>
     {fixedDepartmentId ? <div className="flex gap-3"><Button variant="secondary" onClick={() => changeDates(fromDate, fromDate)}>Theo ngày</Button><Button variant="secondary" disabled={!fromDate} onClick={() => { const range = shiftRange(fromDate,"week"); changeDates(range.fromDate, range.toDate); }}>Theo tuần</Button></div> : null}
     <div className="grid gap-4 rounded-lg border border-border p-4 sm:grid-cols-2 xl:grid-cols-4">
-      {!fixedDepartmentId ? <label className="space-y-1 text-sm font-medium">Khoa buổi khám
+      {!fixedDepartmentId ? <label className="text-sm font-medium"><span className="mb-1 block">Khoa buổi khám</span>
         <ReferenceInput kind="department" value={departmentId} onValueChange={changeDepartment} aria-label="Khoa buổi khám" disabled={checking || mutating || Boolean(retryMutation)} />
       </label> : null}
       <div><ScheduleDateInput label="Từ ngày" id="schedule-from-date" required aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "schedule-from-error" : undefined} value={fromDate} onChange={event => changeDates(event.target.value,toDate)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="schedule-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}</div>
       <div><ScheduleDateInput label="Đến ngày" id="schedule-to-date" required aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "schedule-to-error" : undefined} value={toDate} onChange={event => changeDates(fromDate,event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="schedule-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}</div>
-      <div className="flex items-end gap-2"><Button type="button" onClick={() => void loadSessions()} loading={listLoading}>Tải buổi đã lập</Button><Button type="button" variant="secondary" onClick={() => void loadRooms()}>Tải phòng tư vấn</Button></div>
+      <div className="flex flex-wrap items-start gap-2 sm:pt-6"><Button type="button" onClick={() => void loadSessions()} loading={listLoading}>Tải buổi đã lập</Button><Button type="button" variant="secondary" onClick={() => void loadRooms()}>Tải phòng tư vấn</Button></div>
     </div>
     {listError ? <AsyncState kind="error" message={listError.message} correlationId={listError.correlationId} onRetry={() => void loadSessions()} /> : null}
     {roomError ? <AsyncState kind="error" message={roomError.message} correlationId={roomError.correlationId} onRetry={() => void loadRooms()} /> : null}
