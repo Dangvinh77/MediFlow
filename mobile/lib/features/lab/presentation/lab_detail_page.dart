@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/medical_ui.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
@@ -201,7 +202,7 @@ class _LabDetailState extends State<_LabDetail> {
         body: error != null
             ? RequestError(error!, onRetry: load)
             : v == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: MediFlowLoader())
             : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [

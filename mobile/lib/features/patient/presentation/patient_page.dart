@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
@@ -362,7 +363,7 @@ class _PatientDetailState extends State<_PatientDetail> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải bệnh nhân'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải bệnh nhân'),
       );
     }
     if (_error != null) {
@@ -645,7 +646,7 @@ class _PatientFormState extends State<_PatientForm> {
   Widget build(BuildContext context) {
     if (_editing && _loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải hồ sơ'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải hồ sơ'),
       );
     }
     if (_editing && _loadError != null) {

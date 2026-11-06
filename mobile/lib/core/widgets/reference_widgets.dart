@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../domain/reference.dart';
 import '../network/gateway_reference_reader.dart';
@@ -266,7 +267,7 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
             ),
             Expanded(
               child: loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: MediFlowLoader())
                   : error != null
                   ? Center(
                       child: Column(

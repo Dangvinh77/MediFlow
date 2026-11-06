@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
@@ -309,7 +310,7 @@ class _SessionAdministrationPanelState
       if (_departmentId == null)
         const Text('Chọn khoa để xem các buổi khám.')
       else if (_loading)
-        const Center(child: CircularProgressIndicator())
+        const Center(child: MediFlowLoader())
       else if (_loadError != null)
         RequestError(_loadError!, onRetry: _load)
       else if (_sessions?.isEmpty == true)
@@ -1023,7 +1024,7 @@ class _DepartmentManagementPageState
         }
         final departments = snapshot.data;
         if (departments == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: MediFlowLoader());
         }
         if (departments.isEmpty) {
           return const Center(
@@ -1160,7 +1161,7 @@ class _DepartmentSummaryPanelState
           final data = snapshot.data;
           if (data == null ||
               snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: MediFlowLoader());
           }
           return Wrap(
             spacing: 16,
@@ -1352,7 +1353,7 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
       if (_notice != null) Text(_notice!),
       const SizedBox(height: 8),
       if (_loading)
-        const Center(child: CircularProgressIndicator())
+        const Center(child: MediFlowLoader())
       else if (_loadError != null)
         RequestError(_loadError!, onRetry: _load)
       else if (_shifts?.isEmpty == true)

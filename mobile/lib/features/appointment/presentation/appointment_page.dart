@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/widgets/medical_ui.dart';
 
@@ -374,7 +375,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
       body: !_canRead
           ? const Center(child: Text('Bạn không có quyền xem lịch hẹn.'))
           : _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MediFlowLoader())
           : _error != null && _appointment == null
           ? _ErrorPanel(error: _error!, onRetry: _load)
           : _appointment == null

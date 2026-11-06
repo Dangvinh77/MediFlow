@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../auth/domain/session.dart';
@@ -17,7 +18,7 @@ class SelfProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(sessionProvider);
     return auth.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: MediFlowLoader()),
       error: (error, _) => Center(
         child: Text('Không thể đọc phiên hiện tại. ${error.toString()}'),
       ),
@@ -114,7 +115,7 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MediFlowLoader());
     }
     if (_error case final error?) {
       return ListView(

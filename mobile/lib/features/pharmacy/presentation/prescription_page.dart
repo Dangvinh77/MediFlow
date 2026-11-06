@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
@@ -519,7 +520,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
   Widget _content(BuildContext context) {
     if (loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải đơn thuốc'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải đơn thuốc'),
       );
     }
     if (error != null) {

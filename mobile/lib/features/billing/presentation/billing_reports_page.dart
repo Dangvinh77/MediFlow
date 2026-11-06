@@ -1,6 +1,7 @@
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/request_state.dart';
@@ -182,7 +183,7 @@ class _BillingReportsPageState extends State<BillingReportsPage>
           icon: const Icon(Icons.query_stats),
           label: Text(_loading ? 'Đang tải…' : 'Xem báo cáo'),
         ),
-        if (_loading) const Center(child: CircularProgressIndicator()),
+        if (_loading) const Center(child: MediFlowLoader()),
         if (_error != null)
           RequestError(
             _error!,

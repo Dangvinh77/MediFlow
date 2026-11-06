@@ -2,6 +2,7 @@ import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
@@ -102,7 +103,7 @@ class _NotificationDetailState extends State<_NotificationDetail> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải thông báo'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải thông báo'),
       );
     }
     if (_error != null) {

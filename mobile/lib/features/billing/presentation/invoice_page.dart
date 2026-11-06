@@ -1,6 +1,7 @@
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
@@ -342,7 +343,7 @@ class _InvoicePageState extends State<InvoicePage>
             child: RequestError(_commandError!),
           ),
         const SizedBox(height: 20),
-        if (_loading) const Center(child: CircularProgressIndicator()),
+        if (_loading) const Center(child: MediFlowLoader()),
         if (_error != null)
           RequestError(
             _error!,

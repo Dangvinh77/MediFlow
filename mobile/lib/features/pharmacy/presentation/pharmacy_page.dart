@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
@@ -268,9 +269,7 @@ class _DrugCatalogState extends State<_DrugCatalog> {
         flex: 3,
         child: _loading
             ? const Center(
-                child: CircularProgressIndicator(
-                  semanticsLabel: 'Đang tải danh mục thuốc',
-                ),
+                child: MediFlowLoader(semanticLabel: 'Đang tải danh mục thuốc'),
               )
             : _error != null
             ? SingleChildScrollView(
@@ -453,7 +452,7 @@ class _DrugDetailState extends State<_DrugDetail> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Đang tải thuốc'),
+        child: MediFlowLoader(semanticLabel: 'Đang tải thuốc'),
       );
     }
     if (_error != null) {

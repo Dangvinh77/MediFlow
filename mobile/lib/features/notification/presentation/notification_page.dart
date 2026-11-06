@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/domain/page_result.dart';
 import '../../../core/network/api_failure.dart';
@@ -214,7 +215,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
         ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: MediFlowLoader())
               : _error != null
               ? NotificationRequestError(
                   _error!,

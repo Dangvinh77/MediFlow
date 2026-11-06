@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
@@ -153,7 +154,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
       );
     }
     if (account == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MediFlowLoader());
     }
     final owner = account.staffId != null
         ? ProfileAccountOwner.staff(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/account_recovery_page.dart';
@@ -127,9 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (context, ref, _) {
             final auth = ref.watch(sessionProvider);
             if (auth.isLoading) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
+              return const Scaffold(body: Center(child: MediFlowLoader()));
             }
             if (auth.asData?.value == null) return const SizedBox.shrink();
             return AppShell(location: state.uri.path, child: child);

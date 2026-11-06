@@ -24,3 +24,5 @@ Track implementation and separate runtime/native acceptance in
   Material widgets so the theme applies, and read colours from the theme, never hard-code them.
 - `Wayfinding` colours name an area of the app (`AppModule.accent`). `MedicalColors` statuses
   (`StatusPill`, `NoticeBox`) name a state. Do not use one for the other.
+- A page or section waiting on data shows `MediFlowLoader`. Keep `CircularProgressIndicator` for the
+  small spinner inside a button and `LinearProgressIndicator` for a thin progress bar.
