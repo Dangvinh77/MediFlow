@@ -90,14 +90,14 @@ describe("schedule management", () => {
     expect(await screen.findByRole("option", { name: "Phòng khám 1" })).toBeInTheDocument();
     expect(mocks.rooms).toHaveBeenLastCalledWith("department-id", 0, 50);
     await user.type(screen.getByLabelText("Bác sĩ"), "doctor-id");
-    await user.selectOptions(await screen.findByLabelText("Phòng tư vấn"), "room-id");
+    await user.selectOptions(await screen.findByLabelText("Phòng khám"), "room-id");
     await user.type(screen.getByLabelText("Ngày khám"), "2026-10-27");
     fireEvent.change(screen.getByLabelText("Bắt đầu"), { target: { value: "08:00" } });
     fireEvent.change(screen.getByLabelText("Kết thúc"), { target: { value: "12:00" } });
     await user.clear(screen.getByLabelText("Sức chứa"));
     await user.type(screen.getByLabelText("Sức chứa"), "20");
     expect(screen.getByLabelText("Bác sĩ")).toHaveValue("doctor-id");
-    expect(screen.getByLabelText("Phòng tư vấn")).toHaveValue("room-id");
+    expect(screen.getByLabelText("Phòng khám")).toHaveValue("room-id");
     expect(screen.getByLabelText("Ngày khám")).toHaveValue("2026-10-27");
     expect(screen.getByLabelText("Bắt đầu")).toHaveValue("08:00");
     expect(screen.getByLabelText("Kết thúc")).toHaveValue("12:00");
@@ -114,6 +114,26 @@ describe("schedule management", () => {
     });
     expect(mocks.createSession.mock.calls[0][1]).toEqual(mocks.createSession.mock.calls[1][1]);
     expect(mocks.createSession.mock.calls[0][1].idempotencyKey).toBeTruthy();
+  });
+
+  it("locks session creation until a department is chosen, then asks for the doctor before the room", async () => {
+    const user = userEvent.setup();
+    mocks.rooms.mockResolvedValue({ content: [{ roomId: "room-id", departmentId: "department-id", roomName: "Phòng khám Nội 1", roomType: "CONSULTATION", roomNumber: "101", zone: "Khu A", location: "Tầng 1" }], totalElements: 1, totalPages: 1, number: 0, size: 50 });
+    render(<ScheduleManagementWorkspace enabled />);
+    await user.click(screen.getByText("Tạo buổi khám", { selector: "h3" }));
+    expect(screen.getByLabelText("Bác sĩ")).toBeDisabled();
+    expect(screen.getByLabelText("Phòng khám")).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Tạo buổi khám đang khóa: chọn khoa trước" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Chọn khoa buổi khám trước");
+    expect(mocks.rooms).not.toHaveBeenCalled();
+    expect(mocks.createSession).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Khoa buổi khám"), "department-id");
+    expect(await screen.findByRole("option", { name: "P.101 · Phòng khám Nội 1 · Khu A" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tạo buổi khám đang khóa: chọn khoa trước" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Phòng khám")).toBeDisabled();
+    await user.type(screen.getByLabelText("Bác sĩ"), "doctor-id");
+    expect(screen.getByLabelText("Phòng khám")).toBeEnabled();
   });
 
   it("does not call V2 endpoints while the scheduling gate is off", () => {

@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
 import { DepartmentList } from "./DepartmentList";
+import { RoomDirectory } from "./RoomDirectory";
 import { StaffTable } from "./StaffTable";
 import type { DepartmentDTO } from "../types";
 const sections = [
-  { id: "departments", label: "Khoa", description: "Lâm sàng và cận lâm sàng" },
-  { id: "offices", label: "Phòng", description: "Các phòng hành chính" },
+  { id: "departments", label: "Khoa / bộ phận", description: "Khoa lâm sàng, cận lâm sàng và bộ phận chức năng" },
+  { id: "rooms", label: "Phòng làm việc", description: "Phòng khám, văn phòng khoa và nơi làm việc của bộ phận" },
   { id: "staff", label: "Nhân sự", description: "Hồ sơ và thông tin công tác" },
 ] as const;
 export function OrganizationDirectory() {
@@ -20,9 +21,10 @@ export function OrganizationDirectory() {
       </button>)}
     </div>
     <div id="organization-directory-content">
-      <div hidden={selected === "staff"}>
-        <DepartmentList category={selected === "offices" ? "offices" : "departments"} onLoaded={setDepartments} />
+      <div hidden={selected !== "departments"}>
+        <DepartmentList category="all" onLoaded={setDepartments} />
       </div>
+      {selected === "rooms" ? <RoomDirectory /> : null}
       {selected === "staff" ? <StaffTable departments={departments} /> : null}
     </div>
   </div>;

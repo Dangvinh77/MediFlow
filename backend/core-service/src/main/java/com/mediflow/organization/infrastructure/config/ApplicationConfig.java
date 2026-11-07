@@ -182,6 +182,13 @@ public class ApplicationConfig {
         }
 
         @Bean
+        public com.mediflow.organization.application.port.in.ManageRoomsUseCase manageRoomsUseCase(
+                        RoomRepository roomRepository, DepartmentRepository departmentRepository) {
+                return new com.mediflow.organization.application.service.ManageRoomsService(
+                                roomRepository, departmentRepository);
+        }
+
+        @Bean
         public CreateStaffUseCase createStaffUseCase(
                         StaffRepository staffRepository,
                         DepartmentRepository departmentRepository,

@@ -84,15 +84,17 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   const [mutationError, setMutationError] = useState<WorkspaceError | null>(null);
   const [mutating, setMutating] = useState(false);
   const [lastMutation, setLastMutation] = useState<SessionMutation | null>(null);
+  const [lockNotice, setLockNotice] = useState<string | null>(null);
+  const [roomsLoaded, setRoomsLoaded] = useState(false);
 
   async function loadRooms() {
     if (!departmentId.trim()) { setRoomError({ message: "Chọn khoa trước khi tải phòng.", correlationId: null }); return; }
     const generation = ++roomReads.current; const session = getSessionKey();
-    setRoomError(null); setRooms([]);
+    setRoomError(null); setRooms([]); setRoomsLoaded(false);
     try {
       const result: ConsultationRoomSummary[] = []; let page = 0; let pages = 1;
       while (page < pages) { const value = await appointmentApi.consultationRooms(departmentId.trim(), page, 50); result.push(...value.content); pages = value.totalPages; page++; }
-      if (active.current && generation === roomReads.current && session === getSessionKey()) setRooms(result);
+      if (active.current && generation === roomReads.current && session === getSessionKey()) { setRooms(result); setRoomsLoaded(true); }
     } catch (cause) { if (active.current && generation === roomReads.current && session === getSessionKey()) setRoomError(errorFrom(cause, "Không thể tải phòng tư vấn.")); }
   }
 
@@ -144,6 +146,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   function submitSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (mutationError?.uncertain && lastMutation) { void executeMutation(lastMutation); return; }
+    if (!departmentId.trim()) { setLockNotice("Chọn khoa buổi khám trước khi tạo buổi khám."); return; }
     if (!departmentId.trim() || !form.doctorId.trim() || !form.roomId || !form.sessionDate || !form.startTime || !form.endTime) {
       setMutationError({ message: "Chọn khoa, bác sĩ, phòng và thời gian đầy đủ trước khi lưu.", correlationId: null });
       return;
@@ -179,7 +182,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   function changeDepartment(value: string) {
     if (!confirmLeave()) return;
     reads.current++; roomReads.current++; setListLoading(false);
-    setDepartmentId(value); setListLoaded(false); setRooms([]); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null);
+    setDepartmentId(value); setListLoaded(false); setRooms([]); setRoomsLoaded(false); setLockNotice(null); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null);
   }
 
   // Rooms only serve the create/edit form; load them as soon as a department is chosen.
@@ -225,12 +228,18 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
       </> : listLoading ? <AsyncState kind="loading" message="Đang tải buổi khám…" /> : <p role="status" className="mt-2 text-sm text-muted-foreground">{listLoaded ? "Chưa có buổi khám trong bộ lọc." : "Chọn khoa và khoảng ngày để tải buổi khám đã lập."}</p>}
     </section>
     <details open={editing ? true : undefined} className="rounded-lg border border-border p-4"><summary className="cursor-pointer"><h3 className="inline font-semibold">{editing ? "Sửa buổi khám đã chọn" : "Tạo buổi khám"}</h3></summary>
-    <form className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2 xl:grid-cols-4" onChangeCapture={markDirty} onSubmit={submitSession}>
+    {lockNotice ? <p role="alert" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">{lockNotice}</p> : null}
+    {!departmentId.trim() ? <p className="mt-3 text-sm text-muted-foreground">Thứ tự lập buổi: chọn khoa → chọn bác sĩ của khoa → chọn phòng khám được hoạch định cho khoa.</p> : null}
+    <div className="relative">
+    {!departmentId.trim() ? <button type="button" aria-label="Tạo buổi khám đang khóa: chọn khoa trước" onClick={() => setLockNotice("Chọn khoa buổi khám trước, sau đó chọn bác sĩ rồi mới chọn phòng khám của khoa.")} className="absolute inset-0 z-10 cursor-not-allowed rounded-lg focus-visible:outline-2 focus-visible:outline-primary" /> : null}
+    <form aria-label={editing ? "Sửa buổi khám" : "Tạo buổi khám"} className={`grid gap-4 border-t border-border pt-5 sm:grid-cols-2 xl:grid-cols-4 ${!departmentId.trim() ? "opacity-55" : ""}`} onChangeCapture={markDirty} onSubmit={submitSession}>
+    <fieldset disabled={!departmentId.trim()} className="contents">
       <div className="space-y-1 text-sm font-medium">Bác sĩ
-        <ReferenceInput kind="doctor" scope={departmentId} value={form.doctorId} onValueChange={value => updateForm("doctorId", value)} aria-label="Bác sĩ" disabled={checking || mutating || Boolean(retryMutation)} />
+        <ReferenceInput kind="doctor" scope={departmentId} value={form.doctorId} onValueChange={value => { updateForm("doctorId", value); if (!value) updateForm("roomId", ""); }} aria-label="Bác sĩ" disabled={!departmentId.trim() || checking || mutating || Boolean(retryMutation)} />
       </div>
-      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-room">Phòng tư vấn
-        <select id="schedule-room" required value={form.roomId} onChange={event => updateForm("roomId", event.target.value)} disabled={checking || mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3"><option value="">Chọn phòng</option>{rooms.map(room => <option key={room.roomId} value={room.roomId}>{room.roomName}</option>)}</select>
+      <label className="space-y-1 text-sm font-medium" htmlFor="schedule-room">Phòng khám
+        <select id="schedule-room" required value={form.roomId} onChange={event => updateForm("roomId", event.target.value)} disabled={!departmentId.trim() || !form.doctorId.trim() || checking || mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3"><option value="">{form.doctorId.trim() ? "Chọn phòng khám" : "Chọn bác sĩ trước"}</option>{rooms.map(room => <option key={room.roomId} value={room.roomId}>{room.roomNumber ? `P.${room.roomNumber} · ${room.roomName}${room.zone ? ` · ${room.zone}` : ""}` : room.roomName}</option>)}</select>
+        {roomsLoaded && rooms.length === 0 ? <span role="status" className="block text-xs font-normal text-danger">Khoa chưa có phòng khám được hoạch định. Quản trị viên thêm phòng tại Tổ chức → Phòng làm việc.</span> : null}
       </label>
       <label className="space-y-1 text-sm font-medium" htmlFor="schedule-session-date">Ngày khám<input id="schedule-session-date" type="date" required value={form.sessionDate} onChange={event => updateForm("sessionDate", event.target.value)} disabled={checking || mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
       <label className="space-y-1 text-sm font-medium" htmlFor="schedule-start-time">Bắt đầu<input id="schedule-start-time" type="time" required value={form.startTime} onChange={event => updateForm("startTime", event.target.value)} disabled={checking || mutating || Boolean(retryMutation)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" /></label>
@@ -240,7 +249,9 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
       <fieldset disabled={checking || mutating || Boolean(retryMutation)} className="space-y-2 sm:col-span-2 xl:col-span-4"><legend className="text-sm font-medium">Giờ nghỉ tùy chọn</legend>{form.breaks.map((item, index) => <div key={index} className="flex flex-wrap items-end gap-3"><label className="space-y-1 text-sm">Bắt đầu nghỉ<input type="time" required value={item.startTime} onChange={event => setForm(current => ({ ...current, breaks: current.breaks.map((value, row) => row === index ? { ...value, startTime: event.target.value } : value) }))} className="min-h-11 rounded-lg border border-control-border bg-surface px-3" /></label><label className="space-y-1 text-sm">Kết thúc nghỉ<input type="time" required value={item.endTime} onChange={event => setForm(current => ({ ...current, breaks: current.breaks.map((value, row) => row === index ? { ...value, endTime: event.target.value } : value) }))} className="min-h-11 rounded-lg border border-control-border bg-surface px-3" /></label><Button type="button" variant="danger" onClick={() => { markDirty(); setForm(current => ({ ...current, breaks: current.breaks.filter((_, row) => row !== index) })); }}>Xóa giờ nghỉ</Button></div>)}<Button type="button" variant="secondary" disabled={form.breaks.length >= 20} onClick={() => { markDirty(); setForm(current => ({ ...current, breaks: [...current.breaks, { startTime: "10:00", endTime: "10:15" }] })); }}>Thêm giờ nghỉ</Button></fieldset>
       {mutationError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2 xl:col-span-4"><p>{mutationError.message}</p>{mutationError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: {mutationError.correlationId}</p> : null}{retryMutation ? <p className="mt-2">Kết quả chưa xác định. Gửi lại đúng nội dung để giữ nguyên khóa idempotency.</p> : null}</div> : null}
       <div className="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4"><Button type="submit" loading={mutating}>{retryMutation ? "Gửi lại cùng yêu cầu" : editing ? "Lưu thay đổi buổi" : "Tạo buổi khám"}</Button>{editing && !retryMutation ? <Button type="button" onClick={() => { if (!confirmLeave()) return; setEditing(null); setForm(emptySessionForm()); setMutationError(null); }}>Hủy sửa</Button> : null}</div>
+    </fieldset>
     </form>
+    </div>
     </details>
 
   </section>;

@@ -142,3 +142,38 @@ export interface HeadAppointmentSnapshot {
   history: { appointmentId: string; staffId: string; accountId: string; startedAt: string; endedAt: string | null }[];
 }
 export interface HeadAppointmentCommand { expectedRevision: number; staffId: string | null; reason: string }
+
+/** Workplace room catalogue; mirrors Core's RoomType. */
+export type RoomType =
+  | "CONSULTATION"
+  | "DEPARTMENT_OFFICE"
+  | "LABORATORY"
+  | "PHARMACY"
+  | "CASHIER"
+  | "NURSING"
+  | "ADMINISTRATION";
+
+export interface RoomDTO {
+  roomId: string;
+  departmentId: string;
+  roomType: RoomType;
+  roomNumber: string;
+  roomName: string;
+  zone: string;
+  location: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface RoomPlacement {
+  roomNumber: string;
+  roomName: string;
+  zone: string;
+  location: string;
+}
+
+export interface CreateRoomRequest extends RoomPlacement {
+  departmentId: string;
+  roomType: RoomType;
+}

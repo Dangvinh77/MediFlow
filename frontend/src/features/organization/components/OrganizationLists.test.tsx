@@ -7,6 +7,7 @@ import type { StaffDTO } from "../types";
 const mocks = vi.hoisted(() => ({
   departments: vi.fn(),
   staff: vi.fn(),
+  rooms: vi.fn(),
   router: { replace: vi.fn() },
   getRole: vi.fn(() => "ADMIN"),
   getSessionKey: vi.fn<() => string | null>(() => "session-a"),
@@ -18,7 +19,8 @@ vi.mock("@/lib/auth", () => ({
   getSessionKey: mocks.getSessionKey,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff } }));
+vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff, rooms: mocks.rooms } }));
+vi.mock("@/components/references/ReferenceText", () => ({ ReferenceText: ({ value }: { value: string }) => <span>Bác sĩ {value}</span> }));
 
 import { ApiRequestError } from "@/lib/api";
 
@@ -26,6 +28,7 @@ import { DepartmentList } from "./DepartmentList";
 import { StaffTable } from "./StaffTable";
 import { OrganizationAdminActions } from "./OrganizationAdminActions";
 import { OrganizationDirectory } from "./OrganizationDirectory";
+import { RoomDirectory } from "./RoomDirectory";
 
 function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<StaffDTO> {
   return {
@@ -58,38 +61,65 @@ describe("Organization browse and actions", () => {
     ]);
     render(<DepartmentList />);
     await screen.findByRole("link", { name: "Xem chi tiết Khoa Nội" });
-    fireEvent.change(screen.getByLabelText("Tìm khoa/phòng"), { target: { value: "noi" } });
+    fireEvent.change(screen.getByLabelText("Tìm khoa/bộ phận"), { target: { value: "noi" } });
     expect(screen.getByRole("link", { name: "Xem chi tiết Khoa Nội" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Xem chi tiết Khoa Xét nghiệm" })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Tìm khoa/phòng"), { target: { value: "xn" } });
+    fireEvent.change(screen.getByLabelText("Tìm khoa/bộ phận"), { target: { value: "xn" } });
     expect(screen.getByRole("link", { name: "Xem chi tiết Khoa Xét nghiệm" })).toBeVisible();
     expect(mocks.departments).toHaveBeenCalledTimes(1);
   });
-  it("switches between khoa, phòng and staff without mixing department categories", async () => {
+  it("lists every unit with its head, then workplace rooms, then staff", async () => {
     mocks.departments.mockResolvedValue([
-      { ...departmentContractFixture, departmentName: "Khoa Nội", departmentType: "CLINICAL" },
-      { ...departmentContractFixture, departmentId: "lab", departmentName: "Khoa Xét nghiệm", departmentType: "PARACLINICAL" },
-      { ...departmentContractFixture, departmentId: "office", departmentName: "Phòng Hành chính", departmentType: "ADMINISTRATIVE" },
+      { ...departmentContractFixture, departmentName: "Khoa Nội", departmentType: "CLINICAL", departmentHeadId: "head-1" },
+      { ...departmentContractFixture, departmentId: "eye", departmentName: "Khoa Mắt", departmentType: "CLINICAL", departmentHeadId: null },
+      { ...departmentContractFixture, departmentId: "office", departmentName: "Phòng Hành chính", departmentType: "ADMINISTRATIVE", departmentHeadId: null },
+    ]);
+    mocks.rooms.mockResolvedValue([
+      { roomId: "r1", departmentId: departmentContractFixture.departmentId, roomType: "CONSULTATION", roomNumber: "101", roomName: "Phòng khám Nội 1", zone: "Khu A", location: "Tầng 1", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: null },
+      { roomId: "r2", departmentId: "office", roomType: "ADMINISTRATION", roomNumber: "201", roomName: "Phòng Hành chính", zone: "Khu C", location: "Tầng 2", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: null },
     ]);
     mocks.staff.mockResolvedValue(staffPage());
     render(<OrganizationDirectory />);
-    expect(screen.getByRole("button", { name: /Khoa/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Khoa / bộ phận" })).toHaveAttribute("aria-pressed", "true");
     expect(await screen.findByRole("link", { name: "Xem chi tiết Khoa Nội" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Xem chi tiết Khoa Xét nghiệm" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Xem chi tiết Phòng Hành chính" })).not.toBeInTheDocument();
-    expect(mocks.staff).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /Phòng/ }));
     expect(screen.getByRole("link", { name: "Xem chi tiết Phòng Hành chính" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Xem chi tiết Khoa Nội" })).not.toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Tên phòng" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Trưởng khoa" })).toBeVisible();
+    expect(screen.getByText("Bác sĩ head-1")).toBeVisible();
+    expect(screen.getByText("Chưa bổ nhiệm")).toBeVisible();
+    expect(screen.getByText("Không áp dụng")).toBeVisible();
+    expect(mocks.staff).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Phòng làm việc" }));
+    expect(await screen.findByRole("cell", { name: "Phòng khám Nội 1" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Số phòng" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Khu" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Thêm phòng làm việc" })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Lọc theo loại phòng"), { target: { value: "ADMINISTRATION" } });
+    expect(screen.queryByRole("cell", { name: "Phòng khám Nội 1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "201" })).toBeVisible();
+
     fireEvent.click(screen.getByRole("button", { name: /Nhân sự/ }));
     expect(await screen.findByRole("link", { name: "Xem chi tiết Nguyen Van A" })).toBeVisible();
-    expect(screen.queryByRole("table", { name: "Khoa" })).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Lọc theo khoa" })).toHaveTextContent("Phòng Hành chính");
-    fireEvent.click(screen.getByRole("button", { name: /Khoa/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Khoa / bộ phận" }));
     expect(screen.getByRole("link", { name: "Xem chi tiết Khoa Nội" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Xem chi tiết Nguyen Van A" })).not.toBeInTheDocument();
-    expect(mocks.departments).toHaveBeenCalledTimes(1);
+    expect(mocks.departments).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers only the room types that fit the chosen unit", async () => {
+    mocks.departments.mockResolvedValue([
+      { ...departmentContractFixture, departmentName: "Khoa Nội", departmentType: "CLINICAL" },
+      { ...departmentContractFixture, departmentId: "cash", departmentName: "Phòng Tài chính", departmentType: "ADMINISTRATIVE" },
+    ]);
+    mocks.rooms.mockResolvedValue([]);
+    render(<RoomDirectory />);
+    fireEvent.click(await screen.findByRole("button", { name: "Thêm phòng làm việc" }));
+    const type = screen.getByRole("combobox", { name: /^Loại phòng/ });
+    expect(type).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: /^Khoa \/ bộ phận/ }), { target: { value: departmentContractFixture.departmentId } });
+    expect(Array.from((type as HTMLSelectElement).options).map(option => option.value)).toEqual(["", "CONSULTATION", "DEPARTMENT_OFFICE"]);
+    fireEvent.change(screen.getByRole("combobox", { name: /^Khoa \/ bộ phận/ }), { target: { value: "cash" } });
+    expect(Array.from((type as HTMLSelectElement).options).map(option => option.value)).toEqual(["", "CASHIER", "NURSING", "ADMINISTRATION"]);
   });
 
   it.each(["departments", "staff"] as const)("ignores a retry 401 after %s unmounts", async (resource) => {

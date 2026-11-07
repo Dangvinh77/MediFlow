@@ -41,6 +41,11 @@ core-service,POST,/api/v1/org/departments,ADMIN,true
 core-service,GET,/api/v1/org/departments,ADMIN|DOCTOR|NURSE,true
 core-service,GET,/api/v1/org/departments/{id},ADMIN|DOCTOR|NURSE,true
 core-service,PUT,/api/v1/org/departments/{id},ADMIN,true
+core-service,GET,/api/v1/org/rooms,ADMIN|DOCTOR|NURSE,true
+core-service,GET,/api/v1/org/rooms/{id},ADMIN|DOCTOR|NURSE,true
+core-service,POST,/api/v1/org/rooms,ADMIN,true
+core-service,PUT,/api/v1/org/rooms/{id},ADMIN,true
+core-service,PUT,/api/v1/org/rooms/{id}/status,ADMIN,true
 core-service,POST,/api/v1/org/staff,ADMIN,true
 core-service,PUT,/api/v1/org/staff/{staffId}/department,ADMIN,true
 core-service,GET,/api/v1/org/staff,ADMIN|DOCTOR|NURSE,true

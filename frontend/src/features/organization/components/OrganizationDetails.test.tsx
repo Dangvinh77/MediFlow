@@ -10,10 +10,11 @@ const mocks = vi.hoisted(() => ({
   getRole: vi.fn(() => "ADMIN"),
   getSessionKey: vi.fn<() => string | null>(() => "session-a"),
   router: { replace: vi.fn() },
+  rooms: vi.fn(async () => []),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey, getRole: mocks.getRole, subscribeToAuthChanges: () => () => {} }));
-vi.mock("../api", () => ({ organizationApi: { department: mocks.department, staffMember: mocks.staffMember, staff: mocks.staff, profileAccount: mocks.profileAccount } }));
+vi.mock("../api", () => ({ organizationApi: { department: mocks.department, staffMember: mocks.staffMember, staff: mocks.staff, profileAccount: mocks.profileAccount, rooms: mocks.rooms } }));
 
 import { DepartmentDetail } from "./DepartmentDetail";
 import { StaffDetail } from "./StaffDetail";
@@ -21,11 +22,13 @@ import { StaffDetail } from "./StaffDetail";
 it.each(["ADMINISTRATIVE", "CLINICAL", "PARACLINICAL"] as const)("labels the detail page according to department type %s", async departmentType => {
   mocks.department.mockResolvedValue({ ...departmentContractFixture, departmentType });
   render(<DepartmentDetail departmentId={departmentContractFixture.departmentId} notice="updated" />);
-  const unit = departmentType === "ADMINISTRATIVE" ? "phòng" : "khoa";
+  const unit = departmentType === "CLINICAL" ? "khoa" : "bộ phận";
   expect(await screen.findByRole("heading", { name: `Thông tin ${unit}` })).toBeVisible();
   expect(screen.getByRole("heading", { level: 1, name: `Chi tiết ${unit}` })).toBeVisible();
   expect(screen.getByText(`Loại ${unit}`)).toBeVisible();
-  expect(screen.getByText(unit === "phòng" ? "Trưởng phòng" : "Trưởng khoa")).toBeVisible();
+  expect(screen.getByText(unit === "khoa" ? "Trưởng khoa" : "Tổ chức làm việc")).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Phòng làm việc của đơn vị" })).toBeVisible();
+  expect(mocks.rooms).toHaveBeenCalledWith({ departmentId: departmentContractFixture.departmentId });
   expect(screen.getByText(`Đã cập nhật ${unit}.`)).toHaveTextContent(`Đã cập nhật ${unit}.`);
 });
 

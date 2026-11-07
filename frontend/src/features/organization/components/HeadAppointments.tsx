@@ -7,9 +7,9 @@ import { prepareCommandIntent } from "@/lib/command-intent";
 import { useUnsavedChanges } from "../use-unsaved-changes";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { Button } from "@/components/ui/Button";
-import { StaffPicker } from "./StaffPicker";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { organizationApi } from "../api";
-import type { HeadAppointmentCommand, HeadAppointmentSnapshot } from "../types";
+import type { HeadAppointmentCommand, HeadAppointmentSnapshot, StaffDTO } from "../types";
 
 const historyTime = new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 function formatHistoryTime(value: string) {
@@ -37,6 +37,30 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
     return () => { context.mounted = false; };
   }, [departmentId]);
   const { markDirty, markSaved } = useUnsavedChanges();
+  const [doctors, setDoctors] = useState<StaffDTO[] | null>(null);
+  const [doctorError, setDoctorError] = useState("");
+  const [doctorAttempt, setDoctorAttempt] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const session = getSessionKey();
+    async function load() {
+      const rows: StaffDTO[] = [];
+      for (let page = 0; ; page++) {
+        const batch = await organizationApi.staff({ departmentId, jobTitle: "DOCTOR", activeOnly: true, page, size: 100 });
+        rows.push(...batch.content.filter(member => member.active));
+        if (page + 1 >= batch.totalPages) break;
+      }
+      return rows;
+    }
+    load().then(rows => { if (alive && session === getSessionKey()) setDoctors(rows); })
+      .catch(cause => { if (alive && session === getSessionKey()) setDoctorError(cause instanceof Error ? cause.message : "Không thể tải danh sách bác sĩ của khoa."); });
+    return () => { alive = false; };
+  }, [departmentId, doctorAttempt]);
+  function toggleDoctor(id: string) {
+    markDirty(); setRevoke(false); setPreview(false);
+    // One department has one head: checking a doctor clears any other choice.
+    setStaffId(current => current === id ? "" : id);
+  }
   useEffect(() => {
     let alive = true;
     const session = getSessionKey();
@@ -88,9 +112,23 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
       <p className="text-xs text-muted-foreground">Phiên bản {snapshot.revision}</p>
       <form onSubmit={event => { event.preventDefault(); void save(); }} onChangeCapture={markDirty} className="space-y-4">
         <fieldset disabled={busy || Boolean(pending)} className="space-y-3">
-          <StaffPicker departmentId={departmentId} jobTitle="DOCTOR" value={staffId} onChange={value => { markDirty(); setStaffId(value); setRevoke(false); setPreview(false); }} label="Bác sĩ được đề cử" />
+          <legend className="text-sm font-medium">Bác sĩ của khoa</legend>
+          <p className="text-xs text-muted-foreground">Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.</p>
+          {doctorError ? <AsyncState kind="error" message={doctorError} onRetry={() => { setDoctorError(""); setDoctors(null); setDoctorAttempt(value => value + 1); }} />
+            : !doctors ? <AsyncState kind="loading" message="Đang tải bác sĩ của khoa…" />
+            : doctors.length === 0 ? <AsyncState kind="empty" message="Khoa chưa có bác sĩ đang làm việc." />
+            : <div className="overflow-x-auto rounded-lg border border-border"><table className="w-full text-left text-sm">
+              <caption className="sr-only">Chọn bác sĩ để bổ nhiệm hoặc miễn nhiệm</caption>
+              <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only">Chọn</span></th><th scope="col" className="px-3 py-2">Họ tên</th><th scope="col" className="px-3 py-2">Chuyên môn</th><th scope="col" className="px-3 py-2">Chức vụ</th></tr></thead>
+              <tbody>{doctors.map(doctor => <tr key={doctor.staffId} className={`border-t border-border ${staffId === doctor.staffId ? "bg-primary/5" : ""}`}>
+                <td className="px-3 py-2"><input type="checkbox" aria-label={`Chọn ${doctor.fullName}`} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
+                <td className="px-3 py-2 font-medium">{doctor.fullName}</td>
+                <td className="px-3 py-2">{doctor.specialization || "Chưa cập nhật"}</td>
+                <td className="px-3 py-2">{snapshot.staffId === doctor.staffId ? <StatusBadge tone="success">Trưởng khoa đương nhiệm</StatusBadge> : <span className="text-muted-foreground">Bác sĩ</span>}</td>
+              </tr>)}</tbody>
+            </table></div>}
           <label className="block space-y-1 text-sm">Lý do<textarea aria-label="Lý do" required maxLength={500} value={reason} onChange={event => { setReason(event.target.value); setPreview(false); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label>
-          <div className="flex flex-wrap gap-3"><Button type="button" disabled={!staffId || !reason.trim()} onClick={() => { setRevoke(false); setPreview(true); }}>Xem trước bổ nhiệm</Button>{snapshot.staffId ? <Button type="button" variant="secondary" onClick={() => { setRevoke(true); setPreview(true); markDirty(); }}>Miễn nhiệm</Button> : null}</div>
+          <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={!staffId || staffId === snapshot.staffId || !reason.trim()} onClick={() => { setRevoke(false); setPreview(true); }}>Bổ nhiệm</Button>{snapshot.staffId ? <Button type="button" variant="secondary" onClick={() => { setRevoke(true); setPreview(true); markDirty(); }}>Miễn nhiệm</Button> : null}</div>
         </fieldset>
         {preview || pending ? <div className="space-y-3 rounded-lg border border-border p-4"><p className="text-sm">{snapshot.staffId ? "Nhiệm kỳ hiện tại sẽ kết thúc khi xác nhận." : "Bắt đầu nhiệm kỳ trưởng khoa mới."}</p>{snapshot.staffId ? <div className="text-sm"><p>Người kết thúc nhiệm kỳ</p><ReferenceText kind="doctor" value={snapshot.staffId} /></div> : null}{!revoke && staffId ? <div className="text-sm"><p>Người được bổ nhiệm</p><ReferenceText kind="doctor" value={staffId} /></div> : null}<p className="whitespace-pre-wrap break-words text-sm">Lý do xác nhận: {pending?.reason ?? reason.trim()}</p>{pending ? <p role="status" className="text-sm">Kết quả chưa xác định. Chỉ gửi lại cùng yêu cầu để đối soát; nội dung đang được giữ nguyên.</p> : null}<Button type="submit" loading={busy} disabled={!reason.trim() || (!revoke && !staffId)}>{pending ? "Gửi lại cùng yêu cầu" : revoke ? "Xác nhận miễn nhiệm" : "Xác nhận bổ nhiệm"}</Button></div> : null}
       </form>

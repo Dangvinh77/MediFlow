@@ -32,6 +32,6 @@ public class LookupRoomService implements LookupRoomUseCase {
                 room.getRoomId(),
                 room.getDepartmentId(),
                 room.getRoomName(),
-                room.getRoomType());
+                room.getRoomType().name());
     }
 }

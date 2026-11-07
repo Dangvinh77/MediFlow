@@ -57,9 +57,11 @@ class LocalDemoSeedPostgresTest {
     @Test void automaticStartupAndReplayKeepRealDatabaseWritesAndChangedCredentials() throws Exception {
         var org = new JdbcTemplate(organizationSource);
         var patient = new JdbcTemplate(patientSource);
-        assertThat(org.queryForObject("select count(*) from department", Integer.class)).isEqualTo(10);
+        assertThat(org.queryForObject("select count(*) from department", Integer.class)).isEqualTo(11);
         assertThat(org.queryForObject("select count(*) from staff", Integer.class)).isEqualTo(20);
-        assertThat(org.queryForObject("select count(*) from account", Integer.class)).isEqualTo(9);
+        assertThat(org.queryForObject("select count(*) from account", Integer.class)).isEqualTo(22);
+        assertThat(org.queryForObject("select count(*) from room", Integer.class)).isEqualTo(23);
+        assertThat(org.queryForObject("select count(*) from room where room_type='CONSULTATION'", Integer.class)).isEqualTo(12);
         assertThat(patient.queryForObject("select count(*) from patient", Integer.class)).isEqualTo(10);
         var admin = login.execute("demo.staff01@example.test", "MediFlowDemo@2026");
         var patientLogin = login.execute("demo.patient01@example.test", "MediFlowDemo@2026");
@@ -76,7 +78,7 @@ class LocalDemoSeedPostgresTest {
         assertThat(org.queryForObject("select count(*) from staff", Integer.class)).isEqualTo(20);
         assertThat(org.queryForObject("select full_name from staff where identity_number='777880000001'", String.class))
                 .isEqualTo("Edited Demo");
-        assertThat(org.queryForObject("select count(*) from local_demo_seed_receipt", Integer.class)).isEqualTo(39);
+        assertThat(org.queryForObject("select count(*) from local_demo_seed_receipt", Integer.class)).isEqualTo(76);
         assertThat(patient.queryForObject("select count(*) from local_demo_seed_receipt", Integer.class)).isEqualTo(10);
         assertThat(org.queryForList("select * from organization_event_outbox order by event_id")).isEqualTo(orgOutbox);
         assertThat(patient.queryForList("select * from patient_event_outbox order by event_id")).isEqualTo(patientOutbox);

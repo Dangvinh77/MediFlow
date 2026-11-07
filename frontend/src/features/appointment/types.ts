@@ -72,6 +72,9 @@ export interface ConsultationRoomSummary {
   departmentId: string;
   roomName: string;
   roomType: string;
+  roomNumber?: string;
+  zone?: string;
+  location?: string;
 }
 
 export type ConsultationSessionStatus = "OPEN" | "STOPPED" | "CANCELLED";

@@ -227,6 +227,8 @@ class OrganizationServiceIntegrationTest {
     private com.mediflow.organization.application.port.in.GetDepartmentUseCase getDepartments;
     @Autowired
     private com.mediflow.organization.application.port.in.GetStaffUseCase getStaff;
+    @Autowired
+    private com.mediflow.organization.application.port.in.ManageRoomsUseCase manageRooms;
 
     @Test
     void concurrentSeedRestartsBackfillTrackedMastersOnceAndPreserveLaterClears() throws Exception {
@@ -247,7 +249,7 @@ class OrganizationServiceIntegrationTest {
         person.put("key", staffKey).put("fullName", "Seed person").put("identityNumber", identity).put("departmentKey", unitKey).put("jobTitle", "ADMINISTRATIVE")
                 .put("dateOfBirth", "1990-01-02").put("gender", "FEMALE").put("address", "Seed address").put("hireDate", "2020-03-01").put("qualification", "Degree");
         var seeder = new com.mediflow.organization.infrastructure.config.OrganizationDemoSeeder(jdbc,
-                new org.springframework.transaction.support.TransactionTemplate(organizationTransactions), getDepartments, createDepartmentUseCase, getStaff, createStaffUseCase, manageAccounts, createAccountUseCase);
+                new org.springframework.transaction.support.TransactionTemplate(organizationTransactions), getDepartments, createDepartmentUseCase, getStaff, createStaffUseCase, manageAccounts, createAccountUseCase, manageRooms);
         try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
             var start = new java.util.concurrent.CountDownLatch(1);
             java.util.concurrent.Callable<java.util.Map<String, UUID>> command = () -> { start.await(); return seeder.seedMasters(data); };
@@ -623,8 +625,11 @@ class OrganizationServiceIntegrationTest {
         roomRepository.save(new RoomEntity(
                 roomId,
                 department.getDepartmentId(),
-                "OR-INT-01",
-                "OPERATING_ROOM",
+                "LABORATORY",
+                "INT-" + roomId.toString().substring(0, 8),
+                "Phòng xét nghiệm tích hợp",
+                "Khu tích hợp",
+                "Tầng 1",
                 true,
                 Instant.now(),
                 Instant.now()));
@@ -633,7 +638,7 @@ class OrganizationServiceIntegrationTest {
         assertThat(roomLookup.active()).isTrue();
         assertThat(roomLookup.roomId()).isEqualTo(roomId);
         assertThat(roomLookup.departmentId()).isEqualTo(department.getDepartmentId());
-        assertThat(roomLookup.roomType()).isEqualTo("OPERATING_ROOM");
+        assertThat(roomLookup.roomType()).isEqualTo("LABORATORY");
 
         UUID missingRoomId = UUID.randomUUID();
         assertThat(lookupRoomUseCase.lookup(missingRoomId))

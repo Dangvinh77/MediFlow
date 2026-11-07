@@ -18,7 +18,7 @@ export function DepartmentPeople({ department }: { department: DepartmentDTO }) 
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState(0);
-  const unit = department.departmentType === "ADMINISTRATIVE" ? "phòng" : "khoa";
+  const clinical = department.departmentType === "CLINICAL";
   useEffect(() => {
     let active = true;
     const session = getSessionKey();
@@ -41,8 +41,9 @@ export function DepartmentPeople({ department }: { department: DepartmentDTO }) 
   }, [department.departmentId, attempt, router]);
   const head = members?.find(member => member.staffId === department.departmentHeadId);
   return <section className="overflow-hidden rounded-xl border border-border bg-surface">
-    <div className="border-b border-border px-5 py-4"><h3 className="font-semibold">{unit === "phòng" ? "Trưởng phòng" : "Trưởng khoa"}</h3>
-      {!department.departmentHeadId ? <p className="mt-2 text-sm text-muted-foreground">Chưa phân công</p>
+    <div className="border-b border-border px-5 py-4"><h3 className="font-semibold">{clinical ? "Trưởng khoa" : "Tổ chức làm việc"}</h3>
+      {!clinical ? <p className="mt-2 text-sm text-muted-foreground">Bộ phận làm việc chung tại một phòng; không bổ nhiệm trưởng bộ phận. Mọi nhân sự có tài khoản và thao tác trực tiếp trên hệ thống.</p>
+        : !department.departmentHeadId ? <p className="mt-2 text-sm text-muted-foreground">Chưa bổ nhiệm. Lịch làm việc của khoa do quản trị viên quản lý.</p>
         : head ? <div className="mt-2 space-y-1 text-sm"><p className="font-medium">{head.fullName} · {jobs[head.jobTitle]}</p>{head.phoneNumber ? <p>Điện thoại: {head.phoneNumber}</p> : null}{head.email ? <p>Email: {head.email}</p> : null}<Link href={`/organization/staff/${head.staffId}`} className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">Xem chi tiết</Link></div>
         : members ? <p className="mt-2 text-sm text-muted-foreground">Chưa có thông tin người phụ trách trong danh sách nhân sự của đơn vị.</p> : null}
     </div>

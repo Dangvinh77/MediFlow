@@ -25,11 +25,13 @@ public class OrganizationDemoSeeder {
     private final CreateStaffUseCase createStaff;
     private final ManageAccountsUseCase accounts;
     private final CreateAccountUseCase createAccount;
+    private final ManageRoomsUseCase rooms;
 
     public OrganizationDemoSeeder(JdbcTemplate jdbc, TransactionTemplate transaction,
             GetDepartmentUseCase departments, CreateDepartmentUseCase createDepartment,
             GetStaffUseCase staff, CreateStaffUseCase createStaff,
-            ManageAccountsUseCase accounts, CreateAccountUseCase createAccount) {
+            ManageAccountsUseCase accounts, CreateAccountUseCase createAccount,
+            ManageRoomsUseCase rooms) {
         this.jdbc = jdbc;
         this.transaction = transaction;
         this.departments = departments;
@@ -38,6 +40,7 @@ public class OrganizationDemoSeeder {
         this.createStaff = createStaff;
         this.accounts = accounts;
         this.createAccount = createAccount;
+        this.rooms = rooms;
     }
 
     public Map<String, UUID> seedMasters(JsonNode data) {
@@ -73,8 +76,41 @@ public class OrganizationDemoSeeder {
                 profiles.staff(row, id, previouslyTracked);
                 ids.put(text(row, "key"), id);
             }
+            seedRooms(data, ids);
             return ids;
         });
+    }
+
+    /**
+     * Workplace rooms are adopted by zone and number, or by the department's existing room of a
+     * single-per-department type, so a restored snapshot never breaks the workplace rules.
+     */
+    private void seedRooms(JsonNode data, Map<String, UUID> ids) {
+        if (!data.path("rooms").isArray()) return;
+        List<Room> existing = new ArrayList<>(rooms.list(null, null, false));
+        for (JsonNode row : data.path("rooms")) {
+            UUID departmentId = Objects.requireNonNull(ids.get(text(row, "departmentKey")));
+            RoomType type = RoomType.valueOf(text(row, "roomType"));
+            String zone = text(row, "zone");
+            String number = text(row, "roomNumber");
+            UUID id = once(text(row, "key"), () -> existing.stream()
+                    .filter(room -> room.getZone().equalsIgnoreCase(zone)
+                            && room.getRoomNumber().equalsIgnoreCase(number))
+                    .findFirst()
+                    .or(() -> existing.stream().filter(room -> room.isActive()
+                            && room.getDepartmentId().equals(departmentId)
+                            && type.singlePerDepartment()
+                            && (room.getRoomType() == type || type.functionalWorkplace())).findFirst())
+                    .map(Room::getRoomId)
+                    .orElseGet(() -> {
+                        Room created = rooms.create(new ManageRoomsUseCase.RoomDetails(departmentId, type,
+                                new ManageRoomsUseCase.RoomPlacement(number, text(row, "roomName"), zone,
+                                        text(row, "location"))));
+                        existing.add(created);
+                        return created.getRoomId();
+                    }));
+            ids.put(text(row, "key"), id);
+        }
     }
 
     public void seedAccounts(JsonNode data, Map<String, UUID> staffIds, Map<String, UUID> patientIds) {

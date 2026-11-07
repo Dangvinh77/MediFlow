@@ -38,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -252,6 +253,103 @@ class ScheduleManagementScopeIntegrationTest {
                                 UUID.class,
                                 d.getDepartmentId()))
                 .isNull();
+    }
+
+    @Test
+    void administratorManagesWorkplaceRoomsAndOnlyConsultationRoomsHostSessions() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Rooms");
+        String zone = "Khu " + d.getAbbreviation();
+        java.util.function.BiFunction<String, String, String> body = (type, number) ->
+                "{\"departmentId\":\"" + d.getDepartmentId() + "\",\"roomType\":\"" + type
+                        + "\",\"roomNumber\":\"" + number + "\",\"roomName\":\"Room " + number
+                        + "\",\"zone\":\"" + zone + "\",\"location\":\"Tầng 1\"}";
+        java.util.function.BiFunction<String, String, org.springframework.http.ResponseEntity<String>> create =
+                (type, number) -> http.exchange("/api/v1/org/rooms", HttpMethod.POST,
+                        entity(body.apply(type, number), f.admin(), Role.ADMIN, null, "room-" + number), String.class);
+
+        var first = create.apply("CONSULTATION", "101");
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+        String firstId = mapper.readTree(first.getBody()).at("/data/roomId").asText();
+        assertThat(create.apply("CONSULTATION", "102").getStatusCode().value()).isEqualTo(201);
+        assertThat(create.apply("DEPARTMENT_OFFICE", "110").getStatusCode().value()).isEqualTo(201);
+
+        var secondOffice = create.apply("DEPARTMENT_OFFICE", "111");
+        assertThat(secondOffice.getStatusCode().value()).isEqualTo(422);
+        assertThat(mapper.readTree(secondOffice.getBody()).at("/error/code").asText()).isEqualTo("ROOM_TYPE_ALREADY_ASSIGNED");
+        var wrongType = create.apply("CASHIER", "120");
+        assertThat(mapper.readTree(wrongType.getBody()).at("/error/code").asText()).isEqualTo("ROOM_TYPE_NOT_ALLOWED");
+        var duplicate = create.apply("CONSULTATION", "101");
+        assertThat(duplicate.getStatusCode().value()).isEqualTo(409);
+        assertThat(mapper.readTree(duplicate.getBody()).at("/error/code").asText()).isEqualTo("ROOM_NUMBER_DUPLICATE");
+
+        var all = http.exchange("/api/v1/org/rooms?departmentId=" + d.getDepartmentId(), HttpMethod.GET,
+                entity(null, f.admin(), Role.ADMIN, null, "rooms-list"), String.class);
+        assertThat(mapper.readTree(all.getBody()).at("/data").size()).isEqualTo(3);
+        var typed = http.exchange("/api/v1/org/rooms?roomType=DEPARTMENT_OFFICE&activeOnly=true&departmentId="
+                        + d.getDepartmentId(), HttpMethod.GET,
+                entity(null, f.admin(), Role.ADMIN, null, "rooms-typed"), String.class);
+        assertThat(mapper.readTree(typed.getBody()).at("/data").size()).isEqualTo(1);
+
+        var deactivated = http.exchange("/api/v1/org/rooms/" + firstId + "/status", HttpMethod.PUT,
+                entity("{\"active\":false}", f.admin(), Role.ADMIN, null, "room-off"), String.class);
+        assertThat(mapper.readTree(deactivated.getBody()).at("/data/active").asBoolean()).isFalse();
+        var renamed = http.exchange("/api/v1/org/rooms/" + firstId, HttpMethod.PUT,
+                entity("{\"roomNumber\":\"105\",\"roomName\":\"Renamed\",\"zone\":\"" + zone
+                        + "\",\"location\":\"Tầng 2\"}", f.admin(), Role.ADMIN, null, "room-edit"), String.class);
+        assertThat(mapper.readTree(renamed.getBody()).at("/data/roomNumber").asText()).isEqualTo("105");
+        assertThat(mapper.readTree(renamed.getBody()).at("/data/roomType").asText()).isEqualTo("CONSULTATION");
+
+        // The scheduling picker lists only the active consultation rooms of the department.
+        var consultation = http.exchange("/api/v2/org/consultation-rooms?departmentId=" + d.getDepartmentId(),
+                HttpMethod.GET, entity(null, f.admin(), Role.ADMIN, null, "consult-rooms"), String.class);
+        JsonNode content = mapper.readTree(consultation.getBody()).at("/data/content");
+        assertThat(content.size()).isEqualTo(1);
+        assertThat(content.get(0).get("roomNumber").asText()).isEqualTo("102");
+        assertThat(content.get(0).get("zone").asText()).isEqualTo(zone);
+    }
+
+    @Test
+    void departmentWithoutHeadIsScheduledOnlyByAdministrator() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Headless");
+        Staff doctor = createStaff("Headless doctor", d, JobTitle.DOCTOR, "HEADLESS");
+        Account doctorAccount = accounts.save(Account.create(UUID.randomUUID(), username("headless"),
+                "hash", doctor.getStaffId(), Role.DOCTOR));
+        rooms.save(new RoomEntity(UUID.randomUUID(), d.getDepartmentId(), "CONSULTATION",
+                "H" + d.getAbbreviation(), "Headless clinic room", "Zone " + d.getAbbreviation(),
+                "Floor 1", true, Instant.now(), Instant.now()));
+        String roomsPath = "/api/v2/org/consultation-rooms?departmentId=" + d.getDepartmentId();
+
+        var adminRooms = http.exchange(roomsPath, HttpMethod.GET,
+                entity(null, f.admin(), Role.ADMIN, null, "headless-admin-rooms"), String.class);
+        assertThat(adminRooms.getStatusCode().value()).isEqualTo(200);
+        assertThat(mapper.readTree(adminRooms.getBody()).at("/data/totalElements").asLong()).isEqualTo(1);
+        assertThat(mapper.readTree(adminRooms.getBody()).at("/data/content/0/roomNumber").asText())
+                .isEqualTo("H" + d.getAbbreviation());
+
+        var doctorRooms = http.exchange(roomsPath, HttpMethod.GET,
+                entity(null, doctorAccount, Role.DOCTOR, null, "headless-doctor-rooms"), String.class);
+        assertThat(doctorRooms.getStatusCode().value()).isEqualTo(403);
+
+        String service = token("service", "SYSTEM", "clinical-service");
+        for (Account actor : List.of(f.admin(), doctorAccount)) {
+            var auth = http.exchange("/api/v2/org/scheduling-authority?actorAccountId="
+                            + actor.getAccountId() + "&departmentId=" + d.getDepartmentId(),
+                    HttpMethod.GET, serviceEntity(service, "headless-authority"), String.class);
+            assertThat(mapper.readTree(auth.getBody()).at("/data/canManageSchedules").asBoolean())
+                    .as("Only the administrator manages a department without a head")
+                    .isEqualTo(actor == f.admin());
+        }
+
+        // A non-clinical unit never hosts consultation sessions, not even for an administrator.
+        jdbc.update("UPDATE department SET department_type='ADMINISTRATIVE' WHERE department_id=?",
+                d.getDepartmentId());
+        var nonClinical = http.exchange("/api/v2/org/scheduling-authority?actorAccountId="
+                        + f.admin().getAccountId() + "&departmentId=" + d.getDepartmentId(),
+                HttpMethod.GET, serviceEntity(service, "nonclinical-authority"), String.class);
+        assertThat(mapper.readTree(nonClinical.getBody()).at("/data/canManageSchedules").asBoolean())
+                .isFalse();
     }
 
     @Test
@@ -944,13 +1042,6 @@ class ScheduleManagementScopeIntegrationTest {
         return staff.save(Staff.create(name + " " + UUID.randomUUID().toString().substring(0, 8),
                 department.getDepartmentId(), jobTitle, null, license, null, null,
                 Long.toString(IDENTITIES.incrementAndGet())));
-    }
-
-    private UUID addRoom(Department department, String name, String type, boolean active) {
-        UUID roomId = UUID.randomUUID();
-        rooms.save(new RoomEntity(roomId, department.getDepartmentId(), name, type, active,
-                Instant.now(), Instant.now()));
-        return roomId;
     }
 
     private HttpEntity<String> entity(String body, Account actor, Role role,

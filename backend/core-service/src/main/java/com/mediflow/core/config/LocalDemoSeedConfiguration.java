@@ -33,9 +33,10 @@ public class LocalDemoSeedConfiguration {
             @Qualifier("organizationTransactionManager") PlatformTransactionManager transactions,
             GetDepartmentUseCase departments, CreateDepartmentUseCase createDepartment,
             GetStaffUseCase staff, CreateStaffUseCase createStaff,
-            ManageAccountsUseCase accounts, CreateAccountUseCase createAccount) {
+            ManageAccountsUseCase accounts, CreateAccountUseCase createAccount,
+            com.mediflow.organization.application.port.in.ManageRoomsUseCase rooms) {
         return new OrganizationDemoSeeder(new JdbcTemplate(source), new TransactionTemplate(transactions),
-                departments, createDepartment, staff, createStaff, accounts, createAccount);
+                departments, createDepartment, staff, createStaff, accounts, createAccount, rooms);
     }
 
     @Bean

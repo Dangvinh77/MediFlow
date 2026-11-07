@@ -6,6 +6,8 @@ import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.model.JobTitle;
+import com.mediflow.organization.domain.model.Room;
+import com.mediflow.organization.domain.model.RoomType;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,9 +32,14 @@ public class GetCareLabelService implements GetCareLabelUseCase {
                     .map(member -> new CareLabelDTO(member.getStaffId(), member.getFullName()));
             case "department" -> departments.findById(id)
                     .map(department -> new CareLabelDTO(department.getDepartmentId(), department.getDepartmentName()));
-            case "room" -> rooms.findById(id).filter(room -> "CONSULTATION".equals(room.getRoomType()))
-                    .map(room -> new CareLabelDTO(room.getRoomId(), room.getRoomName()));
+            case "room" -> rooms.findById(id).filter(room -> room.getRoomType() == RoomType.CONSULTATION)
+                    .map(room -> new CareLabelDTO(room.getRoomId(), roomLabel(room)));
             default -> throw new IllegalArgumentException("Loại thông tin không được hỗ trợ");
         };
+    }
+
+    /** "P.101 · Phòng khám Nội 1 · Khu A" — what staff and patients read on a visit. */
+    static String roomLabel(Room room) {
+        return "P." + room.getRoomNumber() + " · " + room.getRoomName() + " · " + room.getZone();
     }
 }

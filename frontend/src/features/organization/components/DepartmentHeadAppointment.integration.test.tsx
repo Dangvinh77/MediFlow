@@ -7,7 +7,7 @@ import { HeadAppointments } from "./HeadAppointments";
 import { ApiRequestError } from "@/lib/api";
 
 const mocks = vi.hoisted(() => ({
-  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(),
+  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(), rooms: vi.fn(async () => []),
   session: vi.fn(() => "session-a"), router: { replace: vi.fn() }, settle: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
@@ -15,7 +15,6 @@ vi.mock("@/lib/auth", () => ({ getRole: () => "ADMIN", getSessionKey: mocks.sess
 vi.mock("@/lib/session", () => ({ getSessionKey: mocks.session }));
 vi.mock("@/lib/command-intent", () => ({ prepareCommandIntent: vi.fn(async () => ({ key: "same-key", correlationId: "same-correlation", settle: mocks.settle, cancelUnsent: vi.fn() })) }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
-vi.mock("./StaffPicker", () => ({ StaffPicker: ({ onChange }: { onChange: (id: string) => void }) => <button type="button" onClick={() => onChange("00000000-0000-4000-8000-000000000002")}>Chọn bác sĩ A</button> }));
 vi.mock("@/components/references/ReferenceText", () => ({ ReferenceText: ({ value }: { value: string }) => <span>{value}</span> }));
 
 const initial: HeadAppointmentSnapshot = { departmentId: department.departmentId, revision: 0, staffId: null, accountId: null, appointmentId: null, updatedAt: null, updatedByAccountId: null, history: [] };
@@ -27,14 +26,14 @@ beforeEach(() => {
   mocks.department.mockResolvedValue(department);
   mocks.staff.mockResolvedValue({ content: [doctor], totalPages: 1 });
   mocks.headAppointments.mockResolvedValue(initial);
+  mocks.rooms.mockResolvedValue([]);
   mocks.replaceHeadAppointment.mockResolvedValue(appointed);
 });
 
-async function confirmAppointment() {
-  await screen.findByRole("button", { name: "Chọn bác sĩ A" });
-  fireEvent.click(screen.getByRole("button", { name: "Chọn bác sĩ A" }));
+async function confirmAppointment(name = doctor.fullName) {
+  fireEvent.click(await screen.findByRole("checkbox", { name: `Chọn ${name}` }));
   fireEvent.change(screen.getByLabelText("Lý do"), { target: { value: "Bổ nhiệm theo quyết định" } });
-  fireEvent.click(screen.getByRole("button", { name: "Xem trước bổ nhiệm" }));
+  fireEvent.click(screen.getByRole("button", { name: "Bổ nhiệm" }));
   fireEvent.click(screen.getByRole("button", { name: "Xác nhận bổ nhiệm" }));
 }
 
@@ -43,15 +42,15 @@ it("updates the department head immediately on appointment and revocation withou
   render(<DepartmentDetail departmentId={department.departmentId} schedulingEnabled />);
   await confirmAppointment();
   expect(await screen.findByText(`${doctor.fullName} · Bác sĩ`)).toBeVisible();
-  expect(screen.getByRole("status")).toHaveTextContent("Đã bổ nhiệm trưởng khoa.");
+  expect(screen.getByText("Đã bổ nhiệm trưởng khoa.")).toBeVisible();
   expect(screen.getByText("Phiên bản 1")).toBeVisible();
   expect(screen.getByText("Lịch sử bổ nhiệm (1)")).toBeVisible();
   expect(screen.getByText(/08:05/)).toHaveTextContent("01/11/2026");
   fireEvent.change(screen.getByLabelText("Lý do"), { target: { value: "Kết thúc nhiệm kỳ" } });
   fireEvent.click(screen.getByRole("button", { name: "Miễn nhiệm" }));
   fireEvent.click(screen.getByRole("button", { name: "Xác nhận miễn nhiệm" }));
-  expect(await screen.findByText("Chưa phân công")).toBeVisible();
-  expect(screen.getByRole("status")).toHaveTextContent("Đã miễn nhiệm trưởng khoa.");
+  expect(await screen.findByText(/^Chưa bổ nhiệm\./)).toBeVisible();
+  expect(screen.getByText("Đã miễn nhiệm trưởng khoa.")).toBeVisible();
   expect(screen.getByText("Phiên bản 2")).toBeVisible();
   expect(screen.getByText("Lịch sử bổ nhiệm (1)")).toBeVisible();
   expect(mocks.headAppointments).toHaveBeenCalledTimes(1);
@@ -73,7 +72,7 @@ it.each(["department", "session"])("ignores a late appointment completion after 
   } else mocks.session.mockReturnValue("session-b");
   await act(async () => { complete(appointed); });
   expect(screen.queryByText(`${doctor.fullName} · Bác sĩ`)).not.toBeInTheDocument();
-  expect(screen.getByText("Chưa phân công")).toBeVisible();
+  expect(screen.getByText(/^Chưa bổ nhiệm\./)).toBeVisible();
 });
 
 it("locks duplicate confirmation and keeps an uncertain retry immutable", async () => {
@@ -123,11 +122,14 @@ it.each(["appointment", "revocation"])("synchronizes an external %s into the dep
   mocks.department.mockResolvedValue({ ...department, departmentHeadId: before.staffId });
   mocks.headAppointments.mockResolvedValueOnce(before).mockResolvedValueOnce(after);
   mocks.replaceHeadAppointment.mockRejectedValueOnce(new ApiRequestError("Changed externally", 409, "HEAD_REVISION_CONFLICT"));
+  // The sitting head cannot be re-appointed, so a revocation race starts from another doctor.
+  const candidate = { ...doctor, staffId: "00000000-0000-4000-8000-000000000077", fullName: "Bác sĩ Ứng viên" };
+  mocks.staff.mockResolvedValue({ content: [doctor, candidate], totalPages: 1 });
   render(<DepartmentDetail departmentId={department.departmentId} schedulingEnabled />);
-  await confirmAppointment();
+  await confirmAppointment(change === "appointment" ? doctor.fullName : candidate.fullName);
   await screen.findByText(`Phiên bản ${after.revision}`);
   if (change === "appointment") expect(await screen.findByText(`${doctor.fullName} · Bác sĩ`)).toBeVisible();
-  else expect(await screen.findByText("Chưa phân công")).toBeVisible();
+  else expect(await screen.findByText(/^Chưa bổ nhiệm\./)).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("Bổ nhiệm đã thay đổi.");
   expect(screen.getByLabelText("Lý do")).toHaveValue("Bổ nhiệm theo quyết định");
   expect(mocks.headAppointments).toHaveBeenCalledTimes(2);

@@ -46,7 +46,7 @@ public class JdbcSchedulingAuthorityRepository implements SchedulingAuthorityRep
                        a.staff_id AS staff_id,
                        COALESCE(s.status='ACTIVE',FALSE) AS staff_active,
                        COALESCE(d.is_active,FALSE) AS department_active,
-                       CASE WHEN a.role='ADMIN' THEN COALESCE(a.is_active AND d.is_active,FALSE)
+                       CASE WHEN a.role='ADMIN' THEN COALESCE(a.is_active AND d.is_active AND d.department_type='CLINICAL',FALSE)
                             WHEN a.role='DOCTOR' THEN COALESCE(a.is_active AND s.status='ACTIVE' AND s.job_title='DOCTOR'
                                  AND s.department_id=d.department_id AND d.is_active AND d.department_type='CLINICAL'
                                  AND h.appointment_id IS NOT NULL,FALSE)
@@ -126,12 +126,13 @@ public class JdbcSchedulingAuthorityRepository implements SchedulingAuthorityRep
                 WHERE department_id=? AND is_active=TRUE AND room_type='CONSULTATION'
                 """, Long.class, departmentId);
         List<RoomSummary> rooms = jdbc.query("""
-                SELECT room_id,department_id,room_name,room_type FROM room
+                SELECT room_id,department_id,room_name,room_type,room_number,zone,location FROM room
                 WHERE department_id=? AND is_active=TRUE AND room_type='CONSULTATION'
-                ORDER BY room_name,room_id LIMIT ? OFFSET ?
+                ORDER BY zone,room_number,room_id LIMIT ? OFFSET ?
                 """, (row, ignored) -> new RoomSummary(row.getObject("room_id", UUID.class),
                 row.getObject("department_id", UUID.class), row.getString("room_name"),
-                row.getString("room_type")), departmentId, size, offset);
+                row.getString("room_type"), row.getString("room_number"), row.getString("zone"),
+                row.getString("location")), departmentId, size, offset);
         return PageResult.of(rooms, total == null ? 0 : total, page, size);
     }
 

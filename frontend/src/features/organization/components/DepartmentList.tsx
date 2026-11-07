@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DirectorySection as DataTableShell } from "./RecordLayout";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ReferenceText } from "@/components/references/ReferenceText";
 import { ApiRequestError } from "@/lib/api";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { organizationApi } from "../api";
@@ -77,7 +78,7 @@ export function DepartmentList({ onLoaded, category = "all" }: {
     return () => { disposed = true; };
   }, [router, attempt, onLoaded]);
 
-  const title = category === "departments" ? "Khoa" : category === "offices" ? "Phòng" : "Khoa phòng";
+  const title = category === "departments" ? "Khoa" : category === "offices" ? "Bộ phận chức năng" : "Khoa / bộ phận";
   const normalize = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase();
   const visibleDepartments = departments.filter(department => (category === "all"
     || (category === "offices" ? department.departmentType === "ADMINISTRATIVE"
@@ -85,8 +86,8 @@ export function DepartmentList({ onLoaded, category = "all" }: {
     && normalize(`${department.departmentName} ${department.abbreviation}`).includes(normalize(keyword.trim())));
 
   return (
-    <DataTableShell title={title} description={category === "departments" ? "Danh sách khoa lâm sàng, cận lâm sàng và trạng thái hoạt động." : category === "offices" ? "Danh sách phòng hành chính và trạng thái hoạt động." : "Danh sách khoa phòng và trạng thái hoạt động."}>
-      <div className="border-t border-border p-4"><Field label="Tìm khoa/phòng" htmlFor="department-keyword"><input id="department-keyword" type="search" value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="Tên hoặc mã viết tắt" className={controlClassName} /></Field></div>
+    <DataTableShell title={title} description={category === "departments" ? "Danh sách khoa lâm sàng, cận lâm sàng và trạng thái hoạt động." : category === "offices" ? "Danh sách bộ phận chức năng và trạng thái hoạt động." : "Khoa lâm sàng có trưởng khoa quản lý lịch; bộ phận cận lâm sàng và chức năng làm việc chung tại một phòng, không bổ nhiệm trưởng."}>
+      <div className="border-t border-border p-4"><Field label="Tìm khoa/bộ phận" htmlFor="department-keyword"><input id="department-keyword" type="search" value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="Tên hoặc mã viết tắt" className={controlClassName} /></Field></div>
       {loading ? <AsyncState kind="loading" message="Đang tải danh sách khoa…" /> : null}
 
       {!loading && error ? (
@@ -99,7 +100,7 @@ export function DepartmentList({ onLoaded, category = "all" }: {
       ) : null}
 
       {!loading && !error && visibleDepartments.length === 0 ? (
-        <AsyncState kind="empty" message={category === "offices" ? "Chưa có phòng nào." : category === "departments" ? "Chưa có khoa nào." : "Chưa có khoa phòng nào."} />
+        <AsyncState kind="empty" message={category === "offices" ? "Chưa có bộ phận nào." : category === "departments" ? "Chưa có khoa nào." : "Chưa có khoa/bộ phận nào."} />
       ) : null}
 
       {!loading && !error && visibleDepartments.length > 0 ? (
@@ -108,9 +109,10 @@ export function DepartmentList({ onLoaded, category = "all" }: {
             <caption className="sr-only">{title}</caption>
             <thead className="border-b border-border text-muted-foreground">
               <tr>
-                <th scope="col" className="px-4 py-3">{category === "offices" ? "Tên phòng" : "Tên khoa"}</th>
+                <th scope="col" className="px-4 py-3">{category === "offices" ? "Tên bộ phận" : category === "all" ? "Tên khoa / bộ phận" : "Tên khoa"}</th>
                 <th scope="col" className="px-4 py-3">Viết tắt</th>
                 <th scope="col" className="px-4 py-3">Loại</th>
+                <th scope="col" className="px-4 py-3">Trưởng khoa</th>
                 <th scope="col" className="px-4 py-3">Địa điểm</th>
                 <th scope="col" className="px-4 py-3">Trạng thái</th>
                 <th scope="col" className="px-4 py-3">Thao tác</th>
@@ -124,6 +126,11 @@ export function DepartmentList({ onLoaded, category = "all" }: {
                   <td className="px-4 py-2">
                     {departmentTypeLabels[department.departmentType] ?? "Không xác định"}
                   </td>
+                  <td className="px-4 py-2">{department.departmentType !== "CLINICAL"
+                    ? <span className="text-muted-foreground">Không áp dụng</span>
+                    : department.departmentHeadId
+                      ? <ReferenceText kind="doctor" value={department.departmentHeadId} fallback="Trưởng khoa" />
+                      : <StatusBadge tone="warning">Chưa bổ nhiệm</StatusBadge>}</td>
                   <td className="px-4 py-2">{department.location || "—"}</td>
                   <td className="px-4 py-2">
                     <StatusBadge tone={department.active ? "success" : "neutral"}>

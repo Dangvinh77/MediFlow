@@ -7,7 +7,7 @@
       "departmentName": "Khoa Nội tổng quát Demo",
       "abbreviation": "DEMO-NOI",
       "departmentType": "CLINICAL",
-      "location": "Tầng 1, khu Demo",
+      "location": "Tầng 1, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220010",
       "email": "demo-noi@demo.mediflow.local"
@@ -17,7 +17,7 @@
       "departmentName": "Khoa Nhi Demo",
       "abbreviation": "DEMO-NHI",
       "departmentType": "CLINICAL",
-      "location": "Tầng 1, khu Demo",
+      "location": "Tầng 1, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220011",
       "email": "demo-nhi@demo.mediflow.local"
@@ -27,8 +27,8 @@
       "departmentName": "Phòng Hành chính Demo",
       "abbreviation": "DEMO-HC",
       "departmentType": "ADMINISTRATIVE",
-      "location": "Tầng 2, khu Demo",
-      "description": "Điều phối công tác hành chính, hỗ trợ vận hành và quản lý nguồn lực của đơn vị.",
+      "location": "Tầng 2, Khu C",
+      "description": "Quản trị hệ thống, tài khoản và điều phối hành chính của bệnh viện; toàn bộ nhân sự làm việc tại một phòng.",
       "phoneNumber": "02838220012",
       "email": "demo-hc@demo.mediflow.local"
     },
@@ -37,7 +37,7 @@
       "departmentName": "Khoa Tim mạch Demo",
       "abbreviation": "DEMO-TIM",
       "departmentType": "CLINICAL",
-      "location": "Tầng 2, khu Demo",
+      "location": "Tầng 2, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220013",
       "email": "demo-tim@demo.mediflow.local"
@@ -47,7 +47,7 @@
       "departmentName": "Khoa Tai Mũi Họng Demo",
       "abbreviation": "DEMO-TMH",
       "departmentType": "CLINICAL",
-      "location": "Tầng 3, khu Demo",
+      "location": "Tầng 3, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220014",
       "email": "demo-tmh@demo.mediflow.local"
@@ -57,7 +57,7 @@
       "departmentName": "Khoa Da liễu Demo",
       "abbreviation": "DEMO-DL",
       "departmentType": "CLINICAL",
-      "location": "Tầng 3, khu Demo",
+      "location": "Tầng 3, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220015",
       "email": "demo-dl@demo.mediflow.local"
@@ -67,7 +67,7 @@
       "departmentName": "Khoa Mắt Demo",
       "abbreviation": "DEMO-MAT",
       "departmentType": "CLINICAL",
-      "location": "Tầng 4, khu Demo",
+      "location": "Tầng 4, Khu A",
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220016",
       "email": "demo-mat@demo.mediflow.local"
@@ -77,8 +77,8 @@
       "departmentName": "Khoa Xét nghiệm Demo",
       "abbreviation": "DEMO-XN",
       "departmentType": "PARACLINICAL",
-      "location": "Tầng 4, khu Demo",
-      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "location": "Tầng 1, Khu B",
+      "description": "Lấy mẫu và thực hiện xét nghiệm cho bệnh nhân ngoại trú; kỹ thuật viên làm việc tại phòng xét nghiệm chung.",
       "phoneNumber": "02838220017",
       "email": "demo-xn@demo.mediflow.local"
     },
@@ -87,8 +87,8 @@
       "departmentName": "Khoa Dược Demo",
       "abbreviation": "DEMO-DUOC",
       "departmentType": "PARACLINICAL",
-      "location": "Tầng 5, khu Demo",
-      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "location": "Tầng 1, Khu B",
+      "description": "Cấp phát thuốc theo đơn ngoại trú tại quầy phát thuốc của khoa.",
       "phoneNumber": "02838220018",
       "email": "demo-duoc@demo.mediflow.local"
     },
@@ -97,10 +97,20 @@
       "departmentName": "Phòng Tài chính Kế toán Demo",
       "abbreviation": "DEMO-TCKT",
       "departmentType": "ADMINISTRATIVE",
-      "location": "Tầng 5, khu Demo",
-      "description": "Điều phối công tác hành chính, hỗ trợ vận hành và quản lý nguồn lực của đơn vị.",
+      "location": "Tầng 1, Khu C",
+      "description": "Thu viện phí, tạm ứng và hoàn phí tại quầy thu ngân.",
       "phoneNumber": "02838220019",
       "email": "demo-tckt@demo.mediflow.local"
+    },
+    {
+      "key": "department-11",
+      "departmentName": "Phòng Điều dưỡng Demo",
+      "abbreviation": "DEMO-DD",
+      "departmentType": "ADMINISTRATIVE",
+      "location": "Tầng 1, Khu A",
+      "description": "Điều dưỡng tiếp đón, đăng ký khám và hướng dẫn bệnh nhân ngoại trú; toàn bộ điều dưỡng làm việc tại một phòng.",
+      "phoneNumber": "02838220020",
+      "email": "demo-dd@demo.mediflow.local"
     }
   ],
   "staff": [
@@ -156,7 +166,7 @@
       "key": "staff-04",
       "fullName": "Phạm Điều Dưỡng Demo",
       "identityNumber": "999880000004",
-      "departmentKey": "department-01",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -188,7 +198,7 @@
       "key": "staff-06",
       "fullName": "Trần Ngọc Lan Demo",
       "identityNumber": "999880000006",
-      "departmentKey": "department-02",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -220,7 +230,7 @@
       "key": "staff-08",
       "fullName": "Phạm Thanh Hà Demo",
       "identityNumber": "999880000008",
-      "departmentKey": "department-04",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -252,7 +262,7 @@
       "key": "staff-10",
       "fullName": "Đặng Thảo Nguyên Demo",
       "identityNumber": "999880000010",
-      "departmentKey": "department-05",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -284,7 +294,7 @@
       "key": "staff-12",
       "fullName": "Đỗ Ngọc Anh Demo",
       "identityNumber": "999880000012",
-      "departmentKey": "department-06",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -316,7 +326,7 @@
       "key": "staff-14",
       "fullName": "Ngô Thu Hương Demo",
       "identityNumber": "999880000014",
-      "departmentKey": "department-07",
+      "departmentKey": "department-11",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -413,7 +423,7 @@
       "fullName": "Lý Minh Quân Demo",
       "identityNumber": "999880000020",
       "departmentKey": "department-10",
-      "jobTitle": "ADMINISTRATIVE",
+      "jobTitle": "CASHIER",
       "specialization": null,
       "licenseNumber": null,
       "phoneNumber": "0908800020",
@@ -423,6 +433,215 @@
       "address": "29 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
       "hireDate": "2016-03-01",
       "qualification": "Cử nhân quản trị"
+    }
+  ],
+  "rooms": [
+    {
+      "key": "room-01-office",
+      "departmentKey": "department-01",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "110",
+      "roomName": "Văn phòng Khoa Nội",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-01-consult-1",
+      "departmentKey": "department-01",
+      "roomType": "CONSULTATION",
+      "roomNumber": "101",
+      "roomName": "Phòng khám Nội 1",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-01-consult-2",
+      "departmentKey": "department-01",
+      "roomType": "CONSULTATION",
+      "roomNumber": "102",
+      "roomName": "Phòng khám Nội 2",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-02-office",
+      "departmentKey": "department-02",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "120",
+      "roomName": "Văn phòng Khoa Nhi",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-02-consult-1",
+      "departmentKey": "department-02",
+      "roomType": "CONSULTATION",
+      "roomNumber": "103",
+      "roomName": "Phòng khám Nhi 1",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-02-consult-2",
+      "departmentKey": "department-02",
+      "roomType": "CONSULTATION",
+      "roomNumber": "104",
+      "roomName": "Phòng khám Nhi 2",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
+    },
+    {
+      "key": "room-04-office",
+      "departmentKey": "department-04",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "210",
+      "roomName": "Văn phòng Khoa Tim mạch",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-04-consult-1",
+      "departmentKey": "department-04",
+      "roomType": "CONSULTATION",
+      "roomNumber": "201",
+      "roomName": "Phòng khám Tim mạch 1",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-04-consult-2",
+      "departmentKey": "department-04",
+      "roomType": "CONSULTATION",
+      "roomNumber": "202",
+      "roomName": "Phòng khám Tim mạch 2",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-05-office",
+      "departmentKey": "department-05",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "310",
+      "roomName": "Văn phòng Khoa Tai Mũi Họng",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-05-consult-1",
+      "departmentKey": "department-05",
+      "roomType": "CONSULTATION",
+      "roomNumber": "301",
+      "roomName": "Phòng khám Tai Mũi Họng 1",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-05-consult-2",
+      "departmentKey": "department-05",
+      "roomType": "CONSULTATION",
+      "roomNumber": "302",
+      "roomName": "Phòng khám Tai Mũi Họng 2",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-06-office",
+      "departmentKey": "department-06",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "320",
+      "roomName": "Văn phòng Khoa Da liễu",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-06-consult-1",
+      "departmentKey": "department-06",
+      "roomType": "CONSULTATION",
+      "roomNumber": "303",
+      "roomName": "Phòng khám Da liễu 1",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-06-consult-2",
+      "departmentKey": "department-06",
+      "roomType": "CONSULTATION",
+      "roomNumber": "304",
+      "roomName": "Phòng khám Da liễu 2",
+      "zone": "Khu A",
+      "location": "Tầng 3, Khu A"
+    },
+    {
+      "key": "room-07-office",
+      "departmentKey": "department-07",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "410",
+      "roomName": "Văn phòng Khoa Mắt",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-07-consult-1",
+      "departmentKey": "department-07",
+      "roomType": "CONSULTATION",
+      "roomNumber": "401",
+      "roomName": "Phòng khám Mắt 1",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-07-consult-2",
+      "departmentKey": "department-07",
+      "roomType": "CONSULTATION",
+      "roomNumber": "402",
+      "roomName": "Phòng khám Mắt 2",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-11-nursing",
+      "departmentKey": "department-11",
+      "roomType": "NURSING",
+      "roomNumber": "100",
+      "roomName": "Phòng Điều dưỡng – Tiếp đón",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A (sảnh chính)"
+    },
+    {
+      "key": "room-08-lab",
+      "departmentKey": "department-08",
+      "roomType": "LABORATORY",
+      "roomNumber": "101",
+      "roomName": "Phòng Xét nghiệm – Lấy mẫu",
+      "zone": "Khu B",
+      "location": "Tầng 1, Khu B"
+    },
+    {
+      "key": "room-09-pharmacy",
+      "departmentKey": "department-09",
+      "roomType": "PHARMACY",
+      "roomNumber": "102",
+      "roomName": "Quầy Phát thuốc ngoại trú",
+      "zone": "Khu B",
+      "location": "Tầng 1, Khu B"
+    },
+    {
+      "key": "room-10-cashier",
+      "departmentKey": "department-10",
+      "roomType": "CASHIER",
+      "roomNumber": "101",
+      "roomName": "Quầy Thu ngân",
+      "zone": "Khu C",
+      "location": "Tầng 1, Khu C"
+    },
+    {
+      "key": "room-03-admin",
+      "departmentKey": "department-03",
+      "roomType": "ADMINISTRATION",
+      "roomNumber": "201",
+      "roomName": "Phòng Hành chính – Quản trị",
+      "zone": "Khu C",
+      "location": "Tầng 2, Khu C"
     }
   ],
   "patients": [
@@ -592,6 +811,110 @@
       "password": "MediFlowDemo@2026",
       "role": "CASHIER",
       "staffKey": "staff-19",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.admin2",
+      "username": "demo.admin2",
+      "password": "MediFlowDemo@2026",
+      "role": "ADMIN",
+      "staffKey": "staff-02",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor3",
+      "username": "demo.doctor3",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-07",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor4",
+      "username": "demo.doctor4",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-09",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor5",
+      "username": "demo.doctor5",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-11",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor6",
+      "username": "demo.doctor6",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-13",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse2",
+      "username": "demo.nurse2",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-06",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse3",
+      "username": "demo.nurse3",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-08",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse4",
+      "username": "demo.nurse4",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-10",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse5",
+      "username": "demo.nurse5",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-12",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse6",
+      "username": "demo.nurse6",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-14",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.lab2",
+      "username": "demo.lab2",
+      "password": "MediFlowDemo@2026",
+      "role": "LAB_TECH",
+      "staffKey": "staff-16",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.pharmacist2",
+      "username": "demo.pharmacist2",
+      "password": "MediFlowDemo@2026",
+      "role": "PHARMACIST",
+      "staffKey": "staff-18",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.cashier2",
+      "username": "demo.cashier2",
+      "password": "MediFlowDemo@2026",
+      "role": "CASHIER",
+      "staffKey": "staff-20",
       "patientKey": null
     },
     {

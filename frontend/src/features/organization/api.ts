@@ -1,5 +1,5 @@
 import { api, type MutationOptions } from "@/lib/api";
-import type { HeadAppointmentCommand, HeadAppointmentSnapshot } from "./types";
+import type { CreateRoomRequest, HeadAppointmentCommand, HeadAppointmentSnapshot, RoomDTO, RoomPlacement, RoomType } from "./types";
 import type { PageResult } from "@/lib/types";
 import type {
   AccountDTO,
@@ -61,6 +61,17 @@ export const organizationApi = {
   mailDelivery: (accountId: string) => api.get<import("./types").MailDelivery>(`/v1/org/accounts/${encodeURIComponent(accountId)}/mail-delivery`),
   retryMail: (accountId: string, messageId: string) => api.post<import("./types").MailDelivery>(`/v1/org/accounts/${encodeURIComponent(accountId)}/mail-delivery/${encodeURIComponent(messageId)}/retry`, {}),
   updateAccountEmail: (accountId: string, email: string, reason: string) => api.put<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}/email`, { email, reason }),
+  rooms: (params: { departmentId?: string; roomType?: RoomType; activeOnly?: boolean } = {}) => {
+    const query = new URLSearchParams({ activeOnly: String(params.activeOnly ?? false) });
+    if (params.departmentId) query.set("departmentId", params.departmentId);
+    if (params.roomType) query.set("roomType", params.roomType);
+    return api.get<RoomDTO[]>(`/v1/org/rooms?${query}`);
+  },
+  createRoom: (body: CreateRoomRequest) => api.post<RoomDTO>("/v1/org/rooms", body),
+  updateRoom: (roomId: string, body: RoomPlacement) =>
+    api.put<RoomDTO>(`/v1/org/rooms/${encodeURIComponent(roomId)}`, body),
+  changeRoomStatus: (roomId: string, active: boolean) =>
+    api.put<RoomDTO>(`/v1/org/rooms/${encodeURIComponent(roomId)}/status`, { active }),
   departments: (activeOnly = true) =>
     api.get<DepartmentDTO[]>(`/v1/org/departments?activeOnly=${activeOnly}`),
   department: (departmentId: string) =>

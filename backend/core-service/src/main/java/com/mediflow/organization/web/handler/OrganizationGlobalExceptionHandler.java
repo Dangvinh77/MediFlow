@@ -141,6 +141,10 @@ public class OrganizationGlobalExceptionHandler {
                     "DEPARTMENT_ABBREVIATION_DUPLICATE",
                     "Department abbreviation already exists");
         }
+        if ("uk_room_zone_number".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "ROOM_NUMBER_DUPLICATE", "Room number already exists in this zone");
+        }
         return buildResponse(HttpStatus.CONFLICT,
                 "DATA_INTEGRITY_VIOLATION", "Request violates a data constraint");
     }
@@ -284,6 +288,9 @@ public class OrganizationGlobalExceptionHandler {
             }
             if (message.contains("uk_department_abbreviation")) {
                 return "uk_department_abbreviation";
+            }
+            if (message.contains("uk_room_zone_number")) {
+                return "uk_room_zone_number";
             }
         }
         return null;
