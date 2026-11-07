@@ -6,7 +6,6 @@ import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.ManageRoomsUseCase;
 import com.mediflow.organization.application.port.in.ManageRoomsUseCase.RoomDetails;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
-import com.mediflow.organization.domain.model.RoomType;
 import com.mediflow.organization.web.dto.request.RoomRequest;
 import com.mediflow.organization.web.dto.request.RoomStatusRequest;
 import com.mediflow.organization.web.dto.request.UpdateRoomRequest;
@@ -47,7 +46,7 @@ public class RoomController {
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE')")
     public ResponseEntity<ApiResponse<List<RoomResponse>>> list(
             @RequestParam(required = false) UUID departmentId,
-            @RequestParam(required = false) RoomType roomType,
+            @RequestParam(required = false) String roomType,
             @RequestParam(defaultValue = "false") boolean activeOnly) {
         return ok(rooms.list(departmentId, roomType, activeOnly).stream().map(RoomResponse::from).toList());
     }

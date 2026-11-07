@@ -5,12 +5,12 @@ import com.mediflow.organization.domain.exception.InvalidRoomException;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Organization-owned workplace room: number, zone, location and type. */
+/** Organization-owned workplace room: number, zone, location and catalogue type code. */
 public final class Room {
 
     private final UUID roomId;
     private final UUID departmentId;
-    private final RoomType roomType;
+    private final String roomType;
     private String roomNumber;
     private String roomName;
     private String zone;
@@ -19,13 +19,13 @@ public final class Room {
     private final Instant createdAt;
     private Instant updatedAt;
 
-    private Room(UUID roomId, UUID departmentId, RoomType roomType, String roomNumber,
+    private Room(UUID roomId, UUID departmentId, String roomType, String roomNumber,
                  String roomName, String zone, String location, boolean active,
                  Instant createdAt, Instant updatedAt) {
         if (roomId == null || departmentId == null) {
             throw new InvalidRoomException("Room and department IDs are required");
         }
-        if (roomType == null) {
+        if (roomType == null || roomType.isBlank()) {
             throw new InvalidRoomException("Room type is required");
         }
         this.roomId = roomId;
@@ -40,14 +40,14 @@ public final class Room {
         this.updatedAt = updatedAt;
     }
 
-    public static Room create(UUID roomId, UUID departmentId, RoomType roomType, String roomNumber,
+    public static Room create(UUID roomId, UUID departmentId, String roomType, String roomNumber,
                               String roomName, String zone, String location) {
         Instant now = Instant.now();
         return new Room(roomId, departmentId, roomType, roomNumber, roomName, zone, location,
                 true, now, now);
     }
 
-    public static Room reconstitute(UUID roomId, UUID departmentId, RoomType roomType,
+    public static Room reconstitute(UUID roomId, UUID departmentId, String roomType,
                                     String roomNumber, String roomName, String zone,
                                     String location, boolean active, Instant createdAt,
                                     Instant updatedAt) {
@@ -84,7 +84,8 @@ public final class Room {
 
     public UUID getRoomId() { return roomId; }
     public UUID getDepartmentId() { return departmentId; }
-    public RoomType getRoomType() { return roomType; }
+    /** Code of a {@link RoomTypeDefinition} catalogue entry. */
+    public String getRoomType() { return roomType; }
     public String getRoomNumber() { return roomNumber; }
     public String getRoomName() { return roomName; }
     public String getZone() { return zone; }

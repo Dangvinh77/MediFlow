@@ -1,13 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PageResult } from "@/lib/types";
-import { departmentContractFixture, staffContractFixture } from "../contract.fixture";
+import { departmentContractFixture, roomTypeCatalogFixture, staffContractFixture } from "../contract.fixture";
 import type { StaffDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
   departments: vi.fn(),
   staff: vi.fn(),
   rooms: vi.fn(),
+  roomTypes: vi.fn(),
+  createRoomType: vi.fn(),
+  deleteRoomType: vi.fn(),
   router: { replace: vi.fn() },
   getRole: vi.fn(() => "ADMIN"),
   getSessionKey: vi.fn<() => string | null>(() => "session-a"),
@@ -19,7 +22,7 @@ vi.mock("@/lib/auth", () => ({
   getSessionKey: mocks.getSessionKey,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff, rooms: mocks.rooms } }));
+vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff, rooms: mocks.rooms, roomTypes: mocks.roomTypes, createRoomType: mocks.createRoomType, deleteRoomType: mocks.deleteRoomType } }));
 vi.mock("@/components/references/ReferenceText", () => ({ ReferenceText: ({ value }: { value: string }) => <span>Bác sĩ {value}</span> }));
 
 import { ApiRequestError } from "@/lib/api";
@@ -78,6 +81,7 @@ describe("Organization browse and actions", () => {
       { roomId: "r1", departmentId: departmentContractFixture.departmentId, roomType: "CONSULTATION", roomNumber: "101", roomName: "Phòng khám Nội 1", zone: "Khu A", location: "Tầng 1", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: null },
       { roomId: "r2", departmentId: "office", roomType: "ADMINISTRATION", roomNumber: "201", roomName: "Phòng Hành chính", zone: "Khu C", location: "Tầng 2", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: null },
     ]);
+    mocks.roomTypes.mockResolvedValue(roomTypeCatalogFixture);
     mocks.staff.mockResolvedValue(staffPage());
     render(<OrganizationDirectory />);
     expect(screen.getByRole("button", { name: "Khoa / bộ phận" })).toHaveAttribute("aria-pressed", "true");
@@ -94,9 +98,21 @@ describe("Organization browse and actions", () => {
     expect(screen.getByRole("columnheader", { name: "Số phòng" })).toBeVisible();
     expect(screen.getByRole("columnheader", { name: "Khu" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Thêm phòng làm việc" })).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Lọc theo loại phòng"), { target: { value: "ADMINISTRATION" } });
+    expect(screen.getByRole("cell", { name: "Phòng hành chính quản trị" })).toBeVisible();
+    const target = screen.getByRole("combobox", { name: /^Đối tượng lọc/ });
+    expect(target).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Lọc theo" }), { target: { value: "type" } });
+    expect(target).toBeEnabled();
+    expect(Array.from((target as HTMLSelectElement).options).map(option => option.value))
+      .toEqual(["", ...roomTypeCatalogFixture.map(type => type.code)]);
+    fireEvent.change(target, { target: { value: "ADMINISTRATION" } });
     expect(screen.queryByRole("cell", { name: "Phòng khám Nội 1" })).not.toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "201" })).toBeVisible();
+    fireEvent.change(screen.getByRole("combobox", { name: "Lọc theo" }), { target: { value: "department" } });
+    expect(target).toHaveValue("");
+    expect(screen.getByRole("cell", { name: "Phòng khám Nội 1" })).toBeVisible();
+    fireEvent.change(target, { target: { value: departmentContractFixture.departmentId } });
+    expect(screen.queryByRole("cell", { name: "201" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Nhân sự/ }));
     expect(await screen.findByRole("link", { name: "Xem chi tiết Nguyen Van A" })).toBeVisible();
@@ -112,6 +128,7 @@ describe("Organization browse and actions", () => {
       { ...departmentContractFixture, departmentId: "cash", departmentName: "Phòng Tài chính", departmentType: "ADMINISTRATIVE" },
     ]);
     mocks.rooms.mockResolvedValue([]);
+    mocks.roomTypes.mockResolvedValue(roomTypeCatalogFixture);
     render(<RoomDirectory />);
     fireEvent.click(await screen.findByRole("button", { name: "Thêm phòng làm việc" }));
     const type = screen.getByRole("combobox", { name: /^Loại phòng/ });
@@ -119,7 +136,39 @@ describe("Organization browse and actions", () => {
     fireEvent.change(screen.getByRole("combobox", { name: /^Khoa \/ bộ phận/ }), { target: { value: departmentContractFixture.departmentId } });
     expect(Array.from((type as HTMLSelectElement).options).map(option => option.value)).toEqual(["", "CONSULTATION", "DEPARTMENT_OFFICE"]);
     fireEvent.change(screen.getByRole("combobox", { name: /^Khoa \/ bộ phận/ }), { target: { value: "cash" } });
-    expect(Array.from((type as HTMLSelectElement).options).map(option => option.value)).toEqual(["", "CASHIER", "NURSING", "ADMINISTRATION"]);
+    expect(Array.from((type as HTMLSelectElement).options).map(option => option.value)).toEqual(["", "CASHIER", "ADMINISTRATION"]);
+  });
+
+  it("manages the room types of each fixed category in the catalogue tab", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.roomTypes.mockResolvedValue(roomTypeCatalogFixture);
+    mocks.createRoomType.mockImplementation(async body => ({ ...roomTypeCatalogFixture[1], ...body, code: "PHONG_THU_THUAT", systemDefined: false, schedulable: false, roomCount: 0 }));
+    mocks.deleteRoomType.mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<OrganizationDirectory />);
+    fireEvent.click(screen.getByRole("button", { name: "Danh mục khoa phòng" }));
+
+    expect(await screen.findByRole("heading", { name: "Khối lâm sàng" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Khối cận lâm sàng" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Khối hành chính (phòng chức năng)" })).toBeVisible();
+    expect(screen.getByText("Dùng lập buổi khám")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Xóa Phòng khám" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Xóa Văn phòng khoa (giao ban)" })).toBeDisabled();
+    expect(screen.queryByText(/Phòng điều dưỡng/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Thêm loại phòng cho Khối lâm sàng" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /^Tên loại phòng/ }), { target: { value: "Phòng thủ thuật" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Cho phép một khoa có nhiều phòng loại này" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thêm loại phòng" }));
+    await waitFor(() => expect(mocks.createRoomType).toHaveBeenCalledWith({ name: "Phòng thủ thuật", description: null, departmentType: "CLINICAL", singlePerDepartment: false }));
+    expect(await screen.findByText("Phòng thủ thuật")).toBeVisible();
+
+    const pharmacy = screen.getByRole("button", { name: "Xóa Quầy cấp phát thuốc" });
+    expect(pharmacy).toBeEnabled();
+    fireEvent.click(pharmacy);
+    await waitFor(() => expect(mocks.deleteRoomType).toHaveBeenCalledWith("PHARMACY"));
+    expect(screen.queryByText("Quầy cấp phát thuốc")).not.toBeInTheDocument();
+    confirm.mockRestore();
   });
 
   it.each(["departments", "staff"] as const)("ignores a retry 401 after %s unmounts", async (resource) => {

@@ -2,7 +2,6 @@ package com.mediflow.organization.infrastructure.persistence.adapter;
 
 import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
 import com.mediflow.organization.infrastructure.persistence.entity.RoomEntity;
 import com.mediflow.organization.infrastructure.persistence.repository.RoomJpaRepository;
 import org.springframework.stereotype.Component;
@@ -31,8 +30,8 @@ public class RoomRepositoryAdapter implements RoomRepository {
     }
 
     @Override
-    public List<Room> search(UUID departmentId, RoomType roomType, boolean activeOnly) {
-        return jpaRepository.search(departmentId, roomType == null ? null : roomType.name(), activeOnly)
+    public List<Room> search(UUID departmentId, String roomType, boolean activeOnly) {
+        return jpaRepository.search(departmentId, roomType, activeOnly)
                 .stream().map(RoomRepositoryAdapter::toDomain).toList();
     }
 
@@ -41,7 +40,7 @@ public class RoomRepositoryAdapter implements RoomRepository {
         return toDomain(jpaRepository.saveAndFlush(new RoomEntity(
                 room.getRoomId(),
                 room.getDepartmentId(),
-                room.getRoomType().name(),
+                room.getRoomType(),
                 room.getRoomNumber(),
                 room.getRoomName(),
                 room.getZone(),
@@ -66,7 +65,7 @@ public class RoomRepositoryAdapter implements RoomRepository {
         return Room.reconstitute(
                 entity.getRoomId(),
                 entity.getDepartmentId(),
-                RoomType.valueOf(entity.getRoomType()),
+                entity.getRoomType(),
                 entity.getRoomNumber(),
                 entity.getRoomName(),
                 entity.getZone(),

@@ -310,6 +310,63 @@ class ScheduleManagementScopeIntegrationTest {
     }
 
     @Test
+    void administratorManagesTheRoomTypeCatalogue() throws Exception {
+        Fixture f = fixture();
+        Department d = department("Catalogue");
+        String suffix = d.getAbbreviation();
+        java.util.function.Function<String, org.springframework.http.ResponseEntity<String>> addType = json ->
+                http.exchange("/api/v1/org/room-types", HttpMethod.POST,
+                        entity(json, f.admin(), Role.ADMIN, null, "type-" + json.hashCode()), String.class);
+
+        var created = addType.apply("{\"name\":\"Phòng thủ thuật " + suffix
+                + "\",\"departmentType\":\"CLINICAL\",\"singlePerDepartment\":false}");
+        assertThat(created.getStatusCode().value()).isEqualTo(201);
+        String code = mapper.readTree(created.getBody()).at("/data/code").asText();
+        assertThat(code).startsWith("PHONG_THU_THUAT_");
+        assertThat(mapper.readTree(created.getBody()).at("/data/schedulable").asBoolean()).isFalse();
+        assertThat(addType.apply("{\"name\":\"phòng THỦ thuật " + suffix
+                + "\",\"departmentType\":\"CLINICAL\"}").getStatusCode().value()).isEqualTo(409);
+
+        // A custom clinical type may repeat in one department but never hosts sessions.
+        for (String number : List.of("701", "702")) {
+            var room = http.exchange("/api/v1/org/rooms", HttpMethod.POST, entity("{\"departmentId\":\""
+                    + d.getDepartmentId() + "\",\"roomType\":\"" + code + "\",\"roomNumber\":\"" + number
+                    + "\",\"roomName\":\"Thủ thuật " + number + "\",\"zone\":\"Khu " + suffix
+                    + "\",\"location\":\"Tầng 7\"}", f.admin(), Role.ADMIN, null, "custom-" + number), String.class);
+            assertThat(room.getStatusCode().value()).isEqualTo(201);
+        }
+        var consultation = http.exchange("/api/v2/org/consultation-rooms?departmentId=" + d.getDepartmentId(),
+                HttpMethod.GET, entity(null, f.admin(), Role.ADMIN, null, "custom-consult"), String.class);
+        assertThat(mapper.readTree(consultation.getBody()).at("/data/content").size()).isZero();
+
+        var listed = http.exchange("/api/v1/org/room-types", HttpMethod.GET,
+                entity(null, f.admin(), Role.ADMIN, null, "type-list"), String.class);
+        JsonNode entry = null;
+        for (JsonNode row : mapper.readTree(listed.getBody()).at("/data")) {
+            if (row.get("code").asText().equals(code)) entry = row;
+        }
+        assertThat(entry).isNotNull();
+        assertThat(entry.get("roomCount").asLong()).isEqualTo(2);
+
+        var inUse = http.exchange("/api/v1/org/room-types/" + code, HttpMethod.DELETE,
+                entity(null, f.admin(), Role.ADMIN, null, "type-delete-used"), String.class);
+        assertThat(inUse.getStatusCode().value()).isEqualTo(422);
+        assertThat(mapper.readTree(inUse.getBody()).at("/error/code").asText()).isEqualTo("ROOM_TYPE_IN_USE");
+        var system = http.exchange("/api/v1/org/room-types/CONSULTATION", HttpMethod.DELETE,
+                entity(null, f.admin(), Role.ADMIN, null, "type-delete-system"), String.class);
+        assertThat(mapper.readTree(system.getBody()).at("/error/code").asText()).isEqualTo("ROOM_TYPE_SYSTEM");
+
+        var unused = addType.apply("{\"name\":\"Kho vật tư " + suffix + "\",\"departmentType\":\"PARACLINICAL\"}");
+        String unusedCode = mapper.readTree(unused.getBody()).at("/data/code").asText();
+        assertThat(mapper.readTree(unused.getBody()).at("/data/singlePerDepartment").asBoolean()).isTrue();
+        var removed = http.exchange("/api/v1/org/room-types/" + unusedCode, HttpMethod.DELETE,
+                entity(null, f.admin(), Role.ADMIN, null, "type-delete-unused"), String.class);
+        assertThat(removed.getStatusCode().value()).isEqualTo(204);
+        assertThat(jdbc.queryForObject("select count(*) from room_type_catalog where code = ?",
+                Integer.class, unusedCode)).isZero();
+    }
+
+    @Test
     void departmentWithoutHeadIsScheduledOnlyByAdministrator() throws Exception {
         Fixture f = fixture();
         Department d = department("Headless");

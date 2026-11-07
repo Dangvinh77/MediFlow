@@ -82,15 +82,22 @@ public class OrganizationDemoSeeder {
     }
 
     /**
-     * Workplace rooms are adopted by zone and number, or by the department's existing room of a
-     * single-per-department type, so a restored snapshot never breaks the workplace rules.
+     * Workplace rooms are adopted by zone and number, or by the department's existing active room
+     * of the same single-room type (any active room for a paraclinical or administrative unit),
+     * so a restored snapshot never breaks the workplace rules.
      */
     private void seedRooms(JsonNode data, Map<String, UUID> ids) {
         if (!data.path("rooms").isArray()) return;
+        Map<String, DepartmentType> categories = new HashMap<>();
+        for (JsonNode row : data.path("departments")) {
+            categories.put(text(row, "key"), DepartmentType.valueOf(text(row, "departmentType")));
+        }
         List<Room> existing = new ArrayList<>(rooms.list(null, null, false));
         for (JsonNode row : data.path("rooms")) {
             UUID departmentId = Objects.requireNonNull(ids.get(text(row, "departmentKey")));
-            RoomType type = RoomType.valueOf(text(row, "roomType"));
+            boolean singleWorkplace = categories.get(text(row, "departmentKey")) != DepartmentType.CLINICAL;
+            String type = text(row, "roomType");
+            boolean singleOfType = !RoomTypeDefinition.CONSULTATION.equals(type);
             String zone = text(row, "zone");
             String number = text(row, "roomNumber");
             UUID id = once(text(row, "key"), () -> existing.stream()
@@ -99,8 +106,8 @@ public class OrganizationDemoSeeder {
                     .findFirst()
                     .or(() -> existing.stream().filter(room -> room.isActive()
                             && room.getDepartmentId().equals(departmentId)
-                            && type.singlePerDepartment()
-                            && (room.getRoomType() == type || type.functionalWorkplace())).findFirst())
+                            && (singleWorkplace || (singleOfType && room.getRoomType().equals(type))))
+                            .findFirst())
                     .map(Room::getRoomId)
                     .orElseGet(() -> {
                         Room created = rooms.create(new ManageRoomsUseCase.RoomDetails(departmentId, type,

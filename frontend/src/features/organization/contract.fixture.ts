@@ -5,6 +5,7 @@ import type {
   CreateDepartmentRequest,
   CreateStaffRequest,
   DepartmentDTO,
+  RoomTypeDTO,
   StaffDTO,
   UpdateDepartmentRequest,
   UpdateStaffRequest,
@@ -106,3 +107,18 @@ export const lockAccountRequestFixture = { isActive: false } satisfies UpdateAcc
 export const replaceActiveAccountRequestFixture = {
   ...createAccountRequestFixture, replaceActiveAccount: true,
 } satisfies CreateAccountRequest;
+
+const roomType = (code: string, name: string, departmentType: RoomTypeDTO["departmentType"], singlePerDepartment: boolean, roomCount = 0): RoomTypeDTO => ({
+  code, name, description: null, departmentType, singlePerDepartment, schedulable: code === "CONSULTATION",
+  systemDefined: code === "CONSULTATION", roomCount, createdAt: "2026-01-01T00:00:00Z", updatedAt: null,
+});
+
+/** Mirrors the catalogue seeded by Core's V20 migration. */
+export const roomTypeCatalogFixture: RoomTypeDTO[] = [
+  roomType("CONSULTATION", "Phòng khám", "CLINICAL", false, 4),
+  roomType("DEPARTMENT_OFFICE", "Văn phòng khoa (giao ban)", "CLINICAL", true, 2),
+  roomType("LABORATORY", "Phòng lấy mẫu & xét nghiệm", "PARACLINICAL", true, 1),
+  roomType("PHARMACY", "Quầy cấp phát thuốc", "PARACLINICAL", true),
+  roomType("CASHIER", "Quầy thu viện phí", "ADMINISTRATIVE", true),
+  roomType("ADMINISTRATION", "Phòng hành chính quản trị", "ADMINISTRATIVE", true, 1),
+];

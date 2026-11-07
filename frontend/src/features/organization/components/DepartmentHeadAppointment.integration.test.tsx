@@ -7,7 +7,7 @@ import { HeadAppointments } from "./HeadAppointments";
 import { ApiRequestError } from "@/lib/api";
 
 const mocks = vi.hoisted(() => ({
-  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(), rooms: vi.fn(async () => []),
+  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(), rooms: vi.fn(async () => []), roomTypes: vi.fn(async () => []),
   session: vi.fn(() => "session-a"), router: { replace: vi.fn() }, settle: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));

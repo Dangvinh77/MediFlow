@@ -145,6 +145,12 @@ public class OrganizationGlobalExceptionHandler {
             return buildResponse(HttpStatus.CONFLICT,
                     "ROOM_NUMBER_DUPLICATE", "Room number already exists in this zone");
         }
+        if ("uk_room_type_catalog_name".equals(constraint) || "room_type_catalog_pkey".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT, "ROOM_TYPE_DUPLICATE", "Room type already exists");
+        }
+        if ("fk_room_room_type".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT, "ROOM_TYPE_IN_USE", "Room type is used by existing rooms");
+        }
         return buildResponse(HttpStatus.CONFLICT,
                 "DATA_INTEGRITY_VIOLATION", "Request violates a data constraint");
     }
@@ -291,6 +297,9 @@ public class OrganizationGlobalExceptionHandler {
             }
             if (message.contains("uk_room_zone_number")) {
                 return "uk_room_zone_number";
+            }
+            for (String name : new String[] {"uk_room_type_catalog_name", "room_type_catalog_pkey", "fk_room_room_type"}) {
+                if (message.contains(name)) return name;
             }
         }
         return null;

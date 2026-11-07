@@ -7,7 +7,7 @@ import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
+import com.mediflow.organization.domain.model.RoomTypeDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class GetCareLabelService implements GetCareLabelUseCase {
                     .map(member -> new CareLabelDTO(member.getStaffId(), member.getFullName()));
             case "department" -> departments.findById(id)
                     .map(department -> new CareLabelDTO(department.getDepartmentId(), department.getDepartmentName()));
-            case "room" -> rooms.findById(id).filter(room -> room.getRoomType() == RoomType.CONSULTATION)
+            case "room" -> rooms.findById(id).filter(room -> RoomTypeDefinition.CONSULTATION.equals(room.getRoomType()))
                     .map(room -> new CareLabelDTO(room.getRoomId(), roomLabel(room)));
             default -> throw new IllegalArgumentException("Loại thông tin không được hỗ trợ");
         };

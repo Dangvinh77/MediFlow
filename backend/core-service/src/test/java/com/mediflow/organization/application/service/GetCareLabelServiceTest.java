@@ -22,10 +22,10 @@ class GetCareLabelServiceTest {
     }
     @Test void exposesOnlyConsultationRoomNamesAndRejectsUnknownKindsBeforeStorage() {
         var id = UUID.randomUUID();
-        when(rooms.findById(id)).thenReturn(Optional.of(Room.create(id, UUID.randomUUID(), RoomType.CONSULTATION,
+        when(rooms.findById(id)).thenReturn(Optional.of(Room.create(id, UUID.randomUUID(), "CONSULTATION",
                 "101", "Phòng khám Nội 1", "Khu A", "Tầng 1")));
         assertThat(labels.read("room", id).orElseThrow().label()).isEqualTo("P.101 · Phòng khám Nội 1 · Khu A");
-        when(rooms.findById(id)).thenReturn(Optional.of(Room.create(id, UUID.randomUUID(), RoomType.DEPARTMENT_OFFICE,
+        when(rooms.findById(id)).thenReturn(Optional.of(Room.create(id, UUID.randomUUID(), "DEPARTMENT_OFFICE",
                 "110", "Văn phòng khoa", "Khu A", "Tầng 1")));
         assertThat(labels.read("room", id)).isEmpty();
         assertThatIllegalArgumentException().isThrownBy(() -> labels.read("account", id));

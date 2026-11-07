@@ -143,15 +143,34 @@ export interface HeadAppointmentSnapshot {
 }
 export interface HeadAppointmentCommand { expectedRevision: number; staffId: string | null; reason: string }
 
-/** Workplace room catalogue; mirrors Core's RoomType. */
-export type RoomType =
-  | "CONSULTATION"
-  | "DEPARTMENT_OFFICE"
-  | "LABORATORY"
-  | "PHARMACY"
-  | "CASHIER"
-  | "NURSING"
-  | "ADMINISTRATION";
+/** Code of a room type catalogue entry (Core's room_type_catalog), e.g. "CONSULTATION". */
+export type RoomType = string;
+
+/** Room type catalogue entry; mirrors Core's RoomTypeResponse. */
+export interface RoomTypeDTO {
+  code: RoomType;
+  name: string;
+  description: string | null;
+  departmentType: DepartmentType;
+  singlePerDepartment: boolean;
+  schedulable: boolean;
+  systemDefined: boolean;
+  roomCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateRoomTypeRequest {
+  name: string;
+  description: string | null;
+  departmentType: DepartmentType;
+  singlePerDepartment: boolean;
+}
+
+export interface UpdateRoomTypeRequest {
+  name: string;
+  description: string | null;
+}
 
 export interface RoomDTO {
   roomId: string;

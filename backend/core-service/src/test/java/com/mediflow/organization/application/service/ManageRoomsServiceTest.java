@@ -7,14 +7,14 @@ import com.mediflow.organization.application.port.in.ManageRoomsUseCase.RoomDeta
 import com.mediflow.organization.application.port.in.ManageRoomsUseCase.RoomPlacement;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
+import com.mediflow.organization.application.port.out.RoomTypeRepository;
 import com.mediflow.organization.domain.exception.InvalidRoomException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
+import com.mediflow.organization.domain.model.RoomTypeDefinition;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +33,26 @@ class ManageRoomsServiceTest {
 
     private final RoomRepository rooms = mock(RoomRepository.class);
     private final DepartmentRepository departments = mock(DepartmentRepository.class);
-    private final ManageRoomsService service = new ManageRoomsService(rooms, departments);
+    private final RoomTypeRepository types = mock(RoomTypeRepository.class);
+    private final ManageRoomsService service = new ManageRoomsService(rooms, departments, types);
+
+    /** The catalogue seeded by V20, plus one administrator-defined clinical type. */
+    private static final List<RoomTypeDefinition> CATALOGUE = List.of(
+            type("CONSULTATION", "Phòng khám", DepartmentType.CLINICAL, false, true),
+            type("DEPARTMENT_OFFICE", "Văn phòng khoa (giao ban)", DepartmentType.CLINICAL, true, false),
+            type("PHONG_THU_THUAT", "Phòng thủ thuật", DepartmentType.CLINICAL, false, false),
+            type("LABORATORY", "Phòng lấy mẫu & xét nghiệm", DepartmentType.PARACLINICAL, true, false),
+            type("PHARMACY", "Quầy cấp phát thuốc", DepartmentType.PARACLINICAL, true, false),
+            type("CASHIER", "Quầy thu viện phí", DepartmentType.ADMINISTRATIVE, true, false),
+            type("ADMINISTRATION", "Phòng hành chính quản trị", DepartmentType.ADMINISTRATIVE, true, false));
+
+    @BeforeEach
+    void catalogue() {
+        for (RoomTypeDefinition type : CATALOGUE) {
+            when(types.lockByCode(type.getCode())).thenReturn(Optional.of(type));
+            when(types.findByCode(type.getCode())).thenReturn(Optional.of(type));
+        }
+    }
 
     private static final RoomPlacement PLACEMENT =
             new RoomPlacement("101", "Phòng khám Nội 1", "Khu A", "Tầng 1, Khu A");
@@ -42,12 +61,12 @@ class ManageRoomsServiceTest {
     void clinicalDepartmentOwnsManyConsultationRooms() {
         Department clinical = department(DepartmentType.CLINICAL);
         when(rooms.findActiveByDepartment(eq(clinical.getDepartmentId()), any()))
-                .thenReturn(List.of(room(clinical, RoomType.CONSULTATION), room(clinical, RoomType.DEPARTMENT_OFFICE)));
+                .thenReturn(List.of(room(clinical, "CONSULTATION"), room(clinical, "DEPARTMENT_OFFICE")));
         when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        Room created = service.create(new RoomDetails(clinical.getDepartmentId(), RoomType.CONSULTATION, PLACEMENT));
+        Room created = service.create(new RoomDetails(clinical.getDepartmentId(), "CONSULTATION", PLACEMENT));
 
-        assertThat(created.getRoomType()).isEqualTo(RoomType.CONSULTATION);
+        assertThat(created.getRoomType()).isEqualTo("CONSULTATION");
         assertThat(created.getRoomNumber()).isEqualTo("101");
         assertThat(created.getZone()).isEqualTo("Khu A");
         assertThat(created.isActive()).isTrue();
@@ -57,10 +76,10 @@ class ManageRoomsServiceTest {
     void clinicalDepartmentKeepsOneSharedOffice() {
         Department clinical = department(DepartmentType.CLINICAL);
         when(rooms.findActiveByDepartment(eq(clinical.getDepartmentId()), any()))
-                .thenReturn(List.of(room(clinical, RoomType.DEPARTMENT_OFFICE)));
+                .thenReturn(List.of(room(clinical, "DEPARTMENT_OFFICE")));
 
         assertThatThrownBy(() -> service.create(
-                new RoomDetails(clinical.getDepartmentId(), RoomType.DEPARTMENT_OFFICE, PLACEMENT)))
+                new RoomDetails(clinical.getDepartmentId(), "DEPARTMENT_OFFICE", PLACEMENT)))
                 .isInstanceOf(BusinessRuleException.class)
                 .extracting("code").isEqualTo("ROOM_TYPE_ALREADY_ASSIGNED");
         verify(rooms, never()).save(any());
@@ -70,39 +89,64 @@ class ManageRoomsServiceTest {
     void functionalUnitWorksInExactlyOneRoom() {
         Department cashier = department(DepartmentType.ADMINISTRATIVE);
         when(rooms.findActiveByDepartment(eq(cashier.getDepartmentId()), any()))
-                .thenReturn(List.of(room(cashier, RoomType.CASHIER)));
+                .thenReturn(List.of(room(cashier, "CASHIER")));
 
         assertThatThrownBy(() -> service.create(
-                new RoomDetails(cashier.getDepartmentId(), RoomType.ADMINISTRATION, PLACEMENT)))
+                new RoomDetails(cashier.getDepartmentId(), "ADMINISTRATION", PLACEMENT)))
                 .isInstanceOf(BusinessRuleException.class)
                 .extracting("code").isEqualTo("ROOM_SINGLE_WORKPLACE");
     }
 
-    @ParameterizedTest
-    @EnumSource(RoomType.class)
-    void roomTypeMustFitTheDepartmentType(RoomType type) {
+    @Test
+    void roomTypeMustBelongToTheDepartmentCategory() {
         for (DepartmentType departmentType : DepartmentType.values()) {
-            Department department = department(departmentType);
-            when(rooms.findActiveByDepartment(eq(department.getDepartmentId()), any())).thenReturn(List.of());
-            when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
-            RoomDetails details = new RoomDetails(department.getDepartmentId(), type, PLACEMENT);
-            if (type.allowedFor(departmentType)) {
-                assertThat(service.create(details).getRoomType()).isEqualTo(type);
-            } else {
-                assertThatThrownBy(() -> service.create(details))
-                        .isInstanceOf(BusinessRuleException.class)
-                        .extracting("code").isEqualTo("ROOM_TYPE_NOT_ALLOWED");
+            for (RoomTypeDefinition type : CATALOGUE) {
+                Department department = department(departmentType);
+                when(rooms.findActiveByDepartment(eq(department.getDepartmentId()), any())).thenReturn(List.of());
+                when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
+                RoomDetails details = new RoomDetails(department.getDepartmentId(), type.getCode(), PLACEMENT);
+                if (type.getDepartmentType() == departmentType) {
+                    assertThat(service.create(details).getRoomType()).isEqualTo(type.getCode());
+                } else {
+                    assertThatThrownBy(() -> service.create(details))
+                            .isInstanceOf(BusinessRuleException.class)
+                            .extracting("code").isEqualTo("ROOM_TYPE_NOT_ALLOWED");
+                }
             }
         }
     }
 
     @Test
-    void consultationRoomsBelongToClinicalDepartmentsOnly() {
-        assertThat(RoomType.CONSULTATION.allowedFor(DepartmentType.CLINICAL)).isTrue();
-        assertThat(RoomType.CONSULTATION.allowedFor(DepartmentType.PARACLINICAL)).isFalse();
-        assertThat(RoomType.CONSULTATION.allowedFor(DepartmentType.ADMINISTRATIVE)).isFalse();
-        assertThat(RoomType.LABORATORY.allowedFor(DepartmentType.PARACLINICAL)).isTrue();
-        assertThat(RoomType.NURSING.allowedFor(DepartmentType.ADMINISTRATIVE)).isTrue();
+    void roomTypeMustExistInTheCatalogue() {
+        Department administrative = department(DepartmentType.ADMINISTRATIVE);
+        when(types.lockByCode("NURSING")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(
+                new RoomDetails(administrative.getDepartmentId(), "NURSING", PLACEMENT)))
+                .isInstanceOf(BusinessRuleException.class)
+                .extracting("code").isEqualTo("ROOM_TYPE_UNKNOWN");
+        verify(rooms, never()).save(any());
+    }
+
+    @Test
+    void customClinicalTypeMayRepeatWhileTheOfficeStaysSingle() {
+        Department clinical = department(DepartmentType.CLINICAL);
+        when(rooms.findActiveByDepartment(eq(clinical.getDepartmentId()), any()))
+                .thenReturn(List.of(room(clinical, "PHONG_THU_THUAT"), room(clinical, "DEPARTMENT_OFFICE")));
+        when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        assertThat(service.create(new RoomDetails(clinical.getDepartmentId(), "PHONG_THU_THUAT", PLACEMENT))
+                .getRoomType()).isEqualTo("PHONG_THU_THUAT");
+    }
+
+    @Test
+    void paraclinicalAndAdministrativeTypesAreAlwaysSingleRoom() {
+        RoomTypeDefinition lab = RoomTypeDefinition.define("Phòng siêu âm", null, DepartmentType.PARACLINICAL, false, 10);
+        RoomTypeDefinition office = RoomTypeDefinition.define("Phòng tiếp khách", null, DepartmentType.CLINICAL, false, 10);
+        assertThat(lab.isSinglePerDepartment()).isTrue();
+        assertThat(office.isSinglePerDepartment()).isFalse();
+        assertThat(CATALOGUE.stream().filter(RoomTypeDefinition::schedulable).map(RoomTypeDefinition::getCode))
+                .containsExactly("CONSULTATION");
     }
 
     @Test
@@ -112,7 +156,7 @@ class ManageRoomsServiceTest {
         when(rooms.existsNumberInZone(eq("Khu A"), eq("101"), any())).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-                new RoomDetails(clinical.getDepartmentId(), RoomType.CONSULTATION, PLACEMENT)))
+                new RoomDetails(clinical.getDepartmentId(), "CONSULTATION", PLACEMENT)))
                 .isInstanceOf(DuplicateResourceException.class)
                 .extracting("code").isEqualTo("ROOM_NUMBER_DUPLICATE");
     }
@@ -123,7 +167,7 @@ class ManageRoomsServiceTest {
         clinical.deactivate(false);
 
         assertThatThrownBy(() -> service.create(
-                new RoomDetails(clinical.getDepartmentId(), RoomType.CONSULTATION, PLACEMENT)))
+                new RoomDetails(clinical.getDepartmentId(), "CONSULTATION", PLACEMENT)))
                 .isInstanceOf(BusinessRuleException.class)
                 .extracting("code").isEqualTo("ROOM_DEPARTMENT_INACTIVE");
     }
@@ -134,17 +178,17 @@ class ManageRoomsServiceTest {
         when(rooms.findActiveByDepartment(any(), any())).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.create(new RoomDetails(clinical.getDepartmentId(),
-                RoomType.CONSULTATION, new RoomPlacement(" ", "Phòng khám", "Khu A", "Tầng 1"))))
+                "CONSULTATION", new RoomPlacement(" ", "Phòng khám", "Khu A", "Tầng 1"))))
                 .isInstanceOf(InvalidRoomException.class);
         assertThatThrownBy(() -> service.create(new RoomDetails(clinical.getDepartmentId(),
-                RoomType.CONSULTATION, new RoomPlacement("101", "Phòng khám", "", "Tầng 1"))))
+                "CONSULTATION", new RoomPlacement("101", "Phòng khám", "", "Tầng 1"))))
                 .isInstanceOf(InvalidRoomException.class);
     }
 
     @Test
     void updateChangesPlacementButKeepsDepartmentAndType() {
         Department clinical = department(DepartmentType.CLINICAL);
-        Room room = room(clinical, RoomType.CONSULTATION);
+        Room room = room(clinical, "CONSULTATION");
         when(rooms.lockById(room.getRoomId())).thenReturn(Optional.of(room));
         when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
 
@@ -153,18 +197,18 @@ class ManageRoomsServiceTest {
         assertThat(updated.getRoomNumber()).isEqualTo("205");
         assertThat(updated.getZone()).isEqualTo("Khu B");
         assertThat(updated.getDepartmentId()).isEqualTo(clinical.getDepartmentId());
-        assertThat(updated.getRoomType()).isEqualTo(RoomType.CONSULTATION);
+        assertThat(updated.getRoomType()).isEqualTo("CONSULTATION");
     }
 
     @Test
     void reactivationRechecksTheSingleWorkplaceRule() {
         Department lab = department(DepartmentType.PARACLINICAL);
-        Room old = room(lab, RoomType.LABORATORY);
+        Room old = room(lab, "LABORATORY");
         old.deactivate();
         when(rooms.findById(old.getRoomId())).thenReturn(Optional.of(old));
         when(rooms.lockById(old.getRoomId())).thenReturn(Optional.of(old));
         when(rooms.findActiveByDepartment(lab.getDepartmentId(), old.getRoomId()))
-                .thenReturn(List.of(room(lab, RoomType.LABORATORY)));
+                .thenReturn(List.of(room(lab, "LABORATORY")));
 
         assertThatThrownBy(() -> service.changeStatus(old.getRoomId(), true))
                 .isInstanceOf(BusinessRuleException.class)
@@ -189,7 +233,12 @@ class ManageRoomsServiceTest {
         return department;
     }
 
-    private static Room room(Department department, RoomType type) {
+    private static RoomTypeDefinition type(String code, String name, DepartmentType category,
+                                           boolean single, boolean system) {
+        return RoomTypeDefinition.reconstitute(code, name, null, category, single, system, 10, null, null);
+    }
+
+    private static Room room(Department department, String type) {
         return Room.create(UUID.randomUUID(), department.getDepartmentId(), type,
                 "R" + UUID.randomUUID().toString().substring(0, 4), "Phòng", "Khu A", "Tầng 1");
     }

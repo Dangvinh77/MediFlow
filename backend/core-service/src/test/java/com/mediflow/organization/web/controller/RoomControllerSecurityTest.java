@@ -5,7 +5,6 @@ import com.mediflow.organization.application.dto.response.RoomLookupDTO;
 import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.ManageRoomsUseCase;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
 import com.mediflow.organization.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.organization.infrastructure.web.CorrelationIdFilter;
@@ -58,7 +57,7 @@ class RoomControllerSecurityTest {
     @WithMockUser(roles = "ADMIN")
     void create_admin_returnsWorkplaceRoom() throws Exception {
         UUID departmentId = UUID.randomUUID();
-        Room room = Room.create(UUID.randomUUID(), departmentId, RoomType.CONSULTATION, "101",
+        Room room = Room.create(UUID.randomUUID(), departmentId, "CONSULTATION", "101",
                 "Phòng khám Nội 1", "Khu A", "Tầng 1, Khu A");
         when(manageRooms.create(any())).thenReturn(room);
 
@@ -106,7 +105,7 @@ class RoomControllerSecurityTest {
     void list_staff_readsRoomsByDepartment() throws Exception {
         UUID departmentId = UUID.randomUUID();
         when(manageRooms.list(eq(departmentId), isNull(), eq(true))).thenReturn(List.of(
-                Room.create(UUID.randomUUID(), departmentId, RoomType.CONSULTATION, "101", "Phòng khám 1", "Khu A", "Tầng 1")));
+                Room.create(UUID.randomUUID(), departmentId, "CONSULTATION", "101", "Phòng khám 1", "Khu A", "Tầng 1")));
 
         mockMvc.perform(get("/api/v1/org/rooms").param("departmentId", departmentId.toString())
                         .param("activeOnly", "true"))

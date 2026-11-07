@@ -106,10 +106,10 @@ public class LocalDemoSeedTest {
 
     @Test void freshDatasetHasExactCountsAndAuthoritativePatientLinks() {
         runSeed();
-        assertThat(departments).hasSize(11);
-        assertThat(staff).hasSize(20);
-        assertThat(rooms).hasSize(23);
-        assertThat(rooms.stream().filter(room -> room.getRoomType() == RoomType.CONSULTATION)).hasSize(12);
+        assertThat(departments).hasSize(13);
+        assertThat(staff).hasSize(26);
+        assertThat(rooms).hasSize(31);
+        assertThat(rooms.stream().filter(room -> room.getRoomType().equals("CONSULTATION"))).hasSize(18);
         // Every member of a functional unit has an account; such units have one workplace room.
         var functionalDepartments = departments.stream()
                 .filter(row -> row.getDepartmentType() != DepartmentType.CLINICAL).map(Department::getDepartmentId).toList();
@@ -117,16 +117,16 @@ public class LocalDemoSeedTest {
                 .allSatisfy(member -> assertThat(accounts).anyMatch(account -> member.getStaffId().equals(account.getStaffId())));
         assertThat(functionalDepartments).allSatisfy(id -> assertThat(rooms.stream()
                 .filter(room -> room.getDepartmentId().equals(id))).singleElement()
-                .satisfies(room -> assertThat(room.getRoomType().functionalWorkplace()).isTrue()));
+                .satisfies(room -> assertThat(room.getRoomType()).isNotIn("CONSULTATION", "DEPARTMENT_OFFICE")));
         assertThat(departments).allSatisfy(row -> assertThat(row.getProfile().description()).isNotBlank());
         assertThat(staff).allSatisfy(row -> assertThat(row.getProfile().qualification()).isNotBlank());
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(22);
+        assertThat(accounts).hasSize(28);
         assertThat(accounts.stream().filter(a -> a.getRole() == Role.PATIENT).map(Account::getPatientId))
                 .containsExactly(patients.get(0).maBenhNhan(), patients.get(1).maBenhNhan());
-        assertThat(count(orgJdbc)).isEqualTo(76);
+        assertThat(count(orgJdbc)).isEqualTo(98);
         assertThat(count(patientJdbc)).isEqualTo(10);
-        assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(22);
+        assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(28);
         assertThat(orgJdbc.queryForObject("select synthetic_email from local_demo_mailbox_account where seed_key='account-demo.admin'", String.class))
                 .isEqualTo("demo.staff01@example.test");
     }
@@ -154,7 +154,7 @@ public class LocalDemoSeedTest {
         clearInvocations(createDepartment, createStaff, createPatient, createAccount);
         runSeed();
         verifyNoInteractions(createDepartment, createStaff, createPatient, createAccount);
-        assertThat(count(orgJdbc)).isEqualTo(76);
+        assertThat(count(orgJdbc)).isEqualTo(98);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 
@@ -176,7 +176,7 @@ public class LocalDemoSeedTest {
         assertThatThrownBy(() -> organization.seedAccounts(data, ids, patientIds))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("identity conflict");
         verifyNoInteractions(createAccount);
-        assertThat(count(orgJdbc)).isEqualTo(54);
+        assertThat(count(orgJdbc)).isEqualTo(70);
     }
 
     @Test void patientFailureRollsBackReceiptsAndNextStartupResumes() {
@@ -187,7 +187,7 @@ public class LocalDemoSeedTest {
         }).when(createPatient).create(any());
         assertThatThrownBy(() -> patient.seed(data)).hasMessage("simulated outage");
         assertThat(count(patientJdbc)).isZero();
-        assertThat(count(orgJdbc)).isEqualTo(54);
+        assertThat(count(orgJdbc)).isEqualTo(70);
         // Organization is already committed; its normal creation ports are never called again.
         clearInvocations(createDepartment, createStaff);
         organization.seedMasters(data);
@@ -195,7 +195,7 @@ public class LocalDemoSeedTest {
         doAnswer(call -> addPatient(call.getArgument(0))).when(createPatient).create(any());
         runSeed();
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(22);
+        assertThat(accounts).hasSize(28);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 

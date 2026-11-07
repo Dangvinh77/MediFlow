@@ -6,35 +6,41 @@ import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.organization.application.port.in.ManageRoomsUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.RoomRepository;
+import com.mediflow.organization.application.port.out.RoomTypeRepository;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.exception.InvalidRoomException;
 import com.mediflow.organization.domain.model.Department;
+import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
+import com.mediflow.organization.domain.model.RoomTypeDefinition;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Workplace room rules: a room type must fit its department type, a functional unit works in
- * exactly one active room, a clinical department keeps one shared office, and a room number
- * is unique within its zone. Department and type never change after creation.
+ * Workplace room rules: the room type comes from the catalogue and must belong to the
+ * department's category, a paraclinical or administrative unit works in exactly one active room,
+ * a clinical department keeps at most one active room of each single-room type (its office),
+ * and a room number is unique within its zone. Department and type never change after creation.
  */
 @Transactional("organizationTransactionManager")
 public class ManageRoomsService implements ManageRoomsUseCase {
 
     private final RoomRepository rooms;
     private final DepartmentRepository departments;
+    private final RoomTypeRepository types;
 
-    public ManageRoomsService(RoomRepository rooms, DepartmentRepository departments) {
+    public ManageRoomsService(RoomRepository rooms, DepartmentRepository departments,
+                              RoomTypeRepository types) {
         this.rooms = rooms;
         this.departments = departments;
+        this.types = types;
     }
 
     @Override
     @Transactional(value = "organizationTransactionManager", readOnly = true)
-    public List<Room> list(UUID departmentId, RoomType roomType, boolean activeOnly) {
+    public List<Room> list(UUID departmentId, String roomType, boolean activeOnly) {
         return rooms.search(departmentId, roomType, activeOnly);
     }
 
@@ -47,22 +53,26 @@ public class ManageRoomsService implements ManageRoomsUseCase {
     @Override
     public Room create(RoomDetails details) {
         if (details == null || details.departmentId() == null || details.roomType() == null
-                || details.placement() == null) {
+                || details.roomType().isBlank() || details.placement() == null) {
             throw new InvalidRoomException("Department, room type and placement are required");
         }
         // Lock the department first: it serializes the single-workplace rules per unit.
         Department department = departments.findByIdForUpdate(details.departmentId())
                 .orElseThrow(() -> new DepartmentNotFoundException(details.departmentId()));
         requireActiveDepartment(department);
-        if (!details.roomType().allowedFor(department.getDepartmentType())) {
+        // Lock the catalogue row so the type cannot be deleted while this room is created.
+        RoomTypeDefinition type = types.lockByCode(details.roomType())
+                .orElseThrow(() -> new BusinessRuleException("ROOM_TYPE_UNKNOWN",
+                        "Room type " + details.roomType() + " is not in the catalogue"));
+        if (!type.allowedFor(department.getDepartmentType())) {
             throw new BusinessRuleException("ROOM_TYPE_NOT_ALLOWED",
-                    "Room type " + details.roomType() + " does not fit a "
+                    "Room type " + type.getCode() + " does not fit a "
                             + department.getDepartmentType() + " department");
         }
-        Room room = Room.create(UUID.randomUUID(), department.getDepartmentId(), details.roomType(),
+        Room room = Room.create(UUID.randomUUID(), department.getDepartmentId(), type.getCode(),
                 details.placement().roomNumber(), details.placement().roomName(),
                 details.placement().zone(), details.placement().location());
-        requireWorkplaceSlot(room);
+        requireWorkplaceSlot(room, department, type);
         requireUniqueNumber(room);
         return rooms.save(room);
     }
@@ -86,7 +96,10 @@ public class ManageRoomsService implements ManageRoomsUseCase {
         if (room.isActive() == active) return room;
         if (active) {
             requireActiveDepartment(department);
-            requireWorkplaceSlot(room);
+            RoomTypeDefinition type = types.findByCode(room.getRoomType())
+                    .orElseThrow(() -> new BusinessRuleException("ROOM_TYPE_UNKNOWN",
+                            "Room type " + room.getRoomType() + " is not in the catalogue"));
+            requireWorkplaceSlot(room, department, type);
             room.activate();
         } else {
             room.deactivate();
@@ -94,14 +107,14 @@ public class ManageRoomsService implements ManageRoomsUseCase {
         return rooms.save(room);
     }
 
-    private void requireWorkplaceSlot(Room room) {
+    private void requireWorkplaceSlot(Room room, Department department, RoomTypeDefinition type) {
         List<Room> others = rooms.findActiveByDepartment(room.getDepartmentId(), room.getRoomId());
-        if (room.getRoomType().functionalWorkplace() && !others.isEmpty()) {
+        if (department.getDepartmentType() != DepartmentType.CLINICAL && !others.isEmpty()) {
             throw new BusinessRuleException("ROOM_SINGLE_WORKPLACE",
-                    "A functional unit works in exactly one active room");
+                    "A paraclinical or administrative unit works in exactly one active room");
         }
-        if (room.getRoomType().singlePerDepartment()
-                && others.stream().anyMatch(other -> other.getRoomType() == room.getRoomType())) {
+        if (type.isSinglePerDepartment()
+                && others.stream().anyMatch(other -> other.getRoomType().equals(room.getRoomType()))) {
             throw new BusinessRuleException("ROOM_TYPE_ALREADY_ASSIGNED",
                     "The department already has an active room of type " + room.getRoomType());
         }

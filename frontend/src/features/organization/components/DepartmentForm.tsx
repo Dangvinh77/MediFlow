@@ -12,12 +12,12 @@ import { isUuid } from "@/lib/validation";
 import { FormSection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
+import { departmentCategories, departmentCategoryHints, departmentCategoryLabels, roomTypesFor } from "../rooms";
 import { departmentMatchesDraft, isSaveOutcomeUnknown, type DepartmentSaveDraft } from "../save-outcome";
 import { SaveOutcomeRecovery } from "./SaveOutcomeRecovery";
-import type { DepartmentType } from "../types";
+import type { DepartmentType, RoomTypeDTO } from "../types";
 
 interface Props { departmentId?: string }
-const typeOptions: { value: DepartmentType; label: string }[] = [{ value: "CLINICAL", label: "Lâm sàng" }, { value: "PARACLINICAL", label: "Cận lâm sàng" }, { value: "ADMINISTRATIVE", label: "Hành chính" }];
 
 export function DepartmentForm({ departmentId }: Props) {
   return <DepartmentFormWorkspace key={departmentId ?? "new"} departmentId={departmentId} />;
@@ -38,6 +38,7 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
+  const [roomTypes, setRoomTypes] = useState<RoomTypeDTO[] | null>(null);
   const mounted = useRef(true);
   const submitting = useRef(false);
   const unresolved = useRef<DepartmentSaveDraft | null>(null);
@@ -46,6 +47,15 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
+  }, []);
+
+  // Room types of each category, so the admin sees which workplaces the unit can have.
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve().then(() => organizationApi.roomTypes())
+      .then(rows => { if (alive) setRoomTypes(rows); })
+      .catch(() => { if (alive) setRoomTypes(null); });
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -95,7 +105,9 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
       else {
         if (isSaveOutcomeUnknown(cause)) { unresolved.current = draft; setUnknownSave(draft); markDirty(); }
-        setError(cause instanceof Error ? cause.message : "Không thể lưu khoa/phòng.");
+        setError(cause instanceof ApiRequestError && cause.code === "DEPARTMENT_TYPE_HAS_ROOMS"
+          ? "Khoa/bộ phận đã có phòng làm việc nên không thể đổi khối. Loại phòng gắn với khối; hãy giữ khối hiện tại hoặc tạo đơn vị mới."
+          : cause instanceof Error ? cause.message : "Không thể lưu khoa/phòng.");
       }
     } finally {
       submitting.current = completed || unresolved.current !== null;
@@ -127,7 +139,8 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
       <FormSection title={`Thông tin ${unit}`} description="Tên, mã viết tắt và phân loại đơn vị trong tổ chức.">
         <Field label={`Tên ${unit}`} htmlFor="department-name" required><input id="department-name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className={controlClassName} /></Field>
         <Field label="Viết tắt" htmlFor="department-abbreviation" required hint={editing ? "Mã viết tắt không đổi sau khi tạo." : undefined}><input id="department-abbreviation" required={!editing} disabled={editing} maxLength={20} value={abbreviation} onChange={(event) => setAbbreviation(event.target.value)} className={controlClassName} /></Field>
-        <Field label={`Loại ${unit}`} htmlFor="department-type" required><select id="department-type" value={type} onChange={(event) => setType(event.target.value as DepartmentType)} className={controlClassName}>{typeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+        <Field label={`Loại ${unit}`} htmlFor="department-type" required><select id="department-type" value={type} onChange={(event) => setType(event.target.value as DepartmentType)} className={controlClassName}>{departmentCategories.map((option) => <option key={option} value={option}>{departmentCategoryLabels[option]}</option>)}</select>
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">{departmentCategoryHints[type]}{roomTypes ? ` Loại phòng của khối: ${roomTypesFor(roomTypes, type).map(row => row.name).join(", ") || "chưa có (thêm tại Danh mục khoa phòng)"}.` : ""}</span></Field>
         <Field label="Địa điểm" htmlFor="department-location"><input id="department-location" maxLength={255} value={location} onChange={(event) => setLocation(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
       <FormSection title="Chức năng và liên hệ" description="Nhiệm vụ và đầu mối liên hệ của đơn vị.">

@@ -183,9 +183,16 @@ public class ApplicationConfig {
 
         @Bean
         public com.mediflow.organization.application.port.in.ManageRoomsUseCase manageRoomsUseCase(
-                        RoomRepository roomRepository, DepartmentRepository departmentRepository) {
+                        RoomRepository roomRepository, DepartmentRepository departmentRepository,
+                        com.mediflow.organization.application.port.out.RoomTypeRepository roomTypeRepository) {
                 return new com.mediflow.organization.application.service.ManageRoomsService(
-                                roomRepository, departmentRepository);
+                                roomRepository, departmentRepository, roomTypeRepository);
+        }
+
+        @Bean
+        public com.mediflow.organization.application.port.in.ManageRoomTypesUseCase manageRoomTypesUseCase(
+                        com.mediflow.organization.application.port.out.RoomTypeRepository roomTypeRepository) {
+                return new com.mediflow.organization.application.service.ManageRoomTypesService(roomTypeRepository);
         }
 
         @Bean
@@ -221,10 +228,12 @@ public class ApplicationConfig {
         @Bean
         public UpdateDepartmentUseCase updateDepartmentUseCase(
                         DepartmentRepository departmentRepository,
-                        StaffRepository staffRepository) {
+                        StaffRepository staffRepository,
+                        RoomRepository roomRepository) {
                 return new UpdateDepartmentService(
                                 departmentRepository,
-                                staffRepository);
+                                staffRepository,
+                                roomRepository);
         }
 
         @Bean

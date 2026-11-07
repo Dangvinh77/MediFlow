@@ -8,7 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.mediflow.organization.application.port.out.DepartmentRepository;
+import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.common.exception.BusinessRuleException;
+import com.mediflow.organization.domain.model.Room;
 import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.exception.InvalidDepartmentException;
@@ -24,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,11 +38,28 @@ class UpdateDepartmentServiceTest {
 
     @Mock private StaffRepository staffRepository;
 
+    @Mock private RoomRepository roomRepository;
+
     private UpdateDepartmentService service;
 
     @BeforeEach
     void setUp() {
-        service = new UpdateDepartmentService(departmentRepository, staffRepository);
+        service = new UpdateDepartmentService(departmentRepository, staffRepository, roomRepository);
+    }
+
+    @Test
+    void execute_departmentWithRooms_keepsItsCategory() {
+        UUID departmentId = UUID.randomUUID();
+        Department department = department(departmentId, "Khoa Nội", "NOI", DepartmentType.CLINICAL);
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
+        when(roomRepository.search(departmentId, null, false)).thenReturn(List.of(Room.create(UUID.randomUUID(),
+                departmentId, "CONSULTATION", "101", "Phòng khám Nội 1", "Khu A", "Tầng 1")));
+
+        BusinessRuleException error = assertThrows(BusinessRuleException.class, () -> service.execute(
+                departmentId, "Khoa Nội", DepartmentType.PARACLINICAL, "Tầng 1", null, true));
+
+        assertEquals("DEPARTMENT_TYPE_HAS_ROOMS", error.getCode());
+        verify(departmentRepository, never()).save(any(Department.class));
     }
 
     @Test

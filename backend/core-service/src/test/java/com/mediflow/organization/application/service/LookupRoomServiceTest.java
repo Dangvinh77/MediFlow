@@ -3,7 +3,6 @@ package com.mediflow.organization.application.service;
 import com.mediflow.organization.application.dto.response.RoomLookupDTO;
 import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -23,7 +22,7 @@ class LookupRoomServiceTest {
     void existingActiveRoom_returnsIdentityProjection() {
         UUID roomId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
-        Room room = Room.reconstitute(roomId, departmentId, RoomType.CONSULTATION, "101", "Phòng khám 1",
+        Room room = Room.reconstitute(roomId, departmentId, "CONSULTATION", "101", "Phòng khám 1",
                 "Khu A", "Tầng 1", true, Instant.now(), Instant.now());
         when(repository.findById(roomId)).thenReturn(Optional.of(room));
 
@@ -43,7 +42,7 @@ class LookupRoomServiceTest {
     @Test
     void inactiveRoom_remainsDistinguishableFromMissing() {
         UUID roomId = UUID.randomUUID();
-        Room room = Room.reconstitute(roomId, UUID.randomUUID(), RoomType.LABORATORY, "102", "Phòng xét nghiệm",
+        Room room = Room.reconstitute(roomId, UUID.randomUUID(), "LABORATORY", "102", "Phòng xét nghiệm",
                 "Khu B", "Tầng 1", false, Instant.now(), Instant.now());
         when(repository.findById(roomId)).thenReturn(Optional.of(room));
 

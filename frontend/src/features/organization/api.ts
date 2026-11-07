@@ -1,5 +1,5 @@
 import { api, type MutationOptions } from "@/lib/api";
-import type { CreateRoomRequest, HeadAppointmentCommand, HeadAppointmentSnapshot, RoomDTO, RoomPlacement, RoomType } from "./types";
+import type { CreateRoomRequest, CreateRoomTypeRequest, HeadAppointmentCommand, HeadAppointmentSnapshot, RoomDTO, RoomPlacement, RoomType, RoomTypeDTO, UpdateRoomTypeRequest } from "./types";
 import type { PageResult } from "@/lib/types";
 import type {
   AccountDTO,
@@ -72,6 +72,11 @@ export const organizationApi = {
     api.put<RoomDTO>(`/v1/org/rooms/${encodeURIComponent(roomId)}`, body),
   changeRoomStatus: (roomId: string, active: boolean) =>
     api.put<RoomDTO>(`/v1/org/rooms/${encodeURIComponent(roomId)}/status`, { active }),
+  roomTypes: () => api.get<RoomTypeDTO[]>("/v1/org/room-types"),
+  createRoomType: (body: CreateRoomTypeRequest) => api.post<RoomTypeDTO>("/v1/org/room-types", body),
+  updateRoomType: (code: RoomType, body: UpdateRoomTypeRequest) =>
+    api.put<RoomTypeDTO>(`/v1/org/room-types/${encodeURIComponent(code)}`, body),
+  deleteRoomType: (code: RoomType) => api.delEmpty(`/v1/org/room-types/${encodeURIComponent(code)}`),
   departments: (activeOnly = true) =>
     api.get<DepartmentDTO[]>(`/v1/org/departments?activeOnly=${activeOnly}`),
   department: (departmentId: string) =>

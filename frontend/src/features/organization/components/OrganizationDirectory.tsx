@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { DepartmentList } from "./DepartmentList";
 import { RoomDirectory } from "./RoomDirectory";
+import { RoomTypeCatalog } from "./RoomTypeCatalog";
 import { StaffTable } from "./StaffTable";
 import type { DepartmentDTO } from "../types";
 const sections = [
   { id: "departments", label: "Khoa / bộ phận", description: "Khoa lâm sàng, cận lâm sàng và bộ phận chức năng" },
   { id: "rooms", label: "Phòng làm việc", description: "Phòng khám, văn phòng khoa và nơi làm việc của bộ phận" },
   { id: "staff", label: "Nhân sự", description: "Hồ sơ và thông tin công tác" },
+  { id: "catalog", label: "Danh mục khoa phòng", description: "Khối khoa và loại phòng được phép trong từng khối" },
 ] as const;
 export function OrganizationDirectory() {
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
@@ -26,6 +28,7 @@ export function OrganizationDirectory() {
       </div>
       {selected === "rooms" ? <RoomDirectory /> : null}
       {selected === "staff" ? <StaffTable departments={departments} /> : null}
+      {selected === "catalog" ? <RoomTypeCatalog /> : null}
     </div>
   </div>;
 }

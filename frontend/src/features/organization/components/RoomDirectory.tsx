@@ -10,8 +10,8 @@ import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { DirectorySection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
-import { roomErrorMessages, roomTypeHints, roomTypeLabels, roomTypes, roomTypesFor } from "../rooms";
-import type { DepartmentDTO, RoomDTO, RoomType } from "../types";
+import { departmentCategories, departmentCategoryLabels, roomErrorMessages, roomTypeName, roomTypeRule, roomTypesFor } from "../rooms";
+import type { DepartmentDTO, RoomDTO, RoomType, RoomTypeDTO } from "../types";
 
 const getServerRole = () => null;
 
@@ -32,21 +32,26 @@ function messageFrom(cause: unknown, fallback: string) {
   return cause instanceof Error ? cause.message : fallback;
 }
 
+/** First filter step: which dimension the second select ("Đối tượng lọc") lists. */
+type FilterDimension = "" | "department" | "type";
+
 const normalize = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[đĐ]/g, "d").toLowerCase();
 
 /**
  * Workplace rooms: consultation rooms planned for clinical departments, the symbolic office of
- * each department, and the single workplace of each functional unit. Admins create and edit.
+ * each department, and the single workplace of each paraclinical or administrative unit. Room
+ * types come from the administrator-managed catalogue. Admins create and edit.
  */
 export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: DepartmentDTO }) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const admin = role === "ADMIN";
   const [departments, setDepartments] = useState<DepartmentDTO[]>(fixedDepartment ? [fixedDepartment] : []);
   const [rooms, setRooms] = useState<RoomDTO[] | null>(null);
+  const [types, setTypes] = useState<RoomTypeDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [departmentFilter, setDepartmentFilter] = useState(fixedDepartment?.departmentId ?? "");
-  const [typeFilter, setTypeFilter] = useState<RoomType | "">("");
+  const [dimension, setDimension] = useState<FilterDimension>(fixedDepartment ? "type" : "");
+  const [target, setTarget] = useState("");
   const [keyword, setKeyword] = useState("");
   const [form, setForm] = useState<RoomForm | null>(null);
   const [saving, setSaving] = useState(false);
@@ -60,9 +65,10 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
     Promise.all([
       organizationApi.rooms({ departmentId: fixedDepartmentId }),
       fixedDepartmentId ? Promise.resolve(null) : organizationApi.departments(false),
-    ]).then(([roomRows, departmentRows]) => {
+      organizationApi.roomTypes(),
+    ]).then(([roomRows, departmentRows, typeRows]) => {
       if (!active || !isRequestSessionCurrent(session)) return;
-      setRooms(roomRows); if (departmentRows) setDepartments(departmentRows);
+      setRooms(roomRows); setTypes(typeRows); if (departmentRows) setDepartments(departmentRows);
     }).catch((cause: unknown) => {
       if (active && isRequestSessionCurrent(session, cause)) setError(messageFrom(cause, "Không thể tải danh sách phòng làm việc."));
     });
@@ -70,11 +76,15 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
   }, [attempt, fixedDepartmentId]);
 
   const departmentById = useMemo(() => new Map(departments.map(department => [department.departmentId, department])), [departments]);
+  const departmentFilter = fixedDepartment?.departmentId ?? (dimension === "department" ? target : "");
+  const typeFilter = dimension === "type" ? target : "";
+  const filterTypes = fixedDepartment ? roomTypesFor(types, fixedDepartment.departmentType) : types;
   const visibleRooms = (rooms ?? []).filter(room => (!departmentFilter || room.departmentId === departmentFilter)
     && (!typeFilter || room.roomType === typeFilter)
     && normalize(`${room.roomNumber} ${room.roomName} ${room.zone} ${room.location}`).includes(normalize(keyword.trim())));
   const formDepartment = form ? departmentById.get(form.departmentId) : undefined;
-  const allowedTypes = roomTypesFor(formDepartment?.departmentType);
+  const allowedTypes = roomTypesFor(types, formDepartment?.departmentType);
+  const selectedType = form ? types.find(type => type.code === form.roomType) : undefined;
 
   function startCreate() {
     setNotice(null); setFormError(null);
@@ -88,11 +98,11 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
 
   function chooseDepartment(departmentId: string) {
     const department = departmentById.get(departmentId);
-    const types = roomTypesFor(department?.departmentType);
+    const choices = roomTypesFor(types, department?.departmentType).map(type => type.code);
     setForm(current => current && ({
       ...current, departmentId,
-      // A functional unit has exactly one workplace type choice in practice; preselect the first.
-      roomType: current.roomType && types.includes(current.roomType) ? current.roomType : types.length === 1 ? types[0] : "",
+      // Preselect the only fitting type, if the category has exactly one.
+      roomType: current.roomType && choices.includes(current.roomType) ? current.roomType : choices.length === 1 ? choices[0] : "",
       location: current.location || department?.location || "",
     }));
   }
@@ -134,7 +144,7 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
     ? fixedDepartment.departmentType === "CLINICAL"
       ? "Các phòng khám được hoạch định cho khoa và văn phòng chung của khoa."
       : "Bộ phận chức năng làm việc chung tại một phòng; mọi nhân sự đều làm việc tại đây."
-    : "Phòng khám phân bổ cho khoa, văn phòng khoa và phòng làm việc riêng của các bộ phận xét nghiệm, phát thuốc, thu ngân, điều dưỡng, quản lý.";
+    : "Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.";
 
   return <DirectorySection title={title} description={description} actions={admin && !form ? <Button variant="primary" onClick={startCreate}>Thêm phòng làm việc</Button> : undefined}>
     {notice ? <p role="status" className="mx-5 mb-4 rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success">{notice}</p> : null}
@@ -145,10 +155,11 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
           {departments.filter(department => department.active || department.departmentId === form.departmentId).map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}
         </select>
       </Field>
-      <Field label="Loại phòng" htmlFor="room-type" required hint={form.roomType ? roomTypeHints[form.roomType] : !form.departmentId ? "Chọn khoa/bộ phận trước để thấy các loại phòng phù hợp." : undefined}>
+      <Field label="Loại phòng" htmlFor="room-type" required hint={selectedType ? `${selectedType.description ? `${selectedType.description} ` : ""}${roomTypeRule(selectedType)}.` : !form.departmentId ? "Chọn khoa/bộ phận trước để thấy các loại phòng phù hợp." : formDepartment && allowedTypes.length === 0 ? `${departmentCategoryLabels[formDepartment.departmentType]} chưa có loại phòng nào trong danh mục.` : undefined}>
         <select id="room-type" value={form.roomType} disabled={Boolean(form.roomId) || !form.departmentId || saving} onChange={event => setForm(current => current && ({ ...current, roomType: event.target.value as RoomType }))} className={controlClassName}>
           <option value="">Chọn loại phòng</option>
-          {(form.roomId && form.roomType ? [form.roomType] : allowedTypes).map(type => <option key={type} value={type}>{roomTypeLabels[type]}</option>)}
+          {form.roomId && form.roomType ? <option value={form.roomType}>{roomTypeName(types, form.roomType)}</option>
+            : allowedTypes.map(type => <option key={type.code} value={type.code}>{type.name}</option>)}
         </select>
       </Field>
       <Field label="Số phòng" htmlFor="room-number" required><input id="room-number" maxLength={20} value={form.roomNumber} disabled={saving} onChange={event => setForm(current => current && ({ ...current, roomNumber: event.target.value }))} placeholder="Ví dụ: 101" className={controlClassName} /></Field>
@@ -158,9 +169,19 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
       {formError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger md:col-span-2 xl:col-span-3">{formError}</p> : null}
       <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3"><Button type="submit" variant="primary" loading={saving}>{form.roomId ? "Lưu thay đổi" : "Thêm phòng"}</Button><Button type="button" disabled={saving} onClick={() => { setForm(null); setFormError(null); }}>Hủy</Button></div>
     </form> : formError ? <p role="alert" className="mx-5 mb-4 text-sm text-danger">{formError}</p> : null}
-    <div className={`grid gap-4 border-t border-border p-4 ${fixedDepartment ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
-      {!fixedDepartment ? <Field label="Lọc theo khoa/bộ phận" htmlFor="room-filter-department"><select id="room-filter-department" value={departmentFilter} onChange={event => setDepartmentFilter(event.target.value)} className={controlClassName}><option value="">Tất cả</option>{departments.map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</select></Field> : null}
-      <Field label="Lọc theo loại phòng" htmlFor="room-filter-type"><select id="room-filter-type" value={typeFilter} onChange={event => setTypeFilter(event.target.value as RoomType | "")} className={controlClassName}><option value="">Tất cả</option>{(fixedDepartment ? roomTypesFor(fixedDepartment.departmentType) : roomTypes).map(type => <option key={type} value={type}>{roomTypeLabels[type]}</option>)}</select></Field>
+    <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
+      {!fixedDepartment ? <Field label="Lọc theo" htmlFor="room-filter-by"><select id="room-filter-by" value={dimension} onChange={event => { setDimension(event.target.value as FilterDimension); setTarget(""); }} className={controlClassName}><option value="">Tất cả phòng</option><option value="department">Khoa / bộ phận</option><option value="type">Loại phòng</option></select></Field> : null}
+      <Field label="Đối tượng lọc" htmlFor="room-filter-target" hint={!dimension ? "Chọn tiêu chí ở ô Lọc theo trước." : undefined}><select id="room-filter-target" value={target} disabled={!dimension} onChange={event => setTarget(event.target.value)} className={controlClassName}>
+        <option value="">{dimension === "department" ? "Tất cả khoa/bộ phận" : dimension === "type" ? "Tất cả loại phòng" : "—"}</option>
+        {dimension === "department" ? departmentCategories.map(category => {
+          const members = departments.filter(department => department.departmentType === category);
+          return members.length ? <optgroup key={category} label={departmentCategoryLabels[category]}>{members.map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</optgroup> : null;
+        }) : null}
+        {dimension === "type" ? departmentCategories.map(category => {
+          const members = filterTypes.filter(type => type.departmentType === category);
+          return members.length ? <optgroup key={category} label={departmentCategoryLabels[category]}>{members.map(type => <option key={type.code} value={type.code}>{type.name}</option>)}</optgroup> : null;
+        }) : null}
+      </select></Field>
       <Field label="Tìm phòng" htmlFor="room-keyword"><input id="room-keyword" type="search" value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="Số phòng, tên, khu" className={controlClassName} /></Field>
     </div>
     {error ? <AsyncState kind="error" message={error} onRetry={() => { setError(null); setRooms(null); setAttempt(value => value + 1); }} />
@@ -174,7 +195,7 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
           <td className="px-4 py-2">{room.roomName}</td>
           <td className="px-4 py-2">{room.zone}</td>
           <td className="px-4 py-2">{room.location}</td>
-          <td className="px-4 py-2">{roomTypeLabels[room.roomType] ?? room.roomType}</td>
+          <td className="px-4 py-2">{roomTypeName(types, room.roomType)}</td>
           {!fixedDepartment ? <td className="px-4 py-2">{departmentById.get(room.departmentId)?.departmentName ?? "—"}</td> : null}
           <td className="px-4 py-2"><StatusBadge tone={room.active ? "success" : "neutral"}>{room.active ? "Đang sử dụng" : "Ngừng sử dụng"}</StatusBadge></td>
           {admin ? <td className="px-4 py-2"><div className="flex flex-nowrap gap-2"><Button type="button" onClick={() => startEdit(room)} aria-label={`Sửa phòng ${room.roomNumber}`}>Sửa</Button><Button type="button" variant={room.active ? "danger" : "secondary"} onClick={() => void toggle(room)} aria-label={`${room.active ? "Ngừng" : "Mở lại"} phòng ${room.roomNumber}`}>{room.active ? "Ngừng" : "Mở lại"}</Button></div></td> : null}

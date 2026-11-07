@@ -1,7 +1,6 @@
 package com.mediflow.organization.web.dto.response;
 
 import com.mediflow.organization.domain.model.Room;
-import com.mediflow.organization.domain.model.RoomType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -9,7 +8,7 @@ import java.util.UUID;
 public record RoomResponse(
         UUID roomId,
         UUID departmentId,
-        RoomType roomType,
+        String roomType,
         String roomNumber,
         String roomName,
         String zone,

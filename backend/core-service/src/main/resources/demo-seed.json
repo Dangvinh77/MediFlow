@@ -103,14 +103,34 @@
       "email": "demo-tckt@demo.mediflow.local"
     },
     {
-      "key": "department-11",
-      "departmentName": "Phòng Điều dưỡng Demo",
-      "abbreviation": "DEMO-DD",
-      "departmentType": "ADMINISTRATIVE",
-      "location": "Tầng 1, Khu A",
-      "description": "Điều dưỡng tiếp đón, đăng ký khám và hướng dẫn bệnh nhân ngoại trú; toàn bộ điều dưỡng làm việc tại một phòng.",
-      "phoneNumber": "02838220020",
-      "email": "demo-dd@demo.mediflow.local"
+      "key": "department-12",
+      "departmentName": "Khoa Ngoại tổng quát Demo",
+      "abbreviation": "DEMO-NGOAI",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 2, Khu A",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220021",
+      "email": "demo-ngoai@demo.mediflow.local"
+    },
+    {
+      "key": "department-13",
+      "departmentName": "Khoa Răng Hàm Mặt Demo",
+      "abbreviation": "DEMO-RHM",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 4, Khu A",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220022",
+      "email": "demo-rhm@demo.mediflow.local"
+    },
+    {
+      "key": "department-14",
+      "departmentName": "Khoa Phụ sản Demo",
+      "abbreviation": "DEMO-SAN",
+      "departmentType": "CLINICAL",
+      "location": "Tầng 5, Khu A",
+      "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
+      "phoneNumber": "02838220023",
+      "email": "demo-san@demo.mediflow.local"
     }
   ],
   "staff": [
@@ -166,7 +186,7 @@
       "key": "staff-04",
       "fullName": "Phạm Điều Dưỡng Demo",
       "identityNumber": "999880000004",
-      "departmentKey": "department-11",
+      "departmentKey": "department-01",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -198,7 +218,7 @@
       "key": "staff-06",
       "fullName": "Trần Ngọc Lan Demo",
       "identityNumber": "999880000006",
-      "departmentKey": "department-11",
+      "departmentKey": "department-02",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -230,7 +250,7 @@
       "key": "staff-08",
       "fullName": "Phạm Thanh Hà Demo",
       "identityNumber": "999880000008",
-      "departmentKey": "department-11",
+      "departmentKey": "department-04",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -262,7 +282,7 @@
       "key": "staff-10",
       "fullName": "Đặng Thảo Nguyên Demo",
       "identityNumber": "999880000010",
-      "departmentKey": "department-11",
+      "departmentKey": "department-05",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -294,7 +314,7 @@
       "key": "staff-12",
       "fullName": "Đỗ Ngọc Anh Demo",
       "identityNumber": "999880000012",
-      "departmentKey": "department-11",
+      "departmentKey": "department-06",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -326,7 +346,7 @@
       "key": "staff-14",
       "fullName": "Ngô Thu Hương Demo",
       "identityNumber": "999880000014",
-      "departmentKey": "department-11",
+      "departmentKey": "department-07",
       "jobTitle": "NURSE",
       "specialization": null,
       "licenseNumber": null,
@@ -433,6 +453,102 @@
       "address": "29 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
       "hireDate": "2016-03-01",
       "qualification": "Cử nhân quản trị"
+    },
+    {
+      "key": "staff-21",
+      "fullName": "Trịnh Văn Khải Demo",
+      "identityNumber": "999880000021",
+      "departmentKey": "department-12",
+      "jobTitle": "DOCTOR",
+      "specialization": "Ngoại tổng quát",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-021",
+      "phoneNumber": "0908800021",
+      "email": "demo.staff21@example.test",
+      "dateOfBirth": "1982-06-03",
+      "gender": "MALE",
+      "address": "12 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2017-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
+    },
+    {
+      "key": "staff-22",
+      "fullName": "Lý Thu Trang Demo",
+      "identityNumber": "999880000022",
+      "departmentKey": "department-12",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800022",
+      "email": "demo.staff22@example.test",
+      "dateOfBirth": "1983-06-04",
+      "gender": "FEMALE",
+      "address": "13 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2018-03-01",
+      "qualification": "Cử nhân điều dưỡng"
+    },
+    {
+      "key": "staff-23",
+      "fullName": "Mai Đức Thịnh Demo",
+      "identityNumber": "999880000023",
+      "departmentKey": "department-13",
+      "jobTitle": "DOCTOR",
+      "specialization": "Răng Hàm Mặt",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-023",
+      "phoneNumber": "0908800023",
+      "email": "demo.staff23@example.test",
+      "dateOfBirth": "1982-06-03",
+      "gender": "MALE",
+      "address": "12 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2017-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
+    },
+    {
+      "key": "staff-24",
+      "fullName": "Phan Mỹ Duyên Demo",
+      "identityNumber": "999880000024",
+      "departmentKey": "department-13",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800024",
+      "email": "demo.staff24@example.test",
+      "dateOfBirth": "1983-06-04",
+      "gender": "FEMALE",
+      "address": "13 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2018-03-01",
+      "qualification": "Cử nhân điều dưỡng"
+    },
+    {
+      "key": "staff-25",
+      "fullName": "Châu Ngọc Hân Demo",
+      "identityNumber": "999880000025",
+      "departmentKey": "department-14",
+      "jobTitle": "DOCTOR",
+      "specialization": "Phụ sản",
+      "licenseNumber": "LOCAL-DEMO-DOCTOR-025",
+      "phoneNumber": "0908800025",
+      "email": "demo.staff25@example.test",
+      "dateOfBirth": "1982-06-03",
+      "gender": "MALE",
+      "address": "12 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2017-03-01",
+      "qualification": "Bác sĩ chuyên khoa I"
+    },
+    {
+      "key": "staff-26",
+      "fullName": "Tạ Kim Oanh Demo",
+      "identityNumber": "999880000026",
+      "departmentKey": "department-14",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800026",
+      "email": "demo.staff26@example.test",
+      "dateOfBirth": "1983-06-04",
+      "gender": "FEMALE",
+      "address": "13 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2018-03-01",
+      "qualification": "Cử nhân điều dưỡng"
     }
   ],
   "rooms": [
@@ -599,15 +715,6 @@
       "location": "Tầng 4, Khu A"
     },
     {
-      "key": "room-11-nursing",
-      "departmentKey": "department-11",
-      "roomType": "NURSING",
-      "roomNumber": "100",
-      "roomName": "Phòng Điều dưỡng – Tiếp đón",
-      "zone": "Khu A",
-      "location": "Tầng 1, Khu A (sảnh chính)"
-    },
-    {
       "key": "room-08-lab",
       "departmentKey": "department-08",
       "roomType": "LABORATORY",
@@ -642,6 +749,87 @@
       "roomName": "Phòng Hành chính – Quản trị",
       "zone": "Khu C",
       "location": "Tầng 2, Khu C"
+    },
+    {
+      "key": "room-12-office",
+      "departmentKey": "department-12",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "220",
+      "roomName": "Văn phòng Khoa Ngoại",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-12-consult-1",
+      "departmentKey": "department-12",
+      "roomType": "CONSULTATION",
+      "roomNumber": "203",
+      "roomName": "Phòng khám Ngoại 1",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-12-consult-2",
+      "departmentKey": "department-12",
+      "roomType": "CONSULTATION",
+      "roomNumber": "204",
+      "roomName": "Phòng khám Ngoại 2",
+      "zone": "Khu A",
+      "location": "Tầng 2, Khu A"
+    },
+    {
+      "key": "room-13-office",
+      "departmentKey": "department-13",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "420",
+      "roomName": "Văn phòng Khoa Răng Hàm Mặt",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-13-consult-1",
+      "departmentKey": "department-13",
+      "roomType": "CONSULTATION",
+      "roomNumber": "403",
+      "roomName": "Phòng khám Răng Hàm Mặt 1",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-13-consult-2",
+      "departmentKey": "department-13",
+      "roomType": "CONSULTATION",
+      "roomNumber": "404",
+      "roomName": "Phòng khám Răng Hàm Mặt 2",
+      "zone": "Khu A",
+      "location": "Tầng 4, Khu A"
+    },
+    {
+      "key": "room-14-office",
+      "departmentKey": "department-14",
+      "roomType": "DEPARTMENT_OFFICE",
+      "roomNumber": "510",
+      "roomName": "Văn phòng Khoa Phụ sản",
+      "zone": "Khu A",
+      "location": "Tầng 5, Khu A"
+    },
+    {
+      "key": "room-14-consult-1",
+      "departmentKey": "department-14",
+      "roomType": "CONSULTATION",
+      "roomNumber": "501",
+      "roomName": "Phòng khám Phụ sản 1",
+      "zone": "Khu A",
+      "location": "Tầng 5, Khu A"
+    },
+    {
+      "key": "room-14-consult-2",
+      "departmentKey": "department-14",
+      "roomType": "CONSULTATION",
+      "roomNumber": "502",
+      "roomName": "Phòng khám Phụ sản 2",
+      "zone": "Khu A",
+      "location": "Tầng 5, Khu A"
     }
   ],
   "patients": [
@@ -915,6 +1103,54 @@
       "password": "MediFlowDemo@2026",
       "role": "CASHIER",
       "staffKey": "staff-20",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor7",
+      "username": "demo.doctor7",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-21",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse7",
+      "username": "demo.nurse7",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-22",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor8",
+      "username": "demo.doctor8",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-23",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse8",
+      "username": "demo.nurse8",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-24",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.doctor9",
+      "username": "demo.doctor9",
+      "password": "MediFlowDemo@2026",
+      "role": "DOCTOR",
+      "staffKey": "staff-25",
+      "patientKey": null
+    },
+    {
+      "key": "account-demo.nurse9",
+      "username": "demo.nurse9",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-26",
       "patientKey": null
     },
     {
