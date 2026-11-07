@@ -201,13 +201,18 @@ select option {
     appearance: base-select;
   }
 
+  /* Unlayered on purpose: a Tailwind `block` on a select must not undo the vertical centering. */
   select:not([multiple], [size]) {
+    display: inline-flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     background-image: none;
     padding-right: 0.75rem;
   }
 
   select:not([multiple], [size])::picker-icon {
+    flex: none;
     width: 1rem;
     height: 1rem;
     background-color: var(--muted-foreground);

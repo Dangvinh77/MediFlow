@@ -11,7 +11,7 @@ import { ScheduleDateInput } from "./ScheduleDateInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
-import type { DoctorCalendarDTO, RegistrationSummary } from "../types";
+import type { DoctorCalendarDTO, DoctorWorkShiftDTO, RegistrationSummary } from "../types";
 
 interface WorkspaceError { message: string; correlationId: string | null }
 
@@ -43,6 +43,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
   const [view, setView] = useState<"day" | "week">("day");
   const [date, setDate] = useState(todayInVietnam);
   const [calendar, setCalendar] = useState<DoctorCalendarDTO | null>(null);
+  const [shifts, setShifts] = useState<DoctorWorkShiftDTO[] | null>(null);
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<WorkspaceError | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -62,22 +63,34 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
     const registrationReads = registrationGeneration;
     appointmentApi.myCalendar({ date: todayInVietnam() }).then(result => {
       if (generation !== readGeneration.current) return;
-      setCalendar(result);
+      setCalendar(result); void loadShifts(result, generation);
     }).catch(cause => {
       if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải dữ liệu của bạn."));
     }).finally(() => { if (generation === readGeneration.current) setLoading(false); });
     return () => { reads.current++; registrationReads.current++; };
+    // loadShifts only reads refs and setters; this is the initial load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
+
+  /** Shifts are context for the sessions, so a failed read never hides the calendar. */
+  async function loadShifts(range: DoctorCalendarDTO, generation: number) {
+    try {
+      const rows = await appointmentApi.myWorkShifts(range.fromDate, range.toDate);
+      if (generation === readGeneration.current) setShifts(rows.filter(row => row.status === "ACTIVE"));
+    } catch {
+      if (generation === readGeneration.current) setShifts(null);
+    }
+  }
 
   async function loadCalendar() {
     if (!enabled || loading || !date) return;
     const generation = ++readGeneration.current;
     registrationGeneration.current++;
     setRegistrationLoading(false); setRegistrationError(null);
-    setLoading(true); setError(null); setCalendar(null); setSelectedSession(null); setRegistrations(null);
+    setLoading(true); setError(null); setCalendar(null); setShifts(null); setSelectedSession(null); setRegistrations(null);
     try {
       const result = await appointmentApi.myCalendar(view === "week" ? { weekStart: mondayOfWeek(date) } : { date });
-      if (generation === readGeneration.current) setCalendar(result);
+      if (generation === readGeneration.current) { setCalendar(result); void loadShifts(result, generation); }
     } catch (cause) {
       if (generation === readGeneration.current) setError(errorFrom(cause, "Không thể tải lịch khám của bạn."));
     } finally {
@@ -105,7 +118,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
   return <div className="space-y-6">
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">Bộ lọc lịch khám</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Lịch được tải theo tài khoản bác sĩ đang đăng nhập.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Ca được phân công cho biết bạn trực giờ nào, phòng nào. Buổi khám là phần trong ca nhận bệnh nhân; mở từng buổi để xem phiếu.</p>
       <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void loadCalendar(); }}>
         <label className="text-sm font-medium" htmlFor="doctor-calendar-view"><span className="mb-1 block">Chế độ lịch</span>
           <select id="doctor-calendar-view" value={view} onChange={event => setView(event.target.value as "day" | "week")} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
@@ -118,6 +131,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
       {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadCalendar()} /> : null}
       {calendar ? <>
         <p role="status" className="mt-4 text-sm text-muted-foreground">{formatLocalDate(calendar.fromDate)} – {formatLocalDate(calendar.toDate)} · {calendar.timezone}</p>
+        {shifts?.length ? <div className="mt-3 rounded-lg bg-surface-muted p-3 text-sm"><h3 className="font-semibold">Ca được phân công</h3><ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1">{shifts.map(shift => <li key={shift.shiftId}>{formatLocalDate(shift.shiftDate)} · {shift.startTime}–{shift.endTime} · <ReferenceText kind="room" value={shift.roomId} fallback="Phòng khám" /></li>)}</ul></div> : null}
         {calendar.sessions.length ? <ul className="mt-3 grid gap-3 lg:grid-cols-2">
           {calendar.sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span className="text-sm">{sessionStatusLabels[session.status]}</span></div>

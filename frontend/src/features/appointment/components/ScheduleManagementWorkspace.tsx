@@ -13,8 +13,7 @@ import { formatLocalDate } from "@/lib/format";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { formatScheduleObservedAt, initialScheduleDate } from "../schedule-presentation";
 import { ScheduleDateInput } from "./ScheduleDateInput";
-import { shiftRange } from "./MyWorkShiftsWorkspace";
-import { sessionDateErrors } from "../session-dates";
+import { sessionDateErrors, shiftRange } from "../session-dates";
 import { appointmentApi } from "../api";
 import type {
   ConsultationBreak,

@@ -3,48 +3,56 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { formatDecimal } from "@/lib/format";
 import { storeSession } from "@/lib/session";
-const mocks = vi.hoisted(() => ({ byPatient: vi.fn(), replace: vi.fn() }));
+const mocks = vi.hoisted(() => ({ paymentHistory: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks }));
-vi.mock("../api", () => ({ billingApi: { byPatient: mocks.byPatient } }));
-import { InvoiceLookup } from "./InvoiceLookup";
+vi.mock("../api", () => ({ billingApi: { paymentHistory: mocks.paymentHistory } }));
+import { PaymentHistoryLookup } from "./PaymentHistoryLookup";
 const patient = "00000000-0000-4000-8000-000000000001";
-const row = { invoiceId: "invoice-1", patientId: patient, createdDate: "2026-10-20", totalAmount: 125.75, isPaid: true, paymentMethod: "CASH", prescriptionId: null, sagaStatus: "COMPLETED", paidAt: null, fees: [] };
-function search() { fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: patient } }); fireEvent.click(screen.getByRole("button", { name: "Tra cứu hóa đơn" })); }
+const paid = { transactionId: "t-1", paymentRequestId: "r-1", patientId: patient, departmentId: "d-1", transactionType: "PAYMENT", purpose: "LAB_TEST", amount: 80000, currency: "VND", paymentMethod: "CASH", completedAt: "2026-11-07T03:00:00Z" };
+const page = (content: unknown[], number = 0, totalPages = 1, totalElements = content.length) => ({ content, number, totalPages, totalElements, size: 20 });
+function search(value = patient) { fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value } }); fireEvent.click(screen.getByRole("button", { name: "Xem lịch sử thu" })); }
 beforeEach(() => { vi.clearAllMocks(); act(() => storeSession({ accessToken: "a", refreshToken: "r", role: "CASHIER" })); });
-describe("InvoiceLookup", () => {
- it("explains patient lookup without exposing UUID terminology", () => {
-   render(<InvoiceLookup />);
-   expect(screen.getByLabelText("Bệnh nhân")).toHaveAttribute("placeholder", "Nhập tên hoặc thông tin bệnh nhân");
-   expect(screen.getByText("Chọn bệnh nhân để xem hóa đơn.")).toBeVisible();
- });
-
- it("uses the submitted patient for pagination and shows server amounts and terminal state", async () => {
-   mocks.byPatient.mockResolvedValueOnce({ content: [row], number: 0, totalPages: 2, totalElements: 21 }).mockResolvedValueOnce({ content: [{ ...row, invoiceId: "invoice-2" }], number: 1, totalPages: 2, totalElements: 21 });
-   render(<InvoiceLookup />); search();
-   expect(screen.queryByRole("link", { name: "Thanh toán khoản phí đã chọn" })).not.toBeInTheDocument();
-   expect(await screen.findByText(formatDecimal(125.75))).toBeVisible();
-   expect(screen.getByText("Đã thanh toán")).toBeVisible();
-   expect(screen.queryByRole("columnheader", { name: "Trạng thái saga" })).not.toBeInTheDocument();
-   fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "unsubmitted-draft" } });
-   fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
-   expect(await screen.findByRole("link", { name: /Hóa đơn/ })).toHaveAttribute("href", "/billing/invoice-2");
-   expect(mocks.byPatient).toHaveBeenLastCalledWith(patient, 1, 20);
-   expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
- });
- it("retries the failed query and renders an empty result", async () => {
-   mocks.byPatient.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, undefined, [], "trace-read")).mockResolvedValueOnce({ content: [], number: 0, totalPages: 0, totalElements: 0 });
-   render(<InvoiceLookup />); search();
-   fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
-   expect(await screen.findByText("trace-read")).toBeVisible();
-   fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
-   expect(await screen.findByText("Bệnh nhân chưa có hóa đơn.")).toBeVisible();
-   expect(mocks.byPatient).toHaveBeenLastCalledWith(patient, 0, 20);
- });
- it("rejects invalid patient ids without issuing a read", async () => {
-   render(<InvoiceLookup />);
-   fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: "invalid" } });
-   fireEvent.click(screen.getByRole("button", { name: "Tra cứu hóa đơn" }));
-   expect(await screen.findByRole("alert")).toHaveTextContent("Chọn một bệnh nhân hợp lệ.");
-   expect(mocks.byPatient).not.toHaveBeenCalled();
- });
+describe("PaymentHistoryLookup", () => {
+  it("opens on collected money from every patient and labels what was collected", async () => {
+    mocks.paymentHistory.mockResolvedValueOnce(page([paid]));
+    render(<PaymentHistoryLookup />);
+    expect(await screen.findByText("Xét nghiệm")).toBeVisible();
+    expect(screen.getByText(new RegExp(formatDecimal(80000)))).toBeVisible();
+    expect(screen.getByText("Tiền mặt")).toBeVisible();
+    expect(screen.getByText("Đã thu")).toBeVisible();
+    expect(mocks.paymentHistory).toHaveBeenCalledWith(null, 0, 20);
+  });
+  it("shows a refund as money going back, not as a collection", async () => {
+    mocks.paymentHistory.mockResolvedValueOnce(page([{ ...paid, transactionId: "t-2", transactionType: "REFUND", purpose: null }]));
+    render(<PaymentHistoryLookup />);
+    expect(await screen.findByText("Hoàn tiền")).toBeVisible();
+    expect(screen.getByText(new RegExp(`−${formatDecimal(80000)}`))).toBeVisible();
+    expect(screen.getByText("Khoản khác")).toBeVisible();
+  });
+  it("keeps the submitted patient while paging", async () => {
+    mocks.paymentHistory.mockResolvedValueOnce(page([paid])).mockResolvedValueOnce(page([paid], 0, 2, 21)).mockResolvedValueOnce(page([{ ...paid, transactionId: "t-3" }], 1, 2, 21));
+    render(<PaymentHistoryLookup />);
+    await screen.findByText("Xét nghiệm");
+    search();
+    fireEvent.change(await screen.findByLabelText("Bệnh nhân"), { target: { value: "unsubmitted-draft" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Trang sau" }));
+    await screen.findByText("Xét nghiệm");
+    expect(mocks.paymentHistory).toHaveBeenLastCalledWith(patient, 1, 20);
+  });
+  it("retries a failed read and explains an empty result", async () => {
+    mocks.paymentHistory.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, undefined, [], "trace-read")).mockResolvedValueOnce(page([]));
+    render(<PaymentHistoryLookup />);
+    fireEvent.click(await screen.findByText("Thông tin hỗ trợ"));
+    expect(await screen.findByText("trace-read")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(await screen.findByText("Chưa có khoản thu nào.")).toBeVisible();
+  });
+  it("rejects an invalid patient without a second read", async () => {
+    mocks.paymentHistory.mockResolvedValueOnce(page([paid]));
+    render(<PaymentHistoryLookup />);
+    await screen.findByText("Xét nghiệm");
+    search("invalid");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chọn một bệnh nhân hợp lệ.");
+    expect(mocks.paymentHistory).toHaveBeenCalledTimes(1);
+  });
 });

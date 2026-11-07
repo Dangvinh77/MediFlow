@@ -1,222 +1,140 @@
 "use client";
 
-import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
-import { formatDecimal, formatLocalDate } from "@/lib/format";
+import { formatDecimal, formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { billingApi } from "../api";
-import type { InvoiceDTO, PaymentMethod } from "../types";
+import type { PageResult } from "@/lib/types";
+import type { PaymentHistoryItem, PaymentMethod } from "../types";
 
-const BILLING_PAGE_SIZE = 20;
+const PAGE_SIZE = 20;
 
-const paymentMethodLabels: Record<PaymentMethod, string> = {
-  CASH: "Tiền mặt",
-  TRANSFER: "Chuyển khoản",
-  INSURANCE: "Bảo hiểm",
-};
+const methodLabels: Record<PaymentMethod, string> = { CASH: "Tiền mặt", TRANSFER: "Chuyển khoản", INSURANCE: "Bảo hiểm" };
+const purposeLabels: Record<string, string> = { EXAM: "Phí khám", LAB_TEST: "Xét nghiệm", PRESCRIPTION: "Thuốc" };
 
-interface RequestError {
-  message: string;
-  correlationId: string | null;
+interface RequestError { message: string; correlationId: string | null }
+interface HistoryRequest { patientId: string | null; page: number }
+
+function requestError(cause: unknown): RequestError {
+  if (cause instanceof ApiRequestError) return { message: cause.message, correlationId: cause.correlationId };
+  return { message: cause instanceof Error ? cause.message : "Không thể tải lịch sử thu.", correlationId: null };
 }
 
-interface BillingRequest {
-  patientId: string;
-  page: number;
-}
-
-function getRequestError(cause: unknown): RequestError {
-  if (cause instanceof ApiRequestError) {
-    return {
-      message: cause.message,
-      correlationId: cause.correlationId,
-    };
-  }
-
-  return {
-    message: cause instanceof Error ? cause.message : "Không thể tải hóa đơn.",
-    correlationId: null,
-  };
-}
-
-function getPaymentMethodLabel(paymentMethod: PaymentMethod | null): string {
-  if (paymentMethod === null) return "—";
-  return paymentMethodLabels[paymentMethod] ?? "Không xác định";
-}
-
-export function InvoiceLookup() {
+/** Money actually moved, newest first. Opens on every patient; choosing one narrows the list. */
+export function PaymentHistoryLookup() {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [patientId, setPatientId] = useState("");
-  const [activePatientId, setActivePatientId] = useState("");
-  const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [request, setRequest] = useState<HistoryRequest>({ patientId: null, page: 0 });
+  const [rows, setRows] = useState<PaymentHistoryItem[] | null>(null);
   const [error, setError] = useState<RequestError | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [lastRequest, setLastRequest] = useState<BillingRequest>({
-    patientId: "",
-    page: 0,
-  });
 
-  const loadInvoices = useCallback(async (id: string, page: number) => {
-    setLastRequest({ patientId: id, page });
-    setLoading(true);
+  const show = useCallback((result: PageResult<PaymentHistoryItem>) => {
+    setRows(result.content);
     setError(null);
-    setInvoices([]);
+    setTotalPages(result.totalPages);
+    setTotalElements(result.totalElements);
+  }, []);
 
-    try {
-      const result = await billingApi.byPatient(id, page, BILLING_PAGE_SIZE);
-      setInvoices(result.content);
-      setPageNumber(result.number);
-      setTotalPages(result.totalPages);
-      setTotalElements(result.totalElements);
-    } catch (cause: unknown) {
-      if (cause instanceof ApiRequestError && cause.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
-      setError(getRequestError(cause));
-    } finally {
-      setLoading(false);
-    }
+  const fail = useCallback((cause: unknown) => {
+    if (cause instanceof ApiRequestError && cause.status === 401) { router.replace("/login"); return; }
+    setRows([]);
+    setError(requestError(cause));
   }, [router]);
+
+  useEffect(() => { billingApi.paymentHistory(null, 0, PAGE_SIZE).then(show).catch(fail); }, [show, fail]);
+
+  function open(next: HistoryRequest) {
+    setRequest(next); setRows(null); setError(null);
+    billingApi.paymentHistory(next.patientId, next.page, PAGE_SIZE).then(show).catch(fail);
+  }
 
   function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedPatientId = patientId.trim();
-
-    if (!isUuid(normalizedPatientId)) {
-      setValidationError("Chọn một bệnh nhân hợp lệ.");
-      return;
-    }
-
+    const selected = patientId.trim();
+    if (selected && !isUuid(selected)) { setValidationError("Chọn một bệnh nhân hợp lệ."); return; }
     setValidationError(null);
-    setSearched(true);
-    setActivePatientId(normalizedPatientId);
-    void loadInvoices(normalizedPatientId, 0);
+    open({ patientId: selected || null, page: 0 });
   }
-
-  const showTable = !loading && !error && invoices.length > 0;
 
   return (
     <section className="mt-6">
-      <div className="mb-4 flex flex-wrap justify-end gap-2">
-        {role === "ADMIN" ? (
-          <>
-            <Link href="/billing/revenue" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Doanh thu theo khoa</Link>
-            <Link href="/billing/admin/outbox" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Phát lại outbox</Link>
-          </>
-        ) : null}
-        <Link href="/billing/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Lập hóa đơn</Link>
-      </div>
-      <form
-        onSubmit={onSearch}
-        noValidate
-        className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end"
-      >
+      {role === "ADMIN" ? (
+        <div className="mb-4 flex flex-wrap justify-end gap-2">
+          <Link href="/billing/revenue" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Doanh thu theo khoa</Link>
+          <Link href="/billing/admin/outbox" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Phát lại outbox</Link>
+        </div>
+      ) : null}
+      <form onSubmit={onSearch} noValidate className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium">
-            Bệnh nhân
-          </label>
-          <ReferenceInput kind="patient"
+          <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium">Bệnh nhân</label>
+          <ReferenceInput
+            kind="patient"
             id="billing-patient-id"
             value={patientId}
-            onValueChange={(selectedId) => {
-              setPatientId(selectedId);
-              setValidationError(null);
-            }}
-            placeholder="Nhập tên hoặc thông tin bệnh nhân"
+            onValueChange={(selectedId) => { setPatientId(selectedId); setValidationError(null); }}
+            placeholder="Để trống để xem tất cả bệnh nhân"
             aria-invalid={validationError ? true : undefined}
             aria-describedby={validationError ? "billing-patient-id-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading || !patientId.trim()}
-          className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Tra cứu hóa đơn
+        <button type="submit" disabled={rows === null} className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50">
+          Xem lịch sử thu
         </button>
       </form>
 
-      {validationError ? (
-        <p id="billing-patient-id-error" role="alert" className="mt-2 text-sm text-danger">
-          {validationError}
-        </p>
+      {validationError ? <p id="billing-patient-id-error" role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
+      {rows === null ? <AsyncState kind="loading" message="Đang tải lịch sử thu…" /> : null}
+      {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => open(request)} /> : null}
+      {rows !== null && !error && rows.length === 0 ? (
+        <AsyncState kind="empty" message={request.patientId ? "Bệnh nhân này chưa có khoản thu nào." : "Chưa có khoản thu nào."} />
       ) : null}
 
-      {!searched && !validationError ? (
-        <AsyncState kind="idle" message="Chọn bệnh nhân để xem hóa đơn." />
-      ) : null}
-
-      {loading ? <AsyncState kind="loading" message="Đang tải hóa đơn…" /> : null}
-
-      {!loading && error ? (
-        <AsyncState
-          kind="error"
-          message={error.message}
-          correlationId={error.correlationId}
-          onRetry={() => void loadInvoices(lastRequest.patientId, lastRequest.page)}
-        />
-      ) : null}
-
-      {searched && !loading && !error && invoices.length === 0 ? (
-        <AsyncState kind="empty" message="Bệnh nhân chưa có hóa đơn." />
-      ) : null}
-
-      {showTable ? (
+      {rows !== null && !error && rows.length > 0 ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-[38rem] text-left text-sm">
+            <table className="w-full min-w-[44rem] text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Ngày lập</th>
-                  <th scope="col" className="px-4 py-3">Mã hóa đơn</th>
-                  <th scope="col" className="px-4 py-3">Tổng tiền</th>
-                  <th scope="col" className="px-4 py-3">Thanh toán</th>
+                  <th scope="col" className="px-4 py-3">Thời điểm</th>
+                  <th scope="col" className="px-4 py-3">Bệnh nhân</th>
+                  <th scope="col" className="px-4 py-3">Khoản</th>
+                  <th scope="col" className="px-4 py-3 text-right">Số tiền</th>
                   <th scope="col" className="px-4 py-3">Hình thức</th>
+                  <th scope="col" className="px-4 py-3">Loại</th>
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((invoice) => {
+                {rows.map((row) => {
+                  const refund = row.transactionType === "REFUND";
                   return (
-                    <tr key={invoice.invoiceId} className="border-b border-border align-top last:border-0">
-                      <td className="px-4 py-3">{formatLocalDate(invoice.createdDate)}</td>
-                      <td className="px-4 py-3 font-mono text-xs"><Link href={`/billing/${invoice.invoiceId}`} className="text-primary hover:underline"><ReferenceText value={invoice.invoiceId} fallback={`Hóa đơn ${formatLocalDate(invoice.createdDate)}`} technical={false} /></Link></td>
-                      <td className="px-4 py-3 font-medium">{formatDecimal(invoice.totalAmount)}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge tone={invoice.isPaid ? "success" : "warning"}>
-                          {invoice.isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
-                        </StatusBadge>
-                      </td>
-                      <td className="px-4 py-3">{getPaymentMethodLabel(invoice.paymentMethod)}</td>
+                    <tr key={row.transactionId} className="border-b border-border align-top last:border-0">
+                      <td className="px-4 py-3">{formatInstant(row.completedAt)}</td>
+                      <td className="px-4 py-3"><ReferenceText kind="patient" value={row.patientId} fallback="Bệnh nhân" /></td>
+                      <td className="px-4 py-3">{row.purpose ? purposeLabels[row.purpose] ?? "Khoản khác" : "Khoản khác"}</td>
+                      <td className="px-4 py-3 text-right font-medium tabular-nums">{refund ? "−" : ""}{formatDecimal(row.amount)} {row.currency}</td>
+                      <td className="px-4 py-3">{methodLabels[row.paymentMethod as PaymentMethod] ?? "Khác"}</td>
+                      <td className="px-4 py-3"><StatusBadge tone={refund ? "warning" : "success"}>{refund ? "Hoàn tiền" : "Đã thu"}</StatusBadge></td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <Pagination
-            page={pageNumber}
-            totalPages={totalPages}
-            totalElements={totalElements}
-            loading={loading}
-            onPageChange={(page) => void loadInvoices(activePatientId, page)}
-          />
+          <Pagination page={request.page} totalPages={totalPages} totalElements={totalElements} loading={false} onPageChange={(page) => open({ ...request, page })} />
         </>
       ) : null}
     </section>

@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
 import { DoctorCalendarWorkspace } from "./DoctorCalendarWorkspace";
 
-const mocks = vi.hoisted(() => ({ calendar: vi.fn(), registrations: vi.fn() }));
+const mocks = vi.hoisted(() => ({ calendar: vi.fn(), registrations: vi.fn(), shifts: vi.fn() }));
 const auth = vi.hoisted(() => ({ session: "session-a", listeners: new Set<() => void>() }));
 vi.mock("@/lib/auth", () => ({ getSessionKey: () => auth.session, subscribeToAuthChanges: (listener: () => void) => { auth.listeners.add(listener); return () => auth.listeners.delete(listener); } }));
-vi.mock("../api", () => ({ appointmentApi: { myCalendar: mocks.calendar, registrationsBySession: mocks.registrations } }));
+vi.mock("../api", () => ({ appointmentApi: { myCalendar: mocks.calendar, registrationsBySession: mocks.registrations, myWorkShifts: mocks.shifts } }));
 
 const session = {
   sessionId: "own-session", revision: 1, doctorId: "signed-doctor", departmentId: "dept", roomId: "room",
@@ -22,6 +22,23 @@ describe("doctor own calendar", () => {
     vi.clearAllMocks(); auth.session = "session-a"; auth.listeners.clear();
     mocks.calendar.mockResolvedValue({ doctorId: "signed-doctor", fromDate: "2026-10-26", toDate: "2026-11-01", timezone: "Asia/Ho_Chi_Minh", sessions: [session] });
     mocks.registrations.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 });
+    mocks.shifts.mockResolvedValue([]);
+  });
+
+  it("shows active assigned shifts above the sessions and keeps the calendar when shifts fail", async () => {
+    mocks.shifts.mockResolvedValueOnce([
+      { shiftId: "active", shiftDate: "2026-10-26", startTime: "07:00", endTime: "17:00", roomId: "room", status: "ACTIVE" },
+      { shiftId: "cancelled", shiftDate: "2026-10-27", startTime: "13:00", endTime: "15:00", roomId: "room", status: "CANCELLED" },
+    ]);
+    const { unmount } = render(<DoctorCalendarWorkspace enabled />);
+    expect(await screen.findByRole("heading", { name: "Ca được phân công" })).toBeVisible();
+    expect(screen.getByText(/07:00–17:00/)).toBeVisible();
+    expect(screen.queryByText(/13:00–15:00/)).not.toBeInTheDocument();
+    unmount();
+    mocks.shifts.mockRejectedValueOnce(new Error("down"));
+    render(<DoctorCalendarWorkspace enabled />);
+    expect(await screen.findByRole("heading", { name: /08:00–12:00/ })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Ca được phân công" })).not.toBeInTheDocument();
   });
 
   it("loads successfully after StrictMode effect cleanup and replay", async () => {

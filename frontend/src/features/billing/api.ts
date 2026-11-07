@@ -8,6 +8,7 @@ import type {
   CompleteLedgerPaymentRequest,
   CreateInvoiceRequest,
   InvoiceDTO,
+  PaymentHistoryItem,
   LabZeroPayableEligibilityDTO,
   LabZeroPayableEligibilityRequest,
   LedgerPaymentDTO,
@@ -47,6 +48,10 @@ export const billingApi = {
   labRefundsDue: (labSourceId: string) => api.get<OutpatientAdjustmentDTO>(`/v1/billing/lab-adjustments/${encodeURIComponent(labSourceId)}/refunds-due`),
   recordRefund: (transactionId: string, body: RefundLedgerPaymentRequest) => api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(transactionId)}/refunds`, body),
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),
+  paymentHistory: (patientId: string | null, page = 0, size = 20) =>
+    api.get<PageResult<PaymentHistoryItem>>(
+      `/v1/billing/patient/payments?${patientId ? `patientId=${encodeURIComponent(patientId)}&` : ""}page=${page}&size=${size}`,
+    ),
   byPatient: (patientId: string, page = 0, size = 20) =>
     api.get<PageResult<InvoiceDTO>>(
       `/v1/billing/patient/${encodeURIComponent(patientId)}?page=${page}&size=${size}`,

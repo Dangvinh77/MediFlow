@@ -26,6 +26,13 @@ const nextConfig: NextConfig = {
     }));
   },
 
+  async redirects() {
+    // Merged screens: shifts live on the doctor calendar, the week on the department overview.
+    return [
+      { source: "/appointments/my-shifts", destination: "/appointments/my-calendar", permanent: false },
+      { source: "/appointments/department/calendar", destination: "/appointments/department", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       {

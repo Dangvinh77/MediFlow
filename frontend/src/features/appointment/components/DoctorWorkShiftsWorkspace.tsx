@@ -10,11 +10,10 @@ import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { Button } from "@/components/ui/Button";
-import { shiftRange } from "./MyWorkShiftsWorkspace";
 import { DoctorWorkShiftWeekGrid } from "./DoctorWorkShiftWeekGrid";
 import { ScheduleDateInput } from "./ScheduleDateInput";
 import { appointmentApi } from "../api";
-import { sessionDateErrors, vietnamToday } from "../session-dates";
+import { sessionDateErrors, shiftRange, vietnamToday } from "../session-dates";
 import type { ConsultationBreak, ConsultationRoomSummary, ConsultationSessionCreate, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate } from "../types";
 type Command = { kind: "create"; body: DoctorWorkShiftCreate } | { kind: "update"; id: string; body: DoctorWorkShiftUpdate } | { kind: "cancel"; id: string; body: { expectedRevision: number; reason: string } } | { kind: "session"; id: string; body: ConsultationSessionCreate };
 function shiftError(cause: unknown, fallback: string) {

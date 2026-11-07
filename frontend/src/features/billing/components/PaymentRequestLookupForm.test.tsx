@@ -189,6 +189,22 @@ describe("PaymentRequestLookupForm", () => {
     expect(screen.queryByRole("region", { name: "Chi tiết khoản phí" })).not.toBeInTheDocument();
   });
 
+  it("does not warn about a missing quote on a prescription, which is collected without one", async () => {
+    const rxId = "00000000-0000-4000-8000-000000000011";
+    const episodeId = "00000000-0000-4000-8000-000000000012";
+    mocks.discover.mockResolvedValue({ ...discovery("PENDING", 20), purpose: "PRESCRIPTION", sourceType: "PRESCRIPTION", sourceId: rxId, careEpisodeId: episodeId, requestedAmount: 20, paidAmount: 0 });
+    mocks.quote.mockRejectedValue(new ApiRequestError("No quote", 404, "BILLING_QUOTE_NOT_FOUND"));
+    render(<PaymentRequestLookupForm quoteEnabled zeroLiabilityEnabled />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "PRESCRIPTION" } });
+    fireEvent.change(screen.getByLabelText("Mã đơn thuốc", { exact: false }), { target: { value: rxId } });
+    fireEvent.change(screen.getByLabelText("Mã bệnh nhân", { exact: false }), { target: { value: patientId } });
+    fireEvent.change(screen.getByLabelText("Mã đợt điều trị", { exact: false }), { target: { value: episodeId } });
+    fireEvent.click(screen.getByRole("button", { name: "Tra cứu khoản phí" }));
+
+    expect(await screen.findByRole("button", { name: "Xác nhận thanh toán" })).toBeEnabled();
+    expect(screen.queryByText(/Không xem đây là khoản miễn phí/)).not.toBeInTheDocument();
+  });
+
   it("treats a missing legacy quote as unavailable rather than zero payable", async () => {
     mocks.discover.mockResolvedValue(discovery());
     mocks.quote.mockRejectedValue(new ApiRequestError("No quote", 404, "BILLING_QUOTE_NOT_FOUND"));

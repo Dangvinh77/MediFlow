@@ -23,8 +23,7 @@ const navigation: readonly NavigationItem[] = [
   { group: "Khám ngoại trú", href: "/appointments", label: "Lịch hẹn", eyebrow: "Tiếp nhận ngoại trú", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Khám ngoại trú", href: "/appointments/schedule", label: "Quản lý buổi khám", eyebrow: "Ca khám & phạm vi khoa", roles: ["ADMIN"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/reception", label: "Tiếp nhận ca khám", eyebrow: "Giữ chỗ & kiểm tra thu", roles: ["ADMIN", "NURSE"], scheduling: true },
-  { group: "Khám ngoại trú", href: "/appointments/my-shifts", label: "Lịch làm việc của tôi", eyebrow: "Giờ & phòng được phân công", roles: ["DOCTOR"], scheduling: true },
-  { group: "Khám ngoại trú", href: "/appointments/my-calendar", label: "Lịch khám của tôi", eyebrow: "Lịch bác sĩ", roles: ["DOCTOR"], scheduling: true },
+  { group: "Khám ngoại trú", href: "/appointments/my-calendar", label: "Lịch khám của tôi", eyebrow: "Ca, buổi khám & phiếu", roles: ["DOCTOR"], scheduling: true },
   { group: "Khám ngoại trú", href: "/appointments/my-registration", label: "Phiếu khám của tôi", eyebrow: "Tra cứu phiếu cá nhân", roles: ["PATIENT"], scheduling: true },
   { group: "Khám ngoại trú", href: "/records", label: "Hồ sơ khám", eyebrow: "Chẩn đoán & kết luận", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"] },
@@ -45,11 +44,10 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ role, open, onClose, schedulingEnabled = false, managementWorkspace = false }: DashboardSidebarProps) {
   const pathname = usePathname();
   const visibleNavigation: readonly NavigationItem[] = managementWorkspace && role === "DOCTOR" ? [
-    { group: "Quản lý khoa", href: "/appointments/department", label: "Tổng quan khoa", eyebrow: "Buổi khám theo khoa", roles: ["DOCTOR"] },
-    { group: "Quản lý khoa", href: "/appointments/department/calendar", label: "Lịch toàn khoa", eyebrow: "Theo ngày & tuần", roles: ["DOCTOR"] },
-    { group: "Quản lý khoa", href: "/appointments/department/sessions", label: "Buổi khám & phòng", eyebrow: "Sức chứa & trạng thái", roles: ["DOCTOR"] },
-    { group: "Quản lý khoa", href: "/appointments/department/shifts", label: "Lịch làm việc bác sĩ", eyebrow: "Phân công giờ & phòng", roles: ["DOCTOR"] },
-    { group: "Quản lý khoa", href: "/reports/outpatient", label: "Báo cáo khoa", eyebrow: "Doanh thu & lượt khám của khoa", roles: ["DOCTOR"] },
+    { group: "Quản lý khoa", href: "/appointments/department", label: "Tổng quan khoa", eyebrow: "Chỉ số & lịch toàn khoa", roles: ["DOCTOR"] },
+    { group: "Quản lý khoa", href: "/appointments/department/shifts", label: "Lịch làm việc bác sĩ", eyebrow: "Phân ca theo giờ & phòng", roles: ["DOCTOR"] },
+    { group: "Quản lý khoa", href: "/appointments/department/sessions", label: "Buổi khám & phòng", eyebrow: "Lập, sửa & ngừng buổi", roles: ["DOCTOR"] },
+    { group: "Quản lý khoa", href: "/reports/outpatient", label: "Báo cáo khoa", eyebrow: "Doanh thu & lượt khám theo kỳ", roles: ["DOCTOR"] },
   ] : role ? navigation.filter((item) => item.roles.includes(role) && (!item.scheduling || schedulingEnabled)) : [];
 
   const activeHref = visibleNavigation.filter(item => pathname === (item.activePath ?? item.href) || pathname.startsWith(`${item.activePath ?? item.href}/`)).sort((a, b) => (b.activePath ?? b.href).length - (a.activePath ?? a.href).length)[0]?.href;
