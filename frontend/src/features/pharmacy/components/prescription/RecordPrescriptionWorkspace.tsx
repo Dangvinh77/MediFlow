@@ -10,7 +10,7 @@ import { pharmacyApi } from "../../api";
 import { prescriptionStatusPresentation } from "../../presentation";
 import type { PrescriptionMode } from "../../prescriptionMode";
 import type { PrescriptionDTO } from "../../types";
-import { formatDate, formatVnd, isUuid } from "../../utils";
+import { formatDate, isUuid } from "../../utils";
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 import { CreatePrescriptionForm } from "./CreatePrescriptionForm";
 
@@ -100,11 +100,10 @@ function WorkspaceContent({ recordId, patientId, canCreate, mode }: RecordPrescr
     {ready && <>
       {result.prescriptions?.length ? <ul className="space-y-2" aria-label="Đơn thuốc đã kê cho hồ sơ">
         {result.prescriptions.map(rx => <li key={rx.prescriptionId}>
-          <Link href={`/pharmacy/prescriptions/${rx.prescriptionId}`} className="block rounded-lg border border-border p-3 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+          <Link href={`/pharmacy/prescriptions/${rx.prescriptionId}?context=record`} className="block rounded-lg border border-border p-3 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="font-medium">{formatDate(rx.prescribedDate)}</span>
               <StatusBadge tone={prescriptionStatusPresentation[rx.status].tone}>{prescriptionStatusPresentation[rx.status].label}</StatusBadge>
-              {!canCreate && <span className="ml-auto tabular-nums text-muted-foreground">{formatVnd(rx.totalAmount)}</span>}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{rx.lines.map(line => `${line.drugName || "Thuốc trong đơn"} × ${line.quantity}`).join(" · ")}</p>
           </Link>

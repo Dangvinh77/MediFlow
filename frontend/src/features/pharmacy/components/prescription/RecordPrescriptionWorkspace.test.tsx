@@ -41,7 +41,9 @@ describe("record prescription workspace", () => {
     mocks.search.mockResolvedValue(page([rx("rx-a"), rx("rx-other-record", { recordId: "00000000-0000-4000-8000-000000000099" })]));
     render(<RecordPrescriptionWorkspace recordId={recordId} patientId={patientId} canCreate={false} mode="outpatient" />);
     const links = await screen.findAllByRole("link");
-    expect(links.map(link => link.getAttribute("href"))).toEqual(["/pharmacy/prescriptions/rx-a"]);
+    expect(links.map(link => link.getAttribute("href"))).toEqual(["/pharmacy/prescriptions/rx-a?context=record"]);
+    // The medical record never shows prices.
+    expect(screen.queryByText(/6\.000|₫|VND/)).not.toBeInTheDocument();
     expect(screen.queryByText("Form kê đơn")).not.toBeInTheDocument();
   });
 

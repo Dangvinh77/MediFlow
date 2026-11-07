@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 vi.mock("@/components/auth/RoleGate", () => ({ RoleGate: ({ children }: { children: ReactNode }) => children }));
 vi.mock("@/features/pharmacy/components/PharmacyPageShell", () => ({ PharmacyPageShell: ({ children }: { children: ReactNode }) => children }));
-vi.mock("@/features/pharmacy/components/prescription/PrescriptionDetail", () => ({ PrescriptionDetail: ({ mode }: { mode: string | null }) => <div>detail:{mode ?? "unavailable"}</div> }));
+vi.mock("@/features/pharmacy/components/prescription/PrescriptionDetail", () => ({ PrescriptionDetail: ({ mode, context }: { mode: string | null; context?: string }) => <div>detail:{mode ?? "unavailable"}{context ? `:${context}` : ""}</div> }));
 import Page, { dynamic } from "./page";
 
 const params = Promise.resolve({ prescriptionId: "00000000-0000-4000-8000-000000000001" });
@@ -20,5 +20,13 @@ describe("prescription detail server contract mode", () => {
     vi.stubEnv("MEDIFLOW_PHARMACY_PRESCRIPTION_MODE", setting);
     render(await Page({ params }));
     expect(screen.getByText(`detail:${expected}`)).toBeVisible();
+  });
+  it("marks a detail opened from a medical record so prices stay hidden", async () => {
+    render(await Page({ params, searchParams: Promise.resolve({ context: "record" }) }));
+    expect(screen.getByText("detail:outpatient:record")).toBeVisible();
+  });
+  it("ignores any other context value", async () => {
+    render(await Page({ params, searchParams: Promise.resolve({ context: "billing" }) }));
+    expect(screen.getByText("detail:outpatient")).toBeVisible();
   });
 });

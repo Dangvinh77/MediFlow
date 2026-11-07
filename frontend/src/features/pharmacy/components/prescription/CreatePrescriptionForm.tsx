@@ -464,7 +464,7 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
                     {context.data.priceCodes.map(code => <option key={code} value={code}>{code}</option>)}
                   </select>
                 </Field>}
-                <p className="text-muted-foreground">Lượt khám và thông tin thu tiền đã được hệ thống cung cấp.</p>
+                <p className="text-muted-foreground">Lượt khám đã được hệ thống cung cấp.</p>
               </div>}
           </div>}
         </div>

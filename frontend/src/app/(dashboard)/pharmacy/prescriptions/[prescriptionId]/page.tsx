@@ -13,12 +13,16 @@ export const metadata: Metadata = {
 
 interface PrescriptionDetailPageProps {
   params: Promise<{ prescriptionId: string }>;
+  searchParams?: Promise<{ context?: string | string[] }>;
 }
 
 export default async function PrescriptionDetailPage({
   params,
+  searchParams,
 }: PrescriptionDetailPageProps) {
   const { prescriptionId } = await params;
+  // Opened from a medical record: the clinical view never shows prices.
+  const context = (await searchParams)?.context === "record" ? "record" : undefined;
   const id = prescriptionId.trim();
   const mode = resolvePrescriptionMode(process.env.MEDIFLOW_PHARMACY_PRESCRIPTION_MODE);
 
@@ -34,7 +38,7 @@ export default async function PrescriptionDetailPage({
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
-          <PrescriptionDetail prescriptionId={id} mode={mode} />
+          <PrescriptionDetail prescriptionId={id} mode={mode} context={context} />
         </RoleGate>
       )}
     </PharmacyPageShell>

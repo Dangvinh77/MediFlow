@@ -42,6 +42,8 @@ import { DispensePrescriptionDialog } from "./DispensePrescriptionDialog";
 interface PrescriptionDetailProps {
   prescriptionId: string;
   mode: PrescriptionMode | null;
+  /** "record" when opened from a medical record: the clinical view hides all prices. */
+  context?: "record";
 }
 
 type DetailRequestState =
@@ -105,15 +107,18 @@ function PrescriptionField({ label, value, identity }: { label: string; value: s
   );
 }
 
-export function PrescriptionDetail({ prescriptionId, mode }: PrescriptionDetailProps) {
-  return <PharmacySessionBoundary><PrescriptionDetailContent key={`${prescriptionId}\u0000${mode}`} prescriptionId={prescriptionId} mode={mode} /></PharmacySessionBoundary>;
+export function PrescriptionDetail({ prescriptionId, mode, context }: PrescriptionDetailProps) {
+  return <PharmacySessionBoundary><PrescriptionDetailContent key={`${prescriptionId}\u0000${mode}`} prescriptionId={prescriptionId} mode={mode} context={context} /></PharmacySessionBoundary>;
 }
 
-function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailProps) {
+function PrescriptionDetailContent({ prescriptionId, mode, context }: PrescriptionDetailProps) {
   const isCurrent = usePharmacyRequestScope("canReadPrescription");
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const capabilities = getPharmacyCapabilities(role);
+  // Prices belong to dispensing and billing, never to the clinical record: a doctor, or anyone
+  // who opened the prescription from a medical record, sees no unit price, line or total amount.
+  const showPricing = role !== "DOCTOR" && context !== "record";
   const [requestState, setRequestState] = useState<DetailRequestState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
   const [activeAction, setActiveAction] = useState<ActiveAction>(null);
@@ -387,7 +392,7 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
           <PrescriptionField label="Bệnh nhân" value={prescription.patientId} identity="patient" />
           <PrescriptionField label="Bác sĩ kê đơn" value={prescription.doctorId} identity="doctor" />
           <PrescriptionField label="Khoa" value={prescription.departmentId} identity="department" />
-          <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
+          {showPricing ? <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div> : null}
           <div><dt className="text-xs text-muted-foreground">Ngày kê đơn</dt><dd className="mt-1">{formatDate(prescription.prescribedDate)}</dd></div>
         </dl>
         {(role === "ADMIN" || role === "DOCTOR") && isUuid(prescription.recordId ?? "") ? <Link className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-medium text-primary underline-offset-4 hover:bg-surface-muted hover:underline" href={`/records/${prescription.recordId}`}>Mở hồ sơ khám nguồn</Link> : null}
@@ -396,19 +401,19 @@ function PrescriptionDetailContent({ prescriptionId, mode }: PrescriptionDetailP
       <section className="rounded-xl border border-border bg-surface p-6">
         <h3 className="text-base font-semibold">Các dòng thuốc</h3>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className={`w-full text-left text-sm ${showPricing ? "min-w-[720px]" : "min-w-[560px]"}`}>
             <thead className="border-b border-border text-xs text-muted-foreground">
-              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th><th className="px-3 py-3">Đơn giá</th><th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3">Ghi chú</th><th className="px-3 py-3 text-right">Thành tiền</th></tr>
+              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th>{showPricing ? <th className="px-3 py-3">Đơn giá</th> : null}<th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3">Ghi chú</th>{showPricing ? <th className="px-3 py-3 text-right">Thành tiền</th> : null}</tr>
             </thead>
             <tbody className="divide-y divide-border">
               {prescription.lines.map((line) => (
                 <tr key={line.lineId}>
                   <td className="px-3 py-3"><div>{line.drugName ?? "Chưa có thông tin tên thuốc"}</div></td>
                   <td className="px-3 py-3">{line.quantity}</td>
-                  <td className="px-3 py-3">{formatVnd(line.unitPrice)}</td>
+                  {showPricing ? <td className="px-3 py-3">{formatVnd(line.unitPrice)}</td> : null}
                   <td className="px-3 py-3">{line.dosage ?? "—"}</td>
                   <td className="px-3 py-3">{line.note ?? "—"}</td>
-                  <td className="px-3 py-3 text-right font-medium">{formatVnd(line.lineTotal)}</td>
+                  {showPricing ? <td className="px-3 py-3 text-right font-medium">{formatVnd(line.lineTotal)}</td> : null}
                 </tr>
               ))}
             </tbody>

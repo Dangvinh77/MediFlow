@@ -60,6 +60,30 @@ describe("PrescriptionDetail status evidence", () => {
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Hủy đơn" })).not.toBeInTheDocument();
   });
+  it.each([
+    ["DOCTOR", undefined],
+    ["ADMIN", "record"],
+    ["PHARMACIST", "record"],
+  ] as const)("hides unit price, line total and total amount for %s in context %s", async (role, context) => {
+    mocks.role = role;
+    mocks.getPrescription.mockResolvedValue({ ...prescription, totalAmount: 12345,
+      lines: [{ lineId: "line-1", drugId: "drug", drugName: "Omeprazol 20mg", quantity: 2, unitPrice: 6172, lineTotal: 12344, dosage: "Ngày 2 lần", note: null }] });
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="outpatient" context={context} />);
+    expect(await screen.findByText("Omeprazol 20mg")).toBeVisible();
+    expect(screen.queryByText("Đơn giá")).not.toBeInTheDocument();
+    expect(screen.queryByText("Thành tiền")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tổng tiền")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/12[.,]345|6[.,]172|12[.,]344/);
+  });
+  it("keeps prices for the pharmacist outside the medical record", async () => {
+    mocks.getPrescription.mockResolvedValue({ ...prescription,
+      lines: [{ lineId: "line-1", drugId: "drug", drugName: "Omeprazol 20mg", quantity: 2, unitPrice: 6172, lineTotal: 12344, dosage: null, note: null }] });
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="outpatient" />);
+    expect(await screen.findByText("Omeprazol 20mg")).toBeVisible();
+    expect(screen.getByText("Đơn giá")).toBeVisible();
+    expect(screen.getByText("Thành tiền")).toBeVisible();
+    expect(screen.getByText("Tổng tiền")).toBeVisible();
+  });
   it("distinguishes missing dispense from a missing prescription", async () => {
     mocks.getPrescription.mockRejectedValue(new ApiRequestError("Missing dispense", 404, "DISPENSE_NOT_FOUND"));
     render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
