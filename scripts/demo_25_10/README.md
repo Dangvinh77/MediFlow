@@ -77,11 +77,11 @@ không chuyển dữ liệu sang `-Fast`; đóng cửa sổ backend cũ trước
 
 Launcher bổ sung lịch hôm nay/ngày mai bằng
 `prepare_ui_demo.py`, sau đó `prepare_demo_calendar.py` thêm **10 nhân sự/khoa đang hoạt động**
-và lịch mọi ngày **01/11/2026–31/01/2027** cho các khoa lâm sàng.
+và lịch mọi ngày trong **một tháng, từ 6 ngày trước ngày seed** cho các khoa lâm sàng.
 Mỗi ngày gồm **07:00–12:00 và 12:00–17:00**, mỗi buổi 40 chỗ, luân phiên sáu bác sĩ
 mẫu mỗi khoa; bốn nhân sự còn lại là điều dưỡng. Khoa ngoài lâm sàng được bổ sung
 nhân sự phù hợp, không có lịch khám bác sĩ giả. Mỗi khoa lâm sàng có phòng lịch riêng,
-không trùng phòng/lịch của `demo.doctor`. Chờ thêm dòng **CALENDAR READY** trước READY.
+không trùng phòng/lịch của `demo.staff03@example.test`. Chờ thêm dòng **CALENDAR READY** trước READY.
 Không sửa snapshot SQL; chỉ bootstrap phòng Organization trước khi bật dịch vụ.
 Lịch đã qua giờ vẫn có để tra cứu, không đăng ký hoặc bắt đầu khám trái ngày/giờ thực;
 lượt nguồn tái khám cần chạy trong 07:00–16:45 giờ Việt Nam. Chạy demo trọn luồng
@@ -104,7 +104,7 @@ python scripts/demo_25_10/prepare_ui_demo.py
 python scripts/demo_25_10/prepare_demo_calendar.py
 ```
 
-Lượt nền của `demo.patient2` có khoản thu thật trong DB demo để làm nguồn tái khám;
+Lượt nền của `demo.patient02@example.test` có khoản thu thật trong DB demo để làm nguồn tái khám;
 ba lượt bạn sẽ thao tác không được đăng ký trước. Không xóa journal khi gặp timeout.
 Lệnh calendar cần stack mới có bootstrap phòng; nếu báo thiếu phòng, khởi động lại
 bằng `scripts/run/start-backend.bat`. Chạy lại cùng stack không tạo trùng và không đặt lại mật khẩu;

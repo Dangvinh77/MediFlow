@@ -17,6 +17,11 @@ import urllib.request
 import uuid
 from onboarding_acceptance import OnboardingAcceptance
 from issuance_acceptance import verify_issuance
+from prepare_ui_demo import SEED_LOGIN_EMAILS
+
+ACCEPTANCE_LOGINS = [(role, SEED_LOGIN_EMAILS[seed_role]) for role, seed_role in [
+    ('admin', 'admin'), ('nurse', 'nurse'), ('doctor', 'doctor'), ('cashier', 'cashier'),
+    ('patient', 'patient'), ('other', 'patient2'), ('lab', 'lab')]]
 
 
 def main():
@@ -120,9 +125,7 @@ def main():
         if args.result_event_replay:
             from result_replay_acceptance import ResultReplayAcceptance
             observer = ResultReplayAcceptance.begin(manifest_path, args.gateway)
-        for role, username in [('admin', 'demo.admin'), ('nurse', 'demo.nurse'), ('doctor', 'demo.doctor'),
-                               ('cashier', 'demo.cashier'), ('patient', 'demo.patient'), ('other', 'demo.patient2'),
-                               ('lab', 'demo.lab')]:
+        for role, username in ACCEPTANCE_LOGINS:
             if args.onboarding and role == 'patient':
                 continue
             login(role, username)

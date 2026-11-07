@@ -592,7 +592,7 @@ nếu có; nói rõ đó là dữ liệu nền, không nhận là kết quả l�
 | Không thấy “Khám mới” | Chọn buổi trước; ở form phía dưới mở **Loại lượt khám → Khám đợt mới** |
 | Không tải được buổi dù đã gõ khoa | Bấm **Tìm**, rồi **chọn kết quả có tên**; nhập chữ thôi chưa chọn khoa |
 | Chỉ thấy BS Demo… chứ không có Lê Bác Sĩ Demo | Kiểm ngày D và khởi động backend đúng ngày, trong giờ khám; luồng chính dùng lịch riêng của demo.staff03@example.test |
-| Chọn nhầm bác sĩ của lịch ba tháng | Chọn lại Lê Bác Sĩ Demo, không dùng tài khoản bác sĩ seed để khám thay; bác sĩ luân phiên chưa được script cấp account |
+| Chọn nhầm bác sĩ của lịch luân phiên | Chọn lại Lê Bác Sĩ Demo, không dùng tài khoản bác sĩ seed để khám thay; bác sĩ luân phiên chưa được script cấp account |
 | Ngày minh họa đã qua | Thay D bằng ngày thực và khởi động phiên demo mới trong giờ khám, không giữ lịch quá khứ |
 | Backend báo PARTIAL, C không có lượt nguồn | Chạy tình huống A/B; muốn đủ C, khởi động phiên mới trong 07:00–16:45 |
 | Bác sĩ chưa có “Bắt đầu khám” | Kiểm đúng bác sĩ, đã thu phí, bệnh nhân đã đến, đúng ngày/giờ; nếu đặt trước thì nurse ghi nhận đã đến |
@@ -636,26 +636,18 @@ giờ **08:00–12:00 → Lưu giờ làm việc**. Sau đó từ ca vừa tạo
 Chỉ tạo khi ngày đó chưa có ca/buổi bạn đã lập; không dùng phòng calendar đã kín.
 Giữ ngày được chọn ở tương lai, không chọn ngày quá khứ.
 
-### 18.2. Tham khảo lịch ba tháng, không thay cho lượt chính
+### 18.2. Tham khảo lịch một tháng, không thay cho lượt chính
 
-Trong khoảng 01/11/2026–31/01/2027, mọi ngày đều có hai buổi ở phòng
-**Phong kham lich day demo**, khoa **Khoa Nội tổng quát Demo**. Ví dụ cụ thể:
+Từ 6 ngày trước đến 24 ngày sau ngày seed, mọi ngày đều có hai buổi ở phòng
+**Phong kham lich day demo**, khoa **Khoa Nội tổng quát Demo**, luân phiên ba bác sĩ
+**BS Demo Khoa Nội tổng quát Demo 01–03**, chưa được script cấp tài khoản.
 
-| Ngày | Buổi | Bác sĩ chọn trên UI | Tài khoản đăng nhập |
-|---|---|---|---|
-| **02/11/2026** | **07:00–12:00** | BS Demo Khoa Nội tổng quát Demo 03 | Chưa được script cấp |
-| **02/11/2026** | **12:00–17:00** | BS Demo Khoa Nội tổng quát Demo 04 | Chưa được script cấp |
-| **03/11/2026** | **07:00–12:00** | BS Demo Khoa Nội tổng quát Demo 05 | Chưa được script cấp |
-| **03/11/2026** | **12:00–17:00** | BS Demo Khoa Nội tổng quát Demo 06 | Chưa được script cấp |
-| **04/11/2026** | **07:00–12:00** | BS Demo Khoa Nội tổng quát Demo 01 | Chưa được script cấp |
-| **04/11/2026** | **12:00–17:00** | BS Demo Khoa Nội tổng quát Demo 02 | Chưa được script cấp |
-
-Lịch ba tháng chỉ minh họa danh mục/lịch. `prepare_demo_calendar.py` hiện không
-cấp account cho sáu bác sĩ luân phiên; không đăng nhập bằng username cũ hoặc dùng
+Lịch một tháng chỉ minh họa danh mục/lịch. `prepare_demo_calendar.py` hiện không
+cấp account cho ba bác sĩ luân phiên; không đăng nhập bằng username cũ hoặc dùng
 bác sĩ seed để khám thay. Luồng chính dùng **Lê Bác Sĩ Demo** với account email
 đã chuẩn bị. Muốn khám bằng bác sĩ khác cần cấp account/authority hợp lệ trước,
 và tái khám đổi bác sĩ cần lý do, xác nhận đồng ý theo UI.
 
 Danh sách khoa, bác sĩ luân phiên và trạng thái chưa cấp account nằm trong **DEMO-CALENDAR.local.md**
-được tạo lúc khởi động; chỉ cần mở file này khi muốn đổi khỏi ví dụ cố định ở trên.
+được tạo lúc khởi động; mở file này khi cần đối chiếu.
 Ngày trong ô lịch theo thiết lập trình duyệt, tiêu đề thẻ buổi hiển thị ngày/tháng/năm.

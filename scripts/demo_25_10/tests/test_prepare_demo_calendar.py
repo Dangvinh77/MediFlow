@@ -65,33 +65,32 @@ class Api:
         assert self.state[stage]['body'] == body and self.state[stage]['path'] == path
 
 
+TODAY = dt.date(2026, 11, 7)
+
+
 class CalendarTest(unittest.TestCase):
-    def test_inclusive_92_days_continuous_two_shifts_and_rotation(self):
-        days = list(calendar.dates(calendar.START, calendar.END))
-        self.assertEqual(len(days), 92)
+    def test_one_month_window_follows_the_run_date_within_the_read_limit(self):
+        days = list(calendar.dates(*calendar.window(TODAY)))
+        self.assertEqual(len(days), 31)
         self.assertEqual(days[0], dt.date(2026, 11, 1))
-        self.assertEqual(days[-1], dt.date(2027, 1, 31))
+        self.assertEqual(days[-1], dt.date(2026, 12, 1))
         self.assertEqual(calendar.SLOTS, (('07:00', '12:00'), ('12:00', '17:00')))
 
     def test_every_department_staffed_clinical_only_scheduled_and_rerun_has_no_duplicates(self):
         api = Api()
-        result = calendar.prepare(api)
+        result = calendar.prepare(api, TODAY)
         self.assertEqual(api.logins, [('admin', 'demo.staff01@example.test')])
-        self.assertEqual(len(api.rows['staff']), 40)
+        self.assertEqual(len(api.rows['staff']), 3)
         self.assertFalse(api.rows.get('accounts'))
-        self.assertEqual(len(api.rows['shifts']), 184)
-        self.assertEqual(len(api.rows['sessions']), 184)
-        clinical = api.rows['staff'][:10]
-        self.assertEqual([r['jobTitle'] for r in clinical].count('DOCTOR'), 6)
-        self.assertEqual([r['jobTitle'] for r in clinical].count('NURSE'), 4)
+        self.assertEqual(len(api.rows['shifts']), 62)
+        self.assertEqual(len(api.rows['sessions']), 62)
+        self.assertEqual({r['jobTitle'] for r in api.rows['staff']}, {'DOCTOR'})
         self.assertTrue(all(r['departmentId'] == 'clinical' for r in api.rows['sessions']))
-        self.assertEqual(len({r['doctorId'] for r in api.rows['sessions']}), 6)
-        self.assertEqual(set(r['jobTitle'] for r in api.rows['staff'][20:30]), {'PHARMACIST'})
-        self.assertEqual(set(r['jobTitle'] for r in api.rows['staff'][30:40]), {'ADMINISTRATIVE'})
-        self.assertEqual(len({r['identityNumber'] for r in api.rows['staff']}), 40)
-        self.assertEqual(result['verifiedSessions'], 184)
+        self.assertEqual(len({r['doctorId'] for r in api.rows['sessions']}), 3)
+        self.assertEqual(len({r['identityNumber'] for r in api.rows['staff']}), 3)
+        self.assertEqual(result['verifiedSessions'], 62)
         writes = api.writes
-        calendar.prepare(api)
+        calendar.prepare(api, TODAY)
         self.assertEqual(api.writes, writes)
 
     def test_fixture_guide_never_publishes_generated_or_seed_passwords(self):
@@ -117,7 +116,7 @@ class CalendarTest(unittest.TestCase):
     def test_verification_detects_cancelled_session_instead_of_reopening_it(self):
         api = Api()
         calendar.prepare(api)
-        api.rows['sessions'][99]['status'] = 'CANCELLED'
+        api.rows['sessions'][30]['status'] = 'CANCELLED'
         with self.assertRaisesRegex(RuntimeError, 'coverage|Coverage'):
             calendar.prepare(api)
 

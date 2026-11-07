@@ -23,6 +23,8 @@ SEED_LOGIN_EMAILS = {
     'nurse': 'demo.staff04@example.test',
     'doctor': 'demo.staff03@example.test',
     'cashier': 'demo.staff19@example.test',
+    'lab': 'demo.staff15@example.test',
+    'pharmacist': 'demo.staff17@example.test',
     'patient': 'demo.patient01@example.test',
     'patient2': 'demo.patient02@example.test',
 }
@@ -77,7 +79,7 @@ class DemoApi:
         if stage:
             # Fixed public demo credentials are supplied in memory on each retry, never saved.
             stored_body = {k: v for k, v in body.items() if k not in journal_omit} if journal_omit else body
-            command = self.state.setdefault(stage, {'key': uuid.uuid4().hex, 'body': stored_body, 'path': path})
+            command = self.state.setdefault(stage, {'key': str(uuid.uuid4()), 'body': stored_body, 'path': path})
             if command['body'] != stored_body or command['path'] != path:
                 raise ValueError('Prepared command changed; reconcile the journal: ' + stage)
             if 'result' in command:
@@ -87,7 +89,7 @@ class DemoApi:
         if role in self.tokens:
             headers['Authorization'] = 'Bearer ' + self.tokens[role]
         if method in ('POST', 'PUT'):
-            headers['Idempotency-Key'] = command['key'] if command else uuid.uuid4().hex
+            headers['Idempotency-Key'] = command['key'] if command else str(uuid.uuid4())
         request = urllib.request.Request(self.gateway + path, None if body is None else json.dumps(body).encode(),
                                          headers, method=method)
         try:
@@ -131,6 +133,48 @@ class DemoApi:
         raise RuntimeError('Projection did not become ready: ' + path)
 
 
+def register_confirmed(api, session, patient_id, stage):
+    """Register at the counter and collect the exam fee; resumes the same journaled commands."""
+    # Reuse exact initial revision on resume; never replace an uncertain command.
+    body = api.state.get(stage, {}).get('body') or {
+        'patientId': patient_id, 'sessionId': session['sessionId'],
+        'expectedSessionRevision': session['revision'], 'receptionMode': 'AT_COUNTER', 'visitType': 'NEW_VISIT'}
+    registration = api.call('nurse', 'POST', '/api/v2/outpatient-registrations', body,
+                            expected=(201,), stage=stage)
+    registration_id = registration['registrationId']
+    current = api.call('nurse', 'GET', '/api/v2/outpatient-registrations/' + registration_id)
+    if current['status'] in ('CONFIRMED', 'IN_EXAM', 'COMPLETED'):
+        return registration_id
+    request = api.wait('cashier', '/api/v2/billing/payment-requests/by-registration?registrationId=' + registration_id,
+                       lambda row: True, expected=(200, 404, 503))
+    payment_stage = stage + '-payment'
+    payment = api.state.get(payment_stage, {}).get('body')
+    if not payment:
+        quote = api.call('cashier', 'GET', '/api/v2/billing/payment-requests/' + request['paymentRequestId'] + '/quote')
+        payment = {'reservationId': request['reservationId'], 'expectedReservationRevision': request['reservationRevision'],
+                   'quoteId': quote['quoteId'], 'amount': quote['patientPayable'], 'currency': 'VND', 'paymentMethod': 'CASH'}
+    receipt = api.call('cashier', 'POST', '/api/v2/billing/payment-requests/' + request['paymentRequestId'] + '/payments',
+                       payment, expected=(200, 202), stage=payment_stage)
+    if receipt['operation']['status'] == 'PREPARING':
+        receipt = api.wait('cashier', '/api/v2/billing/payment-operations/' + receipt['operation']['paymentOperationId'],
+                           lambda row: row['operation']['status'] != 'PREPARING')
+    if receipt['operation']['status'] != 'COMPLETED':
+        raise RuntimeError('History payment did not complete; reconcile before continuing')
+    api.wait('nurse', '/api/v2/outpatient-registrations/' + registration_id, lambda row: row['status'] == 'CONFIRMED')
+    return registration_id
+
+
+def open_record(api, registration_id, patient_id):
+    """Start the exam if needed and return the full medical record of this visit."""
+    records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
+    record = next((row for row in records if row['appointmentId'] == registration_id), None)
+    if record is None:
+        api.call('doctor', 'PUT', '/api/v1/appointments/' + registration_id + '/start-exam', {})
+        records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
+        record = next(row for row in records if row['appointmentId'] == registration_id)
+    return api.call('doctor', 'GET', '/api/v1/records/' + record['recordId'])
+
+
 def prepare(api, now, schedule_only=False):
     today, tomorrow = demo_dates(now)
     for role in ('admin', 'nurse', 'doctor', 'cashier', 'patient', 'patient2'):
@@ -141,7 +185,7 @@ def prepare(api, now, schedule_only=False):
     department = api.call('admin', 'GET', '/api/v1/org/departments/' + department_id)
     query = urllib.parse.urlencode({'departmentId': department_id, 'page': 0, 'size': 100})
     rooms = api.call('admin', 'GET', '/api/v2/org/consultation-rooms?' + query)['content']
-    # Keep the all-day demo.doctor fixture out of the supplemental rotating calendar room.
+    # Keep the all-day seed doctor fixture out of the supplemental rotating calendar room.
     rooms = [room for room in rooms if room['roomName'] != 'Phong kham lich day demo']
     if not rooms:
         raise RuntimeError('Scheduling room fixture missing; restart with --scheduling')
@@ -153,10 +197,14 @@ def prepare(api, now, schedule_only=False):
     for day in (today, tomorrow):
         if day == today and now.astimezone(ZONE).hour >= 17:
             continue
-        body = {'doctorId': doctor_id, 'departmentId': department_id, 'roomId': rooms[0]['roomId'],
-                'sessionDate': str(day), 'startTime': '07:00', 'endTime': '17:00', 'breaks': [], 'capacity': 40}
-        session = api.call('admin', 'POST', '/api/v2/consultation-sessions', body,
-                           expected=(201,), stage='session-' + str(day))
+        assignment = {'doctorId': doctor_id, 'departmentId': department_id, 'roomId': rooms[0]['roomId'],
+                      'startTime': '07:00', 'endTime': '17:00'}
+        # The doctor calendar shows the assigned shift above the sessions cut from it.
+        shift = api.call('admin', 'POST', '/api/v2/doctor-work-shifts', {**assignment, 'shiftDate': str(day)},
+                         expected=(200, 201), stage='shift-' + str(day))
+        session = api.call('admin', 'POST', '/api/v2/doctor-work-shifts/' + shift['shiftId'] + '/consultation-sessions',
+                           {**assignment, 'sessionDate': str(day), 'breaks': [], 'capacity': 40},
+                           expected=(200, 201), stage='session-' + str(day))
         # Re-read because capacity/revision may have changed since the first run.
         rows = api.call('admin', 'GET', '/api/v2/consultation-sessions?' + query
                         + '&fromDate=' + str(day) + '&toDate=' + str(day))['content']
@@ -167,39 +215,8 @@ def prepare(api, now, schedule_only=False):
     session = next(row for row in report['sessions'] if row['sessionDate'] == str(today))
     patient_id = api.claims['patient2']['patientId']
     stage = 'history-' + str(today)
-    # Reuse exact initial revision on resume; never replace an uncertain command.
-    body = api.state.get(stage, {}).get('body') or {
-        'patientId': patient_id, 'sessionId': session['sessionId'],
-        'expectedSessionRevision': session['revision'], 'receptionMode': 'AT_COUNTER', 'visitType': 'NEW_VISIT'}
-    registration = api.call('nurse', 'POST', '/api/v2/outpatient-registrations', body,
-                            expected=(201,), stage=stage)
-    registration_id = registration['registrationId']
-    current = api.call('nurse', 'GET', '/api/v2/outpatient-registrations/' + registration_id)
-    if current['status'] not in ('CONFIRMED', 'IN_EXAM', 'COMPLETED'):
-        request = api.wait('cashier', '/api/v2/billing/payment-requests/by-registration?registrationId=' + registration_id,
-                           lambda row: True, expected=(200, 404, 503))
-        payment_stage = stage + '-payment'
-        payment = api.state.get(payment_stage, {}).get('body')
-        if not payment:
-            quote = api.call('cashier', 'GET', '/api/v2/billing/payment-requests/' + request['paymentRequestId'] + '/quote')
-            payment = {'reservationId': request['reservationId'], 'expectedReservationRevision': request['reservationRevision'],
-                       'quoteId': quote['quoteId'], 'amount': quote['patientPayable'], 'currency': 'VND', 'paymentMethod': 'CASH'}
-        receipt = api.call('cashier', 'POST', '/api/v2/billing/payment-requests/' + request['paymentRequestId'] + '/payments',
-                           payment, expected=(200, 202), stage=payment_stage)
-        if receipt['operation']['status'] == 'PREPARING':
-            receipt = api.wait('cashier', '/api/v2/billing/payment-operations/' + receipt['operation']['paymentOperationId'],
-                               lambda row: row['operation']['status'] != 'PREPARING')
-        if receipt['operation']['status'] != 'COMPLETED':
-            raise RuntimeError('History payment did not complete; reconcile before continuing')
-        current = api.wait('nurse', '/api/v2/outpatient-registrations/' + registration_id,
-                           lambda row: row['status'] == 'CONFIRMED')
-    records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
-    record = next((row for row in records if row['appointmentId'] == registration_id), None)
-    if record is None:
-        api.call('doctor', 'PUT', '/api/v1/appointments/' + registration_id + '/start-exam', {})
-        records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
-        record = next(row for row in records if row['appointmentId'] == registration_id)
-    record = api.call('doctor', 'GET', '/api/v1/records/' + record['recordId'])
+    registration_id = register_confirmed(api, session, patient_id, stage)
+    record = open_record(api, registration_id, patient_id)
     record_path = '/api/v1/records/' + record['recordId']
     if record['status'] != 'COMPLETED':
         if not record.get('diagnoses'):
@@ -234,7 +251,7 @@ def write_fixtures(result, evidence):
         lines.append(f'| {title} | {patient["hoTen"]} | {patient["soCmnd"]} |')
     lines += ['', 'Ngày có lịch: ' + ', '.join(row['sessionDate'] for row in result['sessions']), '',
               '**Có lượt nguồn tái khám hợp lệ.**' if result['historyReady'] else '**CHƯA có lượt nguồn tái khám:** ' + result['limitation'], '',
-              'Chưa đăng ký ba lượt bạn sẽ demo. Một lượt nền của demo.patient2 được thu phí và hoàn tất để làm nguồn tái khám khi historyReady=true.', '',
+              'Chưa đăng ký ba lượt bạn sẽ demo. Một lượt nền của demo.patient02@example.test được thu phí và hoàn tất để làm nguồn tái khám khi historyReady=true.', '',
               'Hướng dẫn: scripts/demo_25_10/DEMO_UI_TUNG_BUOC.md']
     (evidence / 'DEMO-DATA.local.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print('UI FIXTURES: ' + str(output), flush=True)

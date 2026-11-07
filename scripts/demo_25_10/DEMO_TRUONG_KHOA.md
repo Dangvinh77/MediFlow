@@ -5,21 +5,21 @@ Phạm vi: DOCTOR được bổ nhiệm DEPARTMENT_HEAD khoa CLINICAL, phân ca 
 ## Khởi động
 
 1. Chạy `start-backend.bat`, chờ READY. Chạy `start-frontend.bat`, mở http://127.0.0.1:3000. Scheduling UI và Gateway gate được hai BAT cấu hình cho demo dùng một lần.
-2. Nếu muốn tự thử bổ nhiệm bằng UI, chưa chạy script dưới. Dùng demo.admin để bổ nhiệm demo.doctor theo các bước tiếp theo.
+2. `start-backend.bat` đã bổ nhiệm sẵn demo.staff03@example.test (Lê Bác Sĩ Demo) làm trưởng Khoa Nội tổng quát Demo. Muốn tự thử bổ nhiệm bằng UI, trước hết dùng demo.staff01@example.test miễn nhiệm theo mục C, chưa chạy script dưới, rồi làm theo các bước tiếp theo.
 3. Nếu muốn có sẵn trưởng khoa, một ca và một buổi khám mẫu, chạy từ root source:
 
        python scripts/demo_25_10/prepare_department_head_demo.py
 
    Script chỉ chấp nhận active disposable rehearsal ở gateway 28080, gọi API công khai, giữ command journal; không viết SQL nghiệp vụ và không thay một trưởng khoa khác đang có. Ca ở ngày hôm nay +2 (giữ ngày gốc khi rerun), 08:00–12:00, buổi khám 09:00–11:00, 12 chỗ. Ngày và IDs thật được in/lưu trong evidence cục bộ của phiên. Không đăng ký bệnh nhân vào buổi mẫu.
 
-Tài khoản mẫu: demo.admin và demo.doctor, mật khẩu demo công khai `MediFlowDemo@2026`. Không dùng thông tin demo cho tài khoản thật.
+Tài khoản mẫu: demo.staff01@example.test (ADMIN) và demo.staff03@example.test (DOCTOR), mật khẩu demo công khai `MediFlowDemo@2026`. Đăng nhập bằng email; username cũ demo.admin/demo.doctor không còn dùng được. Không dùng thông tin demo cho tài khoản thật.
 
 ## A. Bổ nhiệm và chuyển khu vực
 
-1. Đăng nhập demo.doctor: mặc định vào Khám bệnh. Khi chưa có bổ nhiệm sẽ chưa có nút Sang Quản lý khoa.
-2. Đăng xuất, đăng nhập demo.admin → Tổ chức → Khoa → mở khoa đang có demo.doctor (đối chiếu hồ sơ nhân sự, không đoán từ tên khoa).
+1. Đăng nhập demo.staff03@example.test: mặc định vào Khám bệnh. Khi chưa có bổ nhiệm sẽ chưa có nút Sang Quản lý khoa.
+2. Đăng xuất, đăng nhập demo.staff01@example.test → Tổ chức → Khoa → mở khoa đang có bác sĩ này (đối chiếu hồ sơ nhân sự, không đoán từ tên khoa).
 3. Trong Bổ nhiệm trưởng khoa, chọn đúng bác sĩ, nhập lý do, chọn Xem trước rồi Xác nhận bổ nhiệm. Thay thế người đương nhiệm sẽ kết thúc nhiệm kỳ cũ và được ghi lịch sử; không tạo tài khoản mới.
-4. Đăng nhập lại demo.doctor hoặc quay về cửa sổ bác sĩ và focus/làm mới để tải quyền. Header hiện Sang Quản lý khoa. Bấm để sang dashboard quản lý; kiểm tên khoa và nút Về Khám bệnh.
+4. Đăng nhập lại demo.staff03@example.test hoặc quay về cửa sổ bác sĩ và focus/làm mới để tải quyền. Header hiện Sang Quản lý khoa. Bấm để sang dashboard quản lý; kiểm tên khoa và nút Về Khám bệnh.
 
 ## B. Phân ca bác sĩ và tạo buổi khám
 
@@ -41,7 +41,7 @@ Kiểm chứng bằng API với token bác sĩ cũ có thể chạy trên phiên
 
     python scripts/demo_25_10/prepare_department_head_demo.py --verify-revocation
 
-Lệnh có thay đổi bổ nhiệm: miễn nhiệm rồi khôi phục demo.doctor để tiếp tục demo; giữ receipt/journal. Nếu chạy bị gián đoạn hoặc fixture đã bị sửa, xem journal/evidence và đối soát trước khi thử lại, không xóa journal để gửi một yêu cầu mới tùy tiện.
+Lệnh có thay đổi bổ nhiệm: miễn nhiệm rồi khôi phục demo.staff03@example.test để tiếp tục demo; giữ receipt/journal. Nếu chạy bị gián đoạn hoặc fixture đã bị sửa, xem journal/evidence và đối soát trước khi thử lại, không xóa journal để gửi một yêu cầu mới tùy tiện.
 
 ## Kết thúc
 

@@ -45,3 +45,6 @@ __pycache__/
 
 .DS_Store
 Thumbs.db
+
+# Demo database exports: password hashes and audit data, regenerate with scripts/run/export-db.bat
+scripts/demo_25_10/exports/

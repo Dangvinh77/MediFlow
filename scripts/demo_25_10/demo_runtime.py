@@ -112,6 +112,7 @@ class Workspace:
             for container in verified:
                 self.command('docker', 'rm', '-f', container['Id'])
             for name in ('ui-demo-journal.local.json', 'calendar-journal.local.json',
+                         'cashier-journal.local.json', 'cashier-fixtures.local.json',
                          'ui-demo-fixtures.local.json', 'calendar-fixtures.local.json',
                          'report-demo-journal.local.json', 'report-demo-acceptance.local.json',
                          'DEMO-DATA.local.md', 'DEMO-CALENDAR.local.md'):

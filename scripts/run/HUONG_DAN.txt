@@ -4,8 +4,9 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 - Mở Docker Desktop và chờ Docker sẵn sàng.
 - Cài Java 21, Maven, Python, Node.js và pnpm; các lệnh phải có trong PATH.
 - Cấu hình email trong smtp.local.env ở thư mục gốc dự án nếu cần gửi email.
-- Bốn file BAT nằm trong scripts\run. Có thể nhấp đúp từ Explorer hoặc chạy
+- Các file BAT nằm trong scripts\run. Có thể nhấp đúp từ Explorer hoặc chạy
   từ cửa sổ lệnh. Không cần chuyển thư mục về gốc để đường dẫn hoạt động.
+- Tài khoản đăng nhập demo: TAI_KHOAN_DEMO.txt cùng thư mục.
 
 2. KHỞI ĐỘNG BACKEND
 - Nhấp đúp start-backend.bat, chờ thông báo READY rồi giữ cửa sổ mở.
