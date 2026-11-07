@@ -1,0 +1,89 @@
+MEDIFLOW - TÀI KHOẢN DEMO TOÀN HỆ THỐNG
+
+Chỉ là dữ liệu tổng hợp, không dùng cho hệ thống thật.
+Đối chiếu với database đã seed và đăng nhập thử qua Gateway ngày 07/11/2026.
+
+MẬT KHẨU CHUNG CỦA MỌI TÀI KHOẢN BÊN DƯỚI:  MediFlowDemo@2026
+Đăng nhập bằng EMAIL. Username cũ (demo.admin, demo.doctor...) không còn dùng được.
+Nếu đã đổi mật khẩu trong phiên, chạy lại backend không đặt lại mật khẩu về mặc định.
+
+
+1. ĐƯỜNG DẪN
+
+  Web                http://127.0.0.1:3000/login  (qua Wi-Fi: http://<IP-máy>:3000)
+  Mobile / Gateway   http://<IP-máy>:28080/api
+  Kiểm tra Gateway   http://127.0.0.1:28080/actuator/health
+  Hộp thư demo       http://127.0.0.1:3000/demo-mailbox  (thư của tài khoản seed)
+
+
+2. NHÂN VIÊN - LUỒNG CHÍNH
+
+  Vai trò      Email                       Họ tên                  Khoa / phòng
+  ----------   -------------------------   ---------------------   ----------------------------
+  ADMIN        demo.staff01@example.test   Nguyễn Quản Trị Demo    Phòng Hành chính Demo
+  NURSE        demo.staff04@example.test   Phạm Điều Dưỡng Demo    Khoa Nội tổng quát Demo
+  DOCTOR       demo.staff03@example.test   Lê Bác Sĩ Demo          Khoa Nội tổng quát Demo
+  DOCTOR       demo.staff05@example.test   Nguyễn Minh Phúc Demo   Khoa Nhi Demo
+  LAB_TECH     demo.staff15@example.test   Dương Thanh Tâm Demo    Khoa Xét nghiệm Demo
+  PHARMACIST   demo.staff17@example.test   Mai Thảo Vy Demo        Khoa Dược Demo
+  CASHIER      demo.staff19@example.test   Phan Khánh Linh Demo    Phòng Tài chính Kế toán Demo
+
+  Dùng để làm gì:
+  - ADMIN       Tổ chức, nhân sự, tài khoản, bổ nhiệm trưởng khoa, báo cáo.
+  - NURSE       Tạo hồ sơ bệnh nhân, cấp tài khoản, đăng ký khám.
+  - DOCTOR      staff03: khám, chỉ định, đọc kết quả, kê đơn. Đây là bác sĩ của luồng chính.
+                staff05: bác sĩ thứ hai, khác khoa.
+  - LAB_TECH    Thực hiện xét nghiệm, nhập kết quả.
+  - PHARMACIST  Xuất thuốc.
+  - CASHIER     Thu phí khám, xét nghiệm và thuốc.
+
+  Trưởng khoa: không có tài khoản riêng. Dùng demo.staff03@example.test, nút
+  "Sang Quản lý khoa" chỉ hiện khi đang được bổ nhiệm. start-backend.bat đã bổ nhiệm
+  sẵn staff03 làm trưởng Khoa Nội tổng quát Demo; có thể miễn nhiệm bằng ADMIN rồi
+  bổ nhiệm lại trên UI. Hiện đây là bổ nhiệm trưởng khoa duy nhất trong hệ thống.
+
+
+3. BỆNH NHÂN
+
+  Email                           Họ tên                 CCCD           Ngày sinh    Tình huống
+  -----------------------------   --------------------   ------------   ----------   ---------------
+  demo.patient01@example.test     Nguyễn Văn An Demo     999881000001   12/04/1986   B: BN cũ, khám mới
+  demo.patient02@example.test     Trần Thị Bình Demo     999881000002   12/04/1987   C: tái khám
+
+  Bệnh nhân A (mới): tự tạo trên UI bằng tài khoản NURSE.
+    Demo Nguyễn Lan 01 - CCCD 990000000001 - ngày sinh 01/01/1995
+    Dùng email thật bạn nhận được thư; mật khẩu tạm gửi qua email, phải đổi khi đăng nhập lần đầu.
+    Nếu chưa chuẩn bị hộp thư, chọn bệnh nhân B thay cho A.
+
+  Hai bệnh nhân dành cho thu ngân, start-backend.bat tạo sẵn lượt khám trong ngày
+  (chỉ khi seed chạy trong 07:00-16:45):
+    demo.case.882.30@example.test   Demo LIVE_PHARMACY_BILLING_DEMO         CCCD 999882000030
+      Đang khám, còn xét nghiệm và đơn thuốc chờ thu ở "Xét nghiệm và thuốc".
+      Thu xong, LAB_TECH làm tiếp xét nghiệm và PHARMACIST xuất được thuốc.
+    demo.case.883.30@example.test   Demo HIST_2025_COMPLETED_AND_REFUNDS    CCCD 999883000030
+      Lượt đã thu đủ phí khám, xét nghiệm và thuốc; xem ở "Lịch sử thu".
+
+
+4. KHÔNG DÙNG
+
+  demo.staff02@example.test   Trần Quản Lý Demo. Tài khoản MANAGER cũ, đã bị khóa; đăng nhập
+                              báo sai thông tin. Quản lý khoa nay đi qua bổ nhiệm trưởng khoa.
+
+  Các bác sĩ luân phiên của lịch một tháng không có tài khoản. Muốn dùng phải cấp tài khoản
+  qua luồng email trên UI.
+
+
+5. HẠ TẦNG (CHỈ DÙNG KHI CẦN KIỂM TRA)
+
+  Khi chạy bằng start-backend.bat - cổng do Docker cấp, chỉ nghe trên 127.0.0.1, xem bằng:
+      docker ps --filter "name=mediflow-rehearsal"
+    PostgreSQL   postgres / postgres
+    RabbitMQ     rehearsal / rehearsal-local  (không có giao diện web)
+
+  Khi chạy bằng docker compose:
+    PostgreSQL   postgres / postgres   localhost:5432
+    RabbitMQ     guest / guest         localhost:5672, web http://localhost:15672
+
+
+Thứ tự thao tác từng bước: scripts\demo_25_10\DEMO_UI_TUNG_BUOC.md
+Xuất database sau khi seed: scripts\run\export-db.bat

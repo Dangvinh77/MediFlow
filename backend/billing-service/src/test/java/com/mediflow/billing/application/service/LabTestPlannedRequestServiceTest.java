@@ -108,7 +108,7 @@ class LabTestPlannedRequestServiceTest {
         when(repository.saveChargeAndRequest(eq(command), eq(account), any(), eq(BigDecimal.ZERO), eq(expiresAt)))
                 .thenReturn(new IssuedRequest(requestId, UUID.randomUUID(), BigDecimal.ZERO));
         var quoted = new LabTestPlannedRequestService(repository, priceCatalog, null, catalog, issuer, true,
-                Clock.fixed(issuedAt, ZoneOffset.UTC));
+                LabTestPlannedRequestService.DEFAULT_QUOTE_TTL, Clock.fixed(issuedAt, ZoneOffset.UTC));
 
         UUID result = quoted.issue(command);
 

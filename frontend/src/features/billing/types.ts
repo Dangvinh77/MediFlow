@@ -91,6 +91,20 @@ export interface PaymentRequestQueueItem {
   createdAt: string;
 }
 
+/** Completed ledger movement from GET /v1/billing/patient/payments. */
+export interface PaymentHistoryItem {
+  transactionId: string;
+  paymentRequestId: string | null;
+  patientId: string;
+  departmentId: string;
+  transactionType: "PAYMENT" | "REFUND";
+  purpose: PaymentRequestSourcePurpose | null;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  completedAt: string;
+}
+
 export interface PaymentRequestSelection extends PaymentRequestSourceQuery {
   paymentRequestId: string;
 }

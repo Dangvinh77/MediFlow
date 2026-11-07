@@ -48,7 +48,9 @@ class FakeApi:
             return {'maBenhNhan': path.rsplit('/', 1)[1], 'hoTen': 'Demo', 'soCmnd': '123'}
         if path.startswith('/api/v2/org/consultation-rooms?'):
             return {'content': [{'roomId': 'room', 'roomName': 'Demo room'}]}
-        if path == '/api/v2/consultation-sessions':
+        if path == '/api/v2/doctor-work-shifts':
+            return {**body, 'shiftId': 'shift-' + body['shiftDate']}
+        if path.startswith('/api/v2/doctor-work-shifts/'):
             result = {**body, 'sessionId': 'session-' + body['sessionDate'], 'revision': 1}
             self.sessions.append(result)
             return result
@@ -103,6 +105,14 @@ class PreparationTest(unittest.TestCase):
         result = demo.prepare(api, dt.datetime(2026, 11, 1, 18, tzinfo=demo.ZONE))
         self.assertEqual(result['room']['roomId'], 'room')
         self.assertTrue(all(row['roomId'] == 'room' for row in api.sessions))
+
+    def test_primary_doctor_gets_the_shift_each_session_is_cut_from(self):
+        api = FakeApi()
+        demo.prepare(api, dt.datetime(2026, 11, 1, 9, tzinfo=demo.ZONE))
+        shifts = [body for _, method, path, body in api.calls if path == '/api/v2/doctor-work-shifts']
+        self.assertEqual([row['shiftDate'] for row in shifts], ['2026-11-01', '2026-11-02'])
+        self.assertIn(('admin', 'POST', '/api/v2/doctor-work-shifts/shift-2026-11-01/consultation-sessions'),
+                      [call[:3] for call in api.calls])
 
     def test_day_is_vietnam_day_at_utc_midnight_boundary(self):
         today, tomorrow = demo.demo_dates(dt.datetime(2026, 10, 28, 18, tzinfo=dt.timezone.utc))

@@ -1,8 +1,10 @@
 import datetime as dt
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 spec = importlib.util.spec_from_file_location("prepare_department_head_demo", Path(__file__).resolve().parents[1] / "prepare_department_head_demo.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -12,7 +14,9 @@ class Api:
     def __init__(self, head=None):
         self.claims, self.state, self.calls = {}, {}, []
         self.head = head
+        self.logins = {}
     def login(self, role, username):
+        self.logins[role] = username
         self.claims[role] = {"staffId": "doctor-id"}
     def call(self, role, method, path, body=None, expected=(200,), stage=None):
         self.calls.append((role, method, path, body, stage))
@@ -31,6 +35,11 @@ class Api:
 
 
 class DepartmentHeadDemoTest(unittest.TestCase):
+    def test_logs_in_with_seed_emails_not_retired_usernames(self):
+        api = Api()
+        module.prepare(api, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))
+        self.assertEqual(api.logins, {"admin": "demo.staff01@example.test", "doctor": "demo.staff03@example.test"})
+
     def test_calendar_room_is_excluded_even_when_listed_first(self):
         api = Api()
         original = api.call

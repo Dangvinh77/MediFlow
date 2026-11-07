@@ -7,13 +7,15 @@ import datetime as dt
 import json
 from pathlib import Path
 
+from prepare_ui_demo import SEED_LOGIN_EMAILS
+
 HERE = Path(__file__).resolve().parent
 ZONE = dt.timezone(dt.timedelta(hours=7))
 
 
 def prepare(api, now):
-    api.login("admin", "demo.admin")
-    api.login("doctor", "demo.doctor")
+    api.login("admin", SEED_LOGIN_EMAILS["admin"])
+    api.login("doctor", SEED_LOGIN_EMAILS["doctor"])
     doctor_id = api.claims["doctor"]["staffId"]
     doctor = api.call("admin", "GET", "/api/v1/org/staff/" + doctor_id)
     department_id = doctor["departmentId"]
@@ -105,7 +107,7 @@ def main():
     elif options.verify_revocation:
         result["revocationProof"] = verify_revocation(api, result)
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("DEPARTMENT HEAD READY: demo.doctor retains DOCTOR and can manage its department", flush=True)
+    print("DEPARTMENT HEAD READY: " + SEED_LOGIN_EMAILS["doctor"] + " retains DOCTOR and can manage its department", flush=True)
     print("Sample date: " + result["shift"]["shiftDate"] + "; shift 08:00-12:00; consultation 09:00-11:00; capacity 12", flush=True)
     print("No patient registered in the sample session. IDs and evidence are in the local rehearsal folder.", flush=True)
 

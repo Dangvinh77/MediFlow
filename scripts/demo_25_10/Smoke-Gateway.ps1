@@ -6,8 +6,11 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $seed = Get-Content (Join-Path $repoRoot 'backend/core-service/src/main/resources/demo-seed.json') -Raw | ConvertFrom-Json
 $admin = @($seed.accounts | Where-Object username -EQ 'demo.admin')
 if ($admin.Count -ne 1) { throw 'Expected synthetic demo.admin account in the seed manifest.' }
+# Accounts sign in with the owner's email; the seed username is only a stable key.
+$adminEmail = @($seed.staff | Where-Object key -EQ $admin[0].staffKey)[0].email
+if (-not $adminEmail) { throw 'Expected an email on the synthetic demo.admin staff record.' }
 $login = Invoke-RestMethod "$Gateway/api/v1/auth/login" -Method Post -ContentType application/json `
-    -Body (@{username=$admin[0].username;password=$admin[0].password} | ConvertTo-Json) -TimeoutSec 30
+    -Body (@{username=$adminEmail;password=$admin[0].password} | ConvertTo-Json) -TimeoutSec 30
 if ($login.role -ne 'ADMIN' -or -not $login.accessToken) { throw 'Real Gateway login did not return ADMIN authority.' }
 $headers = @{Authorization='Bearer ' + $login.accessToken}
 $patient = '54fb1ca5-65a7-4ba2-9a0a-48c65832b246' # synthetic snapshot patient
@@ -15,13 +18,13 @@ $routes = @(
     '/api/v1/patients', '/api/v1/appointments', '/api/v1/lab',
     '/api/v1/pharmacy/drugs', "/api/v1/billing/patient/$patient",
     "/api/v1/notifications/patient/$patient",
-    # Closed historical scope with genuine coverage already in the snapshot.
-    '/api/v1/reports/outpatient/daily?fromDate=2025-06-15&toDate=2025-06-15&departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45'
+    # Closed scope seeded by prepare_report_demo (DAILY_SAMPLE_DATE).
+    '/api/v1/reports/outpatient/daily?fromDate=2024-06-17&toDate=2024-06-17&departmentId=9a6dd24a-1c1f-4122-9e31-7cfea345ec45'
 )
 $results = @()
 foreach ($route in $routes) {
     try {
-        $reply = Invoke-WebRequest ($Gateway + $route) -Headers $headers -TimeoutSec 30
+        $reply = Invoke-WebRequest ($Gateway + $route) -Headers $headers -TimeoutSec 30 -UseBasicParsing
         $envelope = $reply.Content | ConvertFrom-Json
         if ($envelope.success -ne $true) { throw "Unsuccessful API envelope at $route" }
         $results += [pscustomobject]@{route=$route;status=[int]$reply.StatusCode;success=$envelope.success}

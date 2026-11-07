@@ -4,6 +4,14 @@ export function vietnamToday(now = new Date()): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+export function shiftRange(date: string, view: "day" | "week") {
+  if (view === "day") return { fromDate: date, toDate: date };
+  const value = new Date(`${date}T12:00:00Z`); const day = value.getUTCDay();
+  value.setUTCDate(value.getUTCDate() - (day === 0 ? 6 : day - 1));
+  const fromDate = value.toISOString().slice(0, 10); value.setUTCDate(value.getUTCDate() + 6);
+  return { fromDate, toDate: value.toISOString().slice(0, 10) };
+}
+
 export function sessionDateErrors(fromDate: string, toDate: string): Partial<Record<"fromDate" | "toDate", string>> {
   const errors: Partial<Record<"fromDate" | "toDate", string>> = {};
   for (const [field, value] of [["fromDate", fromDate], ["toDate", toDate]] as const) {

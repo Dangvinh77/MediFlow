@@ -146,6 +146,9 @@ def initialize_infrastructure(options, evidence, containers, pg, rabbit, workspa
         checked_command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
         checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
                 "-d", "mediflow_organization", "-f", "/tmp/scheduling.sql", log=evidence / "scheduling-seed.log")
+        checked_command("docker", "cp", str(HERE / "seed_retire_stale_charges.sql"), pg + ":/tmp/retire-stale-charges.sql")
+        checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+                "-d", "postgres", "-f", "/tmp/retire-stale-charges.sql", log=evidence / "retire-stale-charges.log")
     counts = {}
     for context in DATABASES:
         query = "SELECT count(*) FROM pg_tables WHERE schemaname='public'"
@@ -363,6 +366,9 @@ def main():
             from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
             fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json', evidence / 'stop'), dt.datetime.now(ZONE))
             write_fixtures(fixtures, evidence)
+            from prepare_cashier_demo import prepare as prepare_cashier, write_fixtures as write_cashier
+            cashier_api = DemoApi(manifest['gateway'], evidence / 'cashier-journal.local.json', evidence / 'stop')
+            write_cashier(prepare_cashier(cashier_api, fixtures, dt.datetime.now(ZONE)), evidence)
             from prepare_demo_calendar import prepare as prepare_calendar, write_fixtures as write_calendar
             calendar_api = DemoApi(manifest['gateway'], evidence / 'calendar-journal.local.json', evidence / 'stop')
             cached_calendar = evidence / 'calendar-fixtures.local.json'
