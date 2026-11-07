@@ -89,16 +89,16 @@ describe("reception session registration", () => {
     expect(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" })).toBeEnabled();
   });
 
-  it("starts with compact date and reception controls and reveals date errors", async () => {
+  it("shows the date range inline and reports date errors without loading", async () => {
     render(<ReceptionWorkspace enabled />);
     const user = userEvent.setup();
-    const dateOptions = screen.getByText(/Chọn ngày khác/).closest("details")!;
-    expect(dateOptions).not.toHaveAttribute("open");
+    expect(screen.getByLabelText("Từ ngày")).toBeVisible();
+    expect(screen.getByLabelText("Đến ngày")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Tiếp nhận hôm nay" })).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Khoa"), "department-id");
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "" } });
     await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
-    expect(dateOptions).toHaveAttribute("open");
+    expect(screen.getByLabelText("Đến ngày")).toHaveAttribute("aria-invalid", "true");
     expect(mocks.list).not.toHaveBeenCalled();
   });
 

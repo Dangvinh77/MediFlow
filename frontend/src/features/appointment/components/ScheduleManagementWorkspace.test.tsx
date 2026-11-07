@@ -86,7 +86,9 @@ describe("schedule management", () => {
     render(<ScheduleManagementWorkspace enabled />);
     await user.type(screen.getByLabelText("Khoa buổi khám"), "department-id");
     await user.click(screen.getByText("Tạo buổi khám", { selector: "h3" }));
-    await user.click(screen.getByRole("button", { name: "Tải phòng tư vấn" }));
+    expect(screen.queryByRole("button", { name: "Tải phòng tư vấn" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Phòng khám 1" })).toBeInTheDocument();
+    expect(mocks.rooms).toHaveBeenLastCalledWith("department-id", 0, 50);
     await user.type(screen.getByLabelText("Bác sĩ"), "doctor-id");
     await user.selectOptions(await screen.findByLabelText("Phòng tư vấn"), "room-id");
     await user.type(screen.getByLabelText("Ngày khám"), "2026-10-27");

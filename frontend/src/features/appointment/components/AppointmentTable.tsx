@@ -2,6 +2,8 @@
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
+import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
+import { containsUuid } from "@/components/references/referenceLabels";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -39,6 +41,31 @@ function getRequestError(cause: unknown): RequestError {
     message: cause instanceof Error ? cause.message : "Không thể tải lịch hẹn.",
     correlationId: null,
   };
+}
+
+/** Patient directory labels read "Họ tên · dd/mm/yyyy"; show the name and birth year in separate columns. */
+function PatientCells({ patientId }: { patientId: string }) {
+  const directory = useReferenceDirectory();
+  const [resolved, setResolved] = useState<{ id: string; label: string | null } | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (directory && (directory.canResolve?.("patient") ?? directory.canSearch("patient"))) {
+      directory.resolve("patient", patientId)
+        .then(label => { if (active) setResolved({ id: patientId, label }); })
+        .catch(() => { if (active) setResolved({ id: patientId, label: null }); });
+    }
+    return () => { active = false; };
+  }, [directory, patientId]);
+  const label = resolved?.id === patientId ? resolved.label : null;
+  const separator = label ? label.lastIndexOf(" · ") : -1;
+  const name = label && separator > 0 ? label.slice(0, separator) : null;
+  const birthYear = label && separator > 0 ? /(\d{4})\s*$/.exec(label.slice(separator + 3))?.[1] ?? null : null;
+  return <>
+    <td className="min-w-36 max-w-44 px-3 py-3">
+      {name && !containsUuid(name) ? <span className="block truncate font-medium" title={name}>{name}</span> : <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" />}
+    </td>
+    <td className="whitespace-nowrap px-3 py-3 tabular-nums">{birthYear ?? "—"}</td>
+  </>;
 }
 
 export function AppointmentTable() {
@@ -172,25 +199,25 @@ export function AppointmentTable() {
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-4xl text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
-                <tr><th scope="col" className="px-4 py-3">Ngày</th><th scope="col" className="px-4 py-3">Giờ</th><th scope="col" className="px-4 py-3">Bệnh nhân</th><th scope="col" className="px-4 py-3">Bác sĩ</th><th scope="col" className="px-4 py-3">Khoa</th><th scope="col" className="px-4 py-3">Trạng thái</th><th scope="col" className="px-4 py-3">Lý do</th><th scope="col" className="px-4 py-3">Chi tiết</th></tr>
+                <tr className="whitespace-nowrap"><th scope="col" className="px-3 py-3">Ngày</th><th scope="col" className="px-3 py-3">Giờ</th><th scope="col" className="px-3 py-3">Bệnh nhân</th><th scope="col" className="px-3 py-3">Năm sinh</th><th scope="col" className="px-3 py-3">Bác sĩ</th><th scope="col" className="px-3 py-3">Khoa</th><th scope="col" className="px-3 py-3">Trạng thái</th><th scope="col" className="px-3 py-3">Lý do</th><th scope="col" className="px-3 py-3 text-right">Chi tiết</th></tr>
               </thead>
               <tbody>
                 {appointments.map((appointment) => {
                   const status = getAppointmentStatusPresentation(appointment);
                   return (
-                    <tr key={appointment.appointmentId} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3">{formatLocalDate(appointment.appointmentDate)}</td>
-                      <td className="px-4 py-3">{appointment.appointmentTime}</td>
-                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="patient" value={appointment.patientId} fallback="Bệnh nhân" /></td>
-                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="doctor" value={appointment.doctorId} fallback="Bác sĩ" /></td>
-                      <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={appointment.departmentId} fallback="Khoa" /></td>
-                      <td className="px-4 py-3"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></td>
-                      <td className="px-4 py-3">{appointment.reason ?? "—"}</td>
-                      <td className="px-4 py-3">
+                    <tr key={appointment.appointmentId} className="border-b border-border align-top last:border-0">
+                      <td className="whitespace-nowrap px-3 py-3 tabular-nums">{formatLocalDate(appointment.appointmentDate)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 tabular-nums">{appointment.appointmentTime}</td>
+                      <PatientCells patientId={appointment.patientId} />
+                      <td className="min-w-28 px-3 py-3"><ReferenceText kind="doctor" value={appointment.doctorId} fallback="Bác sĩ" /></td>
+                      <td className="min-w-32 px-3 py-3"><ReferenceText kind="department" value={appointment.departmentId} fallback="Khoa" /></td>
+                      <td className="whitespace-nowrap px-3 py-3"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></td>
+                      <td className="w-full min-w-40 max-w-72 px-3 py-3"><span className="line-clamp-2 wrap-anywhere" title={appointment.reason ?? undefined}>{appointment.reason ?? "—"}</span></td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right">
                         {canViewDetail ? (
                           <Link
                             href={`/appointments/${appointment.appointmentId}`}
-                            className="font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                            className="inline-flex min-h-9 items-center rounded-lg border border-control-border px-3 text-sm font-semibold text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                           >
                             Xem
                           </Link>
