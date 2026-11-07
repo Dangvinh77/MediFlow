@@ -20,32 +20,36 @@ import java.util.UUID;
 /** CONTRACT-CARE-BILLING-01 — one {@code lab.request.created} fact issues one LAB_TEST request.
  * Transaction wrapper is infrastructure-owned. Replays never re-price the original operation. */
 public final class LabTestPlannedRequestService implements IssueLabTestChargeUseCase {
+    public static final Duration DEFAULT_QUOTE_TTL = Duration.ofMinutes(15);
+
     private final LabTestChargeRepositoryPort repository;
     private final PriceCatalogPort prices;
     private final OutpatientCancellationRepositoryPort cancellations;
     private final OutpatientQuoteCatalogPort quoteCatalog;
     private final IssueOutpatientQuoteService quoteIssuer;
     private final boolean quotesEnabled;
+    private final Duration quoteTtl;
     private final Clock clock;
 
     public LabTestPlannedRequestService(LabTestChargeRepositoryPort repository, PriceCatalogPort prices) {
-        this(repository, prices, null, null, null, false, Clock.systemUTC());
+        this(repository, prices, null, null, null, false, DEFAULT_QUOTE_TTL, Clock.systemUTC());
     }
 
     public LabTestPlannedRequestService(LabTestChargeRepositoryPort repository, PriceCatalogPort prices,
             OutpatientCancellationRepositoryPort cancellations) {
-        this(repository, prices, cancellations, null, null, false, Clock.systemUTC());
+        this(repository, prices, cancellations, null, null, false, DEFAULT_QUOTE_TTL, Clock.systemUTC());
     }
 
     public LabTestPlannedRequestService(LabTestChargeRepositoryPort repository, PriceCatalogPort prices,
             OutpatientCancellationRepositoryPort cancellations, OutpatientQuoteCatalogPort quoteCatalog,
-            IssueOutpatientQuoteService quoteIssuer, boolean quotesEnabled, Clock clock) {
+            IssueOutpatientQuoteService quoteIssuer, boolean quotesEnabled, Duration quoteTtl, Clock clock) {
         this.repository = repository;
         this.prices = prices;
         this.cancellations = cancellations;
         this.quoteCatalog = quoteCatalog;
         this.quoteIssuer = quoteIssuer;
         this.quotesEnabled = quotesEnabled;
+        this.quoteTtl = quoteTtl;
         this.clock = clock;
     }
 
@@ -84,7 +88,7 @@ public final class LabTestPlannedRequestService implements IssueLabTestChargeUse
                 && command.priceCode().equals(line.priceCode()) && line.quantity().compareTo(BigDecimal.ONE) == 0
                 && line.description().length() <= 255 && money(line.unitPrice()) && money(line.grossAmount())
                 && money(line.patientPayable()), "BILLING_QUOTE_BINDING_CONFLICT");
-        Instant expiresAt = issuedAt.plus(Duration.ofMinutes(15));
+        Instant expiresAt = issuedAt.plus(quoteTtl);
         Charge charge = Charge.post(account, command.patientId(), command.departmentId(), "LAB_TEST",
                 command.labId(), command.priceCode(), line.description(), line.quantity(), line.unitPrice(), command.requestedAt());
         require(charge.getGrossAmount().compareTo(line.grossAmount()) == 0, "BILLING_QUOTE_BINDING_CONFLICT");

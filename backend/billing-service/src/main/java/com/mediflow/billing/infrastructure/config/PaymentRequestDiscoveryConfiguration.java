@@ -1,9 +1,12 @@
 package com.mediflow.billing.infrastructure.config;
 
 import com.mediflow.billing.application.port.in.DiscoverPaymentRequestUseCase;
+import com.mediflow.billing.application.port.in.FindPaymentHistoryUseCase;
 import com.mediflow.billing.application.port.in.FindPaymentRequestQueueUseCase;
+import com.mediflow.billing.application.port.out.PaymentHistoryPort;
 import com.mediflow.billing.application.port.out.PaymentRequestDiscoveryPort;
 import com.mediflow.billing.application.port.out.PaymentRequestQueuePort;
+import com.mediflow.billing.application.service.PaymentHistoryService;
 import com.mediflow.billing.application.service.PaymentRequestDiscoveryService;
 import com.mediflow.billing.application.service.PaymentRequestQueueService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,6 +21,11 @@ public class PaymentRequestDiscoveryConfiguration {
     @Bean
     FindPaymentRequestQueueUseCase paymentRequestQueue(PaymentRequestQueuePort queue) {
         return new PaymentRequestQueueService(queue);
+    }
+
+    @Bean
+    FindPaymentHistoryUseCase paymentHistory(PaymentHistoryPort history) {
+        return new PaymentHistoryService(history);
     }
 
     @Bean

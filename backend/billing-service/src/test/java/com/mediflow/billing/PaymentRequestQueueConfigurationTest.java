@@ -17,7 +17,9 @@ class PaymentRequestQueueConfigurationTest {
         return new ApplicationContextRunner()
                 .withUserConfiguration(PaymentRequestDiscoveryConfiguration.class,PaymentRequestQueueController.class)
                 .withBean(PaymentRequestDiscoveryPort.class,() -> mock(PaymentRequestDiscoveryPort.class))
-                .withBean(PaymentRequestQueuePort.class,() -> mock(PaymentRequestQueuePort.class));
+                .withBean(PaymentRequestQueuePort.class,() -> mock(PaymentRequestQueuePort.class))
+                .withBean(com.mediflow.billing.application.port.out.PaymentHistoryPort.class,
+                        () -> mock(com.mediflow.billing.application.port.out.PaymentHistoryPort.class));
     }
     @Test void defaultHasNoQueueEndpointOrUseCase() {
         runner().run(context -> {

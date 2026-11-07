@@ -63,6 +63,7 @@ mediflow:
       acceptance-reference: ${MEDIFLOW_BILLING_SCHEDULED_ELIGIBILITY_PUBLICATION_ACCEPTANCE_REFERENCE:}
     outpatient-quotes:
       enabled: ${MEDIFLOW_BILLING_OUTPATIENT_QUOTES_ENABLED:false}
+      lab-ttl: ${MEDIFLOW_BILLING_LAB_QUOTE_TTL:PT15M}
     zero-payable-eligibility:
       enabled: ${MEDIFLOW_BILLING_ZERO_PAYABLE_ELIGIBILITY_ENABLED:false}
     refunds:
