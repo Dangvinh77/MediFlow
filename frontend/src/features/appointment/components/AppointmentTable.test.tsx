@@ -8,6 +8,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, subscribeToAuthChanges: () => () => {} }));
 vi.mock("../api", () => ({ appointmentApi: { search: mocks.search } }));
 import { AppointmentTable } from "./AppointmentTable";
+import { ReferenceProvider } from "@/components/references/ReferenceProvider";
 
 const emptyPage = { content: [], number: 0, size: 20, totalPages: 0, totalElements: 0, first: true, last: true };
 const appointment: AppointmentDTO = {
@@ -115,5 +116,13 @@ describe("Appointment list filters and request lifecycle", () => {
     await screen.findByText("First visit");
     expect(Boolean(screen.queryByRole("link", { name: "Tạo lịch hẹn" }))).toBe(canCreate);
     expect(Boolean(screen.queryByRole("link", { name: "Xem" }))).toBe(canView);
+  });
+  it("shows the patient name and birth year in separate columns", async () => {
+    mocks.search.mockResolvedValue({ ...emptyPage, content: [appointment], totalPages: 1, totalElements: 1 });
+    const directory = { canSearch: () => true, search: vi.fn(), resolve: vi.fn(async (kind: string) => kind === "patient" ? "Nguyễn Văn An · 12/05/1995" : null) };
+    render(<ReferenceProvider directory={directory}><AppointmentTable /></ReferenceProvider>);
+    expect(await screen.findByText("Nguyễn Văn An")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Năm sinh" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "1995" })).toBeInTheDocument();
   });
 });

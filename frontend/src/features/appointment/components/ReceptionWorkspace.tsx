@@ -12,6 +12,7 @@ import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { sessionDateErrors, vietnamToday } from "../session-dates";
+import { ScheduleDateInput } from "./ScheduleDateInput";
 import { appointmentApi } from "../api";
 import type { ConsultationSessionDTO, FollowUpSourceSummary, RegistrationCreate, RegistrationDTO, RegistrationSummary, RevisionCommand } from "../types";
 
@@ -24,6 +25,9 @@ function errorFrom(cause: unknown, fallback: string): WorkspaceError {
     ? { message: cause.message, correlationId: cause.correlationId }
     : { message: cause instanceof Error ? cause.message : fallback, correlationId: null };
 }
+
+const dateInputClass = "min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-55";
+const linkButton ="inline-flex min-h-11 items-center justify-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 function uncertain(cause: unknown) {
   return !(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500;
@@ -344,32 +348,38 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
       <h2 className="text-lg font-semibold">1. Bệnh nhân</h2>
       <ReferenceInput ref={patientField} kind="patient" value={patientId} onValueChange={changePatient} aria-label="Bệnh nhân" disabled={creating || Boolean(createError?.uncertain) || Boolean(createdRegistration)} />
       {patientId ? <p className="text-sm"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p> : null}
-      <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-3 text-sm">
-        {patientId ? <Link href={`/patients/${encodeURIComponent(patientId)}`} className="inline-flex min-h-11 items-center text-primary underline">Xem hồ sơ bệnh nhân</Link> : null}
-        <Link href="/patients/new" className="inline-flex min-h-11 items-center text-primary underline">Tạo hồ sơ bệnh nhân</Link>
-        <Link href="/patients" className="inline-flex min-h-11 items-center text-primary underline">Tìm hồ sơ bệnh nhân</Link>
+      <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-2 text-sm">
+        {patientId ? <Link href={`/patients/${encodeURIComponent(patientId)}`} className={linkButton}>Xem hồ sơ bệnh nhân</Link> : null}
+        <Link href="/patients/new" className={linkButton}>Tạo hồ sơ bệnh nhân</Link>
+        <Link href="/patients" className={linkButton}>Tìm hồ sơ bệnh nhân</Link>
       </nav>
     </section>
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">2. Chọn buổi khám</h2>
-      {fromDate !== vietnamToday() || toDate !== vietnamToday() ? <Button type="button" variant="secondary" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
-        const today = vietnamToday(); setFromDate(today); setToDate(today);
-        void loadSessions(0, { fromDate: today, toDate: today });
-      }}>Tiếp nhận hôm nay</Button> : null}
-      <p className="mt-2 text-sm text-muted-foreground">Mặc định xem lịch hôm nay. Chọn khoa rồi tải các buổi còn chỗ.</p>
-      <form noValidate className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
-        <label className="space-y-1 text-sm font-medium">Khoa
-          <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" disabled={creating || Boolean(createError?.uncertain)} />
-        </label>
-        <details open={Object.keys(dateErrors).length ? true : undefined} className="sm:col-span-2"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Chọn ngày khác · {formatLocalDate(fromDate)} – {formatLocalDate(toDate)}</summary><div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1 text-sm font-medium" htmlFor="reception-from-date">Từ ngày
-          <input id="reception-from-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="block text-sm text-danger">{dateErrors.fromDate}</span> : null}
-        </label>
-        <label className="space-y-1 text-sm font-medium" htmlFor="reception-to-date">Đến ngày
-          <input id="reception-to-date" type="date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="block text-sm text-danger">{dateErrors.toDate}</span> : null}
-        </label>
-        </div></details>
-        <div className="flex items-end"><Button type="submit" loading={loading} disabled={!departmentId || creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
+      <p className="mt-1 text-sm text-muted-foreground">Mặc định xem lịch hôm nay. Chọn khoa, khoảng ngày rồi tải các buổi còn chỗ.</p>
+      <form noValidate aria-label="Lọc buổi khám" className="mt-4 rounded-lg border border-border bg-surface-muted p-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="min-w-0 text-sm">
+            <span className="mb-1 block font-medium">Khoa</span>
+            <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" disabled={creating || Boolean(createError?.uncertain)} />
+          </div>
+          <div>
+            <ScheduleDateInput label="Từ ngày" id="reception-from-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className={dateInputClass} />
+            {dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.fromDate}</span> : null}
+          </div>
+          <div>
+            <ScheduleDateInput label="Đến ngày" id="reception-to-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className={dateInputClass} />
+            {dateErrors.toDate ? <span id="reception-to-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.toDate}</span> : null}
+          </div>
+          <div className="flex items-start md:pt-6"><Button type="submit" variant="primary" className="w-full xl:w-auto" loading={loading} disabled={!departmentId || creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
+        </div>
+        {fromDate !== vietnamToday() || toDate !== vietnamToday() ? <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
+          <span className="text-muted-foreground">Đang xem {formatLocalDate(fromDate)} – {formatLocalDate(toDate)}.</span>
+          <Button type="button" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
+            const today = vietnamToday(); setFromDate(today); setToDate(today);
+            void loadSessions(0, { fromDate: today, toDate: today });
+          }}>Tiếp nhận hôm nay</Button>
+        </div> : null}
       </form>
       {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
       {!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch.</p> : null}
@@ -405,11 +415,11 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
             <option value="NEW_VISIT">Khám đợt mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
           </select>
         </label>
-        <details><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">{receptionMode === "AT_COUNTER" ? "Có mặt tại quầy · Đổi hình thức" : "Đăng ký trước · Đổi hình thức"}</summary><label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
+        <label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
           <select id="reception-mode" value={receptionMode} onChange={event => setReceptionMode(event.target.value as "AT_COUNTER" | "PREBOOKED")} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
             <option value="AT_COUNTER">Đang có mặt tại quầy</option><option value="PREBOOKED">Đăng ký trước, sẽ đến sau</option>
           </select>
-        </label></details>
+        </label>
         {visitType === "FOLLOW_UP" ? <section className="space-y-3 rounded-lg border border-border p-4 sm:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><h3 className="font-semibold">Lượt khám trước</h3><p className="text-sm text-muted-foreground">Chỉ chọn lượt khám theo lịch đã hoàn tất của cùng bệnh nhân và khoa.</p></div>
@@ -461,7 +471,7 @@ export function ReceptionWorkspace({ enabled, initialPatientId = "" }: { enabled
         <label className="mt-3 block space-y-1" htmlFor="reception-handoff-id">Mã phiếu bàn giao thu ngân
           <input id="reception-handoff-id" readOnly value={createdRegistration.registrationId} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" />
         </label>
-        <Link href={`/appointments/${encodeURIComponent(createdRegistration.registrationId)}`} className="mt-3 inline-flex min-h-11 items-center text-primary underline">Mở phiếu khám vừa đăng ký</Link>
+        <Link href={`/appointments/${encodeURIComponent(createdRegistration.registrationId)}`} className={`mt-3 ${linkButton}`}>Mở phiếu khám vừa đăng ký</Link>
         <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div></dl>
       </div> : null}
 
