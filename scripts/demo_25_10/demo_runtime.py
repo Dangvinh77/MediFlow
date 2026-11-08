@@ -95,8 +95,9 @@ class Workspace:
             # Inspect by immutable ID; a foreign container with the same name is never adopted.
             result = self.command('docker', 'inspect', identity, check=False)
             if result.returncode:
-                message = result.stdout + getattr(result, 'stderr', '')
-                if 'No such object:' in message or 'No such container:' in message:
+                # Docker 29 prints "error: no such object:"; older CLIs capitalize it.
+                message = (result.stdout + getattr(result, 'stderr', '')).casefold()
+                if 'no such object:' in message or 'no such container:' in message:
                     missing = True
                     continue
                 raise RuntimeError('Cannot inspect persistent demo; no container was changed')
