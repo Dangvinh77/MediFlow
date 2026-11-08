@@ -133,6 +133,22 @@ class PersistentRuntimeTest(unittest.TestCase):
         self.assertIn(('docker', 'rm', '-f', 'id-rabbit'), self.calls)
         self.assertFalse(self.workspace.path.exists())
 
+    def test_docker_29_lowercase_missing_object_is_treated_as_missing(self):
+        self.workspace.begin()
+        self.track('pg')
+        self.track('rabbit')
+        self.workspace.complete()
+        original = self.workspace.command
+        def command(*args, **kwargs):
+            if args == ('docker', 'inspect', 'id-pg'):
+                return SimpleNamespace(returncode=1, stdout='[]\n', stderr='error: no such object: id-pg')
+            return original(*args, **kwargs)
+        self.workspace.command = command
+        with self.assertRaisesRegex(RuntimeError, 'ResetData'):
+            self.workspace.open()
+        self.workspace.open(reset=True)
+        self.assertFalse(self.workspace.path.exists())
+
     def test_daemon_error_is_not_treated_as_a_missing_container(self):
         self.workspace.begin()
         self.track('pg')
