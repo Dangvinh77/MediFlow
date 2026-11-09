@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
 import com.mediflow.clinical.application.dto.request.CreateRecordRequest;
-import com.mediflow.clinical.application.dto.request.DiagnosisRequest;
+import com.mediflow.clinical.application.dto.request.AddDiagnosisRequest;
 import com.mediflow.clinical.application.dto.request.UpdateRecordRequest;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
@@ -148,7 +148,7 @@ class MedicalRecordWriteGuardTest {
 
         assertThatThrownBy(() -> service(false, false).create(new CreateRecordRequest(PATIENT, AUTHOR, CARDIOLOGY,
                 LocalDate.of(2026, 11, 1), "symptoms", APPOINTMENT,
-                List.of(new DiagnosisRequest("Viem hong", "mo ta", "J02")))))
+                List.of(new AddDiagnosisRequest("Viem hong", "mo ta", "J02")))))
                 .isInstanceOf(InvalidClinicalDataException.class)
                 .hasFieldOrPropertyWithValue("code", "RECORD_DUPLICATE_APPOINTMENT");
         verify(records, never()).save(any());

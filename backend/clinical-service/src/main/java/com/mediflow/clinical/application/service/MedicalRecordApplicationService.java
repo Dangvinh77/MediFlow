@@ -205,6 +205,9 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
 
     private void requireOutpatientMvpRecordAuthority(MedicalRecord record) {
         if (!outpatientMvpEnabled) {
+            if (recordAccessPolicyEnabled) {
+                staffAuthority.requireAssignedDoctor(record.getDoctorId(), record.getDepartmentId());
+            }
             return;
         }
         if (record.getAppointmentId() == null) {
