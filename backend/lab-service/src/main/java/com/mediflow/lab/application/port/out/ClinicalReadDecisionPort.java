@@ -6,5 +6,9 @@ import java.util.UUID;
 public interface ClinicalReadDecisionPort {
     ClinicalReadDecision decide(UUID patientId, ReaderIdentity reader, String correlationId);
 
-    record ClinicalReadDecision(boolean allowed, String denialCode) {}
+    record ClinicalReadDecision(boolean allowed, String denialCode, UUID departmentScope) {
+        public ClinicalReadDecision(boolean allowed, String denialCode) {
+            this(allowed, denialCode, null);
+        }
+    }
 }

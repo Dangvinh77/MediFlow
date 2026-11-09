@@ -148,7 +148,6 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public MedicalRecordDTO getById(UUID id) {
         MedicalRecord record = records.findById(id)
                 .orElseThrow(() -> new MedicalRecordNotFoundException("Medical record not found: " + id));
@@ -159,7 +158,6 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<MedicalRecordDTO> byPatient(UUID patientId) {
         if (!recordAccessPolicyEnabled) {
             return records.findByPatient(patientId).stream().map(mapper::toDto).toList();

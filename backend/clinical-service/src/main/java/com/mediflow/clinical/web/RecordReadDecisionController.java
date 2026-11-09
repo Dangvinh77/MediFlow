@@ -38,12 +38,12 @@ public class RecordReadDecisionController {
         RecordReadDecision decision = guard.decideForActor(
                 new ActorIdentity(actorAccountId, actorStaffId, null, actorRole), patientId);
         ReadDecisionResponse body = new ReadDecisionResponse(patientId, decision.allowed(), decision.basis(),
-                decision.denialCode(), Instant.now());
+                decision.denialCode(), Instant.now(), decision.nurseDepartmentId());
         return ResponseEntity.ok(ApiResponse.ok(body, correlationIds.currentOrCreate().toString()));
     }
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record ReadDecisionResponse(UUID patientId, boolean allowed, String basis, String denialCode,
-            Instant observedAt) {
+            Instant observedAt, UUID departmentScope) {
     }
 }

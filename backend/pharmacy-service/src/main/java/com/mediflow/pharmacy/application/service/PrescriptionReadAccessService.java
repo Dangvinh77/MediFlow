@@ -8,6 +8,7 @@ import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.SearchPrescriptionsUseCase;
 import com.mediflow.pharmacy.application.port.out.ClinicalReadDecisionPort;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -16,6 +17,10 @@ import java.util.UUID;
  */
 public class PrescriptionReadAccessService {
     private static final String DENIED = "RECORD_ACCESS_DENIED";
+    private static final String PURPOSE_REQUIRED = "RECORD_ACCESS_PURPOSE_REQUIRED";
+    private static final String DECLARE_PURPOSE =
+            "Bạn chưa có căn cứ xem đơn thuốc này. Hãy mở hồ sơ khám của người bệnh và khai báo mục đích đọc.";
+    private static final String NOT_PERMITTED = "Bạn không có quyền xem đơn thuốc này.";
     private static final String PHARMACIST = "PHARMACIST";
     private static final String DOCTOR = "DOCTOR";
 
@@ -63,7 +68,14 @@ public class PrescriptionReadAccessService {
             }
             return searches.search(keyword, null, actor.staffId(), status, page);
         }
-        return searches.search(keyword, null, status, page);
+        return searches.search(keyword, null, status, page).map(PrescriptionReadAccessService::withoutMedicationLines);
+    }
+
+    /** An unfiltered list has no patient to declare against, so it carries work-queue fields only. */
+    private static PrescriptionDTO withoutMedicationLines(PrescriptionDTO p) {
+        return new PrescriptionDTO(p.prescriptionId(), p.recordId(), p.patientId(), p.doctorId(), p.departmentId(),
+                p.prescribedDate(), p.totalAmount(), List.of(), p.status(), p.dispenseStatus(), p.paymentConfirmed(),
+                p.cancelledAt(), p.cancelledBy(), p.cancellationReason(), p.createdAt(), p.updatedAt());
     }
 
     private void requireActor(ActorIdentity actor) {
@@ -75,8 +87,9 @@ public class PrescriptionReadAccessService {
     private void requireAllowed(UUID patientId, ActorIdentity actor, String correlationId) {
         var decision = decisions.decide(patientId, actor, correlationId);
         if (!decision.allowed()) {
-            throw new ForbiddenOperationException(decision.denialCode() == null ? DENIED : decision.denialCode(),
-                    "Reading these prescriptions is not permitted");
+            throw PURPOSE_REQUIRED.equals(decision.denialCode())
+                    ? new ForbiddenOperationException(PURPOSE_REQUIRED, DECLARE_PURPOSE)
+                    : new ForbiddenOperationException(decision.denialCode() == null ? DENIED : decision.denialCode(), NOT_PERMITTED);
         }
     }
 }

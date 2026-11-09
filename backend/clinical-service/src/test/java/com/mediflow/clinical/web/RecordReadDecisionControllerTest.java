@@ -78,7 +78,17 @@ class RecordReadDecisionControllerTest {
 
         com.fasterxml.jackson.databind.JsonNode data = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(result.getResponse().getContentAsString()).get("data");
-        assertThat(data.size()).isEqualTo(5);
+        assertThat(data.size()).isEqualTo(6);
+    }
+
+    @Test
+    void returnsNurseDepartmentScope() throws Exception {
+        UUID department = UUID.randomUUID();
+        when(guard.decideForActor(any(), eq(PATIENT)))
+                .thenReturn(com.mediflow.clinical.application.dto.authority.RecordReadDecision.allowDepartment("DEPARTMENT_ENCOUNTER", department));
+
+        mvc.perform(request().header("Authorization", "Bearer " + labToken()))
+                .andExpect(jsonPath("$.data.departmentScope").value(department.toString()));
     }
 
     @Test

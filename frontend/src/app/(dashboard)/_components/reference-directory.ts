@@ -71,7 +71,7 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         if (kind === "department") { const item = await organizationApi.department(id); return item.departmentId === id ? item.departmentName : null; }
         if (kind === "account" && role === "ADMIN") { const item = await organizationApi.account(id); return item.accountId === id ? `${item.username} · ${item.role}` : null; }
         if (kind === "appointment" && clinicalReader) { const item = await appointmentApi.getById(id); return item.appointmentId === id ? `Lịch hẹn ${formatLocalDate(item.appointmentDate)} · ${item.appointmentTime}` : null; }
-        if (kind === "record") { const item = await medicalRecordApi.getById(id); return item.recordId === id ? `Hồ sơ ${formatLocalDate(item.examinationDate)}` : null; }
+        if (kind === "record") return "Hồ sơ khám"; // Reading the record here would write an access-log row per list row.
         return null;
       })().then(label => { if (label === null) labels.delete(key); return label; }).catch(error => { labels.delete(key); throw error; });
       labels.set(key, pending);

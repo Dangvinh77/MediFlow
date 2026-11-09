@@ -53,7 +53,8 @@ public final class LabClinicalReadDecisionAdapter implements ClinicalReadDecisio
                 || !patientId.equals(response.data().patientId()) || response.data().allowed() == null) {
             throw new LabUpstreamUnavailableException();
         }
-        return new ClinicalReadDecision(response.data().allowed(), response.data().denialCode());
+        return new ClinicalReadDecision(response.data().allowed(), response.data().denialCode(),
+                response.data().departmentScope());
     }
 
     private String serviceToken() {

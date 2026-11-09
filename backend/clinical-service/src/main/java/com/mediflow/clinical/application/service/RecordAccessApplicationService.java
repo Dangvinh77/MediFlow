@@ -72,6 +72,9 @@ public class RecordAccessApplicationService {
     @Transactional
     public RecordAccessDeclarationDTO declare(RecordAccessDeclarationRequest request) {
         ActorIdentity actor = currentActor();
+        if (request.purpose() == null || request.purpose().isBlank()) {
+            throw new InvalidRecordAccessDeclarationException("A purpose is required");
+        }
         String reason = normalizedReason(request.purpose(), request.reason());
         if (!PURPOSES_BY_ROLE.getOrDefault(actor.role(), Set.of()).contains(request.purpose())) {
             throw new InvalidRecordAccessDeclarationException("This purpose is not available for the current role");
@@ -87,7 +90,6 @@ public class RecordAccessApplicationService {
                 declaration.purpose(), declaration.expiresAt());
     }
 
-    @Transactional(readOnly = true)
     public RecordCapabilitiesDTO capabilities(UUID recordId) {
         ActorIdentity actor = currentActor();
         MedicalRecord record = records.findById(recordId)

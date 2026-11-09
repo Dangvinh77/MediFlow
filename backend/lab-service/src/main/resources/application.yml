@@ -40,6 +40,9 @@ spring:
     openfeign:
       client:
         config:
+          labClinicalReadDecisionClient:
+            connectTimeout: 1000
+            readTimeout: 4000
           labClinicalOrderContextClient:
             connectTimeout: 1000
             readTimeout: 2000

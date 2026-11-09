@@ -2,6 +2,8 @@ package com.mediflow.clinical.application.service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -31,6 +33,8 @@ public class RecordReadPolicy {
             AppointmentStatus.ARRIVED, AppointmentStatus.AWAITING_PAYMENT, AppointmentStatus.READY_FOR_EXAM,
             AppointmentStatus.IN_EXAM);
     private static final Duration COMPLETED_WINDOW = Duration.ofDays(30);
+    private static final long OPEN_APPOINTMENT_WINDOW_DAYS = 30;
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String EMERGENCY = "EMERGENCY";
 
     private final AppointmentRepositoryPort appointments;
@@ -120,7 +124,8 @@ public class RecordReadPolicy {
 
     private static boolean isValidBasis(Appointment appointment, Instant at) {
         if (OPEN_STATUSES.contains(appointment.getStatus())) {
-            return true;
+            LocalDate oldestOpen = LocalDate.ofInstant(at, CLINIC_ZONE).minusDays(OPEN_APPOINTMENT_WINDOW_DAYS);
+            return !appointment.getAppointmentDate().isBefore(oldestOpen);
         }
         return appointment.getStatus() == AppointmentStatus.COMPLETED && appointment.getCompletedAt() != null
                 && !appointment.getCompletedAt().isBefore(at.minus(COMPLETED_WINDOW));

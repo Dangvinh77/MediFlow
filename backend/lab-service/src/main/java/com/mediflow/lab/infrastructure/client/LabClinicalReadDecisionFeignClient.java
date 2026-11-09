@@ -23,5 +23,6 @@ public interface LabClinicalReadDecisionFeignClient {
             @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-Correlation-Id") String correlationId);
 
-    record ReadDecisionBody(UUID patientId, Boolean allowed, String basis, String denialCode, Instant observedAt) {}
+    record ReadDecisionBody(UUID patientId, Boolean allowed, String basis, String denialCode, Instant observedAt,
+            UUID departmentScope) {}
 }

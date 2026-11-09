@@ -310,6 +310,30 @@ class RecordReadPolicyTest {
                 new CurrentDoctorAuthoritySnapshot(admin.accountId(), true, true, "ADMIN", null, false, null, false, AT));
     }
 
+    @org.junit.jupiter.api.Test
+    void abandonedOpenAppointmentIsNoLongerABasis() {
+        ActorIdentity doctor = staff(DOCTOR_C, "DOCTOR");
+        core(doctor, "DOCTOR", CARDIOLOGY, true);
+        openAppointmentOn(DOCTOR_C, LocalDate.of(2026, 10, 10));
+
+        assertDenied(policy.forPatient(doctor, PATIENT, AT, CORRELATION), RecordReadPolicy.PURPOSE_REQUIRED);
+    }
+
+    @org.junit.jupiter.api.Test
+    void openAppointmentThirtyDaysOldStillCounts() {
+        ActorIdentity doctor = staff(DOCTOR_C, "DOCTOR");
+        core(doctor, "DOCTOR", CARDIOLOGY, true);
+        openAppointmentOn(DOCTOR_C, LocalDate.of(2026, 10, 11));
+
+        assertAllowed(policy.forPatient(doctor, PATIENT, AT, CORRELATION), "CARE_ASSIGNMENT");
+    }
+
+    private void openAppointmentOn(UUID doctor, LocalDate date) {
+        patientAppointments.add(Appointment.restore(UUID.randomUUID(), PATIENT, doctor, CARDIOLOGY, date,
+                LocalTime.of(9, 0), AppointmentStatus.PENDING, "visit", AT.minusSeconds(86400), null,
+                (short) 0, null, null, null, null, null, null, null));
+    }
+
     private void appointment(UUID doctor, UUID department, AppointmentStatus status, Instant completedAt) {
         patientAppointments.add(Appointment.restore(UUID.randomUUID(), PATIENT, doctor, department,
                 LocalDate.of(2026, 11, 9), LocalTime.of(9, 0), status, "visit", AT.minusSeconds(86400), null,

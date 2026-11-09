@@ -3,7 +3,7 @@
 Ngày chạy: 10/11/2026. Nhánh `develop/mediflow-v2.0`. Stack dựng bằng Docker Compose, flag
 `MEDIFLOW_V2_RECORD_ACCESS_POLICY=true` ở Clinical, Lab, Pharmacy.
 
-Kết quả: **40/40 kiểm tra đạt** cho mục 5 của
+Kết quả: **44/44 kiểm tra đạt** cho mục 5 của
 [`02-medical-record-read-access.md`](../known-limitations/02-medical-record-read-access.md).
 
 ## Cách chạy và giới hạn của bằng chứng
@@ -67,11 +67,19 @@ Lab và Pharmacy với flag bật:
 | Bác sĩ có căn cứ | 200 | 200 |
 | Vai trò nghiệp vụ | `LAB_TECH` đọc `GET /lab`, 200 | `PHARMACIST`, 200 |
 
-## Nhật ký `record_access_log` của lần chạy trước khi dọn
+Bổ sung sau review độc lập:
 
-Đếm theo vai trò, hành động, kết quả, căn cứ và mục đích ở lần chạy 36/39, là lần gần nhất đã lưu đủ
-bảng này. Lần 40/40 chỉ thêm một lượt PUT và không đổi cấu trúc nhật ký; tổng ở lần đó có cả dòng cho
-phép và từ chối.
+| Kiểm tra | Kết quả |
+|---|---|
+| Điều dưỡng Tim mạch đọc kết quả Lab của khoa mình | 200, có kết luận |
+| Điều dưỡng Tim mạch đọc kết quả Lab của Khoa Ngoại | 403 `RECORD_ACCESS_DENIED` |
+| ADMIN chưa khai báo mở `GET /lab` | 200, `conclusion` rỗng, `results` trống |
+| Khai báo thiếu `purpose` | 400 `INVALID_REQUEST` |
+
+## Nhật ký `record_access_log` của lần chạy 44/44
+
+Đếm theo vai trò, hành động, kết quả, căn cứ và mục đích, truy vấn trước khi dọn fixture. Tổng 16 dòng
+cho phép, gồm 2 dòng khai báo, và 11 dòng từ chối.
 
 | Vai trò | Hành động | Kết quả | Căn cứ | Mục đích | Số dòng |
 |---|---|---|---|---|---|
@@ -89,6 +97,7 @@ phép và từ chối.
 | DOCTOR | READ | DENIED | | | 6 |
 | NURSE | LIST | ALLOWED | DEPARTMENT_ENCOUNTER | | 1 |
 | NURSE | LIST | DENIED | | | 2 |
+| NURSE | READ | ALLOWED | DEPARTMENT_ENCOUNTER | | 2 |
 
 Bảng chỉ có các cột định danh, hành động, kết quả, căn cứ, mục đích và thời điểm; không có cột nội dung
 lâm sàng hay token.
@@ -109,14 +118,31 @@ lâm sàng hay token.
 - Bộ phận Tiếp nhận mới trong seed thiếu phòng làm việc, vi phạm quy tắc mỗi đơn vị chức năng có một
   phòng. Đã thêm `room-15-reception`.
 
+## Lỗi phát hiện ở review độc lập và đã sửa
+
+- ADMIN xem danh sách Lab hoặc đơn thuốc không lọc nhận đủ nội dung mà không cần khai báo. Nay chỉ nhận
+  trường hàng đợi; muốn xem nội dung phải mở phiếu và khai báo.
+- Điều dưỡng đọc được kết quả Lab của khoa khác. `read-decision` nay trả `departmentScope` và Lab áp phạm
+  vi này.
+- Hiển thị nhãn hồ sơ trên web và mobile gọi đọc hồ sơ, sinh dòng nhật ký giả. Nay dùng nhãn cố định.
+- Khai báo thiếu `purpose` trả 500. Nay trả 400.
+- Hai Feign client `read-decision` chưa có timeout. Nay 1 giây kết nối, 4 giây đọc.
+- Đọc hồ sơ giữ kết nối DB suốt lúc gọi Core. Nay chỉ giữ trong lúc tải dữ liệu.
+- Lịch hẹn bỏ dở cho quyền đọc vĩnh viễn. Nay chỉ tính lịch hẹn không cũ quá 30 ngày.
+- Từ chối ở Lab và Pharmacy hiện tiếng Anh. Nay là tiếng Việt và chỉ cách khai báo.
+
+Hai giới hạn còn lại đã ghi nhận: danh sách Lab theo khoa của bác sĩ và điều dưỡng, danh sách đơn của chính
+bác sĩ vẫn trả đủ nội dung và không ghi nhật ký theo từng bệnh nhân, đúng như kế hoạch; căn cứ `AUTHOR` không
+áp dụng cho Lab và Pharmacy, bác sĩ quá 30 ngày cần khai báo mục đích.
+
 ## Test tự động
 
 | Phạm vi | Kết quả |
 |---|---|
 | Gateway | 1819 đạt |
 | Core | 517 đạt |
-| Clinical | 564 đạt |
-| Lab | 287 đạt |
-| Pharmacy | 892, 1 lỗi có từ trước: `DispenseApplicationServiceTest.dispense_expiredDrug_doesNotReduceStock` |
-| Web `pnpm test` | 1434 đạt |
-| Mobile `flutter test` | 625 đạt |
+| Clinical | 572 đạt |
+| Lab | 294 đạt |
+| Pharmacy | 895, 1 lỗi có từ trước: `DispenseApplicationServiceTest.dispense_expiredDrug_doesNotReduceStock` |
+| Web `pnpm test` | 1436 đạt |
+| Mobile `flutter test` | 626 đạt |

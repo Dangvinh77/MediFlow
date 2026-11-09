@@ -166,6 +166,69 @@ class LabReadAccessServiceTest {
         verifyNoInteractions(decisions, readers);
     }
 
+    @Test
+    void adminUnfilteredListHidesResultContent() {
+        reader("ADMIN", null);
+        when(labs.search(null, null, null, null, PAGE)).thenReturn(PageResult.of(List.of(realTest(OWN_DEPARTMENT)), 1, 0, 20));
+
+        LabTestDTO item = service(true).search(null, null, null, null, PAGE).content().get(0);
+
+        assertThat(item.patientId()).isEqualTo(PATIENT);
+        assertThat(item.conclusion()).isNull();
+        assertThat(item.results()).isEmpty();
+        verifyNoInteractions(decisions);
+    }
+
+    @Test
+    void scopedNurseCannotReadAnotherDepartmentsResult() {
+        ReaderIdentity reader = reader("NURSE", OWN_DEPARTMENT);
+        when(labs.getById(TEST_ID)).thenReturn(realTest(OTHER_DEPARTMENT));
+        when(decisions.decide(PATIENT, reader, CORRELATION.toString())).thenReturn(new ClinicalReadDecision(true, null, OWN_DEPARTMENT));
+
+        assertThatThrownBy(() -> service(true).getById(TEST_ID))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasFieldOrPropertyWithValue("code", "RECORD_ACCESS_DENIED");
+    }
+
+    @Test
+    void scopedNurseReadsOwnDepartmentsResult() {
+        ReaderIdentity reader = reader("NURSE", OWN_DEPARTMENT);
+        LabTestDTO own = realTest(OWN_DEPARTMENT);
+        when(labs.getById(TEST_ID)).thenReturn(own);
+        when(decisions.decide(PATIENT, reader, CORRELATION.toString())).thenReturn(new ClinicalReadDecision(true, null, OWN_DEPARTMENT));
+
+        assertThat(service(true).getById(TEST_ID)).isSameAs(own);
+    }
+
+    @Test
+    void scopedNurseEpisodeSearchDropsOtherDepartments() {
+        ReaderIdentity reader = reader("NURSE", OWN_DEPARTMENT);
+        UUID episode = UUID.randomUUID();
+        LabTestDTO own = realTest(OWN_DEPARTMENT);
+        when(labs.search(null, null, CareEpisodeType.OUTPATIENT_VISIT, episode, PAGE))
+                .thenReturn(PageResult.of(List.of(own, realTest(OTHER_DEPARTMENT)), 2, 0, 20));
+        when(decisions.decide(PATIENT, reader, CORRELATION.toString())).thenReturn(new ClinicalReadDecision(true, null, OWN_DEPARTMENT));
+
+        PageResult<LabTestDTO> page = service(true).search(null, null, CareEpisodeType.OUTPATIENT_VISIT, episode, PAGE);
+
+        assertThat(page.content()).containsExactly(own);
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void refusalTellsTheUserWhatToDoInVietnamese() {
+        ReaderIdentity reader = reader("DOCTOR", OWN_DEPARTMENT);
+        when(decisions.decide(PATIENT, reader, CORRELATION.toString())).thenReturn(NEEDS_PURPOSE);
+
+        assertThatThrownBy(() -> service(true).getById(TEST_ID)).hasMessageContaining("khai báo mục đích");
+    }
+
+    private static LabTestDTO realTest(UUID department) {
+        return new LabTestDTO(TEST_ID, UUID.randomUUID(), PATIENT, department, "CBC", java.time.LocalDate.of(2026, 11, 9), null,
+                com.mediflow.lab.domain.model.LabTestStatus.PENDING, "Kết luận", true,
+                List.of(mock(com.mediflow.lab.application.dto.response.LabResultDTO.class)), java.time.Instant.EPOCH, null);
+    }
+
     private ReaderIdentity reader(String role, UUID department) {
         ReaderIdentity reader = new ReaderIdentity(UUID.randomUUID(), UUID.randomUUID(), role, department);
         when(readers.current()).thenReturn(Optional.of(reader));

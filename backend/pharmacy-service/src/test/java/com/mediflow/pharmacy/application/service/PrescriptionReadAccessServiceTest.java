@@ -109,7 +109,7 @@ class PrescriptionReadAccessServiceTest {
         PageResult<PrescriptionDTO> page = PageResult.empty(PAGE);
         when(searches.search(null, null, null, PAGE)).thenReturn(page);
 
-        assertThat(service.search(null, null, null, PAGE, admin, CORRELATION)).isSameAs(page);
+        assertThat(service.search(null, null, null, PAGE, admin, CORRELATION)).isEqualTo(page);
         verifyNoInteractions(decisions);
     }
 
@@ -141,6 +141,29 @@ class PrescriptionReadAccessServiceTest {
 
         assertThat(legacy.getById(prescriptionId, null, CORRELATION)).isSameAs(prescription);
         assertThat(legacy.search(null, null, null, PAGE, doctor, CORRELATION)).isSameAs(page);
+    }
+
+    @Test
+    void adminListWithoutPatientHidesMedicationLines() {
+        PrescriptionDTO full = new PrescriptionDTO(prescriptionId, null, patientId, UUID.randomUUID(), null, null, null,
+                List.of(org.mockito.Mockito.mock(com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO.class)),
+                null, null, false, null, null, null, null, null);
+        when(searches.search(null, null, null, PAGE)).thenReturn(PageResult.of(List.of(full), 1, 0, 20));
+
+        PrescriptionDTO item = service.search(null, null, null, PAGE, admin, CORRELATION).content().get(0);
+
+        assertThat(item.prescriptionId()).isEqualTo(prescriptionId);
+        assertThat(item.lines()).isEmpty();
+        verifyNoInteractions(decisions);
+    }
+
+    @Test
+    void refusalTellsTheUserWhatToDoInVietnamese() {
+        when(prescriptions.getPrescriptionById(prescriptionId)).thenReturn(prescription());
+        when(decisions.decide(patientId, doctor, CORRELATION))
+                .thenReturn(new ClinicalReadDecision(false, "RECORD_ACCESS_PURPOSE_REQUIRED"));
+
+        assertThatThrownBy(() -> service.getById(prescriptionId, doctor, CORRELATION)).hasMessageContaining("khai báo mục đích");
     }
 
     private PrescriptionDTO prescription() {

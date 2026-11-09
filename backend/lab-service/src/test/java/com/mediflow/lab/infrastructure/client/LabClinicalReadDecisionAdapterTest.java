@@ -34,7 +34,7 @@ class LabClinicalReadDecisionAdapterTest {
 
     @Test
     void returnsClinicalDecisionForTheRequestedPatient() {
-        respond(new ReadDecisionBody(PATIENT, false, null, "RECORD_ACCESS_PURPOSE_REQUIRED", NOW));
+        respond(new ReadDecisionBody(PATIENT, false, null, "RECORD_ACCESS_PURPOSE_REQUIRED", NOW, null));
 
         assertThat(adapter.decide(PATIENT, READER, "corr-1"))
                 .isEqualTo(new ClinicalReadDecision(false, "RECORD_ACCESS_PURPOSE_REQUIRED"));
@@ -42,7 +42,7 @@ class LabClinicalReadDecisionAdapterTest {
 
     @Test
     void answerForAnotherPatientFailsClosed() {
-        respond(new ReadDecisionBody(UUID.randomUUID(), true, "AUTHOR", null, NOW));
+        respond(new ReadDecisionBody(UUID.randomUUID(), true, "AUTHOR", null, NOW, null));
 
         assertThatThrownBy(() -> adapter.decide(PATIENT, READER, "corr-1"))
                 .isInstanceOf(LabUpstreamUnavailableException.class);
@@ -54,6 +54,14 @@ class LabClinicalReadDecisionAdapterTest {
 
         assertThatThrownBy(() -> adapter.decide(PATIENT, READER, "corr-1"))
                 .isInstanceOf(LabUpstreamUnavailableException.class);
+    }
+
+    @org.junit.jupiter.api.Test
+    void carriesDepartmentScopeFromClinical() {
+        UUID scope = UUID.randomUUID();
+        respond(new ReadDecisionBody(PATIENT, true, "DEPARTMENT_ENCOUNTER", null, NOW, scope));
+
+        org.assertj.core.api.Assertions.assertThat(adapter.decide(PATIENT, READER, "corr-1").departmentScope()).isEqualTo(scope);
     }
 
     private void respond(ReadDecisionBody body) {

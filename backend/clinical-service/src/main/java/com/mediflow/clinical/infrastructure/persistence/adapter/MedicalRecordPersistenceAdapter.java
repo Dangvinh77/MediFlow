@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Component;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -46,9 +47,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
             throw ex;
         }
     }
-    @Override public Optional<MedicalRecord> findById(UUID id) { return repository.findAggregateById(id).map(this::toDomain); }
+    @Override @Transactional(readOnly = true) public Optional<MedicalRecord> findById(UUID id) { return repository.findAggregateById(id).map(this::toDomain); }
     @Override public Optional<MedicalRecord> findByIdForUpdate(UUID id) { return repository.findByIdForUpdate(id).map(this::toDomain); }
-    @Override public List<MedicalRecord> findByPatient(UUID patientId) {
+    @Override @Transactional(readOnly = true) public List<MedicalRecord> findByPatient(UUID patientId) {
         return repository.findByPatientIdOrderByExaminationDateDesc(patientId).stream().map(this::toDomain).toList();
     }
     @Override public Optional<MedicalRecord> findByAppointmentId(UUID appointmentId) {

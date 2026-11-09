@@ -1210,7 +1210,7 @@ nhất quyết định quyền đọc hồ sơ.
 | DOCTOR, ADMIN | Có khai báo còn hạn cho bệnh nhân | `DECLARED_PURPOSE` |
 | NURSE | Có khai báo `EMERGENCY` còn hạn; thấy mọi khoa | `DECLARED_PURPOSE` |
 
-- Appointment còn hiệu lực: `PENDING`, `ARRIVED`, `AWAITING_PAYMENT`, `READY_FOR_EXAM`, `IN_EXAM`, hoặc
+- Appointment còn hiệu lực: `PENDING`, `ARRIVED`, `AWAITING_PAYMENT`, `READY_FOR_EXAM`, `IN_EXAM` với ngày hẹn không cũ quá 30 ngày, hoặc
   `COMPLETED` với `completedAt` không quá 30 ngày. `CANCELLED` không phải căn cứ.
 - Quyền đọc không tạo quyền ghi. Quyền ghi vẫn theo bác sĩ được phân công và lượt đang khám.
 - Khai báo là câu hỏi lý do, không phải chờ duyệt. Hiệu lực: DOCTOR 96 giờ, ADMIN và NURSE 60 phút.
@@ -1237,7 +1237,7 @@ nhất quyết định quyền đọc hồ sơ.
 |---|---|---|
 | `POST /api/v2/records/access-declarations` | ADMIN, DOCTOR, NURSE | Body `{patientId, purpose, reason}`, trả `{declarationId, patientId, purpose, expiresAt}` |
 | `GET /api/v2/records/{id}/capabilities` | ADMIN, DOCTOR, NURSE | Trả `{recordId, patientId, canRead, readBasis, canWriteContent, canComplete, canRequestAmendment, writeBlockedReason}`. `writeBlockedReason`: `RECORD_COMPLETED`, `NOT_ASSIGNED_DOCTOR`, `NOT_IN_EXAM` |
-| `GET /api/v2/clinical/patients/{patientId}/read-decision?actorAccountId=&actorStaffId=&actorRole=` | Nội bộ, service token ≤ 60 giây của `lab-service` hoặc `pharmacy-service`; Gateway chặn | Trả `{patientId, allowed, basis, denialCode, observedAt}`, không có nội dung lâm sàng |
+| `GET /api/v2/clinical/patients/{patientId}/read-decision?actorAccountId=&actorStaffId=&actorRole=` | Nội bộ, service token ≤ 60 giây của `lab-service` hoặc `pharmacy-service`; Gateway chặn | Trả `{patientId, allowed, basis, denialCode, observedAt, departmentScope}`, không có nội dung lâm sàng. `departmentScope` khác null khi người đọc chỉ được xem dữ liệu của khoa đó |
 | `POST /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Body `{capability, reason}`, chỉ nhận `LAB_RESULT_RELEASE`, chỉ cấp cho LAB_TECH đang hoạt động. `CAPABILITY_GRANT_INELIGIBLE`, `CAPABILITY_GRANT_ACTIVE` |
 | `PUT /api/v2/org/capability-grants/{grantId}/revocation` | ADMIN | Body `{reason}`. `CAPABILITY_GRANT_ALREADY_REVOKED` |
 | `GET /api/v2/org/lab-release-authority?actorAccountId=` | Nội bộ, service token ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{actorAccountId, accountActive, staffId, staffActive, canReleaseLabResults, observedAt}` |
@@ -1252,5 +1252,6 @@ duyệt nào dùng quyền này; hai phần đó thuộc Đợt 6.
 - `LAB_TECH` và `PHARMACIST` giữ quyền làm việc, không hỏi Clinical.
 - Đọc một phiếu, đơn hoặc theo bệnh nhân: hỏi Clinical theo `patientId`.
 - Tìm phiếu Lab theo `episodeId`: hỏi Clinical cho từng bệnh nhân trong kết quả.
-- Tìm Lab không có `episodeId`: DOCTOR và NURSE bị ép về khoa hiện hành trong JWT. ADMIN không đổi.
-- Tìm đơn thuốc không có `patientId`: DOCTOR chỉ thấy đơn của mình. ADMIN không đổi.
+- Đọc kết quả Lab của khoa khác `departmentScope`: 403 `RECORD_ACCESS_DENIED`; khi tìm theo `episodeId` thì bỏ các dòng đó.
+- Tìm Lab không có `episodeId`: DOCTOR và NURSE bị ép về khoa hiện hành trong JWT. ADMIN chỉ nhận trường hàng đợi, `conclusion` rỗng và `results` trống.
+- Tìm đơn thuốc không có `patientId`: DOCTOR chỉ thấy đơn của mình. ADMIN nhận đơn với `lines` trống.
