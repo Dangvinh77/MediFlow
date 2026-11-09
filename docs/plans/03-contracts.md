@@ -1255,3 +1255,24 @@ duyệt nào dùng quyền này; hai phần đó thuộc Đợt 6.
 - Đọc kết quả Lab của khoa khác `departmentScope`: 403 `RECORD_ACCESS_DENIED`; khi tìm theo `episodeId` thì bỏ các dòng đó.
 - Tìm Lab không có `episodeId`: DOCTOR và NURSE bị ép về khoa hiện hành trong JWT. ADMIN chỉ nhận trường hàng đợi, `conclusion` rỗng và `results` trống.
 - Tìm đơn thuốc không có `patientId`: DOCTOR chỉ thấy đơn của mình. ADMIN nhận đơn với `lines` trống.
+
+## Tiếp nhận tại phòng khám — Đợt 2 (flag `mediflow.v2.clinic-intake`, mặc định tắt)
+
+API dưới đây chỉ tồn tại khi cả `mediflow.clinical.scheduling.enabled` và `mediflow.v2.clinic-intake` bật. Mọi lệnh ghi cần `Idempotency-Key`.
+
+| Phương thức, đường dẫn | Vai trò | Thân yêu cầu | Trả về |
+|---|---|---|---|
+| `POST /api/v2/outpatient-registrations/{id}/room-queue-ticket` | NURSE của khoa có buổi khám | trống | 201 `ClinicQueueTicketDTO` |
+| `GET /api/v2/clinic-queue?date=&roomId=` | NURSE, DOCTOR | | 200 `List<ClinicQueueEntryDTO>` |
+| `PUT /api/v2/clinic-queue-tickets/{id}/call` | NURSE, DOCTOR | `{expectedRevision}` | 200 `ClinicQueueTicketDTO` |
+| `POST /api/v2/clinic-queue-tickets/{id}/adjustments` | NURSE, DOCTOR | `{expectedRevision,type,reason}` | 201 `ClinicQueueTicketDTO` |
+| `POST /api/v2/outpatient-registrations/{id}/vital-signs` | NURSE của khoa | `VitalSignCreateRequest` | 201 `VitalSignObservationDTO` |
+| `GET /api/v2/outpatient-registrations/{id}/vital-signs` | NURSE, DOCTOR | | 200 `List<VitalSignObservationDTO>` |
+| `POST /api/v2/outpatient-registrations/{id}/reschedule` | ADMIN, NURSE | `{expectedRevision,targetSessionId,reason,patientConfirmed}` | 200 `OutpatientRegistrationDTO` |
+| `GET /api/v2/consultation-sessions/{id}/impact` | ADMIN, DOCTOR quản lý khoa | | 200 `ScheduleImpactDTO` |
+| `GET /api/v2/doctor-work-shifts/{id}/impact` | ADMIN, DOCTOR quản lý khoa | | 200 `ScheduleImpactDTO` |
+| `GET /api/v2/billing/registration-settlements?kind=&page=&size=` | ADMIN, CASHIER | | 200 phân trang `RegistrationSettlementDTO` |
+
+Mã lỗi: `CLINIC_DESK_SCOPE_DENIED` (403); `ROOM_TICKET_EXISTS`, `TICKET_STATE_CONFLICT`, `SHIFT_CANCELLED`, `REGISTRATION_PAYMENT_IN_PROGRESS` (409); `ROOM_TICKET_NOT_ELIGIBLE`, `ROOM_TICKET_WRONG_DATE`, `CLINICAL_ROOM_TICKET_REQUIRED`, `SESSION_DATE_PAST`, `SESSION_SHIFT_CONFLICT`, `VITAL_SIGNS_INVALID`, `VITAL_SIGNS_REASON_REQUIRED`, `RESCHEDULE_CONFIRMATION_REQUIRED`, `RESCHEDULE_TARGET_INVALID` (422).
+
+Wire: `queueNumber` giữ tên, kiểu và ý nghĩa; sau flag được cấp theo khoa và ngày khám. `roomQueueNumber` trên `OutpatientRegistrationDTO` và `RegistrationSummary` chỉ có khi đã cấp số phòng. Sự kiện `outpatient.registration.changed` có trường tùy chọn `reschedule` chỉ ở revision đổi lịch, gồm `actorAccountId`, `actorStaffId`, `reason`, `previousSessionId`, `previousDoctorId`, `previousRoomId`, `previousSessionDate`, `previousStartTime`, `rescheduledAt`. Billing và Notification phải được triển khai trước khi bật flag ở Clinical.
