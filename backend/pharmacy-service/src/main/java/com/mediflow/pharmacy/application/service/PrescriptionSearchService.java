@@ -20,7 +20,7 @@ public class PrescriptionSearchService implements SearchPrescriptionsUseCase {
         this.search = search; this.reader = reader;
     }
     @Override @Transactional(readOnly = true)
-    public PageResult<PrescriptionDTO> search(String keyword, UUID patientId, String status, PageQuery page) {
+    public PageResult<PrescriptionDTO> search(String keyword, UUID patientId, UUID doctorId, String status, PageQuery page) {
         PrescriptionStatus filter = null;
         if (status != null && !status.isBlank()) {
             try { filter = PrescriptionStatus.valueOf(status.trim()); }
@@ -28,7 +28,7 @@ public class PrescriptionSearchService implements SearchPrescriptionsUseCase {
                 throw new PrescriptionRuleException("PRESCRIPTION_STATUS_INVALID", "Trạng thái đơn thuốc không hợp lệ");
             }
         }
-        return search.search(keyword, patientId, filter, PageQuery.of(page.page(), page.size()))
+        return search.search(keyword, patientId, doctorId, filter, PageQuery.of(page.page(), page.size()))
                 .map(reader::getPrescriptionById);
     }
 }

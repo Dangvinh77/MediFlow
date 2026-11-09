@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(PrescriptionController.class)
 @ActiveProfiles("mvp-outpatient")
-@Import({SecurityConfig.class, JwtAuthFilter.class, GlobalExceptionHandler.class})
+@Import({PrescriptionReadAccessTestConfig.class, SecurityConfig.class, JwtAuthFilter.class, GlobalExceptionHandler.class})
 @TestPropertySource(properties = "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class OutpatientPrescriptionApiDisabledControllerTest {
     @Autowired private MockMvc mvc;

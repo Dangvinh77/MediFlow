@@ -7,5 +7,9 @@ import java.util.UUID;
 
 /** Bounded prescription discovery within the Pharmacy store. */
 public interface PrescriptionSearchPort {
-    PageResult<UUID> search(String keyword, UUID patientId, PrescriptionStatus status, PageQuery page);
+    default PageResult<UUID> search(String keyword, UUID patientId, PrescriptionStatus status, PageQuery page) {
+        return search(keyword, patientId, null, status, page);
+    }
+
+    PageResult<UUID> search(String keyword, UUID patientId, UUID doctorId, PrescriptionStatus status, PageQuery page);
 }

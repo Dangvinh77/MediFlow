@@ -69,6 +69,8 @@ eureka:
 mediflow:
   features:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  v2:
+    record-access-policy: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:
