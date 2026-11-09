@@ -1,5 +1,6 @@
 package com.mediflow.clinical.web;
 
+import com.mediflow.clinical.application.exception.InvalidRecordAccessDeclarationException;
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.common.api.ApiResponse;
@@ -115,6 +116,11 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "INVALID_REQUEST",
                 "Request không đúng định dạng");
+    }
+
+    @ExceptionHandler(InvalidRecordAccessDeclarationException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidDeclaration(InvalidRecordAccessDeclarationException exception) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", exception.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)

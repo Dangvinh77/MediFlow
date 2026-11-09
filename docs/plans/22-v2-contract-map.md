@@ -61,6 +61,7 @@ Mỗi dòng cần route Gateway, rule ở `RouteAuthorizationFilter` và test �
 | Method và path | Service | Đợt |
 |---|---|---|
 | `GET /api/v2/records/{id}/capabilities` | Clinical | 1 |
+| `POST /api/v2/records/access-declarations` | Clinical | 1 |
 | `POST /api/v2/outpatient-registrations/{id}/room-queue-ticket` | Clinical | 2 |
 | `GET /api/v2/clinic-queue` | Clinical | 2 |
 | `PUT /api/v2/clinic-queue-tickets/{id}/call` | Clinical | 2 |
