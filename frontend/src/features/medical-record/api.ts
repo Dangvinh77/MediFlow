@@ -10,6 +10,9 @@ import type {
   DiagnosisDTO,
   FollowUpRecommendationDTO,
   MedicalRecordDTO,
+  RecordAccessDeclarationDTO,
+  RecordAccessDeclarationRequest,
+  RecordCapabilitiesDTO,
   UpdateMedicalRecordRequest,
 } from "./types";
 
@@ -40,6 +43,12 @@ export const medicalRecordApi = {
       body,
       options,
     ),
+  capabilities: (recordId: string) =>
+    api.get<RecordCapabilitiesDTO>(
+      `/v2/records/${encodeURIComponent(recordId)}/capabilities`,
+    ),
+  declareAccess: (body: RecordAccessDeclarationRequest) =>
+    api.post<RecordAccessDeclarationDTO>("/v2/records/access-declarations", body),
   getById: (recordId: string) =>
     api.get<MedicalRecordDTO>(
       `/v1/records/${encodeURIComponent(recordId)}`,

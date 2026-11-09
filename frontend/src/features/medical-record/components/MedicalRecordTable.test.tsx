@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { MedicalRecordDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ byPatient: vi.fn(), role: "DOCTOR", router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ declareAccess: vi.fn(), byPatient: vi.fn(), role: "DOCTOR", router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, subscribeToAuthChanges: () => () => {} }));
-vi.mock("../api", () => ({ medicalRecordApi: { byPatient: mocks.byPatient } }));
+vi.mock("../api", () => ({ medicalRecordApi: { byPatient: mocks.byPatient, declareAccess: mocks.declareAccess } }));
 import { MedicalRecordTable } from "./MedicalRecordTable";
 
 const record: MedicalRecordDTO = {
@@ -79,5 +79,28 @@ describe("Medical record patient lookup", () => {
     mocks.role = role;
     render(<MedicalRecordTable />);
     expect(Boolean(screen.queryByRole("link", { name: "Tạo hồ sơ khám" }))).toBe(canCreate);
+  });
+
+  it("asks for a purpose when the lookup needs one and reloads after declaring", async () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    mocks.byPatient.mockRejectedValueOnce(new ApiRequestError("Cần khai báo", 403, "RECORD_ACCESS_PURPOSE_REQUIRED")).mockResolvedValueOnce([record]);
+    mocks.declareAccess.mockResolvedValue({ declarationId: "d", patientId: id, purpose: "CONSULTATION", expiresAt: "2026-11-10T01:00:00Z" });
+    render(<MedicalRecordTable />);
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: /Tra cứu|Tìm/ }));
+    fireEvent.click(await screen.findByRole("radio", { name: "Khám bệnh" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận mục đích" }));
+    expect(await screen.findByText("First patient record")).toBeVisible();
+    expect(mocks.declareAccess).toHaveBeenCalledWith({ patientId: id, purpose: "CONSULTATION", reason: null });
+  });
+
+  it("shows a denial without a purpose form when the lookup is refused", async () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    mocks.byPatient.mockRejectedValue(new ApiRequestError("Từ chối", 403, "RECORD_ACCESS_DENIED"));
+    render(<MedicalRecordTable />);
+    fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: id } });
+    fireEvent.click(screen.getByRole("button", { name: /Tra cứu|Tìm/ }));
+    expect(await screen.findByText("Bạn không có quyền xem hồ sơ khám của bệnh nhân này.")).toBeVisible();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   });
 });

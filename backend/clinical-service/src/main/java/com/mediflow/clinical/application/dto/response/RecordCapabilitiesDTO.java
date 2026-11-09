@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record RecordCapabilitiesDTO(
         UUID recordId,
+        UUID patientId,
         boolean canRead,
         String readBasis,
         boolean canWriteContent,

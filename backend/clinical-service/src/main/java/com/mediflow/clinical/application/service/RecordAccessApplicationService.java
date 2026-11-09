@@ -100,7 +100,7 @@ public class RecordAccessApplicationService {
                 .isPresent();
         String writeBlocked = writeBlockedReason(actor, record, inExam);
         boolean canWrite = writeBlocked == null;
-        return new RecordCapabilitiesDTO(recordId, read.allowed(), read.basis(), canWrite, canWrite && inExam, false,
+        return new RecordCapabilitiesDTO(recordId, record.getPatientId(), read.allowed(), read.basis(), canWrite, canWrite && inExam, false,
                 writeBlocked);
     }
 

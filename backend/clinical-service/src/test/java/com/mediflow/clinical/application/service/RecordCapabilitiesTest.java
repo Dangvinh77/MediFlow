@@ -60,6 +60,7 @@ class RecordCapabilitiesTest {
 
         RecordCapabilitiesDTO capabilities = service(true, true).capabilities(record.getRecordId());
 
+        assertThat(capabilities.patientId()).isEqualTo(record.getPatientId());
         assertThat(capabilities.canRead()).isTrue();
         assertThat(capabilities.readBasis()).isEqualTo("CARE_ASSIGNMENT");
         assertThat(capabilities.canWriteContent()).isTrue();

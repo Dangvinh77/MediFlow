@@ -107,3 +107,29 @@ export interface PatientExamResultDTO {
   dispositionNote: string | null;
   completedAt: string;
 }
+
+export interface RecordCapabilitiesDTO {
+  recordId: string;
+  patientId: string;
+  canRead: boolean;
+  readBasis: string | null;
+  canWriteContent: boolean;
+  canComplete: boolean;
+  canRequestAmendment: boolean;
+  writeBlockedReason: string | null;
+}
+
+export type RecordAccessPurpose = "CONSULTATION" | "CARE_CONTINUITY" | "QUALITY_REVIEW" | "EMERGENCY" | "RECORD_MANAGEMENT";
+
+export interface RecordAccessDeclarationRequest {
+  patientId: string;
+  purpose: RecordAccessPurpose;
+  reason: string | null;
+}
+
+export interface RecordAccessDeclarationDTO {
+  declarationId: string;
+  patientId: string;
+  purpose: RecordAccessPurpose;
+  expiresAt: string;
+}

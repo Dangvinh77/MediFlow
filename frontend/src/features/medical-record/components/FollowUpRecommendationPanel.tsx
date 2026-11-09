@@ -15,6 +15,7 @@ interface FollowUpError { message: string; correlationId: string | null; uncerta
 type RecommendationState =
   | { status: "loading" }
   | { status: "empty" }
+  | { status: "denied" }
   | { status: "loaded"; recommendation: FollowUpRecommendationDTO }
   | { status: "error"; error: FollowUpError };
 
@@ -53,6 +54,10 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
         if (!active) return;
         if (cause instanceof ApiRequestError && cause.status === 404 && cause.code === "RESOURCE_NOT_FOUND") {
           setState({ status: "empty" });
+          return;
+        }
+        if (cause instanceof ApiRequestError && cause.status === 403) {
+          setState({ status: "denied" });
           return;
         }
         setState({ status: "error", error: toError(cause, "Không thể tải đề xuất tái khám.") });
@@ -108,6 +113,7 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
 
   if (!enabled) return null;
   if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><AsyncState kind="loading" message="Đang tải đề xuất tái khám…" /></section>;
+  if (state.status === "denied") return <section className="border-t border-border py-5 text-sm text-muted-foreground"><p role="status">Bạn không có quyền xem đề xuất tái khám của hồ sơ này.</p></section>;
   if (state.status === "error") return <section className="border-t border-border py-5 text-sm text-danger"><p role="alert">{state.error.message}</p>{state.error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.error.correlationId}</p></details> : null}<Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}>Tải lại đề xuất</Button></section>;
   if (state.status === "loaded") {
     const recommendation = state.recommendation;

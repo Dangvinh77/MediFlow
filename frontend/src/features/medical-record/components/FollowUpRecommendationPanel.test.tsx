@@ -61,4 +61,12 @@ describe("V2 follow-up recommendation panel", () => {
     expect(screen.queryByRole("button", { name: "Tạo đề xuất tái khám" })).not.toBeInTheDocument();
     expect(medicalRecordApi.getFollowUpRecommendation).toHaveBeenCalledWith("record-id");
   });
+
+  it("does not show access denial as no follow-up advice", async () => {
+    mocks.get.mockRejectedValueOnce(new ApiRequestError("Từ chối", 403, "RECORD_ACCESS_DENIED"));
+    render(<FollowUpRecommendationPanel recordId="record-id" enabled canCreate />);
+    expect(await screen.findByText("Bạn không có quyền xem đề xuất tái khám của hồ sơ này.")).toBeVisible();
+    expect(screen.queryByText("Chưa có đề xuất tái khám.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
 });
