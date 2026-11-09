@@ -308,5 +308,9 @@ class LabControllerTest {
     @TestConfiguration
     @EnableMethodSecurity
     static class MethodSecurityConfiguration {
+        @org.springframework.context.annotation.Bean
+        com.mediflow.lab.application.service.LabReadAccessService labReadAccessService(ManageLabTestUseCase labs) {
+            return new com.mediflow.lab.application.service.LabReadAccessService(labs, null, null, null, false);
+        }
     }
 }

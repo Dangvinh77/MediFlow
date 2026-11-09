@@ -79,7 +79,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UUID staffId = parseOptionalUuidClaim(claims.get(JwtClaims.STAFF_ID));
             UUID patientId = parseOptionalUuidClaim(claims.get(JwtClaims.PATIENT_ID));
             var authentication = new UsernamePasswordAuthenticationToken(
-                    new LabAuthenticatedPrincipal(subject, staffId, role, patientId),
+                    new LabAuthenticatedPrincipal(subject, staffId, role, patientId,
+                            parseOptionalUuidClaim(claims.get(JwtClaims.DEPARTMENT_ID))),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
