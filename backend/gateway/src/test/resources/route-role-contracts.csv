@@ -155,6 +155,8 @@ billing-service,GET,/api/v2/billing/payment-requests,ADMIN|CASHIER,true
 core-service,GET,/api/v1/org/me/capabilities,ADMIN|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
 core-service,GET,/api/v2/org/departments/{id}/head-appointments,ADMIN,true
 core-service,PUT,/api/v2/org/departments/{id}/head-appointments,ADMIN,true
+core-service,POST,/api/v2/org/staff/{id}/capability-grants,ADMIN,true
+core-service,PUT,/api/v2/org/capability-grants/{id}/revocation,ADMIN,true
 clinical-service,GET,/api/v2/doctor-work-shifts,ADMIN|DOCTOR,true
 clinical-service,POST,/api/v2/doctor-work-shifts,ADMIN|DOCTOR,true
 clinical-service,GET,/api/v2/doctor-work-shifts/mine,DOCTOR,true

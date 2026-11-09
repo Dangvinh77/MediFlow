@@ -93,6 +93,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                 && !hasShortServiceLifetime(claims)
                         || isClinicalAuthorityRequest(request.getRequestURI())
                                 && (!"clinical-service".equals(subject)
+                                        || !hasShortServiceLifetime(claims))
+                        || "/api/v2/org/lab-release-authority".equals(request.getRequestURI())
+                                && (!"lab-service".equals(subject)
                                         || !hasShortServiceLifetime(claims))) {
                     SecurityContextHolder.clearContext();
                     return;

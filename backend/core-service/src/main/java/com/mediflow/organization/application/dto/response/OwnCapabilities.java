@@ -10,7 +10,8 @@ public record OwnCapabilities(
         String role,
         boolean canPracticeAsDoctor,
         List<ManagementDepartment> managementDepartments,
-        Instant observedAt) {
+        Instant observedAt,
+        boolean canReleaseLabResults) {
     public record ManagementDepartment(
             UUID departmentId, String departmentName, UUID appointmentId, long revision) {}
 }
