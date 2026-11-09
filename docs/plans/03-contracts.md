@@ -436,6 +436,10 @@ Patient/staff/account/department IDs có authoritative origin. Episode identity 
 outpatient account, không thay khi record xuất hiện. Không lookup “latest record” hoặc dùng
 patientId để chọn mọi khoản tiền/đơn thuốc.
 
+`careEpisodeId` luôn là mã lượt khám. Quá trình điều trị dài hạn của v2.0 dùng `treatmentCourseId`
+riêng, không gửi vào field `careEpisodeId` và không dùng làm khóa thanh toán (IMP-ID-01,
+[bản đồ hợp đồng v2.0](22-v2-contract-map.md)).
+
 V1 envelope: eventId, eventType, integer version, occurredAt, correlationId, producer, payload.
 Routing key không tự thêm .v1; schema version không là result/operation revision.
 Logical producer vẫn patient-service/clinical-service/pharmacy-service/... dù app co-host.
