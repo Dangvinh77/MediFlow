@@ -1192,3 +1192,65 @@ recorded earlier without a line are `unclassifiedRevenue`.
 Scheduled (V2 registration) EXAM requests are now enrolled in the Billing outpatient publication
 cohort with `record_id=registrationId` as source (Billing V33 widens the payload fence). Their
 `payment.completed` is published like V1 EXAM/LAB_TEST/PRESCRIPTION instead of being held.
+
+## Quyền đọc hồ sơ và quyền duyệt Lab — v2.0 Đợt 1 (10/11/2026)
+
+Áp dụng khi `mediflow.v2.record-access-policy=true` (env `MEDIFLOW_V2_RECORD_ACCESS_POLICY`) ở Clinical,
+Lab và Pharmacy. Flag tắt thì hành vi và wire cũ không đổi. `RecordReadPolicy` ở Clinical là nơi duy
+nhất quyết định quyền đọc hồ sơ.
+
+### Quy tắc đọc
+
+| Vai trò | Được đọc khi | `basis` |
+|---|---|---|
+| DOCTOR, hoặc ADMIN có `staffId` là bác sĩ trên lượt | Là tác giả của record đang mở (chỉ `GET /{id}`) | `AUTHOR` |
+| DOCTOR, hoặc ADMIN có `staffId` là bác sĩ trên lượt | Có appointment của bệnh nhân với `doctorId` là mình, còn hiệu lực | `CARE_ASSIGNMENT` |
+| DOCTOR | Khoa hiện hành của mình có appointment của bệnh nhân còn hiệu lực | `DEPARTMENT_ENCOUNTER` |
+| NURSE | Khoa hiện hành của mình có appointment của bệnh nhân còn hiệu lực; chỉ thấy record của khoa đó | `DEPARTMENT_ENCOUNTER` |
+| DOCTOR, ADMIN | Có khai báo còn hạn cho bệnh nhân | `DECLARED_PURPOSE` |
+| NURSE | Có khai báo `EMERGENCY` còn hạn; thấy mọi khoa | `DECLARED_PURPOSE` |
+
+- Appointment còn hiệu lực: `PENDING`, `ARRIVED`, `AWAITING_PAYMENT`, `READY_FOR_EXAM`, `IN_EXAM`, hoặc
+  `COMPLETED` với `completedAt` không quá 30 ngày. `CANCELLED` không phải căn cứ.
+- Quyền đọc không tạo quyền ghi. Quyền ghi vẫn theo bác sĩ được phân công và lượt đang khám.
+- Khai báo là câu hỏi lý do, không phải chờ duyệt. Hiệu lực: DOCTOR 96 giờ, ADMIN và NURSE 60 phút.
+- Mục đích: DOCTOR `CONSULTATION`, `CARE_CONTINUITY`, `QUALITY_REVIEW`, `EMERGENCY`; ADMIN
+  `RECORD_MANAGEMENT`, `QUALITY_REVIEW`; NURSE `EMERGENCY`. `reason` bắt buộc 10 đến 500 ký tự với
+  `QUALITY_REVIEW` và `RECORD_MANAGEMENT`.
+- Mọi lần đọc, từ chối và khai báo ghi vào `record_access_log` của Clinical, không chứa token hay nội
+  dung lâm sàng. `COMPLETED` chỉ là hoàn tất khám, không có nghĩa đã ký hay đã chuyển lưu trữ.
+
+### Mã lỗi
+
+| Tình huống | HTTP | `error.code` |
+|---|---|---|
+| Chưa có căn cứ đọc, có thể khai báo | 403 | `RECORD_ACCESS_PURPOSE_REQUIRED` |
+| Tài khoản, nhân viên hoặc khoa không còn hoạt động, vai trò khác Core, hoặc không xác định được người đọc | 403 | `RECORD_ACCESS_DENIED` |
+| Khai báo sai mục đích hoặc thiếu lý do | 400 | `INVALID_REQUEST` |
+| Core không trả lời khi Clinical quyết định | 503 | `SCHEDULING_AUTHORITY_UNAVAILABLE` |
+| Clinical không trả lời khi Lab hỏi | 503 | `LAB_SOURCE_ORDER_UNVERIFIED` |
+| Clinical không trả lời khi Pharmacy hỏi | 503 | `PHARMACY_UPSTREAM_UNAVAILABLE` |
+
+### Endpoint
+
+| Method và path | Quyền | Ghi chú |
+|---|---|---|
+| `POST /api/v2/records/access-declarations` | ADMIN, DOCTOR, NURSE | Body `{patientId, purpose, reason}`, trả `{declarationId, patientId, purpose, expiresAt}` |
+| `GET /api/v2/records/{id}/capabilities` | ADMIN, DOCTOR, NURSE | Trả `{recordId, patientId, canRead, readBasis, canWriteContent, canComplete, canRequestAmendment, writeBlockedReason}`. `writeBlockedReason`: `RECORD_COMPLETED`, `NOT_ASSIGNED_DOCTOR`, `NOT_IN_EXAM` |
+| `GET /api/v2/clinical/patients/{patientId}/read-decision?actorAccountId=&actorStaffId=&actorRole=` | Nội bộ, service token ≤ 60 giây của `lab-service` hoặc `pharmacy-service`; Gateway chặn | Trả `{patientId, allowed, basis, denialCode, observedAt}`, không có nội dung lâm sàng |
+| `POST /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Body `{capability, reason}`, chỉ nhận `LAB_RESULT_RELEASE`, chỉ cấp cho LAB_TECH đang hoạt động. `CAPABILITY_GRANT_INELIGIBLE`, `CAPABILITY_GRANT_ACTIVE` |
+| `PUT /api/v2/org/capability-grants/{grantId}/revocation` | ADMIN | Body `{reason}`. `CAPABILITY_GRANT_ALREADY_REVOKED` |
+| `GET /api/v2/org/lab-release-authority?actorAccountId=` | Nội bộ, service token ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{actorAccountId, accountActive, staffId, staffActive, canReleaseLabResults, observedAt}` |
+
+Gateway luôn mở `access-declarations`, `capabilities`, `capability-grants` và `revocation`, không phụ thuộc cờ lịch khám V2. Hai API nội bộ không có route công khai.
+
+`GET /api/v1/org/me/capabilities` thêm `canReleaseLabResults` ở cuối. Chưa có màn hình cấp quyền hay luồng
+duyệt nào dùng quyền này; hai phần đó thuộc Đợt 6.
+
+### Lab và Pharmacy khi flag bật
+
+- `LAB_TECH` và `PHARMACIST` giữ quyền làm việc, không hỏi Clinical.
+- Đọc một phiếu, đơn hoặc theo bệnh nhân: hỏi Clinical theo `patientId`.
+- Tìm phiếu Lab theo `episodeId`: hỏi Clinical cho từng bệnh nhân trong kết quả.
+- Tìm Lab không có `episodeId`: DOCTOR và NURSE bị ép về khoa hiện hành trong JWT. ADMIN không đổi.
+- Tìm đơn thuốc không có `patientId`: DOCTOR chỉ thấy đơn của mình. ADMIN không đổi.

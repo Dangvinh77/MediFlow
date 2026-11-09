@@ -15,9 +15,7 @@ public class SchedulingRouteConfiguration {
         return builder.routes()
                 .route("scheduling-core", route -> route.path(
                         "/api/v2/org/consultation-rooms",
-                        "/api/v2/org/departments/*/head-appointments",
-                        "/api/v2/org/staff/*/capability-grants",
-                        "/api/v2/org/capability-grants/*/revocation").uri("lb://core-service"))
+                        "/api/v2/org/departments/*/head-appointments").uri("lb://core-service"))
                 .route("scheduling-clinical", route -> route.path(
                         "/api/v2/doctor-work-shifts", "/api/v2/doctor-work-shifts/*",
                         "/api/v2/doctor-work-shifts/*/cancel", "/api/v2/doctor-work-shifts/*/consultation-sessions",
@@ -25,8 +23,7 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/consultation-sessions/*/status", "/api/v2/consultation-sessions/*/registrations",
                         "/api/v2/outpatient-registrations", "/api/v2/outpatient-registrations/*",
                         "/api/v2/outpatient-registrations/*/arrival", "/api/v2/outpatient-registrations/*/cancellation",
-                        "/api/v2/records/*/follow-up-recommendations", "/api/v2/records/*/follow-up-recommendation",
-                        "/api/v2/records/access-declarations", "/api/v2/records/*/capabilities")
+                        "/api/v2/records/*/follow-up-recommendations", "/api/v2/records/*/follow-up-recommendation")
                         .uri("lb://clinical-service"))
                 .route("scheduling-billing", route -> route.path(
                         "/api/v2/billing/payment-requests",

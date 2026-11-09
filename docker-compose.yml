@@ -187,6 +187,7 @@ services:
       SERVER_PORT: 8082
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_clinical
+      MEDIFLOW_V2_RECORD_ACCESS_POLICY: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:-true}
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
       SPRING_PROFILES_ACTIVE: outpatient-mvp
@@ -217,6 +218,7 @@ services:
       SERVER_PORT: 8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_lab
+      MEDIFLOW_V2_RECORD_ACCESS_POLICY: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:-true}
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
       SPRING_PROFILES_ACTIVE: outpatient-mvp
@@ -262,6 +264,7 @@ services:
       SERVER_PORT: 8085
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy_docker
+      MEDIFLOW_V2_RECORD_ACCESS_POLICY: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:-true}
       MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED: ${MEDIFLOW_PHARMACY_DEMO_SEED_ENABLED:-true}
       MEDIFLOW_PHARMACY_PRESCRIPTION_PRICE_CODES: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:-DRUG}
       SPRING_RABBITMQ_HOST: rabbitmq

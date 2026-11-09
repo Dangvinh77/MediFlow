@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class,
+@Import({com.mediflow.lab.web.LabReadAccessTestConfig.class, GlobalExceptionHandler.class, SecurityConfig.class,
         ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
