@@ -203,6 +203,46 @@ email/SMS/push hoặc self-booking trong slice này. Lời hẹn tái khám vẫ
 Đây là nghiệp vụ đích đã chốt; checklist ONB trong [07](07-outpatient-workflow-implementation.md)
 và tiêu chí ONB trong [06](06-acceptance-runbook.md) quyết định việc triển khai/nghiệm thu.
 
+### 4.2. Quầy điều dưỡng khoa, số phòng khám và sinh hiệu — TARGET v2.0, chưa triển khai
+
+Yêu cầu ngày 10/11/2026. Luồng này nằm sau flag `mediflow.v2.clinic-intake`, Đợt 2 trong
+[roadmap v2.0](../superpowers/plans/2026-11-10-mediflow-v2-roadmap.md). Flag tắt thì bước 6 ở
+mục 4 giữ nguyên. Chỉ áp dụng cho lượt đăng ký v2 có buổi khám.
+
+| | Số quầy | Số phòng khám |
+|---|---|---|
+| Field | `queueNumber` (đã có) | `roomQueueNumber` (mới) |
+| Cấp khi | Phiếu được xác nhận sau thu phí hoặc zero-pay | Người bệnh đến quầy điều dưỡng khoa |
+| Người cấp | Hệ thống, trong luồng quầy tiếp nhận | `NURSE` của khoa có buổi khám |
+| Đánh số theo | Khoa và ngày khám, mỗi khoa một dãy | Phòng khám và ngày, mỗi phòng một dãy |
+| Dùng để | Đối chiếu phiếu; Billing và Notification đang đọc | Gọi vào đúng phòng |
+
+1. Sau khi phiếu được xác nhận, quầy tiếp nhận hướng dẫn người bệnh đến quầy điều dưỡng của khoa.
+2. `NURSE` của khoa đối chiếu định danh và phiếu, rồi cấp số tiếp theo của phòng nơi bác sĩ được chỉ định khám. Phiếu phải
+   `CONFIRMED`, đã có mặt và đủ điều kiện tài chính. Gửi lại cùng khóa trả về đúng số đã cấp.
+3. `NURSE` đo mạch, huyết áp, nhiệt độ, nhịp thở, SpO2, cân nặng, khi cấp số hoặc trong lúc chờ.
+   Bản đo chỉ được thêm, không sửa đè. Không đo được thì ghi lý do.
+4. `NURSE` của khoa hoặc bác sĩ được phân công gọi theo số của từng phòng; hệ thống ghi người gọi
+   và thời điểm gọi.
+5. Bác sĩ bắt đầu khám. Phiếu phải có số phòng khám. Thiếu sinh hiệu chỉ cảnh báo, không chặn khám.
+6. Quay lại đọc kết quả là tiếp tục lượt đang mở, không cấp số phòng mới.
+
+Quy tắc:
+
+- Khoa của người cấp số lấy từ Organization, không lấy từ client. `NURSE` của Bộ phận Tiếp nhận
+  hoặc khoa khác không cấp số.
+- Phòng khám do bác sĩ được chỉ định trên phiếu quyết định, theo buổi khám của bác sĩ đó. Điều
+  dưỡng không tự chọn phòng.
+- Đổi bác sĩ hoặc phòng theo CL-QUE-04: hủy số cũ có lý do, nhận số tiếp theo của phòng mới. Vắng mặt và ưu tiên theo
+  CL-QUE-03. Không sửa ngầm số đã cấp.
+- Khi bật flag, `queueNumber` được cấp từ dãy theo khoa và ngày khám thay cho dãy theo buổi. Kiểu dữ liệu,
+  wire và sự kiện `OutpatientRegistrationFact` không đổi. Ngày khám lấy từ buổi khám, nên phiếu đặt
+  trước vẫn thuộc dãy của ngày đến khám.
+- Dãy của một khoa trong ngày bắt đầu từ số lớn nhất đã có của khoa đó trong ngày cộng một, để bật flag giữa ngày không
+  trùng số trong cùng buổi.
+- Điều dưỡng không kê đơn và không phát thuốc.
+- Không tự gắn cờ bất thường cho sinh hiệu khi chưa có khoảng tham chiếu được chuyên môn duyệt.
+
 ## 5. Tái khám và quay lại đọc kết quả
 
 | Trường hợp | Lượt/hồ sơ | Phí khám | Thông tin chuyên môn |

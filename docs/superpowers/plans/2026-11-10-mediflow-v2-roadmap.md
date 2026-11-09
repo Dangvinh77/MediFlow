@@ -36,9 +36,9 @@
 Các mục dưới không có trong câu trả lời của bạn. Chúng thay đổi hành vi thật, nên hãy sửa ngay nếu không đồng ý.
 
 1. **Tên aggregate là `TreatmentCourse`, không phải `CareEpisode`.** `careEpisodeId` đã phát hành và đang có nghĩa là mã lượt khám (`LabTest.java:23`, `docs/plans/03-contracts.md`). IMP-ID-01 cấm đổi nghĩa mã này. Trên UI vẫn gọi là "Quá trình điều trị".
-2. **Quyền đọc hồ sơ theo hai căn cứ.** `CARE_ASSIGNMENT` khi nhân viên có lượt được giao với bệnh nhân; `DECLARED_PURPOSE` khi không có, người đọc phải nhập lý do. Cả hai đều lưu vết, không chặn tuyệt đối theo khoa.
+2. **Quyền đọc hồ sơ theo liên hệ điều trị hoặc khai báo.** Có lượt được giao hoặc khoa có lượt trong 30 ngày thì đọc được ngay; không có thì người đọc chọn mục đích (`DECLARED_PURPOSE`). Mọi lần đọc đều lưu vết, không chặn tuyệt đối theo khoa. Chi tiết ở kế hoạch Đợt 1.
 3. **ADMIN không đọc nội dung chuyên môn nếu không khai lý do.** Quản trị kỹ thuật không tự có quyền khai thác hồ sơ.
-4. **NURSE chỉ đọc khi có nhiệm vụ** tiếp nhận/chăm sóc trong khoa, và chỉ thấy bản tóm tắt.
+4. **NURSE đọc đầy đủ record của khoa mình khi khoa có lượt khám của bệnh nhân**; ngoài ra chỉ qua khai báo cấp cứu.
 5. **Người duyệt đính chính hồ sơ là trưởng khoa**, dùng bổ nhiệm sẵn có ở `V15__department_head_appointments.sql`. Khi tác giả nghỉ việc, trưởng khoa phân công người xử lý và danh tính người thật vẫn được giữ.
 6. **Quyền duyệt Lab là một capability `LAB_RESULT_RELEASE` do Organization cấp theo từng nhân viên**, không thêm role mới. ADMIN không tự có quyền này. Demo cần thêm một tài khoản Lab thứ hai.
 7. **`LabTest` giữ `IN_PROGRESS` tới khi phát hành.** Nháp và chờ duyệt nằm ở aggregate `LabReport` riêng. Nhờ vậy `ClinicalLabCompletionGuard` vẫn chặn hoàn tất khi kết quả chưa phát hành mà không phải sửa, và Billing, Report không thấy trạng thái mới.
@@ -88,11 +88,15 @@ Tác vụ chi tiết nằm ở cuối tài liệu.
 
 **Mã:** CL-SCH-01, CL-SCH-02, CL-SCH-03, CL-SCH-04, CL-SCH-05, CL-SCH-06, CL-REG-01, CL-REG-02, CL-REG-03, CL-REG-04, CL-REG-05, CL-REG-06, CL-QUE-01, CL-QUE-02, CL-QUE-03, CL-QUE-04, CL-QUE-05, IMP-ID-05, IMP-FIN-04, IMP-NOT-02
 
+**Bổ sung ngoài 117 mục (yêu cầu 10/11/2026):** CL-INK-01 số phòng khám do quầy điều dưỡng khoa cấp, CL-INK-02 sinh hiệu, CL-INK-03 gọi vào khám. Nghiệp vụ ở [`02-business-flows.md`, mục 4.2](../../plans/02-business-flows.md).
+
 - **Clinical:** Một chính sách duy nhất cho hai đường tạo buổi; báo tác động khi sửa/hủy ca có phiếu; bảng `queue_adjustment` và `appointment_reschedule_log`.
+- **Clinical, quầy điều dưỡng khoa:** Bảng `clinic_queue_ticket` với unique `(room_id, queue_date, room_queue_number)` và bộ đếm theo phòng, ngày; bảng chỉ thêm `vital_sign_observation`. Khi bật flag, `startScheduledExam` yêu cầu có số phòng khám và `allocateQueueNumber` cấp số quầy từ bảng dãy theo khoa và ngày khám; wire của `queueNumber` không đổi.
+- **Gateway:** Thêm route, rule và dòng contract cho các API `room-queue-ticket`, `clinic-queue`, `call`, `vital-signs`.
 - **Billing:** Gửi exact-source/actor/reason khi hủy hoặc đổi; tách void chưa thu với hoàn đã thu.
 - **Notification:** Thông báo đổi lịch đúng người và trạng thái.
-- **Web, mobile:** Lịch ngày/tuần phân biệt hết suất, chưa mở và lỗi tải; hàng chờ tách đã đăng ký với được phép khám.
-- **Nghiệm thu:** Hai quầy tranh suất cuối chỉ một bên thành công; gửi lại cùng key trả cùng phiếu; cùng key khác bệnh nhân bị từ chối.
+- **Web, mobile:** Lịch ngày/tuần phân biệt hết suất, chưa mở và lỗi tải; hàng chờ tách đã đăng ký với được phép khám. Màn hình quầy điều dưỡng khoa theo từng phòng; phiếu và lịch bác sĩ ghi rõ "Số quầy" và "Số phòng khám"; bác sĩ xem sinh hiệu khi khám.
+- **Nghiệm thu:** Hai quầy tranh suất cuối chỉ một bên thành công; gửi lại cùng key trả cùng phiếu; cùng key khác bệnh nhân bị từ chối. Mỗi khoa có dãy số quầy riêng và bắt đầu lại ở ngày khác; bật flag giữa ngày không trùng số; Billing và Notification vẫn nhận phiếu `CONFIRMED`. Hai phòng cùng khoa đánh số độc lập; người bệnh nhận số tiếp theo của phòng có bác sĩ được chỉ định; đổi sang bác sĩ ở phòng khác thì hủy số cũ và nhận số tiếp theo của phòng mới; hai điều dưỡng cấp số đồng thời không trùng; điều dưỡng khoa khác hoặc Bộ phận Tiếp nhận không cấp được; chưa có số phòng thì không bắt đầu khám; quay lại đọc kết quả không cấp số mới.
 
 ### Đợt 3 — Vòng đời lượt khám và nhiều lần khám trong ngày
 
@@ -151,6 +155,7 @@ Thứ tự bắt buộc: Clinical, Notification, Report hiểu `lab.result.amend
 | Flag (mặc định `false`) | Service | Đợt |
 |---|---|---|
 | `mediflow.v2.record-access-policy` | Clinical, Lab, Pharmacy | 1 |
+| `mediflow.v2.clinic-intake` | Clinical | 2 |
 | `mediflow.v2.treatment-course` | Clinical | 4 |
 | `mediflow.v2.record-amendment` | Clinical | 4 |
 | `mediflow.v2.lab-catalog` | Lab, Clinical | 5 |
