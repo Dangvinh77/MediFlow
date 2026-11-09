@@ -27,6 +27,7 @@ public interface OutpatientRegistrationRepositoryPort {
     void lockPaymentOperation(UUID paymentOperationId);
     long allocateFenceToken(UUID registrationId);
     int allocateQueueNumber(UUID sessionId);
+    int allocateDepartmentQueueNumber(UUID departmentId, java.time.LocalDate queueDate);
     Optional<PaymentOperationReceipt> findPaymentOperation(UUID paymentOperationId);
     Optional<PaymentOperationReceipt> findPaymentOperationForUpdate(UUID paymentOperationId);
     PaymentOperationReceipt insertPaymentOperation(PaymentOperationReceipt receipt, Instant at);

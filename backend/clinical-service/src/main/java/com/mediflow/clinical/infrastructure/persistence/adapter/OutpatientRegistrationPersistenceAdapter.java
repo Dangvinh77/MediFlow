@@ -201,6 +201,23 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
         return number;
     }
 
+    /** A new day's sequence continues above numbers issued before the department sequence was switched on. */
+    @Override
+    public int allocateDepartmentQueueNumber(UUID departmentId, java.time.LocalDate queueDate) {
+        Integer number = jdbc.queryForObject("""
+                INSERT INTO department_queue_counter(department_id, queue_date, next_number)
+                VALUES (?, ?, COALESCE((SELECT MAX(r.queue_number)
+                                          FROM outpatient_registration r
+                                          JOIN consultation_session s ON s.session_id = r.session_id
+                                         WHERE s.department_id = ? AND s.session_date = ?), 0) + 2)
+                ON CONFLICT (department_id, queue_date)
+                DO UPDATE SET next_number = department_queue_counter.next_number + 1
+                RETURNING next_number - 1
+                """, Integer.class, departmentId, java.sql.Date.valueOf(queueDate), departmentId, java.sql.Date.valueOf(queueDate));
+        if (number == null || number < 1) throw new IllegalStateException("department queue number could not be allocated");
+        return number;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Optional<PaymentOperationReceipt> findPaymentOperation(UUID paymentOperationId) {

@@ -116,6 +116,7 @@ public class OutpatientRegistrationApplicationService {
     private final Clock clock;
     private final com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records;
     private final com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations;
+    private final ClinicIntakeSettings clinicIntake;
 
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -126,6 +127,16 @@ public class OutpatientRegistrationApplicationService {
                 clock, null, null);
     }
 
+    public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
+            OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
+            PatientLookupPort patients, SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
+            ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
+            Clock clock, com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations) {
+        this(sessions, registrations, appointments, patients, authority, actors, outbox, correlationIds, idempotency,
+                clock, records, recommendations, new ClinicIntakeSettings(false));
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -133,7 +144,9 @@ public class OutpatientRegistrationApplicationService {
             ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
             @Qualifier("clinicalSchedulingClock") Clock clock,
             com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
-            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations) {
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations,
+            ClinicIntakeSettings clinicIntake) {
+        this.clinicIntake = clinicIntake;
         this.records = records;
         this.recommendations = recommendations;
         this.sessions = sessions;
@@ -368,7 +381,9 @@ public class OutpatientRegistrationApplicationService {
         ConsultationSession afterCounts;
         if (command.outcome() == OutpatientPaymentOutcome.COMPLETED) {
             boolean ended = sessionHasEnded(session, now);
-            int queue = ended ? 0 : registrations.allocateQueueNumber(session.sessionId());
+            int queue = ended ? 0 : clinicIntake.enabled()
+                    ? registrations.allocateDepartmentQueueNumber(session.configuration().departmentId(), session.configuration().sessionDate())
+                    : registrations.allocateQueueNumber(session.sessionId());
             after = domain(() -> before.resolveCompleted(command.paymentOperationId(), command.fenceToken(), queue,
                     command.transactionId(), command.clearanceId(), command.completedAt(), ended, command.basis()));
             if (!ended) appointment.confirmScheduledPayment(command.clearanceId(), command.completedAt());
