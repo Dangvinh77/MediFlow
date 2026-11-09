@@ -16,6 +16,47 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
   }
 
   @override
+  Future<RecordCapabilities> capabilities(String recordId) async {
+    _requireId(recordId, 'recordId');
+    final value = await client.get(
+      '/v2/records/${Uri.encodeComponent(recordId)}/capabilities',
+    );
+    if (value is! Map ||
+        value['recordId'] != recordId ||
+        value['canRead'] is! bool ||
+        value['canWriteContent'] is! bool ||
+        value['canComplete'] is! bool) {
+      return RecordCapabilities.readOnly(recordId);
+    }
+    return RecordCapabilities(
+      recordId: recordId,
+      patientId: value['patientId'] is String
+          ? value['patientId'] as String
+          : null,
+      canRead: value['canRead'] as bool,
+      canWriteContent: value['canWriteContent'] as bool,
+      canComplete: value['canComplete'] as bool,
+      writeBlockedReason: value['writeBlockedReason'] is String
+          ? value['writeBlockedReason'] as String
+          : null,
+    );
+  }
+
+  @override
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  }) async {
+    _requireId(patientId, 'patientId');
+    await client.post('/v2/records/access-declarations', {
+      'patientId': patientId,
+      'purpose': purpose,
+      'reason': reason,
+    });
+  }
+
+  @override
   Future<List<MedicalRecord>> byPatient(String patientId) async {
     _requireId(patientId, 'patientId');
     final value = await client.get(

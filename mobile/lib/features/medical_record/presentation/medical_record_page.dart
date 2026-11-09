@@ -261,10 +261,19 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
   Widget _buildResults() {
     if (_loading) return const Center(child: MediFlowLoader());
     if (_error != null) {
-      return _RetryMessage(
-        error: _error!,
-        onRetry: _patientId == null ? null : () => _loadPatient(_patientId!),
-      );
+      return _recordAccessRefusal(
+            error: _error!,
+            patientId: _patientId,
+            role: ref.read(workspaceAccessProvider)?.role,
+            deniedText: 'Bạn không có quyền xem hồ sơ khám của bệnh nhân này.',
+            onDeclared: () => _loadPatient(_patientId!),
+          ) ??
+          _RetryMessage(
+            error: _error!,
+            onRetry: _patientId == null
+                ? null
+                : () => _loadPatient(_patientId!),
+          );
     }
     if (_patientId == null) {
       return const Center(
@@ -321,7 +330,7 @@ class _RecordCard extends StatelessWidget {
                   record.status == 'OPEN'
                       ? 'Đang khám'
                       : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất'
+                      ? 'Đã hoàn tất khám'
                       : 'Trạng thái khác',
                   tone: statusToneOf(record.status),
                 ),
@@ -598,6 +607,7 @@ class MedicalRecordDetailPage extends ConsumerStatefulWidget {
 class _MedicalRecordDetailPageState
     extends ConsumerState<MedicalRecordDetailPage> {
   MedicalRecord? _record;
+  RecordCapabilities? _capabilities;
   Object? _error;
   bool _loading = true, _busy = false, _uncertain = false;
   int _generation = 0;
@@ -610,33 +620,49 @@ class _MedicalRecordDetailPageState
     Future.microtask(_load);
   }
 
+  /// A capability failure leaves the record read only; it never blocks reading.
+  Future<RecordCapabilities?> _capabilitiesOrNull(
+    MedicalRecordRepository repository,
+  ) async {
+    try {
+      return await repository.capabilities(widget.recordId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _load() async {
     final generation = ++_generation;
     final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
     setState(() {
       _record = null;
+      _capabilities = null;
       _error = null;
       _loading = true;
       _uncertain = false;
     });
+    final repository = ref.read(medicalRecordRepositoryProvider);
+    final capabilitiesRequest = _capabilitiesOrNull(repository);
     try {
-      final value = await ref
-          .read(medicalRecordRepositoryProvider)
-          .getById(widget.recordId);
+      final value = await repository.getById(widget.recordId);
+      final capabilities = await capabilitiesRequest;
       if (mounted &&
           generation == _generation &&
           ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
         setState(() {
           _record = value;
+          _capabilities = capabilities;
           _loading = false;
           _identity = identity;
         });
       }
     } catch (error) {
+      final capabilities = await capabilitiesRequest;
       if (mounted &&
           generation == _generation &&
           ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
         setState(() {
+          _capabilities = capabilities;
           _error = error;
           _loading = false;
           _identity = identity;
@@ -710,7 +736,14 @@ class _MedicalRecordDetailPageState
           : _loading
           ? const Center(child: MediFlowLoader())
           : _error != null && _record == null
-          ? _RetryMessage(error: _error!, onRetry: _load)
+          ? _recordAccessRefusal(
+                  error: _error!,
+                  patientId: _capabilities?.patientId,
+                  role: access?.role,
+                  deniedText: 'Bạn không có quyền xem hồ sơ khám này.',
+                  onDeclared: _load,
+                ) ??
+                _RetryMessage(error: _error!, onRetry: _load)
           : _record == null
           ? const Center(child: Text('Không có dữ liệu hồ sơ.'))
           : _buildDetail(_record!, access?.role, outpatientEnabled),
@@ -722,19 +755,35 @@ class _MedicalRecordDetailPageState
     String? role,
     bool outpatientEnabled,
   ) {
-    final canEdit = canEditMedicalRecord(record, role: role);
-    final canComplete = canCompleteMedicalRecord(
-      record,
-      role: role,
-      outpatientEnabled: outpatientEnabled,
-    );
-    final canOrderLab = canOrderClinicalLab(
-      record,
-      role: role,
-      outpatientEnabled: outpatientEnabled,
-    );
-    final canCreatePrescription =
-        outpatientEnabled && canEditMedicalRecord(record, role: role);
+    final capabilities = _capabilities;
+    final canEdit =
+        record.status == 'OPEN' && capabilities?.canWriteContent == true;
+    final canComplete =
+        capabilities?.canComplete == true &&
+        canCompleteMedicalRecord(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
+    final canOrderLab =
+        canEdit &&
+        canOrderClinicalLab(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
+    final canCreatePrescription = outpatientEnabled && canEdit;
+    final readOnlyNotice = record.status != 'OPEN'
+        ? null
+        : capabilities == null
+        ? 'Chưa xác định được quyền ghi, hồ sơ đang ở chế độ chỉ đọc.'
+        : switch (capabilities.writeBlockedReason) {
+            'NOT_ASSIGNED_DOCTOR' =>
+              'Bạn đang xem hồ sơ do bác sĩ khác phụ trách. Chỉ bác sĩ phụ trách mới được ghi vào hồ sơ này.',
+            'NOT_IN_EXAM' =>
+              'Lượt khám chưa ở trạng thái đang khám nên chưa thể ghi vào hồ sơ.',
+            _ => null,
+          };
     final prescriptionBuilder = const {'ADMIN', 'DOCTOR'}.contains(role)
         ? widget.prescriptionWorkspaceBuilder
         : null;
@@ -756,10 +805,14 @@ class _MedicalRecordDetailPageState
                   record.status == 'OPEN'
                       ? 'Đang khám'
                       : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất'
+                      ? 'Đã hoàn tất khám'
                       : 'Trạng thái khác',
                   tone: statusToneOf(record.status),
                 ),
+                if (record.status == 'COMPLETED')
+                  const Text(
+                    'Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.',
+                  ),
                 ReferenceLabel(
                   kind: ReferenceKind.record,
                   id: record.id,
@@ -856,6 +909,7 @@ class _MedicalRecordDetailPageState
             recordId: record.id,
             canCreate: role == 'DOCTOR',
           ),
+        if (readOnlyNotice != null) NoticeBox(readOnlyNotice),
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
         if (_uncertain)
@@ -1436,6 +1490,152 @@ class _ClinicalLabWorkflowPanelState
       ),
     );
   }
+}
+
+/// Turns a read refusal into its own screen; returns null for every other failure.
+Widget? _recordAccessRefusal({
+  required Object error,
+  required String? patientId,
+  required String? role,
+  required String deniedText,
+  required VoidCallback onDeclared,
+}) {
+  if (error is! ApiFailure) return null;
+  if (error.code == 'RECORD_ACCESS_DENIED') {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Align(alignment: Alignment.topCenter, child: Text(deniedText)),
+    );
+  }
+  if (error.code != 'RECORD_ACCESS_PURPOSE_REQUIRED') return null;
+  if (patientId == null) {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: NoticeBox(
+        'Chưa xác định được bệnh nhân của hồ sơ. Hãy tra cứu lại từ danh sách hồ sơ.',
+      ),
+    );
+  }
+  return _RecordAccessPurposeForm(
+    patientId: patientId,
+    role: role,
+    onDeclared: onDeclared,
+  );
+}
+
+class _RecordAccessPurposeForm extends ConsumerStatefulWidget {
+  const _RecordAccessPurposeForm({
+    required this.patientId,
+    required this.role,
+    required this.onDeclared,
+  });
+  final String patientId;
+  final String? role;
+  final VoidCallback onDeclared;
+
+  @override
+  ConsumerState<_RecordAccessPurposeForm> createState() =>
+      _RecordAccessPurposeFormState();
+}
+
+class _RecordAccessPurposeFormState
+    extends ConsumerState<_RecordAccessPurposeForm> {
+  static const _labels = {
+    'CONSULTATION': 'Khám bệnh',
+    'CARE_CONTINUITY': 'Tiếp nối điều trị',
+    'QUALITY_REVIEW': 'Đánh giá chất lượng',
+    'EMERGENCY': 'Cấp cứu',
+    'RECORD_MANAGEMENT': 'Quản lý hồ sơ',
+  };
+  static const _byRole = {
+    'DOCTOR': ['CONSULTATION', 'CARE_CONTINUITY', 'QUALITY_REVIEW', 'EMERGENCY'],
+    'ADMIN': ['RECORD_MANAGEMENT', 'QUALITY_REVIEW'],
+    'NURSE': ['EMERGENCY'],
+  };
+  static const _needsReason = {'QUALITY_REVIEW', 'RECORD_MANAGEMENT'};
+  static const _minReasonLength = 10;
+
+  final _reason = TextEditingController();
+  String? _purpose;
+  Object? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  bool get _reasonRequired => _needsReason.contains(_purpose);
+  bool get _ready =>
+      _purpose != null &&
+      !_saving &&
+      (!_reasonRequired || _reason.text.trim().length >= _minReasonLength);
+
+  Future<void> _submit() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(medicalRecordRepositoryProvider)
+          .declareAccess(
+            patientId: widget.patientId,
+            purpose: _purpose!,
+            reason: _reasonRequired ? _reason.text.trim() : null,
+          );
+      if (mounted) widget.onDeclared();
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        const Text('Bạn cần khai báo mục đích trước khi xem hồ sơ này.'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final purpose in _byRole[widget.role] ?? const <String>[])
+              ChoiceChip(
+                label: Text(_labels[purpose]!),
+                selected: _purpose == purpose,
+                onSelected: _saving
+                    ? null
+                    : (_) => setState(() {
+                        _purpose = purpose;
+                        _error = null;
+                      }),
+              ),
+          ],
+        ),
+        if (_reasonRequired)
+          TextField(
+            controller: _reason,
+            maxLength: 500,
+            maxLines: 3,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'Lý do (ít nhất $_minReasonLength ký tự)',
+            ),
+          ),
+        if (_error != null) _RetryMessage(error: _error!),
+        FilledButton(
+          onPressed: _ready ? _submit : null,
+          child: const Text('Xác nhận mục đích'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _RetryMessage extends StatelessWidget {

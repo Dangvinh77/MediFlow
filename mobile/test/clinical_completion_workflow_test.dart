@@ -121,6 +121,21 @@ class MedicalRecordFake implements MedicalRecordRepository {
   Future<MedicalRecord> getById(String id) =>
       onGet?.call(id) ?? Future.value(record());
   @override
+  Future<RecordCapabilities> capabilities(String recordId) async =>
+      RecordCapabilities(
+        recordId: recordId,
+        patientId: patientId,
+        canRead: true,
+        canWriteContent: true,
+        canComplete: true,
+      );
+  @override
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  }) async {}
+  @override
   Future<List<MedicalRecord>> byPatient(String id) async => [record()];
   @override
   Future<MedicalRecord> create(CreateMedicalRecord draft) async => record();

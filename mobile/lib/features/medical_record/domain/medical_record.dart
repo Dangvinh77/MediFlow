@@ -92,8 +92,37 @@ class LabTestReceipt {
   final String testId, status;
 }
 
+class RecordCapabilities {
+  const RecordCapabilities({
+    required this.recordId,
+    required this.canRead,
+    required this.canWriteContent,
+    required this.canComplete,
+    this.patientId,
+    this.writeBlockedReason,
+  });
+
+  /// Anything the client cannot interpret grants nothing.
+  const RecordCapabilities.readOnly(this.recordId)
+    : canRead = false,
+      canWriteContent = false,
+      canComplete = false,
+      patientId = null,
+      writeBlockedReason = null;
+
+  final String recordId;
+  final String? patientId, writeBlockedReason;
+  final bool canRead, canWriteContent, canComplete;
+}
+
 abstract interface class MedicalRecordRepository {
   Future<MedicalRecord> getById(String recordId);
+  Future<RecordCapabilities> capabilities(String recordId);
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  });
   Future<List<MedicalRecord>> byPatient(String patientId);
   Future<MedicalRecord> create(CreateMedicalRecord draft);
   Future<MedicalRecord> update(String recordId, {required String? symptoms});
