@@ -141,6 +141,15 @@ class MedicalRecordControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "PATIENT")
+    void patientRoleCannotUseStaffRecordEndpoints() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/{id}", UUID.randomUUID())).andExpect(status().isForbidden());
+        mockMvc.perform(get(BASE_PATH + "/patient/{patientId}", UUID.randomUUID())).andExpect(status().isForbidden());
+
+        verifyNoInteractions(manageRecordUseCase);
+    }
+
+    @Test
     @WithMockUser(roles = "NURSE")
     void create_forbiddenRole_returns403() throws Exception {
         mockMvc.perform(post(BASE_PATH)

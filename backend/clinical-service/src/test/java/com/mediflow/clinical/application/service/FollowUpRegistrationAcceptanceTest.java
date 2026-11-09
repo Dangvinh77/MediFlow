@@ -309,6 +309,28 @@ class FollowUpRegistrationAcceptanceTest {
     }
 
     @Test
+    void nurseRegistersForAnotherDepartmentWithoutRecordReadCheck() {
+        service.create(request(PATIENT_ID, SOURCE_REGISTRATION_ID, RECOMMENDATION_ID,
+                SOURCE_DOCTOR_ID, null, null), "registration-reception");
+
+        verify(registrations).insert(any(), eq(ACTOR_ACCOUNT_ID), eq(ACTOR_STAFF_ID), eq("CREATED"), any());
+        verify(authority, never()).currentDoctorAuthority(any(), any());
+    }
+
+    @Test
+    void receptionUnitNurseStillSeesFollowUpAdviceWithoutRecordReadCheck() {
+        var source = new FollowUpSourceSummary(SOURCE_REGISTRATION_ID, SOURCE_RECORD_ID, PATIENT_ID,
+                DEPARTMENT_ID, SOURCE_DOCTOR_ID, SOURCE_AT, null);
+        PageQuery page = PageQuery.of(0, 20);
+        when(registrations.findFollowUpSources(PATIENT_ID, page)).thenReturn(PageResult.of(List.of(source), 1, 0, 20));
+
+        var result = service.followUpSources(PATIENT_ID, page);
+
+        assertThat(result.content().get(0).recommendation()).isNotNull();
+        verify(authority, never()).currentDoctorAuthority(any(), any());
+    }
+
+    @Test
     void sourcePickerReturnsNullableRecommendationOnlyAfterCurrentScopeCheck() {
         var source = new FollowUpSourceSummary(SOURCE_REGISTRATION_ID, SOURCE_RECORD_ID, PATIENT_ID,
                 DEPARTMENT_ID, SOURCE_DOCTOR_ID, SOURCE_AT, null);

@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+import org.springframework.stereotype.Service;
+
 import com.mediflow.clinical.application.dto.authority.CurrentDoctorAuthoritySnapshot;
 import com.mediflow.clinical.application.dto.authority.RecordReadDecision;
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
@@ -19,6 +21,7 @@ import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 
 /** The single place that decides who may read a medical record and on what basis. */
+@Service
 public class RecordReadPolicy {
     public static final String PURPOSE_REQUIRED = "RECORD_ACCESS_PURPOSE_REQUIRED";
     public static final String DENIED = "RECORD_ACCESS_DENIED";

@@ -24,6 +24,7 @@ import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
+import com.mediflow.clinical.application.port.out.RecordAccessPolicyMode;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
@@ -45,15 +46,18 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     private final CorrelationIdProvider correlationIds;
     private final ClinicalStaffAuthority staffAuthority;
     private final boolean outpatientMvpEnabled;
+    private final RecordReadGuard readGuard;
+    private final boolean recordAccessPolicyEnabled;
 
     @Autowired
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
                                            PatientLookupPort patients, StaffLookupPort staff,
                                            ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
                                            CorrelationIdProvider correlationIds,
-                                           CurrentClinicalActorPort actors, OutpatientMvpMode outpatientMvpMode) {
+                                           CurrentClinicalActorPort actors, OutpatientMvpMode outpatientMvpMode,
+                                           RecordReadGuard readGuard, RecordAccessPolicyMode recordAccessPolicyMode) {
         this(appointments, records, patients, staff, publisher, mapper, correlationIds,
-                actors, outpatientMvpMode.enabled());
+                actors, outpatientMvpMode.enabled(), readGuard, recordAccessPolicyMode.enabled());
     }
 
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
@@ -61,6 +65,18 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
                                            ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
                                            CorrelationIdProvider correlationIds,
                                            CurrentClinicalActorPort actors, boolean outpatientMvpEnabled) {
+        this(appointments, records, patients, staff, publisher, mapper, correlationIds,
+                actors, outpatientMvpEnabled, null, false);
+    }
+
+    public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
+                                           PatientLookupPort patients, StaffLookupPort staff,
+                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
+                                           CorrelationIdProvider correlationIds,
+                                           CurrentClinicalActorPort actors, boolean outpatientMvpEnabled,
+                                           RecordReadGuard readGuard, boolean recordAccessPolicyEnabled) {
+        this.readGuard = readGuard;
+        this.recordAccessPolicyEnabled = recordAccessPolicyEnabled;
         this.appointments = appointments;
         this.records = records;
         this.patients = patients;
@@ -134,14 +150,25 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     @Override
     @Transactional(readOnly = true)
     public MedicalRecordDTO getById(UUID id) {
-        return mapper.toDto(records.findById(id)
-                .orElseThrow(() -> new MedicalRecordNotFoundException("Medical record not found: " + id)));
+        MedicalRecord record = records.findById(id)
+                .orElseThrow(() -> new MedicalRecordNotFoundException("Medical record not found: " + id));
+        if (recordAccessPolicyEnabled) {
+            readGuard.requireRecord(record);
+        }
+        return mapper.toDto(record);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MedicalRecordDTO> byPatient(UUID patientId) {
-        return records.findByPatient(patientId).stream().map(mapper::toDto).toList();
+        if (!recordAccessPolicyEnabled) {
+            return records.findByPatient(patientId).stream().map(mapper::toDto).toList();
+        }
+        UUID nurseDepartmentId = readGuard.requirePatient(patientId).nurseDepartmentId();
+        return records.findByPatient(patientId).stream()
+                .filter(record -> nurseDepartmentId == null || nurseDepartmentId.equals(record.getDepartmentId()))
+                .map(mapper::toDto)
+                .toList();
     }
 
     @Override
