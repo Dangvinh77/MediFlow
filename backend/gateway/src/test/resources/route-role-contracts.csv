@@ -177,6 +177,7 @@ clinical-service,GET,/api/v2/outpatient-registrations/{id}/vital-signs,DOCTOR|NU
 clinical-service,PUT,/api/v2/records/{id}/close-without-conclusion,DOCTOR,true
 clinical-service,GET,/api/v2/patients/{patientId}/open-visits,ADMIN|DOCTOR|NURSE,true
 clinical-service,GET,/api/v2/doctors/me/open-visits,DOCTOR,true
+clinical-service,GET,/api/v2/records/{id}/lab-orders,ADMIN|DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NURSE,true
 clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
 clinical-service,GET,/api/v2/doctor-work-shifts/{id}/impact,ADMIN|DOCTOR,true

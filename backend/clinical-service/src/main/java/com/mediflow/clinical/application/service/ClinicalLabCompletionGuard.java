@@ -48,27 +48,35 @@ public final class ClinicalLabCompletionGuard {
                 throw bindingMismatch();
             }
             LabOrderLifecycleSnapshot current = lifecycle.lifecycle(recorded.sourceOrderId(), correlationId);
-            if (current == null || current.exists() == null
-                    || !recorded.sourceOrderId().equals(current.sourceOrderId()) || current.observedAt() == null) {
-                throw unavailable("Lab returned an invalid source-order lifecycle response");
-            }
+            requireWellFormed(recorded, current);
             if (!current.exists()) {
                 requireAbsentSnapshot(current);
                 throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_NOT_FOUND",
                         "The recorded Lab order is not present in Lab");
             }
-            if (!recorded.recordId().equals(current.recordId())
-                    || !recorded.patientId().equals(current.patientId())
-                    || !recorded.requestingDepartmentId().equals(current.departmentId())
-                    || !recorded.careEpisodeType().name().equals(current.careEpisodeType())
-                    || !recorded.careEpisodeId().equals(current.careEpisodeId())) {
-                throw bindingMismatch();
-            }
+            requireSameBinding(recorded, current);
             if ("COMPLETED".equals(current.status()) || "CANCELLED".equals(current.status())) {
                 continue;
             }
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_PENDING",
                     "Every recorded Lab order must be completed or cancelled before record completion");
+        }
+    }
+
+    static void requireWellFormed(ClinicalLabOrder recorded, LabOrderLifecycleSnapshot current) {
+        if (current == null || current.exists() == null
+                || !recorded.sourceOrderId().equals(current.sourceOrderId()) || current.observedAt() == null) {
+            throw unavailable("Lab returned an invalid source-order lifecycle response");
+        }
+    }
+
+    static void requireSameBinding(ClinicalLabOrder recorded, LabOrderLifecycleSnapshot current) {
+        if (!recorded.recordId().equals(current.recordId())
+                || !recorded.patientId().equals(current.patientId())
+                || !recorded.requestingDepartmentId().equals(current.departmentId())
+                || !recorded.careEpisodeType().name().equals(current.careEpisodeType())
+                || !recorded.careEpisodeId().equals(current.careEpisodeId())) {
+            throw bindingMismatch();
         }
     }
 
