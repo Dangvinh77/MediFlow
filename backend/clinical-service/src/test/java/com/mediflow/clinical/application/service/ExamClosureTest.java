@@ -227,7 +227,7 @@ class ExamClosureTest {
     }
 
     @Test void onlyContractTwoCanClose() {
-        Appointment legacy = Appointment.create(inExam.patientId(), h.doctorId, h.departmentId, IntakeHarness.TODAY,
+        Appointment legacy = Appointment.create(inExam.patientId(), h.doctorId, h.departmentId, LocalDate.now().plusDays(1),
                 java.time.LocalTime.of(9, 0), "Khám");
         when(h.appointments.findByIdForUpdate(legacy.getAppointmentId())).thenReturn(Optional.of(legacy));
         MedicalRecord legacyRecord = stubRecord(legacy.getAppointmentId());
