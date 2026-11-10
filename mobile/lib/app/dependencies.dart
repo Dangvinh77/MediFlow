@@ -14,6 +14,8 @@ import '../features/medical_record/presentation/medical_record_page.dart';
 import '../features/appointment/data/gateway_appointment_repository.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/appointment/data/gateway_reception_repository.dart';
+import '../features/appointment/data/gateway_clinic_queue_repository.dart';
+import '../features/appointment/presentation/clinic_queue_page.dart';
 import '../features/appointment/presentation/reception_page.dart';
 import '../features/lab/data/gateway_lab_repository.dart';
 import '../features/lab/data/gateway_patient_lab_results.dart';
@@ -68,6 +70,9 @@ final appOverrides = [
   ),
   scheduleManagementRepositoryProvider.overrideWith(
     (ref) => GatewayScheduleManagementRepository(ref.watch(apiClientProvider)),
+  ),
+  clinicQueueRepositoryProvider.overrideWith(
+    (ref) => GatewayClinicQueueRepository(ref.watch(apiClientProvider)),
   ),
   receptionRepositoryProvider.overrideWith(
     (ref) => GatewayReceptionRepository(ref.watch(apiClientProvider)),

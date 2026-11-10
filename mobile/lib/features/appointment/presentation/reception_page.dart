@@ -5,7 +5,9 @@ import '../../../core/domain/page_result.dart';
 import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
+import '../domain/clinic_queue.dart';
 import '../domain/reception.dart';
+import 'clinic_queue_page.dart';
 import 'outpatient_schedule_pages.dart';
 import 'appointment_page.dart';
 
@@ -424,7 +426,14 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                       id: item.roomId,
                       label: 'Phòng khám',
                     ),
-                    Text('Còn ${item.availableCount} / ${item.capacity} chỗ'),
+                    Text(
+                      ref.read(clinicIntakeEnabledProvider) && !item.canRegister
+                          ? sessionAvailabilityLabels[sessionAvailability(
+                              item,
+                              null,
+                            )]!
+                          : 'Còn ${item.availableCount} / ${item.capacity} chỗ',
+                    ),
                     OutlinedButton(
                       onPressed: locked || !item.canRegister
                           ? null
@@ -641,7 +650,9 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                     'Hạn giữ chỗ: ${_instant(receipt.expiresAt)} (giờ Việt Nam)',
                   ),
                   if (receipt.queueNumber != null)
-                    Text('Số thứ tự: ${receipt.queueNumber}'),
+                    Text(
+                      '${queueNumberLabel(ref.read(clinicIntakeEnabledProvider))}: ${receipt.queueNumber}',
+                    ),
                   ExpansionTile(
                     title: const Text('Thông tin bàn giao'),
                     children: [SelectableText('Mã phiếu: ${receipt.id}')],

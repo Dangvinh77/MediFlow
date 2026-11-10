@@ -9,6 +9,7 @@ import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/appointment/presentation/outpatient_schedule_pages.dart';
+import '../features/appointment/presentation/clinic_queue_page.dart';
 import '../features/appointment/presentation/reception_page.dart';
 import '../features/appointment/presentation/schedule_management_pages.dart';
 import '../features/lab/presentation/lab_page.dart';
@@ -182,6 +183,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/appointments/my-registration',
             builder: (_, _) => const PatientRegistrationsPage(),
+          ),
+          GoRoute(
+            path: '/appointments/clinic-queue',
+            builder: (_, _) => const ClinicQueuePage(),
           ),
           GoRoute(
             path: '/appointments/reception',

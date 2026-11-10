@@ -4,6 +4,7 @@ class AppConfig {
     bool allowInsecureHttp = false,
     this.pharmacyMode = 'unavailable',
     this.scheduledPaymentsEnabled = false,
+    this.clinicIntakeEnabled = false,
     this.outpatientQuotesEnabled = false,
     this.zeroPayableEnabled = false,
   }) {
@@ -45,6 +46,9 @@ class AppConfig {
       'PHARMACY_MODE',
       defaultValue: 'unavailable',
     ),
+    clinicIntakeEnabled: const bool.fromEnvironment(
+      'MEDIFLOW_CLINIC_INTAKE_UI_ENABLED',
+    ),
     scheduledPaymentsEnabled: const bool.fromEnvironment(
       'MEDIFLOW_SCHEDULING_UI_ENABLED',
     ),
@@ -60,6 +64,7 @@ class AppConfig {
   late final String baseUrl;
   final String pharmacyMode;
   final bool scheduledPaymentsEnabled;
+  final bool clinicIntakeEnabled;
   final bool outpatientQuotesEnabled;
   final bool zeroPayableEnabled;
 }

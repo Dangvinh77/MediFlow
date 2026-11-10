@@ -66,9 +66,10 @@ class ReceptionReceipt {
     required this.status,
     required this.expiresAt,
     this.queueNumber,
+    this.roomQueueNumber,
   });
   final String id, patientId, sessionId, doctorId, status, expiresAt;
-  final int? queueNumber;
+  final int? queueNumber, roomQueueNumber;
 }
 
 class ReceptionCommand {
