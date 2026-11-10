@@ -11,6 +11,6 @@ export default async function ReceptionPage({ searchParams }: { searchParams: Pr
   const { patientId } = await searchParams;
   const enabled = process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true";
   return <PageShell title="Tiếp nhận lịch khám" description="Chọn buổi, đăng ký giữ chỗ và theo dõi trạng thái thanh toán.">
-    <RoleGate allowed={["ADMIN", "NURSE"]}><ReceptionWorkspace enabled={enabled} initialPatientId={patientId && isUuid(patientId) ? patientId : ""} /></RoleGate>
+    <RoleGate allowed={["ADMIN", "NURSE"]}><ReceptionWorkspace enabled={enabled} clinicIntakeEnabled={process.env.MEDIFLOW_CLINIC_INTAKE_UI_ENABLED === "true"} initialPatientId={patientId && isUuid(patientId) ? patientId : ""} /></RoleGate>
   </PageShell>;
 }

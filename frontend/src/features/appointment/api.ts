@@ -17,7 +17,9 @@ import type {
   RegistrationCreate,
   RegistrationDTO,
   RegistrationSummary,
+  RescheduleCommand,
   RevisionCommand,
+  ScheduleImpactDTO,
   UpdateAppointmentRequest,
 } from "./types";
 
@@ -149,4 +151,10 @@ export const appointmentApi = {
     api.put<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/arrival`, body, options),
   cancelRegistration: (registrationId: string, body: RegistrationCancellationCommand, options: SchedulingCommandOptions) =>
     api.put<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/cancellation`, body, options),
+  reschedule: (registrationId: string, body: RescheduleCommand, options: SchedulingCommandOptions) =>
+    api.post<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/reschedule`, body, options),
+  sessionImpact: (sessionId: string) =>
+    api.get<ScheduleImpactDTO>(`/v2/consultation-sessions/${encodeURIComponent(sessionId)}/impact`),
+  shiftImpact: (shiftId: string) =>
+    api.get<ScheduleImpactDTO>(`/v2/doctor-work-shifts/${encodeURIComponent(shiftId)}/impact`),
 };

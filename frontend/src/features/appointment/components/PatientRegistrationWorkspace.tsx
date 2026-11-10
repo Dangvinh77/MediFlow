@@ -7,7 +7,7 @@ import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { ReferenceText } from "@/components/references/ReferenceText";
-import { registrationStatusLabels } from "../presentation";
+import { queueNumberLabel, roomNumberText, registrationStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
 import type { RegistrationDTO } from "../types";
 
@@ -19,12 +19,12 @@ function errorFrom(cause: unknown, fallback: string): WorkspaceError {
     : { message: cause instanceof Error ? cause.message : fallback, correlationId: null };
 }
 
-export function PatientRegistrationWorkspace({ enabled }: { enabled: boolean }) {
+export function PatientRegistrationWorkspace({ enabled, clinicIntakeEnabled = false }: { enabled: boolean; clinicIntakeEnabled?: boolean }) {
   const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
-  return <PatientRegistrationWorkspaceContent key={session ?? "anonymous"} enabled={enabled} />;
+  return <PatientRegistrationWorkspaceContent key={session ?? "anonymous"} enabled={enabled} clinicIntakeEnabled={clinicIntakeEnabled} />;
 }
 
-function PatientRegistrationWorkspaceContent({ enabled }: { enabled: boolean }) {
+function PatientRegistrationWorkspaceContent({ enabled, clinicIntakeEnabled }: { enabled: boolean; clinicIntakeEnabled: boolean }) {
   const [page, setPage] = useState(0);
   const [registrations, setRegistrations] = useState<RegistrationDTO[] | null>(null);
   const [totalPages, setTotalPages] = useState(0);
@@ -74,7 +74,8 @@ function PatientRegistrationWorkspaceContent({ enabled }: { enabled: boolean }) 
           <div><dt className="text-muted-foreground">Phòng khám</dt><dd><ReferenceText kind="room" value={item.roomId} fallback="Phòng khám" /></dd></div>
           <div><dt className="text-muted-foreground">Hình thức</dt><dd>{item.receptionMode === "AT_COUNTER" ? "Tiếp nhận tại quầy" : "Đăng ký trước"}</dd></div>
           {item.status === "AWAITING_PAYMENT" ? <div><dt className="text-muted-foreground">Hạn thanh toán giữ chỗ</dt><dd>{formatInstant(item.reservationExpiresAt)}</dd></div> : null}
-          <div><dt className="text-muted-foreground">Số thứ tự</dt><dd>{item.queueNumber !== null ? item.queueNumber : "Chưa cấp số trước khi xác nhận"}</dd></div>
+          <div><dt className="text-muted-foreground">{queueNumberLabel(clinicIntakeEnabled)}</dt><dd>{item.queueNumber !== null ? item.queueNumber : "Chưa cấp số trước khi xác nhận"}</dd></div>
+          {clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? <div><dt className="text-muted-foreground">Số phòng</dt><dd>{item.roomQueueNumber}</dd></div> : null}
         </dl>
         {item.status === "CONFIRMED" ? <p role="status" className="rounded-lg border border-info/30 bg-info/5 p-3 text-sm">{item.checkedInAt ? "Đã ghi nhận bạn có mặt. Vui lòng chờ gọi tên theo hướng dẫn tại phòng khám." : "Lịch khám đã xác nhận. Vui lòng đến quầy tiếp nhận vào ngày hẹn để ghi nhận có mặt trước khi khám."}</p> : null}
         {item.followUpRecommendation ? <section aria-label="Đề xuất tái khám" className="space-y-2 rounded-lg border border-info/30 bg-info/5 p-4">

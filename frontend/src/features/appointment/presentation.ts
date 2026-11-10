@@ -28,3 +28,23 @@ export const registrationStatusLabels: Record<RegistrationStatus, string> = {
   AWAITING_PAYMENT: "Chờ thanh toán", CONFIRMED: "Đã xác nhận", IN_EXAM: "Đang khám",
   COMPLETED: "Đã hoàn tất", EXPIRED: "Hết hạn giữ chỗ", CANCELLED: "Đã hủy", RECONCILIATION_REQUIRED: "Cần đối soát thanh toán",
 };
+
+export function registrationOutcomeLabel(item: { status: RegistrationStatus; checkedInAt: string | null; stage?: string | null }): string {
+  if (item.stage === "ABSENT") return "Vắng mặt";
+  if (item.status === "CONFIRMED") return item.checkedInAt ? "Đã đến · Chờ khám" : "Đã thanh toán · Chờ đến";
+  return registrationStatusLabels[item.status];
+}
+
+/** The reception-counter number, as opposed to the per-room number issued by the department desk. */
+export function queueNumberLabel(clinicIntakeEnabled: boolean): string {
+  return clinicIntakeEnabled ? "Số quầy" : "Số thứ tự";
+}
+
+export function queueNumberText(queueNumber: number | null, clinicIntakeEnabled: boolean): string {
+  if (queueNumber === null) return "Chưa có số";
+  return clinicIntakeEnabled ? `Số quầy ${queueNumber}` : `Số ${queueNumber}`;
+}
+
+export function roomNumberText(roomQueueNumber: number | null | undefined): string | null {
+  return roomQueueNumber === null || roomQueueNumber === undefined ? null : `Số phòng ${roomQueueNumber}`;
+}

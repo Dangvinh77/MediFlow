@@ -166,6 +166,33 @@ export interface RevisionCommand {
   expectedRevision: number;
 }
 
+export interface RescheduleCommand {
+  expectedRevision: number;
+  targetSessionId: string;
+  reason: string;
+  patientConfirmed: boolean;
+}
+
+export interface AffectedRegistration {
+  registrationId: string;
+  patientId: string;
+  sessionId: string;
+  status: RegistrationStatus;
+  reservationStatus: ReservationStatus | null;
+  checkedInAt: string | null;
+  queueNumber: number | null;
+  roomQueueNumber: number | null;
+}
+
+export interface ScheduleImpactDTO {
+  sessionIds: string[];
+  heldCount: number;
+  paymentLockedCount: number;
+  confirmedCount: number;
+  consumedCount: number;
+  registrations: AffectedRegistration[];
+}
+
 export interface RegistrationCancellationCommand {
   expectedRevision: number;
   reason: string;
@@ -194,6 +221,7 @@ export interface RegistrationDTO {
   reservationExpiresAt: string;
   checkedInAt: string | null;
   queueNumber: number | null;
+  roomQueueNumber?: number | null;
   readyForExam: boolean;
   createdAt: string;
   updatedAt: string;
@@ -206,6 +234,7 @@ export interface RegistrationSummary {
   status: RegistrationStatus;
   checkedInAt: string | null;
   queueNumber: number | null;
+  roomQueueNumber?: number | null;
   readyForExam: boolean;
 }
 export interface DoctorWorkShiftCreate { doctorId: string; departmentId: string; roomId: string; shiftDate: string; startTime: string; endTime: string }

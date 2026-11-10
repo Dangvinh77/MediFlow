@@ -1,4 +1,17 @@
 import { sessionDateErrors, vietnamToday } from "./session-dates";
+import type { ConsultationSessionDTO } from "./types";
+
+export type SessionAvailability = "AVAILABLE" | "FULL" | "NOT_OPEN" | "LOAD_ERROR";
+
+export const sessionAvailabilityLabels: Record<SessionAvailability, string> = {
+  AVAILABLE: "Còn chỗ", FULL: "Đã hết chỗ", NOT_OPEN: "Buổi không nhận đăng ký", LOAD_ERROR: "Không tải được lịch",
+};
+
+export function sessionAvailability(session: Pick<ConsultationSessionDTO, "status" | "availableCount"> | null, loadError: unknown): SessionAvailability {
+  if (loadError) return "LOAD_ERROR";
+  if (!session || session.status !== "OPEN") return "NOT_OPEN";
+  return session.availableCount < 1 ? "FULL" : "AVAILABLE";
+}
 
 export function initialScheduleDate(value?: string): string {
   return value && !Object.keys(sessionDateErrors(value,value)).length ? value : vietnamToday();

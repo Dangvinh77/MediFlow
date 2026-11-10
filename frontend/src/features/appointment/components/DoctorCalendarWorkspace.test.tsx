@@ -84,3 +84,23 @@ describe("doctor own calendar", () => {
     expect(appointmentApi.myCalendar).not.toHaveBeenCalled();
   });
 });
+
+describe("doctor calendar queue numbers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks(); auth.session = "session-a"; auth.listeners.clear();
+    mocks.calendar.mockResolvedValue({ doctorId: "signed-doctor", fromDate: "2026-10-26", toDate: "2026-11-01", timezone: "Asia/Ho_Chi_Minh", sessions: [session] });
+    mocks.shifts.mockResolvedValue([]);
+    mocks.registrations.mockResolvedValue({ content: [{ registrationId: "r1", patientId: "p1", visitType: "NEW_VISIT", status: "CONFIRMED", checkedInAt: "2026-10-26T01:00:00Z", queueNumber: 3, roomQueueNumber: 5, readyForExam: true }], totalElements: 1, totalPages: 1, number: 0, size: 20 });
+  });
+  it("names the counter and room numbers when clinic intake is on", async () => {
+    render(<DoctorCalendarWorkspace enabled clinicIntakeEnabled />);
+    await userEvent.click(await screen.findByRole("button", { pressed: false }));
+    expect(await screen.findByText(/Số quầy 3 · Số phòng 5/)).toBeVisible();
+  });
+  it("keeps the short number when clinic intake is off", async () => {
+    render(<DoctorCalendarWorkspace enabled />);
+    await userEvent.click(await screen.findByRole("button", { pressed: false }));
+    expect(await screen.findByText(/Số 3/)).toBeVisible();
+    expect(screen.queryByText(/Số phòng/)).not.toBeInTheDocument();
+  });
+});

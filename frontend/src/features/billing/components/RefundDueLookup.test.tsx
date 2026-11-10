@@ -2,10 +2,10 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { storeSession } from "@/lib/session";
-const mocks = vi.hoisted(() => ({ refundsDue: vi.fn(), labRefundsDue: vi.fn(), recordRefund: vi.fn(), replace: vi.fn() }));
+const mocks = vi.hoisted(() => ({ refundsDue: vi.fn(), labRefundsDue: vi.fn(), examRefundsDue: vi.fn(), registrationSettlements: vi.fn(), recordRefund: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks }));
 vi.mock("../api", () => ({ billingApi: mocks }));
-import { RefundDueLookup } from "./RefundDueLookup";
+import { RefundDueLookup, RegistrationSettlementList } from "./RefundDueLookup";
 const id = "00000000-0000-4000-8000-000000000001";
 beforeEach(() => { vi.resetAllMocks(); act(() => storeSession({ accessToken: "a", refreshToken: "r", role: "CASHIER" })); });
 function openLookup() { const summary = screen.getByText("Tra cứu khoản cần hoàn (hỗ trợ)"); if (!summary.closest("details")?.open) fireEvent.click(summary); }
@@ -152,3 +152,29 @@ function submitRefund() {
  fireEvent.click(screen.getByRole("checkbox"));
  fireEvent.click(screen.getByRole("button", { name: "Ghi nhận hoàn tiền" }));
 }
+describe("registration settlements", () => {
+ const row = (kind: string, reason: string, amount: number) => ({ registrationId: id, registrationRevision: 3, kind, paymentRequestId: id, amount, refundedAmount: 0, outstandingAmount: amount, currency: "USD", sourceType: "OUTPATIENT_REGISTRATION", sourceId: id, actorAccountId: id, reason, occurredAt: "2026-11-10T01:00:00Z" });
+ it("billing lists refund due separately from voided", async () => {
+   mocks.registrationSettlements.mockImplementation(async (kind: string) => ({ content: kind === "REFUND_DUE" ? [row(kind, "Đã thu cần hoàn", 50)] : [row(kind, "Hủy khi chưa thu", 30)], number: 0, totalPages: 1, totalElements: 1, size: 20 }));
+   render(<RegistrationSettlementList />);
+   const due = await screen.findByRole("region", { name: "Cần hoàn tiền" });
+   const voided = await screen.findByRole("region", { name: "Đã hủy chưa thu" });
+   expect(await within(due).findByText("Đã thu cần hoàn")).toBeVisible();
+   expect(within(due).queryByText("Hủy khi chưa thu")).not.toBeInTheDocument();
+   expect(await within(voided).findByText("Hủy khi chưa thu")).toBeVisible();
+   expect(within(voided).queryByText("Đã thu cần hoàn")).not.toBeInTheDocument();
+   expect(mocks.registrationSettlements).toHaveBeenCalledWith("REFUND_DUE", 0, 20);
+   expect(mocks.registrationSettlements).toHaveBeenCalledWith("VOID_UNPAID", 0, 20);
+ });
+ it("refund lookup accepts an exam registration source", async () => {
+   mocks.examRefundsDue.mockResolvedValue({ sourceId: id, sourceType: "OUTPATIENT_REGISTRATION", eventType: "CANCELLED", status: "APPLIED", rejectionCode: null, refundsDue: [{ originalTransactionId: id, amount: 50, currency: "USD" }] });
+   render(<RefundDueLookup />);
+   openLookup();
+   fireEvent.change(screen.getByLabelText("Loại nguồn hoàn tiền", { exact: false }), { target: { value: "EXAM" } });
+   fireEvent.change(screen.getByLabelText("Mã phiếu khám", { exact: false }), { target: { value: id } });
+   fireEvent.click(screen.getByRole("button", { name: "Tra cứu nghĩa vụ hoàn tiền" }));
+   await screen.findByText("50 USD");
+   expect(mocks.examRefundsDue).toHaveBeenCalledWith(id);
+   expect(mocks.refundsDue).not.toHaveBeenCalled();
+ });
+});

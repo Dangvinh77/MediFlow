@@ -4,19 +4,57 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
+import { AsyncState } from "@/components/ui/AsyncState";
 import { ApiRequestError } from "@/lib/api";
-import { formatDecimal } from "@/lib/format";
+import { formatDecimal, formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { useCommand } from "@/lib/use-command";
 import { billingApi } from "../api";
-import type { LedgerPaymentMethod, LedgerRefundDTO, OutpatientAdjustmentDTO, PrescriptionAdjustmentDTO, RefundDueDTO } from "../types";
+import type { LedgerPaymentMethod, LedgerRefundDTO, OutpatientAdjustmentDTO, PrescriptionAdjustmentDTO, RefundDueDTO, RegistrationSettlementDTO, RegistrationSettlementKind } from "../types";
 import { BillingSessionBoundary } from "./BillingSessionBoundary";
 
-type RefundSourceType = "LAB_TEST" | "PRESCRIPTION";
+type RefundSourceType = "EXAM" | "LAB_TEST" | "PRESCRIPTION";
 type AdjustmentDTO = OutpatientAdjustmentDTO | PrescriptionAdjustmentDTO;
 
 function readRefundObligations(sourceType: RefundSourceType, sourceId: string) {
+  if (sourceType === "EXAM") return billingApi.examRefundsDue(sourceId);
   return sourceType === "LAB_TEST" ? billingApi.labRefundsDue(sourceId) : billingApi.refundsDue(sourceId);
+}
+
+export function RegistrationSettlementList() {
+  return <BillingSessionBoundary identity="registration-settlements"><div className="space-y-4">
+    <SettlementSection kind="REFUND_DUE" title="Cần hoàn tiền" empty="Không có phiếu khám nào cần hoàn tiền." />
+    <SettlementSection kind="VOID_UNPAID" title="Đã hủy chưa thu" empty="Không có phiếu khám nào bị hủy khi chưa thu tiền." />
+  </div></BillingSessionBoundary>;
+}
+
+interface SettlementRead { key: string; rows?: RegistrationSettlementDTO[]; totalPages?: number; message?: string; correlationId?: string | null }
+
+function SettlementSection({ kind, title, empty }: { kind: RegistrationSettlementKind; title: string; empty: string }) {
+  const [page, setPage] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const [read, setRead] = useState<SettlementRead | null>(null);
+  const key = `${kind}:${page}:${attempt}`;
+  useEffect(() => {
+    let live = true;
+    billingApi.registrationSettlements(kind, page, 20)
+      .then((result) => { if (live) setRead({ key, rows: result.content, totalPages: result.totalPages }); })
+      .catch((cause: unknown) => { if (live) setRead({ key, message: cause instanceof ApiRequestError ? cause.message : "Không thể tải danh sách phiếu khám.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null }); });
+    return () => { live = false; };
+  }, [kind, page, key]);
+  const current = read?.key === key ? read : null;
+  const totalPages = current?.totalPages ?? 0;
+  return <section aria-label={title} className="space-y-3 rounded-lg border border-border p-4">
+    <h2 className="font-semibold">{title}</h2>
+    {!current ? <AsyncState kind="loading" message="Đang tải danh sách phiếu khám…" /> : null}
+    {current?.message ? <AsyncState kind="error" message={current.message} correlationId={current.correlationId ?? null} onRetry={() => setAttempt((value) => value + 1)} /> : null}
+    {current?.rows ? current.rows.length ? <ul className="divide-y divide-border">{current.rows.map((row) => <li key={`${row.registrationId}:${row.registrationRevision}`} className="space-y-1 py-3 text-sm">
+      <p className="font-semibold tabular-nums">{formatDecimal(kind === "REFUND_DUE" ? row.outstandingAmount : row.amount)} {row.currency}</p>
+      {row.reason ? <p>{row.reason}</p> : null}
+      <p className="text-muted-foreground">{formatInstant(row.occurredAt)} · Mã phiếu: <span className="break-all font-mono">{row.registrationId}</span></p>
+    </li>)}</ul> : <p role="status" className="text-sm text-muted-foreground">{empty}</p> : null}
+    {totalPages > 1 ? <nav aria-label={`Trang ${title}`} className="flex items-center justify-between text-sm"><Button type="button" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>Trang trước</Button><span>Trang {page + 1} / {totalPages}</span><Button type="button" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></nav> : null}
+  </section>;
 }
 
 export function RefundDueLookup() {
@@ -38,7 +76,7 @@ function RefundDueLookupSession() {
   const focusLookup = useRef(false);
   const locked = useRef(false);
   const generation = useRef(0);
-  const sourceIdLabel = sourceType === "LAB_TEST" ? "Mã xét nghiệm" : "Mã đơn thuốc";
+  const sourceIdLabel = sourceType === "EXAM" ? "Mã phiếu khám" : sourceType === "LAB_TEST" ? "Mã xét nghiệm" : "Mã đơn thuốc";
 
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => {
@@ -111,12 +149,13 @@ function RefundDueLookupSession() {
   }
 
   return <section aria-label="Nghĩa vụ hoàn tiền" className="space-y-4">
-    <p className="text-sm text-muted-foreground">Tra cứu nghĩa vụ do Billing xác nhận sau khi hủy hoặc điều chỉnh xét nghiệm, đơn thuốc. Chỉ ghi nhận khoản đã thực tế hoàn cho người bệnh.</p>
+    <p className="text-sm text-muted-foreground">Tra cứu nghĩa vụ do Billing xác nhận sau khi hủy hoặc điều chỉnh phiếu khám, xét nghiệm, đơn thuốc. Chỉ ghi nhận khoản đã thực tế hoàn cho người bệnh.</p>
     <details open={lookupOpen} onToggle={(event) => setLookupOpen(event.currentTarget.open)} className="max-w-xl rounded-lg border border-border p-3">
       <summary className="min-h-9 cursor-pointer text-sm font-medium">Tra cứu khoản cần hoàn (hỗ trợ)</summary>
       <form onSubmit={lookup} noValidate className="mt-3 space-y-3">
         <Field label="Loại nguồn hoàn tiền" htmlFor="refund-source-type" required>
           <select id="refund-source-type" value={sourceType} disabled={busy || commandLocked || result !== null} onChange={(event) => { setSourceType(event.target.value as RefundSourceType); setId(""); setError(null); }} className={controlClassName}>
+            <option value="EXAM">Phiếu khám</option>
             <option value="LAB_TEST">Xét nghiệm</option>
             <option value="PRESCRIPTION">Đơn thuốc</option>
           </select>

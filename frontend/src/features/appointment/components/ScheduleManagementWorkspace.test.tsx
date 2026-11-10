@@ -3,18 +3,19 @@ import Link from "next/link";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "@/lib/api";
 import { appointmentApi } from "../api";
 import { ScheduleManagementWorkspace, SessionAdministration } from "./ScheduleManagementWorkspace";
 
 const mocks = vi.hoisted(() => ({
   rooms: vi.fn(), scope: vi.fn(), replaceScope: vi.fn(),
   createSession: vi.fn(), updateSession: vi.fn(), changeStatus: vi.fn(), listSessions: vi.fn(),
-  departments: vi.fn(),
+  departments: vi.fn(), sessionImpact: vi.fn(),
 }));
 vi.mock("../api", () => ({ appointmentApi: {
   consultationRooms: mocks.rooms, scheduleManagementScope: mocks.scope, replaceScheduleManagementScope: mocks.replaceScope,
   createSession: mocks.createSession, updateSession: mocks.updateSession, changeSessionStatus: mocks.changeStatus,
-  listConsultationSessions: mocks.listSessions,
+  listConsultationSessions: mocks.listSessions, sessionImpact: mocks.sessionImpact,
 } }));
 vi.mock("@/lib/api", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/api")>(), api: { get: mocks.departments } }));
 vi.mock("@/lib/session", () => ({ getSessionKey: () => "admin-session" }));
@@ -143,4 +144,24 @@ describe("schedule management", () => {
     expect(appointmentApi.consultationRooms).not.toHaveBeenCalled();
   });
 
+});
+
+describe("schedule impact", () => {
+  it("blocked session edit opens the impact panel", async () => {
+    vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
+    const user = userEvent.setup();
+    mocks.listSessions.mockResolvedValue({ content: [created], number: 0, totalPages: 1, totalElements: 1 });
+    mocks.rooms.mockResolvedValue({ content: [{ roomId: "room-id", departmentId: "department-id", roomName: "Phòng 1", roomType: "CONSULTATION" }], number: 0, totalPages: 1, totalElements: 1 });
+    mocks.updateSession.mockRejectedValue(new ApiRequestError("Buổi đã có phiếu", 409, "SESSION_HAS_REGISTRATIONS"));
+    mocks.sessionImpact.mockResolvedValue({ sessionIds: ["new-session"], heldCount: 0, paymentLockedCount: 0, confirmedCount: 1, consumedCount: 0, registrations: [
+      { registrationId: "r1", patientId: "p1", sessionId: "new-session", status: "CONFIRMED", reservationStatus: "CONFIRMED", checkedInAt: null, queueNumber: 4, roomQueueNumber: null },
+    ] });
+    render(<SessionAdministration fixedDepartmentId="department-id" clinicIntakeEnabled />);
+    await user.click(await screen.findByRole("button", { name: "Sửa" }));
+    fireEvent.change(screen.getByLabelText("Lý do sửa buổi"), { target: { value: "Bác sĩ nghỉ" } });
+    await user.click(screen.getByRole("button", { name: "Lưu thay đổi buổi" }));
+    expect(await screen.findByRole("heading", { name: "Bệnh nhân bị ảnh hưởng" })).toBeVisible();
+    expect(mocks.sessionImpact).toHaveBeenCalledWith("new-session");
+    expect(await screen.findByText(/Số quầy 4/)).toBeVisible();
+  });
 });

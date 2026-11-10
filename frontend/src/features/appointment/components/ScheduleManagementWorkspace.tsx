@@ -13,6 +13,7 @@ import { formatLocalDate } from "@/lib/format";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { formatScheduleObservedAt, initialScheduleDate } from "../schedule-presentation";
 import { ScheduleDateInput } from "./ScheduleDateInput";
+import { ScheduleImpactPanel } from "./ScheduleImpactPanel";
 import { sessionDateErrors, shiftRange } from "../session-dates";
 import { appointmentApi } from "../api";
 import type {
@@ -59,7 +60,7 @@ function emptySessionForm(): SessionFormState {
   return { doctorId: "", roomId: "", sessionDate: "", startTime: "08:00", endTime: "12:00", capacity: "20", breaks: [], reason: "" };
 }
 
-export function SessionAdministration({ fixedDepartmentId = "", checking = false, initialDate }: { fixedDepartmentId?: string; checking?: boolean; initialDate?: string }) {
+export function SessionAdministration({ fixedDepartmentId = "", checking = false, initialDate, clinicIntakeEnabled = false }: { fixedDepartmentId?: string; checking?: boolean; initialDate?: string; clinicIntakeEnabled?: boolean }) {
   const [departmentId, setDepartmentId] = useState(fixedDepartmentId);
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const reads = useRef(0);
@@ -86,6 +87,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   const [lastMutation, setLastMutation] = useState<SessionMutation | null>(null);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
   const [roomsLoaded, setRoomsLoaded] = useState(false);
+  const [impactSessionId, setImpactSessionId] = useState<string | null>(null);
 
   async function loadRooms() {
     if (!departmentId.trim()) { setRoomError({ message: "Chọn khoa trước khi tải phòng.", correlationId: null }); return; }
@@ -120,7 +122,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   async function executeMutation(command: SessionMutation) {
     if (mutationLock.current || checking) return;
     mutationLock.current = true; reads.current++; setListLoading(false); const session = getSessionKey();
-    setMutating(true); setMutationError(null); setLastMutation(command);
+    setMutating(true); setMutationError(null); setLastMutation(command); setImpactSessionId(null);
     try {
       const intent = await prepareCommandIntent(command.scope, session, command.body);
       if (session !== getSessionKey()) return;
@@ -140,6 +142,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
         try { const intent = await prepareCommandIntent(command.scope, session, command.body); intent.settle(cause); } catch { /* Keep unresolved intent locked. */ }
       }
       setMutationError({ ...errorFrom(cause, "Không thể lưu thay đổi buổi khám."), uncertain: outcomeUnknown(cause) });
+      if (clinicIntakeEnabled && command.kind !== "create" && cause instanceof ApiRequestError && cause.code === "SESSION_HAS_REGISTRATIONS") setImpactSessionId(command.sessionId);
     } finally { mutationLock.current = false; if (active.current && session === getSessionKey()) setMutating(false); }
   }
 
@@ -167,7 +170,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
 
   function beginEdit(session: ConsultationSessionDTO) {
     if (!confirmLeave()) return;
-    setEditing(session); setMutationError(null);
+    setEditing(session); setMutationError(null); setImpactSessionId(null);
     setForm({ doctorId: session.doctorId, roomId: session.roomId, sessionDate: session.sessionDate, startTime: session.startTime, endTime: session.endTime, capacity: String(session.capacity), breaks: session.breaks.map(item => ({ ...item })), reason: "" });
     setDepartmentId(session.departmentId);
     setRooms(current => current.some(room => room.roomId === session.roomId) ? current : [...current, { roomId: session.roomId, departmentId: session.departmentId, roomName: "Phòng hiện tại", roomType: "CONSULTATION" }]);
@@ -182,7 +185,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   function changeDepartment(value: string) {
     if (!confirmLeave()) return;
     reads.current++; roomReads.current++; setListLoading(false);
-    setDepartmentId(value); setListLoaded(false); setRooms([]); setRoomsLoaded(false); setLockNotice(null); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null);
+    setDepartmentId(value); setListLoaded(false); setRooms([]); setRoomsLoaded(false); setLockNotice(null); setSessions([]); setSessionPage(0); setSessionPages(0); setEditing(null); setForm(emptySessionForm()); setListError(null); setRoomError(null); setMutationError(null); setImpactSessionId(null);
   }
 
   // Rooms only serve the create/edit form; load them as soon as a department is chosen.
@@ -217,6 +220,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
     {listError ? <AsyncState kind="error" message={listError.message} correlationId={listError.correlationId} onRetry={() => void loadSessions()} /> : null}
     {roomError ? <AsyncState kind="error" message={roomError.message} correlationId={roomError.correlationId} onRetry={() => void loadRooms()} /> : null}
     {mutationError && lastMutation?.kind === "status" ? <div role="alert" className="space-y-3 rounded-lg border border-danger/40 p-4 text-sm text-danger"><p>{mutationError.message}</p>{mutationError.uncertain ? <><p>Kết quả chưa xác định. Gửi lại đúng yêu cầu để đối soát.</p><Button disabled={checking || mutating} onClick={() => void executeMutation(lastMutation)}>Gửi lại thay đổi trạng thái</Button></> : null}</div> : null}
+    {impactSessionId ? <ScheduleImpactPanel kind="session" id={impactSessionId} /> : null}
 
 
     <section className="border-t border-border pt-5">
@@ -257,7 +261,7 @@ export function SessionAdministration({ fixedDepartmentId = "", checking = false
   </section>;
 }
 
-export function ScheduleManagementWorkspace({ enabled }: { enabled: boolean }) {
+export function ScheduleManagementWorkspace({ enabled, clinicIntakeEnabled = false }: { enabled: boolean; clinicIntakeEnabled?: boolean }) {
   if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Quản lý lịch khám V2 chưa được mở.</p>;
-  return <div className="space-y-6"><SessionAdministration /></div>;
+  return <div className="space-y-6"><SessionAdministration clinicIntakeEnabled={clinicIntakeEnabled} /></div>;
 }
