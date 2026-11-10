@@ -11,12 +11,14 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { queueNumberLabel, queueNumberText, registrationOutcomeLabel, registrationStatusLabels, roomNumberText, sessionStatusLabels } from "../presentation";
 import { sessionAvailability, sessionAvailabilityLabels } from "../schedule-presentation";
 import { RescheduleDialog } from "./RescheduleDialog";
+import { OpenVisitNotice } from "./OpenVisitNotice";
+import { isUuid } from "@/lib/validation";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { sessionDateErrors, vietnamToday } from "../session-dates";
 import { ScheduleDateInput } from "./ScheduleDateInput";
 import { appointmentApi } from "../api";
-import type { ConsultationSessionDTO, FollowUpSourceSummary, RegistrationCancellationCommand, RegistrationCreate, RegistrationDTO, RegistrationSummary, RevisionCommand } from "../types";
+import type { ConsultationSessionDTO, FollowUpSourceSummary, RegistrationCancellationCommand, RegistrationCreate, RegistrationDTO, RegistrationSummary, ReturnSourceRecord, RevisionCommand } from "../types";
 
 interface WorkspaceError { message: string; correlationId: string | null; uncertain?: boolean }
 interface RegistrationActionError extends WorkspaceError { registrationId: string }
@@ -36,6 +38,11 @@ function errorFrom(cause: unknown, fallback: string): WorkspaceError {
 
 const dateInputClass = "min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-55";
 const linkButton ="inline-flex min-h-11 items-center justify-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+
+const returnSourceLabels: Record<string, string> = {
+  COMPLETED: "Đã hoàn tất khám",
+  CLOSED_WITHOUT_CONCLUSION: "Kết thúc không kết luận",
+};
 
 function uncertain(cause: unknown) {
   return !(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500;
@@ -66,6 +73,15 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
   const [followUpSourceError, setFollowUpSourceError] = useState<WorkspaceError | null>(null);
   const [selectedFollowUpSource, setSelectedFollowUpSource] = useState<FollowUpSourceSummary | null>(null);
   const [useFollowUpRecommendation, setUseFollowUpRecommendation] = useState(true);
+  const [independentReason, setIndependentReason] = useState("");
+  const [sameDepartmentOpen, setSameDepartmentOpen] = useState(false);
+  const [forceIndependentReason, setForceIndependentReason] = useState(false);
+  const [isReturnVisit, setIsReturnVisit] = useState(false);
+  const [returnSources, setReturnSources] = useState<ReturnSourceRecord[] | null>(null);
+  const [returnSourceError, setReturnSourceError] = useState<WorkspaceError | null>(null);
+  const [returnSourceId, setReturnSourceId] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const returnSourceGeneration = useRef(0);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<WorkspaceError | null>(null);
   const [createdRegistration, setCreatedRegistration] = useState<RegistrationDTO | null>(null);
@@ -222,10 +238,27 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
           intent.settle(cause);
         } catch { /* Retain the pending intent and its fingerprint. */ }
       }
+      if (current() && cause instanceof ApiRequestError && cause.code === "OPEN_VISIT_EXISTS") setForceIndependentReason(true);
       if (current()) setCreateError({ ...errorFrom(cause, "Không thể đăng ký giữ chỗ."), uncertain: uncertain(cause) || cause instanceof CommandIntentError });
     } finally {
       writeLock.current = false;
       if (alive.current) setCreating(false);
+    }
+  }
+
+  function resetReturnVisit() {
+    returnSourceGeneration.current++;
+    setIsReturnVisit(false); setReturnSources(null); setReturnSourceError(null); setReturnSourceId(""); setReturnReason("");
+  }
+
+  async function loadReturnSources() {
+    const generation = ++returnSourceGeneration.current;
+    setReturnSources(null); setReturnSourceError(null);
+    try {
+      const records = await appointmentApi.returnSources(patientId.trim());
+      if (returnSourceGeneration.current === generation) setReturnSources(records.filter(record => record.status in returnSourceLabels));
+    } catch (cause) {
+      if (returnSourceGeneration.current === generation) setReturnSourceError(errorFrom(cause, "Không thể tải các lượt đã kết thúc."));
     }
   }
 
@@ -338,6 +371,16 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
       setCreateError({ message: "Cần lý do chọn bác sĩ khác và xác nhận bệnh nhân đã đồng ý.", correlationId: null });
       return;
     }
+    const needsIndependentReason = sameDepartmentOpen || forceIndependentReason;
+    if (needsIndependentReason && !independentReason.trim()) {
+      setCreateError({ message: "Bệnh nhân còn lượt khám chưa kết thúc trong khoa này. Cần ghi lý do đăng ký thêm lượt.", correlationId: null });
+      return;
+    }
+    const linksReturn = visitType === "NEW_VISIT" && isReturnVisit;
+    if (linksReturn && (!returnSourceId || !returnReason.trim())) {
+      setCreateError({ message: "Chọn lượt đã kết thúc và ghi lý do quay lại.", correlationId: null });
+      return;
+    }
     const body: RegistrationCreate = {
       patientId: patientId.trim(),
       sessionId: selectedSession.sessionId,
@@ -349,6 +392,8 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
       replacementReason: hasDoctorReplacement ? replacementReason.trim() : null,
       patientAgreedToDoctorReplacement: hasDoctorReplacement ? true : null,
       reason: reason.trim() || null,
+      ...(needsIndependentReason ? { independentVisitReason: independentReason.trim() } : {}),
+      ...(linksReturn ? { returnSourceRecordId: returnSourceId, returnReason: returnReason.trim() } : {}),
     };
     void submitRegistration(body);
   }
@@ -360,6 +405,7 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
     selectionGeneration.current++; registrationReads.current++;
     setNeedsRefresh(false); setRefreshing(false); setRefreshError(false); setRegistrationLoading(false);
     followUpSourceGeneration.current++;
+    setSameDepartmentOpen(false); setForceIndependentReason(false); setIndependentReason("");
     setDepartmentId(value); setSessionsLoaded(false); setLoading(false); setSessions([]); setSessionPage(0); setSessionPages(0); setSelectedSession(null); setRegistrationList(null); setRegistrationPage(0); setRegistrationPages(0); setLoadError(null); setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
   }
 
@@ -370,6 +416,7 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
     setPatientId(value); setCreateError(null); setFollowUpSources(null);
     setSelectedFollowUpSource(null); setFollowUpSourceError(null); setFollowUpSourceLoading(false);
     setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
+    setIndependentReason(""); setSameDepartmentOpen(false); setForceIndependentReason(false); resetReturnVisit();
   }
 
   function nextPatient() {
@@ -464,6 +511,7 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
             setVisitType(event.target.value as "NEW_VISIT" | "FOLLOW_UP"); setCreateError(null);
             setFollowUpSources(null); setSelectedFollowUpSource(null); setFollowUpSourceError(null);
             setUseFollowUpRecommendation(true); setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
+            resetReturnVisit();
           }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
             <option value="NEW_VISIT">Khám đợt mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
           </select>
@@ -509,6 +557,26 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
         <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="reception-reason">{visitType === "FOLLOW_UP" ? selectedRecommendation ? "Lý do đăng ký tái khám (nếu có)" : "Lý do đăng ký tái khám" : "Ghi chú tùy chọn"}
           <textarea id="reception-reason" value={reason} maxLength={1000} onChange={event => { setReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
         </label>
+        {visitType === "NEW_VISIT" ? <section aria-label="Quay lại sau lượt đã kết thúc" className="space-y-3 rounded-lg border border-border p-4 text-sm sm:col-span-2">
+          <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={isReturnVisit} disabled={!patientId.trim() || creating || Boolean(createError?.uncertain)} onChange={event => {
+            setCreateError(null);
+            if (event.target.checked) { setIsReturnVisit(true); void loadReturnSources(); } else resetReturnVisit();
+          }} />Bệnh nhân quay lại sau lượt đã kết thúc</label>
+          {returnSourceError ? <AsyncState kind="error" message={returnSourceError.message} correlationId={returnSourceError.correlationId} onRetry={() => void loadReturnSources()} /> : null}
+          {isReturnVisit && !returnSources && !returnSourceError ? <AsyncState kind="loading" message="Đang tải các lượt đã kết thúc…" /> : null}
+          {isReturnVisit && returnSources ? returnSources.length ? <>
+            <label className="block space-y-1 font-medium" htmlFor="reception-return-source">Lượt đã kết thúc
+              <select id="reception-return-source" value={returnSourceId} onChange={event => { setReturnSourceId(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
+                <option value="">Chọn lượt</option>
+                {returnSources.map(record => <option key={record.recordId} value={record.recordId}>{formatLocalDate(record.examinationDate)} · {returnSourceLabels[record.status]}</option>)}
+              </select>
+            </label>
+            <label className="block space-y-1 font-medium" htmlFor="reception-return-reason">Lý do quay lại
+              <textarea id="reception-return-reason" value={returnReason} maxLength={500} onChange={event => { setReturnReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
+            </label>
+          </> : <p role="status" className="text-muted-foreground">Bệnh nhân chưa có lượt nào đã kết thúc.</p> : null}
+        </section> : null}
+        {isUuid(patientId.trim()) && !createdRegistration ? <OpenVisitNotice key={patientId.trim()} patientId={patientId.trim()} departmentId={selectedSession.departmentId} reason={independentReason} onReasonChange={value => { setIndependentReason(value); setCreateError(null); }} onSameDepartmentChange={setSameDepartmentOpen} forceReason={forceIndependentReason} disabled={creating || Boolean(createError?.uncertain)} /> : null}
         {createError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2">
           <p>{createError.message}</p>{createError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{createError.correlationId}</span></p> : null}
           {createError.uncertain ? <p className="mt-2">Chưa xác định phiếu đã được tạo hay chưa. Hãy gửi lại đúng yêu cầu để dùng cùng khóa idempotency.</p> : null}

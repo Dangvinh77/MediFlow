@@ -73,7 +73,7 @@ function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefre
     <section className="space-y-4 rounded-xl border border-border bg-surface p-6">
       <h2 className="text-lg font-semibold">Khám ngoại trú</h2>
       {appointment.status === "AWAITING_PAYMENT" ? <p role="status" className="text-sm text-warning">Đang chờ xác nhận thanh toán phí khám. Chỉ bắt đầu khi hệ thống ghi nhận đủ điều kiện.</p> : null}
-      {appointment.status === "IN_EXAM" ? <p role="status" className="text-sm text-success">Đã bắt đầu khám. Hồ sơ khám đã được hệ thống tạo.</p> : null}
+      {appointment.status === "IN_EXAM" ? <p role="status" className="text-sm text-success">Đã bắt đầu khám. Tiếp tục khám trong hồ sơ của lượt này.</p> : null}
       {appointment.careContractVersion >= 2 && appointment.status === "READY_FOR_EXAM" && role === "DOCTOR" && !canStartScheduled ? <p role="status" className="text-sm text-muted-foreground">{!scheduled ? "Đang kiểm tra điều kiện khám…" : scheduled.error ? "Chưa kiểm tra được điều kiện khám. Chọn Cập nhật trạng thái để thử lại." : !scheduled.item?.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận để ghi nhận có mặt." : "Chưa đủ điều kiện bắt đầu. Kiểm tra giờ khám và trạng thái phiếu, sau đó cập nhật lại."}</p> : null}
       {missingRoomNumber ? <p role="status" className="text-sm text-warning">Bệnh nhân chưa có số phòng. Điều dưỡng khoa cần cấp số phòng trước khi bắt đầu khám.</p> : null}
       {showVitals ? <VitalSignHistory registrationId={appointment.appointmentId} /> : null}

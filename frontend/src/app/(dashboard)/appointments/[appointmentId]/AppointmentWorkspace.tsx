@@ -5,5 +5,5 @@ import { ExaminationRecordLink } from "@/features/medical-record/components/Exam
 
 export function AppointmentWorkspace({ appointmentId, outpatientEnabled, clinicIntakeEnabled }: { appointmentId: string; outpatientEnabled: boolean; clinicIntakeEnabled: boolean }) {
   return <AppointmentDetail appointmentId={appointmentId} outpatientEnabled={outpatientEnabled} clinicIntakeEnabled={clinicIntakeEnabled}
-    renderRecordLink={(appointment) => <ExaminationRecordLink key={appointment.appointmentId} patientId={appointment.patientId} appointmentId={appointment.appointmentId} />} />;
+    renderRecordLink={(appointment) => <ExaminationRecordLink key={appointment.appointmentId} patientId={appointment.patientId} appointmentId={appointment.appointmentId} label={appointment.status === "IN_EXAM" ? "Tiếp tục khám" : undefined} />} />;
 }

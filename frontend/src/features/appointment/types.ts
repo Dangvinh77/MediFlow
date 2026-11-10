@@ -136,6 +136,26 @@ export interface RegistrationCreate {
   replacementReason: string | null;
   patientAgreedToDoctorReplacement: boolean | null;
   reason: string | null;
+  returnSourceRecordId?: string;
+  returnReason?: string;
+  independentVisitReason?: string;
+}
+
+export interface OpenVisitDTO {
+  registrationId: string;
+  recordId: string;
+  doctorId: string;
+  departmentId: string;
+  sessionDate: string;
+  startedAt: string | null;
+}
+
+/** The part of a patient's record reception needs to link a return visit; no clinical content is shown. */
+export interface ReturnSourceRecord {
+  recordId: string;
+  status: string;
+  examinationDate: string;
+  departmentId: string;
 }
 
 export interface FollowUpRecommendationDTO {

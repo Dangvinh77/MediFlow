@@ -18,6 +18,12 @@ describe("Examination record link", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("uses the caller's label for the record link", async () => {
+    mocks.byPatient.mockResolvedValue([{ recordId: "record-a", appointmentId: "appointment-a" }]);
+    render(<ExaminationRecordLink patientId="patient-a" appointmentId="appointment-a" label="Tiếp tục khám" />);
+    expect(await screen.findByRole("link", { name: "Tiếp tục khám" })).toHaveAttribute("href", "/records/record-a");
+  });
+
   it("still offers a retry for other failures", async () => {
     mocks.byPatient.mockRejectedValue(new ApiRequestError("Lỗi máy chủ", 500, "INTERNAL_ERROR"));
     render(<ExaminationRecordLink patientId="patient-a" appointmentId="appointment-a" />);

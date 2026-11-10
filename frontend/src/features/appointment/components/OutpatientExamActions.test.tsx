@@ -125,6 +125,12 @@ describe("outpatient appointment actions", () => {
     }
   });
 
+  it("in exam offers continue and never start", () => {
+    renderActions({ role: "DOCTOR", appointment: { ...readyAppointment, status: "IN_EXAM" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Tiếp tục khám trong hồ sơ của lượt này");
+    expect(screen.queryByRole("button", { name: "Bắt đầu khám" })).not.toBeInTheDocument();
+  });
+
   it("passes the server-returned check-in state to the parent", async () => {
     const updated = { ...pendingAppointment, status: "AWAITING_PAYMENT", careContractVersion: 1 } satisfies AppointmentDTO;
     mocks.checkIn.mockResolvedValue(updated);

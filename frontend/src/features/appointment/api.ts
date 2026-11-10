@@ -1,6 +1,6 @@
 import { api, type MutationOptions } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
-import type { DepartmentSessionSummary, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate } from "./types";
+import type { DepartmentSessionSummary, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate, OpenVisitDTO, ReturnSourceRecord } from "./types";
 import type {
   AppointmentDTO,
   ChangeAppointmentStatusRequest,
@@ -139,6 +139,11 @@ export const appointmentApi = {
     api.put<ConsultationSessionDTO>(`/v2/consultation-sessions/${encodeURIComponent(sessionId)}/status`, body, options),
   createRegistration: (body: RegistrationCreate, options: SchedulingCommandOptions) =>
     api.post<RegistrationDTO>("/v2/outpatient-registrations", body, options),
+  openVisits: (patientId: string) =>
+    api.get<OpenVisitDTO[]>(`/v2/patients/${encodeURIComponent(patientId)}/open-visits`),
+  myOpenVisits: () => api.get<OpenVisitDTO[]>("/v2/doctors/me/open-visits"),
+  returnSources: (patientId: string) =>
+    api.get<ReturnSourceRecord[]>(`/v1/records/patient/${encodeURIComponent(patientId)}`),
   myRegistrations: (params: OwnRegistrationSearchParams = {}) => {
     const page = Number.isInteger(params.page) && (params.page ?? -1) >= 0 ? params.page! : 0;
     const size = Number.isInteger(params.size) && (params.size ?? 0) > 0 ? Math.min(params.size!, 100) : 20;
