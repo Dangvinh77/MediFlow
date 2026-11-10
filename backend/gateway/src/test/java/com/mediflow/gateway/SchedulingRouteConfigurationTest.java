@@ -52,6 +52,7 @@ class SchedulingRouteConfigurationTest {
                 "/api/v2/clinic-queue-tickets/123/adjustments", "lb://clinical-service",
                 "/api/v2/outpatient-registrations/123/vital-signs", "lb://clinical-service",
                 "/api/v2/outpatient-registrations/123/reschedule", "lb://clinical-service",
+                "/api/v2/records/123/close-without-conclusion", "lb://clinical-service",
                 "/api/v2/consultation-sessions/123/impact", "lb://clinical-service",
                 "/api/v2/doctor-work-shifts/123/impact", "lb://clinical-service",
                 "/api/v2/billing/registration-settlements", "lb://billing-service");

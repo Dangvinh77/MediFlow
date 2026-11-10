@@ -110,6 +110,9 @@ public class RecordAccessApplicationService {
         if (record.getStatus() == MedicalRecordStatus.COMPLETED) {
             return "RECORD_COMPLETED";
         }
+        if (record.getStatus() == MedicalRecordStatus.CLOSED_WITHOUT_CONCLUSION) {
+            return "RECORD_CLOSED";
+        }
         boolean writerRole = "DOCTOR".equals(actor.role()) || "ADMIN".equals(actor.role());
         if (!outpatientMvpEnabled && !policyEnabled) {
             return writerRole ? null : "NOT_ASSIGNED_DOCTOR";

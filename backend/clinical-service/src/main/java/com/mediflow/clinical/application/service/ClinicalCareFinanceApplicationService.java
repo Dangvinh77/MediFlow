@@ -303,6 +303,38 @@ public class ClinicalCareFinanceApplicationService
         }
     }
 
+    /** Ends a visit the patient abandoned: no diagnosis or disposition, so no record-completed fact and no charge. */
+    @Transactional
+    public MedicalRecordDTO closeWithoutConclusion(UUID recordId, com.mediflow.clinical.application.dto.request.CloseRecordRequest request) {
+        if (request == null) {
+            throw new InvalidClinicalDataException("RECORD_CLOSURE_INVALID", "A closure reason and note are required");
+        }
+        MedicalRecord record = lockedRecord(recordId);
+        if (record.getAppointmentId() == null) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination can end without a conclusion");
+        }
+        Appointment appointment = lockedAppointment(record.getAppointmentId());
+        if (appointment.getCareContractVersion() != 2 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination in progress can end without a conclusion");
+        }
+        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        requireScheduledLifecycle();
+        String correlationId = correlationIds.currentOrCreate().toString();
+        labCompletionGuard.requireAllClosed(record, appointment, correlationId);
+        Instant now = clock.instant();
+        AppointmentStatus oldStatus = appointment.getStatus();
+        record.closeWithoutConclusion(request.reason(), request.note(), actors.current().staffId(), now);
+        scheduledRegistrations.completeExamination(appointment, now);
+        appointment.completeScheduled(now);
+        MedicalRecord savedRecord = records.save(record);
+        Appointment savedAppointment = appointments.save(appointment);
+        appendStatusChanged(savedAppointment, savedRecord.getRecordId(), oldStatus,
+                savedAppointment.getStatus(), now, savedAppointment.getEmergencyOverrideId());
+        return mapper.toDto(savedRecord);
+    }
+
     @Override
     @Transactional
     public MedicalRecordDTO complete(UUID recordId, CompleteRecordRequest request) {

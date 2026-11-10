@@ -174,6 +174,7 @@ clinical-service,PUT,/api/v2/clinic-queue-tickets/{id}/call,DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/clinic-queue-tickets/{id}/adjustments,DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/outpatient-registrations/{id}/vital-signs,NURSE,true
 clinical-service,GET,/api/v2/outpatient-registrations/{id}/vital-signs,DOCTOR|NURSE,true
+clinical-service,PUT,/api/v2/records/{id}/close-without-conclusion,DOCTOR,true
 clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NURSE,true
 clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
 clinical-service,GET,/api/v2/doctor-work-shifts/{id}/impact,ADMIN|DOCTOR,true

@@ -93,6 +93,17 @@ class ClinicalPersistenceAdapterTest {
     }
 
     @Test
+    void closedRecordIsHiddenFromPatientResults() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        MedicalRecord closed = MedicalRecord.create(patient, doctor, UUID.randomUUID(), LocalDate.now(), null, null, List.of(Diagnosis.create("Draft", null, null)));
+        closed.closeWithoutConclusion(com.mediflow.clinical.domain.model.RecordClosureReason.PATIENT_LEFT, "Tự về", doctor, Instant.now());
+        records.save(closed);
+        assertThat(records.findById(closed.getRecordId()).orElseThrow().getClosureNote()).isEqualTo("Tự về");
+        assertThat(records.findCompletedByPatient(patient, PageQuery.of(0, 10)).totalElements()).isZero();
+    }
+
+    @Test
     void cancelledCareFinanceAppointmentRoundTrip_preservesAuditEvidence() {
         Instant now = Instant.now();
         Appointment appointment = Appointment.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

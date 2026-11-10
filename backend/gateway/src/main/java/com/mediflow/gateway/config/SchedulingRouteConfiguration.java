@@ -27,7 +27,8 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/outpatient-registrations/*/room-queue-ticket", "/api/v2/outpatient-registrations/*/vital-signs",
                         "/api/v2/outpatient-registrations/*/reschedule", "/api/v2/clinic-queue",
                         "/api/v2/clinic-queue-tickets/*/call", "/api/v2/clinic-queue-tickets/*/adjustments",
-                        "/api/v2/consultation-sessions/*/impact", "/api/v2/doctor-work-shifts/*/impact")
+                        "/api/v2/consultation-sessions/*/impact", "/api/v2/doctor-work-shifts/*/impact",
+                        "/api/v2/records/*/close-without-conclusion")
                         .uri("lb://clinical-service"))
                 .route("scheduling-billing", route -> route.path(
                         "/api/v2/billing/payment-requests",
