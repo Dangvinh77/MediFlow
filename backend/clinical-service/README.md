@@ -19,6 +19,11 @@ Part of **MediFlow: A Microservices-Based Hospital Information System for Outpat
 Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
 
 
+Department nurse desk (MediFlow v2.0): `MEDIFLOW_V2_CLINIC_INTAKE` (default `false`) turns on the
+room queue, vital signs, rescheduling and schedule-impact APIs, and per-department counter numbers.
+With it off those APIs return 404 and `queueNumber` stays per session. Web uses
+`MEDIFLOW_CLINIC_INTAKE_UI_ENABLED`; mobile uses `--dart-define=MEDIFLOW_CLINIC_INTAKE_UI_ENABLED=true`.
+
 **Khoa Khám bệnh** — the outpatient examination workflow end to end: booking an appointment, the examination, the medical record and its diagnoses.
 
 Reference: [service rules](../../docs/ai/services/clinical.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/history/2026-10-18-clinical-lab-checkpoints.md).
