@@ -30,6 +30,12 @@ public final class MedicalRecord {
     private RecordDisposition disposition;
     private String dispositionNote;
     private Instant completedAt;
+    @Getter(AccessLevel.NONE)
+    private Closure closure;
+    private final UUID previousRecordId;
+
+    /** How a visit ended when no conclusion could be recorded. */
+    public record Closure(RecordClosureReason reason, String note, UUID closedByStaffId, Instant closedAt) {}
 
     /** Legacy record creation retains the existing diagnosis-at-create rule. */
     public static MedicalRecord create(UUID patientId, UUID doctorId, UUID departmentId, LocalDate date,
@@ -51,6 +57,18 @@ public final class MedicalRecord {
                 List.of(), createdAt, null, MedicalRecordStatus.OPEN, null, null, null);
     }
 
+    /** Opens a new visit that points at an earlier one; nothing clinical is copied from the source. */
+    public static MedicalRecord openForAppointment(UUID patientId, UUID doctorId, UUID departmentId,
+                                                    LocalDate date, String symptoms, UUID appointmentId,
+                                                    Instant createdAt, UUID previousRecordId) {
+        if (appointmentId == null) {
+            throw new InvalidClinicalDataException("CLINICAL_RECORD_NOT_FOUND",
+                    "Appointment-backed record requires an appointment id");
+        }
+        return restore(UUID.randomUUID(), patientId, doctorId, departmentId, date, symptoms, appointmentId,
+                List.of(), createdAt, null, MedicalRecordStatus.OPEN, null, null, null, null, previousRecordId);
+    }
+
     public static MedicalRecord restore(UUID id, UUID patientId, UUID doctorId, UUID departmentId,
                                         LocalDate date, String symptoms, UUID appointmentId,
                                         List<Diagnosis> diagnoses, Instant createdAt, Instant updatedAt) {
@@ -63,6 +81,16 @@ public final class MedicalRecord {
                                         List<Diagnosis> diagnoses, Instant createdAt, Instant updatedAt,
                                         MedicalRecordStatus status, RecordDisposition disposition,
                                         String dispositionNote, Instant completedAt) {
+        return restore(id, patientId, doctorId, departmentId, date, symptoms, appointmentId, diagnoses, createdAt,
+                updatedAt, status, disposition, dispositionNote, completedAt, null, null);
+    }
+
+    public static MedicalRecord restore(UUID id, UUID patientId, UUID doctorId, UUID departmentId,
+                                        LocalDate date, String symptoms, UUID appointmentId,
+                                        List<Diagnosis> diagnoses, Instant createdAt, Instant updatedAt,
+                                        MedicalRecordStatus status, RecordDisposition disposition,
+                                        String dispositionNote, Instant completedAt, Closure closure,
+                                        UUID previousRecordId) {
         validateReferences(patientId, doctorId, departmentId, date);
         if (diagnoses == null || diagnoses.stream().anyMatch(Objects::isNull)) {
             throw new InvalidClinicalDataException("RECORD_NO_DIAGNOSIS",
@@ -81,9 +109,14 @@ public final class MedicalRecord {
             throw new InvalidClinicalDataException("CLINICAL_DISPOSITION_REQUIRED",
                     "Completed record requires a diagnosis, disposition and completion time");
         }
+        if ((status == MedicalRecordStatus.CLOSED_WITHOUT_CONCLUSION) != (closure != null)
+                || status == MedicalRecordStatus.CLOSED_WITHOUT_CONCLUSION && (completedAt != null || disposition != null)) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Closure details belong only to a record closed without a conclusion");
+        }
         return new MedicalRecord(Objects.requireNonNull(id), patientId, doctorId, departmentId, date,
                 symptoms, appointmentId, new ArrayList<>(diagnoses), Objects.requireNonNull(createdAt),
-                updatedAt, status, disposition, dispositionNote, completedAt);
+                updatedAt, status, disposition, dispositionNote, completedAt, closure, previousRecordId);
     }
 
     public void addDiagnosis(Diagnosis diagnosis) {
@@ -120,6 +153,34 @@ public final class MedicalRecord {
         dispositionNote = note;
         completedAt = at;
         updatedAt = at;
+    }
+
+    /** Ends the visit when the patient left or refused; no diagnosis is required or invented. */
+    public void closeWithoutConclusion(RecordClosureReason reason, String note, UUID staffId, Instant at) {
+        requireOpen();
+        if (reason == null || staffId == null || at == null || note == null || note.isBlank() || note.length() > 1000) {
+            throw new InvalidClinicalDataException("RECORD_CLOSURE_INVALID",
+                    "Closing a visit requires a reason, a note up to 1000 characters and the closing doctor");
+        }
+        status = MedicalRecordStatus.CLOSED_WITHOUT_CONCLUSION;
+        closure = new Closure(reason, note, staffId, at);
+        updatedAt = at;
+    }
+
+    public RecordClosureReason getClosureReason() {
+        return closure == null ? null : closure.reason();
+    }
+
+    public String getClosureNote() {
+        return closure == null ? null : closure.note();
+    }
+
+    public UUID getClosedByStaffId() {
+        return closure == null ? null : closure.closedByStaffId();
+    }
+
+    public Instant getClosedAt() {
+        return closure == null ? null : closure.closedAt();
     }
 
     public List<Diagnosis> getDiagnoses() {

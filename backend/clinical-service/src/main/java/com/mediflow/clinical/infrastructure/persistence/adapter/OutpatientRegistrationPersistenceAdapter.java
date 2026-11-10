@@ -54,8 +54,9 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                         locked_at, reconcile_after, transaction_id, clearance_id, payment_completed_at,
                         cancellation_actor_account_id, cancellation_actor_staff_id, cancellation_reason, cancelled_at,
                         created_at, updated_at, previous_registration_id, follow_up_recommendation_id,
-                        doctor_replacement_reason, patient_agreed_to_doctor_replacement, follow_up_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        doctor_replacement_reason, patient_agreed_to_doctor_replacement, follow_up_reason,
+                        return_source_record_id, return_reason, independent_visit_reason)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, registration.registrationId(), registration.sessionId(), registration.patientId(),
                     registration.revision(), registration.receptionMode().name(), registration.visitType().name(),
                     registration.status().name(), reservation.reservationId(), reservation.revision(),
@@ -70,7 +71,10 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                     registration.followUp() == null ? null : registration.followUp().recommendationId(),
                     registration.followUp() == null ? null : registration.followUp().replacementReason(),
                     registration.followUp() == null ? null : registration.followUp().patientAgreedToDoctorReplacement(),
-                    registration.followUp() == null ? null : registration.followUp().reason());
+                    registration.followUp() == null ? null : registration.followUp().reason(),
+                    registration.returnLink() == null ? null : registration.returnLink().sourceRecordId(),
+                    registration.returnLink() == null ? null : registration.returnLink().returnReason(),
+                    registration.returnLink() == null ? null : registration.returnLink().independentVisitReason());
         } catch (DuplicateKeyException collision) {
             throw new DuplicateResourceException("ACTIVE_REGISTRATION_EXISTS", "Patient already has an active registration for this session");
         }
@@ -363,7 +367,10 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                 reservation, cancellation, row.getObject("previous_registration_id") == null ? null :
                     new OutpatientRegistration.FollowUpLink(row.getObject("previous_registration_id", UUID.class),
                         row.getObject("follow_up_recommendation_id", UUID.class), row.getString("doctor_replacement_reason"),
-                        (Boolean) row.getObject("patient_agreed_to_doctor_replacement"), row.getString("follow_up_reason")));
+                        (Boolean) row.getObject("patient_agreed_to_doctor_replacement"), row.getString("follow_up_reason")),
+                row.getObject("return_source_record_id") == null && row.getString("independent_visit_reason") == null ? null :
+                    new OutpatientRegistration.ReturnLink(row.getObject("return_source_record_id", UUID.class),
+                        row.getString("return_reason"), row.getString("independent_visit_reason")));
     }
 
     private void appendAudit(OutpatientRegistration after, OutpatientRegistration before,

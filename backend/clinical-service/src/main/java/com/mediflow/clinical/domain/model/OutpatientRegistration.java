@@ -20,7 +20,16 @@ public record OutpatientRegistration(
         Instant updatedAt,
         Reservation reservation,
         Cancellation cancellation,
-        FollowUpLink followUp) {
+        FollowUpLink followUp,
+        ReturnLink returnLink) {
+
+    public OutpatientRegistration(UUID registrationId, int revision, UUID patientId, UUID sessionId,
+            OutpatientReceptionMode receptionMode, OutpatientVisitType visitType, OutpatientRegistrationStatus status,
+            Instant checkedInAt, Integer queueNumber, Instant createdAt, Instant updatedAt,
+            Reservation reservation, Cancellation cancellation, FollowUpLink followUp) {
+        this(registrationId, revision, patientId, sessionId, receptionMode, visitType, status, checkedInAt,
+                queueNumber, createdAt, updatedAt, reservation, cancellation, followUp, null);
+    }
 
     public OutpatientRegistration(UUID registrationId, int revision, UUID patientId, UUID sessionId,
             OutpatientReceptionMode receptionMode, OutpatientVisitType visitType, OutpatientRegistrationStatus status,
@@ -34,7 +43,12 @@ public record OutpatientRegistration(
         Objects.requireNonNull(link, "follow-up source is required");
         return new OutpatientRegistration(registrationId, revision, patientId, sessionId, receptionMode,
                 OutpatientVisitType.FOLLOW_UP, status, checkedInAt, queueNumber, createdAt, updatedAt,
-                reservation, cancellation, link);
+                reservation, cancellation, link, returnLink);
+    }
+
+    public OutpatientRegistration withReturnLink(ReturnLink link) {
+        return new OutpatientRegistration(registrationId, revision, patientId, sessionId, receptionMode, visitType, status,
+                checkedInAt, queueNumber, createdAt, updatedAt, reservation, cancellation, followUp, link);
     }
 
     public OutpatientRegistration {
@@ -218,7 +232,7 @@ public record OutpatientRegistration(
         requireReschedulable(expectedRevision);
         return new OutpatientRegistration(registrationId, revision + 1, patientId, target.sessionId(), receptionMode, visitType, status,
                 clearArrival ? null : checkedInAt, newQueueNumber != null ? newQueueNumber : queueNumber, createdAt, at, reservation,
-                cancellation, followUp);
+                cancellation, followUp, returnLink);
     }
 
     public OutpatientRegistration startExam(Instant startedAt) {
@@ -265,7 +279,16 @@ public record OutpatientRegistration(
             Cancellation nextCancellation) {
         return new OutpatientRegistration(registrationId, nextRevision, patientId, sessionId, receptionMode,
                 visitType, nextStatus, nextCheckedInAt, nextQueueNumber, createdAt, nextUpdatedAt,
-                nextReservation, nextCancellation, followUp);
+                nextReservation, nextCancellation, followUp, returnLink);
+    }
+
+    /** A visit that refers back to an earlier record, or goes ahead although another visit is still open. */
+    public record ReturnLink(UUID sourceRecordId, String returnReason, String independentVisitReason) {
+        public ReturnLink {
+            if ((sourceRecordId == null) != (returnReason == null)) {
+                throw new IllegalArgumentException("a return source and its reason go together");
+            }
+        }
     }
 
     public record FollowUpLink(UUID previousRegistrationId, UUID recommendationId,

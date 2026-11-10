@@ -63,7 +63,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
         UUID appointmentId = e.getAppointment() == null ? null : e.getAppointment().getAppointmentId();
         return MedicalRecord.restore(e.getRecordId(), e.getPatientId(), e.getDoctorId(), e.getDepartmentId(),
                 e.getExaminationDate(), e.getSymptoms(), appointmentId, diagnoses, e.getCreatedAt(), e.getUpdatedAt(),
-                e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt());
+                e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt(),
+                e.getClosureReason() == null ? null : new MedicalRecord.Closure(e.getClosureReason(), e.getClosureNote(),
+                        e.getClosedByStaffId(), e.getClosedAt()), e.getPreviousRecordId());
     }
     private MedicalRecordJpaEntity toEntity(MedicalRecord r) {
         MedicalRecordJpaEntity entity = MedicalRecordJpaEntity.builder().recordId(r.getRecordId())
@@ -72,7 +74,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 .appointment(r.getAppointmentId() == null ? null : appointments.getReferenceById(r.getAppointmentId()))
                 .createdAt(r.getCreatedAt()).updatedAt(r.getUpdatedAt()).status(r.getStatus())
                 .disposition(r.getDisposition()).dispositionNote(r.getDispositionNote())
-                .completedAt(r.getCompletedAt()).build();
+                .completedAt(r.getCompletedAt()).previousRecordId(r.getPreviousRecordId())
+                .closureReason(r.getClosureReason()).closureNote(r.getClosureNote())
+                .closedByStaffId(r.getClosedByStaffId()).closedAt(r.getClosedAt()).build();
         entity.setDiagnoses(new ArrayList<>(r.getDiagnoses().stream().map(d -> DiagnosisJpaEntity.builder()
                 .diagnosisId(d.getDiagnosisId()).record(entity).diagnosisName(d.getDiagnosisName())
                 .description(d.getDescription()).icdCode(d.getIcdCode()).build()).toList()));
