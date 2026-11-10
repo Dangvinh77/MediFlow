@@ -593,7 +593,7 @@ public class OutpatientRegistrationApplicationService {
         });
     }
 
-    private SchedulingAuthoritySnapshot requireActiveActor(ActorIdentity actor, UUID departmentId) {
+    SchedulingAuthoritySnapshot requireActiveActor(ActorIdentity actor, UUID departmentId) {
         SchedulingAuthoritySnapshot snapshot = authority.authority(actor.accountId(), departmentId,
                 correlationIds.currentOrCreate().toString());
         if (!actor.role().equals(snapshot.currentRole()) || !Boolean.TRUE.equals(snapshot.accountExists())
@@ -631,7 +631,7 @@ public class OutpatientRegistrationApplicationService {
         }
     }
 
-    private void requireEligible(ConsultationSession.Configuration config) {
+    void requireEligible(ConsultationSession.Configuration config) {
         ConsultationEligibilitySnapshot snapshot = authority.consultationEligibility(config.doctorId(),
                 config.departmentId(), config.roomId(), correlationIds.currentOrCreate().toString());
         if (!Boolean.TRUE.equals(snapshot.eligible()) || !Boolean.TRUE.equals(snapshot.doctorActive())
@@ -746,7 +746,7 @@ public class OutpatientRegistrationApplicationService {
         return appointments.findByIdForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Registration was not found"));
     }
 
-    private ActorIdentity requireHumanActor(String... roles) {
+    ActorIdentity requireHumanActor(String... roles) {
         ActorIdentity actor = actors.current();
         if (actor == null || actor.accountId() == null || actor.role() == null) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "A verified clinical actor is required");
@@ -755,7 +755,7 @@ public class OutpatientRegistrationApplicationService {
         throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor role cannot use this registration command");
     }
 
-    private static ConsultationSession adjustCounts(ConsultationSession session, int held, int locked,
+    static ConsultationSession adjustCounts(ConsultationSession session, int held, int locked,
             int confirmed, int consumed, int available) {
         var counts = session.counts();
         return session.withCounts(new ConsultationSession.Counts(counts.heldCount() + held,
@@ -763,7 +763,7 @@ public class OutpatientRegistrationApplicationService {
                 counts.consumedCount() + consumed, counts.availableCount() + available));
     }
 
-    private OutpatientRegistrationDTO toDto(OutpatientRegistration registration, ConsultationSession session) {
+    OutpatientRegistrationDTO toDto(OutpatientRegistration registration, ConsultationSession session) {
         var config = session.configuration();
         boolean ready = registration.status() == OutpatientRegistrationStatus.CONFIRMED
                 && registration.checkedInAt() != null && registration.reservation().clearanceId() != null;
@@ -794,6 +794,11 @@ public class OutpatientRegistrationApplicationService {
     }
 
     private void appendFact(OutpatientRegistration registration, ConsultationSession session, Instant changedAt) {
+        appendFact(registration, session, changedAt, null);
+    }
+
+    void appendFact(OutpatientRegistration registration, ConsultationSession session, Instant changedAt,
+            OutpatientRegistrationFact.RescheduleFact reschedule) {
         var config = session.configuration();
         var reservation = registration.reservation();
         CancellationFact cancellation = registration.cancellation() == null ? null : new CancellationFact(
@@ -805,7 +810,7 @@ public class OutpatientRegistrationApplicationService {
                 registration.visitType(), reservation.reservationId(), reservation.status(), registration.status(),
                 registration.checkedInAt(), registration.queueNumber(), reservation.expiresAt(), registration.visitType() == OutpatientVisitType.FOLLOW_UP ? "OUTPATIENT_FOLLOW_UP" : PRICE_CODE,
                 "EXAM", registration.registrationId(), "OUTPATIENT_VISIT", registration.registrationId(),
-                cancellation, changedAt);
+                cancellation, changedAt, reschedule);
         String correlationId = correlationIds.currentOrCreate().toString();
         DomainEventEnvelope<OutpatientRegistrationFact> event = new DomainEventEnvelope<>(UUID.randomUUID(),
                 "outpatient.registration.changed", 1, changedAt, correlationId, "clinical-service", fact);

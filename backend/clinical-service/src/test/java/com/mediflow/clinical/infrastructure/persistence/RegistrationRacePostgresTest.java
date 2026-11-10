@@ -61,6 +61,7 @@ class RegistrationRacePostgresTest {
     static OutpatientRegistrationApplicationService service;
     static CountDownLatch bothStarted;
     static OutpatientRegistrationPersistenceAdapter registrations;
+    static com.mediflow.clinical.application.service.RegistrationRescheduleApplicationService reschedules;
 
     @BeforeAll static void build() {
         var ds = new DriverManagerDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
@@ -108,6 +109,46 @@ class RegistrationRacePostgresTest {
                 new OutpatientRegistrationPersistenceAdapter(jdbc, mapper), appointments, patients, authority, actors,
                 mock(ClinicalOutboxPort.class), correlations, idempotency, Clock.fixed(ClinicIntakeTestFixtures.NOW, ZoneOffset.UTC),
                 null, null, new ClinicIntakeSettings(true));
+        var appointmentStore = mock(AppointmentRepositoryPort.class);
+        when(appointmentStore.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(appointmentStore.findByIdForUpdate(any())).thenAnswer(call -> {
+            var a = Appointment.createScheduled(call.getArgument(0), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DAY,
+                    java.time.LocalTime.of(8, 0), "Khám", ClinicIntakeTestFixtures.NOW, null);
+            return java.util.Optional.of(a);
+        });
+        reschedules = new com.mediflow.clinical.application.service.RegistrationRescheduleApplicationService(
+                new ConsultationSessionPersistenceAdapter(jdbc, mapper), new OutpatientRegistrationPersistenceAdapter(jdbc, mapper), appointmentStore,
+                mock(com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort.class), service, idempotency,
+                Clock.fixed(ClinicIntakeTestFixtures.NOW, ZoneOffset.UTC));
+    }
+
+    @Test void twoReschedulesForLastSeatOnlyOneWins() throws Exception {
+        UUID department = UUID.randomUUID();
+        var target = fixtures.session(UUID.randomUUID(), department, UUID.randomUUID(), DAY, 1);
+        var outcomes = new ArrayList<Callable<String>>();
+        int counter = 0;
+        for (String key : List.of("move-a", "move-b")) {
+            var source = fixtures.session(UUID.randomUUID(), department, UUID.randomUUID(), DAY, 5);
+            var moving = fixtures.confirmedWithNumber(source, 100 + counter++);
+            jdbc.update("UPDATE consultation_session SET confirmed_count=1, available_count=available_count-1 WHERE session_id=?", source.sessionId());
+            outcomes.add(() -> {
+                try {
+                    reschedules.reschedule(moving.registrationId(), new com.mediflow.clinical.application.dto.request.RegistrationRescheduleRequest(
+                            moving.revision() + 1, target.sessionId(), "Đổi bác sĩ", true), key);
+                    return "MOVED";
+                } catch (DuplicateResourceException rejected) {
+                    return rejected.getCode();
+                }
+            });
+        }
+        bothStarted = new CountDownLatch(2);
+        var results = new ArrayList<String>();
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            for (var future : pool.invokeAll(outcomes)) results.add(future.get());
+        }
+        assertThat(results).containsExactlyInAnyOrder("MOVED", "SESSION_CAPACITY_EXHAUSTED");
+        assertThat(jdbc.queryForObject("SELECT available_count FROM consultation_session WHERE session_id=?", Integer.class, target.sessionId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM appointment_reschedule_log WHERE new_session_id=?", Integer.class, target.sessionId())).isEqualTo(1);
     }
 
     @Test void onlyHoldsPastTheirExpiryAreDue() {

@@ -106,14 +106,14 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
         Reservation reservation = after.reservation();
         Cancellation cancellation = after.cancellation();
         int changed = jdbc.update("""
-                UPDATE outpatient_registration SET revision = ?, status = ?, reservation_revision = ?,
+                UPDATE outpatient_registration SET session_id = ?, revision = ?, status = ?, reservation_revision = ?,
                     reservation_status = ?, reservation_expires_at = ?, checked_in_at = ?, queue_number = ?,
                     active_payment_operation_id = ?, active_fence_token = ?, locked_at = ?, reconcile_after = ?,
                     transaction_id = ?, clearance_id = ?, payment_completed_at = ?,
                     cancellation_actor_account_id = ?, cancellation_actor_staff_id = ?, cancellation_reason = ?,
                     cancelled_at = ?, updated_at = ?
                 WHERE registration_id = ? AND revision = ? AND reservation_revision = ?
-                """, after.revision(), after.status().name(), reservation.revision(), reservation.status().name(),
+                """, after.sessionId(), after.revision(), after.status().name(), reservation.revision(), reservation.status().name(),
                 timestamp(reservation.expiresAt()), timestamp(after.checkedInAt()), after.queueNumber(), reservation.paymentOperationId(),
                 reservation.fenceToken(), timestamp(reservation.lockedAt()), timestamp(reservation.reconcileAfter()), reservation.transactionId(),
                 reservation.clearanceId(), timestamp(reservation.completedAt()), cancellation == null ? null : cancellation.actorAccountId(),
@@ -126,6 +126,19 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
 
     @Override
     @Transactional(readOnly = true)
+    public void appendRescheduleLog(RescheduleLog l) {
+        jdbc.update("""
+                INSERT INTO appointment_reschedule_log(log_id, registration_id, old_session_id, new_session_id, old_doctor_id, new_doctor_id,
+                    old_room_id, new_room_id, old_session_date, new_session_date, old_start_time, new_start_time, actor_account_id,
+                    actor_staff_id, authority_scope_revision, reason, patient_confirmed, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)
+                """, UUID.randomUUID(), l.registrationId(), l.oldSessionId(), l.newSessionId(), l.oldDoctorId(), l.newDoctorId(), l.oldRoomId(),
+                l.newRoomId(), java.sql.Date.valueOf(l.oldSessionDate()), java.sql.Date.valueOf(l.newSessionDate()),
+                java.sql.Time.valueOf(l.oldStartTime()), java.sql.Time.valueOf(l.newStartTime()), l.actorAccountId(), l.actorStaffId(),
+                l.authorityScopeRevision(), l.reason(), timestamp(l.createdAt()));
+    }
+
+    @Override
     public java.util.List<UUID> findExpiredHeld(java.time.Instant now, int limit) {
         return jdbc.queryForList("""
                 SELECT registration_id FROM outpatient_registration

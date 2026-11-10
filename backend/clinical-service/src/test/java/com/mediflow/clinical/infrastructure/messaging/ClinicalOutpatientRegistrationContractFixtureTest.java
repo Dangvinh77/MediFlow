@@ -43,6 +43,21 @@ class ClinicalOutpatientRegistrationContractFixtureTest {
                                 Instant.parse("2026-10-26T03:02:00Z")), 2)));
     }
 
+    @Test
+    void factWithoutRescheduleKeepsExactExistingJson() throws IOException {
+        var plain = fact(3, OutpatientReservationStatus.CONFIRMED, OutpatientRegistrationStatus.CONFIRMED, 1, null, 1);
+        assertThat(new String(serializer.serialize(event(1002, 1102, plain)), java.nio.charset.StandardCharsets.UTF_8)).doesNotContain("reschedule");
+        var moved = new OutpatientRegistrationFact(plain.registrationId(), plain.registrationRevision(), plain.patientId(), plain.doctorId(),
+                plain.departmentId(), plain.sessionId(), plain.roomId(), plain.sessionDate(), plain.startTime(), plain.endTime(), plain.visitType(),
+                plain.reservationId(), plain.reservationStatus(), plain.status(), plain.checkedInAt(), plain.queueNumber(), plain.reservationExpiresAt(),
+                plain.priceCode(), plain.sourceType(), plain.sourceId(), plain.careEpisodeType(), plain.careEpisodeId(), null, plain.changedAt(),
+                new OutpatientRegistrationFact.RescheduleFact(id(9001), id(9002), "Đổi bác sĩ", id(6002), id(4002), id(7002), LocalDate.of(2026, 10, 27),
+                        LocalTime.of(8, 0), plain.changedAt()));
+        var json = new ObjectMapper().readTree(serializer.serialize(event(1002, 1102, moved)));
+        assertThat(json.get("payload").get("reschedule").get("previousSessionId").asText()).isEqualTo(id(6002).toString());
+        assertThat(json.get("payload").get("reschedule").get("previousStartTime").asText()).isEqualTo("08:00");
+    }
+
     private void assertBytes(String fixturePath, DomainEventEnvelope<OutpatientRegistrationFact> event)
             throws IOException {
         byte[] actual = serializer.serialize(event);

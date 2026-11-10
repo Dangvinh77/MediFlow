@@ -25,6 +25,33 @@ class OutpatientRegistrationTest {
         assertThat(registration.reservation().expiresAt()).isEqualTo(NOW.plusSeconds(15 * 60));
     }
 
+    private static ConsultationSession rescheduleTarget() {
+        return ConsultationSession.open(id(90), id(91), id(92), id(93), LocalDate.of(2026, 10, 27), LocalTime.of(9, 0),
+                LocalTime.of(10, 0), List.of(), 10);
+    }
+
+    @Test
+    void rescheduleMovesSessionKeepsIdentityAndAppliesArrivalChoice() {
+        OutpatientRegistration registration = registration(OutpatientReceptionMode.AT_COUNTER);
+        OutpatientRegistration moved = registration.reschedule(1, rescheduleTarget(), null, true, NOW.plusSeconds(30));
+        assertThat(moved.sessionId()).isEqualTo(id(90));
+        assertThat(moved.registrationId()).isEqualTo(registration.registrationId());
+        assertThat(moved.revision()).isEqualTo(2);
+        assertThat(moved.checkedInAt()).isNull();
+        assertThat(moved.reservation()).isEqualTo(registration.reservation());
+        assertThat(registration.reschedule(1, rescheduleTarget(), null, false, NOW.plusSeconds(30)).checkedInAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void rescheduleRejectsStaleRevisionAndLockedPayment() {
+        OutpatientRegistration registration = registration(OutpatientReceptionMode.AT_COUNTER);
+        assertThatThrownBy(() -> registration.reschedule(9, rescheduleTarget(), null, false, NOW))
+                .isInstanceOf(IllegalStateException.class).hasMessage("REVISION_CONFLICT");
+        OutpatientRegistration locked = registration.acquirePayment(1, id(5), 1, NOW.plusSeconds(5));
+        assertThatThrownBy(() -> locked.reschedule(locked.revision(), rescheduleTarget(), null, false, NOW))
+                .isInstanceOf(IllegalStateException.class).hasMessage("REGISTRATION_PAYMENT_IN_PROGRESS");
+    }
+
     @Test
     void prebookedRegistrationRequiresArrivalAndArrivalIsRecordedOnlyOnce() {
         OutpatientRegistration registration = registration(OutpatientReceptionMode.PREBOOKED);

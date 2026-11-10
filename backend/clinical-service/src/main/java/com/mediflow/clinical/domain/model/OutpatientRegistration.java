@@ -201,6 +201,26 @@ public record OutpatientRegistration(
                 expiredAt, expired, cancellation);
     }
 
+    /** Fails unless this registration can still change session; checked before any number is taken. */
+    public void requireReschedulable(int expectedRevision) {
+        if (expectedRevision != revision) throw new IllegalStateException("REVISION_CONFLICT");
+        if (reservation.status() == OutpatientReservationStatus.PAYMENT_LOCKED) {
+            throw new IllegalStateException("REGISTRATION_PAYMENT_IN_PROGRESS");
+        }
+        if (status != OutpatientRegistrationStatus.AWAITING_PAYMENT && status != OutpatientRegistrationStatus.CONFIRMED) {
+            throw new IllegalStateException("RESCHEDULE_NOT_ALLOWED");
+        }
+    }
+
+    /** Same registration, reservation and payment; only the place in the schedule changes. */
+    public OutpatientRegistration reschedule(int expectedRevision, ConsultationSession target, Integer newQueueNumber,
+            boolean clearArrival, Instant at) {
+        requireReschedulable(expectedRevision);
+        return new OutpatientRegistration(registrationId, revision + 1, patientId, target.sessionId(), receptionMode, visitType, status,
+                clearArrival ? null : checkedInAt, newQueueNumber != null ? newQueueNumber : queueNumber, createdAt, at, reservation,
+                cancellation, followUp);
+    }
+
     public OutpatientRegistration startExam(Instant startedAt) {
         if (status != OutpatientRegistrationStatus.CONFIRMED
                 || checkedInAt == null || reservation.status() != OutpatientReservationStatus.CONFIRMED
