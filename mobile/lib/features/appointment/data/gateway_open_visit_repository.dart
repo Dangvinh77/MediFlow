@@ -20,7 +20,7 @@ class GatewayOpenVisitRepository implements OpenVisitRepository {
   @override
   Future<List<ReturnSource>> returnSources(String patientId) async {
     final value = await client.get(
-      '/v1/records/patient/${Uri.encodeComponent(patientId)}',
+      '/v2/patients/${Uri.encodeComponent(patientId)}/return-sources',
     );
     return _maps(value)
         .where((item) => returnSourceLabels.containsKey(item['status']))

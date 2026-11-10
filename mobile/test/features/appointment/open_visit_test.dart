@@ -370,6 +370,10 @@ void main() {
       final result = await GatewayOpenVisitRepository(client)
           .returnSources(fixtures.patientId);
       expect(result.map((item) => item.recordId), ['b']);
+      expect(
+        adapter.requests.single.path,
+        endsWith('v2/patients/${fixtures.patientId}/return-sources'),
+      );
     });
 
     test('a plain registration omits the new fields', () {

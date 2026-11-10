@@ -98,6 +98,13 @@ describe("clinic desk commands through Gateway", () => {
   beforeEach(() => { vi.stubGlobal("fetch", fetchMock); fetchMock.mockReset(); fetchMock.mockImplementation(async () => Response.json({ success: true, data: {} })); });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("reads return sources from the registration route, not the record-read route", async () => {
+    const sources = [{ recordId: "record-1", status: "COMPLETED", examinationDate: "2026-11-01", departmentId: "department-1" }];
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: sources }));
+    expect(await appointmentApi.returnSources("patient/1")).toEqual(sources);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/patients/patient%2F1/return-sources");
+  });
+
   it("reads the board for one date and optionally one room", async () => {
     await appointmentApi.clinicQueue("2026-11-10");
     await appointmentApi.clinicQueue("2026-11-10", "room/1");

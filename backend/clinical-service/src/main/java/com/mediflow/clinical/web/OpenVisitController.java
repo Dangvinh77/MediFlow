@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mediflow.clinical.application.dto.response.OpenVisitDTO;
+import com.mediflow.clinical.application.dto.response.ReturnSourceDTO;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.service.OpenVisitApplicationService;
 import com.mediflow.common.api.ApiResponse;
@@ -30,6 +31,12 @@ public class OpenVisitController {
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','NURSE')")
     public ResponseEntity<ApiResponse<List<OpenVisitDTO>>> forPatient(@PathVariable UUID patientId) {
         return ResponseEntity.ok(ApiResponse.ok(visits.forPatient(patientId), correlationIds.currentOrCreate().toString()));
+    }
+
+    @GetMapping("/api/v2/patients/{patientId}/return-sources")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    public ResponseEntity<ApiResponse<List<ReturnSourceDTO>>> returnSources(@PathVariable UUID patientId) {
+        return ResponseEntity.ok(ApiResponse.ok(visits.returnSources(patientId), correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/api/v2/doctors/me/open-visits")

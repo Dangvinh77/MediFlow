@@ -143,7 +143,7 @@ export const appointmentApi = {
     api.get<OpenVisitDTO[]>(`/v2/patients/${encodeURIComponent(patientId)}/open-visits`),
   myOpenVisits: () => api.get<OpenVisitDTO[]>("/v2/doctors/me/open-visits"),
   returnSources: (patientId: string) =>
-    api.get<ReturnSourceRecord[]>(`/v1/records/patient/${encodeURIComponent(patientId)}`),
+    api.get<ReturnSourceRecord[]>(`/v2/patients/${encodeURIComponent(patientId)}/return-sources`),
   myRegistrations: (params: OwnRegistrationSearchParams = {}) => {
     const page = Number.isInteger(params.page) && (params.page ?? -1) >= 0 ? params.page! : 0;
     const size = Number.isInteger(params.size) && (params.size ?? 0) > 0 ? Math.min(params.size!, 100) : 20;

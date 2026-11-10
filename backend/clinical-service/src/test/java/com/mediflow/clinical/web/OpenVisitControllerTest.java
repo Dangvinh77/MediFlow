@@ -1,5 +1,6 @@
 package com.mediflow.clinical.web;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
+import com.mediflow.clinical.application.dto.response.ReturnSourceDTO;
 import com.mediflow.clinical.application.service.OpenVisitApplicationService;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
@@ -51,6 +53,22 @@ class OpenVisitControllerTest {
     void ownListIsForDoctors(String role) throws Exception {
         mvc.perform(get(DOCTOR_PATH).with(user("u").roles(role))).andExpect(status().isForbidden());
         verifyNoInteractions(visits);
+    }
+
+    private static final String RETURN_PATH = "/api/v2/patients/" + UUID.randomUUID() + "/return-sources";
+
+    @ParameterizedTest @ValueSource(strings = {"DOCTOR", "CASHIER", "PATIENT", "PHARMACIST", "LAB_TECH"})
+    void returnSourcesAreForRegistrationStaff(String role) throws Exception {
+        mvc.perform(get(RETURN_PATH).with(user("u").roles(role))).andExpect(status().isForbidden());
+        verifyNoInteractions(visits);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "NURSE"})
+    void registrationStaffSeeReturnSources(String role) throws Exception {
+        when(visits.returnSources(any())).thenReturn(List.of(new ReturnSourceDTO(UUID.randomUUID(), "COMPLETED",
+                java.time.LocalDate.of(2026, 11, 1), UUID.randomUUID())));
+        mvc.perform(get(RETURN_PATH).with(user("u").roles(role))).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data[0].status").value("COMPLETED"));
     }
 
     @Test void nurseSeesThePatientList() throws Exception {
