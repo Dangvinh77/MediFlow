@@ -236,6 +236,17 @@ public class ConsultationSessionPersistenceAdapter implements ConsultationSessio
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ConsultationSession> findOnDate(LocalDate date, UUID departmentId, UUID doctorId, UUID roomId) {
+        return jdbc.query("""
+                SELECT * FROM consultation_session
+                WHERE session_date = ? AND status <> 'CANCELLED'
+                  AND (?::uuid IS NULL OR department_id = ?) AND (?::uuid IS NULL OR doctor_id = ?) AND (?::uuid IS NULL OR room_id = ?)
+                ORDER BY start_time, session_id
+                """, this::mapOne, date, departmentId, departmentId, doctorId, doctorId, roomId, roomId);
+    }
+
     private ConsultationSession mapOne(ResultSet row, int index) throws SQLException {
         try {
             var config = new ConsultationSession.Configuration(row.getObject("doctor_id", UUID.class),

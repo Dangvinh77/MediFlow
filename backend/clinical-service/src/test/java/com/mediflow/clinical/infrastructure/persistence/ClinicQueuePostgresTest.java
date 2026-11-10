@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.dto.authority.CurrentDoctorAuthoritySnapshot;
 import com.mediflow.clinical.application.dto.authority.SchedulingAuthoritySnapshot;
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
+import com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.IdempotentCommandPort;
@@ -156,6 +157,44 @@ class ClinicQueuePostgresTest {
             for (var future : pool.invokeAll(tasks)) numbers.add(future.get());
         }
         assertThat(numbers).containsExactlyInAnyOrderElementsOf(IntStream.rangeClosed(1, 12).boxed().toList());
+    }
+
+    @Test void boardRowsJoinActiveTicketAndLeaveTerminalRegistrationsOut() {
+        var session = session(UUID.randomUUID(), UUID.randomUUID());
+        UUID ticketed = arrived(session);
+        service.issue(ticketed, "a");
+        UUID noTicket = arrived(session);
+        UUID held = fixtures.registration(session).registrationId();
+        UUID gone = fixtures.registration(session).registrationId();
+        jdbc.update("UPDATE outpatient_registration SET status='EXPIRED',reservation_status='EXPIRED',revision=revision+1 WHERE registration_id=?", gone);
+
+        var rows = adapter.boardRows(List.of(session.sessionId()));
+        assertThat(rows).extracting(ClinicQueueRepositoryPort.BoardRow::registrationId).containsExactlyInAnyOrder(ticketed, noTicket, held);
+        var withTicket = rows.stream().filter(r -> r.registrationId().equals(ticketed)).findFirst().orElseThrow();
+        assertThat(withTicket.ticket().roomQueueNumber()).isEqualTo(1);
+        assertThat(withTicket.cleared()).isTrue();
+        assertThat(rows.stream().filter(r -> r.registrationId().equals(noTicket)).findFirst().orElseThrow().ticket()).isNull();
+        assertThat(rows.stream().filter(r -> r.registrationId().equals(held)).findFirst().orElseThrow().cleared()).isFalse();
+    }
+
+    @Test void adjustmentRowsAreKept() {
+        UUID registration = arrived(session(UUID.randomUUID(), UUID.randomUUID()));
+        var ticket = service.issue(registration, "a").data();
+        adapter.appendAdjustment(ticket.ticketId(), "CALLED", null, UUID.randomUUID(), null, ClinicIntakeTestFixtures.NOW);
+        adapter.appendAdjustment(ticket.ticketId(), "NO_SHOW", "Vắng", UUID.randomUUID(), null, ClinicIntakeTestFixtures.NOW);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM queue_adjustment WHERE ticket_id=?", Integer.class, ticket.ticketId())).isEqualTo(2);
+    }
+
+    @Test void findOnDateAppliesEachFilter() {
+        UUID doctor = UUID.randomUUID();
+        UUID room = UUID.randomUUID();
+        var match = session(doctor, room);
+        session(UUID.randomUUID(), UUID.randomUUID());
+        var sessions = new ConsultationSessionPersistenceAdapter(jdbc, new ObjectMapper().findAndRegisterModules());
+        assertThat(sessions.findOnDate(DAY, DEPARTMENT, null, null)).hasSize(2);
+        assertThat(sessions.findOnDate(DAY, null, doctor, null)).extracting(ConsultationSession::sessionId).containsExactly(match.sessionId());
+        assertThat(sessions.findOnDate(DAY, null, null, room)).extracting(ConsultationSession::sessionId).containsExactly(match.sessionId());
+        assertThat(sessions.findOnDate(DAY.plusDays(1), DEPARTMENT, null, null)).isEmpty();
     }
 
     @Test void activeNumbersIgnoreCancelledTickets() {

@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +22,7 @@ import com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort;
 import com.mediflow.clinical.application.service.ConditionalOnClinicIntake;
 import com.mediflow.clinical.domain.model.ClinicQueueTicket;
 import com.mediflow.clinical.domain.model.ClinicQueueTicketStatus;
+import com.mediflow.clinical.domain.model.OutpatientRegistrationStatus;
 import com.mediflow.common.exception.DuplicateResourceException;
 
 @Component
@@ -93,6 +95,40 @@ public class ClinicQueuePersistenceAdapter implements ClinicQueueRepositoryPort 
                 """, ps -> ps.setArray(1, ps.getConnection().createArrayOf("uuid", registrationIds.toArray())),
                 rs -> { numbers.put(rs.getObject("registration_id", UUID.class), rs.getInt("room_queue_number")); });
         return numbers;
+    }
+
+    @Override @Transactional(readOnly = true)
+    public Optional<ClinicQueueTicket> findById(UUID ticketId) {
+        return jdbc.query("SELECT * FROM clinic_queue_ticket WHERE ticket_id = ?", this::map, ticketId).stream().findFirst();
+    }
+
+    @Override @Transactional
+    public void appendAdjustment(UUID ticketId, String type, String reason, UUID actorAccountId, UUID actorStaffId, Instant at) {
+        jdbc.update("""
+                INSERT INTO queue_adjustment(adjustment_id, ticket_id, type, reason, actor_account_id, actor_staff_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, UUID.randomUUID(), ticketId, type, reason, actorAccountId, actorStaffId, Timestamp.from(at));
+    }
+
+    @Override @Transactional(readOnly = true)
+    public List<BoardRow> boardRows(Collection<UUID> sessionIds) {
+        if (sessionIds.isEmpty()) return List.of();
+        return jdbc.query("""
+                SELECT t.*, r.registration_id AS reg_id, r.patient_id AS reg_patient_id, r.session_id AS reg_session_id,
+                       r.status AS reg_status, r.checked_in_at AS reg_checked_in_at, r.queue_number AS reg_queue_number,
+                       r.clearance_id AS reg_clearance_id,
+                       EXISTS(SELECT 1 FROM vital_sign_observation v WHERE v.registration_id = r.registration_id) AS has_vitals
+                FROM outpatient_registration r
+                LEFT JOIN clinic_queue_ticket t ON t.registration_id = r.registration_id AND t.status <> 'CANCELLED'
+                WHERE r.session_id = ANY(?) AND r.status IN ('AWAITING_PAYMENT','CONFIRMED','IN_EXAM')
+                """, ps -> ps.setArray(1, ps.getConnection().createArrayOf("uuid", sessionIds.toArray())), (rs, row) -> {
+                    Number queue = (Number) rs.getObject("reg_queue_number");
+                    return new BoardRow(rs.getObject("reg_id", UUID.class), rs.getObject("reg_patient_id", UUID.class),
+                            rs.getObject("reg_session_id", UUID.class), OutpatientRegistrationStatus.valueOf(rs.getString("reg_status")),
+                            instant(rs, "reg_checked_in_at"), queue == null ? null : queue.intValue(),
+                            rs.getObject("reg_clearance_id", UUID.class) != null,
+                            rs.getObject("ticket_id", UUID.class) == null ? null : map(rs, row), rs.getBoolean("has_vitals"));
+                });
     }
 
     private static Timestamp timestamp(Instant value) {
