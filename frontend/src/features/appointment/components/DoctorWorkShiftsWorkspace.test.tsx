@@ -131,5 +131,15 @@ it("shift cancel shows affected registrations before confirming", async () => {
   expect(appointmentApi.shiftImpact).toHaveBeenCalledWith("s1");
   expect(await screen.findByText(/Số quầy 4/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Xác nhận hủy giờ làm việc" })).toBeInTheDocument();
+  expect(screen.getByText(/buổi khám còn mở của ca sẽ bị dừng/i)).toBeInTheDocument();
+  expect(screen.queryByText(/sẽ chặn hủy/i)).not.toBeInTheDocument();
   expect(appointmentApi.cancelWorkShift).not.toHaveBeenCalled();
+});
+it("shift cancel still warns that linked sessions block it while clinic intake is off", async () => {
+  vi.mocked(appointmentApi.workShifts).mockResolvedValue(result([shift]));
+  render(<DoctorWorkShiftsWorkspace departmentId="k" checking={false} />);
+  const cancel = await screen.findByRole("button", { name: "Hủy giờ làm việc" });
+  await waitFor(() => expect(cancel).toBeEnabled());
+  fireEvent.click(cancel);
+  expect(await screen.findByText(/sẽ chặn hủy/i)).toBeInTheDocument();
 });

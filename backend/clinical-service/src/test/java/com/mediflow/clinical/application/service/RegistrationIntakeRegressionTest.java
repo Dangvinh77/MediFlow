@@ -112,6 +112,32 @@ class RegistrationIntakeRegressionTest {
         verify(h.outbox).appendRawOutpatientEvent(any());
     }
 
+    private com.mediflow.clinical.domain.model.OutpatientRegistration heldThenMoved(ConsultationSession occupied) {
+        var held = h.stub(h.held(occupied, OutpatientReceptionMode.PREBOOKED));
+        var target = h.session(UUID.randomUUID(), UUID.randomUUID(), IntakeHarness.TODAY, 20);
+        var moved = held.reschedule(held.revision(), target, null, false, IntakeHarness.NOW);
+        when(h.registrations.findByIdForUpdate(held.registrationId())).thenReturn(java.util.Optional.of(moved));
+        return held;
+    }
+
+    @Test void holdMovedBeforeItsLockGivesNoSeatBackToTheOldSession() {
+        var held = heldThenMoved(h.withCounts(session, 1, 0, 0, 0));
+        afterHoldExpired();
+        assertThatThrownBy(() -> h.registrationService(true).expireHeldReservation(held.registrationId()))
+                .isInstanceOfSatisfying(DuplicateResourceException.class, e -> assertThat(e.getCode()).isEqualTo("REVISION_CONFLICT"));
+        verify(h.sessions, never()).updateCounts(any(), any(), any());
+    }
+
+    @Test void paymentAgainstAHoldMovedBeforeItsLockIsRefused() {
+        var held = heldThenMoved(h.withCounts(session, 1, 0, 0, 0));
+        var command = new com.mediflow.clinical.application.dto.request.PaymentLockCommand(UUID.randomUUID(), UUID.randomUUID(),
+                held.registrationId(), held.patientId(), "EXAM", held.registrationId(), held.registrationId(),
+                held.reservation().revision(), "PATIENT_PAYMENT", null);
+        assertThatThrownBy(() -> h.registrationService(true).acquirePayment(held.reservation().reservationId(), command))
+                .isInstanceOfSatisfying(DuplicateResourceException.class, e -> assertThat(e.getCode()).isEqualTo("REVISION_CONFLICT"));
+        verify(h.sessions, never()).updateCounts(any(), any(), any());
+    }
+
     @Test void holdStillValidIsNotExpired() {
         var occupied = h.withCounts(session, 1, 0, 0, 0);
         var held = h.stub(h.held(occupied, OutpatientReceptionMode.PREBOOKED));

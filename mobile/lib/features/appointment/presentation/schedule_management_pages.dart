@@ -1139,6 +1139,14 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
       );
       return;
     }
+    if (ref.read(clinicIntakeEnabledProvider)) {
+      final goAhead = await showScheduleImpact(
+        context,
+        ref.read(clinicQueueRepositoryProvider).shiftImpact(shift.id),
+        confirmLabel: 'Xác nhận hủy giờ làm việc',
+      );
+      if (!goAhead || !mounted) return;
+    }
     if (await runCommand(
       _repository,
       ScheduleCommand.cancelShift(shift, reason),
@@ -1146,14 +1154,6 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
       _reason.clear();
       setState(() => _notice = 'Đã lưu giờ làm việc.');
       _load();
-    } else if (mounted) {
-      _showImpactWhenBlocked(
-        context,
-        ref,
-        commandError,
-        'SHIFT_HAS_LINKED_SESSIONS',
-        (clinic) => clinic.shiftImpact(shift.id),
-      );
     }
   }
 

@@ -280,6 +280,7 @@ public class OutpatientRegistrationApplicationService {
         OutpatientRegistration visible = readRegistration(registrationId);
         ConsultationSession session = lockSession(visible.sessionId());
         OutpatientRegistration before = lockRegistration(registrationId);
+        requireStillIn(session, before);
         Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         OutpatientRegistration after = before.expire(now);
         if (after == before) return;
@@ -396,6 +397,7 @@ public class OutpatientRegistrationApplicationService {
         OutpatientRegistration visible = readRegistration(command.registrationId());
         ConsultationSession session = lockSession(visible.sessionId());
         OutpatientRegistration before = lockRegistration(command.registrationId());
+        requireStillIn(session, before);
         var reservation = before.reservation();
         if (!before.registrationId().equals(command.sourceId())
                 || !before.registrationId().equals(command.careEpisodeId())
@@ -736,6 +738,13 @@ public class OutpatientRegistrationApplicationService {
 
     private OutpatientRegistration readRegistration(UUID id) {
         return registrations.findById(id).orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Registration was not found"));
+    }
+
+    /** A reschedule can commit between reading the registration and locking its session. */
+    private static void requireStillIn(ConsultationSession session, OutpatientRegistration registration) {
+        if (!registration.sessionId().equals(session.sessionId())) {
+            throw new DuplicateResourceException("REVISION_CONFLICT", "Registration moved to another session");
+        }
     }
 
     private OutpatientRegistration lockRegistration(UUID id) {

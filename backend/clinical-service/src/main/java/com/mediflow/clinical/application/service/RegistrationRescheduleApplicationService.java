@@ -69,13 +69,14 @@ public class RegistrationRescheduleApplicationService {
             throw new BusinessRuleException("RESCHEDULE_CONFIRMATION_REQUIRED", "The patient must agree before the appointment is moved");
         }
         ConsultationSession visibleTarget = sessions.findById(request.targetSessionId()).orElseThrow(RegistrationRescheduleApplicationService::targetInvalid);
-        if (visibleTarget.sessionId().equals(visibleSource.sessionId()) || !departmentId.equals(visibleTarget.configuration().departmentId())) {
-            throw targetInvalid();
-        }
-        try {
-            access.requireEligible(visibleTarget.configuration());
-        } catch (BusinessRuleException ineligible) {
-            throw targetInvalid();
+        // A retry of a move that succeeded finds the registration already in the target and must reach its stored result.
+        if (!visibleTarget.sessionId().equals(visibleSource.sessionId())) {
+            if (!departmentId.equals(visibleTarget.configuration().departmentId())) throw targetInvalid();
+            try {
+                access.requireEligible(visibleTarget.configuration());
+            } catch (BusinessRuleException ineligible) {
+                throw targetInvalid();
+            }
         }
         requireKey(key);
         String path = "/api/v2/outpatient-registrations/" + registrationId + "/reschedule";
@@ -83,6 +84,7 @@ public class RegistrationRescheduleApplicationService {
                 OutpatientRegistrationDTO.class, 200, ignored -> null, () -> {
                     UUID sourceId = visibleSource.sessionId();
                     UUID targetId = visibleTarget.sessionId();
+                    if (sourceId.equals(targetId)) throw targetInvalid();
                     boolean sourceFirst = sourceId.compareTo(targetId) < 0;
                     ConsultationSession firstLocked = lock(sourceFirst ? sourceId : targetId);
                     ConsultationSession secondLocked = lock(sourceFirst ? targetId : sourceId);

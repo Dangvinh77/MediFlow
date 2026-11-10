@@ -216,8 +216,10 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
     @Transactional
     public int allocateQueueNumber(UUID sessionId) {
         Integer number = jdbc.queryForObject("""
-                UPDATE consultation_session SET next_queue_number = next_queue_number + 1
-                WHERE session_id = ? RETURNING next_queue_number - 1
+                UPDATE consultation_session s
+                   SET next_queue_number = GREATEST(s.next_queue_number,
+                           COALESCE((SELECT MAX(r.queue_number) FROM outpatient_registration r WHERE r.session_id = s.session_id), 0) + 1) + 1
+                 WHERE s.session_id = ? RETURNING s.next_queue_number - 1
                 """, Integer.class, sessionId);
         if (number == null || number < 1) throw new IllegalStateException("queue number could not be allocated");
         return number;
@@ -233,9 +235,14 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                                           JOIN consultation_session s ON s.session_id = r.session_id
                                          WHERE s.department_id = ? AND s.session_date = ?), 0) + 2)
                 ON CONFLICT (department_id, queue_date)
-                DO UPDATE SET next_number = department_queue_counter.next_number + 1
+                DO UPDATE SET next_number = GREATEST(department_queue_counter.next_number,
+                        COALESCE((SELECT MAX(r.queue_number)
+                                    FROM outpatient_registration r
+                                    JOIN consultation_session s ON s.session_id = r.session_id
+                                   WHERE s.department_id = ? AND s.session_date = ?), 0) + 1) + 1
                 RETURNING next_number - 1
-                """, Integer.class, departmentId, java.sql.Date.valueOf(queueDate), departmentId, java.sql.Date.valueOf(queueDate));
+                """, Integer.class, departmentId, java.sql.Date.valueOf(queueDate), departmentId, java.sql.Date.valueOf(queueDate),
+                departmentId, java.sql.Date.valueOf(queueDate));
         if (number == null || number < 1) throw new IllegalStateException("department queue number could not be allocated");
         return number;
     }

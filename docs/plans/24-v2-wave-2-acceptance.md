@@ -54,7 +54,7 @@ Vai: Bác sĩ `demo.staff03` phòng Nội 1, `demo.staff05` phòng Nội 2; đi�
 | Lỗi | Sửa | Bằng chứng |
 |---|---|---|
 | Cờ tắt, đường dẫn mới trả 500 thay vì 404 | `GlobalExceptionHandler` xử lý route không tồn tại | `routeThatIsSwitchedOff_isNotFoundInsteadOfServerError` đỏ rồi xanh |
-| Hủy phiếu đặt lịch luôn 500: ràng buộc chỉ cho phép ghi thông tin hủy ở contract 1 | Migration `V16` mở cho contract 2, vẫn yêu cầu đủ cả bộ thông tin | `AppointmentCancellationAuditPostgresTest` đỏ rồi xanh |
+| Hủy phiếu đặt lịch luôn 500: ràng buộc chỉ cho phép ghi thông tin hủy ở contract 1 | Migration `V16` cho phép contract 2 ghi thông tin hủy; khi đã ghi thì phải đủ cả bộ, còn phiếu contract 2 không ghi gì vẫn được chấp nhận | `AppointmentCancellationAuditPostgresTest` đỏ rồi xanh |
 
 Ba test migration ghim số phiên bản cũ đã được cập nhật theo `V16` của Clinical và `V34` của Billing.
 

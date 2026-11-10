@@ -69,6 +69,15 @@ class ClinicQueueIssueTest {
         return status == ClinicQueueTicketStatus.IN_EXAM ? ticket.startExam(IntakeHarness.NOW) : ticket;
     }
 
+    @Test void registrationMovedBeforeItsLockGetsNoNumberFromTheOldRoom() {
+        var target = h.session(UUID.randomUUID(), UUID.randomUUID(), IntakeHarness.TODAY, 20);
+        var moved = registration.reschedule(registration.revision(), target, null, false, IntakeHarness.NOW);
+        when(h.registrations.findByIdForUpdate(registration.registrationId())).thenReturn(Optional.of(moved));
+        assertThatThrownBy(() -> service().issue(registration.registrationId(), "key"))
+                .isInstanceOfSatisfying(DuplicateResourceException.class, e -> assertThat(e.getCode()).isEqualTo("REVISION_CONFLICT"));
+        verify(tickets, never()).allocateRoomQueueNumber(any(), any());
+    }
+
     @Test void issuesNextNumberOfDoctorsRoom() {
         when(tickets.allocateRoomQueueNumber(h.roomId, IntakeHarness.TODAY)).thenReturn(4);
         var dto = service().issue(registration.registrationId(), "key").data();

@@ -578,12 +578,11 @@ void main() {
       expect(find.text('Gửi lại cùng yêu cầu'), findsNothing);
     });
 
-    testWidgets('a blocked cancel lists affected patients', (tester) async {
+    testWidgets('cancelling a shift lists affected patients first', (
+      tester,
+    ) async {
       useTall(tester);
       final clinic = FakeImpact();
-      repository.results.add(
-        const ApiFailure('x', status: 409, code: 'SHIFT_HAS_LINKED_SESSIONS'),
-      );
       await tester.pumpWidget(
         host(
           const SingleChildScrollView(
@@ -604,6 +603,40 @@ void main() {
 
       expect(clinic.shifts, hasLength(1));
       expect(find.text('Bệnh nhân bị ảnh hưởng'), findsOneWidget);
+      expect(repository.commands, isEmpty);
+
+      await tester.tap(find.text('Xác nhận hủy giờ làm việc'));
+      await tester.pumpAndSettle();
+      expect(repository.commands, hasLength(1));
+      expect(repository.commands.single.body['reason'], 'Đổi lịch');
+    });
+
+    testWidgets('dismissing the affected patients sends nothing', (
+      tester,
+    ) async {
+      useTall(tester);
+      await tester.pumpWidget(
+        host(
+          const SingleChildScrollView(
+            child: DepartmentShiftsPanel(departmentId: department),
+          ),
+          role: 'DOCTOR',
+          repository: repository,
+          clinic: FakeImpact(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Lý do hủy giờ làm việc'),
+        'Đổi lịch',
+      );
+      await tester.tap(find.text('Hủy giờ làm việc'));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.text('Bệnh nhân bị ảnh hưởng'), findsNothing);
+      expect(repository.commands, isEmpty);
     });
 
     testWidgets('a cancelled shift has no actions', (tester) async {

@@ -124,6 +124,18 @@ class RegistrationRescheduleTest {
         assertNothingMoved();
     }
 
+    @Test void retryAfterSuccessReturnsTheStoredResult() {
+        var first = service().reschedule(confirmed.registrationId(), request(confirmed, target), "key");
+        h.stub(confirmed.reschedule(confirmed.revision(), target, null, false, IntakeHarness.NOW));
+        org.mockito.Mockito.doAnswer(call -> new com.mediflow.clinical.application.port.out.IdempotentCommandPort.Result<>(first.data(), 200, null, true))
+                .when(h.idempotency).execute(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+                        any(), org.mockito.ArgumentMatchers.anyInt(), any(), any());
+        var retry = service().reschedule(confirmed.registrationId(), request(confirmed, target), "key");
+        assertThat(retry.replayed()).isTrue();
+        assertThat(retry.data()).isEqualTo(first.data());
+    }
+
     @Test void requiresPatientConfirmation() {
         var request = new RegistrationRescheduleRequest(confirmed.revision(), target.sessionId(), "Đổi", false);
         assertThatThrownBy(() -> service().reschedule(confirmed.registrationId(), request, "key"))

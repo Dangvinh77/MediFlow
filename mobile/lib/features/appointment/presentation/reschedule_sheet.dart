@@ -212,8 +212,13 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
 }
 
 class ScheduleImpactSheet extends StatelessWidget {
-  const ScheduleImpactSheet({super.key, required this.impact});
+  const ScheduleImpactSheet({
+    super.key,
+    required this.impact,
+    this.confirmLabel,
+  });
   final ScheduleImpact impact;
+  final String? confirmLabel;
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
@@ -251,32 +256,45 @@ class ScheduleImpactSheet extends StatelessWidget {
               ],
             ),
           ),
+        if (confirmLabel != null)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(confirmLabel!),
+            ),
+          ),
       ],
     ),
   );
 }
 
-/// Shows who a blocked schedule change would affect, once the backend refuses it.
-Future<void> showScheduleImpact(
+/// Shows who a schedule change affects. With [confirmLabel], resolves true only
+/// when the list loaded and the user went ahead.
+Future<bool> showScheduleImpact(
   BuildContext context,
-  Future<ScheduleImpact> impact,
-) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  builder: (_) => SafeArea(
-    child: FutureBuilder<ScheduleImpact>(
-      future: impact,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) return RequestError(snapshot.error!);
-        final data = snapshot.data;
-        if (data == null) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return ScheduleImpactSheet(impact: data);
-      },
+  Future<ScheduleImpact> impact, {
+  String? confirmLabel,
+}) async {
+  final confirmed = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => SafeArea(
+      child: FutureBuilder<ScheduleImpact>(
+        future: impact,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return RequestError(snapshot.error!);
+          final data = snapshot.data;
+          if (data == null) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return ScheduleImpactSheet(impact: data, confirmLabel: confirmLabel);
+        },
+      ),
     ),
-  ),
-);
+  );
+  return confirmed == true;
+}

@@ -66,6 +66,25 @@ class DepartmentQueueNumberPostgresTest {
         assertThat(adapter.allocateDepartmentQueueNumber(a, DAY)).isEqualTo(9);
     }
 
+    @Test void sessionSequenceSkipsNumbersIssuedWhileDepartmentSequenceWasOn() {
+        UUID a = UUID.randomUUID();
+        var session = fixtures.session(a, DAY);
+        fixtures.confirmedWithNumber(session, adapter.allocateDepartmentQueueNumber(a, DAY));
+        fixtures.confirmedWithNumber(session, adapter.allocateDepartmentQueueNumber(a, DAY));
+        assertThat(adapter.allocateQueueNumber(session.sessionId())).isEqualTo(3);
+        assertThat(adapter.allocateQueueNumber(session.sessionId())).isEqualTo(4);
+    }
+
+    @Test void departmentSequenceSkipsNumbersIssuedWhileSessionSequenceWasOn() {
+        UUID a = UUID.randomUUID();
+        var session = fixtures.session(a, DAY);
+        fixtures.confirmedWithNumber(session, adapter.allocateDepartmentQueueNumber(a, DAY));
+        fixtures.confirmedWithNumber(session, 2);
+        fixtures.confirmedWithNumber(session, 3);
+        assertThat(adapter.allocateDepartmentQueueNumber(a, DAY)).isEqualTo(4);
+        assertThat(adapter.allocateDepartmentQueueNumber(a, DAY)).isEqualTo(5);
+    }
+
     @Test void concurrentAllocationsNeverRepeat() throws Exception {
         UUID a = UUID.randomUUID();
         var tasks = new ArrayList<Callable<Integer>>();

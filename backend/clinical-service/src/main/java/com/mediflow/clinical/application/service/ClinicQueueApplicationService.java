@@ -89,6 +89,9 @@ public class ClinicQueueApplicationService {
                     ConsultationSession locked = lockSession(visible.sessionId());
                     OutpatientRegistration current = registrations.findByIdForUpdate(registrationId)
                             .orElseThrow(ClinicQueueApplicationService::registrationMissing);
+                    if (!current.sessionId().equals(locked.sessionId())) {
+                        throw new DuplicateResourceException("REVISION_CONFLICT", "Registration moved to another session");
+                    }
                     if (tickets.findActiveByRegistration(registrationId).isPresent()) {
                         throw new DuplicateResourceException("ROOM_TICKET_EXISTS", "This registration already has a room queue number");
                     }
