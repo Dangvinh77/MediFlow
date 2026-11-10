@@ -87,6 +87,7 @@ public class OutpatientRegistrationApplicationService {
                 && appointment.getStatus() == com.mediflow.clinical.domain.model.AppointmentStatus.IN_EXAM
                 && before.reservation().status() == OutpatientReservationStatus.CONSUMED) return;
         var after = domain(() -> before.startExam(at));
+        if (clinicIntake.enabled()) startRoomTicket(before.registrationId(), at);
         registrations.update(before, after, actor.accountId(), actor.staffId(), "EXAM_STARTED", at);
         sessions.updateCounts(session, adjustCounts(session, 0, 0, -1, 1, 0), at);
         appendFact(after, session, at);
@@ -100,6 +101,7 @@ public class OutpatientRegistrationApplicationService {
         requireAssignedDoctor(actor, session);
         if (!before.patientId().equals(appointment.getPatientId())) notFoundRegistration();
         var after = domain(() -> before.complete(at));
+        if (clinicIntake.enabled()) completeRoomTicket(before.registrationId(), at);
         registrations.update(before, after, actor.accountId(), actor.staffId(), "COMPLETED", at);
         appendFact(after, session, at);
     }
@@ -255,6 +257,7 @@ public class OutpatientRegistrationApplicationService {
                     Instant now = clock.instant();
                     OutpatientRegistration after = domain(() -> before.cancel(request.expectedRevision(),
                             actor.accountId(), actor.staffId(), request.reason(), now));
+                    if (clinicIntake.enabled()) cancelRoomTicket(registrationId, actor.accountId(), request.reason(), now);
                     Appointment appointment = lockAppointment(registrationId);
                     appointment.cancelScheduled(request.reason(), actor.accountId(), now);
                     appointments.save(appointment);
@@ -326,6 +329,38 @@ public class OutpatientRegistrationApplicationService {
                 registration.status() == OutpatientRegistrationStatus.CONFIRMED
                         && registration.checkedInAt() != null && registration.reservation().clearanceId() != null,
                 rooms.get(registration.registrationId())));
+    }
+
+    private java.util.Optional<com.mediflow.clinical.domain.model.ClinicQueueTicket> lockActiveTicket(UUID registrationId) {
+        var queue = clinicQueue();
+        if (queue == null) return java.util.Optional.empty();
+        return queue.findActiveByRegistration(registrationId)
+                .map(found -> queue.findByIdForUpdate(found.ticketId()).orElse(found));
+    }
+
+    private void startRoomTicket(UUID registrationId, Instant at) {
+        var ticket = lockActiveTicket(registrationId).orElseThrow(() -> new BusinessRuleException("CLINICAL_ROOM_TICKET_REQUIRED",
+                "The department desk must issue a room number before the exam starts"));
+        clinicQueue().update(ticket, ticketStep(() -> ticket.startExam(at)));
+    }
+
+    /** An exam begun before the desk went live has no ticket and still finishes. */
+    private void completeRoomTicket(UUID registrationId, Instant at) {
+        lockActiveTicket(registrationId).filter(ticket -> ticket.status() == com.mediflow.clinical.domain.model.ClinicQueueTicketStatus.IN_EXAM)
+                .ifPresent(ticket -> clinicQueue().update(ticket, ticket.complete(at)));
+    }
+
+    private void cancelRoomTicket(UUID registrationId, UUID actor, String reason, Instant at) {
+        lockActiveTicket(registrationId).ifPresent(ticket -> clinicQueue().update(ticket, ticketStep(() -> ticket.cancel(actor, reason, at))));
+    }
+
+    private static com.mediflow.clinical.domain.model.ClinicQueueTicket ticketStep(
+            java.util.function.Supplier<com.mediflow.clinical.domain.model.ClinicQueueTicket> step) {
+        try {
+            return step.get();
+        } catch (IllegalStateException conflict) {
+            throw new DuplicateResourceException(conflict.getMessage(), conflict.getMessage());
+        }
     }
 
     private com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort clinicQueue() {
@@ -582,7 +617,7 @@ public class OutpatientRegistrationApplicationService {
         if (!Boolean.TRUE.equals(snapshot.canManageSchedules())) notFoundRegistration();
     }
 
-    private void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {
+    void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {
         if (actor.staffId() == null || !actor.staffId().equals(session.configuration().doctorId())) {
             notFoundRegistration();
         }
