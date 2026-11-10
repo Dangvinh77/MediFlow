@@ -47,11 +47,19 @@ class ClinicQueueControllerTest {
     @TestConfiguration @EnableMethodSecurity static class MethodSecurity {}
 
     @Nested
-    @WebMvcTest(value = ClinicQueueController.class, properties = {"mediflow.clinical.scheduling.enabled=true", "mediflow.v2.clinic-intake=true"})
+    @WebMvcTest(value = {ClinicQueueController.class, VitalSignController.class}, properties = {"mediflow.clinical.scheduling.enabled=true", "mediflow.v2.clinic-intake=true"})
     @Import({MethodSecurity.class, ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
     class WhenEnabled {
         @Autowired MockMvc mvc;
         @MockBean ClinicQueueApplicationService queue;
+        @MockBean com.mediflow.clinical.application.service.VitalSignApplicationService vitals;
+
+        @Test void vitalSignsAreRecordedByNursesOnly() throws Exception {
+            String path = "/api/v2/outpatient-registrations/" + REGISTRATION + "/vital-signs";
+            mvc.perform(post(path).with(csrf()).with(user("doctor").roles("DOCTOR")).header("Idempotency-Key", "k")
+                    .contentType("application/json").content("{\"pulseBpm\":80}")).andExpect(status().isForbidden());
+            verifyNoInteractions(vitals);
+        }
 
         @Test void issueRequiresIdempotencyKey() throws Exception {
             mvc.perform(post(PATH).with(csrf()).with(user("nurse").roles("NURSE"))).andExpect(status().isBadRequest());

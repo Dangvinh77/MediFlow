@@ -177,6 +177,24 @@ class ClinicQueuePostgresTest {
         assertThat(rows.stream().filter(r -> r.registrationId().equals(held)).findFirst().orElseThrow().cleared()).isFalse();
     }
 
+    @Test void vitalSignsStayAppendOnlyAndMarkTheBoard() {
+        var session = session(UUID.randomUUID(), UUID.randomUUID());
+        UUID registration = arrived(session);
+        var store = new com.mediflow.clinical.infrastructure.persistence.adapter.VitalSignPersistenceAdapter(jdbc);
+        for (int pulse : List.of(70, 90)) {
+            store.insert(com.mediflow.clinical.domain.model.VitalSignObservation.record(UUID.randomUUID(), registration, UUID.randomUUID(), DEPARTMENT,
+                    ClinicIntakeTestFixtures.NOW.plusSeconds(pulse), UUID.randomUUID(), null, pulse, 120, 80, new java.math.BigDecimal("37.5"), 18, 98,
+                    new java.math.BigDecimal("60.25"), null));
+        }
+        var rows = store.listByRegistration(registration);
+        assertThat(rows).extracting(o -> o.pulseBpm()).containsExactly(90, 70);
+        assertThat(rows.get(0).temperatureC()).isEqualByComparingTo("37.5");
+        assertThat(rows.get(0).weightKg()).isEqualByComparingTo("60.25");
+        assertThat(adapter.boardRows(List.of(session.sessionId())).get(0).vitalSignsRecorded()).isTrue();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update("DELETE FROM vital_sign_observation WHERE registration_id=?", registration))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+    }
+
     @Test void adjustmentRowsAreKept() {
         UUID registration = arrived(session(UUID.randomUUID(), UUID.randomUUID()));
         var ticket = service.issue(registration, "a").data();
