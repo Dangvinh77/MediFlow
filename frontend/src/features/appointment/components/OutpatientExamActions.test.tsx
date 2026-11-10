@@ -5,6 +5,7 @@ import type { AppointmentDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({
   registration: vi.fn(),
+  listVitalSigns: vi.fn(),
   checkIn: vi.fn(),
   startExam: vi.fn(),
   changeStatus: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("../api", () => ({
   appointmentApi: {
     registration: mocks.registration,
+    listVitalSigns: mocks.listVitalSigns,
     checkIn: mocks.checkIn,
     startExam: mocks.startExam,
     changeStatus: mocks.changeStatus,
@@ -235,4 +237,44 @@ it("keeps a paid scheduled patient waiting until the server confirms arrival and
   renderActions({ appointment: { ...readyAppointment, careContractVersion: 2 }, role: "DOCTOR" });
   expect(await screen.findByText(/Chờ bệnh nhân đến quầy tiếp nhận/)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Bắt đầu khám" })).not.toBeInTheDocument();
+});
+
+describe("clinic intake before the exam", () => {
+  const scheduled = { ...readyAppointment, careContractVersion: 2 };
+  const ready = { registrationId: readyAppointment.appointmentId, readyForExam: true, roomQueueNumber: 2 };
+  const reading = { observationId: "o1", registrationId: readyAppointment.appointmentId, observedAt: "2026-11-10T01:00:00Z", recordedByAccountId: "a", recordedByStaffId: "s", pulseBpm: 82, systolicMmhg: 120, diastolicMmhg: 80, temperatureC: 36.6, respiratoryRate: 18, spo2Percent: 98, weightKg: 60, notMeasuredReason: null };
+  function open(appointment: AppointmentDTO, clinicIntakeEnabled = true) {
+    return render(<OutpatientExamActions appointment={appointment} role="DOCTOR" onUpdated={vi.fn()} onRefresh={vi.fn()} clinicIntakeEnabled={clinicIntakeEnabled} />);
+  }
+  beforeEach(() => { mocks.registration.mockReset(); mocks.listVitalSigns.mockReset(); });
+
+  it("doctor sees vitals when examining", async () => {
+    mocks.listVitalSigns.mockResolvedValue([reading]);
+    open({ ...scheduled, status: "IN_EXAM" });
+    expect(await screen.findByText(/82 lần\/phút/)).toBeVisible();
+    expect(mocks.listVitalSigns).toHaveBeenCalledWith(readyAppointment.appointmentId);
+  });
+
+  it("missing vitals warns but keeps start enabled", async () => {
+    mocks.registration.mockResolvedValue(ready);
+    mocks.listVitalSigns.mockResolvedValue([]);
+    open(scheduled);
+    expect(await screen.findByText(/Chưa có sinh hiệu/)).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Bắt đầu khám" })).toBeEnabled();
+  });
+
+  it("missing room number disables start with the reason", async () => {
+    mocks.registration.mockResolvedValue({ ...ready, roomQueueNumber: undefined });
+    mocks.listVitalSigns.mockResolvedValue([reading]);
+    open(scheduled);
+    expect(await screen.findByRole("button", { name: "Bắt đầu khám" })).toBeDisabled();
+    expect(screen.getByText(/chưa có số phòng/)).toBeVisible();
+  });
+
+  it("does not ask for a room number or vitals when the flag is off", async () => {
+    mocks.registration.mockResolvedValue({ ...ready, roomQueueNumber: undefined });
+    open(scheduled, false);
+    expect(await screen.findByRole("button", { name: "Bắt đầu khám" })).toBeEnabled();
+    expect(mocks.listVitalSigns).not.toHaveBeenCalled();
+  });
 });

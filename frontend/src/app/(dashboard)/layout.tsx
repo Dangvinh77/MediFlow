@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <DashboardShell schedulingEnabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"}>
+    <DashboardShell schedulingEnabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"} clinicIntakeEnabled={process.env.MEDIFLOW_CLINIC_INTAKE_UI_ENABLED === "true"}>
       {children}
     </DashboardShell>
   );

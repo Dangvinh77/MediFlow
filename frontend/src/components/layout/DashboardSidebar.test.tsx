@@ -85,3 +85,17 @@ it.each([false, true])("gives cashiers one work entry with scheduling gate %s", 
   expect(screen.getByRole("link", { name: /Thu ngân/ })).toHaveAttribute("aria-current", "page");
   route.pathname = "/pharmacy/drugs/123";
 });
+
+describe("department nurse desk navigation", () => {
+  it("sidebar shows the desk only for NURSE and DOCTOR with the flag on", () => {
+    const desk = { name: /Quầy điều dưỡng khoa/ };
+    const { rerender } = render(<DashboardSidebar role="NURSE" open={false} onClose={vi.fn()} schedulingEnabled clinicIntakeEnabled />);
+    expect(screen.getByRole("link", desk)).toHaveAttribute("href", "/appointments/clinic-queue");
+    rerender(<DashboardSidebar role="DOCTOR" open={false} onClose={vi.fn()} schedulingEnabled clinicIntakeEnabled />);
+    expect(screen.getByRole("link", desk)).toBeInTheDocument();
+    rerender(<DashboardSidebar role="ADMIN" open={false} onClose={vi.fn()} schedulingEnabled clinicIntakeEnabled />);
+    expect(screen.queryByRole("link", desk)).not.toBeInTheDocument();
+    rerender(<DashboardSidebar role="NURSE" open={false} onClose={vi.fn()} schedulingEnabled />);
+    expect(screen.queryByRole("link", desk)).not.toBeInTheDocument();
+  });
+});

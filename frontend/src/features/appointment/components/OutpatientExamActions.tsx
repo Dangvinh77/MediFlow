@@ -8,6 +8,7 @@ import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { useCommand } from "@/lib/use-command";
 import { appointmentApi } from "../api";
+import { VitalSignHistory } from "./VitalSignHistory";
 import type { AppointmentDTO, RegistrationDTO } from "../types";
 
 interface OutpatientExamActionsProps {
@@ -15,6 +16,7 @@ interface OutpatientExamActionsProps {
   role: Role | null;
   onUpdated: (appointment: AppointmentDTO) => void;
   onRefresh: () => void;
+  clinicIntakeEnabled?: boolean;
 }
 
 export function OutpatientExamActions(props: OutpatientExamActionsProps) {
@@ -28,7 +30,7 @@ export function OutpatientExamActions(props: OutpatientExamActionsProps) {
   />;
 }
 
-function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefresh }: OutpatientExamActionsProps) {
+function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefresh, clinicIntakeEnabled = false }: OutpatientExamActionsProps) {
   const command = useCommand();
   const [confirm, setConfirm] = useState<"check-in" | "start" | "cancel" | null>(null);
   const canCheckIn = (role === "ADMIN" || role === "NURSE")
@@ -49,12 +51,15 @@ function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefre
   const canStart = canStartScheduled || (role === "ADMIN" || role === "DOCTOR")
     && appointment.status === "READY_FOR_EXAM" && appointment.careContractVersion === 1
     && Boolean(appointment.examClearanceId);
+  const missingRoomNumber = clinicIntakeEnabled && canStartScheduled && (scheduled?.item?.roomQueueNumber ?? null) === null;
+  const showVitals = clinicIntakeEnabled && role === "DOCTOR" && appointment.careContractVersion >= 2
+    && (appointment.status === "READY_FOR_EXAM" || appointment.status === "IN_EXAM");
   const canEditOrCancel = (role === "ADMIN" || role === "DOCTOR" || role === "NURSE")
     && appointment.status === "PENDING";
 
   function submit() {
     if (command.uncertain || !confirm) return;
-    if ((confirm === "check-in" && !canCheckIn) || (confirm === "start" && !canStart)) return;
+    if ((confirm === "check-in" && !canCheckIn) || (confirm === "start" && (!canStart || missingRoomNumber))) return;
     if (confirm === "cancel" && !canEditOrCancel) return;
     void command.run(
       () => confirm === "check-in" ? appointmentApi.checkIn(appointment.appointmentId)
@@ -70,10 +75,12 @@ function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefre
       {appointment.status === "AWAITING_PAYMENT" ? <p role="status" className="text-sm text-warning">Đang chờ xác nhận thanh toán phí khám. Chỉ bắt đầu khi hệ thống ghi nhận đủ điều kiện.</p> : null}
       {appointment.status === "IN_EXAM" ? <p role="status" className="text-sm text-success">Đã bắt đầu khám. Hồ sơ khám đã được hệ thống tạo.</p> : null}
       {appointment.careContractVersion >= 2 && appointment.status === "READY_FOR_EXAM" && role === "DOCTOR" && !canStartScheduled ? <p role="status" className="text-sm text-muted-foreground">{!scheduled ? "Đang kiểm tra điều kiện khám…" : scheduled.error ? "Chưa kiểm tra được điều kiện khám. Chọn Cập nhật trạng thái để thử lại." : !scheduled.item?.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận để ghi nhận có mặt." : "Chưa đủ điều kiện bắt đầu. Kiểm tra giờ khám và trạng thái phiếu, sau đó cập nhật lại."}</p> : null}
+      {missingRoomNumber ? <p role="status" className="text-sm text-warning">Bệnh nhân chưa có số phòng. Điều dưỡng khoa cần cấp số phòng trước khi bắt đầu khám.</p> : null}
+      {showVitals ? <VitalSignHistory registrationId={appointment.appointmentId} /> : null}
       <CommandFeedback error={command.error} uncertain={command.uncertain} />
       <div className="flex flex-wrap gap-3">
         {canCheckIn ? <Button type="button" variant="primary" disabled={command.busy || command.uncertain} onClick={() => setConfirm("check-in")}>Tiếp nhận bệnh nhân</Button> : null}
-        {canStart ? <Button type="button" variant="primary" disabled={command.busy || command.uncertain} onClick={() => setConfirm("start")}>Bắt đầu khám</Button> : null}
+        {canStart ? <Button type="button" variant="primary" disabled={command.busy || command.uncertain || missingRoomNumber} onClick={() => setConfirm("start")}>Bắt đầu khám</Button> : null}
         {canEditOrCancel && !command.busy && !command.uncertain ? <Link href={`/appointments/${appointment.appointmentId}/edit`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Chỉnh sửa lịch hẹn</Link> : null}
         {canEditOrCancel ? <Button type="button" variant="danger" disabled={command.busy || command.uncertain} onClick={() => setConfirm("cancel")}>Hủy lịch hẹn</Button> : null}
         <Button type="button" disabled={command.busy} onClick={onRefresh}>Cập nhật trạng thái</Button>

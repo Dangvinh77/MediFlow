@@ -19,6 +19,7 @@ import { OutpatientExamActions } from "./OutpatientExamActions";
 interface AppointmentDetailProps {
   appointmentId: string;
   outpatientEnabled?: boolean;
+  clinicIntakeEnabled?: boolean;
   renderRecordLink?: (appointment: AppointmentDTO) => ReactNode;
 }
 
@@ -62,7 +63,7 @@ export function AppointmentDetail(props: AppointmentDetailProps) {
   return <AppointmentDetailContent key={`${props.appointmentId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, renderRecordLink, role }: AppointmentDetailProps & { role: Role | null }) {
+function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, clinicIntakeEnabled = false, renderRecordLink, role }: AppointmentDetailProps & { role: Role | null }) {
   const router = useRouter();
   const active = useRef(false);
   useEffect(() => {
@@ -236,7 +237,7 @@ function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, re
         </section>
       ) : null}
 
-      {outpatientEnabled ? <OutpatientExamActions key={requestKey} appointment={appointment} role={role}
+      {outpatientEnabled ? <OutpatientExamActions key={requestKey} appointment={appointment} role={role} clinicIntakeEnabled={clinicIntakeEnabled}
         onUpdated={(updated) => setRequestState({ key: requestKey, status: "success", appointment: updated })}
         onRefresh={retry} /> : null}
 

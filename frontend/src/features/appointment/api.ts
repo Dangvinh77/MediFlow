@@ -17,6 +17,12 @@ import type {
   RegistrationCreate,
   RegistrationDTO,
   RegistrationSummary,
+  ClinicQueueEntryDTO,
+  ClinicQueueTicketDTO,
+  ClinicTicketAdjustmentCommand,
+  ClinicTicketCallCommand,
+  VitalSignCreateRequest,
+  VitalSignObservationDTO,
   RescheduleCommand,
   RevisionCommand,
   ScheduleImpactDTO,
@@ -153,6 +159,21 @@ export const appointmentApi = {
     api.put<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/cancellation`, body, options),
   reschedule: (registrationId: string, body: RescheduleCommand, options: SchedulingCommandOptions) =>
     api.post<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/reschedule`, body, options),
+  clinicQueue: (date: string, roomId?: string) => {
+    const query = new URLSearchParams({ date });
+    if (roomId) query.set("roomId", roomId);
+    return api.get<ClinicQueueEntryDTO[]>(`/v2/clinic-queue?${query}`);
+  },
+  issueRoomTicket: (registrationId: string, options: SchedulingCommandOptions) =>
+    api.post<ClinicQueueTicketDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/room-queue-ticket`, undefined, options),
+  callTicket: (ticketId: string, body: ClinicTicketCallCommand, options: SchedulingCommandOptions) =>
+    api.put<ClinicQueueTicketDTO>(`/v2/clinic-queue-tickets/${encodeURIComponent(ticketId)}/call`, body, options),
+  adjustTicket: (ticketId: string, body: ClinicTicketAdjustmentCommand, options: SchedulingCommandOptions) =>
+    api.post<ClinicQueueTicketDTO>(`/v2/clinic-queue-tickets/${encodeURIComponent(ticketId)}/adjustments`, body, options),
+  createVitalSigns: (registrationId: string, body: VitalSignCreateRequest, options: SchedulingCommandOptions) =>
+    api.post<VitalSignObservationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/vital-signs`, body, options),
+  listVitalSigns: (registrationId: string) =>
+    api.get<VitalSignObservationDTO[]>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/vital-signs`),
   sessionImpact: (sessionId: string) =>
     api.get<ScheduleImpactDTO>(`/v2/consultation-sessions/${encodeURIComponent(sessionId)}/impact`),
   shiftImpact: (shiftId: string) =>
