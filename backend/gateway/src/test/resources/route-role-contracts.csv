@@ -168,3 +168,13 @@ report-service,GET,/api/v1/reports/outpatient/available-periods,ADMIN|DOCTOR,tru
 report-service,GET,/api/v1/reports/outpatient/statistics,ADMIN|DOCTOR,true
 clinical-service,POST,/api/v2/records/access-declarations,ADMIN|DOCTOR|NURSE,true
 clinical-service,GET,/api/v2/records/{id}/capabilities,ADMIN|DOCTOR|NURSE,true
+clinical-service,POST,/api/v2/outpatient-registrations/{id}/room-queue-ticket,NURSE,true
+clinical-service,GET,/api/v2/clinic-queue,DOCTOR|NURSE,true
+clinical-service,PUT,/api/v2/clinic-queue-tickets/{id}/call,DOCTOR|NURSE,true
+clinical-service,POST,/api/v2/clinic-queue-tickets/{id}/adjustments,DOCTOR|NURSE,true
+clinical-service,POST,/api/v2/outpatient-registrations/{id}/vital-signs,NURSE,true
+clinical-service,GET,/api/v2/outpatient-registrations/{id}/vital-signs,DOCTOR|NURSE,true
+clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NURSE,true
+clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
+clinical-service,GET,/api/v2/doctor-work-shifts/{id}/impact,ADMIN|DOCTOR,true
+billing-service,GET,/api/v2/billing/registration-settlements,ADMIN|CASHIER,true

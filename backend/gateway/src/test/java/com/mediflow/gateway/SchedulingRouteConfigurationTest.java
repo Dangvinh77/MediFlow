@@ -43,6 +43,29 @@ class SchedulingRouteConfigurationTest {
         }
     }
 
+    @Test
+    void clinicIntakeRoutesAreRegistered() {
+        Map<String, String> cases = Map.of(
+                "/api/v2/outpatient-registrations/123/room-queue-ticket", "lb://clinical-service",
+                "/api/v2/clinic-queue", "lb://clinical-service",
+                "/api/v2/clinic-queue-tickets/123/call", "lb://clinical-service",
+                "/api/v2/clinic-queue-tickets/123/adjustments", "lb://clinical-service",
+                "/api/v2/outpatient-registrations/123/vital-signs", "lb://clinical-service",
+                "/api/v2/outpatient-registrations/123/reschedule", "lb://clinical-service",
+                "/api/v2/consultation-sessions/123/impact", "lb://clinical-service",
+                "/api/v2/doctor-work-shifts/123/impact", "lb://clinical-service",
+                "/api/v2/billing/registration-settlements", "lb://billing-service");
+        cases.forEach((path, uri) -> assertThat(matching(path)).as(path).containsExactly(uri));
+    }
+
+    @Test
+    void clinicIntakeRoutesAbsentWhenSchedulingOff() {
+        new org.springframework.boot.test.context.runner.ApplicationContextRunner()
+                .withUserConfiguration(com.mediflow.gateway.config.SchedulingRouteConfiguration.class)
+                .withPropertyValues("mediflow.gateway.scheduling-v2.enabled=false")
+                .run(context -> assertThat(context).doesNotHaveBean("schedulingRoutes"));
+    }
+
     private java.util.List<String> matching(String path) {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path));
         return routes.getRoutes().filterWhen(route -> route.getPredicate().apply(exchange))
