@@ -5,7 +5,22 @@ export interface DiagnosisDTO {
   icdCode: string | null;
 }
 
-export type MedicalRecordStatus = "OPEN" | "COMPLETED";
+export type MedicalRecordStatus = "OPEN" | "COMPLETED" | "CLOSED_WITHOUT_CONCLUSION";
+
+export type RecordClosureReason = "PATIENT_LEFT" | "PATIENT_REFUSED_EXAM" | "PATIENT_REFUSED_ORDER" | "OTHER";
+
+export interface CloseRecordRequest {
+  reason: RecordClosureReason;
+  note: string;
+}
+
+export interface RecordLabOrderDTO {
+  sourceOrderId: string;
+  testId: string | null;
+  labType: string;
+  status: string;
+  orderedAt: string;
+}
 
 export type RecordDisposition =
   | "OUTPATIENT_FOLLOW_UP"
@@ -29,6 +44,10 @@ export interface MedicalRecordDTO {
   disposition: RecordDisposition | null;
   dispositionNote: string | null;
   completedAt: string | null;
+  previousRecordId?: string;
+  closureReason?: RecordClosureReason;
+  closureNote?: string;
+  closedAt?: string;
 }
 
 export interface AddDiagnosisRequest {

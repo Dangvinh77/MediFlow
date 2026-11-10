@@ -136,7 +136,7 @@ function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) 
   if (loadState.status === "error") {
     return <div className="mt-6"><MedicalRecordMutationError {...loadState.error} onRetry={() => { setLoadState({ status: "loading" }); setRetryToken((value) => value + 1); }} /></div>;
   }
-  if (loadState.record.status === "COMPLETED") {
+  if (loadState.record.status !== "OPEN") {
     return <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6"><h2 className="text-lg font-semibold">Hồ sơ đã hoàn tất</h2><p className="mt-2 text-sm text-muted-foreground">Hồ sơ hoàn tất là bất biến và không thể sửa triệu chứng.</p><Link href={`/records/${recordId}`} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Xem chi tiết</Link></section>;
   }
 

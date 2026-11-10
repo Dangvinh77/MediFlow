@@ -328,6 +328,32 @@ describe("Medical record detail identity and permissions", () => {
       expect(screen.queryByRole("button", { name: "Thử tải lại" })).not.toBeInTheDocument();
     });
 
+    it("closed record shows reason and no write actions", async () => {
+      mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a", status: "CLOSED_WITHOUT_CONCLUSION", closureReason: "PATIENT_LEFT", closureNote: "Tự ý về, đã dặn tái khám", closedAt: "2026-10-17T03:00:00Z" });
+      mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_CLOSED" });
+      render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+      expect(await screen.findByText("Kết thúc không kết luận")).toBeVisible();
+      expect(screen.getByText("Bệnh nhân tự ý về")).toBeVisible();
+      expect(screen.getByText("Tự ý về, đã dặn tái khám")).toBeVisible();
+      expect(screen.queryByText("Hoàn tất lần khám")).not.toBeInTheDocument();
+      expect(screen.queryByText("Thêm chẩn đoán", { selector: "summary" })).not.toBeInTheDocument();
+      expect(screen.queryByText("Đã hoàn tất khám")).not.toBeInTheDocument();
+    });
+
+    it("shows link to previous record", async () => {
+      mocks.getById.mockResolvedValue({ ...record, previousRecordId: "record-old" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      expect(await screen.findByRole("link", { name: "Xem hồ sơ lượt trước" })).toHaveAttribute("href", "/records/record-old");
+    });
+
+    it("prescribed is not shown as dispensed", async () => {
+      mocks.getById.mockResolvedValue({ ...record, status: "COMPLETED", disposition: "PRESCRIPTION", completedAt: "2026-10-17T03:00:00Z" });
+      mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_COMPLETED" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      await screen.findByText("Đã hoàn tất khám");
+      expect(screen.queryByText(/đã phát thuốc|đã cấp thuốc/i)).not.toBeInTheDocument();
+    });
+
     it("labels completed record as examination completed, not signed or archived", async () => {
       mocks.getById.mockResolvedValue({ ...record, status: "COMPLETED", completedAt: "2026-10-17T03:00:00Z" });
       mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_COMPLETED" });

@@ -17,6 +17,9 @@ import { medicalRecordApi } from "../api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordCapabilitiesDTO, RecordDisposition } from "../types";
 import { AddDiagnosisForm } from "./AddDiagnosisForm";
 import { CompleteRecordForm } from "./CompleteRecordForm";
+import { CloseRecordForm } from "./CloseRecordForm";
+import { RecordLabOrdersPanel } from "./RecordLabOrdersPanel";
+import { closureReasonLabels } from "../closure";
 import { FollowUpRecommendationPanel } from "./FollowUpRecommendationPanel";
 import { RecordAccessPurposeForm } from "./RecordAccessPurposeForm";
 
@@ -27,6 +30,7 @@ interface MedicalRecordDetailProps {
   notice?: "created" | "updated";
   outpatientEnabled?: boolean;
   schedulingV2Enabled?: boolean;
+  cancelLabOrder?: (testId: string, reason: string) => Promise<unknown>;
   prescriptionWorkspace?: PrescriptionWorkspaceSlot;
 }
 
@@ -85,7 +89,7 @@ export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
   return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, prescriptionWorkspace, role }: MedicalRecordDetailProps & { role: Role | null }) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, cancelLabOrder, prescriptionWorkspace, role }: MedicalRecordDetailProps & { role: Role | null }) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -279,6 +283,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
   }
 
   const isOpen = record.status === "OPEN";
+  const isClosed = record.status === "CLOSED_WITHOUT_CONCLUSION";
   const canWrite = isOpen && capabilities?.canWriteContent === true;
   const canComplete = outpatientEnabled && isOpen && Boolean(record.appointmentId) && capabilities?.canComplete === true;
   const readOnlyNotice = !isOpen || refreshing ? null
@@ -299,12 +304,23 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
 
       <header className="border-b border-border pb-5">
         <PatientContextBanner label="Ngữ cảnh hồ sơ khám" patientId={record.patientId} departmentId={record.departmentId} doctorId={record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
-          <StatusBadge tone={isOpen ? "info" : "success"}>{isOpen ? "Đang khám" : "Đã hoàn tất khám"}</StatusBadge>
+          <StatusBadge tone={isOpen ? "info" : isClosed ? "warning" : "success"}>{isOpen ? "Đang khám" : isClosed ? "Kết thúc không kết luận" : "Đã hoàn tất khám"}</StatusBadge>
         </PatientContextBanner>
-        {!isOpen ? <p className="mt-3 text-sm text-muted-foreground">Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.</p> : null}
+        {record.status === "COMPLETED" ? <p className="mt-3 text-sm text-muted-foreground">Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.</p> : null}
+        {isClosed ? (
+          <dl className="mt-3 border-l-2 border-warning px-4 py-2 text-sm">
+            <dt className="text-xs font-medium text-muted-foreground">Lý do kết thúc</dt>
+            <dd>{record.closureReason ? closureReasonLabels[record.closureReason] : "Chưa ghi nhận"}</dd>
+            <dt className="mt-2 text-xs font-medium text-muted-foreground">Ghi chú và dặn dò</dt>
+            <dd>{record.closureNote ?? "Chưa ghi nhận"}</dd>
+            <dt className="mt-2 text-xs font-medium text-muted-foreground">Thời điểm</dt>
+            <dd>{formatInstant(record.closedAt ?? null)}</dd>
+          </dl>
+        ) : null}
+        {record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4">Xem hồ sơ lượt trước</Link></p> : null}
 
         {outpatientEnabled && record.appointmentId ? (
-          <section aria-label="Xét nghiệm của lượt khám" className="mt-5 border-t border-border pt-4">
+          <section id="record-lab-orders" aria-label="Xét nghiệm của lượt khám" className="mt-5 border-t border-border pt-4">
             <h3 className="text-sm font-semibold">Xét nghiệm của lượt khám</h3>
             <p className="mt-1 text-sm text-muted-foreground">Chỉ định và theo dõi xét nghiệm theo đúng lượt khám này.</p>
             <div className="mt-2 flex flex-wrap items-center gap-1">
@@ -313,6 +329,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
               ) : null}
               <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}>Xem phiếu xét nghiệm</Link>
             </div>
+            {schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} /> : null}
           </section>
         ) : null}
       </header>
@@ -380,6 +397,14 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
           <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4">Hoàn tất lần khám</summary>
           <p className="pb-2 text-sm text-muted-foreground">Mở khi đã hoàn tất chẩn đoán và hướng xử trí. Hồ sơ sẽ không thể chỉnh sửa sau khi kết thúc.</p>
           <CompleteRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onCompleted={applyRecord} />
+        </details>
+      ) : null}
+
+      {canComplete && schedulingV2Enabled && role === "DOCTOR" ? (
+        <details className="border-b border-border pb-3">
+          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4">Kết thúc lượt không kết luận</summary>
+          <p className="pb-2 text-sm text-muted-foreground">Dùng khi bệnh nhân tự ý về hoặc từ chối khám. Không cần chẩn đoán, nhưng mọi chỉ định xét nghiệm phải có kết quả hoặc đã hủy.</p>
+          <CloseRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onClosed={applyRecord} />
         </details>
       ) : null}
 

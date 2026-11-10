@@ -3,6 +3,7 @@ import type { PageResult } from "@/lib/types";
 import type {
   AddDiagnosisRequest,
   ClinicalLabOrderDTO,
+  CloseRecordRequest,
   CompleteRecordRequest,
   CreateClinicalLabOrderRequest,
   CreateFollowUpRecommendationRequest,
@@ -13,6 +14,7 @@ import type {
   RecordAccessDeclarationDTO,
   RecordAccessDeclarationRequest,
   RecordCapabilitiesDTO,
+  RecordLabOrderDTO,
   UpdateMedicalRecordRequest,
 } from "./types";
 
@@ -24,6 +26,18 @@ export const medicalRecordApi = {
       `/v1/records/${encodeURIComponent(recordId)}/complete`,
       body,
     ),
+  closeWithoutConclusion: (
+    recordId: string,
+    body: CloseRecordRequest,
+    options: Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>,
+  ) =>
+    api.put<MedicalRecordDTO>(
+      `/v2/records/${encodeURIComponent(recordId)}/close-without-conclusion`,
+      body,
+      options,
+    ),
+  labOrders: (recordId: string) =>
+    api.get<RecordLabOrderDTO[]>(`/v2/records/${encodeURIComponent(recordId)}/lab-orders`),
   createLabOrder: (recordId: string, body: CreateClinicalLabOrderRequest) =>
     api.post<ClinicalLabOrderDTO>(
       `/v1/records/${encodeURIComponent(recordId)}/lab-orders`,
