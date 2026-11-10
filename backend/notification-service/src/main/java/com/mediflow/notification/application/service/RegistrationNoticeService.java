@@ -17,6 +17,11 @@ public class RegistrationNoticeService {
     public void receive(RegistrationNoticeCommand command) {
         if (!history.claim(command.eventId(), RegistrationNoticeCommand.EVENT_TYPE, command.rawHash())) return;
         if (!projections.advance(command)) return;
+        if (command.rescheduled()) {
+            deliver(command, "OUTPATIENT_REGISTRATION_RESCHEDULED", "Lịch khám đã thay đổi",
+                    "Lịch khám của bạn đã được đổi. Vui lòng xem ngày, giờ, bác sĩ và phòng mới trong phiếu khám.");
+            return;
+        }
         String title = switch (command.status()) {
             case "AWAITING_PAYMENT" -> "Đăng ký đang chờ thanh toán";
             case "CONFIRMED" -> "Phiếu khám đã xác nhận";
@@ -33,8 +38,11 @@ public class RegistrationNoticeService {
             case "EXPIRED" -> "Thời gian giữ suất đã hết. Vui lòng liên hệ quầy tiếp nhận để đăng ký lại.";
             default -> "Hệ thống đang đối soát phiếu khám. Vui lòng liên hệ quầy tiếp nhận; không thanh toán lại khi chưa rõ kết quả.";
         };
+        deliver(command, "OUTPATIENT_REGISTRATION_" + command.status(), title, content);
+    }
+
+    private void deliver(RegistrationNoticeCommand command, String templateKey, String title, String content) {
         history.deliverInApp(new CareNotificationIntent(UUID.randomUUID(), command.patientId(), command.eventId(),
-                RegistrationNoticeCommand.EVENT_TYPE, command.registrationId(), command.correlationId(),
-                "OUTPATIENT_REGISTRATION_" + command.status(), title, content));
+                RegistrationNoticeCommand.EVENT_TYPE, command.registrationId(), command.correlationId(), templateKey, title, content));
     }
 }
