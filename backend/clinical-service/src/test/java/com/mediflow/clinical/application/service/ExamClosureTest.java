@@ -10,6 +10,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +47,7 @@ import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.ClinicQueueTicket;
 import com.mediflow.clinical.domain.model.ClinicQueueTicketStatus;
+import com.mediflow.clinical.domain.model.CareEpisodeType;
 import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.domain.model.ConsultationSession;
 import com.mediflow.clinical.domain.model.MedicalRecord;
@@ -264,18 +266,27 @@ class ExamClosureTest {
 
     @Test void resultAfterClosureDoesNotReopenRecord() {
         close();
-        var attachments = mock(com.mediflow.clinical.application.port.in.AttachExternalResultUseCase.class);
+        var results = mock(com.mediflow.clinical.application.port.out.ExternalResultRepositoryPort.class);
         UUID lab = UUID.randomUUID();
-        when(attachments.attachLabResult(record.getRecordId(), lab, "Bình thường")).thenReturn(true);
-        new ClinicalIntegrationService(attachments, h.records).onLabResultCreated(lateResult(lab));
+        when(results.attach(record.getRecordId(), com.mediflow.clinical.domain.model.ExternalResultType.LAB, lab, "Bình thường"))
+                .thenReturn(true);
+        when(h.records.findById(record.getRecordId())).thenReturn(Optional.of(record));
+        new ClinicalIntegrationService(new ExternalResultApplicationService(h.records, results), h.records)
+                .onLabResultCreated(lateResult(lab));
         assertThat(record.getStatus()).isEqualTo(MedicalRecordStatus.CLOSED_WITHOUT_CONCLUSION);
+        assertThat(record.getClosureReason()).isEqualTo(RecordClosureReason.PATIENT_LEFT);
+        assertThat(record.getClosedAt()).isEqualTo(IntakeHarness.NOW);
         assertThat(record.getCompletedAt()).isNull();
-        verify(attachments).attachLabResult(record.getRecordId(), lab, "Bình thường");
-        verify(h.records).save(record);
+        assertThat(record.getDiagnoses()).isEmpty();
+        verify(results).attach(record.getRecordId(), com.mediflow.clinical.domain.model.ExternalResultType.LAB, lab, "Bình thường");
+        verify(h.records, times(1)).save(any());
     }
 
+    /** The v1 contract Lab publishes: the binding must match the closed record or the result is refused. */
     private com.mediflow.clinical.application.dto.command.LabResultCreatedCommand lateResult(UUID lab) {
-        return new com.mediflow.clinical.application.dto.command.LabResultCreatedCommand(UUID.randomUUID(), record.getRecordId(), lab, "Bình thường");
+        return new com.mediflow.clinical.application.dto.command.LabResultCreatedCommand(UUID.randomUUID(), record.getRecordId(),
+                lab, "Bình thường", 1, record.getPatientId(), record.getDepartmentId(), CareEpisodeType.OUTPATIENT_VISIT,
+                appointment.getAppointmentId(), 1);
     }
 
     @Test void retrySameKeyReturnsStoredResult() {
