@@ -20,6 +20,8 @@ public interface OutpatientRegistrationRepositoryPort {
     void update(OutpatientRegistration before, OutpatientRegistration after, UUID actorAccountId, UUID actorStaffId,
             String action, Instant at);
     boolean existsActivePatientSession(UUID patientId, UUID sessionId);
+    /** Registrations still holding a seat whose hold ran out at or before {@code now}, oldest first. */
+    java.util.List<UUID> findExpiredHeld(java.time.Instant now, int limit);
     PageResult<OutpatientRegistration> findByPatient(UUID patientId, PageQuery page);
     PageResult<OutpatientRegistration> findBySession(UUID sessionId, PageQuery page);
     PageResult<com.mediflow.clinical.application.dto.response.FollowUpSourceSummary> findFollowUpSources(UUID patientId, PageQuery page);

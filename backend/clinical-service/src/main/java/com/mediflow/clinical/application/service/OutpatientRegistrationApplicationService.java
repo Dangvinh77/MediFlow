@@ -257,6 +257,20 @@ public class OutpatientRegistrationApplicationService {
                 });
     }
 
+    /** Gives an unpaid hold's seat back once its time is up; safe to run twice or against a paid registration. */
+    @Transactional
+    public void expireHeldReservation(UUID registrationId) {
+        OutpatientRegistration visible = readRegistration(registrationId);
+        ConsultationSession session = lockSession(visible.sessionId());
+        OutpatientRegistration before = lockRegistration(registrationId);
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        OutpatientRegistration after = before.expire(now);
+        if (after == before) return;
+        registrations.update(before, after, null, null, "EXPIRED", now);
+        sessions.updateCounts(session, adjustCounts(session, -1, 0, 0, 0, 1), now);
+        appendFact(after, session, now);
+    }
+
     public OutpatientRegistrationDTO get(UUID registrationId) {
         OutpatientRegistration registration = readRegistration(registrationId);
         ConsultationSession session = readSession(registration.sessionId());

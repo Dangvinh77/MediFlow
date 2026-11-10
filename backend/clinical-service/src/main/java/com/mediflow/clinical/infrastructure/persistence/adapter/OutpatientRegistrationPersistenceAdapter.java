@@ -126,6 +126,15 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
 
     @Override
     @Transactional(readOnly = true)
+    public java.util.List<UUID> findExpiredHeld(java.time.Instant now, int limit) {
+        return jdbc.queryForList("""
+                SELECT registration_id FROM outpatient_registration
+                WHERE reservation_status = 'HELD' AND reservation_expires_at <= ?
+                ORDER BY reservation_expires_at, registration_id LIMIT ?
+                """, UUID.class, java.sql.Timestamp.from(now), limit);
+    }
+
+    @Override
     public boolean existsActivePatientSession(UUID patientId, UUID sessionId) {
         Boolean exists = jdbc.queryForObject("""
                 SELECT EXISTS(SELECT 1 FROM outpatient_registration WHERE patient_id = ? AND session_id = ?
