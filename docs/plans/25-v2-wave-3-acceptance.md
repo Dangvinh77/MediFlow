@@ -43,7 +43,20 @@ Compose project riêng `mediflow-w2`, `down -v` rồi dựng lại, seed demo, c
 | Khác khoa, không có lý do | 201 |
 | Phí khám | Mỗi lượt có đúng 1 dòng `EXAM` trong `charge`; lượt quay lại có phí riêng |
 
+## Sửa sau review độc lập
+
+| Vấn đề | Cách sửa | Bằng chứng |
+|---|---|---|
+| Chỉ định Lab chưa tiếp nhận làm lượt khám kẹt mãi ở trạng thái đang khám | Bác sĩ phụ trách rút chỉ định kèm lý do qua `PUT /api/v2/records/{id}/lab-orders/{sourceOrderId}/withdrawal`; chỉ khi Lab báo chưa có chỉ định. Web và mobile có nút "Rút chỉ định" | `ExamClosureTest`, `ClinicalLabOrderPersistenceAdapterTest`, `ExamLifecycleSchemaPostgresTest`, test web và mobile |
+| Quầy và admin không chọn được lượt nguồn khi quay lại vì phải qua quyền đọc hồ sơ | `GET /api/v2/patients/{patientId}/return-sources` (ADMIN, NURSE) chỉ trả mã hồ sơ, trạng thái, ngày khám, khoa | `OpenVisitApplicationServiceTest`, `OpenVisitControllerTest`, test web và mobile |
+| Test "kết quả về sau khi đóng" quá yếu | Viết lại trên hợp đồng v1 với dịch vụ gắn kết quả thật; đã chạy với bản lỗi cố ý để thấy test đỏ | `ExamClosureTest.resultAfterClosureDoesNotReopenRecord` |
+
+Sau khi sửa: backend clinical và gateway 2825/2825, web 1523/1523, mobile 682/682.
+
 ## Giới hạn của bằng chứng
+
+- Hai endpoint thêm sau review chỉ được kiểm bằng test tự động và test hợp đồng route của Gateway; chưa chạy lại
+  bộ nghiệm thu qua Gateway trên DB sạch.
 
 - "Sang ngày sau" được mô phỏng bằng cách lùi `session_date` của buổi khám một ngày trong DB, không phải chờ qua ngày thật.
   Test `examinationDateIsClinicDate` và các test giữ hành vi `complete`/`update` không xét ngày là bằng chứng bổ sung.
