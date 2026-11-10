@@ -9,6 +9,7 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/appointment.dart';
+import 'open_visit_notice.dart';
 
 final appointmentRepositoryProvider = Provider<AppointmentRepository>(
   (ref) => throw StateError(
@@ -51,6 +52,20 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
     final canCreate = const {'ADMIN', 'NURSE'}.contains(access.role);
     return Column(
       children: [
+        if (access.role == 'DOCTOR' &&
+            ref.watch(outpatientUiEnabledProvider) &&
+            ref.watch(openVisitRepositoryProvider) != null)
+          DoctorOpenVisitsSection(
+            key: ValueKey(access.sessionIdentity),
+            onOpen: (visit) => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => AppointmentDetailPage(
+                  appointmentId: visit.registrationId,
+                  onOpenRecord: widget.onOpenRecord,
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.all(12),
           child: Wrap(

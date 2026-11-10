@@ -25,6 +25,10 @@ class MedicalRecord {
     this.disposition,
     this.dispositionNote,
     this.completedAt,
+    this.closureReason,
+    this.closureNote,
+    this.closedAt,
+    this.previousRecordId,
   });
 
   final String id, patientId, doctorId, departmentId, examinationDate;
@@ -32,6 +36,7 @@ class MedicalRecord {
   final String createdAt, status;
   final String? symptoms, appointmentId, updatedAt;
   final String? disposition, dispositionNote, completedAt;
+  final String? closureReason, closureNote, closedAt, previousRecordId;
 }
 
 class DiagnosisDraft {

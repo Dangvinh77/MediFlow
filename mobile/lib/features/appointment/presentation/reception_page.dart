@@ -6,8 +6,10 @@ import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/clinic_queue.dart';
+import '../domain/open_visit.dart';
 import '../domain/reception.dart';
 import 'clinic_queue_page.dart';
+import 'open_visit_notice.dart';
 import 'outpatient_schedule_pages.dart';
 import 'appointment_page.dart';
 
@@ -92,6 +94,15 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
   Object? error;
   int generation = 0, sourceGeneration = 0;
   final reason = TextEditingController(), replacement = TextEditingController();
+  final independent = TextEditingController(),
+      returnReason = TextEditingController();
+  bool sameDepartmentOpen = false,
+      forceIndependent = false,
+      returnVisit = false;
+  List<ReturnSource>? returnSources;
+  String? returnSourceId;
+  Object? returnSourceError;
+  int returnGeneration = 0;
   final scroll = ScrollController();
   late final ReceptionPending pending;
   late final Object identity;
@@ -131,6 +142,8 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
     generation++;
     sourceGeneration++;
     reason.dispose();
+    independent.dispose();
+    returnReason.dispose();
     replacement.dispose();
     scroll.dispose();
     super.dispose();
@@ -145,6 +158,38 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
     replacement.clear();
     agreed = false;
     useRecommendation = true;
+    returnGeneration++;
+    returnVisit = false;
+    returnSources = null;
+    returnSourceId = null;
+    returnSourceError = null;
+    returnReason.clear();
+  }
+
+  void clearOpenVisitCheck() {
+    sameDepartmentOpen = false;
+    forceIndependent = false;
+    independent.clear();
+  }
+
+  Future<void> loadReturnSources() async {
+    final repository = ref.read(openVisitRepositoryProvider);
+    if (repository == null || patient == null) return;
+    final request = ++returnGeneration;
+    setState(() {
+      returnSources = null;
+      returnSourceError = null;
+    });
+    try {
+      final result = await repository.returnSources(patient!);
+      if (current && request == returnGeneration) {
+        setState(() => returnSources = result);
+      }
+    } catch (cause) {
+      if (current && request == returnGeneration) {
+        setState(() => returnSourceError = cause);
+      }
+    }
   }
 
   void clearSessions() {
@@ -239,6 +284,11 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
       reason: reason.text,
       replacementReason: replacement.text,
       agreedToReplacement: agreed,
+      requireIndependentReason: sameDepartmentOpen || forceIndependent,
+      independentReason: independent.text,
+      returnVisit: returnVisit,
+      returnSourceRecordId: returnSourceId,
+      returnReason: returnReason.text,
     );
     final issue = command.validate();
     if (pending.intent == null && issue != null) {
@@ -268,7 +318,12 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
           cause.status == 408 ||
           cause.status! >= 500;
       if (!ambiguous) pending.intent = null;
-      setState(() => error = cause);
+      setState(() {
+        error = cause;
+        if (cause is ApiFailure && cause.code == 'OPEN_VISIT_EXISTS') {
+          forceIndependent = true;
+        }
+      });
     } finally {
       if (current) setState(() => busy = false);
     }
@@ -287,6 +342,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
       prebooked = false;
       error = null;
       clearSource();
+      clearOpenVisitCheck();
     });
     if (scroll.hasClients) scroll.jumpTo(0);
   }
@@ -314,6 +370,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
               : (value) => setState(() {
                   patient = value;
                   clearSource();
+                  clearOpenVisitCheck();
                   error = null;
                 }),
         ),
@@ -351,6 +408,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
               : (value) => setState(() {
                   department = value;
                   clearSessions();
+                  clearOpenVisitCheck();
                 }),
         ),
         ExpansionTile(
@@ -616,6 +674,81 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
               labelText: followUp ? 'Lý do tái khám' : 'Ghi chú (nếu có)',
             ),
           ),
+          if (!followUp && ref.watch(openVisitRepositoryProvider) != null) ...[
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Bệnh nhân quay lại sau lượt đã kết thúc'),
+              value: returnVisit,
+              onChanged: locked || patient == null
+                  ? null
+                  : (value) {
+                      setState(() {
+                        returnGeneration++;
+                        returnVisit = value!;
+                        returnSources = null;
+                        returnSourceId = null;
+                        returnSourceError = null;
+                        returnReason.clear();
+                        error = null;
+                      });
+                      if (value!) loadReturnSources();
+                    },
+            ),
+            if (returnVisit && returnSourceError != null)
+              TextButton(
+                onPressed: locked ? null : loadReturnSources,
+                child: const Text('Không tải được lượt đã kết thúc. Thử lại'),
+              ),
+            if (returnVisit &&
+                returnSources == null &&
+                returnSourceError == null)
+              const LinearProgressIndicator(),
+            if (returnVisit && returnSources?.isEmpty == true)
+              const Text('Bệnh nhân chưa có lượt nào đã kết thúc.'),
+            if (returnVisit && returnSources?.isNotEmpty == true) ...[
+              DropdownButtonFormField<String>(
+                key: const Key('reception-return-source'),
+                isExpanded: true,
+                itemHeight: null,
+                initialValue: returnSourceId,
+                decoration: const InputDecoration(
+                  labelText: 'Lượt đã kết thúc',
+                ),
+                items: [
+                  for (final item in returnSources!)
+                    DropdownMenuItem(
+                      value: item.recordId,
+                      child: Text(
+                        '${item.examinationDate} · ${returnSourceLabels[item.status]}',
+                      ),
+                    ),
+                ],
+                onChanged: locked
+                    ? null
+                    : (value) => setState(() => returnSourceId = value),
+              ),
+              TextField(
+                key: const Key('reception-return-reason'),
+                controller: returnReason,
+                enabled: !locked,
+                maxLength: 500,
+                decoration: const InputDecoration(labelText: 'Lý do quay lại'),
+              ),
+            ],
+          ],
+          if (patient != null && receipt == null)
+            if (ref.watch(openVisitRepositoryProvider) case final repository?)
+              OpenVisitNotice(
+                key: ValueKey((patient, session.departmentId)),
+                repository: repository,
+                patientId: patient!,
+                departmentId: session.departmentId,
+                controller: independent,
+                enabled: !locked,
+                forceReason: forceIndependent,
+                onSameDepartmentChanged: (value) =>
+                    setState(() => sameDepartmentOpen = value),
+              ),
           if (receipt == null)
             FilledButton(
               onPressed: busy || patient == null ? null : register,

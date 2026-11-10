@@ -29,6 +29,10 @@ abstract final class MedicalRecordDto {
       disposition: JsonReader.optionalString(json, 'disposition'),
       dispositionNote: JsonReader.optionalString(json, 'dispositionNote'),
       completedAt: JsonReader.optionalString(json, 'completedAt'),
+      closureReason: JsonReader.optionalString(json, 'closureReason'),
+      closureNote: JsonReader.optionalString(json, 'closureNote'),
+      closedAt: JsonReader.optionalString(json, 'closedAt'),
+      previousRecordId: JsonReader.optionalString(json, 'previousRecordId'),
     );
   }
 }

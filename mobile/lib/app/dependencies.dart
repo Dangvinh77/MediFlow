@@ -25,6 +25,10 @@ import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/lab/presentation/lab_page.dart';
 import '../features/lab/presentation/lab_detail_page.dart';
 import '../features/lab/data/gateway_lab_workflow.dart';
+import '../features/appointment/data/gateway_open_visit_repository.dart';
+import '../features/appointment/presentation/open_visit_notice.dart';
+import '../features/medical_record/data/gateway_exam_lifecycle_repository.dart';
+import '../features/medical_record/presentation/record_lab_orders_section.dart';
 import '../features/report/data/gateway_report_repository.dart';
 import '../features/report/presentation/report_page.dart';
 import '../features/patient/data/gateway_patient_repository.dart';
@@ -58,6 +62,17 @@ final _pharmacyAdapterProvider = Provider(
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  examLifecycleRepositoryProvider.overrideWith(
+    (ref) => GatewayExamLifecycleRepository(ref.watch(apiClientProvider)),
+  ),
+  recordLabCancelProvider.overrideWith(
+    (ref) => (testId, reason) async {
+      await ref.read(labWorkflowProvider).cancel(testId, reason);
+    },
+  ),
+  openVisitRepositoryProvider.overrideWith(
+    (ref) => GatewayOpenVisitRepository(ref.watch(apiClientProvider)),
+  ),
   profileAccountRepositoryProvider.overrideWith(
     (ref) => GatewayProfileAccountRepository(ref.watch(apiClientProvider)),
   ),

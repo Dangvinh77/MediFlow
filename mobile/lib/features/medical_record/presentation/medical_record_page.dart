@@ -7,8 +7,11 @@ import '../../../core/widgets/medical_ui.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
+import '../domain/exam_lifecycle.dart';
 import '../domain/medical_record.dart';
+import 'close_record_sheet.dart';
 import 'follow_up_recommendation_panel.dart';
+import 'record_lab_orders_section.dart';
 
 final medicalRecordRepositoryProvider = Provider<MedicalRecordRepository>(
   (ref) => throw StateError(
@@ -327,11 +330,7 @@ class _RecordCard extends StatelessWidget {
                   ),
                 ),
                 StatusPill(
-                  record.status == 'OPEN'
-                      ? 'Đang khám'
-                      : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất khám'
-                      : 'Trạng thái khác',
+                  _recordStatusLabel(record.status),
                   tone: statusToneOf(record.status),
                 ),
               ],
@@ -610,7 +609,7 @@ class _MedicalRecordDetailPageState
   RecordCapabilities? _capabilities;
   Object? _error;
   bool _loading = true, _busy = false, _uncertain = false;
-  int _generation = 0;
+  int _generation = 0, _labOrdersRevision = 0;
   Object? _identity;
 
   @override
@@ -618,6 +617,22 @@ class _MedicalRecordDetailPageState
     super.initState();
     _identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
     Future.microtask(_load);
+  }
+
+  Future<void> _closeRecord(MedicalRecord record) async {
+    final repository = ref.read(examLifecycleRepositoryProvider);
+    final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    if (repository == null || _busy || _uncertain) return;
+    final closed = await showCloseRecordSheet(
+      context,
+      record: record,
+      repository: repository,
+    );
+    if (closed != null &&
+        mounted &&
+        ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
+      setState(() => _record = closed);
+    }
   }
 
   /// A capability failure leaves the record read only; it never blocks reading.
@@ -773,15 +788,22 @@ class _MedicalRecordDetailPageState
           outpatientEnabled: outpatientEnabled,
         );
     final canCreatePrescription = outpatientEnabled && canEdit;
+    final lifecycle = ref.watch(examLifecycleRepositoryProvider);
+    final canClose =
+        lifecycle != null &&
+        capabilities?.canComplete == true &&
+        canCloseWithoutConclusion(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
     final readOnlyNotice = record.status != 'OPEN'
         ? null
         : capabilities == null
         ? 'Chưa xác định được quyền ghi, hồ sơ đang ở chế độ chỉ đọc.'
         : switch (capabilities.writeBlockedReason) {
-            'NOT_ASSIGNED_DOCTOR' =>
-              'Bạn đang xem hồ sơ do bác sĩ khác phụ trách. Chỉ bác sĩ phụ trách mới được ghi vào hồ sơ này.',
-            'NOT_IN_EXAM' =>
-              'Lượt khám chưa ở trạng thái đang khám nên chưa thể ghi vào hồ sơ.',
+            'NOT_ASSIGNED_DOCTOR' => 'Bạn đang xem hồ sơ do bác sĩ khác phụ trách. Chỉ bác sĩ phụ trách mới được ghi vào hồ sơ này.',
+            'NOT_IN_EXAM' => 'Lượt khám chưa ở trạng thái đang khám nên chưa thể ghi vào hồ sơ.',
             _ => null,
           };
     final prescriptionBuilder = const {'ADMIN', 'DOCTOR'}.contains(role)
@@ -802,11 +824,7 @@ class _MedicalRecordDetailPageState
                 ),
                 const SizedBox(height: 8),
                 StatusPill(
-                  record.status == 'OPEN'
-                      ? 'Đang khám'
-                      : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất khám'
-                      : 'Trạng thái khác',
+                  _recordStatusLabel(record.status),
                   tone: statusToneOf(record.status),
                 ),
                 if (record.status == 'COMPLETED')
@@ -844,6 +862,27 @@ class _MedicalRecordDetailPageState
                   Text('Cập nhật: ${record.updatedAt}'),
                 if (record.completedAt != null)
                   Text('Hoàn tất: ${record.completedAt}'),
+                if (record.closureReason != null)
+                  Text(
+                    'Lý do: ${recordClosureReasonLabels[record.closureReason] ?? record.closureReason}',
+                  ),
+                if (record.closureNote?.trim().isNotEmpty == true)
+                  Text(record.closureNote!),
+                if (record.closedAt != null)
+                  Text('Kết thúc lúc: ${record.closedAt}'),
+                if (record.previousRecordId case final previous?)
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => MedicalRecordDetailPage(
+                          recordId: previous,
+                          prescriptionWorkspaceBuilder:
+                              widget.prescriptionWorkspaceBuilder,
+                        ),
+                      ),
+                    ),
+                    child: const Text('Xem hồ sơ lượt trước'),
+                  ),
               ],
             ),
           ),
@@ -948,7 +987,18 @@ class _MedicalRecordDetailPageState
           _ClinicalLabWorkflowPanel(
             record: record,
             repository: ref.read(medicalRecordRepositoryProvider),
-            onCreated: widget.onLabTestCreated,
+            onCreated: (receipt) {
+              setState(() => _labOrdersRevision++);
+              widget.onLabTestCreated?.call(receipt);
+            },
+          ),
+        if (outpatientEnabled &&
+            lifecycle != null &&
+            record.appointmentId?.trim().isNotEmpty == true)
+          RecordLabOrdersSection(
+            key: ValueKey((record.id, _identity, _labOrdersRevision)),
+            recordId: record.id,
+            canChange: canEdit,
           ),
         if (prescriptionBuilder case final buildWorkspace?)
           Card(
@@ -984,6 +1034,11 @@ class _MedicalRecordDetailPageState
                   .complete(record.id, disposition: disposition, note: note),
               (updated) => setState(() => _record = updated),
             ),
+          ),
+        if (canClose)
+          OutlinedButton(
+            onPressed: _busy || _uncertain ? null : () => _closeRecord(record),
+            child: const Text('Kết thúc không kết luận'),
           ),
       ],
     );
@@ -1548,7 +1603,12 @@ class _RecordAccessPurposeFormState
     'RECORD_MANAGEMENT': 'Quản lý hồ sơ',
   };
   static const _byRole = {
-    'DOCTOR': ['CONSULTATION', 'CARE_CONTINUITY', 'QUALITY_REVIEW', 'EMERGENCY'],
+    'DOCTOR': [
+      'CONSULTATION',
+      'CARE_CONTINUITY',
+      'QUALITY_REVIEW',
+      'EMERGENCY',
+    ],
     'ADMIN': ['RECORD_MANAGEMENT', 'QUALITY_REVIEW'],
     'NURSE': ['EMERGENCY'],
   };
@@ -1671,6 +1731,13 @@ class _RetryMessage extends StatelessWidget {
     ),
   );
 }
+
+String _recordStatusLabel(String status) => switch (status) {
+  'OPEN' => 'Đang khám',
+  'COMPLETED' => 'Đã hoàn tất khám',
+  'CLOSED_WITHOUT_CONCLUSION' => 'Kết thúc không kết luận',
+  _ => 'Trạng thái khác',
+};
 
 bool _outcomeUnknown(Object error) =>
     error is! ApiFailure ||
