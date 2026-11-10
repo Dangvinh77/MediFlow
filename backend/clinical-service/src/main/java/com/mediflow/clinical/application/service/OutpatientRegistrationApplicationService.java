@@ -106,6 +106,8 @@ public class OutpatientRegistrationApplicationService {
         appendFact(after, session, at);
     }
 
+    private static final int TEXT_REASON_MAX = 500;
+
     private final ConsultationSessionRepositoryPort sessions;
     private final OutpatientRegistrationRepositoryPort registrations;
     private final AppointmentRepositoryPort appointments;
@@ -197,6 +199,8 @@ public class OutpatientRegistrationApplicationService {
                         throw new DuplicateResourceException("ACTIVE_REGISTRATION_EXISTS",
                                 "Patient already has an active registration for this session");
                     }
+                    requireReasonForOpenVisit(request, session);
+                    OutpatientRegistration.ReturnLink returnLink = validatedReturnLink(request);
                     Instant now = clock.instant();
                     UUID registrationId = UUID.randomUUID();
                     OutpatientRegistration registration = OutpatientRegistration.create(registrationId,
@@ -209,6 +213,7 @@ public class OutpatientRegistrationApplicationService {
                     if (request.visitType() == OutpatientVisitType.FOLLOW_UP) {
                         registration = registration.asFollowUp(validateFollowUp(request, session));
                     }
+                    if (returnLink != null) registration = registration.withReturnLink(returnLink);
                     appointments.save(appointment);
                     registrations.insert(registration, actor.accountId(), actor.staffId(), "CREATED", now);
                     ConsultationSession after = adjustCounts(session, 1, 0, 0, 0, -1);
@@ -544,6 +549,52 @@ public class OutpatientRegistrationApplicationService {
                 || request.followUpRecommendationId() == null && (request.reason() == null || request.reason().isBlank())) {
             throw new BusinessRuleException("INVALID_REQUEST", "Follow-up requires a completed source and a recommendation or reason");
         }
+        if (request.visitType() == OutpatientVisitType.FOLLOW_UP && (request.returnSourceRecordId() != null || request.returnReason() != null)) {
+            throw new BusinessRuleException("INVALID_REQUEST", "FOLLOW_UP names its source through the previous registration");
+        }
+        if (request.independentVisitReason() != null && request.independentVisitReason().length() > TEXT_REASON_MAX) {
+            throw new BusinessRuleException("INVALID_REQUEST", "Independent visit reason is too long");
+        }
+        boolean hasReason = request.returnReason() != null && !request.returnReason().isBlank()
+                && request.returnReason().length() <= TEXT_REASON_MAX;
+        if (request.returnSourceRecordId() == null ? request.returnReason() != null : !hasReason) {
+            throw new BusinessRuleException("RETURN_SOURCE_INVALID", "A return visit needs both its source record and a reason");
+        }
+    }
+
+    /** A second visit in a department where one is still open is usually a mistake, so it must be explained. */
+    private void requireReasonForOpenVisit(RegistrationCreateRequest request, ConsultationSession target) {
+        boolean openInDepartment = registrations.findOpenVisitsByPatient(request.patientId()).stream()
+                .anyMatch(visit -> visit.departmentId().equals(target.configuration().departmentId()));
+        if (openInDepartment && (request.independentVisitReason() == null || request.independentVisitReason().isBlank())) {
+            throw new DuplicateResourceException("OPEN_VISIT_EXISTS", "Patient has an open visit in this department; give a reason to register another");
+        }
+    }
+
+    private OutpatientRegistration.ReturnLink validatedReturnLink(RegistrationCreateRequest request) {
+        String independent = request.independentVisitReason() == null || request.independentVisitReason().isBlank()
+                ? null : request.independentVisitReason();
+        if (request.returnSourceRecordId() == null) {
+            return independent == null ? null : new OutpatientRegistration.ReturnLink(null, null, independent);
+        }
+        var source = records.findById(request.returnSourceRecordId()).orElse(null);
+        if (source == null || !request.patientId().equals(source.getPatientId())
+                || source.getStatus() == com.mediflow.clinical.domain.model.MedicalRecordStatus.OPEN) {
+            throw new BusinessRuleException("RETURN_SOURCE_INVALID", "The return source must be a finished record of this patient");
+        }
+        return new OutpatientRegistration.ReturnLink(source.getRecordId(), request.returnReason(), independent);
+    }
+
+    /** The earlier record a new examination refers to; only the link is carried, never its content. */
+    public UUID previousRecordIdFor(UUID registrationId) {
+        var registration = registrations.findById(registrationId).orElse(null);
+        if (registration == null) return null;
+        if (registration.returnLink() != null && registration.returnLink().sourceRecordId() != null) {
+            return registration.returnLink().sourceRecordId();
+        }
+        if (registration.followUp() == null) return null;
+        return records.findByAppointmentId(registration.followUp().previousRegistrationId())
+                .map(com.mediflow.clinical.domain.model.MedicalRecord::getRecordId).orElse(null);
     }
 
     private OutpatientRegistration.FollowUpLink validateFollowUp(RegistrationCreateRequest request, ConsultationSession target) {

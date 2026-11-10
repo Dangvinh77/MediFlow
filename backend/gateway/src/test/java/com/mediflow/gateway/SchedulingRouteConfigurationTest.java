@@ -52,11 +52,18 @@ class SchedulingRouteConfigurationTest {
                 "/api/v2/clinic-queue-tickets/123/adjustments", "lb://clinical-service",
                 "/api/v2/outpatient-registrations/123/vital-signs", "lb://clinical-service",
                 "/api/v2/outpatient-registrations/123/reschedule", "lb://clinical-service",
-                "/api/v2/records/123/close-without-conclusion", "lb://clinical-service",
                 "/api/v2/consultation-sessions/123/impact", "lb://clinical-service",
                 "/api/v2/doctor-work-shifts/123/impact", "lb://clinical-service",
                 "/api/v2/billing/registration-settlements", "lb://billing-service");
         cases.forEach((path, uri) -> assertThat(matching(path)).as(path).containsExactly(uri));
+    }
+
+    @Test
+    void examLifecycleRoutesAreRegistered() {
+        for (String path : new String[]{"/api/v2/records/123/close-without-conclusion", "/api/v2/records/123/lab-orders",
+                "/api/v2/patients/123/open-visits", "/api/v2/doctors/me/open-visits"}) {
+            assertThat(matching(path)).as(path).containsExactly("lb://clinical-service");
+        }
     }
 
     @Test

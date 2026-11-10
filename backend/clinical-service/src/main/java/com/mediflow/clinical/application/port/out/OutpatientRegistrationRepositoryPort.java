@@ -20,6 +20,8 @@ public interface OutpatientRegistrationRepositoryPort {
     void update(OutpatientRegistration before, OutpatientRegistration after, UUID actorAccountId, UUID actorStaffId,
             String action, Instant at);
     boolean existsActivePatientSession(UUID patientId, UUID sessionId);
+    java.util.List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByPatient(UUID patientId);
+    java.util.List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByDoctor(UUID doctorId, int limit);
     void appendRescheduleLog(RescheduleLog log);
 
     record RescheduleLog(UUID registrationId, UUID oldSessionId, UUID newSessionId, UUID oldDoctorId, UUID newDoctorId, UUID oldRoomId,

@@ -243,7 +243,8 @@ public class ClinicalCareFinanceApplicationService
         MedicalRecord record = records.findByAppointmentId(appointmentId).orElse(null);
         if (record == null) {
             record = MedicalRecord.openForAppointment(appointment.getPatientId(), appointment.getDoctorId(),
-                    appointment.getDepartmentId(), LocalDate.ofInstant(now, java.time.ZoneId.of("Asia/Ho_Chi_Minh")), null, appointmentId, now);
+                    appointment.getDepartmentId(), LocalDate.ofInstant(now, java.time.ZoneId.of("Asia/Ho_Chi_Minh")), null, appointmentId, now,
+                    scheduled ? scheduledRegistrations.previousRecordIdFor(appointmentId) : null);
         } else if (record.getStatus() != MedicalRecordStatus.OPEN
                 || !record.getPatientId().equals(appointment.getPatientId())
                 || !record.getDoctorId().equals(appointment.getDoctorId())

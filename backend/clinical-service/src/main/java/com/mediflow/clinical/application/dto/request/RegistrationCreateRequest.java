@@ -18,7 +18,18 @@ public record RegistrationCreateRequest(
         @Size(max = 1000) String reason,
         UUID followUpRecommendationId,
         @Size(max = 1000) String replacementReason,
-        Boolean patientAgreedToDoctorReplacement) {
+        Boolean patientAgreedToDoctorReplacement,
+        UUID returnSourceRecordId,
+        String returnReason,
+        String independentVisitReason) {
+    public RegistrationCreateRequest(UUID patientId, UUID sessionId, int expectedSessionRevision,
+            OutpatientReceptionMode receptionMode, OutpatientVisitType visitType,
+            UUID previousRegistrationId, String reason, UUID followUpRecommendationId, String replacementReason,
+            Boolean patientAgreedToDoctorReplacement) {
+        this(patientId, sessionId, expectedSessionRevision, receptionMode, visitType, previousRegistrationId, reason,
+                followUpRecommendationId, replacementReason, patientAgreedToDoctorReplacement, null, null, null);
+    }
+
     public RegistrationCreateRequest(UUID patientId, UUID sessionId, int expectedSessionRevision,
             OutpatientReceptionMode receptionMode, OutpatientVisitType visitType,
             UUID previousRegistrationId, String reason) {

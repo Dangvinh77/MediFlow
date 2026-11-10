@@ -326,6 +326,35 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
         return PageResult.of(rows, total, page.page(), page.size());
     }
 
+    private static final String OPEN_VISITS = """
+            SELECT r.registration_id, m.record_id, m.doctor_id, m.department_id, s.session_date, a.examination_started_at
+            FROM outpatient_registration r
+            JOIN appointment a ON a.appointment_id = r.registration_id
+            JOIN consultation_session s ON s.session_id = r.session_id
+            JOIN medical_record m ON m.appointment_id = a.appointment_id
+            WHERE r.status = 'IN_EXAM' AND a.status = 'IN_EXAM' AND m.status = 'OPEN'
+            """;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByPatient(UUID patientId) {
+        return jdbc.query(OPEN_VISITS + " AND r.patient_id = ? ORDER BY a.examination_started_at, r.registration_id",
+                this::mapOpenVisit, patientId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByDoctor(UUID doctorId, int limit) {
+        return jdbc.query(OPEN_VISITS + " AND m.doctor_id = ? ORDER BY a.examination_started_at, r.registration_id LIMIT ?",
+                this::mapOpenVisit, doctorId, limit);
+    }
+
+    private com.mediflow.clinical.application.dto.response.OpenVisitDTO mapOpenVisit(ResultSet row, int index) throws SQLException {
+        return new com.mediflow.clinical.application.dto.response.OpenVisitDTO(row.getObject("registration_id", UUID.class),
+                row.getObject("record_id", UUID.class), row.getObject("doctor_id", UUID.class), row.getObject("department_id", UUID.class),
+                row.getObject("session_date", java.time.LocalDate.class), instant(row, "examination_started_at"));
+    }
+
     private Optional<OutpatientRegistration> query(String sql, UUID id) {
         return jdbc.query(sql, this::mapOne, id).stream().findFirst();
     }
