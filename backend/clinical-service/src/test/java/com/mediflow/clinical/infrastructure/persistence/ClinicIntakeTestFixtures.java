@@ -31,8 +31,12 @@ public final class ClinicIntakeTestFixtures {
     }
 
     public ConsultationSession session(UUID doctorId, UUID departmentId, UUID roomId, LocalDate date, int capacity) {
-        var session = ConsultationSession.open(UUID.randomUUID(), doctorId, departmentId, roomId, date,
-                LocalTime.of(8, 0), LocalTime.of(11, 0), List.of(), capacity);
+        return session(doctorId, departmentId, roomId, date, capacity, LocalTime.of(8, 0), LocalTime.of(11, 0));
+    }
+
+    public ConsultationSession session(UUID doctorId, UUID departmentId, UUID roomId, LocalDate date, int capacity,
+            LocalTime start, LocalTime end) {
+        var session = ConsultationSession.open(UUID.randomUUID(), doctorId, departmentId, roomId, date, start, end, List.of(), capacity);
         return sessions.insert(session, ACTOR, null, NOW);
     }
 

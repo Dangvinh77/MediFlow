@@ -33,6 +33,8 @@ import org.mockito.ArgumentCaptor;
 class ShiftImpactCascadeTest {
     private final IntakeHarness h = new IntakeHarness();
     private final DoctorWorkShiftRepositoryPort shifts = mock(DoctorWorkShiftRepositoryPort.class);
+    private final com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort tickets =
+            mock(com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort.class);
     private DoctorWorkShift shift;
     private ConsultationSession first;
     private ConsultationSession second;
@@ -48,7 +50,7 @@ class ShiftImpactCascadeTest {
     }
 
     private ScheduleImpactApplicationService impact() {
-        return new ScheduleImpactApplicationService(h.sessions, shifts, h.registrations, schedules(true));
+        return new ScheduleImpactApplicationService(h.sessions, shifts, h.registrations, schedules(true), tickets);
     }
 
     @BeforeEach void setUp() {
@@ -96,7 +98,9 @@ class ShiftImpactCascadeTest {
                 .thenReturn(PageResult.of(List.of(confirmed, active, cancelled), 3, 0, 100));
         when(h.registrations.findBySession(eq(second.sessionId()), any())).thenReturn(PageResult.of(List.of(), 0, 0, 100));
 
+        when(tickets.activeNumbers(any())).thenReturn(java.util.Map.of(confirmed.registrationId(), 6));
         var bySession = impact().forSession(first.sessionId());
+        assertThat(bySession.registrations()).extracting("roomQueueNumber").containsExactly(6, null);
         assertThat(bySession.sessionIds()).containsExactly(first.sessionId());
         assertThat(bySession.confirmedCount()).isEqualTo(2);
         assertThat(bySession.registrations()).extracting("registrationId")

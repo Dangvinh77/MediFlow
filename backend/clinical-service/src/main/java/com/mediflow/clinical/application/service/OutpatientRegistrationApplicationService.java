@@ -117,6 +117,7 @@ public class OutpatientRegistrationApplicationService {
     private final com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records;
     private final com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations;
     private final ClinicIntakeSettings clinicIntake;
+    private final org.springframework.beans.factory.ObjectProvider<com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort> clinicQueue;
 
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -137,6 +138,17 @@ public class OutpatientRegistrationApplicationService {
                 clock, records, recommendations, new ClinicIntakeSettings(false));
     }
 
+    public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
+            OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
+            PatientLookupPort patients, SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
+            ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
+            Clock clock, com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations,
+            ClinicIntakeSettings clinicIntake) {
+        this(sessions, registrations, appointments, patients, authority, actors, outbox, correlationIds, idempotency,
+                clock, records, recommendations, clinicIntake, null);
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -145,8 +157,10 @@ public class OutpatientRegistrationApplicationService {
             @Qualifier("clinicalSchedulingClock") Clock clock,
             com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
             com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations,
-            ClinicIntakeSettings clinicIntake) {
+            ClinicIntakeSettings clinicIntake,
+            org.springframework.beans.factory.ObjectProvider<com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort> clinicQueue) {
         this.clinicIntake = clinicIntake;
+        this.clinicQueue = clinicQueue;
         this.records = records;
         this.recommendations = recommendations;
         this.sessions = sessions;
@@ -304,11 +318,24 @@ public class OutpatientRegistrationApplicationService {
             default -> throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED",
                     "Actor role cannot view session registrations");
         }
-        return registrations.findBySession(sessionId, page).map(registration -> new RegistrationSummary(
+        var found = registrations.findBySession(sessionId, page);
+        var rooms = roomNumbers(found.content().stream().map(OutpatientRegistration::registrationId).toList());
+        return found.map(registration -> new RegistrationSummary(
                 registration.registrationId(), registration.patientId(), registration.visitType(),
                 registration.status(), registration.checkedInAt(), registration.queueNumber(),
                 registration.status() == OutpatientRegistrationStatus.CONFIRMED
-                        && registration.checkedInAt() != null && registration.reservation().clearanceId() != null));
+                        && registration.checkedInAt() != null && registration.reservation().clearanceId() != null,
+                rooms.get(registration.registrationId())));
+    }
+
+    private com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort clinicQueue() {
+        return clinicQueue == null ? null : clinicQueue.getIfAvailable();
+    }
+
+    /** Empty while the clinic desk is off, which keeps the field off the wire. */
+    private java.util.Map<UUID, Integer> roomNumbers(java.util.Collection<UUID> registrationIds) {
+        var queue = clinicQueue();
+        return queue == null ? java.util.Map.of() : queue.activeNumbers(registrationIds);
     }
 
     public ReservationPaymentContext paymentContext(UUID reservationId) {
@@ -727,7 +754,8 @@ public class OutpatientRegistrationApplicationService {
                 registration.visitType(), registration.followUp() == null ? null : registration.followUp().previousRegistrationId(),
                 registration.status(), reservation.reservationId(),
                 reservation.revision(), reservation.status(), reservation.expiresAt(), registration.checkedInAt(),
-                registration.queueNumber(), ready, registration.createdAt(), registration.updatedAt(), recordId, advice);
+                registration.queueNumber(), ready, registration.createdAt(), registration.updatedAt(), recordId, advice,
+                roomNumbers(java.util.List.of(registration.registrationId())).get(registration.registrationId()));
     }
 
     private void appendFact(OutpatientRegistration registration, ConsultationSession session, Instant changedAt) {

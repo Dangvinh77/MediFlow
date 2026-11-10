@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mediflow.clinical.domain.model.OutpatientReceptionMode;
 import com.mediflow.clinical.domain.model.OutpatientRegistrationStatus;
 import com.mediflow.clinical.domain.model.OutpatientReservationStatus;
@@ -34,7 +35,8 @@ public record OutpatientRegistrationDTO(
         Integer queueNumber,
         boolean readyForExam,
         Instant createdAt,
-        Instant updatedAt, UUID recordId, FollowUpRecommendationDTO followUpRecommendation) {
+        Instant updatedAt, UUID recordId, FollowUpRecommendationDTO followUpRecommendation,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Integer roomQueueNumber) {
     public OutpatientRegistrationDTO(
         UUID registrationId,
         int revision,
@@ -58,5 +60,32 @@ public record OutpatientRegistrationDTO(
         Integer queueNumber,
         boolean readyForExam,
         Instant createdAt,
-        Instant updatedAt) { this(registrationId, revision, patientId, doctorId, departmentId, roomId, sessionId, sessionDate, startTime, endTime, receptionMode, visitType, previousRegistrationId, status, reservationId, reservationRevision, reservationStatus, reservationExpiresAt, checkedInAt, queueNumber, readyForExam, createdAt, updatedAt, null, null); }
+        Instant updatedAt, UUID recordId, FollowUpRecommendationDTO followUpRecommendation) { this(registrationId, revision, patientId, doctorId, departmentId, roomId, sessionId, sessionDate, startTime, endTime, receptionMode, visitType, previousRegistrationId, status, reservationId, reservationRevision, reservationStatus, reservationExpiresAt, checkedInAt, queueNumber, readyForExam, createdAt, updatedAt, recordId, followUpRecommendation, null); }
+
+    public OutpatientRegistrationDTO withRoomQueueNumber(Integer number) { return new OutpatientRegistrationDTO(registrationId, revision, patientId, doctorId, departmentId, roomId, sessionId, sessionDate, startTime, endTime, receptionMode, visitType, previousRegistrationId, status, reservationId, reservationRevision, reservationStatus, reservationExpiresAt, checkedInAt, queueNumber, readyForExam, createdAt, updatedAt, recordId, followUpRecommendation, number); }
+
+    public OutpatientRegistrationDTO(
+        UUID registrationId,
+        int revision,
+        UUID patientId,
+        UUID doctorId,
+        UUID departmentId,
+        UUID roomId,
+        UUID sessionId,
+        LocalDate sessionDate,
+        @JsonFormat(pattern = "HH:mm") LocalTime startTime,
+        @JsonFormat(pattern = "HH:mm") LocalTime endTime,
+        OutpatientReceptionMode receptionMode,
+        OutpatientVisitType visitType,
+        UUID previousRegistrationId,
+        OutpatientRegistrationStatus status,
+        UUID reservationId,
+        int reservationRevision,
+        OutpatientReservationStatus reservationStatus,
+        Instant reservationExpiresAt,
+        Instant checkedInAt,
+        Integer queueNumber,
+        boolean readyForExam,
+        Instant createdAt,
+        Instant updatedAt) { this(registrationId, revision, patientId, doctorId, departmentId, roomId, sessionId, sessionDate, startTime, endTime, receptionMode, visitType, previousRegistrationId, status, reservationId, reservationRevision, reservationStatus, reservationExpiresAt, checkedInAt, queueNumber, readyForExam, createdAt, updatedAt, null, null, null); }
 }

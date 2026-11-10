@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.mediflow.clinical.application.dto.response.ScheduleImpactDTO;
+import com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort;
 import com.mediflow.clinical.application.port.out.ConsultationSessionRepositoryPort;
 import com.mediflow.clinical.application.port.out.DoctorWorkShiftRepositoryPort;
 import com.mediflow.clinical.application.port.out.OutpatientRegistrationRepositoryPort;
@@ -27,9 +28,12 @@ public class ScheduleImpactApplicationService {
     private final DoctorWorkShiftRepositoryPort shifts;
     private final OutpatientRegistrationRepositoryPort registrations;
     private final ConsultationSessionApplicationService schedules;
+    private final ClinicQueueRepositoryPort tickets;
 
     public ScheduleImpactApplicationService(ConsultationSessionRepositoryPort sessions, DoctorWorkShiftRepositoryPort shifts,
-            OutpatientRegistrationRepositoryPort registrations, ConsultationSessionApplicationService schedules) {
+            OutpatientRegistrationRepositoryPort registrations, ConsultationSessionApplicationService schedules,
+            ClinicQueueRepositoryPort tickets) {
+        this.tickets = tickets;
         this.sessions = sessions;
         this.shifts = shifts;
         this.registrations = registrations;
@@ -77,9 +81,10 @@ public class ScheduleImpactApplicationService {
         int page = 0;
         while (true) {
             var result = registrations.findBySession(sessionId, PageQuery.of(page, 100));
-            result.content().stream().filter(r -> AFFECTED.contains(r.status())).forEach(r -> rows.add(
-                    new ScheduleImpactDTO.AffectedRegistration(r.registrationId(), r.patientId(), r.sessionId(), r.status(),
-                            r.reservation().status(), r.checkedInAt(), r.queueNumber(), null)));
+            var affected = result.content().stream().filter(r -> AFFECTED.contains(r.status())).toList();
+            var rooms = tickets.activeNumbers(affected.stream().map(r -> r.registrationId()).toList());
+            affected.forEach(r -> rows.add(new ScheduleImpactDTO.AffectedRegistration(r.registrationId(), r.patientId(), r.sessionId(),
+                    r.status(), r.reservation().status(), r.checkedInAt(), r.queueNumber(), rooms.get(r.registrationId()))));
             page++;
             if (page * 100L >= result.totalElements() || result.content().isEmpty()) return rows;
         }

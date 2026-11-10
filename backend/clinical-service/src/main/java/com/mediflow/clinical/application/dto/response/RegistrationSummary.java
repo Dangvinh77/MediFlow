@@ -7,4 +7,5 @@ import com.mediflow.clinical.domain.model.OutpatientRegistrationStatus;
 import com.mediflow.clinical.domain.model.OutpatientVisitType;
 
 public record RegistrationSummary(UUID registrationId, UUID patientId, OutpatientVisitType visitType,
-        OutpatientRegistrationStatus status, Instant checkedInAt, Integer queueNumber, boolean readyForExam) {}
+        OutpatientRegistrationStatus status, Instant checkedInAt, Integer queueNumber, boolean readyForExam,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Integer roomQueueNumber) {}
