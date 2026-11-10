@@ -54,4 +54,10 @@ public class MedicalRecordJpaEntity {
     @Column(name = "closure_note", columnDefinition = "text") private String closureNote;
     @Column(name = "closed_by_staff_id") private UUID closedByStaffId;
     @Column(name = "closed_at") private Instant closedAt;
+    @Column(name = "chief_complaint", columnDefinition = "text") private String chiefComplaint;
+    @Column(name = "present_illness", columnDefinition = "text") private String presentIllness;
+    @Column(name = "past_history", columnDefinition = "text") private String pastHistory;
+    @Column(name = "allergy_note", columnDefinition = "text") private String allergyNote;
+    @Column(name = "physical_exam", columnDefinition = "text") private String physicalExam;
+    @Column(name = "advice", columnDefinition = "text") private String advice;
 }

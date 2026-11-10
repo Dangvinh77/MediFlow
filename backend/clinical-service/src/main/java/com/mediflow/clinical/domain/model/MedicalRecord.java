@@ -33,6 +33,8 @@ public final class MedicalRecord {
     @Getter(AccessLevel.NONE)
     private Closure closure;
     private final UUID previousRecordId;
+    @Getter(AccessLevel.NONE)
+    private ClinicalContent content;
 
     /** How a visit ended when no conclusion could be recorded. */
     public record Closure(RecordClosureReason reason, String note, UUID closedByStaffId, Instant closedAt) {}
@@ -116,7 +118,14 @@ public final class MedicalRecord {
         }
         return new MedicalRecord(Objects.requireNonNull(id), patientId, doctorId, departmentId, date,
                 symptoms, appointmentId, new ArrayList<>(diagnoses), Objects.requireNonNull(createdAt),
-                updatedAt, status, disposition, dispositionNote, completedAt, closure, previousRecordId);
+                updatedAt, status, disposition, dispositionNote, completedAt, closure, previousRecordId,
+                ClinicalContent.EMPTY);
+    }
+
+    /** Re-attaches stored examination sections when a record is loaded; never used to change a visit. */
+    public MedicalRecord withStoredContent(ClinicalContent stored) {
+        this.content = stored == null ? ClinicalContent.EMPTY : stored;
+        return this;
     }
 
     public void addDiagnosis(Diagnosis diagnosis) {
@@ -129,9 +138,44 @@ public final class MedicalRecord {
     }
 
     public void update(String symptoms) {
+        update(symptoms, null);
+    }
+
+    /** Writes symptoms and merges examination sections; only while the visit is open. */
+    public void update(String symptoms, ClinicalContent change) {
         requireOpen();
+        ClinicalContent next = content.merge(change);
         this.symptoms = symptoms;
+        this.content = next;
         updatedAt = Instant.now();
+    }
+
+    public ClinicalContent getContent() {
+        return content;
+    }
+
+    public String getChiefComplaint() {
+        return content.chiefComplaint();
+    }
+
+    public String getPresentIllness() {
+        return content.presentIllness();
+    }
+
+    public String getPastHistory() {
+        return content.pastHistory();
+    }
+
+    public String getAllergyNote() {
+        return content.allergyNote();
+    }
+
+    public String getPhysicalExam() {
+        return content.physicalExam();
+    }
+
+    public String getAdvice() {
+        return content.advice();
     }
 
     public void complete(RecordDisposition nextDisposition, String note, Instant at) {

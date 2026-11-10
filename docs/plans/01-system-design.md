@@ -119,6 +119,16 @@ Core/Support chia cùng failure domain. Tách queue/pool/transaction budget đ�
 nhưng JVM crash/OOM vẫn ảnh hưởng cả hai module. Cần thử tải vừa đủ demo, không xây platform
 bulkhead/scheduler framework mới nếu cấu hình có sẵn đã đáp ứng.
 
+### Nguồn dữ liệu bệnh nhân và hồ sơ (v2.0)
+
+| Dữ liệu | Context giữ | Ghi chú |
+|---|---|---|
+| Định danh, hành chính, BHYT | Core Patient | Không giữ nội dung khám, dị ứng hay tiền sử |
+| Nội dung khám theo lượt: lý do khám, bệnh sử, tiền sử, ghi chú dị ứng, khám thực thể, lời dặn | Clinical (`medical_record`) | Ghi khi lượt còn mở; sau khi kết thúc chỉ sửa bằng đính chính |
+| Sinh hiệu, chẩn đoán, hướng xử trí | Clinical | |
+| Sổ dị ứng cấp bệnh nhân | Clinical (`patient_allergy`, Đợt 4) | `allergyNote` của lượt là lời ghi tại lượt đó, không phải sổ dị ứng |
+| Kết quả xét nghiệm | Lab | Clinical chỉ giữ tham chiếu và tóm tắt đã gắn |
+
 ## Không thêm công nghệ
 
 Giữ Java/Spring/Maven/PostgreSQL/RabbitMQ/Eureka/Gateway và stack FE hiện tại. Không thêm Kafka,

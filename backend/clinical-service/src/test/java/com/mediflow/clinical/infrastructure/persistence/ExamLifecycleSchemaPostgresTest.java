@@ -71,6 +71,16 @@ class ExamLifecycleSchemaPostgresTest {
                 """, Integer.class)).isEqualTo(1);
     }
 
+    @Test void recordContentColumnsExist() {
+        UUID id = record();
+        assertThat(jdbc.update("""
+                UPDATE medical_record SET chief_complaint='Ho', present_illness='Ba ngày', past_history='Hen',
+                allergy_note='Penicillin', physical_exam='Phổi ran', advice='Nghỉ ngơi' WHERE record_id=?
+                """, id)).isEqualTo(1);
+        assertThatThrownBy(() -> jdbc.update("UPDATE medical_record SET advice=? WHERE record_id=?", "x".repeat(4001), id))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
     @Test void returnSourceAndReasonGoTogether() {
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM pg_constraint WHERE conname = 'ck_outpatient_registration_return_link'

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.domain.model.ClinicalContent;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
@@ -65,7 +66,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 e.getExaminationDate(), e.getSymptoms(), appointmentId, diagnoses, e.getCreatedAt(), e.getUpdatedAt(),
                 e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt(),
                 e.getClosureReason() == null ? null : new MedicalRecord.Closure(e.getClosureReason(), e.getClosureNote(),
-                        e.getClosedByStaffId(), e.getClosedAt()), e.getPreviousRecordId());
+                        e.getClosedByStaffId(), e.getClosedAt()), e.getPreviousRecordId())
+                .withStoredContent(new ClinicalContent(e.getChiefComplaint(), e.getPresentIllness(), e.getPastHistory(),
+                        e.getAllergyNote(), e.getPhysicalExam(), e.getAdvice()));
     }
     private MedicalRecordJpaEntity toEntity(MedicalRecord r) {
         MedicalRecordJpaEntity entity = MedicalRecordJpaEntity.builder().recordId(r.getRecordId())
@@ -76,7 +79,10 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 .disposition(r.getDisposition()).dispositionNote(r.getDispositionNote())
                 .completedAt(r.getCompletedAt()).previousRecordId(r.getPreviousRecordId())
                 .closureReason(r.getClosureReason()).closureNote(r.getClosureNote())
-                .closedByStaffId(r.getClosedByStaffId()).closedAt(r.getClosedAt()).build();
+                .closedByStaffId(r.getClosedByStaffId()).closedAt(r.getClosedAt())
+                .chiefComplaint(r.getChiefComplaint()).presentIllness(r.getPresentIllness())
+                .pastHistory(r.getPastHistory()).allergyNote(r.getAllergyNote())
+                .physicalExam(r.getPhysicalExam()).advice(r.getAdvice()).build();
         entity.setDiagnoses(new ArrayList<>(r.getDiagnoses().stream().map(d -> DiagnosisJpaEntity.builder()
                 .diagnosisId(d.getDiagnosisId()).record(entity).diagnosisName(d.getDiagnosisName())
                 .description(d.getDescription()).icdCode(d.getIcdCode()).build()).toList()));

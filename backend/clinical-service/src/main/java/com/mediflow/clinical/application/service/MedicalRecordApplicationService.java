@@ -143,7 +143,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     public MedicalRecordDTO update(UUID id, UpdateRecordRequest request) {
         MedicalRecord record = locked(id);
         requireOutpatientMvpRecordAuthority(record);
-        record.update(request.symptoms());
+        record.update(request.symptoms(), request.content());
         return mapper.toDto(records.save(record));
     }
 
