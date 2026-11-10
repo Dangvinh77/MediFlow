@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
+import com.mediflow.clinical.application.dto.response.RecordLabOrderDTO;
 import com.mediflow.clinical.application.port.out.IdempotentCommandPort;
 import com.mediflow.clinical.application.service.ExamClosureApplicationService;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
@@ -58,6 +59,31 @@ class ExamClosureControllerTest {
         mvc.perform(put(PATH).with(csrf()).with(user("d").roles("DOCTOR")).contentType("application/json").content(BODY))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(closure);
+    }
+
+    private static final UUID ORDER = UUID.randomUUID();
+    private static final String WITHDRAW = "/api/v2/records/" + RECORD + "/lab-orders/" + ORDER + "/withdrawal";
+
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "NURSE", "CASHIER", "PATIENT"})
+    void onlyDoctorsCanWithdraw(String role) throws Exception {
+        mvc.perform(put(WITHDRAW).with(csrf()).with(user("u").roles(role)).header("Idempotency-Key", "k")
+                .contentType("application/json").content("{\"reason\":\"Đổi ý\"}")).andExpect(status().isForbidden());
+        verifyNoInteractions(closure);
+    }
+
+    @Test void withdrawalNeedsIdempotencyKey() throws Exception {
+        mvc.perform(put(WITHDRAW).with(csrf()).with(user("d").roles("DOCTOR")).contentType("application/json")
+                .content("{\"reason\":\"Đổi ý\"}")).andExpect(status().isBadRequest());
+        verifyNoInteractions(closure);
+    }
+
+    @Test void doctorWithdrawsUnreceivedOrder() throws Exception {
+        when(closure.withdrawLabOrder(eq(RECORD), eq(ORDER), any(), eq("k"))).thenReturn(new IdempotentCommandPort.Result<>(
+                new RecordLabOrderDTO(ORDER, null, "CBC", "WITHDRAWN", java.time.Instant.parse("2026-11-10T03:00:00Z")), 200, null, false));
+        mvc.perform(put(WITHDRAW).with(csrf()).with(user("d").roles("DOCTOR")).header("Idempotency-Key", "k")
+                .contentType("application/json").content("{\"reason\":\"Đổi ý\"}"))
+                .andExpect(status().isOk()).andExpect(header().string("Idempotency-Replayed", "false"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data.status").value("WITHDRAWN"));
     }
 
     @Test void doctorClosesAndReceivesTheRecord() throws Exception {

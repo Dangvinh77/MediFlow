@@ -1,6 +1,8 @@
 package com.mediflow.clinical.application.service;
 
 import java.util.List;
+import java.util.UUID;
+import java.time.Instant;
 import java.util.Objects;
 
 import com.mediflow.clinical.application.dto.authority.LabOrderLifecycleSnapshot;
@@ -61,6 +63,28 @@ public final class ClinicalLabCompletionGuard {
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_PENDING",
                     "Every recorded Lab order must be completed or cancelled before record completion");
         }
+    }
+
+    /** Withdraws an order of this visit that Lab never received; an order Lab holds is cancelled in Lab instead. */
+    public ClinicalLabOrder withdrawUnreceived(MedicalRecord record, Appointment appointment, UUID sourceOrderId,
+            UUID staffId, String reason, Instant at, String correlationId) {
+        ClinicalLabOrder recorded = orders.findById(sourceOrderId)
+                .filter(order -> record.getRecordId().equals(order.recordId()))
+                .orElseThrow(() -> new InvalidClinicalDataException("CLINICAL_LAB_ORDER_NOT_FOUND",
+                        "The Lab order does not belong to this visit"));
+        if (!record.getPatientId().equals(recorded.patientId())
+                || !appointment.getAppointmentId().equals(recorded.careEpisodeId())) {
+            throw bindingMismatch();
+        }
+        LabOrderLifecycleSnapshot current = lifecycle.lifecycle(sourceOrderId, correlationId);
+        requireWellFormed(recorded, current);
+        if (current.exists()) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_RECEIVED",
+                    "Lab already holds this order; cancel it through Lab instead");
+        }
+        requireAbsentSnapshot(current);
+        orders.withdraw(sourceOrderId, staffId, reason, at);
+        return recorded;
     }
 
     static void requireWellFormed(ClinicalLabOrder recorded, LabOrderLifecycleSnapshot current) {

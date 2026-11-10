@@ -24,7 +24,22 @@ class LifecycleFake implements ExamLifecycleRepository {
   Future<List<RecordLabOrder>> Function()? onOrders;
   Future<MedicalRecord> Function()? onClose;
   final closes = <({String reason, String note, String key})>[];
+  final withdrawals = <({String order, String reason, String key})>[];
   int orderReads = 0;
+
+  @override
+  Future<void> withdrawLabOrder(
+    String recordId,
+    String sourceOrderId, {
+    required String reason,
+    required String idempotencyKey,
+  }) async {
+    withdrawals.add((
+      order: sourceOrderId,
+      reason: reason,
+      key: idempotencyKey,
+    ));
+  }
 
   @override
   Future<List<RecordLabOrder>> labOrders(String recordId) {
@@ -230,6 +245,26 @@ void main() {
       expect(find.textContaining('Hủy hoặc hoãn'), findsOneWidget);
     });
 
+    testWidgets('order never sent to Lab points to withdrawal', (tester) async {
+      tallScreen(tester);
+      final lifecycle = LifecycleFake()
+        ..onClose = () async => throw const ApiFailure(
+          'Chưa tới Lab',
+          status: 422,
+          code: 'CLINICAL_LAB_ORDER_NOT_FOUND',
+        );
+      final records = fixtures.MedicalRecordFake()..onGet = (_) async => open();
+      await tester.pumpWidget(
+        lifecycleHost(lifecycle: lifecycle, records: records),
+      );
+      await tester.pumpAndSettle();
+      await openSheet(tester);
+      await fillAndConfirm(tester, 'Tự ý về');
+      await tester.tap(find.byKey(const Key('close-record-submit')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Rút chỉ định'), findsOneWidget);
+    });
+
     testWidgets('closed record shows reason and no write actions', (
       tester,
     ) async {
@@ -276,14 +311,66 @@ void main() {
     Widget section(
       LifecycleFake lifecycle, {
       Future<void> Function(String, String)? cancel,
+      bool canChange = true,
     }) => lifecycleHost(
       lifecycle: lifecycle,
       records: fixtures.MedicalRecordFake(),
       cancel: cancel,
-      child: const SingleChildScrollView(
-        child: RecordLabOrdersSection(recordId: 'record-a', canChange: true),
+      child: SingleChildScrollView(
+        child: RecordLabOrdersSection(
+          recordId: 'record-a',
+          canChange: canChange,
+        ),
       ),
     );
+
+    const unreceived = RecordLabOrder(
+      sourceOrderId: 'order-2',
+      labType: 'Nước tiểu',
+      status: 'NOT_RECEIVED',
+      orderedAt: '2026-10-22T08:10:00Z',
+    );
+
+    testWidgets('withdraws an order Lab never received', (tester) async {
+      final lifecycle = LifecycleFake()
+        ..onOrders = () async => const [unreceived];
+      await tester.pumpWidget(section(lifecycle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rút chỉ định'));
+      await tester.pumpAndSettle();
+      final confirm = find.byKey(const Key('lab-order-action-confirm'));
+      expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+      expect(find.text('Lý do rút chỉ định'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('lab-order-action-reason')),
+        ' Không lấy mẫu ',
+      );
+      await tester.pump();
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
+      final sent = lifecycle.withdrawals.single;
+      expect(sent.order, 'order-2');
+      expect(sent.reason, 'Không lấy mẫu');
+      expect(sent.key, isNotEmpty);
+      expect(lifecycle.orderReads, 2);
+    });
+
+    testWidgets('withdrawal is offered only while the visit can change', (
+      tester,
+    ) async {
+      final lifecycle = LifecycleFake()
+        ..onOrders = () async => const [unreceived, order];
+      await tester.pumpWidget(section(lifecycle, canChange: false));
+      await tester.pumpAndSettle();
+      expect(find.text('Rút chỉ định'), findsNothing);
+      await tester.pumpWidget(
+        section(
+          LifecycleFake()..onOrders = () async => const [unreceived, order],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Rút chỉ định'), findsOneWidget);
+    });
 
     testWidgets('shows each order status from source', (tester) async {
       final lifecycle = LifecycleFake()
@@ -427,6 +514,34 @@ void main() {
       expect(request.data, {'reason': 'OTHER', 'note': 'Ghi chú'});
       expect(result.status, 'CLOSED_WITHOUT_CONCLUSION');
     });
+
+    test(
+      'withdrawal sends the trimmed reason under an idempotency key',
+      () async {
+        adapter.data = {
+          'sourceOrderId': 'order-1',
+          'labType': 'Máu',
+          'status': 'WITHDRAWN',
+          'orderedAt': '2026-10-22T08:10:00Z',
+        };
+        await GatewayExamLifecycleRepository(client).withdrawLabOrder(
+          fixtures.recordId,
+          'order-1',
+          reason: ' Không lấy mẫu ',
+          idempotencyKey: 'key-w',
+        );
+        final request = adapter.requests.single;
+        expect(request.method, 'PUT');
+        expect(
+          request.path,
+          endsWith(
+            'v2/records/${fixtures.recordId}/lab-orders/order-1/withdrawal',
+          ),
+        );
+        expect(request.headers['Idempotency-Key'], 'key-w');
+        expect(request.data, {'reason': 'Không lấy mẫu'});
+      },
+    );
 
     test('a null test id means the lab has not received the order', () async {
       adapter.data = [

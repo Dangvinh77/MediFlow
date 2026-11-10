@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mediflow.clinical.application.dto.request.CloseRecordRequest;
+import com.mediflow.clinical.application.dto.request.WithdrawLabOrderRequest;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
+import com.mediflow.clinical.application.dto.response.RecordLabOrderDTO;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.service.ExamClosureApplicationService;
 import com.mediflow.common.api.ApiResponse;
@@ -33,6 +35,15 @@ public class ExamClosureController {
     public ResponseEntity<ApiResponse<MedicalRecordDTO>> close(@PathVariable UUID id, @RequestBody CloseRecordRequest request,
             @RequestHeader("Idempotency-Key") String idempotencyKey) {
         var result = closure.closeWithoutConclusion(id, request, idempotencyKey);
+        return ResponseEntity.status(result.status()).header("Idempotency-Replayed", Boolean.toString(result.replayed()))
+                .body(ApiResponse.ok(result.data(), correlationIds.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/api/v2/records/{id}/lab-orders/{sourceOrderId}/withdrawal")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<ApiResponse<RecordLabOrderDTO>> withdrawLabOrder(@PathVariable UUID id, @PathVariable UUID sourceOrderId,
+            @RequestBody WithdrawLabOrderRequest request, @RequestHeader("Idempotency-Key") String idempotencyKey) {
+        var result = closure.withdrawLabOrder(id, sourceOrderId, request, idempotencyKey);
         return ResponseEntity.status(result.status()).header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .body(ApiResponse.ok(result.data(), correlationIds.currentOrCreate().toString()));
     }

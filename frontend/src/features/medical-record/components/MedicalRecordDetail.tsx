@@ -329,7 +329,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
               ) : null}
               <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}>Xem phiếu xét nghiệm</Link>
             </div>
-            {schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} /> : null}
+            {schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} canWithdraw={canWrite && !actionsBlocked} /> : null}
           </section>
         ) : null}
       </header>

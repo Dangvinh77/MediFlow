@@ -65,6 +65,12 @@ class ExamLifecycleSchemaPostgresTest {
         assertThat(jdbc.update("UPDATE medical_record SET status='COMPLETED',disposition='OTHER',completed_at=now() WHERE record_id=?", id)).isEqualTo(1);
     }
 
+    @Test void labOrderWithdrawalFieldsGoTogether() {
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM pg_constraint WHERE conname = 'ck_clinical_lab_order_withdrawal'
+                """, Integer.class)).isEqualTo(1);
+    }
+
     @Test void returnSourceAndReasonGoTogether() {
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM pg_constraint WHERE conname = 'ck_outpatient_registration_return_link'

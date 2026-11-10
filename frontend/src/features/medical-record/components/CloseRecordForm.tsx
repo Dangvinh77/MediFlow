@@ -54,6 +54,9 @@ export function CloseRecordForm({ record, onClosed, disabled = false, isInteract
     {command.error?.code === "CLINICAL_LAB_ORDER_PENDING"
       ? <p className="text-sm"><a href="#record-lab-orders" className="font-medium underline underline-offset-4">Xem chỉ định xét nghiệm</a> để hủy, hoãn hoặc chờ kết quả trước khi kết thúc.</p>
       : null}
+    {command.error?.code === "CLINICAL_LAB_ORDER_NOT_FOUND"
+      ? <p className="text-sm">Rút chỉ định Lab chưa tiếp nhận rồi kết thúc lại. <a href="#record-lab-orders" className="font-medium underline underline-offset-4">Xem chỉ định xét nghiệm</a></p>
+      : null}
     <fieldset disabled={disabled || command.busy || command.uncertain} className="space-y-4">
       <Field label="Lý do kết thúc" htmlFor="close-reason" required>
         <select id="close-reason" className={controlClassName} value={reason} onChange={(event) => { setReason(event.target.value as RecordClosureReason); onActivityChange?.(true); }}>

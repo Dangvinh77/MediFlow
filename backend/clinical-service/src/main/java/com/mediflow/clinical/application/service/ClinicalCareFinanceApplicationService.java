@@ -48,6 +48,7 @@ import com.mediflow.clinical.domain.exception.ClinicalRecordNotFoundException;
 import com.mediflow.clinical.domain.model.AdmissionPriority;
 import com.mediflow.clinical.domain.model.AdmissionReferral;
 import com.mediflow.clinical.domain.model.Appointment;
+import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.CareEpisodeType;
 import com.mediflow.clinical.domain.model.EmergencyOverride;
@@ -302,6 +303,33 @@ public class ClinicalCareFinanceApplicationService
         if (!clearance.matchesRecord(record)) {
             throw clearanceMismatch();
         }
+    }
+
+    /** Takes back an order Lab never received, so it no longer blocks the end of the visit. */
+    @Transactional
+    public com.mediflow.clinical.application.dto.response.RecordLabOrderDTO withdrawLabOrder(UUID recordId, UUID sourceOrderId,
+            com.mediflow.clinical.application.dto.request.WithdrawLabOrderRequest request) {
+        String reason = request == null || request.reason() == null ? "" : request.reason().trim();
+        if (reason.isEmpty() || reason.length() > 500 || sourceOrderId == null) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_WITHDRAWAL_INVALID",
+                    "A withdrawal reason of 1-500 characters is required");
+        }
+        MedicalRecord record = lockedRecord(recordId);
+        if (record.getAppointmentId() == null) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination can withdraw a Lab order");
+        }
+        Appointment appointment = lockedAppointment(record.getAppointmentId());
+        if (appointment.getCareContractVersion() != 2 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Lab orders can only be withdrawn while the examination is in progress");
+        }
+        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        requireScheduledLifecycle();
+        ClinicalLabOrder withdrawn = labCompletionGuard.withdrawUnreceived(record, appointment, sourceOrderId,
+                actors.current().staffId(), reason, clock.instant(), correlationIds.currentOrCreate().toString());
+        return new com.mediflow.clinical.application.dto.response.RecordLabOrderDTO(withdrawn.sourceOrderId(), null,
+                withdrawn.labType(), "WITHDRAWN", withdrawn.orderedAt());
     }
 
     /** Ends a visit the patient abandoned: no diagnosis or disposition, so no record-completed fact and no charge. */

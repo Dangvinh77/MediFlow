@@ -14,6 +14,11 @@ export interface CloseRecordRequest {
   note: string;
 }
 
+/** Body for taking back an order Lab never received. */
+export interface WithdrawLabOrderRequest {
+  reason: string;
+}
+
 export interface RecordLabOrderDTO {
   sourceOrderId: string;
   testId: string | null;

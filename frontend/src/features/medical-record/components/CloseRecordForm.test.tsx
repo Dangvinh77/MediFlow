@@ -27,6 +27,15 @@ function fill(note: string) {
 describe("Ending a visit without a conclusion", () => {
   beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear(); });
 
+  it("points to the order list when an order never reached Lab", async () => {
+    mocks.close.mockRejectedValue(new ApiRequestError("Chỉ định chưa tới Lab", 422, "CLINICAL_LAB_ORDER_NOT_FOUND"));
+    render(<CloseRecordForm record={record} onClosed={vi.fn()} />);
+    fill("Bệnh nhân về");
+    fireEvent.click(screen.getByRole("button", { name: "Kết thúc lượt khám" }));
+    expect(await screen.findByText(/Rút chỉ định Lab chưa tiếp nhận/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Xem chỉ định xét nghiệm" })).toHaveAttribute("href", "#record-lab-orders");
+  });
+
   it("closes with reason and note", async () => {
     const closed = { ...record, status: "CLOSED_WITHOUT_CONCLUSION" as const };
     const onClosed = vi.fn();

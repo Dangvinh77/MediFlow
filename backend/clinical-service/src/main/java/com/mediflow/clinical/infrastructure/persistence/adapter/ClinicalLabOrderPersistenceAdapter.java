@@ -4,6 +4,7 @@ import com.mediflow.clinical.application.port.out.ClinicalLabOrderRepositoryPort
 import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.infrastructure.persistence.jpaEntity.ClinicalLabOrderJpaEntity;
 import com.mediflow.clinical.infrastructure.persistence.repository.ClinicalLabOrderJpaRepository;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
@@ -22,14 +23,26 @@ public class ClinicalLabOrderPersistenceAdapter implements ClinicalLabOrderRepos
 
     @Override
     public Optional<ClinicalLabOrder> findById(UUID sourceOrderId) {
-        return repository.findById(sourceOrderId).map(ClinicalLabOrderPersistenceAdapter::toDomain);
+        return repository.findById(sourceOrderId).filter(entity -> entity.getWithdrawnAt() == null)
+                .map(ClinicalLabOrderPersistenceAdapter::toDomain);
     }
 
     @Override
     public List<ClinicalLabOrder> findByRecordId(UUID recordId) {
         return repository.findByRecordIdOrderByOrderedAtAscSourceOrderIdAsc(recordId).stream()
+                .filter(entity -> entity.getWithdrawnAt() == null)
                 .map(ClinicalLabOrderPersistenceAdapter::toDomain)
                 .toList();
+    }
+
+    @Override
+    public void withdraw(UUID sourceOrderId, UUID withdrawnByStaffId, String reason, Instant withdrawnAt) {
+        ClinicalLabOrderJpaEntity entity = repository.findById(sourceOrderId)
+                .orElseThrow(() -> new IllegalStateException("Clinical Lab order disappeared: " + sourceOrderId));
+        entity.setWithdrawnAt(withdrawnAt);
+        entity.setWithdrawnByStaffId(withdrawnByStaffId);
+        entity.setWithdrawalReason(reason);
+        repository.saveAndFlush(entity);
     }
 
     private static ClinicalLabOrderJpaEntity toEntity(ClinicalLabOrder order) {

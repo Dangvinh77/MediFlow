@@ -61,6 +61,7 @@ class SchedulingRouteConfigurationTest {
     @Test
     void examLifecycleRoutesAreRegistered() {
         for (String path : new String[]{"/api/v2/records/123/close-without-conclusion", "/api/v2/records/123/lab-orders",
+                "/api/v2/records/123/lab-orders/456/withdrawal",
                 "/api/v2/patients/123/open-visits", "/api/v2/doctors/me/open-visits"}) {
             assertThat(matching(path)).as(path).containsExactly("lb://clinical-service");
         }

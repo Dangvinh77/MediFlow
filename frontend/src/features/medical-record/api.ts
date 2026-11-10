@@ -16,6 +16,7 @@ import type {
   RecordCapabilitiesDTO,
   RecordLabOrderDTO,
   UpdateMedicalRecordRequest,
+  WithdrawLabOrderRequest,
 } from "./types";
 
 export const medicalRecordApi = {
@@ -38,6 +39,17 @@ export const medicalRecordApi = {
     ),
   labOrders: (recordId: string) =>
     api.get<RecordLabOrderDTO[]>(`/v2/records/${encodeURIComponent(recordId)}/lab-orders`),
+  withdrawLabOrder: (
+    recordId: string,
+    sourceOrderId: string,
+    body: WithdrawLabOrderRequest,
+    options: Required<Pick<MutationOptions, "idempotencyKey" | "correlationId">>,
+  ) =>
+    api.put<RecordLabOrderDTO>(
+      `/v2/records/${encodeURIComponent(recordId)}/lab-orders/${encodeURIComponent(sourceOrderId)}/withdrawal`,
+      body,
+      options,
+    ),
   createLabOrder: (recordId: string, body: CreateClinicalLabOrderRequest) =>
     api.post<ClinicalLabOrderDTO>(
       `/v1/records/${encodeURIComponent(recordId)}/lab-orders`,

@@ -32,4 +32,7 @@ public class ClinicalLabOrderJpaEntity {
     @Column(name = "requested_date", nullable = false) private LocalDate requestedDate;
     @Column(name = "price_code", nullable = false, length = 64) private String priceCode;
     @Column(name = "ordered_at", nullable = false) private Instant orderedAt;
+    @Column(name = "withdrawn_at") private Instant withdrawnAt;
+    @Column(name = "withdrawn_by_staff_id") private UUID withdrawnByStaffId;
+    @Column(name = "withdrawal_reason", length = 500) private String withdrawalReason;
 }

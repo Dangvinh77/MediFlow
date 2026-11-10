@@ -42,8 +42,9 @@ class _RecordLabOrdersSectionState
     extends ConsumerState<RecordLabOrdersSection> {
   final _reason = TextEditingController();
   List<RecordLabOrder>? _orders;
-  bool _loading = true, _unavailable = false, _busy = false, _postpone = false;
-  String? _activeTestId, _message;
+  bool _loading = true, _unavailable = false, _busy = false;
+  // Which order is being acted on and how: cancel, postpone or withdraw.
+  String? _activeOrderId, _mode, _withdrawKey, _message;
   int _generation = 0;
 
   @override
@@ -85,28 +86,48 @@ class _RecordLabOrdersSectionState
     }
   }
 
-  void _begin(String testId, {required bool postpone}) => setState(() {
-    _activeTestId = testId;
-    _postpone = postpone;
+  void _begin(RecordLabOrder order, String mode) => setState(() {
+    _activeOrderId = order.sourceOrderId;
+    _mode = mode;
+    // One key per withdrawal attempt, kept across retries of the same order.
+    _withdrawKey = mode == 'withdraw' ? newExamCommandKey() : null;
     _message = null;
     _reason.clear();
   });
 
-  Future<void> _submit() async {
+  Future<void> _send(RecordLabOrder order, String text) async {
+    if (_mode == 'withdraw') {
+      final repository = ref.read(examLifecycleRepositoryProvider);
+      if (repository == null) return;
+      await repository.withdrawLabOrder(
+        widget.recordId,
+        order.sourceOrderId,
+        reason: text,
+        idempotencyKey: _withdrawKey!,
+      );
+      return;
+    }
     final cancel = ref.read(recordLabCancelProvider);
-    final testId = _activeTestId;
+    if (cancel == null || order.testId == null) return;
+    await cancel(
+      order.testId!,
+      _mode == 'postpone' ? '$labOrderPostponePrefix$text' : text,
+    );
+  }
+
+  Future<void> _submit(RecordLabOrder order) async {
     final text = _reason.text.trim();
-    if (cancel == null || testId == null || text.isEmpty || _busy) return;
+    if (text.isEmpty || _busy) return;
     setState(() {
       _busy = true;
       _message = null;
     });
     try {
-      await cancel(testId, _postpone ? '$labOrderPostponePrefix$text' : text);
+      await _send(order, text);
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _activeTestId = null;
+        _activeOrderId = null;
       });
     } catch (_) {
       if (!mounted) return;
@@ -143,15 +164,16 @@ class _RecordLabOrdersSectionState
               if (orders.isEmpty)
                 const Text('Chưa có chỉ định xét nghiệm.')
               else
-                for (final order in orders) _row(order, cancel != null),
+                for (final order in orders)
+                  _row(order, cancel != null, widget.canChange),
           ],
         ),
       ),
     );
   }
 
-  Widget _row(RecordLabOrder order, bool canAct) {
-    final editing = _activeTestId != null && _activeTestId == order.testId;
+  Widget _row(RecordLabOrder order, bool canAct, bool canWithdraw) {
+    final editing = _activeOrderId == order.sourceOrderId;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -173,17 +195,25 @@ class _RecordLabOrdersSectionState
               spacing: 8,
               children: [
                 TextButton(
-                  onPressed: _busy
-                      ? null
-                      : () => _begin(order.testId!, postpone: false),
+                  onPressed: _busy ? null : () => _begin(order, 'cancel'),
                   child: const Text('Hủy chỉ định'),
                 ),
                 TextButton(
-                  onPressed: _busy
-                      ? null
-                      : () => _begin(order.testId!, postpone: true),
+                  onPressed: _busy ? null : () => _begin(order, 'postpone'),
                   child: const Text('Hoãn sang lần sau'),
                 ),
+              ],
+            ),
+          if (canWithdraw && order.canWithdraw && !editing)
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: _busy ? null : () => _begin(order, 'withdraw'),
+                  child: const Text('Rút chỉ định'),
+                ),
+                const Text('Lab chưa nhận chỉ định này nên có thể rút lại.'),
               ],
             ),
           if (editing) ...[
@@ -193,7 +223,11 @@ class _RecordLabOrdersSectionState
               enabled: !_busy,
               maxLength: 400,
               decoration: InputDecoration(
-                labelText: _postpone ? 'Lý do hoãn' : 'Lý do hủy',
+                labelText: switch (_mode) {
+                  'postpone' => 'Lý do hoãn',
+                  'withdraw' => 'Lý do rút chỉ định',
+                  _ => 'Lý do hủy',
+                },
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -204,13 +238,13 @@ class _RecordLabOrdersSectionState
                   key: const Key('lab-order-action-confirm'),
                   onPressed: _busy || _reason.text.trim().isEmpty
                       ? null
-                      : _submit,
+                      : () => _submit(order),
                   child: const Text('Xác nhận'),
                 ),
                 TextButton(
                   onPressed: _busy
                       ? null
-                      : () => setState(() => _activeTestId = null),
+                      : () => setState(() => _activeOrderId = null),
                   child: const Text('Bỏ qua'),
                 ),
               ],

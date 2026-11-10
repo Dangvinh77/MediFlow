@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import com.mediflow.clinical.application.dto.command.ActorIdentity;
 import com.mediflow.clinical.application.dto.request.CloseRecordRequest;
+import com.mediflow.clinical.application.dto.request.WithdrawLabOrderRequest;
+import com.mediflow.clinical.application.dto.response.RecordLabOrderDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.IdempotentCommandPort;
@@ -42,6 +44,19 @@ public class ExamClosureApplicationService {
         String path = "/api/v2/records/" + recordId + "/close-without-conclusion";
         return idempotency.execute(actor.accountId().toString(), "PUT", path, key, fingerprint(recordId + ":" + request),
                 MedicalRecordDTO.class, 200, ignored -> null, () -> careFinance.closeWithoutConclusion(recordId, request));
+    }
+
+    public IdempotentCommandPort.Result<RecordLabOrderDTO> withdrawLabOrder(UUID recordId, UUID sourceOrderId,
+            WithdrawLabOrderRequest request, String key) {
+        ActorIdentity actor = actors.current();
+        if (actor == null || actor.accountId() == null || actor.staffId() == null || !"DOCTOR".equals(actor.role())) {
+            throw new ForbiddenOperationException("CLINICAL_STAFF_IDENTITY_REQUIRED",
+                    "Only the examining doctor may withdraw a Lab order");
+        }
+        requireKey(key);
+        String path = "/api/v2/records/" + recordId + "/lab-orders/" + sourceOrderId + "/withdrawal";
+        return idempotency.execute(actor.accountId().toString(), "PUT", path, key, fingerprint(path + ":" + request),
+                RecordLabOrderDTO.class, 200, ignored -> null, () -> careFinance.withdrawLabOrder(recordId, sourceOrderId, request));
     }
 
     private static void requireKey(String key) {

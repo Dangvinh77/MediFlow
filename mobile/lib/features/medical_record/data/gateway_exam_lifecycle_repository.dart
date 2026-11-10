@@ -33,6 +33,25 @@ class GatewayExamLifecycleRepository implements ExamLifecycleRepository {
   }
 
   @override
+  Future<void> withdrawLabOrder(
+    String recordId,
+    String sourceOrderId, {
+    required String reason,
+    required String idempotencyKey,
+  }) async {
+    final text = reason.trim();
+    if (text.isEmpty || text.length > 500) {
+      throw ArgumentError('Lý do rút chỉ định phải có từ 1 đến 500 ký tự.');
+    }
+    await client.putIdempotent(
+      '/v2/records/${Uri.encodeComponent(recordId)}/lab-orders/'
+      '${Uri.encodeComponent(sourceOrderId)}/withdrawal',
+      {'reason': text},
+      idempotencyKey: idempotencyKey,
+    );
+  }
+
+  @override
   Future<MedicalRecord> closeWithoutConclusion(
     String recordId, {
     required String reason,

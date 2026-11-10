@@ -39,10 +39,20 @@ class RecordLabOrder {
 
   bool get inProgress =>
       testId != null && status != 'COMPLETED' && status != 'CANCELLED';
+
+  /// Lab never received it, so the doctor may take it back instead of
+  /// cancelling it in Lab.
+  bool get canWithdraw => testId == null && status == 'NOT_RECEIVED';
 }
 
 abstract interface class ExamLifecycleRepository {
   Future<List<RecordLabOrder>> labOrders(String recordId);
+  Future<void> withdrawLabOrder(
+    String recordId,
+    String sourceOrderId, {
+    required String reason,
+    required String idempotencyKey,
+  });
   Future<MedicalRecord> closeWithoutConclusion(
     String recordId, {
     required String reason,

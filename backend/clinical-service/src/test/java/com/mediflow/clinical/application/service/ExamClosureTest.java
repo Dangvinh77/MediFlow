@@ -20,6 +20,8 @@ import java.util.UUID;
 
 import com.mediflow.clinical.application.dto.authority.LabOrderLifecycleSnapshot;
 import com.mediflow.clinical.application.dto.request.CloseRecordRequest;
+import com.mediflow.clinical.application.dto.request.WithdrawLabOrderRequest;
+import com.mediflow.clinical.application.dto.response.RecordLabOrderDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.dto.response.RecordCapabilitiesDTO;
 import com.mediflow.clinical.application.dto.authority.RecordReadDecision;
@@ -110,13 +112,88 @@ class ExamClosureTest {
         service.closeWithoutConclusion(record.getRecordId(), REQUEST, "key-1");
     }
 
-    private void labOrder(String status) {
+    private ClinicalLabOrder labOrder(String status) {
         ClinicalLabOrder order = ClinicalLabOrder.create(record.getRecordId(), record.getPatientId(), h.doctorId, h.departmentId,
                 appointment.getAppointmentId(), "CBC", LocalDate.of(2026, 11, 10), "CBC_PRICE", IntakeHarness.NOW);
-        when(labOrders.findByRecordId(record.getRecordId())).thenReturn(List.of(order));
+        lenient().when(labOrders.findByRecordId(record.getRecordId())).thenReturn(List.of(order));
+        lenient().when(labOrders.findById(order.sourceOrderId())).thenReturn(Optional.of(order));
         when(lifecycle.lifecycle(eq(order.sourceOrderId()), anyString())).thenReturn(new LabOrderLifecycleSnapshot(order.sourceOrderId(), true,
                 UUID.randomUUID(), record.getRecordId(), record.getPatientId(), h.departmentId, "OUTPATIENT_VISIT",
                 appointment.getAppointmentId(), status, IntakeHarness.NOW));
+        return order;
+    }
+
+    private ClinicalLabOrder unreceivedLabOrder() {
+        ClinicalLabOrder order = ClinicalLabOrder.create(record.getRecordId(), record.getPatientId(), h.doctorId, h.departmentId,
+                appointment.getAppointmentId(), "CBC", LocalDate.of(2026, 11, 10), "CBC_PRICE", IntakeHarness.NOW);
+        lenient().when(labOrders.findByRecordId(record.getRecordId())).thenReturn(List.of(order));
+        lenient().when(labOrders.findById(order.sourceOrderId())).thenReturn(Optional.of(order));
+        lenient().when(lifecycle.lifecycle(eq(order.sourceOrderId()), anyString())).thenReturn(new LabOrderLifecycleSnapshot(
+                order.sourceOrderId(), false, null, null, null, null, null, null, null, IntakeHarness.NOW));
+        return order;
+    }
+
+    private RecordLabOrderDTO withdraw(UUID sourceOrderId, String reason) {
+        return service.withdrawLabOrder(record.getRecordId(), sourceOrderId, new WithdrawLabOrderRequest(reason), "key-w").data();
+    }
+
+    @Test void unreceivedOrderBlocksClosure() {
+        unreceivedLabOrder();
+        assertThatThrownBy(this::close).isInstanceOfSatisfying(InvalidClinicalDataException.class,
+                e -> assertThat(e.getCode()).isEqualTo("CLINICAL_LAB_ORDER_NOT_FOUND"));
+    }
+
+    @Test void doctorWithdrawsOrderLabNeverReceived() {
+        ClinicalLabOrder order = unreceivedLabOrder();
+        RecordLabOrderDTO withdrawn = withdraw(order.sourceOrderId(), "  Bệnh nhân không đi lấy mẫu ");
+        verify(labOrders).withdraw(order.sourceOrderId(), h.doctorId, "Bệnh nhân không đi lấy mẫu", IntakeHarness.NOW);
+        assertThat(withdrawn.status()).isEqualTo("WITHDRAWN");
+        assertThat(withdrawn.sourceOrderId()).isEqualTo(order.sourceOrderId());
+    }
+
+    @Test void orderLabAlreadyHasCannotBeWithdrawn() {
+        ClinicalLabOrder order = labOrder("ORDERED");
+        assertThatThrownBy(() -> withdraw(order.sourceOrderId(), "Đổi ý"))
+                .isInstanceOfSatisfying(InvalidClinicalDataException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("CLINICAL_LAB_ORDER_RECEIVED"));
+        verify(labOrders, never()).withdraw(any(), any(), any(), any());
+    }
+
+    @Test void withdrawalNeedsReason() {
+        ClinicalLabOrder order = unreceivedLabOrder();
+        assertThatThrownBy(() -> withdraw(order.sourceOrderId(), "   "))
+                .isInstanceOfSatisfying(InvalidClinicalDataException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("CLINICAL_LAB_ORDER_WITHDRAWAL_INVALID"));
+        verify(labOrders, never()).withdraw(any(), any(), any(), any());
+    }
+
+    @Test void otherDoctorCannotWithdraw() {
+        ClinicalLabOrder order = unreceivedLabOrder();
+        h.actAs("DOCTOR", UUID.randomUUID(), h.departmentId);
+        assertThatThrownBy(() -> withdraw(order.sourceOrderId(), "Đổi ý"))
+                .isInstanceOfSatisfying(ForbiddenOperationException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("CLINICAL_DOCTOR_NOT_ASSIGNED"));
+        verify(labOrders, never()).withdraw(any(), any(), any(), any());
+    }
+
+    @Test void orderOfAnotherRecordCannotBeWithdrawn() {
+        UUID unknown = UUID.randomUUID();
+        when(labOrders.findById(unknown)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> withdraw(unknown, "Đổi ý"))
+                .isInstanceOfSatisfying(InvalidClinicalDataException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("CLINICAL_LAB_ORDER_NOT_FOUND"));
+        verify(labOrders, never()).withdraw(any(), any(), any(), any());
+    }
+
+    @Test void withdrawalRetryReturnsStoredResult() {
+        ClinicalLabOrder order = unreceivedLabOrder();
+        RecordLabOrderDTO stored = new RecordLabOrderDTO(order.sourceOrderId(), null, "CBC", "WITHDRAWN", IntakeHarness.NOW);
+        when(h.idempotency.execute(anyString(), eq("PUT"),
+                eq("/api/v2/records/" + record.getRecordId() + "/lab-orders/" + order.sourceOrderId() + "/withdrawal"),
+                eq("key-w"), anyString(), eq(RecordLabOrderDTO.class), anyInt(), any(), any()))
+                .thenReturn(new IdempotentCommandPort.Result<>(stored, 200, null, true));
+        assertThat(withdraw(order.sourceOrderId(), "Đổi ý")).isSameAs(stored);
+        verify(labOrders, never()).withdraw(any(), any(), any(), any());
     }
 
     @Test void assignedDoctorClosesRecordWithoutDiagnosis() {

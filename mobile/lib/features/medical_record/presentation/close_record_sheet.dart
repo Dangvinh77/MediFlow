@@ -72,6 +72,8 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
             ? 'Kết quả chưa rõ. Gửi lại cùng yêu cầu, hoặc đóng và làm mới hồ sơ.'
             : cause.code == 'CLINICAL_LAB_ORDER_PENDING'
             ? 'Còn chỉ định xét nghiệm chưa xong. Hủy hoặc hoãn ở mục Chỉ định xét nghiệm rồi thử lại.'
+            : cause.code == 'CLINICAL_LAB_ORDER_NOT_FOUND'
+            ? 'Có chỉ định Lab chưa tiếp nhận. Rút chỉ định ở mục Chỉ định xét nghiệm rồi thử lại.'
             : cause.message;
       });
     }
