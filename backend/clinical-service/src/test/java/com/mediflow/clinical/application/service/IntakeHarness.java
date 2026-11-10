@@ -43,6 +43,7 @@ final class IntakeHarness {
     static final Instant NOW = Instant.parse("2026-11-10T01:00:00Z");
     static final LocalDate TODAY = LocalDate.of(2026, 11, 10);
     static final long FENCE = 5L;
+    static final UUID ACTOR = UUID.randomUUID();
 
     final ConsultationSessionRepositoryPort sessions = mock(ConsultationSessionRepositoryPort.class);
     final OutpatientRegistrationRepositoryPort registrations = mock(OutpatientRegistrationRepositoryPort.class);
@@ -150,6 +151,15 @@ final class IntakeHarness {
                 actor.accountId(), true, true, role, staffId, true, staffDepartment, true, NOW));
         lenient().when(authority.authority(any(), any(), any())).thenAnswer(call -> new SchedulingAuthoritySnapshot(
                 actor.accountId(), true, true, role, staffId, true, call.getArgument(1), true, false, 7L, NOW));
+        return actor;
+    }
+
+    /** An administrator whose current Core scope allows schedule management. */
+    ActorIdentity actAsManager() {
+        ActorIdentity actor = new ActorIdentity(UUID.randomUUID(), null, null, "ADMIN");
+        lenient().when(actors.current()).thenReturn(actor);
+        lenient().when(authority.authority(any(), any(), any())).thenAnswer(call -> new SchedulingAuthoritySnapshot(
+                actor.accountId(), true, true, "ADMIN", null, null, call.getArgument(1), true, true, 7L, NOW));
         return actor;
     }
 

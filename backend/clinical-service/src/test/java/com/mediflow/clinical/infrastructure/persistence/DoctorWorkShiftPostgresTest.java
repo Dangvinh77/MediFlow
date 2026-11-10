@@ -101,6 +101,26 @@ class DoctorWorkShiftPostgresTest {
         assertThatThrownBy(()->inTx(()->jdbc.update("UPDATE consultation_session SET doctor_id=? WHERE session_id=?",UUID.randomUUID(),cancelled.sessionId())))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class).hasMessageContaining("SHIFT_SESSION_MISMATCH");
     }
+    @Test void cancelledShiftKeepsStoppedSessionServingItsRegistrations() {
+        var shift=shift(); inTx(()->shifts.insert(shift,ACTOR,NOW)); var session=link(shift);
+        var stopped=session.changeStatus(1,ConsultationSessionStatus.STOPPED,"nghỉ");
+        inTx(()->{sessions.update(session,stopped,ACTOR,"STATUS_CHANGED","nghỉ",NOW);return null;});
+        assertThatThrownBy(()->inTx(()->{shifts.update(shift,shift.cancel(1,"nghỉ"),ACTOR,"nghỉ",NOW);return null;}))
+                .isInstanceOf(DuplicateResourceException.class).hasMessageContaining("Cancel linked");
+        inTx(()->{shifts.cancelKeepingStoppedSessions(shift,shift.cancel(1,"nghỉ"),ACTOR,"nghỉ",NOW);return null;});
+        assertThat(shifts.findById(shift.shiftId()).orElseThrow().status()).isEqualTo(DoctorWorkShift.Status.CANCELLED);
+        assertThat(shifts.linkedSessionIds(shift.shiftId())).containsExactly(session.sessionId());
+        assertThat(shifts.findBySession(session.sessionId())).isPresent();
+        inTx(()->{sessions.updateCounts(stopped,stopped.withCounts(new ConsultationSession.Counts(1,0,0,0,stopped.configuration().capacity()-1)),NOW);return null;});
+        assertThat(jdbc.queryForObject("SELECT held_count FROM consultation_session WHERE session_id=?",Integer.class,session.sessionId())).isEqualTo(1);
+        assertThatThrownBy(()->inTx(()->jdbc.update("UPDATE consultation_session SET status='OPEN',revision=revision+1 WHERE session_id=?",session.sessionId())))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class).hasMessageContaining("SHIFT_SESSION_MISMATCH");
+    }
+    @Test void cancelKeepingStoppedSessionsRefusesAnOpenSession() {
+        var shift=shift(); inTx(()->shifts.insert(shift,ACTOR,NOW)); link(shift);
+        assertThatThrownBy(()->inTx(()->{shifts.cancelKeepingStoppedSessions(shift,shift.cancel(1,"nghỉ"),ACTOR,"nghỉ",NOW);return null;}))
+                .isInstanceOfSatisfying(DuplicateResourceException.class,failure->assertThat(failure.getCode()).isEqualTo("SHIFT_HAS_SESSIONS"));
+    }
     @Test void sessionCreationAndCancellationSerializeOnSourceShiftInBothOrders() throws Exception {
         for(boolean createFirst:List.of(true,false)) {
             clear(); var shift=shift(); inTx(()->shifts.insert(shift,ACTOR,NOW));

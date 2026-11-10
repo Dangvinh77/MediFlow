@@ -11,4 +11,7 @@ public interface DoctorWorkShiftRepositoryPort {
     PageResult<DoctorWorkShift> search(UUID department, LocalDate from, LocalDate to, PageQuery page);
     List<DoctorWorkShift> findByDoctor(UUID doctor, LocalDate from, LocalDate to);
     void linkSession(UUID shiftId, UUID sessionId);
+    List<UUID> linkedSessionIds(UUID shiftId);
+    Optional<DoctorWorkShift> findBySession(UUID sessionId);
+    void cancelKeepingStoppedSessions(DoctorWorkShift before, DoctorWorkShift after, UUID actor, String reason, Instant at);
 }
