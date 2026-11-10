@@ -29,6 +29,11 @@ public class ScheduledPaymentConfiguration {
         return new com.mediflow.billing.application.service.FindScheduledPaymentQueueService(queue);
     }
 
+    @Bean
+    com.mediflow.billing.application.port.in.ListRegistrationSettlementsUseCase listRegistrationSettlements(OutpatientRegistrationSourcePort sources) {
+        return new com.mediflow.billing.application.service.ListRegistrationSettlementsService(sources);
+    }
+
     public static final String REGISTRATION_QUEUE = "billing.scheduled-registration.q";
 
     @Bean
