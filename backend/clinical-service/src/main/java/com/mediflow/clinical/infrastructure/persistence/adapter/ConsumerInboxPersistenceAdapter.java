@@ -92,8 +92,16 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                     labId);
         }
         if (key.startsWith("clinical:lab-result:v1:")) {
-            UUID labId = uuidPart(key.substring("clinical:lab-result:v1:".length(), key.length() - 2));
+            String rest = key.substring("clinical:lab-result:v1:".length());
+            UUID labId = uuidPart(rest.substring(0, 36));
+            int version = Integer.parseInt(rest.substring(37));
             lockLabReference(labId);
+            if (version > 1) {
+                // An amendment always follows the attached original; only its own revision row is a
+                // historical effect that predates the inbox.
+                return exists("SELECT EXISTS(SELECT 1 FROM attached_result_revision WHERE reference_id = ? "
+                        + "AND result_version = ?)", labId, version);
+            }
             return exists("SELECT EXISTS(SELECT 1 FROM attached_result WHERE type = 'LAB' AND reference_id = ?)",
                     labId);
         }
@@ -173,8 +181,8 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
         return rows.stream().findFirst().orElse(null);
     }
 
-    private boolean exists(String sql, Object value) {
-        Boolean found = jdbc.queryForObject(sql, Boolean.class, value);
+    private boolean exists(String sql, Object... values) {
+        Boolean found = jdbc.queryForObject(sql, Boolean.class, values);
         return Boolean.TRUE.equals(found);
     }
 
