@@ -182,6 +182,30 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void recordReviewAuthorityRequiresClinicalServiceAndShortLivedToken() throws Exception {
+        MockHttpServletRequest request = requestWithToken(createToken(
+                "clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(50)));
+        request.setRequestURI("/api/v2/org/record-review-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(createToken("lab-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(50)));
+        request.setRequestURI("/api/v2/org/record-review-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(createToken("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(61)));
+        request.setRequestURI("/api/v2/org/record-review-authority");
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void humanAccessTokenWithNonUuidSubject_isNotAccepted() throws Exception {
         String token = createToken("not-an-account-id", "ADMIN", JwtClaims.ACCESS_TOKEN_TYPE,
                 Instant.now().plusSeconds(300));

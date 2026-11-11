@@ -4,6 +4,7 @@ import com.mediflow.common.api.ApiResponse;
 import com.mediflow.organization.application.dto.request.CapabilityGrantCommand;
 import com.mediflow.organization.application.dto.request.CapabilityRevocationCommand;
 import com.mediflow.organization.application.dto.response.LabReleaseAuthority;
+import com.mediflow.organization.application.dto.response.RecordReviewAuthority;
 import com.mediflow.organization.application.dto.response.StaffCapabilityGrantDTO;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.service.StaffCapabilityGrantService;
@@ -64,6 +65,15 @@ public class StaffCapabilityGrantController {
         return ResponseEntity.ok()
                 .header("Cache-Control", "no-store")
                 .body(ApiResponse.ok(service.labReleaseAuthority(actorAccountId),
+                        correlationIds.currentOrCreate().toString()));
+    }
+
+    @GetMapping("/api/v2/org/record-review-authority")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE') and principal == 'clinical-service'")
+    public ResponseEntity<ApiResponse<RecordReviewAuthority>> recordReviewAuthority(@RequestParam UUID actorAccountId) {
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(ApiResponse.ok(service.recordReviewAuthority(actorAccountId),
                         correlationIds.currentOrCreate().toString()));
     }
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
@@ -27,6 +28,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.mediflow.organization.application.dto.response.LabReleaseAuthority;
+import com.mediflow.organization.application.dto.response.RecordReviewAuthority;
 import com.mediflow.organization.application.service.StaffCapabilityGrantService;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
 import com.mediflow.organization.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
@@ -60,11 +62,40 @@ class StaffCapabilityGrantControllerSecurityTest {
     }
 
     @Test
+    void authorityEndpointOnlyForClinicalService() throws Exception {
+        UUID account = UUID.randomUUID();
+        when(service.recordReviewAuthority(account))
+                .thenReturn(new RecordReviewAuthority(account, UUID.randomUUID(), true));
+
+        mockMvc.perform(get("/api/v2/org/record-review-authority").param("actorAccountId", account.toString())
+                        .with(service("clinical-service")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.actorAccountId").value(account.toString()))
+                .andExpect(jsonPath("$.data.canReviewRecords").value(true));
+
+        mockMvc.perform(get("/api/v2/org/record-review-authority").param("actorAccountId", account.toString())
+                        .with(service("lab-service")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(username = "00000000-0000-0000-0000-000000000001", roles = "LAB_TECH")
     void labTechCannotGrantToThemselves() throws Exception {
         mockMvc.perform(post("/api/v2/org/staff/{id}/capability-grants", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"capability\":\"LAB_RESULT_RELEASE\",\"reason\":\"x\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    @WithMockUser(username = "00000000-0000-0000-0000-000000000002", roles = "DOCTOR")
+    void doctorCannotRevokeCapabilityGrant() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(
+                        "/api/v2/org/capability-grants/{id}/revocation", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Assignment ended\"}"))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(service);
     }

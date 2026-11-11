@@ -6,6 +6,7 @@ import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.organization.application.dto.request.CapabilityGrantCommand;
 import com.mediflow.organization.application.dto.request.CapabilityRevocationCommand;
 import com.mediflow.organization.application.dto.response.LabReleaseAuthority;
+import com.mediflow.organization.application.dto.response.RecordReviewAuthority;
 import com.mediflow.organization.application.dto.response.StaffCapabilityGrantDTO;
 import com.mediflow.organization.application.exception.SchedulingScopeDeniedException;
 import com.mediflow.organization.application.port.out.SchedulingAuthorityRepository;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Service
 public class StaffCapabilityGrantService {
     private static final String LAB_RESULT_RELEASE = "LAB_RESULT_RELEASE";
+    private static final String MEDICAL_RECORD_REVIEW = "MEDICAL_RECORD_REVIEW";
 
     private final StaffCapabilityGrantRepository grants;
     private final SchedulingAuthorityRepository authority;
@@ -36,16 +38,19 @@ public class StaffCapabilityGrantService {
     @Transactional(transactionManager = "organizationTransactionManager")
     public StaffCapabilityGrantDTO grant(
             UUID actorId, Role role, UUID staffId, CapabilityGrantCommand command) {
-        if (command == null || !LAB_RESULT_RELEASE.equals(command.capability())) {
+        if (command == null || !(LAB_RESULT_RELEASE.equals(command.capability())
+                || MEDICAL_RECORD_REVIEW.equals(command.capability()))) {
             throw new IllegalArgumentException("Unsupported capability");
         }
         requireReason(command.reason());
         requireAdmin(actorId, role);
         var target = grants.lockTarget(staffId)
                 .orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Staff not found"));
-        if (target.role() != Role.LAB_TECH || !target.staffActive() || !target.accountActive()) {
+        Role requiredRole = MEDICAL_RECORD_REVIEW.equals(command.capability()) ? Role.DOCTOR : Role.LAB_TECH;
+        if (target.role() != requiredRole || !target.staffActive() || !target.accountActive()) {
             throw new BusinessRuleException(
-                    "CAPABILITY_GRANT_INELIGIBLE", "An active LAB_TECH account and staff record are required");
+                    "CAPABILITY_GRANT_INELIGIBLE",
+                    "An active " + requiredRole + " account and staff record are required");
         }
         var grant = new StaffCapabilityGrantDTO(UUID.randomUUID(), staffId, command.capability(), actorId,
                 command.reason().trim(), now(), null, null, null);
@@ -80,6 +85,14 @@ public class StaffCapabilityGrantService {
                 && data.staffActive() && data.hasActiveGrant();
         return new LabReleaseAuthority(actorAccountId, data.accountActive(), data.staffId(), data.staffActive(),
                 canRelease, Instant.now());
+    }
+
+    @Transactional(transactionManager = "organizationTransactionManager", readOnly = true)
+    public RecordReviewAuthority recordReviewAuthority(UUID actorAccountId) {
+        var data = grants.findRecordReview(actorAccountId);
+        boolean canReview = data.accountExists() && data.accountActive() && data.role() == Role.DOCTOR
+                && data.staffActive() && data.hasActiveGrant();
+        return new RecordReviewAuthority(actorAccountId, data.staffId(), canReview);
     }
 
     private void requireAdmin(UUID actorId, Role role) {

@@ -28,6 +28,7 @@ import com.mediflow.organization.domain.model.Role;
 
 class StaffCapabilityGrantServiceTest {
     private static final String RELEASE = "LAB_RESULT_RELEASE";
+    private static final String RECORD_REVIEW = "MEDICAL_RECORD_REVIEW";
 
     private final FakeGrants grants = new FakeGrants();
     private final SchedulingAuthorityRepository authority = mock(SchedulingAuthorityRepository.class);
@@ -58,6 +59,52 @@ class StaffCapabilityGrantServiceTest {
     }
 
     @Test
+    void grantsRecordReviewToActiveDoctor() {
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, true, true));
+
+        var grant = service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "Hospital record reviewer"));
+
+        assertThat(grant.capability()).isEqualTo(RECORD_REVIEW);
+        var authority = service.recordReviewAuthority(accountId);
+        assertThat(authority.actorAccountId()).isEqualTo(accountId);
+        assertThat(authority.staffId()).isEqualTo(staffId);
+        assertThat(authority.canReviewRecords()).isTrue();
+    }
+
+    @Test
+    void recordReviewRefusedForNurseLabTechOrInactiveStaff() {
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.NURSE, true, true));
+        assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "review")))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_INELIGIBLE");
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.LAB_TECH, true, true));
+        assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "review")))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_INELIGIBLE");
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, false, true));
+        assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "review")))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_INELIGIBLE");
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, true, false));
+        assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "review")))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_INELIGIBLE");
+    }
+
+    @Test
+    void labReleaseStillOnlyForLabTech() {
+        assertThat(service.grant(adminId, Role.ADMIN, staffId, command()).capability()).isEqualTo(RELEASE);
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, true, true));
+        assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId, command()))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_INELIGIBLE");
+    }
+
+    @Test
     void onlyActiveAdminCanGrant() {
         when(authority.lockAccount(adminId)).thenReturn(Optional.of(new AccountAuthority(adminId, false, Role.ADMIN, null)));
 
@@ -83,11 +130,37 @@ class StaffCapabilityGrantServiceTest {
     }
 
     @Test
-    void duplicateActiveGrantIsRejected() {
+    void oneActiveGrantPerStaffAndCapability() {
         service.grant(adminId, Role.ADMIN, staffId, command());
 
         assertThatThrownBy(() -> service.grant(adminId, Role.ADMIN, staffId, command()))
                 .isInstanceOf(DuplicateResourceException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_ACTIVE");
+    }
+
+    @Test
+    void revokedGrantGivesNoAuthority() {
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, true, true));
+        var grant = service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "Hospital record reviewer"));
+        assertThat(service.recordReviewAuthority(accountId).canReviewRecords()).isTrue();
+
+        service.revoke(adminId, Role.ADMIN, grant.grantId(), new CapabilityRevocationCommand("Assignment ended"));
+
+        assertThat(service.recordReviewAuthority(accountId).canReviewRecords()).isFalse();
+    }
+
+    @Test
+    void recordReviewAuthorityRequiresActiveDoctorDespiteRetainedGrant() {
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, true, true));
+        service.grant(adminId, Role.ADMIN, staffId,
+                new CapabilityGrantCommand(RECORD_REVIEW, "Hospital record reviewer"));
+        assertThat(service.recordReviewAuthority(accountId).canReviewRecords()).isTrue();
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.DOCTOR, false, true));
+        assertThat(service.recordReviewAuthority(accountId).canReviewRecords()).isFalse();
+
+        grants.accounts.put(staffId, new Person(accountId, staffId, Role.ADMIN, true, true));
+        assertThat(service.recordReviewAuthority(accountId).canReviewRecords()).isFalse();
     }
 
     @Test
@@ -192,6 +265,14 @@ class StaffCapabilityGrantServiceTest {
                     .map(p -> new LabReleaseData(true, p.accountActive(), p.role(), p.staffId(), p.staffActive(),
                             rows.containsValue(new Row(p.staffId(), RELEASE))))
                     .orElse(new LabReleaseData(false, false, null, null, false, false));
+        }
+
+        @Override
+        public RecordReviewData findRecordReview(UUID accountId) {
+            return accounts.values().stream().filter(p -> p.accountId().equals(accountId)).findFirst()
+                    .map(p -> new RecordReviewData(true, p.accountActive(), p.role(), p.staffId(), p.staffActive(),
+                            rows.containsValue(new Row(p.staffId(), RECORD_REVIEW))))
+                    .orElse(new RecordReviewData(false, false, null, null, false, false));
         }
     }
 }

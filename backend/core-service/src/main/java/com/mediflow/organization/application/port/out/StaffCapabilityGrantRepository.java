@@ -20,8 +20,13 @@ public interface StaffCapabilityGrantRepository {
 
     LabReleaseData findLabRelease(UUID accountId);
 
+    RecordReviewData findRecordReview(UUID accountId);
+
     record GrantTarget(UUID staffId, Role role, boolean staffActive, boolean accountActive) {}
 
     record LabReleaseData(boolean accountExists, boolean accountActive, Role role, UUID staffId, boolean staffActive,
+            boolean hasActiveGrant) {}
+
+    record RecordReviewData(boolean accountExists, boolean accountActive, Role role, UUID staffId, boolean staffActive,
             boolean hasActiveGrant) {}
 }

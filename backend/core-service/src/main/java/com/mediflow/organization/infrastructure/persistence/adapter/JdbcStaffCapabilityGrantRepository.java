@@ -75,6 +75,19 @@ public class JdbcStaffCapabilityGrantRepository implements StaffCapabilityGrantR
                 accountId).stream().findFirst().orElse(new LabReleaseData(false, false, null, null, false, false));
     }
 
+    @Override
+    public RecordReviewData findRecordReview(UUID accountId) {
+        return jdbc.query("""
+                SELECT a.is_active,a.role,a.staff_id,COALESCE(s.status='ACTIVE',FALSE) AS staff_active,
+                  EXISTS(SELECT 1 FROM staff_capability_grant g WHERE g.staff_id=a.staff_id
+                         AND g.capability='MEDICAL_RECORD_REVIEW' AND g.revoked_at IS NULL) AS granted
+                FROM account a LEFT JOIN staff s ON s.staff_id=a.staff_id WHERE a.account_id=?
+                """,
+                (r, n) -> new RecordReviewData(true, r.getBoolean("is_active"), Role.valueOf(r.getString("role")),
+                        r.getObject("staff_id", UUID.class), r.getBoolean("staff_active"), r.getBoolean("granted")),
+                accountId).stream().findFirst().orElse(new RecordReviewData(false, false, null, null, false, false));
+    }
+
     private static StaffCapabilityGrantDTO map(ResultSet r) throws SQLException {
         Timestamp revokedAt = r.getTimestamp("revoked_at");
         return new StaffCapabilityGrantDTO(r.getObject("grant_id", UUID.class), r.getObject("staff_id", UUID.class),

@@ -72,6 +72,7 @@ class SchedulingRouteAuthorizationTest {
     void internalAndUnknownRoutesRemainDeniedAtThePublicBoundary() {
         for (String path : List.of("/api/v2/org/scheduling-authority", "/api/v2/org/consultation-eligibility",
                 "/api/v2/org/current-doctor-authority", "/api/v2/org/lab-release-authority",
+                "/api/v2/org/record-review-authority",
                 "/api/v2/lab/source-orders/123/lifecycle",
                 "/api/v2/clinical/reservations/123/payment-locks",
                 "/api/v2/clinical/reservations/123/payment-resolution",
