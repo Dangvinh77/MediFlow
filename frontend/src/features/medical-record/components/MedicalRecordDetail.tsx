@@ -22,6 +22,11 @@ import { RecordLabOrdersPanel } from "./RecordLabOrdersPanel";
 import { closureReasonLabels } from "../closure";
 import { FollowUpRecommendationPanel } from "./FollowUpRecommendationPanel";
 import { RecordAccessPurposeForm } from "./RecordAccessPurposeForm";
+import { ClinicalContentSummary } from "./ClinicalContentFields";
+import { PatientAllergyPanel } from "./PatientAllergyPanel";
+import { RecordDocumentsPanel } from "./RecordDocumentsPanel";
+import { RecordCollaborationSection } from "./RecordCollaborationSection";
+import type { RecordDocumentDTO } from "../types";
 
 type PrescriptionWorkspaceSlot = ReactNode | ((record: MedicalRecordDTO, canCreate: boolean) => ReactNode);
 
@@ -32,6 +37,7 @@ interface MedicalRecordDetailProps {
   schedulingV2Enabled?: boolean;
   cancelLabOrder?: (testId: string, reason: string) => Promise<unknown>;
   prescriptionWorkspace?: PrescriptionWorkspaceSlot;
+  documentHref?: (document: RecordDocumentDTO) => string | undefined;
 }
 
 interface RequestError {
@@ -89,7 +95,7 @@ export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
   return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, cancelLabOrder, prescriptionWorkspace, role }: MedicalRecordDetailProps & { role: Role | null }) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, cancelLabOrder, prescriptionWorkspace, documentHref, role }: MedicalRecordDetailProps & { role: Role | null }) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -302,8 +308,10 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         </p>
       ) : null}
 
+      <PatientAllergyPanel patientId={record.patientId} role={role} sourceRecordId={record.recordId} />
+
       <header className="border-b border-border pb-5">
-        <PatientContextBanner label="Ngữ cảnh hồ sơ khám" patientId={record.patientId} departmentId={record.departmentId} doctorId={record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
+        <PatientContextBanner label="Ngữ cảnh hồ sơ khám" patientId={record.patientId} departmentId={record.departmentId} doctorId={record.responsibleDoctorId ?? record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
           <StatusBadge tone={isOpen ? "info" : isClosed ? "warning" : "success"}>{isOpen ? "Đang khám" : isClosed ? "Kết thúc không kết luận" : "Đã hoàn tất khám"}</StatusBadge>
         </PatientContextBanner>
         {record.status === "COMPLETED" ? <p className="mt-3 text-sm text-muted-foreground">Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.</p> : null}
@@ -317,7 +325,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
             <dd>{formatInstant(record.closedAt ?? null)}</dd>
           </dl>
         ) : null}
-        {record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4">Xem hồ sơ lượt trước</Link></p> : null}
+        {record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4">Lượt trước — chỉ tham khảo</Link></p> : null}
 
         {outpatientEnabled && record.appointmentId ? (
           <section id="record-lab-orders" aria-label="Xét nghiệm của lượt khám" className="mt-5 border-t border-border pt-4">
@@ -346,7 +354,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       {readOnlyNotice ? <p role="status" className="border-l-2 border-warning px-4 py-2 text-sm text-foreground">{readOnlyNotice}</p> : null}
 
       <section aria-label="Nội dung đã ghi" className="space-y-4">
-      <p className="text-sm text-muted-foreground">Bác sĩ phụ trách: <ReferenceText kind="doctor" value={record.doctorId} fallback="Bác sĩ" /> <span aria-hidden="true">·</span> Cập nhật lần cuối: {formatInstant(record.updatedAt ?? record.createdAt)}</p>
+      <p className="text-sm text-muted-foreground">Bác sĩ phụ trách: <ReferenceText kind="doctor" value={record.responsibleDoctorId ?? record.doctorId} fallback="Bác sĩ" /> <span aria-hidden="true">·</span> Cập nhật lần cuối: {formatInstant(record.updatedAt ?? record.createdAt)}</p>
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
         <section aria-labelledby="exam-content-heading">
           <h2 id="exam-content-heading" className="text-lg font-semibold">Nội dung khám</h2>
@@ -354,6 +362,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
             <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Triệu chứng</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{record.symptoms ?? "—"}</dd></div>
             <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hướng xử trí</dt><dd className="mt-1 text-sm leading-6">{record.disposition ? dispositionLabels[record.disposition] : "—"}</dd>{record.dispositionNote ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{record.dispositionNote}</p> : null}</div>
           </dl>
+          <ClinicalContentSummary sections={record} />
         </section>
 
         <section aria-labelledby="diagnoses-heading" className="border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
@@ -374,6 +383,10 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         </section>
       </div>
       </section>
+
+      <RecordDocumentsPanel recordId={record.recordId} sourceHref={documentHref} />
+
+      <RecordCollaborationSection record={record} capabilities={capabilities} onCommandSuccess={retry} />
 
       <WriteArea show={canWrite || canComplete}>
       {canWrite ? (
@@ -430,7 +443,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
         <dl className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
           <Identifier label="Mã hồ sơ" kind="record" value={record.recordId} />
           <Identifier label="Bệnh nhân" kind="patient" value={record.patientId} />
-          <Identifier label="Bác sĩ" kind="doctor" value={record.doctorId} />
+          <Identifier label="Bác sĩ mở hồ sơ" kind="doctor" value={record.doctorId} />
           <Identifier label="Khoa" kind="department" value={record.departmentId} />
           <Identifier label="Lịch hẹn" value={record.appointmentId} />
           <div><dt className="text-xs font-medium text-muted-foreground">Ngày khám</dt><dd className="mt-1">{formatLocalDate(record.examinationDate)}</dd></div>

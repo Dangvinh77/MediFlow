@@ -3,14 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordCapabilitiesDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ capabilities: vi.fn(), declareAccess: vi.fn(), getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ capabilities: vi.fn(), declareAccess: vi.fn(), getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), documents: vi.fn(), allergies: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: () => mocks.role,
   getSessionKey: () => mocks.token,
   subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => { mocks.listeners.delete(listener); }; },
 }));
-vi.mock("../api", () => ({ medicalRecordApi: { capabilities: mocks.capabilities, declareAccess: mocks.declareAccess, getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder } }));
+vi.mock("../api", () => ({ medicalRecordApi: { capabilities: mocks.capabilities, declareAccess: mocks.declareAccess, getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder, documents: mocks.documents, allergies: mocks.allergies } }));
+vi.mock("./RecordCollaborationSection", () => ({ RecordCollaborationSection: () => null }));
 import { MedicalRecordDetail } from "./MedicalRecordDetail";
 
 const record: MedicalRecordDTO = {
@@ -26,7 +27,7 @@ const writable: RecordCapabilitiesDTO = {
 };
 
 describe("Medical record detail identity and permissions", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.capabilities.mockReset(); mocks.capabilities.mockResolvedValue(writable); mocks.declareAccess.mockReset(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
+  beforeEach(() => { vi.clearAllMocks(); mocks.capabilities.mockReset(); mocks.capabilities.mockResolvedValue(writable); mocks.declareAccess.mockReset(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.documents.mockReset(); mocks.documents.mockResolvedValue([]); mocks.allergies.mockReset(); mocks.allergies.mockResolvedValue({ active: [], inactive: [] }); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
   it("blocks refreshing while a diagnosis is being saved", async () => {
     let resolve!: (value: DiagnosisDTO) => void;
@@ -54,6 +55,26 @@ describe("Medical record detail identity and permissions", () => {
     const clinical = screen.getByRole("heading", { name: "Nội dung khám" });
     const metadata = screen.getByText("Thông tin đối chiếu và thời điểm");
     expect(clinical.compareDocumentPosition(metadata) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const allergy = screen.getByRole("heading", { name: "Sổ dị ứng" });
+    expect(allergy.compareDocumentPosition(clinical) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows structured sections in plan order and hides empty sections", async () => {
+    mocks.getById.mockResolvedValue({ ...record, chiefComplaint: "Đau ngực", presentIllness: "Khởi phát hôm qua", pastHistory: "Tăng huyết áp", allergyNote: "Ghi chú lượt khám", physicalExam: "Mạch đều", advice: "Uống đủ nước" });
+    const firstView = render(<MedicalRecordDetail recordId="record-a" />);
+
+    const labels = ["Lý do khám chính", "Bệnh sử", "Tiền sử", "Ghi chú dị ứng của lượt khám", "Khám thực thể", "Lời dặn"];
+    const nodes = await Promise.all(labels.map((label) => screen.findByText(label)));
+    for (let index = 0; index < nodes.length - 1; index += 1) {
+      expect(nodes[index].compareDocumentPosition(nodes[index + 1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+
+    firstView.unmount();
+    mocks.getById.mockResolvedValue(record);
+    const { unmount } = render(<MedicalRecordDetail recordId="record-b" />);
+    await screen.findByText("First record");
+    expect(screen.queryByText("Lý do khám chính")).not.toBeInTheDocument();
+    unmount();
   });
 
   it("preserves a diagnosis draft after refreshing and asks before applying a closed record", async () => {
@@ -266,11 +287,13 @@ describe("Medical record detail identity and permissions", () => {
     });
 
     it("shows the responsible doctor and read-only notice for another doctor's record", async () => {
-      mocks.getById.mockResolvedValue(openVisit);
+      mocks.getById.mockResolvedValue({ ...openVisit, responsibleDoctorId: "doctor-b" });
       mocks.capabilities.mockResolvedValue(denied);
       render(<MedicalRecordDetail recordId="record-a" />);
       expect(await screen.findByText(/Chỉ bác sĩ phụ trách mới được ghi/)).toBeVisible();
-      expect(screen.getByLabelText("Nội dung đã ghi")).toHaveTextContent("doctor-a");
+      expect(document.querySelector("header")).toHaveTextContent("doctor-b");
+      expect(document.querySelector("header")).not.toHaveTextContent("doctor-a");
+      expect(screen.getAllByText("Bác sĩ mở hồ sơ").some((label) => label.closest("div")?.textContent?.includes("doctor-a"))).toBe(true);
     });
 
     it("separates read-only history from the open-visit write area", async () => {
@@ -343,7 +366,8 @@ describe("Medical record detail identity and permissions", () => {
     it("shows link to previous record", async () => {
       mocks.getById.mockResolvedValue({ ...record, previousRecordId: "record-old" });
       render(<MedicalRecordDetail recordId="record-a" />);
-      expect(await screen.findByRole("link", { name: "Xem hồ sơ lượt trước" })).toHaveAttribute("href", "/records/record-old");
+      expect(await screen.findByRole("link", { name: "Lượt trước — chỉ tham khảo" })).toHaveAttribute("href", "/records/record-old");
+      expect(screen.queryByRole("button", { name: /Sao chép lượt trước/ })).not.toBeInTheDocument();
     });
 
     it("prescribed is not shown as dispensed", async () => {
