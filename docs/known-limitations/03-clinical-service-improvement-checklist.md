@@ -792,6 +792,12 @@ REC-01, REC-03, REC-04, REC-05, REC-06, AMD-02, AMD-04, AMD-05, AMD-06, COL-01, 
 VIEW-03, MIG-02, IMP-ID-04, IMP-RX-01, IMP-RX-02, IMP-REP-01. Quá trình điều trị sau cờ `mediflow.v2.treatment-course`;
 bàn giao, hội chẩn và đính chính sau cờ `mediflow.v2.record-amendment`; cả hai mặc định tắt.
 
+## Ghi chú thực hiện Đợt 5–7 — 11/11/2026
+
+Danh mục, template, nhận mẫu, duyệt/trả kết quả, đính chính, giá trị nguy hiểm và worklist của Lab đã triển khai
+sau cờ (`mediflow.v2.lab-catalog`, `lab-review`, `lab-amendment`, cờ Notification `lab-critical`), mặc định tắt,
+**chưa nghiệm thu**. Quy trình bật/tắt: [`27-v2-cutover-runbook.md`](../plans/27-v2-cutover-runbook.md).
+
 [L01]: https://xaydungchinhsach.chinhphu.vn/toan-van-luat-15-2023-qh15-kham-benh-chua-benh-119231127164453959.htm
 [L02]: https://baochinhphu.vn/huong-dan-moi-nhat-trien-khai-ho-so-benh-an-dien-tu-102250610172135659.htm
 [L03]: https://bocongan.gov.vn/chinh-sach-phap-luat/co-so-du-lieu-van-ban/luat-bao-ve-du-lieu-ca-nhan-1753688803

@@ -573,3 +573,13 @@ User đã duyệt một tài khoản DOCTOR giữ nghiệp vụ chuyên môn, đ
 Trưởng khoa phân ca bác sĩ/khoa/phòng/ngày/giờ, sau đó chủ động tạo buổi nhận khám nằm trong ca với số chỗ riêng. Ca làm việc không tự tạo suất đăng ký, không phải chấm công. Sửa/hủy ca liên kết phải xử lý buổi khám theo guards hiện có; không tự đổi người khám hoặc hủy lượt đã có tiền. Chỉ phạm vi 07:00–17:00 ngoại trú; lịch ca điều dưỡng/Lab, payroll, trực đêm và inpatient/surgery chưa mở.
 
 Dashboard bác sĩ mặc định là Khám bệnh, có nút Sang Quản lý khoa khi authority bổ nhiệm hợp lệ, và nút Về Khám bệnh ở khu quản lý. Chuyển khu chỉ đổi điều hướng, không đổi role/session; cảnh báo dữ liệu chưa lưu. Backend kiểm bổ nhiệm/khoa trên mỗi thao tác, không chờ JWT cũ hết hạn sau miễn nhiệm. Dashboard quản lý không tự cấp đọc bệnh án người khác hoặc báo cáo tài chính. [Thiết kế và kiểm chứng](../superpowers/specs/2026-10-31-manager-workforce-proposal.md).
+
+## Lab: duyệt, trả, đính chính, mẫu và giá trị nguy hiểm — 11/11/2026
+
+Sau cờ `lab-review`/`lab-amendment` (mặc định tắt; xem [`27-v2-cutover-runbook.md`](27-v2-cutover-runbook.md)):
+
+- Người trả kết quả phải khác người nhập (duyệt bởi người thứ hai có năng lực duyệt trả Lab do Organization cấp).
+- Bản nháp và bản gửi duyệt/trả lại không phát sự kiện; chỉ lúc trả mới phát `lab.result.created`.
+- Đính chính kết quả đã trả là một bản sửa mới cũng phải qua duyệt, rồi phát `lab.result.amended`; không sửa đè bản cũ.
+- Một thông báo giá trị nguy hiểm cho mỗi cặp (bản sửa, chỉ số); bác sĩ của khoa chỉ định xác nhận.
+- Xét nghiệm đã vào luồng duyệt không còn nhận `PUT /api/v1/lab/{id}/results` (409 `LAB_REVIEW_REQUIRED`).

@@ -1321,3 +1321,12 @@ Mã lỗi mới: `RECORD_CONTENT_INVALID`, `ALLERGY_INVALID`, `TREATMENT_COURSE_
 `AMENDMENT_ALREADY_DECIDED` (422); `AMENDMENT_SELF_DECISION`, `AMENDMENT_AUTHOR_NOT_ELIGIBLE`,
 `AMENDMENT_DECISION_DENIED`, `AMENDMENT_ASSIGNMENT_DENIED` (403); `HANDOVER_NOT_FOUND`, `AMENDMENT_NOT_FOUND`,
 `ALLERGY_NOT_FOUND`, `TREATMENT_COURSE_NOT_FOUND` (404); `RECORD_REVIEW_AUTHORITY_UNAVAILABLE` (503).
+
+## Lab Đợt 5–7 — 11/11/2026
+
+- Sự kiện: `lab.result.created` v1 (thêm `values`, `releasedBy` khi trả qua duyệt), `lab.result.amended` v1,
+  `lab.critical.raised` v1. Fixture: `backend/lab-service/src/test/resources/contracts/`.
+- Endpoint mới: `/api/v2/lab/{testId}/report`, `/api/v2/lab/{testId}/specimens`,
+  `PUT /api/v2/lab/specimens/{specimenId}/decision`, `GET /api/v2/lab/worklist`, `GET /api/v2/lab/critical-notices`,
+  `POST /api/v2/lab/{testId}/critical-notices/{noticeId}/acknowledgement`.
+- Cờ, thứ tự bật, rollback và mã lỗi (`LAB_REVIEW_REQUIRED`, `LAB_REVIEW_DISABLED`): [`27-v2-cutover-runbook.md`](27-v2-cutover-runbook.md).

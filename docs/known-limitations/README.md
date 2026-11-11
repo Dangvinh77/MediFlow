@@ -15,3 +15,12 @@ lâu dài vào tài liệu canonical (`docs/plans/*`) và xóa/đánh dấu tài
 | 01 | [Chưa có cấp quá trình điều trị để nhóm nhiều lượt khám / tái khám của nhiều bác sĩ](01-multi-doctor-medical-record.md) | Clinical | Đề xuất — chưa triển khai; hiện trạng hiệu chỉnh 2026-11-09 |
 | 02 | [Đọc lịch sử liên khoa, quyền ghi, hồ sơ hoàn tất và nhiều ca trong ngày](02-medical-record-read-access.md) | Clinical / Gateway / Frontend | Đã đối chiếu source 2026-11-09 — chưa nghiệm thu runtime, chưa sửa production |
 | 03 | [Checklist xác nhận Clinical và Lab: lịch, hồ sơ, phân loại và template kết quả](03-clinical-service-improvement-checklist.md) | Clinical / Lab / giao diện và hợp đồng liên quan | Đã đồng ý toàn bộ 117 mục phần 1–21 ngày 10/11/2026; đang triển khai trên nhánh `develop/mediflow-v2.0`. Checkbox là quyết định, không phải nghiệm thu |
+
+## Lab Đợt 5–7 — 11/11/2026
+
+Các giới hạn đã biết (chi tiết: [`../plans/27-v2-cutover-runbook.md`](../plans/27-v2-cutover-runbook.md)):
+
+- Lab không có giới tính/tuổi bệnh nhân: khoảng tham chiếu theo giới/tuổi gắn `UNDETERMINED` và không tạo thông báo nguy hiểm.
+- Bác sĩ khoa chỉ định xác nhận giá trị nguy hiểm vì Lab không lưu bác sĩ chỉ định.
+- Tài liệu Clinical hiển thị bản sửa nhưng không hiển thị người duyệt trả.
+- Giao diện ADMIN cấp năng lực duyệt trả Lab chưa xây (chủ frontend Organization).
