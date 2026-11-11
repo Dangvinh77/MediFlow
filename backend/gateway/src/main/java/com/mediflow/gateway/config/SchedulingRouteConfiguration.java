@@ -37,7 +37,8 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/records/*/handovers", "/api/v2/records/*/handovers/*/acceptance",
                         "/api/v2/records/*/consultation-notes", "/api/v2/records/*/amendments",
                         "/api/v2/records/*/amendments/*/decision", "/api/v2/records/*/amendment-assignments",
-                        "/api/v2/amendments/pending")
+                        "/api/v2/amendments/pending", "/api/v2/patients/*/allergies",
+                        "/api/v2/patients/*/allergies/*/status")
                         .uri("lb://clinical-service"))
                 .route("scheduling-billing", route -> route.path(
                         "/api/v2/billing/payment-requests",
