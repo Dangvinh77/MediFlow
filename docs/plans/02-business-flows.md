@@ -348,6 +348,31 @@ hồ sơ sau khi kê đơn, Pharmacy tiếp tục cấp thuốc và đính kèm 
 Lượt chỉ đối soát xong khi các dịch vụ/thuốc đã hoàn thành hoặc hủy hợp lệ, khoản phải thu/hoàn
 còn lại đã được xử lý. Không tạo state CLOSED trên API hiện tại nếu chưa có contract.
 
+### 7.1. Hồ sơ nhiều lượt, bàn giao, hội chẩn và đính chính — Đợt 4 v2.0
+
+Hai cờ, mặc định tắt: `mediflow.v2.treatment-course` cho quá trình điều trị, `mediflow.v2.record-amendment`
+cho bàn giao, hội chẩn và đính chính. Tắt cờ thì các endpoint này trả 404 và màn hình ẩn phần tương ứng.
+Dòng thời gian, nội dung khám có cấu trúc, danh sách tài liệu và sổ dị ứng không có cờ.
+
+- **Dòng thời gian:** hồ sơ bệnh nhân hiện từng lượt theo ngày, khoa, bác sĩ, loại lượt và kết quả. Điều dưỡng
+  chỉ thấy lượt của khoa mình. Nội dung khám có sáu mục: lý do khám, bệnh sử, tiền sử, ghi chú dị ứng, khám
+  thực thể, lời dặn.
+- **Quá trình điều trị:** bác sĩ chủ động mở và gắn từng lượt; không gộp hồi tố, không sao chép chẩn đoán hay đơn
+  thuốc. Chỉ gắn được lượt của cùng bệnh nhân. Đóng quá trình phải có quyết định và ghi chú.
+- **Bàn giao:** bác sĩ phụ trách bàn giao lượt đang mở cho bác sĩ khác, kèm lý do và việc đang chờ. Người nhận
+  chấp nhận thì thành bác sĩ phụ trách; từ đó chỉ người nhận ghi hồ sơ, kê đơn và đóng lượt. `doctorId` của hồ sơ
+  và của sự kiện vẫn là bác sĩ mở hồ sơ; `careEpisodeId` của chỉ định không đổi.
+- **Hội chẩn:** mỗi bác sĩ đọc được hồ sơ ghi ý kiến riêng khi lượt còn mở; ghi chú chỉ thêm, giữ tác giả.
+- **Đính chính:** hồ sơ đã kết thúc không bị sửa. Bác sĩ phụ trách, hoặc bác sĩ được giao, gửi đính chính cho một
+  mục kèm lý do. Trưởng khoa, hoặc bác sĩ được ADMIN cấp `MEDICAL_RECORD_REVIEW`, duyệt hoặc từ chối; không ai tự
+  duyệt đính chính của mình. Bản duyệt có mã băm nội dung để xác nhận nội bộ.
+- **Sổ dị ứng:** theo bệnh nhân, không theo lượt. Điều dưỡng và bác sĩ thêm; chỉ bác sĩ đổi trạng thái, có lý do.
+  Dị ứng nhập nhầm vẫn còn trong lịch sử.
+- **Tài liệu:** mỗi lượt có danh sách kết quả Lab và đơn thuốc chỉ đọc; tài liệu về sau thời điểm kết thúc được
+  đánh dấu "bổ sung sau khi kết thúc".
+
+Nghiệm thu: [`26-v2-wave-4-acceptance.md`](26-v2-wave-4-acceptance.md).
+
 ## 8. Nhận biết trạng thái trên frontend
 
 | Chiều trạng thái | Nội dung cần hiển thị | Không được suy ra |
