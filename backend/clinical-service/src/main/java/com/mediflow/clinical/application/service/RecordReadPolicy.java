@@ -76,7 +76,7 @@ public class RecordReadPolicy {
     private RecordReadDecision doctorOrAdminDecision(ActorIdentity actor, UUID patientId, MedicalRecord record,
             UUID currentDepartment, List<Appointment> valid, Instant at) {
         UUID staffId = actor.staffId();
-        if (staffId != null && record != null && staffId.equals(record.getDoctorId())) {
+        if (staffId != null && record != null && (staffId.equals(record.getDoctorId()) || staffId.equals(record.responsibleDoctorId()))) {
             return RecordReadDecision.allow("AUTHOR");
         }
         if (staffId != null && anyMatch(valid, appointment -> staffId.equals(appointment.getDoctorId()))) {

@@ -324,7 +324,7 @@ public class ClinicalCareFinanceApplicationService
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Lab orders can only be withdrawn while the examination is in progress");
         }
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         requireScheduledLifecycle();
         ClinicalLabOrder withdrawn = labCompletionGuard.withdrawUnreceived(record, appointment, sourceOrderId,
                 actors.current().staffId(), reason, clock.instant(), correlationIds.currentOrCreate().toString());
@@ -348,7 +348,7 @@ public class ClinicalCareFinanceApplicationService
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Only a scheduled examination in progress can end without a conclusion");
         }
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         requireScheduledLifecycle();
         String correlationId = correlationIds.currentOrCreate().toString();
         labCompletionGuard.requireAllClosed(record, appointment, correlationId);
@@ -381,7 +381,7 @@ public class ClinicalCareFinanceApplicationService
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Appointment must be in examination before record completion");
         }
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         if (!admissionReferralsEnabled && (request.disposition() == RecordDisposition.ADMISSION
                 || request.disposition() == RecordDisposition.TRANSFER)) {
             throw deferredAdmission();

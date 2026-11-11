@@ -345,7 +345,7 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
     @Override
     @Transactional(readOnly = true)
     public List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByDoctor(UUID doctorId, int limit) {
-        return jdbc.query(OPEN_VISITS + " AND m.doctor_id = ? ORDER BY a.examination_started_at, r.registration_id LIMIT ?",
+        return jdbc.query(OPEN_VISITS + " AND COALESCE(m.responsible_doctor_id, m.doctor_id) = ? ORDER BY a.examination_started_at, r.registration_id LIMIT ?",
                 this::mapOpenVisit, doctorId, limit);
     }
 

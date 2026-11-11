@@ -21,7 +21,7 @@ public class PrescriptionContextReadAdapter implements PrescriptionContextReadPo
         Objects.requireNonNull(recordId);
         // One MVCC statement. Only Clinical selects its own appointment-backed/walk-in episode.
         return jdbc.queryForObject("""
-                SELECT r.record_id,r.patient_id,r.doctor_id,r.department_id,r.status,r.disposition,
+                SELECT r.record_id,r.patient_id,COALESCE(r.responsible_doctor_id,r.doctor_id) AS doctor_id,r.department_id,r.status,r.disposition,
                        r.appointment_id,a.patient_id AS appointment_patient,a.department_id AS appointment_department,
                        statement_timestamp() AS observed_at
                 FROM (SELECT ?::uuid AS id) requested

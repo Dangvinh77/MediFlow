@@ -60,4 +60,5 @@ public class MedicalRecordJpaEntity {
     @Column(name = "allergy_note", columnDefinition = "text") private String allergyNote;
     @Column(name = "physical_exam", columnDefinition = "text") private String physicalExam;
     @Column(name = "advice", columnDefinition = "text") private String advice;
+    @Column(name = "responsible_doctor_id") private UUID responsibleDoctorId;
 }

@@ -164,7 +164,7 @@ public class FollowUpRecommendationApplicationService {
         MedicalRecord record = records.findByIdForUpdate(sourceRecordId)
                 .orElseThrow(FollowUpRecommendationApplicationService::notFound);
         if (record.getStatus() != MedicalRecordStatus.COMPLETED || record.getAppointmentId() == null
-                || !actor.staffId().equals(record.getDoctorId())
+                || !actor.staffId().equals(record.responsibleDoctorId())
                 || request.recommendedFrom().isBefore(record.getExaminationDate())) {
             throw notFound();
         }
@@ -230,7 +230,7 @@ public class FollowUpRecommendationApplicationService {
                 if (actor.patientId() == null || !actor.patientId().equals(record.getPatientId())) throw notFound();
             }
             case "DOCTOR" -> {
-                if (actor.staffId() == null || !actor.staffId().equals(record.getDoctorId())) throw notFound();
+                if (actor.staffId() == null || (!actor.staffId().equals(record.getDoctorId()) && !actor.staffId().equals(record.responsibleDoctorId()))) throw notFound();
                 requireCurrentDoctor(actor, correlationIds.currentOrCreate().toString());
             }
             case "ADMIN", "NURSE" -> requireCurrentClinicalReadAuthority(actor, record.getDepartmentId());

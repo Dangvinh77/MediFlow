@@ -105,7 +105,8 @@ public class JdbcTreatmentCourseAdapter implements TreatmentCourseRepositoryPort
     private TreatmentCourse course(ResultSet rs) throws SQLException {
         UUID courseId = rs.getObject("course_id", UUID.class);
         List<UUID> visits = jdbc.queryForList(
-                "SELECT record_id FROM treatment_course_visit WHERE course_id = ? ORDER BY added_at, record_id",
+                "SELECT v.record_id FROM treatment_course_visit v JOIN medical_record r ON r.record_id = v.record_id"
+                        + " WHERE v.course_id = ? ORDER BY r.examination_date, r.created_at, v.added_at, v.record_id",
                 UUID.class, courseId);
         String decision = rs.getString("closure_decision");
         return TreatmentCourse.restore(courseId, rs.getObject("patient_id", UUID.class),

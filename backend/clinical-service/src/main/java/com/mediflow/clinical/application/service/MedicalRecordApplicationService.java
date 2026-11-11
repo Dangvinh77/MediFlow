@@ -204,7 +204,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     private void requireOutpatientMvpRecordAuthority(MedicalRecord record) {
         if (!outpatientMvpEnabled) {
             if (recordAccessPolicyEnabled) {
-                staffAuthority.requireAssignedDoctor(record.getDoctorId(), record.getDepartmentId());
+                staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
             }
             return;
         }
@@ -221,7 +221,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
                 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
             throw legacyRecordWriteDisabled();
         }
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
     }
 
     private static InvalidClinicalDataException legacyRecordWriteDisabled() {

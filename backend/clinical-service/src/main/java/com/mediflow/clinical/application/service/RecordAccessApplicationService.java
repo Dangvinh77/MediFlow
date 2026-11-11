@@ -117,7 +117,7 @@ public class RecordAccessApplicationService {
         if (!outpatientMvpEnabled && !policyEnabled) {
             return writerRole ? null : "NOT_ASSIGNED_DOCTOR";
         }
-        if (!writerRole || actor.staffId() == null || !actor.staffId().equals(record.getDoctorId())) {
+        if (!writerRole || actor.staffId() == null || !actor.staffId().equals(record.responsibleDoctorId())) {
             return "NOT_ASSIGNED_DOCTOR";
         }
         return outpatientMvpEnabled && !inExam ? "NOT_IN_EXAM" : null;

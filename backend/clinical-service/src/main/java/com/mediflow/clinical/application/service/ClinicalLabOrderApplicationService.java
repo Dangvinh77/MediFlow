@@ -106,7 +106,7 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
                     "Lab orders require the matching active outpatient examination");
         }
 
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         ClinicalLabOrder order = ClinicalLabOrder.create(record.getRecordId(), record.getPatientId(),
                 appointment.getDoctorId(), appointment.getDepartmentId(), appointment.getAppointmentId(),
                 request.labType(), request.requestedDate(), request.priceCode(), clock.instant());

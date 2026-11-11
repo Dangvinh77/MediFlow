@@ -139,6 +139,32 @@ class MedicalRecordWriteGuardTest {
     }
 
     @Test
+    void previousDoctorCannotWriteAfterHandover() {
+        MedicalRecord record = inExamRecord();
+        UUID receiver = UUID.randomUUID();
+        record.handOverTo(receiver, CREATED);
+        actor(AUTHOR, "DOCTOR");
+
+        assertNotAssigned(() -> service(true, true).update(record.getRecordId(), update()));
+    }
+
+    @Test
+    void receiverWritesAfterHandoverAndRecordKeepsOpeningDoctor() {
+        MedicalRecord record = inExamRecord();
+        UUID receiver = UUID.randomUUID();
+        when(staff.departmentOf(receiver)).thenReturn(Optional.of(CARDIOLOGY));
+        record.handOverTo(receiver, CREATED);
+        actor(receiver, "DOCTOR");
+
+        service(true, true).update(record.getRecordId(), update());
+
+        ArgumentCaptor<MedicalRecord> saved = ArgumentCaptor.forClass(MedicalRecord.class);
+        verify(records).save(saved.capture());
+        assertThat(saved.getValue().getDoctorId()).isEqualTo(AUTHOR);
+        assertThat(saved.getValue().responsibleDoctorId()).isEqualTo(receiver);
+    }
+
+    @Test
     void secondRecordForAppointmentIsRejected() {
         MedicalRecord existing = openRecord();
         when(patients.exists(PATIENT)).thenReturn(true);

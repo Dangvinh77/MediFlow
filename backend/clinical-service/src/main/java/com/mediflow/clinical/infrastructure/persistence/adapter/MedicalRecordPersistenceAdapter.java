@@ -68,7 +68,8 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 e.getClosureReason() == null ? null : new MedicalRecord.Closure(e.getClosureReason(), e.getClosureNote(),
                         e.getClosedByStaffId(), e.getClosedAt()), e.getPreviousRecordId())
                 .withStoredContent(new ClinicalContent(e.getChiefComplaint(), e.getPresentIllness(), e.getPastHistory(),
-                        e.getAllergyNote(), e.getPhysicalExam(), e.getAdvice()));
+                        e.getAllergyNote(), e.getPhysicalExam(), e.getAdvice()))
+                .withResponsibleDoctor(e.getResponsibleDoctorId());
     }
     private MedicalRecordJpaEntity toEntity(MedicalRecord r) {
         MedicalRecordJpaEntity entity = MedicalRecordJpaEntity.builder().recordId(r.getRecordId())
@@ -82,7 +83,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 .closedByStaffId(r.getClosedByStaffId()).closedAt(r.getClosedAt())
                 .chiefComplaint(r.getChiefComplaint()).presentIllness(r.getPresentIllness())
                 .pastHistory(r.getPastHistory()).allergyNote(r.getAllergyNote())
-                .physicalExam(r.getPhysicalExam()).advice(r.getAdvice()).build();
+                .physicalExam(r.getPhysicalExam()).advice(r.getAdvice())
+                .responsibleDoctorId(r.responsibleDoctorId().equals(r.getDoctorId()) ? null : r.responsibleDoctorId())
+                .build();
         entity.setDiagnoses(new ArrayList<>(r.getDiagnoses().stream().map(d -> DiagnosisJpaEntity.builder()
                 .diagnosisId(d.getDiagnosisId()).record(entity).diagnosisName(d.getDiagnosisName())
                 .description(d.getDescription()).icdCode(d.getIcdCode()).build()).toList()));

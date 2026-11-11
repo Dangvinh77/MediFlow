@@ -11,7 +11,7 @@ import com.mediflow.clinical.application.port.out.PatientTimelineReadPort;
 
 @Component
 public class JdbcPatientTimelineAdapter implements PatientTimelineReadPort {
-    static final String RESPONSIBLE_DOCTOR = "NULL::uuid";
+    static final String RESPONSIBLE_DOCTOR = "r.responsible_doctor_id";
 
     private final JdbcTemplate jdbc;
 

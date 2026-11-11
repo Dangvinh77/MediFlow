@@ -35,6 +35,9 @@ public final class MedicalRecord {
     private final UUID previousRecordId;
     @Getter(AccessLevel.NONE)
     private ClinicalContent content;
+    /** The doctor who currently holds the visit after a handover; null means the opening doctor. */
+    @Getter(AccessLevel.NONE)
+    private UUID responsibleDoctorId;
 
     /** How a visit ended when no conclusion could be recorded. */
     public record Closure(RecordClosureReason reason, String note, UUID closedByStaffId, Instant closedAt) {}
@@ -119,13 +122,35 @@ public final class MedicalRecord {
         return new MedicalRecord(Objects.requireNonNull(id), patientId, doctorId, departmentId, date,
                 symptoms, appointmentId, new ArrayList<>(diagnoses), Objects.requireNonNull(createdAt),
                 updatedAt, status, disposition, dispositionNote, completedAt, closure, previousRecordId,
-                ClinicalContent.EMPTY);
+                ClinicalContent.EMPTY, null);
     }
 
     /** Re-attaches stored examination sections when a record is loaded; never used to change a visit. */
     public MedicalRecord withStoredContent(ClinicalContent stored) {
         this.content = stored == null ? ClinicalContent.EMPTY : stored;
         return this;
+    }
+
+    /** Re-attaches the stored handover holder when a record is loaded. */
+    public MedicalRecord withResponsibleDoctor(UUID stored) {
+        this.responsibleDoctorId = stored;
+        return this;
+    }
+
+    /** The doctor who may write the visit now; the opening doctor until a handover is accepted. */
+    public UUID responsibleDoctorId() {
+        return responsibleDoctorId == null ? doctorId : responsibleDoctorId;
+    }
+
+    /** Moves write responsibility to another doctor; {@link #getDoctorId()} keeps the opening doctor. */
+    public void handOverTo(UUID receiverDoctorId, Instant at) {
+        requireOpen();
+        if (receiverDoctorId == null || at == null || receiverDoctorId.equals(responsibleDoctorId())) {
+            throw new InvalidClinicalDataException("HANDOVER_INVALID",
+                    "A handover needs another doctor and a time");
+        }
+        responsibleDoctorId = receiverDoctorId;
+        updatedAt = at;
     }
 
     public void addDiagnosis(Diagnosis diagnosis) {

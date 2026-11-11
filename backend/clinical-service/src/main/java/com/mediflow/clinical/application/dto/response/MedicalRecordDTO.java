@@ -34,8 +34,20 @@ public record MedicalRecordDTO(
         @JsonInclude(JsonInclude.Include.NON_NULL) String pastHistory,
         @JsonInclude(JsonInclude.Include.NON_NULL) String allergyNote,
         @JsonInclude(JsonInclude.Include.NON_NULL) String physicalExam,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String advice
+        @JsonInclude(JsonInclude.Include.NON_NULL) String advice,
+        @JsonInclude(JsonInclude.Include.NON_NULL) UUID responsibleDoctorId
 ) {
+    public MedicalRecordDTO(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId, LocalDate examinationDate,
+            String symptoms, UUID appointmentId, List<DiagnosisDTO> diagnoses, Instant createdAt, Instant updatedAt,
+            MedicalRecordStatus status, RecordDisposition disposition, String dispositionNote, Instant completedAt,
+            UUID previousRecordId, RecordClosureReason closureReason, String closureNote, Instant closedAt,
+            String chiefComplaint, String presentIllness, String pastHistory, String allergyNote, String physicalExam,
+            String advice) {
+        this(recordId, patientId, doctorId, departmentId, examinationDate, symptoms, appointmentId, diagnoses, createdAt,
+                updatedAt, status, disposition, dispositionNote, completedAt, previousRecordId, closureReason, closureNote,
+                closedAt, chiefComplaint, presentIllness, pastHistory, allergyNote, physicalExam, advice, null);
+    }
+
     public MedicalRecordDTO(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId, LocalDate examinationDate,
             String symptoms, UUID appointmentId, List<DiagnosisDTO> diagnoses, Instant createdAt, Instant updatedAt,
             MedicalRecordStatus status, RecordDisposition disposition, String dispositionNote, Instant completedAt,

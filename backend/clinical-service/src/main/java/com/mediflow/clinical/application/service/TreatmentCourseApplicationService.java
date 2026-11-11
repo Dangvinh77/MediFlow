@@ -126,7 +126,7 @@ public class TreatmentCourseApplicationService {
         if (!first.getPatientId().equals(request.patientId())) {
             throw new InvalidClinicalDataException("TREATMENT_COURSE_INVALID", "The first visit belongs to another patient");
         }
-        staffAuthority.requireAssignedDoctor(first.getDoctorId(), first.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(first.responsibleDoctorId(), first.getDepartmentId());
         TreatmentCourse course = TreatmentCourse.open(request.patientId(), first.getDepartmentId(), request.problem(),
                 request.openingReason(), actor.staffId(), first.getRecordId(), clock.instant());
         courses.insert(course);
