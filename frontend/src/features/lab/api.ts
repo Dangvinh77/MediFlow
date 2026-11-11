@@ -2,7 +2,9 @@ import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
   AddLabResultsRequest,
+  AmendLabReportRequest,
   CancelLabTestRequest,
+  LabReportDTO,
   CreateLabRequest,
   LabCareEpisodeType,
   LabCatalogGroup,
@@ -11,6 +13,9 @@ import type {
   LabTestDTO,
   LabTestStatus,
   StartLabTestRequest,
+  SaveLabReportDraftRequest,
+  SubmitLabReportRequest,
+  ReturnLabReportRequest,
 } from "./types";
 
 export interface LabSearchParams {
@@ -27,6 +32,18 @@ export const labApi = {
     api.get<LabCatalogItemDTO[]>(`/v2/lab/catalog${group ? `?group=${encodeURIComponent(group)}` : ""}`),
   getTemplate: (testId: string) =>
     api.get<LabTestTemplateDTO>(`/v2/lab/${encodeURIComponent(testId)}/template`),
+  getReport: (testId: string) =>
+    api.get<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report`),
+  saveReportDraft: (testId: string, body: SaveLabReportDraftRequest) =>
+    api.put<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report/draft`, body),
+  submitReport: (testId: string, body: SubmitLabReportRequest) =>
+    api.post<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report/submission`, body),
+  returnReport: (testId: string, body: ReturnLabReportRequest) =>
+    api.post<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report/return`, body),
+  releaseReport: (testId: string) =>
+    api.post<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report/release`),
+  amendReport: (testId: string, body: AmendLabReportRequest) =>
+    api.post<LabReportDTO>(`/v2/lab/${encodeURIComponent(testId)}/report/amendments`, body),
   mine: (page = 0) => api.get<PageResult<import("./types").PatientLabResultDTO>>(`/v1/lab/mine?page=${page}&size=20`),
   getById: (testId: string) =>
     api.get<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}`),

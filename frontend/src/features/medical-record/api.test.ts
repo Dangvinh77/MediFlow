@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { medicalRecordApi } from "./api";
-import type { ClinicalLabOrderDTO, FollowUpRecommendationDTO } from "./types";
+import type { ClinicalLabOrderDTO, FollowUpRecommendationDTO, RecordDocumentDTO } from "./types";
 
 vi.mock("client-only", () => ({}));
 vi.mock("@/lib/session", () => ({ getToken: () => "test-token", getSessionKey: () => "test-session", getRefreshToken: () => null, clearSession: vi.fn() }));
@@ -123,6 +123,30 @@ describe("Wave 4 patient record API contracts", () => {
       "/api/v2/amendments/pending",
       "/api/v2/patients/patient%2F1/allergies",
     ]);
+  });
+
+  it("preserves current and previous lab revision metadata from Clinical", async () => {
+    const documents: RecordDocumentDTO[] = [{
+      type: "LAB",
+      referenceId: "lab-result-1",
+      summary: "Công thức máu",
+      attachedAt: "2026-11-11T01:15:00Z",
+      afterConclusion: false,
+      resultVersion: 3,
+      amendmentReason: "Sửa lại kết quả sau khi đối chiếu.",
+      previousRevisions: [{
+        resultVersion: 2,
+        summary: "Công thức máu phiên bản 2",
+        amendmentReason: "Nhập sai trị số bình thường.",
+        sourceAt: "2026-11-10T03:00:00Z",
+        label: "Đã đính chính",
+      }],
+    }];
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: documents }));
+
+    expect(await medicalRecordApi.documents("record/1")).toEqual(documents);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/records/record%2F1/documents");
+    expect(fetchMock.mock.calls[0][1].method).toBe("GET");
   });
 
   it("sends every new write with a stable idempotency key and correlation ID", async () => {

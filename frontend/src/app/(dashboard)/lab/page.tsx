@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { LabTable } from "@/features/lab/components/LabTable";
+import { LabReviewNavigation } from "@/features/lab/components/LabReviewNavigation";
 import type { LabTestStatus } from "@/features/lab/types";
 import { isUuid } from "@/lib/validation";
 
@@ -22,6 +23,7 @@ export default async function LabPage({ searchParams }: { searchParams: Promise<
     <PageShell
       title="Xét nghiệm"
       description="Hàng đợi xét nghiệm theo khoa, trạng thái và đợt chăm sóc."
+      actions={<LabReviewNavigation />}
     >
       <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"]}>
         <LabTable key={`${episodeType}:${episodeId}:${status}:${departmentId}:${page}`} initialEpisodeId={episodeId} initialEpisodeType={episodeType} initialStatus={status} initialDepartmentId={departmentId} initialPage={page} outpatientEnabled={outpatientUiEnabled()} />

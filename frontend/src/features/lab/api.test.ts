@@ -131,4 +131,53 @@ describe("Lab care contract through Gateway", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/catalog");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("gets a review report by encoded test ID", async () => {
+    const report = { reportId: "report", testId: "test/1", draftRevision: 0, status: "DRAFT" };
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: report }));
+
+    await expect(labApi.getReport("test/1")).resolves.toEqual(report);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test%2F1/report");
+    expect(fetchMock.mock.calls[0][1].method).toBe("GET");
+  });
+
+  it("saves a report draft with its last-read revision", async () => {
+    const body = { draftRevision: 3, values: [{ fieldCode: "WBC", operator: ">", value: "5" }], conclusion: "Ổn định", performedDate: "2026-11-11" };
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { reportId: "report", ...body } }));
+
+    await labApi.saveReportDraft("test", body);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test/report/draft");
+    expect(fetchMock.mock.calls[0][1].method).toBe("PUT");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual(body);
+  });
+
+  it("submits a report at the supplied draft revision", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { status: "PENDING_REVIEW" } }));
+    await labApi.submitReport("test", { draftRevision: 7 });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test/report/submission");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ draftRevision: 7 });
+  });
+
+  it("returns a pending report with a reason", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { status: "DRAFT" } }));
+    await labApi.returnReport("test", { reason: "Thiếu thông tin" });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test/report/return");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ reason: "Thiếu thông tin" });
+  });
+
+  it("releases a pending report without a request body", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { status: "RELEASED" } }));
+    await labApi.releaseReport("test");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test/report/release");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    expect(fetchMock.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it("starts an amendment with a reason", async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: { status: "DRAFT" } }));
+    await labApi.amendReport("test", { reason: "Đính chính dữ liệu" });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/lab/test/report/amendments");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ reason: "Đính chính dữ liệu" });
+  });
 });

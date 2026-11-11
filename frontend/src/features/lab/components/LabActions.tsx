@@ -18,15 +18,19 @@ interface LabActionsProps {
   onUpdated: (test: LabTestDTO) => void;
   onRefreshBlockedChange?: (blocked: boolean) => void;
   refreshing?: boolean;
+  /** The test uses the review workflow, so the v1 result entry is hidden. */
+  reviewWorkflow?: boolean;
+  /** Called when the v1 result entry is refused because the test entered the review workflow. */
+  onReviewRequired?: () => void;
 }
 const getServerRole = () => null;
 const emptyResult = (): LabResultInput => ({ indicator: "", value: "", unit: null, referenceRange: null });
 
-export function LabActions({ test, onUpdated, onRefreshBlockedChange, refreshing = false }: LabActionsProps) {
-  return <LabActionsContent key={test.testId} test={test} onUpdated={onUpdated} onRefreshBlockedChange={onRefreshBlockedChange} refreshing={refreshing} />;
+export function LabActions(props: LabActionsProps) {
+  return <LabActionsContent key={props.test.testId} {...props} />;
 }
 
-function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing = false }: LabActionsProps) {
+function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing = false, reviewWorkflow = false, onReviewRequired }: LabActionsProps) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const command = useCommand();
   const busy = command.busy;
@@ -68,7 +72,7 @@ function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing
   const canStart = canWork && (test.careContractVersion === 1
     ? test.status === "READY" && Boolean(test.clearanceId)
     : test.status === "PENDING" || test.status === "READY");
-  const canEnterResults = canWork && test.status === "IN_PROGRESS";
+  const canEnterResults = canWork && test.status === "IN_PROGRESS" && !reviewWorkflow;
   const canCancelCurrent = canCancel && !["COMPLETED", "CANCELLED"].includes(test.status);
   const refreshBlocked = busy || (mode !== null && !command.uncertain);
   useEffect(() => { onRefreshBlockedChange?.(refreshBlocked); }, [onRefreshBlockedChange, refreshBlocked]);
@@ -102,7 +106,17 @@ function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing
       setValidationError("Ngày thực hiện phải từ ngày yêu cầu trở đi."); return;
     }
     setValidationError(null);
-    void command.run(() => labApi.addResults(test.testId, { results: normalized, conclusion: conclusion.trim() || null, performedDate }), (updated) => { setMode(null); onUpdated(updated); });
+    void command.run(
+      () => labApi.addResults(test.testId, { results: normalized, conclusion: conclusion.trim() || null, performedDate })
+        .catch((cause: unknown) => {
+          if (cause instanceof ApiRequestError && cause.code === "LAB_REVIEW_REQUIRED") return null;
+          throw cause;
+        }),
+      (updated) => {
+        setMode(null);
+        if (updated) onUpdated(updated);
+        else onReviewRequired?.();
+      });
   }
 
   async function submitCancel(event: FormEvent<HTMLFormElement>) {

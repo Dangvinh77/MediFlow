@@ -57,10 +57,14 @@ export function LabTemplateResults({
   fields,
   drafts,
   onDraftChange,
+  valueMaxLength = 50,
+  reasonMaxLength = 50 - NO_RESULT_PREFIX.length,
 }: {
   fields: LabTemplateFieldDTO[];
   drafts: LabTemplateDrafts;
   onDraftChange: (fieldCode: string, change: Partial<LabTemplateDraft>) => void;
+  valueMaxLength?: number;
+  reasonMaxLength?: number;
 }) {
   const orderedFields = [...fields].sort((left, right) => left.position - right.position);
   return <div className="space-y-4">
@@ -72,10 +76,10 @@ export function LabTemplateResults({
       const isChoice = (field.valueType === "QUALITATIVE" || field.valueType === "SEMI_QUANTITATIVE") && options.length > 0;
       return <div key={field.fieldCode} className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-2">
         <Field label={`Giá trị ${field.label}`} htmlFor={inputId} required={field.required}>
-          {isChoice ? <select id={inputId} aria-label={`Giá trị ${field.label}`} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value })} className={controlClassName}>
+          {isChoice ? <select id={inputId} aria-label={`Giá trị ${field.label}`} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName}>
             <option value="">Chọn kết quả</option>
             {options.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select> : field.valueType === "TEXT" ? <textarea id={inputId} aria-label={`Giá trị ${field.label}`} rows={2} maxLength={field.allowsOperator ? 48 : 50} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value })} className={controlClassName} /> : <input id={inputId} aria-label={`Giá trị ${field.label}`} type={field.valueType === "QUANTITATIVE" ? "number" : "text"} step={field.valueType === "QUANTITATIVE" ? "any" : undefined} maxLength={field.allowsOperator ? 48 : 50} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value })} className={controlClassName} />}
+          </select> : field.valueType === "TEXT" ? <textarea id={inputId} aria-label={`Giá trị ${field.label}`} rows={2} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} /> : <input id={inputId} aria-label={`Giá trị ${field.label}`} type={field.valueType === "QUANTITATIVE" ? "number" : "text"} step={field.valueType === "QUANTITATIVE" ? "any" : undefined} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} />}
         </Field>
         {field.allowsOperator ? <Field label={`Toán tử ${field.label}`} htmlFor={`lab-template-operator-${field.fieldCode}`}>
           <select id={`lab-template-operator-${field.fieldCode}`} aria-label={`${field.label} toán tử`} value={draft.operator} onChange={(event) => onDraftChange(field.fieldCode, { operator: event.target.value })} className={controlClassName}>
@@ -90,7 +94,7 @@ export function LabTemplateResults({
           <input id={`lab-template-range-${field.fieldCode}`} aria-label={`Khoảng tham chiếu ${field.label}`} readOnly value={rangeText(field) ?? ""} className={controlClassName} />
         </Field>
         <Field label={`Lý do không có kết quả ${field.label}`} htmlFor={`lab-template-reason-${field.fieldCode}`}>
-          <input id={`lab-template-reason-${field.fieldCode}`} maxLength={50 - NO_RESULT_PREFIX.length} value={draft.reason} onChange={(event) => onDraftChange(field.fieldCode, { reason: event.target.value })} className={controlClassName} />
+          <input id={`lab-template-reason-${field.fieldCode}`} maxLength={reasonMaxLength} value={draft.reason} onChange={(event) => onDraftChange(field.fieldCode, { reason: event.target.value.slice(0, reasonMaxLength) })} className={controlClassName} />
         </Field>
       </div>;
     })}

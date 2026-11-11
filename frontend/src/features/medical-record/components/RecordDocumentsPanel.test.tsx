@@ -34,6 +34,42 @@ describe("record documents", () => {
     expect(await screen.findByText("Bổ sung sau khi kết thúc")).toBeVisible();
   });
 
+  it("shows the current lab revision and labels earlier revisions as amended", async () => {
+    mocks.documents.mockResolvedValue([{
+      ...documents[0],
+      resultVersion: 3,
+      amendmentReason: "Sửa lại kết quả sau khi đối chiếu.",
+      previousRevisions: [{
+        resultVersion: 2,
+        summary: "Công thức máu phiên bản 2",
+        amendmentReason: "Nhập sai trị số bình thường.",
+        sourceAt: "2026-11-10T03:00:00Z",
+        label: "Đã đính chính",
+      }],
+    }]);
+    render(<RecordDocumentsPanel recordId="record-a" />);
+
+    expect(await screen.findByText("Phiên bản kết quả hiện tại: 3")).toBeVisible();
+    expect(screen.getByText("Lý do đính chính: Sửa lại kết quả sau khi đối chiếu.")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Đã đính chính" })).toBeVisible();
+    expect(screen.getByText("Công thức máu phiên bản 2")).toBeVisible();
+    expect(screen.getByText(/Nhập sai trị số bình thường\./)).toBeVisible();
+    expect(screen.getByText("10:00 10/11/2026")).toBeVisible();
+  });
+
+  it("keeps old documents usable when revision fields are absent or null", async () => {
+    mocks.documents.mockResolvedValue([
+      documents[0],
+      { ...documents[1], resultVersion: null, amendmentReason: null, previousRevisions: null },
+    ]);
+    render(<RecordDocumentsPanel recordId="record-a" />);
+
+    expect(await screen.findByText("Công thức máu")).toBeVisible();
+    expect(screen.getAllByText("Đơn thuốc")).toHaveLength(2);
+    expect(screen.queryByText("Phiên bản kết quả hiện tại:")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Đã đính chính" })).not.toBeInTheDocument();
+  });
+
   it("shows a retryable outage instead of an empty list", async () => {
     mocks.documents.mockRejectedValueOnce(new ApiRequestError("Không thể tải", 503, "UNAVAILABLE")).mockResolvedValueOnce([]);
     render(<RecordDocumentsPanel recordId="record-a" />);

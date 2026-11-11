@@ -211,12 +211,23 @@ export interface TimelineQuery {
 
 export type RecordDocumentType = "LAB" | "PRESCRIPTION";
 
+export interface RecordDocumentPreviousRevisionDTO {
+  resultVersion: number;
+  summary: string;
+  amendmentReason: string | null;
+  sourceAt: string;
+  label: string;
+}
+
 export interface RecordDocumentDTO {
   type: RecordDocumentType;
   referenceId: string;
   summary: string;
   attachedAt: string;
   afterConclusion: boolean;
+  resultVersion?: number | null;
+  amendmentReason?: string | null;
+  previousRevisions?: RecordDocumentPreviousRevisionDTO[] | null;
 }
 
 export type TreatmentCourseStatus = "OPEN" | "CLOSED";

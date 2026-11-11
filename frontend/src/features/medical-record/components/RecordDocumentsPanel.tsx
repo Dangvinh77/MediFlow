@@ -84,6 +84,27 @@ export function RecordDocumentsPanel({
                   <p className="text-xs font-medium text-muted-foreground">{documentTypeLabels[document.type]}</p>
                   {href ? <Link href={href} className="font-medium text-primary underline-offset-4 hover:underline">{document.summary || documentTypeLabels[document.type]}</Link>
                     : <p className="font-medium">{document.summary || documentTypeLabels[document.type]}</p>}
+                  {document.type === "LAB" && document.resultVersion != null ? (
+                    <p className="mt-1 text-sm text-muted-foreground">Phiên bản kết quả hiện tại: {document.resultVersion}</p>
+                  ) : null}
+                  {document.type === "LAB" && document.amendmentReason ? (
+                    <p className="mt-1 text-sm text-muted-foreground">Lý do đính chính: {document.amendmentReason}</p>
+                  ) : null}
+                  {document.type === "LAB" && document.previousRevisions?.length ? (
+                    <section className="mt-3 rounded-lg border border-border bg-surface-muted/40 p-3" aria-label="Đã đính chính">
+                      <h3 className="text-sm font-semibold">Đã đính chính</h3>
+                      <ul className="mt-2 space-y-2">
+                        {document.previousRevisions.map((revision) => (
+                          <li key={`${revision.resultVersion}:${revision.sourceAt}`} className="border-t border-border pt-2 text-sm first:border-0 first:pt-0">
+                            <p className="font-medium">{revision.label || "Đã đính chính"} · phiên bản {revision.resultVersion}</p>
+                            <p>{revision.summary}</p>
+                            {revision.amendmentReason ? <p className="text-muted-foreground">Lý do: {revision.amendmentReason}</p> : null}
+                            <time dateTime={revision.sourceAt} className="text-xs text-muted-foreground">{formatClinicalInstant(revision.sourceAt)}</time>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
                   {document.afterConclusion ? <p className="mt-1 text-sm text-warning">Bổ sung sau khi kết thúc</p> : null}
                 </div>
                 <time dateTime={document.attachedAt} className="shrink-0 text-sm text-muted-foreground">{formatClinicalInstant(document.attachedAt)}</time>
