@@ -11,4 +11,4 @@ Root `AGENTS.md` rules continue to apply.
   Reactivation needs an explicit task, source lock and producer/consumer fixture acceptance; never infer wire fields or identifiers.
 - Before REST/event integration, read `docs/ai/16-care-finance-integration-contracts.md`, the active `docs/handoffs/` registry, and the Inpatient-related canonical contracts listed in `docs/ai/services/inpatient.md`.
 - Keep Inpatient business contracts `DESIGN_READY` until producers and consumers pass fixtures together; preserve separately tracked statuses such as the identity contract's `PARTIAL`.
-- **Verify:** `mvn -q -pl backend/inpatient-service -am test`
+- **Verify:** `mvn -q -pl backend/inpatient-service -am -DskipTests install` (compile only). Its tests were removed on 2026-11-11 while the context is deferred; `src/test/resources/contracts/` stays because Billing, Notification, Pharmacy and Report tests read those producer fixtures. Write new tests before re-enabling the context.

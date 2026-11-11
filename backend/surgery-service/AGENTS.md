@@ -15,4 +15,4 @@ is active; use the [handoff registry](../../docs/handoffs/README.md) for later r
 - Do not infer cross-service identifiers, prices, event names, producer payloads, or query another service's database.
 - Before REST/event work, read `docs/ai/16-care-finance-integration-contracts.md` and all active Surgery handoffs in `docs/handoffs/README.md`.
 - Keep `mediflow.features.surgery.enabled=false` until its API, producers, consumers, Gateway route, and rollout criteria are verified.
-- **Verify regression only:** `mvn -q -pl backend/surgery-service -am test`. Surgery already belongs to the reactor; running tests does not activate deferred runtime features.
+- **Verify:** `mvn -q -pl backend/surgery-service -am -DskipTests install` (compile only). Its tests were removed on 2026-11-11 while the context is deferred; `src/test/resources/contracts/` stays because Billing, Notification and Report tests read those producer fixtures. Write new tests before re-enabling the context.
