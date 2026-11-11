@@ -5,6 +5,9 @@ import type {
   CancelLabTestRequest,
   CreateLabRequest,
   LabCareEpisodeType,
+  LabCatalogGroup,
+  LabCatalogItemDTO,
+  LabTestTemplateDTO,
   LabTestDTO,
   LabTestStatus,
   StartLabTestRequest,
@@ -20,6 +23,10 @@ export interface LabSearchParams {
 }
 
 export const labApi = {
+  catalog: (group?: LabCatalogGroup) =>
+    api.get<LabCatalogItemDTO[]>(`/v2/lab/catalog${group ? `?group=${encodeURIComponent(group)}` : ""}`),
+  getTemplate: (testId: string) =>
+    api.get<LabTestTemplateDTO>(`/v2/lab/${encodeURIComponent(testId)}/template`),
   mine: (page = 0) => api.get<PageResult<import("./types").PatientLabResultDTO>>(`/v1/lab/mine?page=${page}&size=20`),
   getById: (testId: string) =>
     api.get<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}`),

@@ -6,6 +6,57 @@ export type LabTestStatus =
   | "COMPLETED"
   | "CANCELLED";
 export type LabCareEpisodeType = "OUTPATIENT_VISIT" | "ADMISSION";
+export type LabCatalogGroup = "HEMATOLOGY" | "BIOCHEMISTRY" | "IMMUNOLOGY" | "URINALYSIS" | "MICROBIOLOGY";
+
+export interface LabCatalogItemDTO {
+  serviceCode: string;
+  name: string;
+  displayGroup: string;
+  specimenType: string;
+  preparation: string | null;
+  turnaroundHours: number | null;
+  priceCode: string;
+  templateCode: string;
+  panel: boolean;
+}
+
+export interface LabReferenceRangeDTO {
+  sex: string | null;
+  ageMinDays: number | null;
+  ageMaxDays: number | null;
+  low: number | string | null;
+  high: number | string | null;
+  criticalLow: number | string | null;
+  criticalHigh: number | string | null;
+  reviewed: boolean;
+}
+
+export type LabTemplateValueType = "QUANTITATIVE" | "QUALITATIVE" | "SEMI_QUANTITATIVE" | "TEXT";
+
+export interface LabTemplateFieldDTO {
+  fieldCode: string;
+  label: string;
+  position: number;
+  required: boolean;
+  valueType: LabTemplateValueType;
+  unit: string | null;
+  allowedOptions: string[] | null;
+  allowsOperator: boolean;
+  ranges: LabReferenceRangeDTO[];
+}
+
+export interface LabResultTemplateDTO {
+  templateCode: string;
+  version: number;
+  name: string;
+  fields: LabTemplateFieldDTO[];
+}
+
+export interface LabTestTemplateDTO {
+  testId: string;
+  serviceCode: string | null;
+  template: LabResultTemplateDTO | null;
+}
 
 export interface LabResultDTO {
   resultId: string;
@@ -49,6 +100,7 @@ export interface CreateLabRequest {
   careEpisodeType?: LabCareEpisodeType | null;
   careEpisodeId?: string | null;
   priceCode?: string | null;
+  serviceCode?: string | null;
 }
 
 export interface EmergencyOverrideRequest {

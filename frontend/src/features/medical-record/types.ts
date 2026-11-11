@@ -106,6 +106,7 @@ export interface CreateClinicalLabOrderRequest {
   labType: string;
   requestedDate: string;
   priceCode: string;
+  serviceCode?: string;
 }
 
 export interface ClinicalLabOrderDTO {
@@ -120,6 +121,7 @@ export interface ClinicalLabOrderDTO {
   requestedDate: string;
   priceCode: string;
   orderedAt: string;
+  serviceCode?: string | null;
 }
 
 export interface FollowUpRecommendationDTO {
