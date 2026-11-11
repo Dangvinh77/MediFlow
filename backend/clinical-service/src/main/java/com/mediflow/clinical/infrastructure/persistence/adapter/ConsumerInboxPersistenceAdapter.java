@@ -132,6 +132,10 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                     && "lab.result.created".equals(claim.routingKey())
                     && (key.startsWith("clinical:lab-result:v0:") || key.matches(
                             "clinical:lab-result:v1:[0-9a-fA-F-]{36}:1")))
+                // A released amendment shares the (labId, resultVersion) namespace; its revision is 2 or later.
+                || ("clinical-lab-result".equals(claim.consumerName())
+                    && "lab.result.amended".equals(claim.routingKey())
+                    && key.matches("clinical:lab-result:v1:[0-9a-fA-F-]{36}:([2-9]|[1-9][0-9]{1,8})"))
                 || ("clinical-prescription".equals(claim.consumerName())
                     && "prescription.filled".equals(claim.routingKey())
                     && (key.matches("clinical:prescription:v0:[0-9a-fA-F-]{36}")

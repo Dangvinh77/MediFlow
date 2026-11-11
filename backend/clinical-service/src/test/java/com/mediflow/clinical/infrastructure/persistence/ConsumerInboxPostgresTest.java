@@ -88,6 +88,31 @@ class ConsumerInboxPostgresTest {
     }
 
     @org.junit.jupiter.api.Test
+    void labAmendment_contractAcceptsRevisionTwoAndUpOnceAndRejectsTheOriginalVersion() {
+        TestDatabase db = migrateFresh();
+        ConsumerInboxBoundary boundary = boundary(db);
+        String operationKey = "clinical:lab-result:v1:" + LAB_ID + ":2";
+        UUID eventId = UUID.fromString("00000000-0000-0000-0000-000000001701");
+
+        assertThat(deliver(db, boundary, amendmentClaim(eventId, operationKey, "corr-amend"),
+                () -> insertEffect(db, "lab-amendment", operationKey))).isEqualTo(InboxOutcome.APPLIED);
+        assertThat(deliver(db, boundary, amendmentClaim(UUID.randomUUID(), operationKey, "corr-amend"),
+                () -> insertEffect(db, "lab-amendment", operationKey))).isEqualTo(InboxOutcome.DUPLICATE_OPERATION);
+        // Revision 1 belongs to lab.result.created; an amendment can never claim it.
+        String original = "clinical:lab-result:v1:" + LAB_ID + ":1";
+        assertThatThrownBy(() -> deliver(db, boundary, amendmentClaim(UUID.randomUUID(), original, "corr-bad"),
+                () -> insertEffect(db, "lab-amendment", original)))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        assertThat(count(db, "consumer_inbox_test_effect")).isEqualTo(1);
+    }
+
+    private static ConsumerInboxClaim amendmentClaim(UUID eventId, String operationKey, String correlationId) {
+        byte[] body = envelope(eventId, "lab.result.amended", correlationId,
+                "{\"labTestId\":\"" + LAB_ID + "\",\"resultVersion\":2,\"amendmentReason\":\"Do lai\"}");
+        return evidence().create("clinical-lab-result", "lab.result.amended", eventId, operationKey, body);
+    }
+
+    @org.junit.jupiter.api.Test
     void outpatientEligibility_contractAcceptsFenceScopedDedupeAndRejectsChangedBusinessBytes() {
         TestDatabase db = migrateFresh();
         ConsumerInboxBoundary boundary = boundary(db);
