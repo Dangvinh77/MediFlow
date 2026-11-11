@@ -39,6 +39,7 @@ services:
                 "OUTPATIENT_FOLLOW_UP": {"description": "Tai kham ngoai tru demo", "unitAmount": 80000.00},
                 "LAB": {"description": "Xet nghiem khac demo", "unitAmount": 80000.00},
                 "LAB_CBC": {"description": "Cong thuc mau demo", "unitAmount": 120000.00},
+                "LAB-CBC": {"description": "Cong thuc mau demo (danh muc)", "unitAmount": 120000.00},
                 "LAB_GLUCOSE": {"description": "Duong huyet demo", "unitAmount": 40000.00}
               }
             },

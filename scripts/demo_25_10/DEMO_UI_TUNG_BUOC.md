@@ -92,6 +92,7 @@ Mật khẩu seed mẫu trong bảng (nếu chưa đổi trong phiên): **`MediF
 | Thu phí khám, xét nghiệm và thuốc | `demo.staff19@example.test` |
 | Khám, chỉ định, đọc kết quả, kê đơn | `demo.staff03@example.test` |
 | Thực hiện xét nghiệm, nhập kết quả | `demo.staff15@example.test` |
+| KTV thứ hai: phát hành kết quả (mục 8) | `demo.staff16@example.test` |
 | Xuất thuốc | `demo.staff17@example.test` |
 | Bệnh nhân cũ Nguyễn Văn An Demo xem kết quả | `demo.patient01@example.test` |
 | Bệnh nhân tái khám Trần Thị Bình Demo xem kết quả | `demo.patient02@example.test` |
@@ -352,9 +353,12 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
 
    | Ô | Giá trị |
    |---|---|
-   | Loại xét nghiệm | `CBC` |
-   | Mã giá | `LAB_CBC` |
+   | Dịch vụ (danh mục) | **Công thức máu · Bộ xét nghiệm** |
    | Ngày yêu cầu | **D**, ví dụ **04/11/2026** |
+
+   Mã giá `LAB-CBC` đi theo danh mục, không nhập tay. Nếu khối báo
+   *Không tải được danh mục xét nghiệm*, bấm tải lại trang; không nhập thủ công,
+   vì chỉ định thủ công không có mẫu báo cáo để duyệt ở mục 8.
 
 10. **Lập chỉ định** → tại khối tiếp theo, **Tạo yêu cầu từ chỉ định → Mở xét nghiệm**.
     Không bỏ qua bước tạo yêu cầu thứ hai.
@@ -394,32 +398,58 @@ chọn Xét nghiệm, điền LAB và PHIEU, tìm đúng bệnh nhân rồi **Tr
 không tạo lại giao dịch vì lỗi tải dữ liệu. Pending/không rõ kết quả khóa đổi khoản;
 gửi lại giữ nguyên yêu cầu, kể cả khi báo giá mới đã hết hạn.
 
-## 8. VINH / LAB_TECH — Lab: thực hiện và trả kết quả
+## 8. VINH / LAB_TECH — Lab: bệnh phẩm, nhập kết quả và duyệt hai người
 
 **Người trình bày: Vinh · Lab.**
 
-**UI / RabbitMQ:** **Bắt đầu xét nghiệm** kiểm điều kiện; **Lưu kết quả** → `lab.result.created`.
+**UI / RabbitMQ:** **Bắt đầu xét nghiệm** kiểm điều kiện đã thu; **Phát hành** →
+`lab.result.created`. Người nhập và người phát hành phải là hai KTV khác nhau.
 
 **Bàn giao:** Vinh đăng nhập lại DOCTOR đọc kết quả cùng lượt ở mục 9.
 
+Cả hai KTV đã được cấp quyền **Phát hành kết quả xét nghiệm** lúc chuẩn bị
+(ADMIN xem ở Organization → hồ sơ nhân sự → **Quyền đặc biệt**).
+
 1. **Đăng xuất → demo.staff15@example.test / MediFlowDemo@2026**.
-2. Mở **http://127.0.0.1:3000/lab** → chọn CBC đúng tên bệnh nhân.
+2. Mở **http://127.0.0.1:3000/lab** → chọn **Công thức máu** đúng tên bệnh nhân.
    Cách nhanh: mở lại URL **/lab/[LAB]** đã lưu ở mục 6.
 3. Tải lại trạng thái để nhận xác nhận đã thu → **Bắt đầu xét nghiệm**.
    Nếu chưa thu thì bước này phải bị chặn; không dùng chế độ cấp cứu để vượt qua.
-4. **Nhập kết quả**. Đối chiếu lại khối **Đối chiếu bệnh nhân trước khi nhập kết quả**:
-   đúng tên/ngày sinh, loại xét nghiệm và khoa yêu cầu. Các mã/phiên bản kỹ thuật đã
-   chuyển vào **Thông tin tham chiếu và hỗ trợ**; chỉ mở khi cần đối soát.
-   Nhập đúng một dòng:
+4. Khối **Bệnh phẩm** → **Thu nhận bệnh phẩm**, loại `WHOLE_BLOOD_EDTA` → **Thu nhận**
+   → **Tiếp nhận**. (NURSE cũng thu nhận được; chỉ KTV tiếp nhận hoặc từ chối.)
+5. Khối **Báo cáo xét nghiệm**: đối chiếu tên/ngày sinh rồi nhập đủ năm chỉ số:
 
-   | Chỉ số | Giá trị | Đơn vị | Khoảng tham chiếu |
-   |---|---|---|---|
-   | `WBC` | `7.0` | `G/L` | `4-10` |
+   | Chỉ số | Giá trị |
+   |---|---|
+   | `WBC` | `7.0` |
+   | `RBC` | `4.8` |
+   | `HGB` | `140` |
+   | `HCT` | `0.42` |
+   | `PLT` | `250` |
 
-5. **Ngày thực hiện → D**, ví dụ **04/11/2026**.
-   **Kết luận**: `Kết quả mô phỏng phục vụ demo`.
-6. **Lưu kết quả**. Kỳ vọng xét nghiệm hoàn tất và có bảng WBC.
-7. Giữ URL Lab, chuyển lại bác sĩ.
+   **Ngày thực hiện → D**; **Kết luận**: `Kết quả mô phỏng phục vụ demo`.
+6. **Lưu nháp** → **Gửi duyệt**. Trạng thái **Chờ duyệt**.
+7. Bấm **Phát hành** bằng chính tài khoản này: hệ thống từ chối
+   *"Không thể tự phát hành báo cáo do chính bạn nhập hoặc gửi duyệt."* — điểm cần nói.
+8. **Đăng xuất → demo.staff16@example.test** → mở cùng URL → **Phát hành**.
+   Trạng thái **Đã phát hành**. Giữ URL Lab, chuyển lại bác sĩ.
+
+Cờ chỉ số hiện **Chưa xác định**: Lab không giữ giới tính/tuổi bệnh nhân nên khoảng
+tham chiếu theo tuổi/giới không áp dụng và không phát cảnh báo nguy cấp. Không hứa
+trình bày cảnh báo nguy cấp trong buổi demo.
+
+## 8b. Tùy chọn — đính chính kết quả đã phát hành
+
+Chỉ dùng khi còn thời gian, sau mục 8.
+
+1. **demo.staff15@example.test** mở lại **/lab/[LAB]** → **Đính chính** → lý do
+   `Nhập nhầm, đo lại mẫu` → **Tạo bản đính chính**.
+2. Sửa `WBC = 6.5` → **Lưu nháp** → **Gửi duyệt**.
+3. **demo.staff16@example.test** → **Phát hành**.
+4. Bác sĩ mở lại hồ sơ: tài liệu Lab hiện phiên bản 2 và giữ phiên bản cũ trong lịch sử.
+
+Kiểm tra tự động cùng luồng khi rehearsal đang chạy:
+`python scripts/demo_25_10/lab_v2_walkthrough.py CBC` → `LAB V2 WALKTHROUGH PASSED`.
 
 ## 9. VINH / DOCTOR — Clinical: đọc lại kết quả trong cùng lượt
 
@@ -432,7 +462,7 @@ gửi lại giữ nguyên yêu cầu, kể cả khi báo giá mới đã hết h
 1. **Đăng xuất → demo.staff03@example.test / MediFlowDemo@2026**.
 2. Mở lại URL **/records/[HOSO]** đã lưu, **Cập nhật hồ sơ**.
 3. **Xem xét nghiệm của lượt khám** → mở CBC của đúng người/đúng lượt, đọc bảng
-   **WBC = 7.0 G/L, khoảng tham chiếu 4-10**.
+   **WBC = 7.0 G/L** cùng bốn chỉ số còn lại.
 
 ## 10. HUY / DOCTOR — Pharmacy: tạo đơn thuốc
 
