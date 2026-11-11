@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 /** Administrators decide which laboratory staff may release results; the capability is never implied by a role. */
@@ -76,6 +77,12 @@ public class StaffCapabilityGrantService {
         grants.revoke(grantId, actorId, reason, at);
         return new StaffCapabilityGrantDTO(grant.grantId(), grant.staffId(), grant.capability(), grant.grantedBy(),
                 grant.grantReason(), grant.grantedAt(), actorId, reason, at);
+    }
+
+    /** Read-only history for the ADMIN capability screen; the endpoint itself is ADMIN-only. */
+    @Transactional(transactionManager = "organizationTransactionManager", readOnly = true)
+    public List<StaffCapabilityGrantDTO> list(UUID staffId) {
+        return grants.findByStaff(staffId);
     }
 
     @Transactional(transactionManager = "organizationTransactionManager", readOnly = true)

@@ -217,6 +217,23 @@ class StaffCapabilityGrantServiceTest {
                 .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("CAPABILITY_GRANT_ALREADY_REVOKED");
     }
 
+    @Test
+    void listsOneStaffMembersGrantsNewestFirstIncludingRevoked() throws InterruptedException {
+        var first = service.grant(adminId, Role.ADMIN, staffId, command());
+        service.revoke(adminId, Role.ADMIN, first.grantId(), new CapabilityRevocationCommand("Chuyen cong tac"));
+        Thread.sleep(2);
+        var second = service.grant(adminId, Role.ADMIN, staffId, command());
+        UUID other = UUID.randomUUID();
+        grants.accounts.put(other, new Person(UUID.randomUUID(), other, Role.LAB_TECH, true, true));
+        service.grant(adminId, Role.ADMIN, other, command());
+
+        var listed = service.list(staffId);
+
+        assertThat(listed).extracting(StaffCapabilityGrantDTO::grantId).containsExactly(second.grantId(), first.grantId());
+        assertThat(listed.get(1).revocationReason()).isEqualTo("Chuyen cong tac");
+        assertThat(service.list(UUID.randomUUID())).isEmpty();
+    }
+
     private static CapabilityGrantCommand command() {
         return new CapabilityGrantCommand(RELEASE, "Duoc phan cong");
     }
@@ -257,6 +274,12 @@ class StaffCapabilityGrantServiceTest {
             var g = grants.get(grantId);
             grants.put(grantId, new StaffCapabilityGrantDTO(g.grantId(), g.staffId(), g.capability(), g.grantedBy(),
                     g.grantReason(), g.grantedAt(), actorId, reason, at));
+        }
+
+        @Override
+        public java.util.List<StaffCapabilityGrantDTO> findByStaff(UUID staffId) {
+            return grants.values().stream().filter(g -> g.staffId().equals(staffId))
+                    .sorted(java.util.Comparator.comparing(StaffCapabilityGrantDTO::grantedAt).reversed()).toList();
         }
 
         @Override

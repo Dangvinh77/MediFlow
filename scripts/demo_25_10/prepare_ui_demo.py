@@ -24,6 +24,7 @@ SEED_LOGIN_EMAILS = {
     'doctor': 'demo.staff03@example.test',
     'cashier': 'demo.staff19@example.test',
     'lab': 'demo.staff15@example.test',
+    'lab2': 'demo.staff16@example.test',
     'pharmacist': 'demo.staff17@example.test',
     'patient': 'demo.patient01@example.test',
     'patient2': 'demo.patient02@example.test',
@@ -175,10 +176,20 @@ def open_record(api, registration_id, patient_id):
     return api.call('doctor', 'GET', '/api/v1/records/' + record['recordId'])
 
 
+def grant_lab_release(api):
+    """Both seed lab techs may release, so one enters/submits and the other releases (four-eyes rule)."""
+    for role in ('lab', 'lab2'):
+        # 409 CAPABILITY_GRANT_ACTIVE on a rerun means the grant is already in place.
+        api.call('admin', 'POST', '/api/v2/org/staff/' + api.claims[role]['staffId'] + '/capability-grants',
+                 {'capability': 'LAB_RESULT_RELEASE', 'reason': 'Demo: cap quyen phat hanh ket qua xet nghiem'},
+                 expected=(201, 409))
+
+
 def prepare(api, now, schedule_only=False):
     today, tomorrow = demo_dates(now)
-    for role in ('admin', 'nurse', 'doctor', 'cashier', 'patient', 'patient2'):
+    for role in ('admin', 'nurse', 'doctor', 'cashier', 'lab', 'lab2', 'patient', 'patient2'):
         api.login(role, SEED_LOGIN_EMAILS[role])
+    grant_lab_release(api)
     doctor_id = api.claims['doctor']['staffId']
     staff = api.call('admin', 'GET', '/api/v1/org/staff/' + doctor_id)
     department_id = staff['departmentId']

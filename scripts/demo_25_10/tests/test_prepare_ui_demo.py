@@ -33,13 +33,16 @@ class FakeApi:
         self.record = None
         self.registration_status = 'CONFIRMED'
         self.payment_status = 'COMPLETED'
+        self.held_grants = set()
 
     def login(self, role, username):
         self.logins.append((role, username))
-        self.claims[role] = {'staffId': 'doctor-id', 'patientId': role + '-id'}
+        self.claims[role] = {'staffId': 'doctor-id' if role == 'doctor' else role + '-staff', 'patientId': role + '-id'}
 
     def call(self, role, method, path, body=None, expected=(200,), stage=None):
         self.calls.append((role, method, path, body))
+        if path.endswith('/capability-grants'):
+            return None if path in self.held_grants else {'grantId': 'grant', **body}
         if path.startswith('/api/v1/org/staff/'):
             return {'departmentId': 'dept', 'fullName': 'Demo doctor'}
         if path.startswith('/api/v1/org/departments/'):
@@ -138,6 +141,8 @@ class PreparationTest(unittest.TestCase):
             ('nurse', 'demo.staff04@example.test'),
             ('doctor', 'demo.staff03@example.test'),
             ('cashier', 'demo.staff19@example.test'),
+            ('lab', 'demo.staff15@example.test'),
+            ('lab2', 'demo.staff16@example.test'),
             ('patient', 'demo.patient01@example.test'),
             ('patient2', 'demo.patient02@example.test'),
         ])
@@ -148,6 +153,17 @@ class PreparationTest(unittest.TestCase):
         self.assertEqual(api.record['status'], 'COMPLETED')
         self.assertEqual(len(report['sessions']), 2)
         self.assertEqual(report['followUpAdvice']['recommendedFrom'], '2026-10-28')
+
+    def test_both_lab_techs_get_release_capability_so_a_second_person_can_release(self):
+        api = FakeApi()
+        api.held_grants.add('/api/v2/org/staff/lab2-staff/capability-grants')  # rerun: already active -> 409
+        demo.prepare(api, dt.datetime(2026, 10, 28, 9, tzinfo=demo.ZONE), schedule_only=True)
+        grants = [(role, path, body) for role, method, path, body in api.calls if path.endswith('/capability-grants')]
+        self.assertEqual([(role, path) for role, path, _ in grants], [
+            ('admin', '/api/v2/org/staff/lab-staff/capability-grants'),
+            ('admin', '/api/v2/org/staff/lab2-staff/capability-grants'),
+        ])
+        self.assertTrue(all(body['capability'] == 'LAB_RESULT_RELEASE' and body['reason'] for _, _, body in grants))
 
     def test_stopped_or_foreign_manifest_refused(self):
         with self.assertRaises(ValueError):

@@ -8,9 +8,19 @@ services:
     environment:
       MEDIFLOW_CLINICAL_SCHEDULING_ENABLED: "true"
       MEDIFLOW_V2_CLINIC_INTAKE: "true"
+      # v2 waves 3-7 for the presentation: treatment courses, record amendments, Lab catalogue orders.
+      MEDIFLOW_V2_TREATMENT_COURSE: "true"
+      MEDIFLOW_V2_RECORD_AMENDMENT: "true"
+      MEDIFLOW_V2_LABCATALOG: "true"
       MEDIFLOW_ADMISSION_REFERRAL_ENABLED: "false"
-      # Same LAB_TEST codes as billing.care-finance.prices below; others are rejected at order time.
-      MEDIFLOW_CLINICAL_LAB_PRICE_CODES: "LAB,LAB_CBC,LAB_GLUCOSE"
+      # Same LAB_TEST codes as billing.care-finance.prices (below and Billing application.yml, lab V7 catalogue).
+      MEDIFLOW_CLINICAL_LAB_PRICE_CODES: "LAB,LAB_CBC,LAB_GLUCOSE,LAB-CBC,LAB-GLU,LAB-HBSAG,LAB-UA,LAB-MICRO"
+  lab-service:
+    environment:
+      # Lab v2 (waves 5-7); Organization must grant LAB_RESULT_RELEASE to two LAB_TECH (prepare_ui_demo does it).
+      MEDIFLOW_V2_LABCATALOG: "true"
+      MEDIFLOW_V2_LAB_REVIEW: "true"
+      MEDIFLOW_V2_LAB_AMENDMENT: "true"
   billing-service:
     environment:
       MEDIFLOW_BILLING_SCHEDULED_PAYMENTS_ENABLED: "true"
@@ -39,7 +49,12 @@ services:
                 {"source-type": "EXAM", "price-code": "OUTPATIENT_EXAM", "support-rate": 0.50},
                 {"source-type": "EXAM", "price-code": "OUTPATIENT_FOLLOW_UP", "support-rate": 0.50},
                 {"source-type": "LAB_TEST", "price-code": "LAB_CBC", "support-rate": 0.70},
-                {"source-type": "LAB_TEST", "price-code": "LAB_GLUCOSE", "support-rate": 0.50}
+                {"source-type": "LAB_TEST", "price-code": "LAB_GLUCOSE", "support-rate": 0.50},
+                {"source-type": "LAB_TEST", "price-code": "LAB-CBC", "support-rate": 0.70},
+                {"source-type": "LAB_TEST", "price-code": "LAB-GLU", "support-rate": 0.50},
+                {"source-type": "LAB_TEST", "price-code": "LAB-HBSAG", "support-rate": 0.50},
+                {"source-type": "LAB_TEST", "price-code": "LAB-UA", "support-rate": 0.50},
+                {"source-type": "LAB_TEST", "price-code": "LAB-MICRO", "support-rate": 0.50}
               ]
             }
           },
@@ -55,6 +70,7 @@ services:
   support-service:
     environment:
       MEDIFLOW_NOTIFICATION_OUTPATIENT_REGISTRATION_CONSUMER_ENABLED: "true"
+      MEDIFLOW_NOTIFICATION_LAB_CRITICAL_ENABLED: "true"
   frontend:
     environment:
       MEDIFLOW_SCHEDULING_UI_ENABLED: "true"

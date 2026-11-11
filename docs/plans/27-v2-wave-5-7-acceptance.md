@@ -21,7 +21,12 @@ ghi nhận mọi người lưu nháp, thứ tự khóa khi phát hành, và bác
 Còn lại (nhỏ): `source_at` khi bản đính chính đến trước bản gốc ở Clinical; trùng `fieldCode` trong một nháp trả 500;
 thu mẫu không kiểm trạng thái xét nghiệm.
 
+## Đã bổ sung cho buổi trình bày (12/11/2026)
+
+- Màn ADMIN cấp/thu hồi quyền (chi tiết nhân sự → "Quyền đặc biệt") và `GET /api/v2/org/staff/{staffId}/capability-grants`; H-13 đóng.
+- Cấu hình demo (`compose.outpatient.local.yml`) bật cờ Lab v2, đính chính, danh mục, cảnh báo nguy cấp và giá các mã xét nghiệm.
+- `prepare_ui_demo.py` cấp `LAB_RESULT_RELEASE` cho `demo.lab` và `demo.lab2` để một người nhập, người kia phát hành.
+
 ## Chưa làm
 
 - Nghiệm thu đóng gói qua Gateway theo thứ tự bật cờ của [runbook](27-v2-cutover-runbook.md).
-- Màn ADMIN cấp quyền phát hành ([H-13](../handoffs/HANDOFF-HA-LAB-RELEASE-CAPABILITY-UI-2026-11-11.md)).

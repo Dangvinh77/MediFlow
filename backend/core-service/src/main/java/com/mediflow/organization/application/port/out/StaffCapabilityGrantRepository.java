@@ -4,6 +4,7 @@ import com.mediflow.organization.application.dto.response.StaffCapabilityGrantDT
 import com.mediflow.organization.domain.model.Role;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,6 +18,9 @@ public interface StaffCapabilityGrantRepository {
     Optional<StaffCapabilityGrantDTO> lockGrant(UUID grantId);
 
     void revoke(UUID grantId, UUID actorId, String reason, Instant at);
+
+    /** Every grant of one staff member, active and revoked, newest first. */
+    List<StaffCapabilityGrantDTO> findByStaff(UUID staffId);
 
     LabReleaseData findLabRelease(UUID accountId);
 

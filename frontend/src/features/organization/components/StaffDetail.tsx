@@ -10,6 +10,7 @@ import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { DetailSection, RecordIdentity } from "./RecordLayout";
 import { StaffDepartment } from "./StaffDepartment";
 import { ProfileAccountPanel } from "./ProfileAccountPanel";
+import { StaffCapabilityGrants } from "./StaffCapabilityGrants";
 import { organizationApi } from "../api";
 import { isRequestSessionCurrent } from "../request-session";
 import type { JobTitle, StaffDTO } from "../types";
@@ -35,6 +36,7 @@ function StaffDetailWorkspace({ staffId, notice }: { staffId: string; notice?: "
       {role === "ADMIN" ? <DetailSection title="Thông tin cá nhân và liên hệ"><Info label="CCCD" value={staff.identityNumber} /><Info label="Ngày sinh" value={date(staff.dateOfBirth)} /><Info label="Giới tính" value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label="Địa chỉ" value={staff.address} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection> : null}
     </div>
     {role === "ADMIN" ? <ProfileAccountPanel ownerType="staff" ownerId={staff.staffId} profileActive={staff.active} jobTitle={staff.jobTitle} onProfileChanged={() => setAttempt(value => value + 1)} /> : null}
+    {role === "ADMIN" ? <StaffCapabilityGrants staffId={staff.staffId} /> : null}
   </section>;
 }
 function Info({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className={`mt-1.5 break-words text-sm leading-6 ${mono ? "font-mono" : ""}`}>{value ?? "—"}</dd></div>; }

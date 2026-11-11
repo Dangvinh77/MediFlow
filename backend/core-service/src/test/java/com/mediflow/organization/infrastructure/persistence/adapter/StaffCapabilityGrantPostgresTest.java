@@ -64,6 +64,26 @@ class StaffCapabilityGrantPostgresTest {
         assertThatCode(() -> insertGrant(staffId, "MEDICAL_RECORD_REVIEW")).doesNotThrowAnyException();
     }
 
+    @Test
+    void findByStaffListsOnlyThatStaffNewestFirstWithRevocation() {
+        UUID staffId = UUID.randomUUID();
+        UUID other = UUID.randomUUID();
+        jdbc.update("INSERT INTO staff (staff_id) VALUES (?),(?)", staffId, other);
+        UUID older = insertGrant(staffId, "LAB_RESULT_RELEASE");
+        jdbc.update("UPDATE staff_capability_grant SET granted_at=now()-interval '1 day',revoked_by=?,"
+                + "revocation_reason='Het phan cong',revoked_at=now() WHERE grant_id=?", UUID.randomUUID(), older);
+        UUID newer = insertGrant(staffId, "LAB_RESULT_RELEASE");
+        insertGrant(other, "LAB_RESULT_RELEASE");
+
+        var listed = new JdbcStaffCapabilityGrantRepository(jdbc.getDataSource()).findByStaff(staffId);
+
+        org.assertj.core.api.Assertions.assertThat(listed)
+                .extracting(com.mediflow.organization.application.dto.response.StaffCapabilityGrantDTO::grantId)
+                .containsExactly(newer, older);
+        org.assertj.core.api.Assertions.assertThat(listed.get(1).revocationReason()).isEqualTo("Het phan cong");
+        org.assertj.core.api.Assertions.assertThat(listed.get(0).revokedAt()).isNull();
+    }
+
     private UUID insertGrant(UUID staffId, String capability) {
         UUID grantId = UUID.randomUUID();
         jdbc.update("""

@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,6 +61,12 @@ public class JdbcStaffCapabilityGrantRepository implements StaffCapabilityGrantR
     public void revoke(UUID grantId, UUID actorId, String reason, Instant at) {
         jdbc.update("UPDATE staff_capability_grant SET revoked_by=?,revocation_reason=?,revoked_at=? WHERE grant_id=?",
                 actorId, reason, Timestamp.from(at), grantId);
+    }
+
+    @Override
+    public List<StaffCapabilityGrantDTO> findByStaff(UUID staffId) {
+        return jdbc.query("SELECT * FROM staff_capability_grant WHERE staff_id=? ORDER BY granted_at DESC,grant_id",
+                (r, n) -> map(r), staffId);
     }
 
     @Override

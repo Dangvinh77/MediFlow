@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -46,6 +47,14 @@ public class StaffCapabilityGrantController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
                 service.grant(accountId(authentication), Role.ADMIN, staffId, command),
                 correlationIds.currentOrCreate().toString()));
+    }
+
+    @GetMapping("/api/v2/org/staff/{staffId}/capability-grants")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<StaffCapabilityGrantDTO>>> list(@PathVariable UUID staffId) {
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(ApiResponse.ok(service.list(staffId), correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/api/v2/org/capability-grants/{grantId}/revocation")

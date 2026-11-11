@@ -110,6 +110,30 @@ class StaffCapabilityGrantControllerSecurityTest {
         verifyNoInteractions(service);
     }
 
+    @Test
+    @WithMockUser(username = "00000000-0000-0000-0000-000000000001", roles = "ADMIN")
+    void adminListsStaffGrants() throws Exception {
+        UUID staff = UUID.randomUUID();
+        UUID grant = UUID.randomUUID();
+        when(service.list(staff)).thenReturn(List.of(new com.mediflow.organization.application.dto.response
+                .StaffCapabilityGrantDTO(grant, staff, "LAB_RESULT_RELEASE", UUID.randomUUID(), "Phan cong",
+                Instant.now(), null, null, null)));
+
+        mockMvc.perform(get("/api/v2/org/staff/{id}/capability-grants", staff))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data[0].grantId").value(grant.toString()))
+                .andExpect(jsonPath("$.data[0].capability").value("LAB_RESULT_RELEASE"));
+    }
+
+    @Test
+    @WithMockUser(username = "00000000-0000-0000-0000-000000000003", roles = "LAB_TECH")
+    void labTechCannotListGrants() throws Exception {
+        mockMvc.perform(get("/api/v2/org/staff/{id}/capability-grants", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+
     /** The JWT filter stores the service name as a plain string principal. */
     private static RequestPostProcessor service(String name) {
         return SecurityMockMvcRequestPostProcessors.authentication(new UsernamePasswordAuthenticationToken(
