@@ -36,6 +36,7 @@ class LabReportControllerTest {
     @TestConfiguration @EnableMethodSecurity static class MethodSecurity {}
     @Autowired MockMvc mvc;
     @MockBean LabReportApplicationService service;
+    @MockBean com.mediflow.lab.application.service.LabReportReleaseService release;
     @MockBean com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider correlation;
     final UUID id = UUID.randomUUID();
     static final String DRAFT = "{\"draftRevision\":0,\"values\":[{\"fieldCode\":\"GLU\",\"value\":\"5.2\"}]}";
@@ -54,6 +55,22 @@ class LabReportControllerTest {
         mvc.perform(post("/api/v2/lab/" + id + "/report/return").with(user).with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"x\"}")).andExpect(status().isForbidden());
         verifyNoInteractions(service);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PATIENT"})
+    void onlyLabTechsRelease(String role) throws Exception {
+        var user = org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("u").roles(role);
+        mvc.perform(post("/api/v2/lab/" + id + "/report/release").with(user).with(csrf()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(release);
+    }
+
+    @Test @WithMockUser(roles = "LAB_TECH")
+    void deniedReleaseIsForbidden() throws Exception {
+        when(release.release(id)).thenThrow(new com.mediflow.common.exception.ForbiddenOperationException(
+                "LAB_RELEASE_DENIED", "denied"));
+        mvc.perform(post("/api/v2/lab/" + id + "/report/release").with(csrf()))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.error.code").value("LAB_RELEASE_DENIED"));
     }
 
     @Test @WithMockUser(roles = "LAB_TECH")

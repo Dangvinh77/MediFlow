@@ -56,7 +56,8 @@ import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
 public class LabApplicationService implements ManageLabTestUseCase,
-        UpdateLabPaymentUseCase, ReactToFinancialClearanceUseCase {
+        UpdateLabPaymentUseCase, ReactToFinancialClearanceUseCase,
+        com.mediflow.lab.application.port.in.LabResultReleasePort {
 
     private final LabTestRepositoryPort tests;
     private final LabEventPublisherPort publisher;
@@ -72,6 +73,7 @@ public class LabApplicationService implements ManageLabTestUseCase,
     private final LabClinicalOrderContextPort clinicalOrders;
     private final CreateLabRequestUseCase requestCreation;
     private final LabExecutionAuthorityPort executionAuthority;
+    private final com.mediflow.lab.application.port.out.LabResultWorkflowGate reviewGate;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
@@ -117,6 +119,22 @@ public class LabApplicationService implements ManageLabTestUseCase,
                                  Clock clock, LabClinicalOrderContextPort clinicalOrders,
                                  CreateLabRequestUseCase requestCreation,
                                  LabExecutionAuthorityPort executionAuthority) {
+        this(tests, publisher, mapper, correlationIds, outbox, clearances, overrides, authenticatedStaff,
+                careFinanceV2Enabled, outpatientMvpEnabled, clock, clinicalOrders, requestCreation,
+                executionAuthority, com.mediflow.lab.application.port.out.LabResultWorkflowGate.never());
+    }
+
+    public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
+                                 LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                 LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
+                                 LabEmergencyOverrideRepositoryPort overrides,
+                                 AuthenticatedStaffContextPort authenticatedStaff,
+                                 boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
+                                 Clock clock, LabClinicalOrderContextPort clinicalOrders,
+                                 CreateLabRequestUseCase requestCreation,
+                                 LabExecutionAuthorityPort executionAuthority,
+                                 com.mediflow.lab.application.port.out.LabResultWorkflowGate reviewGate) {
+        this.reviewGate = java.util.Objects.requireNonNull(reviewGate);
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
@@ -303,6 +321,10 @@ public class LabApplicationService implements ManageLabTestUseCase,
         requireOutpatientV1Mutation(test);
         if (test.getCareContractVersion() == 1) {
             requireV2Enabled();
+            if (reviewGate.reviewRequired(test.getTestId())) {
+                throw new DuplicateResourceException("LAB_REVIEW_REQUIRED",
+                        "Xét nghiệm này đang theo quy trình duyệt; kết quả phải được người thứ hai phát hành");
+            }
         }
         List<LabResult> results = request.results().stream()
                 .map(item -> LabResult.create(item.indicator(), item.value(), item.unit(), item.referenceRange()))
@@ -425,13 +447,42 @@ public class LabApplicationService implements ManageLabTestUseCase,
         return mapper.toDto(saved);
     }
 
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void releaseReviewed(UUID testId, List<LabResult> results, String conclusion,
+            java.time.LocalDate performedDate, UUID releasedBy, List<LabResultV2Payload.ReleasedValue> values,
+            Instant at) {
+        LabTest test = locked(testId);
+        requireOutpatientV1Mutation(test);
+        if (test.getCareContractVersion() != 1) {
+            throw new LabRuleException("LAB_REPORT_TEST_NOT_IN_PROGRESS",
+                    "Chỉ phát hành báo cáo cho xét nghiệm theo hợp đồng v1");
+        }
+        requireV2Enabled();
+        LabFinancialClearance clearance = test.getEmergencyOverrideId() == null && test.getClearanceId() != null
+                ? clearances.findByTestIdAndClearanceId(test.getTestId(), test.getClearanceId()).orElse(null)
+                : null;
+        test.recordResults(results, conclusion, performedDate, clearance, at);
+        if (test.getEmergencyOverrideId() == null && clearance != null) {
+            executionAuthority.requireCurrent(clearance, test.getTestId(),
+                    correlationIds.currentOrCreate().toString());
+        }
+        LabTest saved = tests.save(test);
+        appendResultEvent(saved, releasedBy, at, values, releasedBy);
+    }
+
     private void appendResultEvent(LabTest test, UUID verifiedBy, Instant occurredAt) {
+        appendResultEvent(test, verifiedBy, occurredAt, null, null);
+    }
+
+    private void appendResultEvent(LabTest test, UUID verifiedBy, Instant occurredAt,
+            List<LabResultV2Payload.ReleasedValue> values, UUID releasedBy) {
         String correlationId = correlationIds.currentOrCreate().toString();
         LabResultV2Payload payload = new LabResultV2Payload(test.getTestId(), test.getPatientId(),
                 test.getRecordId(), test.getRequestingDepartmentId(), test.getCareEpisodeType(),
                 test.getCareEpisodeId(), test.getLabType(), test.getResultVersion(),
                 test.getResults().stream().map(LabResultCreatedEvent.Result::from).toList(),
-                test.getConclusion(), verifiedBy, test.getPerformedDate(), occurredAt);
+                test.getConclusion(), verifiedBy, test.getPerformedDate(), occurredAt, values, releasedBy);
         outbox.append(new DomainEventEnvelope<>(UUID.randomUUID(), "lab.result.created", 1,
                 occurredAt, correlationId, "lab-service", payload));
     }

@@ -45,10 +45,20 @@ public class LabApplicationConfig {
             Clock clock,
             @Value("${mediflow.features.care-finance-v2:false}") boolean careFinanceV2Enabled,
             LabOutpatientMvpMode outpatientMvpMode,
-            ObjectProvider<LabExecutionAuthorityPort> executionAuthority) {
+            ObjectProvider<LabExecutionAuthorityPort> executionAuthority,
+            ObjectProvider<com.mediflow.lab.application.port.out.LabReportRepositoryPort> reports,
+            @Value("${mediflow.v2.lab-review:false}") boolean labReviewEnabled) {
         return new LabApplicationService(tests, publisher, mapper, correlationIds, outbox,
                 clearances, overrides, authenticatedStaff, careFinanceV2Enabled,
                 outpatientMvpMode.enabled(), clock, clinicalOrders.getIfAvailable(), requestCreation,
-                executionAuthority.getIfAvailable(LabExecutionAuthorityPort::unavailable));
+                executionAuthority.getIfAvailable(LabExecutionAuthorityPort::unavailable),
+                reviewGate(labReviewEnabled, reports.getIfAvailable()));
+    }
+
+    /** With the review workflow on, a test that entered it may only complete through a release. */
+    static com.mediflow.lab.application.port.out.LabResultWorkflowGate reviewGate(boolean enabled,
+            com.mediflow.lab.application.port.out.LabReportRepositoryPort reports) {
+        return enabled && reports != null ? testId -> reports.workflowVersion(testId) == 1
+                : com.mediflow.lab.application.port.out.LabResultWorkflowGate.never();
     }
 }

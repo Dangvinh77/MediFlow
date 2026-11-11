@@ -24,10 +24,13 @@ import jakarta.validation.Valid;
 @RestController
 public class LabReportController {
     private final LabReportApplicationService reports;
+    private final com.mediflow.lab.application.service.LabReportReleaseService release;
     private final CorrelationIdProvider correlationIds;
 
-    public LabReportController(LabReportApplicationService reports, CorrelationIdProvider correlationIds) {
+    public LabReportController(LabReportApplicationService reports,
+            com.mediflow.lab.application.service.LabReportReleaseService release, CorrelationIdProvider correlationIds) {
         this.reports = reports;
+        this.release = release;
         this.correlationIds = correlationIds;
     }
 
@@ -56,6 +59,12 @@ public class LabReportController {
     public ResponseEntity<ApiResponse<LabReportDTO>> returnForCorrection(@PathVariable UUID testId,
             @Valid @RequestBody ReturnLabReportRequest request) {
         return ok(reports.returnForCorrection(testId, request));
+    }
+
+    @PostMapping("/api/v2/lab/{testId}/report/release")
+    @PreAuthorize("hasRole('LAB_TECH')")
+    public ResponseEntity<ApiResponse<LabReportDTO>> release(@PathVariable UUID testId) {
+        return ok(release.release(testId));
     }
 
     private ResponseEntity<ApiResponse<LabReportDTO>> ok(LabReportDTO body) {

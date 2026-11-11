@@ -308,6 +308,51 @@ class LabCareFinanceV2ApplicationServiceTest {
     }
 
     @Test
+    void addResults_reviewWorkflowTestsMustBeReleased() {
+        LabTest test = v2Test();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        LabApplicationService reviewing = new LabApplicationService(tests, compatibilityEvents, mapper, correlations,
+                outbox, clearances, overrides, authenticatedStaff, true, false, Clock.fixed(NOW, ZoneOffset.UTC),
+                null, null, executionAuthority, id -> id.equals(test.getTestId()));
+
+        assertThatThrownBy(() -> reviewing.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")), "Normal", REQUESTED_DATE)))
+                .isInstanceOfSatisfying(com.mediflow.common.exception.DuplicateResourceException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("LAB_REVIEW_REQUIRED"));
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void addResults_releaseOfAReviewedReportCompletesWithValuesAndReleaser() {
+        LabTest test = v2Test();
+        UUID releasedBy = UUID.randomUUID();
+        LabEmergencyOverride approval = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
+                test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), releasedBy,
+                "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+        test.start(null, approval, NOW);
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+        var value = new LabResultV2Payload.ReleasedValue("HGB", "Hemoglobin", null, "13.5", "g/dL", null, "NORMAL",
+                "12 - 16");
+
+        service.releaseReviewed(test.getTestId(), List.of(com.mediflow.lab.domain.model.LabResult.create(
+                "Hemoglobin", "13.5", "g/dL", "12 - 16")), "Bình thường", REQUESTED_DATE, releasedBy,
+                List.of(value), NOW);
+
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
+        ArgumentCaptor<DomainEventEnvelope<?>> envelope = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox).append(envelope.capture());
+        assertThat(envelope.getValue().eventType()).isEqualTo("lab.result.created");
+        LabResultV2Payload payload = (LabResultV2Payload) envelope.getValue().payload();
+        assertThat(payload.releasedBy()).isEqualTo(releasedBy);
+        assertThat(payload.verifiedBy()).isEqualTo(releasedBy);
+        assertThat(payload.values()).containsExactly(value);
+        assertThat(payload.resultVersion()).isEqualTo(1);
+    }
+
+    @Test
     void addResults_v2UsesOneClockInstantForEnvelopeAndPayload() {
         LabTest test = v2Test();
         UUID verifiedBy = UUID.randomUUID();
