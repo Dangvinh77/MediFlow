@@ -8,6 +8,7 @@ import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/features/lab/domain/lab_workflow.dart';
+import 'package:mediflow_mobile/features/lab/domain/lab_catalog.dart';
 import 'package:mediflow_mobile/features/lab/presentation/lab_detail_page.dart';
 import 'package:mediflow_mobile/features/report/domain/report.dart';
 import 'package:mediflow_mobile/features/report/presentation/report_page.dart';
@@ -29,6 +30,10 @@ LabDetail labDetail(String status) => LabDetail(
 );
 
 class Workflow implements LabWorkflow {
+  @override
+  Future<LabTestTemplate> template(String testId) async =>
+      LabTestTemplate(testId: testId, serviceCode: null, template: null);
+
   Future<LabDetail> Function()? read;
   bool committed = false;
   int starts = 0;

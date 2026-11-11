@@ -1,11 +1,49 @@
 import '../../../core/domain/reference.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/network/json_reader.dart';
+import '../domain/lab_catalog.dart';
 import '../domain/lab_workflow.dart';
+import 'lab_catalog_dto.dart';
 
-class GatewayLabWorkflow implements LabWorkflow {
+class GatewayLabWorkflow implements LabWorkflow, LabCatalogReader {
   const GatewayLabWorkflow(this.client);
   final ApiClient client;
+
+  @override
+  Future<LabCatalog> catalog({String? group}) async {
+    try {
+      return LabCatalogDto.catalog(
+        await client.get('/v2/lab/catalog', query: {'group': ?group}),
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_CATALOG_DISABLED') {
+        return const LabCatalog(enabled: false);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LabTestTemplate> template(String testId) async {
+    _id(testId);
+    try {
+      return LabCatalogDto.testTemplate(
+        await client.get('/v2/lab/$testId/template'),
+        testId,
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404) {
+        return LabTestTemplate(
+          testId: testId,
+          serviceCode: null,
+          template: null,
+        );
+      }
+      rethrow;
+    }
+  }
+
   LabDetail _decode(Object? raw, String id) {
     if (raw is! Map<String, dynamic> ||
         raw['testId'] != id ||

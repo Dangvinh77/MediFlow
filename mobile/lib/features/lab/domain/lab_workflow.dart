@@ -1,3 +1,5 @@
+import 'lab_catalog.dart';
+
 class LabResultDraft {
   const LabResultDraft({
     required this.indicator,
@@ -49,6 +51,7 @@ class LabDetail {
 
 abstract interface class LabWorkflow {
   Future<LabDetail> detail(String id);
+  Future<LabTestTemplate> template(String testId);
   Future<LabDetail> start(String id);
   Future<LabDetail> results(
     String id,

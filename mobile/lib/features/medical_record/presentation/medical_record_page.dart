@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -790,12 +792,14 @@ class _MedicalRecordDetailPageState
           key: ValueKey(('patient-allergies', record.patientId)),
           patientId: record.patientId,
           sourceRecordId: record.id,
-          canAdd: !widget.referenceOnly &&
-              const {'DOCTOR', 'NURSE'}.contains(role),
+          canAdd:
+              !widget.referenceOnly && const {'DOCTOR', 'NURSE'}.contains(role),
           canManageStatus: !widget.referenceOnly && role == 'DOCTOR',
         ),
         if (widget.referenceOnly)
-          const NoticeBox('Lượt trước — chỉ tham khảo. Không thể thay đổi dữ liệu.'),
+          const NoticeBox(
+            'Lượt trước — chỉ tham khảo. Không thể thay đổi dữ liệu.',
+          ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -1126,16 +1130,13 @@ class _MedicalRecordDetailPageState
           ),
           FilledButton(
             key: const Key('record-content-save'),
-            onPressed: () => Navigator.pop(
-              context,
-              <String, String?>{
-                for (final field in recordContentFields)
-                  field: controllers[field]!.text.isEmpty &&
-                          original[field] == null
-                      ? null
-                      : controllers[field]!.text,
-              },
-            ),
+            onPressed: () => Navigator.pop(context, <String, String?>{
+              for (final field in recordContentFields)
+                field:
+                    controllers[field]!.text.isEmpty && original[field] == null
+                    ? null
+                    : controllers[field]!.text,
+            }),
             child: const Text('Lưu'),
           ),
         ],
@@ -1449,11 +1450,18 @@ class _ClinicalLabWorkflowPanelState
     extends ConsumerState<_ClinicalLabWorkflowPanel> {
   final _labType = TextEditingController();
   final _priceCode = TextEditingController();
+  final List<ClinicalLabCatalogItem> _catalogItems = [];
+  late final ClinicalLabCatalogRepository? _catalogRepository;
   DateTime _requestedDate = DateTime.now();
+  String? _selectedCatalogGroup;
+  ClinicalLabCatalogItem? _selectedCatalogItem;
   ClinicalLabOrder? _sourceOrder;
   LabTestReceipt? _receipt;
   Object? _error;
+  Object? _catalogError;
   bool _busy = false,
+      _catalogLoading = false,
+      _catalogDisabled = true,
       _sourceUncertain = false,
       _labUncertain = false,
       _labConflict = false;
@@ -1463,6 +1471,9 @@ class _ClinicalLabWorkflowPanelState
   void initState() {
     super.initState();
     _identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    _catalogRepository = widget.repository is ClinicalLabCatalogRepository
+        ? widget.repository as ClinicalLabCatalogRepository
+        : null;
     _progress = ref.read(_pendingLabProgressProvider);
     final pending = _progress[widget.record.id];
     if (pending != null) {
@@ -1472,7 +1483,78 @@ class _ClinicalLabWorkflowPanelState
       _labConflict = pending.labConflict;
       _error = pending.error;
     }
+    if (_sourceOrder == null && _catalogRepository != null) {
+      _catalogLoading = true;
+      unawaited(_loadCatalog());
+    }
   }
+
+  Future<void> _loadCatalog() async {
+    final identity = _identity;
+    try {
+      final items = await _catalogRepository!.labCatalog();
+      if (!_sessionIsCurrent(identity)) return;
+      setState(() {
+        _catalogLoading = false;
+        _catalogDisabled = items == null;
+        _catalogItems
+          ..clear()
+          ..addAll(items ?? const []);
+        if (_catalogItems.isNotEmpty) {
+          _selectedCatalogGroup = _catalogGroups.first;
+        }
+      });
+    } catch (error) {
+      if (!_sessionIsCurrent(identity)) return;
+      setState(() {
+        _catalogLoading = false;
+        _catalogDisabled = true;
+        _catalogError = error;
+      });
+    }
+  }
+
+  bool _sessionIsCurrent(Object? identity) =>
+      mounted && ref.read(workspaceAccessProvider)?.sessionIdentity == identity;
+
+  List<String> get _catalogGroups =>
+      _catalogItems.map((item) => item.displayGroup).toSet().toList()..sort();
+
+  List<ClinicalLabCatalogItem> get _selectedGroupItems => _catalogItems
+      .where((item) => item.displayGroup == _selectedCatalogGroup)
+      .toList(growable: false);
+
+  void _selectCatalogGroup(String? group) {
+    setState(() {
+      _selectedCatalogGroup = group;
+      _selectedCatalogItem = null;
+      _labType.clear();
+      _priceCode.clear();
+      _error = null;
+    });
+  }
+
+  void _selectCatalogItem(ClinicalLabCatalogItem? item) {
+    setState(() {
+      _selectedCatalogItem = item;
+      _labType.text = item?.name ?? '';
+      _priceCode.text = item?.priceCode ?? '';
+      _error = null;
+    });
+  }
+
+  static const _catalogGroupLabels = {
+    'HEMATOLOGY': 'Huyết học',
+    'BIOCHEMISTRY': 'Sinh hóa',
+    'IMMUNOLOGY': 'Miễn dịch',
+    'URINALYSIS': 'Nước tiểu',
+    'MICROBIOLOGY': 'Vi sinh',
+  };
+
+  String _groupLabel(String group) => _catalogGroupLabels[group] ?? group;
+
+  String _metadata(String? value) =>
+      value == null || value.trim().isEmpty ? 'Chưa có thông tin' : value;
 
   @override
   void dispose() {
@@ -1494,10 +1576,15 @@ class _ClinicalLabWorkflowPanelState
 
   Future<void> _createSourceOrder() async {
     if (_busy || _sourceUncertain || _sourceOrder != null) return;
+    if (!_catalogDisabled && _selectedCatalogItem == null) {
+      setState(() => _error = 'Chọn dịch vụ xét nghiệm trước khi gửi.');
+      return;
+    }
     final draft = ClinicalLabOrderDraft(
       labType: _labType.text,
       requestedDate: _dateString(_requestedDate),
       priceCode: _priceCode.text,
+      serviceCode: _catalogDisabled ? null : _selectedCatalogItem?.serviceCode,
     );
     final issue = validateClinicalLabOrder(draft);
     if (issue != null) {
@@ -1602,20 +1689,83 @@ class _ClinicalLabWorkflowPanelState
                 'Chỉ định được gắn với hồ sơ và lịch khám. Dùng mã giá do cơ sở phê duyệt.',
               ),
               if (_sourceOrder == null) ...[
-                TextField(
-                  controller: _labType,
-                  maxLength: 50,
-                  decoration: const InputDecoration(
-                    labelText: 'Loại xét nghiệm *',
+                if (_catalogError != null) _RetryMessage(error: _catalogError!),
+                if (_catalogLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: MediFlowLoader()),
                   ),
-                ),
-                TextField(
-                  controller: _priceCode,
-                  maxLength: 64,
-                  decoration: const InputDecoration(labelText: 'Mã giá *'),
-                ),
+                if (!_catalogLoading &&
+                    !_catalogDisabled &&
+                    _catalogItems.isEmpty)
+                  const NoticeBox(
+                    'Danh mục chưa có dịch vụ xét nghiệm để chọn.',
+                  ),
+                if (!_catalogLoading &&
+                    !_catalogDisabled &&
+                    _catalogItems.isNotEmpty) ...[
+                  DropdownButtonFormField<String>(
+                    key: const ValueKey('clinical-lab-catalog-group'),
+                    initialValue: _selectedCatalogGroup,
+                    decoration: const InputDecoration(
+                      labelText: 'Nhóm xét nghiệm',
+                    ),
+                    items: [
+                      for (final group in _catalogGroups)
+                        DropdownMenuItem(
+                          value: group,
+                          child: Text(_groupLabel(group)),
+                        ),
+                    ],
+                    onChanged: _busy ? null : _selectCatalogGroup,
+                  ),
+                  DropdownButtonFormField<ClinicalLabCatalogItem>(
+                    key: ValueKey(
+                      'clinical-lab-catalog-service-$_selectedCatalogGroup',
+                    ),
+                    initialValue: _selectedCatalogItem,
+                    decoration: const InputDecoration(
+                      labelText: 'Dịch vụ xét nghiệm',
+                    ),
+                    items: [
+                      for (final item in _selectedGroupItems)
+                        DropdownMenuItem(value: item, child: Text(item.name)),
+                    ],
+                    onChanged: _busy ? null : _selectCatalogItem,
+                  ),
+                  if (_selectedCatalogItem != null) ...[
+                    Text('Bệnh phẩm: ${_selectedCatalogItem!.specimenType}'),
+                    Text(
+                      'Chuẩn bị: ${_metadata(_selectedCatalogItem!.preparation)}',
+                    ),
+                    Text(
+                      'Thời gian trả kết quả: ${_selectedCatalogItem!.turnaroundHours == null ? 'Chưa có thông tin' : '${_selectedCatalogItem!.turnaroundHours} giờ'}',
+                    ),
+                    Text('Mã giá: ${_selectedCatalogItem!.priceCode}'),
+                    if (_selectedCatalogItem!.panel)
+                      const Text(
+                        'Dịch vụ bảng được gửi trong một đơn xét nghiệm.',
+                      ),
+                  ],
+                ],
+                if (!_catalogLoading && _catalogDisabled)
+                  TextField(
+                    key: const ValueKey('clinical-lab-manual-type'),
+                    controller: _labType,
+                    maxLength: 50,
+                    decoration: const InputDecoration(
+                      labelText: 'Loại xét nghiệm *',
+                    ),
+                  ),
+                if (!_catalogLoading && _catalogDisabled)
+                  TextField(
+                    key: const ValueKey('clinical-lab-manual-price'),
+                    controller: _priceCode,
+                    maxLength: 64,
+                    decoration: const InputDecoration(labelText: 'Mã giá *'),
+                  ),
                 OutlinedButton.icon(
-                  onPressed: _busy || _sourceUncertain
+                  onPressed: _busy || _sourceUncertain || _catalogLoading
                       ? null
                       : () async {
                           final selected = await showDatePicker(
@@ -1632,7 +1782,12 @@ class _ClinicalLabWorkflowPanelState
                   label: Text('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
                 ),
                 FilledButton(
-                  onPressed: _busy || _sourceUncertain
+                  key: const ValueKey('clinical-lab-submit'),
+                  onPressed:
+                      _busy ||
+                          _sourceUncertain ||
+                          _catalogLoading ||
+                          (!_catalogDisabled && _selectedCatalogItem == null)
                       ? null
                       : _createSourceOrder,
                   child: const Text('Gửi chỉ định xét nghiệm'),

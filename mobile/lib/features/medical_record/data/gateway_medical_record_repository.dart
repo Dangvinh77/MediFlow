@@ -1,10 +1,45 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_failure.dart';
 import '../domain/medical_record.dart';
 import 'medical_record_dto.dart';
 
-class GatewayMedicalRecordRepository implements MedicalRecordRepository {
+class GatewayMedicalRecordRepository
+    implements MedicalRecordRepository, ClinicalLabCatalogRepository {
   const GatewayMedicalRecordRepository(this.client);
   final ApiClient client;
+
+  @override
+  Future<List<ClinicalLabCatalogItem>?> labCatalog({String? group}) async {
+    final selectedGroup = group?.trim();
+    try {
+      final value = await client.get(
+        '/v2/lab/catalog',
+        query: selectedGroup == null || selectedGroup.isEmpty
+            ? null
+            : {'group': selectedGroup},
+      );
+      if (value is! List) {
+        throw const FormatException(
+          'Phản hồi danh mục xét nghiệm không hợp lệ.',
+        );
+      }
+      return value
+          .map((item) {
+            if (item is! Map<String, dynamic>) {
+              throw const FormatException(
+                'Dữ liệu dịch vụ xét nghiệm không hợp lệ.',
+              );
+            }
+            return ClinicalLabCatalogDto.fromJson(item);
+          })
+          .toList(growable: false);
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_CATALOG_DISABLED') {
+        return null;
+      }
+      rethrow;
+    }
+  }
 
   @override
   Future<MedicalRecord> getById(String recordId) async {
@@ -183,6 +218,7 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
         'labType': draft.labType.trim(),
         'requestedDate': draft.requestedDate,
         'priceCode': draft.priceCode.trim(),
+        if (draft.serviceCode != null) 'serviceCode': draft.serviceCode!.trim(),
       },
     );
     if (value is! Map<String, dynamic>) {
@@ -222,6 +258,8 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
       'careEpisodeType': sourceOrder.careEpisodeType,
       'careEpisodeId': sourceOrder.careEpisodeId,
       'priceCode': sourceOrder.priceCode,
+      if (sourceOrder.serviceCode != null)
+        'serviceCode': sourceOrder.serviceCode,
     });
     if (value is! Map<String, dynamic>) {
       throw const FormatException('Phản hồi tạo xét nghiệm không hợp lệ.');
