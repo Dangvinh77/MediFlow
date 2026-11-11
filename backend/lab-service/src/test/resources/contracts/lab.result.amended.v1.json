@@ -28,11 +28,13 @@
     "values": [
       {
         "fieldCode": "HGB",
+        "label": "Hemoglobin",
         "operator": null,
         "value": "115",
         "noResultReason": null,
         "unit": "g/L",
-        "flag": "LOW"
+        "flag": "LOW",
+        "referenceRange": "120 - 160"
       }
     ],
     "conclusion": "Thiếu máu nhẹ",

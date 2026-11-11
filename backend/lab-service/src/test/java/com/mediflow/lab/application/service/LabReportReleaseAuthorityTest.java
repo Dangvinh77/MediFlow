@@ -79,6 +79,40 @@ class LabReportReleaseAuthorityTest {
                 TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), true);
     }
 
+    LabReport submittedAmendment(UUID by) {
+        LabReport report = LabReport.open(testId, 2, "GLU", 1, "Nhập nhầm", AT.minusSeconds(300));
+        report.saveDraft(0, List.of(new LabValueInput("GLU", null, "5.0", null)), "Bình thường",
+                LocalDate.of(2026, 11, 11), by, AT.minusSeconds(200));
+        report.submit(1, template, by, AT.minusSeconds(100));
+        return report;
+    }
+
+    @Test void amendmentWriterCannotReleaseIt() {
+        LabReport report = submittedAmendment(writer);
+        when(authority.canRelease(any(), any(), any())).thenReturn(true);
+        assertThatThrownBy(() -> service(writer, report).release(testId))
+                .isInstanceOfSatisfying(ForbiddenOperationException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("LAB_SELF_RELEASE"));
+        verify(labs, never()).releaseAmendment(any());
+    }
+
+    @Test void releasedAmendmentIsPublishedAsTheNextRevision() {
+        LabReport report = submittedAmendment(writer);
+        when(authority.canRelease(eq(reviewerAccount), eq(reviewer), any())).thenReturn(true);
+
+        service(reviewer, report).release(testId);
+
+        ArgumentCaptor<LabResultReleasePort.AmendmentRelease> amendment =
+                ArgumentCaptor.forClass(LabResultReleasePort.AmendmentRelease.class);
+        verify(labs).releaseAmendment(amendment.capture());
+        assertThat(amendment.getValue().resultVersion()).isEqualTo(2);
+        assertThat(amendment.getValue().amendmentReason()).isEqualTo("Nhập nhầm");
+        assertThat(amendment.getValue().releasedBy()).isEqualTo(reviewer);
+        assertThat(amendment.getValue().values()).singleElement()
+                .satisfies(v -> assertThat(v.flag()).isEqualTo("NORMAL"));
+        verify(labs, never()).releaseReviewed(any(), any(), any(), any(), any(), any(), any());
+    }
+
     @Test void writerCannotReleaseOwnReport() {
         LabReport report = submitted(writer);
         when(authority.canRelease(any(), any(), any())).thenReturn(true);

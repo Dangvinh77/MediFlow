@@ -12,4 +12,12 @@ import com.mediflow.lab.domain.model.LabResult;
 public interface LabResultReleasePort {
     void releaseReviewed(UUID testId, List<LabResult> results, String conclusion, LocalDate performedDate,
             UUID releasedBy, List<LabResultV2Payload.ReleasedValue> values, Instant at);
+
+    /** Replaces the released result with the next revision and publishes {@code lab.result.amended}. */
+    void releaseAmendment(AmendmentRelease amendment);
+
+    record AmendmentRelease(UUID testId, List<LabResult> results, String conclusion, LocalDate performedDate,
+            UUID releasedBy, List<LabResultV2Payload.ReleasedValue> values, int resultVersion, String amendmentReason,
+            String templateCode, int templateVersion, Instant at) {
+    }
 }

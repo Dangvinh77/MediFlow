@@ -471,6 +471,26 @@ public class LabApplicationService implements ManageLabTestUseCase,
         appendResultEvent(saved, releasedBy, at, values, releasedBy);
     }
 
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void releaseAmendment(com.mediflow.lab.application.port.in.LabResultReleasePort.AmendmentRelease amendment) {
+        LabTest test = locked(amendment.testId());
+        requireV2Enabled();
+        int previous = test.getResultVersion();
+        test.amendResults(amendment.results(), amendment.conclusion(), amendment.performedDate(),
+                amendment.resultVersion(), amendment.at());
+        LabTest saved = tests.save(test);
+        var payload = new com.mediflow.lab.application.event.LabResultAmendedPayload(saved.getTestId(),
+                saved.getPatientId(), saved.getRecordId(), saved.getRequestingDepartmentId(),
+                saved.getCareEpisodeType(), saved.getCareEpisodeId(), saved.getLabType(), saved.getResultVersion(),
+                previous, amendment.amendmentReason(),
+                saved.getResults().stream().map(LabResultCreatedEvent.Result::from).toList(), amendment.values(),
+                saved.getConclusion(), amendment.releasedBy(), amendment.at(), amendment.templateCode(),
+                amendment.templateVersion(), saved.getPerformedDate());
+        outbox.append(new DomainEventEnvelope<>(UUID.randomUUID(), "lab.result.amended", 1, amendment.at(),
+                correlationIds.currentOrCreate().toString(), "lab-service", payload));
+    }
+
     private void appendResultEvent(LabTest test, UUID verifiedBy, Instant occurredAt) {
         appendResultEvent(test, verifiedBy, occurredAt, null, null);
     }

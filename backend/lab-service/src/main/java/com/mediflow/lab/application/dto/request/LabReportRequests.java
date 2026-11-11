@@ -28,6 +28,6 @@ public final class LabReportRequests {
     public record ReturnLabReportRequest(@NotBlank @Size(max = 1000) String reason) {
     }
 
-    public record OpenAmendmentRequest(@NotBlank @Size(max = 1000) String reason) {
+    public record OpenAmendmentRequest(@Size(max = 1000) String reason) {
     }
 }

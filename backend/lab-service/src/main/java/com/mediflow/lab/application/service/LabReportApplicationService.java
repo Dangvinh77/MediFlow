@@ -42,18 +42,28 @@ public class LabReportApplicationService {
     private final boolean enabled;
     private final com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens;
 
+    private final boolean amendmentsEnabled;
+
     /** Unit fixtures that do not exercise specimens. */
     public LabReportApplicationService(LabTestRepositoryPort tests, LabReportRepositoryPort reports,
             LabCatalogPort catalog, AuthenticatedStaffContextPort staff, Clock clock, boolean enabled) {
-        this(tests, reports, catalog, staff, clock, enabled, null);
+        this(tests, reports, catalog, staff, clock, enabled, null, false);
+    }
+
+    public LabReportApplicationService(LabTestRepositoryPort tests, LabReportRepositoryPort reports,
+            LabCatalogPort catalog, AuthenticatedStaffContextPort staff, Clock clock, boolean enabled,
+            com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens) {
+        this(tests, reports, catalog, staff, clock, enabled, specimens, false);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public LabReportApplicationService(LabTestRepositoryPort tests, LabReportRepositoryPort reports,
             LabCatalogPort catalog, AuthenticatedStaffContextPort staff, @Qualifier("labClock") Clock clock,
             @Value("${mediflow.v2.lab-review:false}") boolean enabled,
-            com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens) {
+            com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens,
+            @Value("${mediflow.v2.lab-amendment:false}") boolean amendmentsEnabled) {
         this.specimens = specimens;
+        this.amendmentsEnabled = amendmentsEnabled;
         this.tests = tests;
         this.reports = reports;
         this.catalog = catalog;
@@ -111,6 +121,28 @@ public class LabReportApplicationService {
         report.returnForCorrection(request.reason(), actor, clock.instant());
         reports.update(report, expected);
         return LabReportDTO.of(report);
+    }
+
+    /** Opens revision n+1 as a draft prefilled from the released revision n; n stays untouched. */
+    @Transactional
+    public LabReportDTO openAmendment(UUID testId,
+            com.mediflow.lab.application.dto.request.LabReportRequests.OpenAmendmentRequest request) {
+        requireEnabled();
+        if (!amendmentsEnabled) {
+            throw new ResourceNotFoundException("LAB_AMENDMENT_DISABLED", "Chức năng đính chính kết quả chưa được bật");
+        }
+        UUID actor = actor();
+        tests.findByIdForUpdate(testId).orElseThrow(() -> new LabTestNotFoundException(testId));
+        LabReport released = reports.forUpdate(testId)
+                .filter(r -> r.getStatus() == LabReportStatus.RELEASED)
+                .orElseThrow(() -> new com.mediflow.common.exception.DuplicateResourceException(
+                        "LAB_AMENDMENT_NOT_RELEASED", "Chỉ đính chính kết quả đã phát hành và chưa có bản đính chính mở"));
+        LabReport amendment = LabReport.open(testId, released.getResultVersion() + 1, released.getTemplateCode(),
+                released.getTemplateVersion(), request.reason(), clock.instant());
+        amendment.saveDraft(0, released.getValues(), released.getConclusion(), released.getPerformedDate(), actor,
+                clock.instant());
+        reports.insert(amendment);
+        return LabReportDTO.of(amendment);
     }
 
     private LabReport openOriginal(LabTest test) {

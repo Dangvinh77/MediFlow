@@ -65,6 +65,24 @@ class LabReportControllerTest {
         verifyNoInteractions(release);
     }
 
+    @ParameterizedTest @ValueSource(strings = {"ADMIN", "DOCTOR", "NURSE", "PATIENT"})
+    void onlyLabTechsOpenAmendments(String role) throws Exception {
+        var user = org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("u").roles(role);
+        mvc.perform(post("/api/v2/lab/" + id + "/report/amendments").with(user).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"x\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+
+    @Test @WithMockUser(roles = "LAB_TECH")
+    void amendmentWithoutReasonIsUnprocessable() throws Exception {
+        when(service.openAmendment(eq(id), any())).thenThrow(new LabRuleException("LAB_AMENDMENT_REASON_REQUIRED", "x"));
+        mvc.perform(post("/api/v2/lab/" + id + "/report/amendments").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("LAB_AMENDMENT_REASON_REQUIRED"));
+    }
+
     @Test @WithMockUser(roles = "LAB_TECH")
     void deniedReleaseIsForbidden() throws Exception {
         when(release.release(id)).thenThrow(new com.mediflow.common.exception.ForbiddenOperationException(

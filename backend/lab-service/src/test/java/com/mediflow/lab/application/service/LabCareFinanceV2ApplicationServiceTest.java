@@ -353,6 +353,70 @@ class LabCareFinanceV2ApplicationServiceTest {
     }
 
     @Test
+    void releaseAmendment_publishesOneAmendedRevisionShapedLikeTheContract() throws Exception {
+        LabTest test = v2Test();
+        UUID releasedBy = UUID.randomUUID();
+        LabEmergencyOverride approval = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
+                test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), releasedBy,
+                "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+        test.start(null, approval, NOW);
+        test.recordResults(List.of(com.mediflow.lab.domain.model.LabResult.create("Hemoglobin", "13.5", "g/dL",
+                "12-16")), "Bình thường", REQUESTED_DATE, null, NOW);
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+        var value = new LabResultV2Payload.ReleasedValue("HGB", "Hemoglobin", null, "115", "g/L", null, "LOW",
+                "120 - 160");
+
+        service.releaseAmendment(new com.mediflow.lab.application.port.in.LabResultReleasePort.AmendmentRelease(
+                test.getTestId(), List.of(com.mediflow.lab.domain.model.LabResult.create("Hemoglobin", "115", "g/L",
+                        "120 - 160")), "Thiếu máu nhẹ", REQUESTED_DATE, releasedBy, List.of(value), 2,
+                "Nhập nhầm giá trị HGB", "CBC", 1, NOW.plusSeconds(60)));
+
+        assertThat(test.getResultVersion()).isEqualTo(2);
+        assertThat(test.getResults()).extracting(com.mediflow.lab.domain.model.LabResult::getValue)
+                .containsExactly("115");
+        ArgumentCaptor<DomainEventEnvelope<?>> envelope = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox).append(envelope.capture());
+        assertThat(envelope.getValue().eventType()).isEqualTo("lab.result.amended");
+        var json = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        var payload = json.valueToTree(envelope.getValue().payload());
+        var fixture = json.readTree(java.nio.file.Files.readString(java.nio.file.Path.of(
+                "src/test/resources/contracts/lab.result.amended.v1.json"))).get("payload");
+        assertThat(payload.get("previousResultVersion").asInt()).isEqualTo(1);
+        assertThat(payload.get("resultVersion").asInt()).isEqualTo(2);
+        java.util.List<String> keys = new java.util.ArrayList<>();
+        payload.fieldNames().forEachRemaining(keys::add);
+        java.util.List<String> expected = new java.util.ArrayList<>();
+        fixture.fieldNames().forEachRemaining(expected::add);
+        assertThat(keys).containsExactlyInAnyOrderElementsOf(expected);
+        java.util.List<String> valueKeys = new java.util.ArrayList<>();
+        payload.get("values").get(0).fieldNames().forEachRemaining(valueKeys::add);
+        java.util.List<String> fixtureValueKeys = new java.util.ArrayList<>();
+        fixture.get("values").get(0).fieldNames().forEachRemaining(fixtureValueKeys::add);
+        assertThat(valueKeys).containsExactlyInAnyOrderElementsOf(fixtureValueKeys);
+    }
+
+    @Test
+    void releaseAmendment_rejectsASkippedRevision() {
+        LabTest test = v2Test();
+        LabEmergencyOverride approval = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
+                test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), UUID.randomUUID(),
+                "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+        test.start(null, approval, NOW);
+        test.recordResults(List.of(com.mediflow.lab.domain.model.LabResult.create("Hemoglobin", "13.5", "g/dL",
+                "12-16")), "Bình thường", REQUESTED_DATE, null, NOW);
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+
+        assertThatThrownBy(() -> service.releaseAmendment(
+                new com.mediflow.lab.application.port.in.LabResultReleasePort.AmendmentRelease(test.getTestId(),
+                        List.of(com.mediflow.lab.domain.model.LabResult.create("Hemoglobin", "1", "g/L", null)), null,
+                        REQUESTED_DATE, UUID.randomUUID(), List.of(), 3, "x", "CBC", 1, NOW)))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class);
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
     void addResults_v2UsesOneClockInstantForEnvelopeAndPayload() {
         LabTest test = v2Test();
         UUID verifiedBy = UUID.randomUUID();

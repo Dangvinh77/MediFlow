@@ -107,7 +107,13 @@ public class LabReportReleaseService {
             results.add(LabResult.create(field.label(), displayValue(input), field.unit(), range));
         }
         report.release(actor, flags, at);
-        labs.releaseReviewed(testId, results, report.getConclusion(), report.getPerformedDate(), actor, values, at);
+        if (report.getResultVersion() == 1) {
+            labs.releaseReviewed(testId, results, report.getConclusion(), report.getPerformedDate(), actor, values, at);
+        } else {
+            labs.releaseAmendment(new LabResultReleasePort.AmendmentRelease(testId, results, report.getConclusion(),
+                    report.getPerformedDate(), actor, values, report.getResultVersion(), report.getAmendmentReason(),
+                    report.getTemplateCode(), report.getTemplateVersion(), at));
+        }
         reports.update(report, expected);
         return LabReportDTO.of(report);
     }

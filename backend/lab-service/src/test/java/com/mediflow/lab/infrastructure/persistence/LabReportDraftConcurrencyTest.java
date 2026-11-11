@@ -71,6 +71,34 @@ class LabReportDraftConcurrencyTest {
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
+    @Test void amendmentKeepsTheReleasedRevision() {
+        UUID testId = test();
+        LabReport first = LabReport.open(testId, 1, "GLU", 1, null, AT);
+        adapter.insert(first);
+        first.saveDraft(0, List.of(new LabValueInput("GLU", null, "7.1", null)), "Tăng", LocalDate.of(2026, 11, 11),
+                UUID.randomUUID(), AT);
+        adapter.update(first, 0);
+        first.submit(1, new com.mediflow.lab.domain.model.LabResultTemplate("GLU", 1, "Glucose", List.of(new com.mediflow.lab.domain.model.LabTemplateField("GLU", "Glucose", 1, false, com.mediflow.lab.domain.model.LabValueType.QUANTITATIVE, "mmol/L", List.of(), true, List.of()))),
+                UUID.randomUUID(), AT);
+        adapter.update(first, 1);
+        first.release(UUID.randomUUID(), java.util.Map.of("GLU", com.mediflow.lab.domain.model.LabFlag.HIGH), AT);
+        adapter.update(first, 1);
+
+        LabReport second = LabReport.open(testId, 2, "GLU", 1, "Nhập nhầm", AT.plusSeconds(60));
+        adapter.insert(second);
+        second.saveDraft(0, List.of(new LabValueInput("GLU", null, "5.0", null)), "Bình thường",
+                LocalDate.of(2026, 11, 11), UUID.randomUUID(), AT.plusSeconds(60));
+        adapter.update(second, 0);
+
+        List<LabReport> revisions = adapter.revisions(testId);
+        assertThat(revisions).extracting(LabReport::getResultVersion).containsExactly(1, 2);
+        assertThat(revisions.get(0).getValues()).extracting(LabValueInput::value).containsExactly("7.1");
+        assertThat(revisions.get(0).getFlags()).containsEntry("GLU", com.mediflow.lab.domain.model.LabFlag.HIGH);
+        assertThat(revisions.get(0).getStatus().name()).isEqualTo("RELEASED");
+        assertThat(revisions.get(1).getAmendmentReason()).isEqualTo("Nhập nhầm");
+        assertThat(adapter.current(testId).orElseThrow().getResultVersion()).isEqualTo(2);
+    }
+
     @Test void newTestsStayOnTheOldWorkflowUntilEntered() {
         UUID testId = test();
         assertThat(adapter.workflowVersion(testId)).isZero();

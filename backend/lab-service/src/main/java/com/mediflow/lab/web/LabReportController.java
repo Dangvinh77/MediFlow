@@ -61,6 +61,13 @@ public class LabReportController {
         return ok(reports.returnForCorrection(testId, request));
     }
 
+    @PostMapping("/api/v2/lab/{testId}/report/amendments")
+    @PreAuthorize("hasRole('LAB_TECH')")
+    public ResponseEntity<ApiResponse<LabReportDTO>> openAmendment(@PathVariable UUID testId,
+            @Valid @RequestBody com.mediflow.lab.application.dto.request.LabReportRequests.OpenAmendmentRequest request) {
+        return ok(reports.openAmendment(testId, request));
+    }
+
     @PostMapping("/api/v2/lab/{testId}/report/release")
     @PreAuthorize("hasRole('LAB_TECH')")
     public ResponseEntity<ApiResponse<LabReportDTO>> release(@PathVariable UUID testId) {
