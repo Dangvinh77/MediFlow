@@ -12,4 +12,8 @@ public interface AttachExternalResultUseCase {
     /** {@code reportedAt} is when Lab produced the result; {@code null} falls back to the arrival time. */
     boolean attachLabResult(UUID recordId, UUID labTestId, String conclusion, Instant reportedAt);
     boolean attachPrescription(UUID recordId, UUID prescriptionId);
+
+    /** Records an amended Lab revision; false when that revision was already recorded. */
+    boolean attachLabRevision(UUID recordId, UUID labTestId, int resultVersion, String conclusion,
+            String amendmentReason, Instant releasedAt);
 }

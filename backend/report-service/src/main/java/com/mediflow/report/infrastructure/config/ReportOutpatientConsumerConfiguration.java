@@ -31,7 +31,7 @@ public class ReportOutpatientConsumerConfiguration {
                 .deadLetterRoutingKey("report.outpatient-v1.dlq").build();
         var dlq=QueueBuilder.durable("report.outpatient-v1.dlq").build();
         var topology=new java.util.ArrayList<Declarable>(java.util.List.of(events,dead,queue,dlq));
-        for(String key:java.util.List.of("medicalrecord.completed","lab.result.created","prescription.filled","payment.completed","payment.refunded"))
+        for(String key:java.util.List.of("medicalrecord.completed","lab.result.created","lab.result.amended","prescription.filled","payment.completed","payment.refunded"))
             topology.add(BindingBuilder.bind(queue).to(events).with(key));
         topology.add(BindingBuilder.bind(dlq).to(dead).with(dlq.getName()));
         return new Declarables(topology);

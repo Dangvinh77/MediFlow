@@ -20,5 +20,17 @@ public interface ExternalResultRepositoryPort {
     /** Every reference attached to a record, oldest first. */
     List<AttachedDocument> findByRecord(UUID recordId);
 
+    /**
+     * Records released Lab revision {@code resultVersion} (2 and above) and makes it the attached summary
+     * unless a newer revision is already shown. Returns false when this revision was already recorded.
+     */
+    boolean attachLabRevision(UUID recordId, UUID labId, int resultVersion, String summary, String amendmentReason,
+            Instant sourceAt);
+
+    /** Every recorded revision of one Lab test on a record, oldest first. */
+    List<LabResultRevision> labResultRevisions(UUID recordId, UUID labId);
+
     record AttachedDocument(String type, UUID referenceId, String summary, Instant attachedAt) {}
+
+    record LabResultRevision(int resultVersion, String summary, String amendmentReason, Instant sourceAt) {}
 }

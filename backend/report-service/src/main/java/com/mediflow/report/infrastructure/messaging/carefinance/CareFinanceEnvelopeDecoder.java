@@ -41,6 +41,7 @@ public class CareFinanceEnvelopeDecoder implements CareFinanceWirePort {
             Map.entry("admission.closed", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("discharge.medically.approved", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("lab.result.created", new SourceContract("lab-service", "labId")),
+            Map.entry("lab.result.amended", new SourceContract("lab-service", "labId")),
             Map.entry("prescription.filled", new SourceContract("pharmacy-service", "dispenseId")),
             Map.entry("surgery.completed", new SourceContract("surgery-service", "resultId")),
             Map.entry("surgery.cancelled", new SourceContract("surgery-service", "cancellationId")));

@@ -24,12 +24,59 @@ public class ExternalResultPersistenceAdapter implements ExternalResultRepositor
     @Override
     public boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary,
             java.time.Instant sourceAt) {
-        return jdbc.update("""
-                INSERT INTO attached_result(record_id, type, reference_id, summary, source_at)
-                VALUES (?, ?, ?, ?, ?)
+        java.sql.Timestamp at = sourceAt == null ? null : java.sql.Timestamp.from(sourceAt);
+        boolean attached = jdbc.update("""
+                INSERT INTO attached_result(record_id, type, reference_id, summary, source_at, result_version)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (record_id, type, reference_id) DO NOTHING
-                """, recordId, type.name(), referenceId, summary,
-                sourceAt == null ? null : java.sql.Timestamp.from(sourceAt)) == 1;
+                """, recordId, type.name(), referenceId, summary, at,
+                type == ExternalResultType.LAB ? 1 : null) == 1;
+        if (type != ExternalResultType.LAB) {
+            return attached;
+        }
+        // An amendment may have arrived first; the original still joins the history without replacing it.
+        boolean recorded = insertRevision(recordId, referenceId, 1, summary, null, at);
+        return attached || recorded;
+    }
+
+    @Override
+    public boolean attachLabRevision(UUID recordId, UUID labId, int resultVersion, String summary,
+            String amendmentReason, java.time.Instant sourceAt) {
+        if (resultVersion < 2) {
+            throw new IllegalArgumentException("An amended Lab revision starts at 2");
+        }
+        java.sql.Timestamp at = sourceAt == null ? null : java.sql.Timestamp.from(sourceAt);
+        boolean recorded = insertRevision(recordId, labId, resultVersion, summary, amendmentReason, at);
+        // source_at stays the original report time so documents keep placing the result inside the visit.
+        jdbc.update("""
+                INSERT INTO attached_result(record_id, type, reference_id, summary, source_at, result_version)
+                VALUES (?, 'LAB', ?, ?, ?, ?)
+                ON CONFLICT (record_id, type, reference_id) DO UPDATE
+                SET summary = EXCLUDED.summary, result_version = EXCLUDED.result_version
+                WHERE COALESCE(attached_result.result_version, 1) < EXCLUDED.result_version
+                """, recordId, labId, summary, at, resultVersion);
+        return recorded;
+    }
+
+    @Override
+    public List<LabResultRevision> labResultRevisions(UUID recordId, UUID labId) {
+        return jdbc.query("""
+                SELECT result_version, summary, amendment_reason, source_at FROM attached_result_revision
+                WHERE record_id = ? AND reference_id = ? ORDER BY result_version
+                """, (rs, n) -> new LabResultRevision(rs.getInt("result_version"), rs.getString("summary"),
+                rs.getString("amendment_reason"),
+                rs.getTimestamp("source_at") == null ? null : rs.getTimestamp("source_at").toInstant()),
+                recordId, labId);
+    }
+
+    private boolean insertRevision(UUID recordId, UUID labId, int resultVersion, String summary,
+            String amendmentReason, java.sql.Timestamp at) {
+        return jdbc.update("""
+                INSERT INTO attached_result_revision(record_id, reference_id, result_version, summary,
+                                                     amendment_reason, source_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (record_id, reference_id, result_version) DO NOTHING
+                """, recordId, labId, resultVersion, summary, amendmentReason, at) == 1;
     }
 
     @Override

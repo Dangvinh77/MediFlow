@@ -20,7 +20,7 @@ làm nuôi cấy đầy đủ hay kháng sinh đồ. FHIR chỉ là nguồn tham
 
 | Routing key | Producer | Consumer trong MVP | Ràng buộc đang có | Đợt | Loại thay đổi |
 |---|---|---|---|---|---|
-| `lab.result.created` | Lab (`LabApplicationService:434`) | Clinical, Notification, Report (Outpatient, Operational), Billing (`FeeAccrualService` sinh phí LAB khi nhận event; Đợt 6 phải xác minh mode nào bật đường này để phát hành không tạo phí sai) | Clinical bắt `resultVersion == 1`; Report khai báo `RESULT_VERSION_ONE_ONLY`; Inpatient deferred | 6 | Đổi thời điểm phát sang lúc phát hành; giữ nguyên schema |
+| `lab.result.created` | Lab (`LabApplicationService:434`) | Clinical, Notification, Report (Outpatient, Operational), Billing (`FeeAccrualService` sinh phí LAB khi nhận event; Đợt 6 phải xác minh mode nào bật đường này để phát hành không tạo phí sai) | Clinical bắt `resultVersion == 1`; Report khai báo `RESULT_REVISIONS` (đính chính đến qua `lab.result.amended`); Inpatient deferred | 6 | Đổi thời điểm phát sang lúc phát hành; giữ nguyên schema |
 | `lab.request.created` | Lab | Billing | Tạo planned charge | 5 | Thêm field `serviceCode` có compatibility test |
 | `lab.request.cancelled` | Lab | Billing | Exact-source | 2 | Xác minh actor/reason, không đổi nghĩa |
 | `medicalrecord.created` | Clinical | Billing, Lab, Report | Mode quyết định có charge hay không | 3 | Không đổi; khóa dedupe |
@@ -35,6 +35,21 @@ làm nuôi cấy đầy đủ hay kháng sinh đồ. FHIR chỉ là nguồn tham
 | `lab.result.amended` | Lab | Clinical, Notification, Report | Mọi consumer đã triển khai, rồi mới bật `mediflow.v2.lab-amendment` | 6 |
 
 Dedupe theo `labId` + `resultVersion`. Bản cũ đến muộn không ghi đè bản mới. Đổi `resultVersion` không tạo charge.
+
+**`lab.result.amended` v1 (đã khóa ở Đợt 6.1).** Envelope `DomainEventEnvelope`, `producer = lab-service`, `version = 1`.
+Fixture gốc: `backend/lab-service/src/test/resources/contracts/lab.result.amended.v1.json`; các bên nhận đọc thẳng file này.
+
+- Payload: `labId`, `patientId`, `recordId`, `departmentId`, `careEpisodeType` (`OUTPATIENT_VISIT`), `careEpisodeId`,
+  `labType`, `resultVersion` (≥ 2), `previousResultVersion` (≥ 1, nhỏ hơn `resultVersion`), `amendmentReason` (bắt buộc),
+  `results`, `values`, `conclusion`, `releasedBy`, `releasedAt`, `templateCode`, `templateVersion`, `performedDate`.
+- `lab.result.created` thêm các field tùy chọn `values`, `templateCode`, `templateVersion`, `reportId`, `releasedBy`.
+  `resultVersion` vẫn bằng 1.
+- Clinical: inbox key `clinical:lab-result:v1:{labId}:{resultVersion}`, chung namespace với `lab.result.created`.
+  Lưu lịch sử ở `attached_result_revision` và hiển thị revision lớn nhất. Revision cũ hoặc lặp là no-op.
+- Notification: một thông báo in-app cho mỗi `(labId, resultVersion)`, dù sự kiện mang `eventId` nào.
+- Report: kiểm tra rồi bỏ qua, không đóng góp số liệu, nên đính chính không tính thành lượt xét nghiệm mới.
+  Capability của `lab.result.created` là `RESULT_REVISIONS`. `lab.result.amended` có correction policy `NO_OPERATIONAL_EFFECT`.
+- Billing: không subscribe, nên đính chính không sinh phí.
 
 ## REST hiện có bị ảnh hưởng
 

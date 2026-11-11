@@ -92,6 +92,62 @@ class ClinicalIntegrationServiceTest {
                 .isInstanceOf(ConsumerInboxConflictException.class);
     }
 
+    private com.mediflow.clinical.application.dto.command.LabResultAmendedCommand amendment(UUID recordId,
+            UUID patientId, UUID departmentId, UUID episodeId) {
+        return new com.mediflow.clinical.application.dto.command.LabResultAmendedCommand(UUID.randomUUID(), recordId,
+                UUID.randomUUID(), patientId, departmentId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, 2, 1,
+                "Nhập nhầm", "Thiếu máu nhẹ", java.time.Instant.parse("2026-09-29T06:00:00Z"));
+    }
+
+    private MedicalRecord recordFor(UUID recordId, UUID patientId, UUID departmentId, UUID appointmentId) {
+        MedicalRecord record = mock(MedicalRecord.class);
+        when(record.getPatientId()).thenReturn(patientId);
+        when(record.getDepartmentId()).thenReturn(departmentId);
+        when(record.getAppointmentId()).thenReturn(appointmentId);
+        when(record.getRecordId()).thenReturn(recordId);
+        when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
+        return record;
+    }
+
+    @Test
+    void onLabResultAmended_recordsTheRevisionForTheMatchingVisit() {
+        UUID recordId = UUID.randomUUID(), patientId = UUID.randomUUID(), departmentId = UUID.randomUUID(),
+                appointmentId = UUID.randomUUID();
+        recordFor(recordId, patientId, departmentId, appointmentId);
+        var command = amendment(recordId, patientId, departmentId, appointmentId);
+        when(attachments.attachLabRevision(recordId, command.labId(), 2, "Thiếu máu nhẹ", "Nhập nhầm",
+                command.releasedAt())).thenReturn(true);
+
+        service.onLabResultAmended(command);
+
+        verify(attachments).attachLabRevision(recordId, command.labId(), 2, "Thiếu máu nhẹ", "Nhập nhầm",
+                command.releasedAt());
+    }
+
+    @Test
+    void onLabResultAmended_staleOrRepeatedRevisionIsANoOpNotAConflict() {
+        UUID recordId = UUID.randomUUID(), patientId = UUID.randomUUID(), departmentId = UUID.randomUUID(),
+                appointmentId = UUID.randomUUID();
+        recordFor(recordId, patientId, departmentId, appointmentId);
+        var command = amendment(recordId, patientId, departmentId, appointmentId);
+        when(attachments.attachLabRevision(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(false);
+
+        service.onLabResultAmended(command);
+    }
+
+    @Test
+    void onLabResultAmended_otherPatientsRecordIsAConflict() {
+        UUID recordId = UUID.randomUUID(), departmentId = UUID.randomUUID(), appointmentId = UUID.randomUUID();
+        recordFor(recordId, UUID.randomUUID(), departmentId, appointmentId);
+        var command = amendment(recordId, UUID.randomUUID(), departmentId, appointmentId);
+
+        assertThatThrownBy(() -> service.onLabResultAmended(command))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        org.mockito.Mockito.verifyNoInteractions(attachments);
+    }
+
     @Test
     void onLabResultCreated_missingMaterialEffectIsAConflict() {
         LabResultCreatedCommand command = new LabResultCreatedCommand(

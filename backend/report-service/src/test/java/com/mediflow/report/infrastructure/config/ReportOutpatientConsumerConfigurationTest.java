@@ -33,7 +33,7 @@ class ReportOutpatientConsumerConfigurationTest {
                 .withPropertyValues("mediflow.features.care-finance-v2=true","mediflow.report.outpatient-consumer.enabled=true")
                 .run(c->{var t=c.getBean("reportOutpatientTopology",Declarables.class);
                     assertThat(t.getDeclarablesByType(Binding.class).stream().filter(b->b.getExchange().equals("mediflow.events"))
-                            .map(Binding::getRoutingKey)).containsExactly("medicalrecord.completed","lab.result.created","prescription.filled","payment.completed","payment.refunded");
+                            .map(Binding::getRoutingKey)).containsExactly("medicalrecord.completed","lab.result.created","lab.result.amended","prescription.filled","payment.completed","payment.refunded");
                     assertThat(t.getDeclarablesByType(Queue.class)).hasSize(2).allMatch(Queue::isDurable);
                 });
     }

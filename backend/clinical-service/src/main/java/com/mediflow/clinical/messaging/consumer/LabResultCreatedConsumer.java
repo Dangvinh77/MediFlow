@@ -25,6 +25,10 @@ public class LabResultCreatedConsumer {
                 payload.careEpisodeId(), payload.resultVersion(), payload.occurredAt()));
     }
 
+    public void consumeAmendment(com.mediflow.clinical.application.dto.command.LabResultAmendedCommand command) {
+        useCase.onLabResultAmended(command);
+    }
+
     static void validate(LabResultCreatedPayload payload) {
         if (payload == null) {
             throw new IllegalArgumentException("lab.result.created payload is required");

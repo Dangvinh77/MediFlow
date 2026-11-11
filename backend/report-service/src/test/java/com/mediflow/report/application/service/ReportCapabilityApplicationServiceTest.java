@@ -43,10 +43,10 @@ class ReportCapabilityApplicationServiceTest {
 
         assertThat(capabilities.capabilityVersion()).isOne();
         assertThat(capabilities.historyPolicy()).isEqualTo("AVAILABLE_EVIDENCE_ONLY");
-        assertThat(capabilities.sources()).hasSize(12);
+        assertThat(capabilities.sources()).hasSize(13);
         assertThat(capabilities.sources()).extracting(source -> source.eventType())
                 .containsExactlyInAnyOrder(
-                        "medicalrecord.completed", "lab.result.created", "prescription.filled",
+                        "medicalrecord.completed", "lab.result.created", "lab.result.amended", "prescription.filled",
                         "surgery.completed", "surgery.cancelled", "admission.started",
                         "admission.closed", "discharge.medically.approved", "payment.completed",
                         "payment.refunded", "settlement.reconciled", "settlement.recognition.completed");

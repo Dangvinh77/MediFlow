@@ -43,7 +43,7 @@ class ReportOperationalConsumerConfigurationTest {
         var topology = new ReportOperationalConsumerConfiguration().reportOperationalTopology();
         assertThat(topology.getDeclarablesByType(Binding.class).stream()
                 .filter(b -> b.getExchange().equals("mediflow.events")).map(Binding::getRoutingKey)
-                .collect(Collectors.toSet())).containsExactlyInAnyOrder("medicalrecord.completed", "lab.result.created",
+                .collect(Collectors.toSet())).containsExactlyInAnyOrder("medicalrecord.completed", "lab.result.created", "lab.result.amended",
                         "prescription.filled", "surgery.completed", "surgery.cancelled", "admission.started", "admission.closed", "discharge.medically.approved");
         var queues = topology.getDeclarablesByType(Queue.class);
         assertThat(queues).hasSize(2).allMatch(Queue::isDurable);

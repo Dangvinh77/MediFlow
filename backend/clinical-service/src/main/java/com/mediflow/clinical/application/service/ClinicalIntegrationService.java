@@ -55,6 +55,30 @@ public class ClinicalIntegrationService implements ReactToLabResultUseCase, Reac
 
     @Override
     @Transactional
+    public void onLabResultAmended(com.mediflow.clinical.application.dto.command.LabResultAmendedCommand command) {
+        if (command.careEpisodeType() != CareEpisodeType.OUTPATIENT_VISIT || command.resultVersion() < 2
+                || command.previousResultVersion() < 1 || command.previousResultVersion() >= command.resultVersion()) {
+            throw new ConsumerInboxConflictException("unsupported lab result amendment");
+        }
+        MedicalRecord record = records.findByIdForUpdate(command.recordId())
+                .orElseThrow(() -> new ConsumerInboxConflictException(
+                        "lab result amendment references an unknown medical record"));
+        java.util.UUID canonicalEpisodeId = record.getAppointmentId() == null
+                ? record.getRecordId() : record.getAppointmentId();
+        if (!record.getPatientId().equals(command.patientId())
+                || !record.getDepartmentId().equals(command.departmentId())
+                || !canonicalEpisodeId.equals(command.careEpisodeId())) {
+            throw new ConsumerInboxConflictException(
+                    "lab result amendment patient, department, or care episode does not match the medical record");
+        }
+        // A revision already recorded, or older than the one shown, is a valid no-op: history and the
+        // newest summary are both already correct.
+        attachments.attachLabRevision(command.recordId(), command.labId(), command.resultVersion(),
+                command.conclusion(), command.amendmentReason(), command.releasedAt());
+    }
+
+    @Override
+    @Transactional
     public void onPrescriptionFilled(PrescriptionFilledCommand command) {
         if (command.sourceVersion() == 1) {
             if (!"OUTPATIENT_VISIT".equals(command.careEpisodeType()) || command.dispenseId() == null) {

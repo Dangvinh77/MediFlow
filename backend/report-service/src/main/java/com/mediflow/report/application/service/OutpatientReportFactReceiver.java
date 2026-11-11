@@ -37,6 +37,7 @@ public class OutpatientReportFactReceiver implements ReceiveOutpatientReportFact
                     throw deferred();
                 operations.apply(command);
             }
+            case "lab.result.amended" -> lab.validateAmendment(event);
             case "lab.result.created", "prescription.filled" -> {
                 var command = event.metadata().eventType().equals("lab.result.created") ? lab.map(event) : pharmacy.map(event);
                 if (command.contributions().stream().anyMatch(f -> !"OUTPATIENT_VISIT".equals(f.careEpisodeType())))

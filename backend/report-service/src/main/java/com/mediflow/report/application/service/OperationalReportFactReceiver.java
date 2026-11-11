@@ -48,6 +48,7 @@ public class OperationalReportFactReceiver implements ReceiveOperationalReportFa
         switch (event.metadata().eventType()) {
             case "medicalrecord.completed" -> operations.apply(clinical.map(event));
             case "lab.result.created" -> operations.apply(lab.map(event));
+            case "lab.result.amended" -> lab.validateAmendment(event);
             case "prescription.filled" -> operations.apply(pharmacy.map(event));
             case "surgery.completed", "surgery.cancelled" -> operations.apply(surgery.map(event));
             case "admission.started" -> {
