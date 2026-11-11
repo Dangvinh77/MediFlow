@@ -25,4 +25,9 @@ public interface RecordAmendmentRepositoryPort {
     void insertAssignment(AmendmentAssignment assignment);
 
     Optional<AmendmentAssignment> findAssignment(UUID recordId, UUID assigneeStaffId);
+
+    boolean assignmentExists(UUID recordId, UUID assignmentId);
+
+    /** Ends an assignment; revoking an already revoked assignment changes nothing. */
+    void revokeAssignment(UUID recordId, UUID assignmentId, UUID revokedByStaffId, java.time.Instant at);
 }

@@ -87,4 +87,16 @@ class RecordAmendmentPostgresTest {
         assertThat(adapter.findAssignment(recordId, assignee)).isPresent();
         assertThat(adapter.findAssignment(recordId, UUID.randomUUID())).isEmpty();
     }
+
+    @Test void revokedAssignmentNoLongerCounts() {
+        UUID recordId = record(UUID.randomUUID());
+        UUID assignee = UUID.randomUUID();
+        AmendmentAssignment assignment = AmendmentAssignment.create(recordId, assignee, UUID.randomUUID(), "BS cũ nghỉ", AT);
+        adapter.insertAssignment(assignment);
+        assertThat(adapter.assignmentExists(recordId, assignment.getAssignmentId())).isTrue();
+        assertThat(adapter.assignmentExists(UUID.randomUUID(), assignment.getAssignmentId())).isFalse();
+        adapter.revokeAssignment(recordId, assignment.getAssignmentId(), UUID.randomUUID(), AT.plusSeconds(60));
+        adapter.revokeAssignment(recordId, assignment.getAssignmentId(), UUID.randomUUID(), AT.plusSeconds(120));
+        assertThat(adapter.findAssignment(recordId, assignee)).isEmpty();
+    }
 }

@@ -31,6 +31,7 @@ export function RecordHandoverPanel({ recordId, departmentId, canHandover, canAc
 
   const handovers = state.status === "loaded" ? state.data : [];
   const hasPendingHandover = handovers.some((item) => item.status === "PENDING");
+  const hasAcceptedHandover = handovers.some((item) => item.status === "ACCEPTED");
   const requestBody = { toDoctorId: toDoctorId.trim(), reason: reason.trim(), pendingItems: pendingItems.trim() };
   return <section role="region" aria-label="Bàn giao bác sĩ" className="space-y-4 rounded-xl border border-border bg-surface p-5">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Bàn giao bác sĩ</h2><p className="mt-1 text-sm text-muted-foreground">Bàn giao ghi rõ người nhận, lý do và việc còn chờ.</p></div>
@@ -50,6 +51,7 @@ export function RecordHandoverPanel({ recordId, departmentId, canHandover, canAc
       <Field label="Việc còn chờ" htmlFor={`handover-pending-${recordId}`} required><textarea id={`handover-pending-${recordId}`} value={pendingItems} maxLength={2000} onChange={(event) => setPendingItems(event.target.value)} disabled={commandLocked} className={controlClassName} /></Field>
       <div className="flex flex-wrap items-center gap-3"><IdempotentAction<RecordHandoverDTO> scope={`record-handover:request:${recordId}`} label="Gửi bàn giao" body={requestBody} disabled={commandLocked || !requestBody.toDoctorId || !requestBody.reason || !requestBody.pendingItems} onLockedChange={setCommandLocked} run={(options) => medicalRecordApi.requestHandover(recordId, requestBody, options)} onSuccess={refresh} /><Button type="button" variant="secondary" disabled={commandLocked} onClick={() => setShowForm(false)}>Hủy</Button></div>
     </form> : null}
-    {hasPendingHandover && !canAcceptHandover ? <p className="text-sm text-muted-foreground">Bác sĩ cũ chỉ xem được nội dung sau khi bàn giao.</p> : null}
+    {hasPendingHandover && !canAcceptHandover ? <p className="text-sm text-muted-foreground">Bác sĩ hiện tại vẫn phụ trách cho tới khi bác sĩ nhận chấp nhận bàn giao.</p> : null}
+    {hasAcceptedHandover && !hasPendingHandover ? <p className="text-sm text-muted-foreground">Bác sĩ cũ chỉ xem được nội dung sau khi bàn giao.</p> : null}
   </section>;
 }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,6 +55,13 @@ public class RecordAmendmentController {
     public ResponseEntity<ApiResponse<AmendmentAssignmentDTO>> assign(@PathVariable UUID recordId,
             @RequestBody AmendmentAssignmentRequest request, @RequestHeader("Idempotency-Key") String key) {
         return respond(amendments.assign(recordId, request, key));
+    }
+
+    @DeleteMapping("/api/v2/records/{recordId}/amendment-assignments/{assignmentId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<Void> revokeAssignment(@PathVariable UUID recordId, @PathVariable UUID assignmentId) {
+        amendments.revokeAssignment(recordId, assignmentId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/api/v2/records/{recordId}/amendments")

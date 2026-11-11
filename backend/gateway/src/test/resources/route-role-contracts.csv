@@ -194,6 +194,7 @@ clinical-service,POST,/api/v2/records/{recordId}/amendments,DOCTOR,true
 clinical-service,GET,/api/v2/records/{recordId}/amendments,ADMIN|DOCTOR|NURSE,true
 clinical-service,PUT,/api/v2/records/{recordId}/amendments/{amendmentId}/decision,DOCTOR,true
 clinical-service,POST,/api/v2/records/{recordId}/amendment-assignments,DOCTOR,true
+clinical-service,DELETE,/api/v2/records/{recordId}/amendment-assignments/{assignmentId},DOCTOR,true
 clinical-service,GET,/api/v2/amendments/pending,DOCTOR,true
 clinical-service,GET,/api/v2/patients/{patientId}/allergies,ADMIN|DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/patients/{patientId}/allergies,DOCTOR|NURSE,true

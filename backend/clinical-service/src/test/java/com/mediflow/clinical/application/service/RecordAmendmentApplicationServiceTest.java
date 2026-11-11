@@ -193,6 +193,29 @@ class RecordAmendmentApplicationServiceTest {
         verify(amendments, never()).insertAssignment(any());
     }
 
+    @Test void headRevokesAnAssignment() {
+        UUID assignmentId = UUID.randomUUID();
+        when(amendments.assignmentExists(record.getRecordId(), assignmentId)).thenReturn(true);
+        as(head, "DOCTOR");
+        service.revokeAssignment(record.getRecordId(), assignmentId);
+        verify(amendments).revokeAssignment(record.getRecordId(), assignmentId, head, NOW);
+    }
+
+    @Test void onlyHeadRevokesAnAssignment() {
+        UUID assignmentId = UUID.randomUUID();
+        when(amendments.assignmentExists(record.getRecordId(), assignmentId)).thenReturn(true);
+        as(colleague, "DOCTOR");
+        assertThatThrownBy(() -> service.revokeAssignment(record.getRecordId(), assignmentId))
+                .extracting("code").isEqualTo("AMENDMENT_ASSIGNMENT_DENIED");
+        verify(amendments, never()).revokeAssignment(any(), any(), any(), any());
+    }
+
+    @Test void revokingAnUnknownAssignmentIsNotFound() {
+        as(head, "DOCTOR");
+        assertThatThrownBy(() -> service.revokeAssignment(record.getRecordId(), UUID.randomUUID()))
+                .extracting("code").isEqualTo("AMENDMENT_ASSIGNMENT_NOT_FOUND");
+    }
+
     @Test void assigneeRequestsWithOwnIdentity() {
         when(staff.departmentOf(author)).thenReturn(Optional.empty());
         when(amendments.findAssignment(record.getRecordId(), colleague)).thenReturn(Optional.of(

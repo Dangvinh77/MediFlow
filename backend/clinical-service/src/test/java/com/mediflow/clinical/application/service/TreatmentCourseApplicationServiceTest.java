@@ -182,6 +182,18 @@ class TreatmentCourseApplicationServiceTest {
         assertThat(course.getStatus()).isEqualTo(TreatmentCourseStatus.CLOSED);
     }
 
+    @Test void headOfAnotherDepartmentIsNotHead() {
+        TreatmentCourse course = stored();
+        UUID otherDoctor = UUID.randomUUID();
+        UUID otherAccount = UUID.randomUUID();
+        when(actors.current()).thenReturn(new ActorIdentity(otherAccount, otherDoctor, null, "DOCTOR"));
+        when(authority.authority(eq(otherAccount), eq(department), anyString()))
+                .thenReturn(snapshot(otherAccount, otherDoctor, true, UUID.randomUUID()));
+        CloseTreatmentCourseRequest close = new CloseTreatmentCourseRequest(TreatmentCourseDecision.RESOLVED, "Ổn định");
+        assertThatThrownBy(() -> service.close(course.getCourseId(), close, "k")).isInstanceOf(ForbiddenOperationException.class);
+        verify(courses, never()).close(any());
+    }
+
     @Test void responsibleDoctorClosesWithoutHeadLookup() {
         TreatmentCourse course = stored();
         service.close(course.getCourseId(), new CloseTreatmentCourseRequest(TreatmentCourseDecision.RESOLVED, "Ổn"), "k");
@@ -238,7 +250,11 @@ class TreatmentCourseApplicationServiceTest {
         assertThat(withoutCourses.timeline(patient, 0, 20, null, null).content().get(0).treatmentCourseIds()).isNull();
     }
 
-    private static SchedulingAuthoritySnapshot snapshot(UUID account, UUID staffId, boolean head) {
-        return new SchedulingAuthoritySnapshot(account, true, true, "DOCTOR", staffId, true, null, true, head, 1L, NOW);
+    private SchedulingAuthoritySnapshot snapshot(UUID account, UUID staffId, boolean head) {
+        return snapshot(account, staffId, head, department);
+    }
+
+    private static SchedulingAuthoritySnapshot snapshot(UUID account, UUID staffId, boolean head, UUID departmentId) {
+        return new SchedulingAuthoritySnapshot(account, true, true, "DOCTOR", staffId, true, departmentId, true, head, 1L, NOW);
     }
 }

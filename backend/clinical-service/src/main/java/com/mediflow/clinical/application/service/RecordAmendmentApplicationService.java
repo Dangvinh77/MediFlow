@@ -116,6 +116,20 @@ public class RecordAmendmentApplicationService {
                 ignored -> null, () -> assignNow(actor, recordId, request));
     }
 
+    /** The department head ends an assignment; the assignee can no longer request amendments for the visit. */
+    @Transactional
+    public void revokeAssignment(UUID recordId, UUID assignmentId) {
+        ActorIdentity actor = doctor();
+        MedicalRecord record = records.findById(recordId).orElseThrow(() -> notFound(recordId));
+        if (!isHead(actor, record.getDepartmentId())) {
+            throw new ForbiddenOperationException("AMENDMENT_ASSIGNMENT_DENIED", "Only the department head may revoke");
+        }
+        if (!amendments.assignmentExists(recordId, assignmentId)) {
+            throw new ResourceNotFoundException("AMENDMENT_ASSIGNMENT_NOT_FOUND", "Assignment not found: " + assignmentId);
+        }
+        amendments.revokeAssignment(recordId, assignmentId, actor.staffId(), clock.instant());
+    }
+
     @Transactional(readOnly = true)
     public List<RecordAmendmentDTO> list(UUID recordId) {
         MedicalRecord record = records.findById(recordId).orElseThrow(() -> notFound(recordId));

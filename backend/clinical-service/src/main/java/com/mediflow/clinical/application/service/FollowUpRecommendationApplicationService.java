@@ -203,7 +203,7 @@ public class FollowUpRecommendationApplicationService {
         FollowUpRecommendation recommendation;
         try {
             recommendation = new FollowUpRecommendation(UUID.randomUUID(), record.getRecordId(),
-                    sourceRegistrationId, record.getPatientId(), record.getDepartmentId(), record.getDoctorId(),
+                    sourceRegistrationId, record.getPatientId(), record.getDepartmentId(), record.responsibleDoctorId(),
                     request.recommendedFrom(), request.recommendedThrough(), request.reason(),
                     request.preparationInstructions(), createdAt, actor.accountId(), actor.staffId());
         } catch (IllegalArgumentException invalid) {

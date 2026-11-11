@@ -176,7 +176,8 @@ public class TreatmentCourseApplicationService {
         SchedulingAuthoritySnapshot snapshot = authority.authority(actor.accountId(), departmentId,
                 correlationIds.currentOrCreate().toString());
         return snapshot != null && Boolean.TRUE.equals(snapshot.canManageSchedules())
-                && Boolean.TRUE.equals(snapshot.staffActive()) && actor.staffId().equals(snapshot.staffId());
+                && Boolean.TRUE.equals(snapshot.staffActive()) && actor.staffId().equals(snapshot.staffId())
+                && departmentId.equals(snapshot.departmentId());
     }
 
     private TreatmentCourse locked(UUID courseId) {

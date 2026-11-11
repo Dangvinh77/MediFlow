@@ -2,10 +2,12 @@ package com.mediflow.clinical.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -63,7 +65,16 @@ class RecordAmendmentControllerTest {
                     .content("{\"assigneeStaffId\":\"" + UUID.randomUUID() + "\",\"reason\":\"x\"}"))
                     .andExpect(status().isForbidden());
             mvc.perform(get("/api/v2/amendments/pending").with(user("u").roles(role))).andExpect(status().isForbidden());
+            mvc.perform(delete(BASE + "/amendment-assignments/" + UUID.randomUUID()).with(user("u").roles(role)).with(csrf()))
+                    .andExpect(status().isForbidden());
             verifyNoInteractions(service);
+        }
+
+        @Test void doctorRevokesAnAssignment() throws Exception {
+            UUID assignmentId = UUID.randomUUID();
+            mvc.perform(delete(BASE + "/amendment-assignments/" + assignmentId).with(user("d").roles("DOCTOR")).with(csrf()))
+                    .andExpect(status().isNoContent());
+            verify(service).revokeAssignment(RECORD, assignmentId);
         }
 
         @Test void doctorRequestsAmendment() throws Exception {

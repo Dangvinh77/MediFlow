@@ -80,12 +80,28 @@ public class JdbcRecordAmendmentAdapter implements RecordAmendmentRepositoryPort
     public Optional<AmendmentAssignment> findAssignment(UUID recordId, UUID assigneeStaffId) {
         return jdbc.query("""
                 SELECT assignment_id, record_id, assignee_staff_id, assigned_by_staff_id, reason, created_at
-                FROM record_amendment_assignment WHERE record_id = ? AND assignee_staff_id = ?
+                FROM record_amendment_assignment WHERE record_id = ? AND assignee_staff_id = ? AND revoked_at IS NULL
                 ORDER BY created_at DESC, assignment_id LIMIT 1
                 """, (rs, n) -> AmendmentAssignment.restore(rs.getObject("assignment_id", UUID.class),
                 rs.getObject("record_id", UUID.class), rs.getObject("assignee_staff_id", UUID.class),
                 rs.getObject("assigned_by_staff_id", UUID.class), rs.getString("reason"),
                 rs.getTimestamp("created_at").toInstant()), recordId, assigneeStaffId).stream().findFirst();
+    }
+
+    @Override
+    public boolean assignmentExists(UUID recordId, UUID assignmentId) {
+        Integer count = jdbc.queryForObject(
+                "SELECT count(*) FROM record_amendment_assignment WHERE record_id = ? AND assignment_id = ?",
+                Integer.class, recordId, assignmentId);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public void revokeAssignment(UUID recordId, UUID assignmentId, UUID revokedByStaffId, java.time.Instant at) {
+        jdbc.update("""
+                UPDATE record_amendment_assignment SET revoked_at = ?, revoked_by_staff_id = ?
+                WHERE record_id = ? AND assignment_id = ? AND revoked_at IS NULL
+                """, Timestamp.from(at), revokedByStaffId, recordId, assignmentId);
     }
 
     private static RecordAmendment row(ResultSet rs, int n) throws SQLException {

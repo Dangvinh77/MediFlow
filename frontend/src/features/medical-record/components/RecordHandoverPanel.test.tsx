@@ -67,6 +67,19 @@ describe("RecordHandoverPanel", () => {
     expect(screen.queryByRole("button", { name: /Chấp nhận bàn giao/ })).not.toBeInTheDocument();
   });
 
+  it("shows the read-only wording only after acceptance", async () => {
+    mocks.list.mockResolvedValueOnce([handover]);
+    const pending = render(<RecordHandoverPanel {...props} />);
+    await screen.findByText(/Theo dõi kết quả/);
+    expect(screen.queryByText(/Bác sĩ cũ chỉ xem được/)).not.toBeInTheDocument();
+    expect(screen.getByText(/vẫn phụ trách cho tới khi bác sĩ nhận chấp nhận/)).toBeVisible();
+    pending.unmount();
+
+    mocks.list.mockResolvedValueOnce([{ ...handover, status: "ACCEPTED", acceptedAt: "2026-11-10T04:00:00Z" }]);
+    render(<RecordHandoverPanel {...props} />);
+    expect(await screen.findByText(/Bác sĩ cũ chỉ xem được/)).toBeVisible();
+  });
+
   it("lets the responsible doctor replace a pending handover and labels the replaced one", async () => {
     mocks.list.mockResolvedValueOnce([{ ...handover, handoverId: "handover-old", status: "SUPERSEDED" }, handover]);
     render(<RecordHandoverPanel {...props} canHandover />);
