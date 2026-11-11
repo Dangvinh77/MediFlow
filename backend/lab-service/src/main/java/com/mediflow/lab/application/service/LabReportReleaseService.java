@@ -49,11 +49,19 @@ public class LabReportReleaseService {
     private final TransactionOperations transactions;
     private final Clock clock;
     private final boolean enabled;
+    private final com.mediflow.lab.application.port.out.LabTestRepositoryPort tests;
+    private final com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices;
+    private final com.mediflow.lab.application.port.out.LabOutboxPort outbox;
 
     public LabReportReleaseService(LabReportRepositoryPort reports, LabCatalogPort catalog,
             AuthenticatedStaffContextPort staff, CurrentReaderPort readers, LabReleaseAuthorityPort authority,
             LabResultReleasePort labs, CorrelationIdProvider correlationIds, TransactionOperations transactions,
-            Clock clock, boolean enabled) {
+            Clock clock, boolean enabled, com.mediflow.lab.application.port.out.LabTestRepositoryPort tests,
+            com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices,
+            com.mediflow.lab.application.port.out.LabOutboxPort outbox) {
+        this.tests = tests;
+        this.notices = notices;
+        this.outbox = outbox;
         this.reports = reports;
         this.catalog = catalog;
         this.staff = staff;
@@ -115,7 +123,32 @@ public class LabReportReleaseService {
                     report.getTemplateCode(), report.getTemplateVersion(), at));
         }
         reports.update(report, expected);
+        raiseCriticalNotices(testId, report, values, at);
         return LabReportDTO.of(report);
+    }
+
+    private void raiseCriticalNotices(UUID testId, LabReport report, List<ReleasedValue> values, Instant at) {
+        List<ReleasedValue> critical = values.stream()
+                .filter(v -> v.flag() != null && LabFlag.valueOf(v.flag()).critical()).toList();
+        if (critical.isEmpty()) {
+            return;
+        }
+        var test = tests.findById(testId).orElseThrow(() -> new IllegalStateException("Released test vanished"));
+        String correlationId = correlationIds.currentOrCreate().toString();
+        for (ReleasedValue v : critical) {
+            var notice = com.mediflow.lab.domain.model.LabCriticalNotice.raise(testId, report.getResultVersion(),
+                    v.fieldCode(), v.label(), v.value(), v.unit(), LabFlag.valueOf(v.flag()), test.getPatientId(),
+                    test.getRequestingDepartmentId(), at);
+            if (!notices.insertIfAbsent(notice)) {
+                continue;
+            }
+            var payload = new com.mediflow.lab.application.event.LabCriticalRaisedPayload(notice.getNoticeId(), testId,
+                    test.getPatientId(), test.getRecordId(), test.getRequestingDepartmentId(), test.getCareEpisodeType(),
+                    test.getCareEpisodeId(), test.getLabType(), report.getResultVersion(), v.fieldCode(), v.label(),
+                    v.value(), v.unit(), v.flag(), at);
+            outbox.append(new com.mediflow.lab.application.event.DomainEventEnvelope<>(UUID.randomUUID(),
+                    "lab.critical.raised", 1, at, correlationId, "lab-service", payload));
+        }
     }
 
     private static String displayValue(LabValueInput input) {

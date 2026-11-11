@@ -56,6 +56,12 @@ class LabReportReleaseAuthorityTest {
     final CurrentReaderPort readers = mock(CurrentReaderPort.class);
     final LabReleaseAuthorityPort authority = mock(LabReleaseAuthorityPort.class);
     final LabResultReleasePort labs = mock(LabResultReleasePort.class);
+    final com.mediflow.lab.application.port.out.LabTestRepositoryPort tests =
+            mock(com.mediflow.lab.application.port.out.LabTestRepositoryPort.class);
+    final com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices =
+            mock(com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort.class);
+    final com.mediflow.lab.application.port.out.LabOutboxPort outbox =
+            mock(com.mediflow.lab.application.port.out.LabOutboxPort.class);
     final CorrelationIdProvider correlations = () -> UUID.fromString("00000000-0000-4000-8000-0000000000cc");
     final LabResultTemplate template = new LabResultTemplate("GLU", 1, "Glucose", List.of(new LabTemplateField(
             "GLU", "Glucose", 1, true, LabValueType.QUANTITATIVE, "mmol/L", List.of(), true,
@@ -75,8 +81,18 @@ class LabReportReleaseAuthorityTest {
         when(readers.current()).thenReturn(Optional.of(new ReaderIdentity(reviewerAccount, actor, "LAB_TECH", null)));
         when(reports.forUpdate(testId)).thenReturn(Optional.of(report));
         when(catalog.template("GLU", 1)).thenReturn(Optional.of(template));
+        com.mediflow.lab.domain.model.LabTest test = org.mockito.Mockito.mock(com.mediflow.lab.domain.model.LabTest.class);
+        when(test.getTestId()).thenReturn(testId);
+        when(test.getPatientId()).thenReturn(UUID.fromString("00000000-0000-4000-8000-0000000000a1"));
+        when(test.getRequestingDepartmentId()).thenReturn(UUID.fromString("00000000-0000-4000-8000-0000000000d1"));
+        when(test.getRecordId()).thenReturn(UUID.randomUUID());
+        when(test.getCareEpisodeType()).thenReturn(com.mediflow.lab.domain.model.CareEpisodeType.OUTPATIENT_VISIT);
+        when(test.getCareEpisodeId()).thenReturn(UUID.randomUUID());
+        when(test.getLabType()).thenReturn("Glucose");
+        when(tests.findById(testId)).thenReturn(Optional.of(test));
+        when(notices.insertIfAbsent(any())).thenReturn(true);
         return new LabReportReleaseService(reports, catalog, staff, readers, authority, labs, correlations,
-                TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), true);
+                TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), true, tests, notices, outbox);
     }
 
     LabReport submittedAmendment(UUID by) {
@@ -137,7 +153,8 @@ class LabReportReleaseAuthorityTest {
     @Test void disabledWorkflowNeverAsksOrganization() {
         LabReport report = submitted(writer);
         LabReportReleaseService disabled = new LabReportReleaseService(reports, catalog, staff, readers, authority,
-                labs, correlations, TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), false);
+                labs, correlations, TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), false,
+                tests, notices, outbox);
         assertThatThrownBy(() -> disabled.release(testId))
                 .isInstanceOf(com.mediflow.common.exception.ResourceNotFoundException.class);
         verify(authority, never()).canRelease(any(), any(), any());
@@ -165,5 +182,32 @@ class LabReportReleaseAuthorityTest {
             assertThat(v.referenceRange()).isEqualTo("3.9 - 6.4");
         });
         verify(reports).update(report, 1);
+        verify(notices, never()).insertIfAbsent(any());
+        verify(outbox, never()).append(any());
+    }
+
+    @Test void criticalValueRaisesExactlyOneNoticeForTheDepartment() {
+        LabReport report = LabReport.open(testId, 1, "GLU", 1, null, AT.minusSeconds(600));
+        report.saveDraft(0, List.of(new LabValueInput("GLU", null, "30", null)), null, LocalDate.of(2026, 11, 11),
+                writer, AT.minusSeconds(500));
+        report.submit(1, template, writer, AT.minusSeconds(400));
+        when(authority.canRelease(eq(reviewerAccount), eq(reviewer), any())).thenReturn(true);
+
+        service(reviewer, report).release(testId);
+
+        ArgumentCaptor<com.mediflow.lab.domain.model.LabCriticalNotice> notice =
+                ArgumentCaptor.forClass(com.mediflow.lab.domain.model.LabCriticalNotice.class);
+        verify(notices).insertIfAbsent(notice.capture());
+        assertThat(notice.getValue().getFlag()).isEqualTo(LabFlag.CRITICAL_HIGH);
+        assertThat(notice.getValue().getDepartmentId())
+                .isEqualTo(UUID.fromString("00000000-0000-4000-8000-0000000000d1"));
+        ArgumentCaptor<com.mediflow.lab.application.event.DomainEventEnvelope<?>> event =
+                ArgumentCaptor.forClass(com.mediflow.lab.application.event.DomainEventEnvelope.class);
+        verify(outbox).append(event.capture());
+        assertThat(event.getValue().eventType()).isEqualTo("lab.critical.raised");
+        var payload = (com.mediflow.lab.application.event.LabCriticalRaisedPayload) event.getValue().payload();
+        assertThat(payload.noticeId()).isEqualTo(notice.getValue().getNoticeId());
+        assertThat(payload.departmentId()).isEqualTo(UUID.fromString("00000000-0000-4000-8000-0000000000d1"));
+        assertThat(payload.value()).isEqualTo("30");
     }
 }

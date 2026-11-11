@@ -36,10 +36,13 @@ public class LabReviewConfiguration {
             AuthenticatedStaffContextPort staff, CurrentReaderPort readers,
             ObjectProvider<LabReleaseAuthorityPort> authority, LabApplicationService labs,
             CorrelationIdProvider correlationIds, PlatformTransactionManager transactions, Clock labClock,
-            @Value("${mediflow.v2.lab-review:false}") boolean enabled) {
+            @Value("${mediflow.v2.lab-review:false}") boolean enabled,
+            com.mediflow.lab.application.port.out.LabTestRepositoryPort tests,
+            com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices,
+            com.mediflow.lab.application.port.out.LabOutboxPort outbox) {
         return new LabReportReleaseService(reports, catalog, staff, readers,
                 authority.getIfAvailable(LabReleaseAuthorityPort::denyAll), labs, correlationIds,
-                new TransactionTemplate(transactions), labClock, enabled);
+                new TransactionTemplate(transactions), labClock, enabled, tests, notices, outbox);
     }
 
     /** The Organization client exists only while the review workflow is on. */
