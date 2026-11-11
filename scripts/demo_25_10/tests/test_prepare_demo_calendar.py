@@ -72,8 +72,9 @@ class CalendarTest(unittest.TestCase):
     def test_one_month_window_follows_the_run_date_within_the_read_limit(self):
         days = list(calendar.dates(*calendar.window(TODAY)))
         self.assertEqual(len(days), 31)
-        self.assertEqual(days[0], dt.date(2026, 11, 1))
-        self.assertEqual(days[-1], dt.date(2026, 12, 1))
+        # Clinical refuses sessions for past dates (SESSION_DATE_PAST), so the window starts on the run date.
+        self.assertEqual(days[0], TODAY)
+        self.assertEqual(days[-1], dt.date(2026, 12, 7))
         self.assertEqual(calendar.SLOTS, (('07:00', '12:00'), ('12:00', '17:00')))
 
     def test_every_department_staffed_clinical_only_scheduled_and_rerun_has_no_duplicates(self):

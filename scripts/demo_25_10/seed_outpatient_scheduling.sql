@@ -66,4 +66,33 @@ BEGIN
                           AND r.room_name='Phong kham lich day demo' AND r.room_type='CONSULTATION' AND r.is_active);
     END IF;
 END $$;
+
+-- Lab v2 needs a second LAB_TECH so one person enters/submits and another releases. The snapshot
+-- predates demo.lab2 (demo-seed.json staff-16), so add its account for the synthetic technician,
+-- reusing demo.lab's password hash (same public demo password; no secret is written here).
+-- Before V16 the username is the seed name and Core migrates it to the staff email.
+DO $$
+DECLARE
+    email_schema boolean := EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = 'account' AND column_name = 'email_migrated');
+BEGIN
+    IF email_schema THEN
+        EXECUTE $sql$
+            INSERT INTO account (account_id, username, password_hash, staff_id, role, is_active, created_at, updated_at,
+                                 email_migrated)
+            SELECT gen_random_uuid(), lower(s.email), l.password_hash, s.staff_id, 'LAB_TECH', TRUE, now(), now(), TRUE
+            FROM account l JOIN staff template ON template.staff_id = l.staff_id
+            JOIN staff s ON lower(s.email) = 'demo.staff16@example.test' AND s.status = 'ACTIVE'
+            WHERE l.role = 'LAB_TECH' AND lower(template.email) = 'demo.staff15@example.test'
+              AND NOT EXISTS (SELECT 1 FROM account a WHERE a.staff_id = s.staff_id)
+              AND NOT EXISTS (SELECT 1 FROM account a WHERE lower(a.username) = lower(s.email))
+        $sql$;
+    ELSE
+        INSERT INTO account (account_id, username, password_hash, staff_id, role, is_active, created_at, updated_at)
+        SELECT gen_random_uuid(), 'demo.lab2', l.password_hash, s.staff_id, 'LAB_TECH', TRUE, now(), now()
+        FROM account l JOIN staff s ON lower(s.email) = 'demo.staff16@example.test' AND s.status = 'ACTIVE'
+        WHERE l.username = 'demo.lab'
+          AND NOT EXISTS (SELECT 1 FROM account a WHERE a.staff_id = s.staff_id OR a.username = 'demo.lab2');
+    END IF;
+END $$;
 COMMIT;

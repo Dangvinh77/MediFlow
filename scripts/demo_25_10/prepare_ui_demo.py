@@ -170,6 +170,10 @@ def open_record(api, registration_id, patient_id):
     records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
     record = next((row for row in records if row['appointmentId'] == registration_id), None)
     if record is None:
+        # Clinic intake v2: the department desk issues the room number before the doctor starts.
+        # The journal stage keeps a rerun on the same Idempotency-Key, so no second ticket appears.
+        api.call('nurse', 'POST', '/api/v2/outpatient-registrations/' + registration_id + '/room-queue-ticket', {},
+                 expected=(200, 201), stage='room-ticket-' + registration_id)
         api.call('doctor', 'PUT', '/api/v1/appointments/' + registration_id + '/start-exam', {})
         records = api.call('doctor', 'GET', '/api/v1/records/patient/' + patient_id)
         record = next(row for row in records if row['appointmentId'] == registration_id)

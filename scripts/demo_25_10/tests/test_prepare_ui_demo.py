@@ -71,7 +71,11 @@ class FakeApi:
             return {'operation': {'status': self.payment_status}}
         if path.startswith('/api/v1/records/patient/'):
             return [self.record] if self.record else []
+        if path.endswith('/room-queue-ticket'):
+            self.ticketed = True
+            return {'ticketId': 'ticket', 'status': 'WAITING'}
         if path.endswith('/start-exam'):
+            assert getattr(self, 'ticketed', False), 'clinic intake needs a room ticket before the exam'
             self.record = {'recordId': 'record', 'appointmentId': 'history', 'status': 'OPEN', 'diagnoses': []}
             return {}
         if path == '/api/v1/records/record':
@@ -151,6 +155,8 @@ class PreparationTest(unittest.TestCase):
         self.assertEqual(len(registrations), 1)
         self.assertEqual(registrations[0]['patientId'], 'patient2-id')
         self.assertEqual(api.record['status'], 'COMPLETED')
+        ticket = [(role, path) for role, method, path, _ in api.calls if path.endswith('/room-queue-ticket')]
+        self.assertEqual(ticket, [('nurse', '/api/v2/outpatient-registrations/history/room-queue-ticket')])
         self.assertEqual(len(report['sessions']), 2)
         self.assertEqual(report['followUpAdvice']['recommendedFrom'], '2026-10-28')
 
