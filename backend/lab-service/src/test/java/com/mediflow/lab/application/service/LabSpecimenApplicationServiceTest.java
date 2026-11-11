@@ -64,6 +64,21 @@ class LabSpecimenApplicationServiceTest {
         verify(tests, never()).save(any());
     }
 
+    @Test void cancelledTestsCannotReceiveASpecimen() {
+        signedIn();
+        LabTest active = test(patient);
+        LabTest cancelled = test(patient);
+        cancelled.cancel("Bác sĩ hủy chỉ định", UUID.randomUUID(), AT);
+        assertThatThrownBy(() -> service.collect(cancelled.getTestId(), new CollectSpecimenRequest("BLOOD", List.of(), null)))
+                .isInstanceOfSatisfying(LabRuleException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("LAB_SPECIMEN_TEST_NOT_ACTIVE"));
+        assertThatThrownBy(() -> service.collect(active.getTestId(),
+                new CollectSpecimenRequest("BLOOD", List.of(cancelled.getTestId()), null)))
+                .isInstanceOfSatisfying(LabRuleException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("LAB_SPECIMEN_TEST_NOT_ACTIVE"));
+        verify(specimens, never()).insert(any());
+    }
+
     @Test void testsOfAnotherPatientAreRejected() {
         signedIn();
         LabTest first = test(patient);

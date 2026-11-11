@@ -122,6 +122,14 @@ public final class LabReport {
         if (conclusion != null && conclusion.length() > 4000) {
             throw new LabRuleException("LAB_REPORT_INVALID", "Kết luận tối đa 4000 ký tự");
         }
+        if (values != null) {
+            var seen = new java.util.HashSet<String>();
+            for (LabValueInput value : values) {
+                if (value != null && !seen.add(value.fieldCode())) {
+                    throw new LabRuleException("LAB_REPORT_INVALID", "Chỉ số nhập trùng: " + value.fieldCode());
+                }
+            }
+        }
         this.values = values == null ? List.of() : List.copyOf(values);
         this.conclusion = conclusion;
         this.performedDate = performedDate;

@@ -25,10 +25,14 @@ public class ExternalResultPersistenceAdapter implements ExternalResultRepositor
     public boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary,
             java.time.Instant sourceAt) {
         java.sql.Timestamp at = sourceAt == null ? null : java.sql.Timestamp.from(sourceAt);
+        // An amendment delivered before its original carried a later time; the original restores the
+        // earliest source time without replacing the newer summary.
         boolean attached = jdbc.update("""
                 INSERT INTO attached_result(record_id, type, reference_id, summary, source_at, result_version)
                 VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (record_id, type, reference_id) DO NOTHING
+                ON CONFLICT (record_id, type, reference_id) DO UPDATE SET source_at = EXCLUDED.source_at
+                WHERE EXCLUDED.type = 'LAB' AND EXCLUDED.source_at IS NOT NULL
+                  AND (attached_result.source_at IS NULL OR EXCLUDED.source_at < attached_result.source_at)
                 """, recordId, type.name(), referenceId, summary, at,
                 type == ExternalResultType.LAB ? 1 : null) == 1;
         if (type != ExternalResultType.LAB) {

@@ -18,8 +18,9 @@ Kết quả chạy trên nhánh `develop/mediflow-v2.0` tại commit `26201b02`.
 Review toàn nhánh (code-reviewer) tìm 1 Critical, 4 Important; tất cả đã sửa trong `4f6a72e3`, mỗi lỗi có test đỏ→xanh:
 tên dịch vụ Organization (core-service), độ rộng `lab_result.value` (V11), chặn v1 cho xét nghiệm đã gắn template,
 ghi nhận mọi người lưu nháp, thứ tự khóa khi phát hành, và bác sĩ/điều dưỡng chỉ đọc bản đã phát hành.
-Còn lại (nhỏ): `source_at` khi bản đính chính đến trước bản gốc ở Clinical; trùng `fieldCode` trong một nháp trả 500;
-thu mẫu không kiểm trạng thái xét nghiệm.
+Ba lỗi nhỏ đã sửa ngày 12/11/2026: bản gốc đến sau bản đính chính trả lại `source_at` sớm nhất ở Clinical;
+trùng `fieldCode` trong một nháp trả 422 `LAB_REPORT_INVALID`; xét nghiệm đã hủy/hoàn tất từ chối lấy mẫu
+(422 `LAB_SPECIMEN_TEST_NOT_ACTIVE`).
 
 ## Đã bổ sung cho buổi trình bày (12/11/2026)
 

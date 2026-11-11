@@ -32,6 +32,14 @@ class LabReportTest {
         assertThat(report.getEnteredBy()).isEqualTo(TECH);
     }
 
+    @Test void aFieldEnteredTwiceInOneDraftIsRejectedWithoutSaving() {
+        LabReport report = draft();
+        assertThatThrownBy(() -> report.saveDraft(0, List.of(new LabValueInput("GLU", null, "5.2", null),
+                new LabValueInput("GLU", null, "6.1", null)), null, null, TECH, AT))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("LAB_REPORT_INVALID");
+        assertThat(report.getDraftRevision()).isZero();
+    }
+
     @Test void staleDraftRevisionIsAConflict() {
         LabReport report = draft();
         report.saveDraft(0, List.of(), null, null, TECH, AT);

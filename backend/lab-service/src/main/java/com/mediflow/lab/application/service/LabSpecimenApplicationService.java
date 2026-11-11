@@ -56,14 +56,14 @@ public class LabSpecimenApplicationService {
     public LabSpecimenDTO collect(UUID testId, CollectSpecimenRequest request) {
         requireEnabled();
         UUID actor = actor();
-        LabTest primary = test(testId);
+        LabTest primary = activeTest(testId);
         List<UUID> testIds = new ArrayList<>(List.of(primary.getTestId()));
         if (request.additionalTestIds() != null) {
             for (UUID other : request.additionalTestIds()) {
                 if (other == null || testIds.contains(other)) {
                     continue;
                 }
-                LabTest test = test(other);
+                LabTest test = activeTest(other);
                 if (!test.getPatientId().equals(primary.getPatientId())) {
                     throw new LabRuleException("LAB_SPECIMEN_PATIENT_MISMATCH",
                             "Một mẫu chỉ dùng cho các xét nghiệm của cùng một bệnh nhân");
@@ -109,6 +109,15 @@ public class LabSpecimenApplicationService {
         LabTest test = tests.findById(testId).orElseThrow(() -> new LabTestNotFoundException(testId));
         if (test.getCareContractVersion() != 1) {
             throw new LabRuleException("LAB_SPECIMEN_TEST_UNSUPPORTED", "Chỉ quản lý mẫu cho xét nghiệm hợp đồng v1");
+        }
+        return test;
+    }
+
+    /** A cancelled or completed test no longer takes a specimen. */
+    private LabTest activeTest(UUID testId) {
+        LabTest test = test(testId);
+        if (test.isFinal()) {
+            throw new LabRuleException("LAB_SPECIMEN_TEST_NOT_ACTIVE", "Xét nghiệm đã hủy hoặc đã hoàn tất, không lấy mẫu");
         }
         return test;
     }

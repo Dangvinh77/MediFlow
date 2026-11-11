@@ -84,4 +84,15 @@ class LabResultRevisionOrderingTest {
         assertThat(adapter.labResultRevisions(recordId, labId)).extracting(LabResultRevision::amendmentReason)
                 .containsExactly(null, "sửa 1");
     }
+
+    @Test void lateOriginalRestoresTheEarliestSourceTime() {
+        UUID recordId = record(), labId = UUID.randomUUID();
+        adapter.attachLabRevision(recordId, labId, 2, "v2", "sửa 1", AT.plusSeconds(60));
+        adapter.attach(recordId, ExternalResultType.LAB, labId, "v1", AT);
+        assertThat(adapter.findByRecord(recordId).get(0).attachedAt()).isEqualTo(AT);
+        // A replayed amendment never moves the time forward again.
+        adapter.attachLabRevision(recordId, labId, 2, "v2", "sửa 1", AT.plusSeconds(60));
+        assertThat(adapter.findByRecord(recordId).get(0).attachedAt()).isEqualTo(AT);
+        assertThat(current(recordId)).isEqualTo("v2");
+    }
 }
