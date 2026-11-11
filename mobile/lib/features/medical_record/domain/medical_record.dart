@@ -20,6 +20,13 @@ class MedicalRecord {
     required this.createdAt,
     required this.status,
     this.symptoms,
+    this.chiefComplaint,
+    this.presentIllness,
+    this.pastHistory,
+    this.allergyNote,
+    this.physicalExam,
+    this.advice,
+    this.responsibleDoctorId,
     this.appointmentId,
     this.updatedAt,
     this.disposition,
@@ -35,6 +42,8 @@ class MedicalRecord {
   final List<Diagnosis> diagnoses;
   final String createdAt, status;
   final String? symptoms, appointmentId, updatedAt;
+  final String? chiefComplaint, presentIllness, pastHistory, allergyNote;
+  final String? physicalExam, advice, responsibleDoctorId;
   final String? disposition, dispositionNote, completedAt;
   final String? closureReason, closureNote, closedAt, previousRecordId;
 }
@@ -105,6 +114,11 @@ class RecordCapabilities {
     required this.canComplete,
     this.patientId,
     this.writeBlockedReason,
+    this.canHandover,
+    this.canAcceptHandover,
+    this.canAddConsultationNote,
+    this.canAmend,
+    this.canDecideAmendments,
   });
 
   /// Anything the client cannot interpret grants nothing.
@@ -113,11 +127,27 @@ class RecordCapabilities {
       canWriteContent = false,
       canComplete = false,
       patientId = null,
-      writeBlockedReason = null;
+      writeBlockedReason = null,
+      canHandover = null,
+      canAcceptHandover = null,
+      canAddConsultationNote = null,
+      canAmend = null,
+      canDecideAmendments = null;
 
   final String recordId;
   final String? patientId, writeBlockedReason;
   final bool canRead, canWriteContent, canComplete;
+
+  /// Collaboration flags are null (absent) while the server feature is off.
+  final bool? canHandover, canAcceptHandover, canAddConsultationNote;
+  final bool? canAmend, canDecideAmendments;
+
+  bool get collaborationAvailable =>
+      canHandover != null ||
+      canAcceptHandover != null ||
+      canAddConsultationNote != null ||
+      canAmend != null ||
+      canDecideAmendments != null;
 }
 
 abstract interface class MedicalRecordRepository {

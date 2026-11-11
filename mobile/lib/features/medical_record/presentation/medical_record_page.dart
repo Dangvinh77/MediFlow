@@ -9,9 +9,15 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../domain/exam_lifecycle.dart';
 import '../domain/medical_record.dart';
+import '../domain/patient_timeline.dart';
 import 'close_record_sheet.dart';
 import 'follow_up_recommendation_panel.dart';
+import 'patient_allergy_section.dart';
+import 'patient_timeline_section.dart';
 import 'record_lab_orders_section.dart';
+import 'record_collaboration_section.dart';
+import 'record_documents_section.dart';
+import 'treatment_courses_section.dart';
 
 final medicalRecordRepositoryProvider = Provider<MedicalRecordRepository>(
   (ref) => throw StateError(
@@ -31,14 +37,32 @@ typedef MedicalRecordPrescriptionWorkspaceBuilder = Widget Function(
   required bool canCreate,
 });
 
+typedef MedicalRecordDocumentRouteBuilder = void Function(
+  BuildContext context,
+  RecordDocument document,
+);
+
+class _PendingRecordContentUpdate {
+  const _PendingRecordContentUpdate({
+    required this.recordId,
+    required this.changes,
+    required this.idempotencyKey,
+  });
+
+  final String recordId, idempotencyKey;
+  final Map<String, String?> changes;
+}
+
 class MedicalRecordPage extends ConsumerStatefulWidget {
   const MedicalRecordPage({
     super.key,
     this.onLabTestCreated,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   ConsumerState<MedicalRecordPage> createState() => _MedicalRecordPageState();
 }
@@ -50,9 +74,11 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
     required this.patientId,
     required this.visitId,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final String patientId, visitId;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
@@ -68,6 +94,7 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
       visitId: visitId,
       repository: ref.watch(medicalRecordRepositoryProvider),
       prescriptionWorkspaceBuilder: prescriptionWorkspaceBuilder,
+      onOpenDocument: onOpenDocument,
     );
   }
 }
@@ -79,10 +106,12 @@ class _VisitRecordResolver extends StatefulWidget {
     required this.visitId,
     required this.repository,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final String patientId, visitId;
   final MedicalRecordRepository repository;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   State<_VisitRecordResolver> createState() => _VisitRecordResolverState();
 }
@@ -114,6 +143,7 @@ class _VisitRecordResolverState extends State<_VisitRecordResolver> {
         return MedicalRecordDetailPage(
           recordId: snapshot.data!.id,
           prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
+          onOpenDocument: widget.onOpenDocument,
         );
       }
       return Scaffold(
@@ -283,97 +313,31 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
         child: Text('Chọn bệnh nhân theo tên để xem hồ sơ khám.'),
       );
     }
-    final records = _records;
-    if (records == null) return const SizedBox.shrink();
-    if (records.isEmpty) {
-      return const Center(child: Text('Bệnh nhân chưa có hồ sơ khám.'));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: records.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) => _RecordCard(
-        record: records[index],
-        onOpen: () => Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (_) => MedicalRecordDetailPage(
-              recordId: records[index].id,
-              onLabTestCreated: widget.onLabTestCreated,
-              prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
-            ),
+    if (_records == null) return const SizedBox.shrink();
+    final patientId = _patientId!;
+    return PatientTimelineSection(
+      patientId: patientId,
+      errorBuilder: (error) =>
+          _recordAccessRefusal(
+            error: error,
+            patientId: patientId,
+            role: ref.read(workspaceAccessProvider)?.role,
+            deniedText: 'Bạn không có quyền xem hồ sơ khám của bệnh nhân này.',
+            onDeclared: () => _loadPatient(patientId),
+          ) ??
+          _RetryMessage(error: error, onRetry: () => _loadPatient(patientId)),
+      onOpenRecord: (entry) => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => MedicalRecordDetailPage(
+            recordId: entry.recordId,
+            onLabTestCreated: widget.onLabTestCreated,
+            prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
+            onOpenDocument: widget.onOpenDocument,
           ),
         ),
       ),
     );
   }
-}
-
-class _RecordCard extends StatelessWidget {
-  const _RecordCard({required this.record, required this.onOpen});
-  final MedicalRecord record;
-  final VoidCallback onOpen;
-  @override
-  Widget build(BuildContext context) => Card(
-    child: InkWell(
-      onTap: onOpen,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ngày khám: ${record.examinationDate}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                StatusPill(
-                  _recordStatusLabel(record.status),
-                  tone: statusToneOf(record.status),
-                ),
-              ],
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.patient,
-              id: record.patientId,
-              label: 'Bệnh nhân',
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.doctor,
-              id: record.doctorId,
-              label: 'Bác sĩ',
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.department,
-              id: record.departmentId,
-              label: 'Khoa',
-            ),
-            if (record.appointmentId != null)
-              ReferenceLabel(
-                kind: ReferenceKind.appointment,
-                id: record.appointmentId!,
-                label: 'Lịch hẹn',
-              ),
-            Text(
-              record.diagnoses.isEmpty
-                  ? 'Chưa có chẩn đoán'
-                  : record.diagnoses.map((d) => d.name).join(' · '),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onOpen,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('Mở hồ sơ'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class MedicalRecordEditorPage extends ConsumerStatefulWidget {
@@ -594,10 +558,14 @@ class MedicalRecordDetailPage extends ConsumerStatefulWidget {
     required this.recordId,
     this.onLabTestCreated,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
+    this.referenceOnly = false,
   });
   final String recordId;
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
+  final bool referenceOnly;
   @override
   ConsumerState<MedicalRecordDetailPage> createState() =>
       _MedicalRecordDetailPageState();
@@ -611,6 +579,7 @@ class _MedicalRecordDetailPageState
   bool _loading = true, _busy = false, _uncertain = false;
   int _generation = 0, _labOrdersRevision = 0;
   Object? _identity;
+  _PendingRecordContentUpdate? _pendingContentUpdate;
 
   @override
   void initState() {
@@ -772,8 +741,11 @@ class _MedicalRecordDetailPageState
   ) {
     final capabilities = _capabilities;
     final canEdit =
-        record.status == 'OPEN' && capabilities?.canWriteContent == true;
+        !widget.referenceOnly &&
+        record.status == 'OPEN' &&
+        capabilities?.canWriteContent == true;
     final canComplete =
+        !widget.referenceOnly &&
         capabilities?.canComplete == true &&
         canCompleteMedicalRecord(
           record,
@@ -790,6 +762,7 @@ class _MedicalRecordDetailPageState
     final canCreatePrescription = outpatientEnabled && canEdit;
     final lifecycle = ref.watch(examLifecycleRepositoryProvider);
     final canClose =
+        !widget.referenceOnly &&
         lifecycle != null &&
         capabilities?.canComplete == true &&
         canCloseWithoutConclusion(
@@ -806,12 +779,23 @@ class _MedicalRecordDetailPageState
             'NOT_IN_EXAM' => 'Lượt khám chưa ở trạng thái đang khám nên chưa thể ghi vào hồ sơ.',
             _ => null,
           };
-    final prescriptionBuilder = const {'ADMIN', 'DOCTOR'}.contains(role)
+    final prescriptionBuilder =
+        !widget.referenceOnly && const {'ADMIN', 'DOCTOR'}.contains(role)
         ? widget.prescriptionWorkspaceBuilder
         : null;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        PatientAllergySection(
+          key: ValueKey(('patient-allergies', record.patientId)),
+          patientId: record.patientId,
+          sourceRecordId: record.id,
+          canAdd: !widget.referenceOnly &&
+              const {'DOCTOR', 'NURSE'}.contains(role),
+          canManageStatus: !widget.referenceOnly && role == 'DOCTOR',
+        ),
+        if (widget.referenceOnly)
+          const NoticeBox('Lượt trước — chỉ tham khảo. Không thể thay đổi dữ liệu.'),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -878,40 +862,18 @@ class _MedicalRecordDetailPageState
                           recordId: previous,
                           prescriptionWorkspaceBuilder:
                               widget.prescriptionWorkspaceBuilder,
+                          onOpenDocument: widget.onOpenDocument,
+                          referenceOnly: true,
                         ),
                       ),
                     ),
-                    child: const Text('Xem hồ sơ lượt trước'),
+                    child: const Text('Lượt trước — chỉ tham khảo'),
                   ),
               ],
             ),
           ),
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Triệu chứng',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  record.symptoms?.trim().isNotEmpty == true
-                      ? record.symptoms!
-                      : 'Chưa ghi nhận.',
-                ),
-                if (record.disposition != null)
-                  Text(
-                    'Hướng xử trí: ${_dispositionLabel(record.disposition!)}',
-                  ),
-                if (record.dispositionNote?.trim().isNotEmpty == true)
-                  Text(record.dispositionNote!),
-              ],
-            ),
-          ),
-        ),
+        ..._clinicalContentSections(record),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -940,6 +902,24 @@ class _MedicalRecordDetailPageState
             ),
           ),
         ),
+        RecordDocumentsSection(
+          recordId: record.id,
+          onOpenSource: widget.onOpenDocument == null
+              ? null
+              : (document) => widget.onOpenDocument!(context, document),
+        ),
+        if (!widget.referenceOnly) ...[
+          TreatmentCoursesSection(
+            key: ValueKey(('treatment-courses', record.patientId)),
+            patientId: record.patientId,
+            recordId: record.id,
+          ),
+          RecordCollaborationSection(
+            key: ValueKey(('record-collaboration', record.id)),
+            recordId: record.id,
+            capabilities: _capabilities,
+          ),
+        ],
         if (record.status == 'COMPLETED' &&
             ref.watch(appConfigProvider).scheduledPaymentsEnabled &&
             ref.watch(followUpRecommendationRepositoryProvider) != null)
@@ -951,9 +931,16 @@ class _MedicalRecordDetailPageState
         if (readOnlyNotice != null) NoticeBox(readOnlyNotice),
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
-        if (_uncertain)
+        if (_uncertain && _pendingContentUpdate == null)
           const NoticeBox(
             'Kết quả thao tác chưa rõ. Làm mới hồ sơ trước khi thử lại.',
+          ),
+        if (_pendingContentUpdate case final pending?)
+          OutlinedButton.icon(
+            key: const Key('record-content-retry'),
+            onPressed: _busy ? null : () => _sendContentUpdate(pending),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Gửi lại cùng yêu cầu'),
           ),
         if (_busy) const LinearProgressIndicator(),
         Wrap(
@@ -964,9 +951,9 @@ class _MedicalRecordDetailPageState
               OutlinedButton.icon(
                 onPressed: _busy || _uncertain
                     ? null
-                    : () => _editSymptoms(record),
+                    : () => _editContent(record),
                 icon: const Icon(Icons.edit_note),
-                label: const Text('Sửa triệu chứng'),
+                label: const Text('Sửa nội dung khám'),
               ),
             if (canEdit)
               OutlinedButton.icon(
@@ -1044,18 +1031,93 @@ class _MedicalRecordDetailPageState
     );
   }
 
-  Future<void> _editSymptoms(MedicalRecord record) async {
+  List<Widget> _clinicalContentSections(MedicalRecord record) => [
+    if (record.symptoms?.trim().isNotEmpty == true)
+      _clinicalSection('Triệu chứng', record.symptoms!),
+    if (record.chiefComplaint?.trim().isNotEmpty == true)
+      _clinicalSection('Lý do khám', record.chiefComplaint!),
+    if (record.presentIllness?.trim().isNotEmpty == true)
+      _clinicalSection('Diễn biến bệnh', record.presentIllness!),
+    if (record.pastHistory?.trim().isNotEmpty == true)
+      _clinicalSection('Tiền sử', record.pastHistory!),
+    if (record.allergyNote?.trim().isNotEmpty == true)
+      _clinicalSection('Ghi chú dị ứng của lượt', record.allergyNote!),
+    if (record.physicalExam?.trim().isNotEmpty == true)
+      _clinicalSection('Khám thực thể', record.physicalExam!),
+    if (record.advice?.trim().isNotEmpty == true)
+      _clinicalSection('Dặn dò', record.advice!),
+    if (record.disposition != null ||
+        record.dispositionNote?.trim().isNotEmpty == true)
+      _clinicalSection(
+        'Hướng xử trí',
+        [
+          if (record.disposition != null)
+            _dispositionLabel(record.disposition!),
+          if (record.dispositionNote?.trim().isNotEmpty == true)
+            record.dispositionNote!,
+        ].join('\n'),
+      ),
+  ];
+
+  Widget _clinicalSection(String title, String content) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(content),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _editContent(MedicalRecord record) async {
     final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
-    final controller = TextEditingController(text: record.symptoms ?? '');
-    final route = DialogRoute<String?>(
+    final original = <String, String?>{
+      'symptoms': record.symptoms,
+      'chiefComplaint': record.chiefComplaint,
+      'presentIllness': record.presentIllness,
+      'pastHistory': record.pastHistory,
+      'allergyNote': record.allergyNote,
+      'physicalExam': record.physicalExam,
+      'advice': record.advice,
+    };
+    const labels = <String, String>{
+      'symptoms': 'Triệu chứng',
+      'chiefComplaint': 'Lý do khám',
+      'presentIllness': 'Diễn biến bệnh',
+      'pastHistory': 'Tiền sử',
+      'allergyNote': 'Ghi chú dị ứng của lượt',
+      'physicalExam': 'Khám thực thể',
+      'advice': 'Dặn dò',
+    };
+    final controllers = {
+      for (final field in recordContentFields)
+        field: TextEditingController(text: original[field] ?? ''),
+    };
+    final route = DialogRoute<Map<String, String?>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sửa triệu chứng'),
-        content: TextField(
-          controller: controller,
-          maxLength: 4000,
-          maxLines: 5,
-          decoration: const InputDecoration(labelText: 'Triệu chứng'),
+        title: const Text('Sửa nội dung khám'),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final field in recordContentFields)
+                  TextField(
+                    key: Key('record-content-$field'),
+                    controller: controllers[field],
+                    maxLength: 4000,
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: labels[field]),
+                  ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -1063,26 +1125,93 @@ class _MedicalRecordDetailPageState
             child: const Text('Hủy'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            key: const Key('record-content-save'),
+            onPressed: () => Navigator.pop(
+              context,
+              <String, String?>{
+                for (final field in recordContentFields)
+                  field: controllers[field]!.text.isEmpty &&
+                          original[field] == null
+                      ? null
+                      : controllers[field]!.text,
+              },
+            ),
             child: const Text('Lưu'),
           ),
         ],
       ),
     );
-    final symptoms = await Navigator.of(context).push(route);
+    final edited = await Navigator.of(context).push(route);
     await route.completed;
-    controller.dispose();
-    if (symptoms == null ||
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+    if (edited == null ||
         !mounted ||
         ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
       return;
     }
-    await _run(
-      () => ref
-          .read(medicalRecordRepositoryProvider)
-          .update(record.id, symptoms: symptoms),
-      (updated) => setState(() => _record = updated),
+    final changes = changedRecordSections(original: original, edited: edited);
+    if (changes.isEmpty) return;
+    await _sendContentUpdate(
+      _PendingRecordContentUpdate(
+        recordId: record.id,
+        changes: Map.unmodifiable(changes),
+        idempotencyKey: newExamCommandKey(),
+      ),
     );
+  }
+
+  Future<void> _sendContentUpdate(_PendingRecordContentUpdate intent) async {
+    if (_busy ||
+        _identity != ref.read(workspaceAccessProvider)?.sessionIdentity ||
+        widget.referenceOnly ||
+        _record?.status != 'OPEN') {
+      return;
+    }
+    final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    setState(() {
+      _pendingContentUpdate = intent;
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final repository = ref.read(patientTimelineRepositoryProvider);
+      if (repository == null) {
+        throw StateError('Không có kết nối để cập nhật nội dung hồ sơ.');
+      }
+      final updated = await repository.updateContent(
+        intent.recordId,
+        changes: intent.changes,
+        idempotencyKey: intent.idempotencyKey,
+      );
+      if (!mounted ||
+          ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
+        return;
+      }
+      setState(() {
+        _record = updated;
+        _pendingContentUpdate = null;
+        _uncertain = false;
+        _error = null;
+      });
+    } catch (error) {
+      if (!mounted ||
+          ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
+        return;
+      }
+      final unknown = _outcomeUnknown(error);
+      setState(() {
+        _error = error;
+        _uncertain = unknown;
+        if (!unknown) _pendingContentUpdate = null;
+      });
+    } finally {
+      if (mounted &&
+          ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   Future<void> _addDiagnosis(MedicalRecord record) async {

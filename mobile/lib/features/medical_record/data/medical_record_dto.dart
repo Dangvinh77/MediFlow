@@ -14,6 +14,16 @@ abstract final class MedicalRecordDto {
       departmentId: JsonReader.string(json, 'departmentId'),
       examinationDate: JsonReader.string(json, 'examinationDate'),
       symptoms: JsonReader.optionalString(json, 'symptoms'),
+      chiefComplaint: JsonReader.optionalString(json, 'chiefComplaint'),
+      presentIllness: JsonReader.optionalString(json, 'presentIllness'),
+      pastHistory: JsonReader.optionalString(json, 'pastHistory'),
+      allergyNote: JsonReader.optionalString(json, 'allergyNote'),
+      physicalExam: JsonReader.optionalString(json, 'physicalExam'),
+      advice: JsonReader.optionalString(json, 'advice'),
+      responsibleDoctorId: JsonReader.optionalString(
+        json,
+        'responsibleDoctorId',
+      ),
       appointmentId: JsonReader.optionalString(json, 'appointmentId'),
       diagnoses: rawDiagnoses
           .map((value) {

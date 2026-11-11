@@ -39,6 +39,11 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
       writeBlockedReason: value['writeBlockedReason'] is String
           ? value['writeBlockedReason'] as String
           : null,
+      canHandover: _flag(value, 'canHandover'),
+      canAcceptHandover: _flag(value, 'canAcceptHandover'),
+      canAddConsultationNote: _flag(value, 'canAddConsultationNote'),
+      canAmend: _flag(value, 'canAmend'),
+      canDecideAmendments: _flag(value, 'canDecideAmendments'),
     );
   }
 
@@ -245,6 +250,9 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+
+  static bool? _flag(Map<dynamic, dynamic> json, String key) =>
+      json[key] is bool ? json[key] as bool : null;
 
   static void _requireId(String id, String field) {
     if (!isMedicalRecordUuid(id)) throw ArgumentError.value(id, field);

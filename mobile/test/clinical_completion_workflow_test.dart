@@ -375,6 +375,8 @@ void main() {
   });
 
   testWidgets('symptom draft cannot cross a session change', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final records = MedicalRecordFake();
     await tester.pumpWidget(
       host(
@@ -383,9 +385,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sửa triệu chứng'));
+    await tester.tap(find.text('Sửa nội dung khám'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Old session draft');
+    await tester.enterText(
+      find.byKey(const Key('record-content-symptoms')),
+      'Old session draft',
+    );
     await tester.pumpWidget(
       host(
         child: const MedicalRecordDetailPage(recordId: recordId),

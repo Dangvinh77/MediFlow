@@ -50,6 +50,8 @@ Future<void> pumpDetail(
   AccessFake records, {
   String role = 'DOCTOR',
 }) async {
+  await tester.binding.setSurfaceSize(const Size(800, 3000));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     host(
       child: const MedicalRecordDetailPage(recordId: recordId),
@@ -67,7 +69,7 @@ void main() {
     tester,
   ) async {
     await pumpDetail(tester, AccessFake());
-    expect(find.text('Sửa triệu chứng'), findsOneWidget);
+    expect(find.text('Sửa nội dung khám'), findsOneWidget);
     expect(find.text('Thêm chẩn đoán'), findsOneWidget);
   });
 
@@ -75,7 +77,7 @@ void main() {
     tester,
   ) async {
     await pumpDetail(tester, AccessFake()..capabilitiesResult = denied);
-    expect(find.text('Sửa triệu chứng'), findsNothing);
+    expect(find.text('Sửa nội dung khám'), findsNothing);
     expect(find.text('Thêm chẩn đoán'), findsNothing);
     expect(find.textContaining('Chỉ bác sĩ phụ trách'), findsOneWidget);
   });
@@ -84,7 +86,7 @@ void main() {
     tester,
   ) async {
     await pumpDetail(tester, AccessFake()..capabilitiesFail = true);
-    expect(find.text('Sửa triệu chứng'), findsNothing);
+    expect(find.text('Sửa nội dung khám'), findsNothing);
     expect(find.textContaining('Chưa xác định được quyền ghi'), findsOneWidget);
   });
 

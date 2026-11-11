@@ -289,7 +289,7 @@ void main() {
         lifecycleHost(lifecycle: LifecycleFake(), records: records),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Xem hồ sơ lượt trước'), findsOneWidget);
+      expect(find.text('Lượt trước — chỉ tham khảo'), findsOneWidget);
     });
 
     testWidgets('a nurse is not offered closing', (tester) async {
