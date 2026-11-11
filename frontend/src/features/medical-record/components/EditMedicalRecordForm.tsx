@@ -130,7 +130,7 @@ function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) 
     }
 
     const body: UpdateMedicalRecordRequest = {};
-    if (symptoms !== (loadState.record.symptoms ?? "")) body.symptoms = symptoms.trim() || null;
+    if (symptoms !== (loadState.record.symptoms ?? "")) body.symptoms = symptoms.trim();
     for (const [field] of clinicalContentSections) {
       if (content[field] !== (loadState.record[field] ?? "")) body[field] = content[field];
     }

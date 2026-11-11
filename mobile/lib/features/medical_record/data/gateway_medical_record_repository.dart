@@ -117,7 +117,8 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
     }
     return _readRecord(
       await client.put('/v1/records/${Uri.encodeComponent(recordId)}', {
-        'symptoms': _clean(symptoms),
+        // An empty string clears; null would keep the stored symptoms.
+        'symptoms': symptoms?.trim() ?? '',
       }),
       recordId,
     );

@@ -509,6 +509,15 @@ void main() {
       expect(find.byKey(const Key('handover-accept-$_handover')), findsNothing);
     });
 
+    testWidgets('replacedHandoverIsLabelled', (tester) async {
+      final repository = CollabFake()
+        ..onHandovers = (() async => [
+          _handoverModel(status: 'SUPERSEDED', from: _me, to: _other),
+        ]);
+      await _pump(tester, repository, capabilities: _caps(handover: true));
+      expect(find.textContaining('Đã thay bằng yêu cầu mới'), findsOneWidget);
+    });
+
     testWidgets('formerDoctorSeesReadOnlyAfterHandover', (tester) async {
       final repository = CollabFake()
         ..onHandovers = (() async => [

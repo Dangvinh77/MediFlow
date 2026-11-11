@@ -680,7 +680,11 @@ class _HandoverTile extends StatelessWidget {
     children: [
       Text(
         '${handover.fromDoctorId} → ${handover.toDoctorId} · '
-        '${handover.status == 'ACCEPTED' ? 'Đã tiếp nhận' : 'Chờ tiếp nhận'}',
+        '${switch (handover.status) {
+          'ACCEPTED' => 'Đã tiếp nhận',
+          'SUPERSEDED' => 'Đã thay bằng yêu cầu mới',
+          _ => 'Chờ tiếp nhận',
+        }}',
         style: Theme.of(context).textTheme.bodySmall,
       ),
       Text(handover.reason),

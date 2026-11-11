@@ -34,16 +34,17 @@ export function RecordHandoverPanel({ recordId, departmentId, canHandover, canAc
   const requestBody = { toDoctorId: toDoctorId.trim(), reason: reason.trim(), pendingItems: pendingItems.trim() };
   return <section role="region" aria-label="Bàn giao bác sĩ" className="space-y-4 rounded-xl border border-border bg-surface p-5">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Bàn giao bác sĩ</h2><p className="mt-1 text-sm text-muted-foreground">Bàn giao ghi rõ người nhận, lý do và việc còn chờ.</p></div>
-      {canHandover && !hasPendingHandover && !showForm ? <Button type="button" variant="secondary" disabled={commandLocked} onClick={() => setShowForm(true)}>Tạo bàn giao</Button> : null}
+      {canHandover && !showForm ? <Button type="button" variant="secondary" disabled={commandLocked} onClick={() => setShowForm(true)}>Tạo bàn giao</Button> : null}
     </header>
     {state.status === "empty" ? <p role="status" className="text-sm text-muted-foreground">Chưa có bàn giao.</p> : null}
     {handovers.length ? <ul className="divide-y divide-border">{handovers.map((handover) => <li key={handover.handoverId} className="space-y-2 py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{handover.status === "PENDING" ? "Đang chờ người nhận" : "Đã tiếp nhận"}</span><time className="text-xs text-muted-foreground">{formatClinicalInstant(handover.acceptedAt ?? handover.requestedAt)}</time></div>
+      <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{handover.status === "PENDING" ? "Đang chờ người nhận" : handover.status === "SUPERSEDED" ? "Đã thay bằng yêu cầu mới" : "Đã tiếp nhận"}</span><time className="text-xs text-muted-foreground">{formatClinicalInstant(handover.acceptedAt ?? handover.requestedAt)}</time></div>
       <p className="text-sm">Lý do: {handover.reason}</p><p className="whitespace-pre-wrap text-sm">Việc còn chờ: {handover.pendingItems}</p>
       <dl className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2"><div><dt>Bác sĩ bàn giao</dt><dd className="mt-1 break-all font-mono">{handover.fromDoctorId}</dd></div><div><dt>Bác sĩ nhận</dt><dd className="mt-1 break-all font-mono">{handover.toDoctorId}</dd></div></dl>
       {handover.status === "PENDING" && canAcceptHandover ? <IdempotentAction<RecordHandoverDTO> scope={`record-handover:accept:${recordId}:${handover.handoverId}`} label="Chấp nhận bàn giao" body={{}} disabled={commandLocked} onLockedChange={setCommandLocked} run={(options) => medicalRecordApi.acceptHandover(recordId, handover.handoverId, options)} onSuccess={refresh} /> : null}
     </li>)}</ul> : null}
-    {canHandover && !hasPendingHandover && showForm ? <form className="space-y-3 rounded-lg border border-border p-4" onSubmit={(event) => event.preventDefault()}>
+    {canHandover && showForm ? <form className="space-y-3 rounded-lg border border-border p-4" onSubmit={(event) => event.preventDefault()}>
+      {hasPendingHandover ? <p className="text-sm text-muted-foreground">Gửi bàn giao mới sẽ thay yêu cầu đang chờ.</p> : null}
       <Field label="Bác sĩ nhận bàn giao" htmlFor={`handover-doctor-${recordId}`} required hint="Chọn bác sĩ trong cùng khoa."><ReferenceInput kind="doctor" scope={departmentId} id={`handover-doctor-${recordId}`} value={toDoctorId} onValueChange={setToDoctorId} disabled={commandLocked} placeholder="Tìm bác sĩ trong khoa" /></Field>
       <Field label="Lý do bàn giao" htmlFor={`handover-reason-${recordId}`} required><textarea id={`handover-reason-${recordId}`} value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} disabled={commandLocked} className={controlClassName} /></Field>
       <Field label="Việc còn chờ" htmlFor={`handover-pending-${recordId}`} required><textarea id={`handover-pending-${recordId}`} value={pendingItems} maxLength={2000} onChange={(event) => setPendingItems(event.target.value)} disabled={commandLocked} className={controlClassName} /></Field>

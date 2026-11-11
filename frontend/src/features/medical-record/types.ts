@@ -253,7 +253,7 @@ export interface CloseTreatmentCourseRequest {
   note: string;
 }
 
-export type RecordHandoverStatus = "PENDING" | "ACCEPTED";
+export type RecordHandoverStatus = "PENDING" | "ACCEPTED" | "SUPERSEDED";
 
 export interface RecordHandoverDTO {
   handoverId: string;

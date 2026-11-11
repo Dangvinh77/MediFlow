@@ -149,6 +149,20 @@ describe("Medical record forms", () => {
     expect(mocks.update).toHaveBeenCalledTimes(1);
   });
 
+  it("sends an empty string to clear symptoms", async () => {
+    mocks.getById.mockResolvedValue(record);
+    mocks.update.mockResolvedValue(record);
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    await screen.findByText("First record");
+    fireEvent.change(screen.getByLabelText("Triệu chứng"), { target: { value: "  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("record-a", { symptoms: "" }, {
+      idempotencyKey: expect.any(String), correlationId: expect.any(String),
+    }));
+  });
+
   it("sends only changed structured sections when editing a record", async () => {
     mocks.getById.mockResolvedValue({ ...record, chiefComplaint: "Đau đầu", presentIllness: "Khởi phát sáng nay", pastHistory: null, allergyNote: null, physicalExam: null, advice: null });
     mocks.update.mockResolvedValue(record);

@@ -67,6 +67,14 @@ describe("RecordHandoverPanel", () => {
     expect(screen.queryByRole("button", { name: /Chấp nhận bàn giao/ })).not.toBeInTheDocument();
   });
 
+  it("lets the responsible doctor replace a pending handover and labels the replaced one", async () => {
+    mocks.list.mockResolvedValueOnce([{ ...handover, handoverId: "handover-old", status: "SUPERSEDED" }, handover]);
+    render(<RecordHandoverPanel {...props} canHandover />);
+    expect(await screen.findByText(/Đã thay bằng yêu cầu mới/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Tạo bàn giao/ }));
+    expect(screen.getByText(/thay yêu cầu đang chờ/)).toBeVisible();
+  });
+
   it("sends a handover and retries an uncertain outcome with the same payload and key", async () => {
     mocks.request.mockRejectedValueOnce(new Error("network dropped"));
     render(<RecordHandoverPanel {...props} canHandover />);
