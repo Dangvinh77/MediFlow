@@ -34,7 +34,11 @@ class LabTestChargeConfigurationTest {
         });
     }
     private ApplicationContextRunner runner() {
-        return new ApplicationContextRunner().withUserConfiguration(LabTestChargeConfiguration.class)
+        // Spring Boot converts "PT15M" to Duration through its shared conversion service; a bare runner has none.
+        return new ApplicationContextRunner()
+                .withInitializer(context -> context.getBeanFactory().setConversionService(
+                        org.springframework.boot.convert.ApplicationConversionService.getSharedInstance()))
+                .withUserConfiguration(LabTestChargeConfiguration.class)
                 .withBean(Queue.class, () -> QueueBuilder.durable("billing.q").build())
                 .withBean(TopicExchange.class, () -> new TopicExchange("mediflow.events"))
                 .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
