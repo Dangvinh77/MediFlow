@@ -190,6 +190,11 @@ clinical-service,GET,/api/v2/records/{recordId}/handovers,ADMIN|DOCTOR|NURSE,tru
 clinical-service,PUT,/api/v2/records/{recordId}/handovers/{handoverId}/acceptance,DOCTOR,true
 clinical-service,POST,/api/v2/records/{recordId}/consultation-notes,DOCTOR,true
 clinical-service,GET,/api/v2/records/{recordId}/consultation-notes,ADMIN|DOCTOR|NURSE,true
+clinical-service,POST,/api/v2/records/{recordId}/amendments,DOCTOR,true
+clinical-service,GET,/api/v2/records/{recordId}/amendments,ADMIN|DOCTOR|NURSE,true
+clinical-service,PUT,/api/v2/records/{recordId}/amendments/{amendmentId}/decision,DOCTOR,true
+clinical-service,POST,/api/v2/records/{recordId}/amendment-assignments,DOCTOR,true
+clinical-service,GET,/api/v2/amendments/pending,DOCTOR,true
 clinical-service,GET,/api/v2/records/{id}/lab-orders,ADMIN|DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NURSE,true
 clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
