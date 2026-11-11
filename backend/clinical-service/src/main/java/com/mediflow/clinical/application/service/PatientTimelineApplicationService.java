@@ -87,9 +87,35 @@ public class PatientTimelineApplicationService {
         }
         Instant concludedAt = record.getCompletedAt() != null ? record.getCompletedAt() : record.getClosedAt();
         return results.findByRecord(recordId).stream()
-                .map(document -> new RecordDocumentDTO(document.type(), document.referenceId(), document.summary(),
-                        document.attachedAt(), concludedAt != null && document.attachedAt().isAfter(concludedAt)))
+                .map(document -> document(recordId, document,
+                        concludedAt != null && document.attachedAt().isAfter(concludedAt)))
                 .toList();
+    }
+
+    private RecordDocumentDTO document(UUID recordId, ExternalResultRepositoryPort.AttachedDocument document,
+            boolean afterConclusion) {
+        if (!"LAB".equals(document.type())) {
+            return new RecordDocumentDTO(document.type(), document.referenceId(), document.summary(),
+                    document.attachedAt(), afterConclusion);
+        }
+        List<ExternalResultRepositoryPort.LabResultRevision> revisions =
+                results.labResultRevisions(recordId, document.referenceId());
+        if (revisions.isEmpty()) {
+            return new RecordDocumentDTO(document.type(), document.referenceId(), document.summary(),
+                    document.attachedAt(), afterConclusion);
+        }
+        var current = revisions.stream()
+                .max(java.util.Comparator.comparingInt(ExternalResultRepositoryPort.LabResultRevision::resultVersion))
+                .orElseThrow();
+        List<RecordDocumentDTO.PreviousRevision> previous = revisions.stream()
+                .filter(r -> r.resultVersion() < current.resultVersion())
+                .sorted(java.util.Comparator.comparingInt(
+                        ExternalResultRepositoryPort.LabResultRevision::resultVersion).reversed())
+                .map(r -> new RecordDocumentDTO.PreviousRevision(r.resultVersion(), r.summary(), r.amendmentReason(),
+                        r.sourceAt(), "Đã đính chính"))
+                .toList();
+        return new RecordDocumentDTO(document.type(), document.referenceId(), document.summary(),
+                document.attachedAt(), afterConclusion, current.resultVersion(), current.amendmentReason(), previous);
     }
 
     private static TimelineEntryDTO entry(TimelineRow row, Map<UUID, List<UUID>> courseIds) {

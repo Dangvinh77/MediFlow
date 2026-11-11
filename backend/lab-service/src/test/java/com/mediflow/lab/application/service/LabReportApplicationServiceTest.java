@@ -75,6 +75,22 @@ class LabReportApplicationServiceTest {
         verify(reports, never()).update(any(), anyInt());
     }
 
+    @Test void worklistMarksOverdueAgainstTheLabClock() {
+        com.mediflow.lab.application.port.out.LabWorklistPort port =
+                mock(com.mediflow.lab.application.port.out.LabWorklistPort.class);
+        var row = new com.mediflow.lab.application.port.out.LabWorklistPort.WorklistRow(testId, UUID.randomUUID(),
+                "Glucose", "IN_PROGRESS", "GLU", "Glucose máu", "BIOCHEMISTRY", "ACCEPTED", "DRAFT", 1,
+                AT.minusSeconds(1));
+        var later = new com.mediflow.lab.application.port.out.LabWorklistPort.WorklistRow(UUID.randomUUID(),
+                UUID.randomUUID(), "CBC", "PENDING", null, null, null, "NOT_COLLECTED", null, null, null);
+        when(port.open()).thenReturn(List.of(row, later));
+        var items = new LabWorklistService(port, Clock.fixed(AT, ZoneOffset.UTC), true).worklist();
+        assertThat(items).extracting(com.mediflow.lab.application.dto.response.LabWorklistItemDTO::overdue)
+                .containsExactly(true, false);
+        assertThatThrownBy(() -> new LabWorklistService(port, Clock.fixed(AT, ZoneOffset.UTC), false).worklist())
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     @Test void disabledWorkflowIsNotFound() {
         assertThatThrownBy(() -> service(false).saveDraft(testId, new SaveLabReportDraftRequest(0, List.of(), null, null)))
                 .isInstanceOf(ResourceNotFoundException.class).extracting("code").isEqualTo("LAB_REVIEW_DISABLED");

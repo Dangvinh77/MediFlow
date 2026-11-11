@@ -61,6 +61,39 @@ class RecordDocumentsTest {
         assertThat(only(COMPLETED.minusSeconds(60)).afterConclusion()).isFalse();
     }
 
+    @Test void amendedLabShowsTheCurrentRevisionAndLabelsEarlierOnes() {
+        UUID lab = UUID.randomUUID();
+        when(records.findById(record.getRecordId())).thenReturn(Optional.of(record));
+        when(results.findByRecord(record.getRecordId())).thenReturn(List.of(
+                new AttachedDocument("LAB", lab, "Thiếu máu nhẹ", COMPLETED.plusSeconds(60))));
+        when(results.labResultRevisions(record.getRecordId(), lab)).thenReturn(List.of(
+                new ExternalResultRepositoryPort.LabResultRevision(1, "Bình thường", null, COMPLETED.minusSeconds(60)),
+                new ExternalResultRepositoryPort.LabResultRevision(2, "Thiếu máu nhẹ", "Nhập nhầm HGB",
+                        COMPLETED.plusSeconds(60))));
+
+        RecordDocumentDTO document = service.documents(record.getRecordId()).get(0);
+
+        assertThat(document.resultVersion()).isEqualTo(2);
+        assertThat(document.summary()).isEqualTo("Thiếu máu nhẹ");
+        assertThat(document.amendmentReason()).isEqualTo("Nhập nhầm HGB");
+        assertThat(document.previousRevisions()).singleElement().satisfies(previous -> {
+            assertThat(previous.resultVersion()).isEqualTo(1);
+            assertThat(previous.summary()).isEqualTo("Bình thường");
+            assertThat(previous.label()).isEqualTo("Đã đính chính");
+        });
+    }
+
+    @Test void prescriptionsHaveNoRevisions() {
+        when(records.findById(record.getRecordId())).thenReturn(Optional.of(record));
+        when(results.findByRecord(record.getRecordId())).thenReturn(List.of(
+                new AttachedDocument("PRESCRIPTION", UUID.randomUUID(), "Đơn thuốc", COMPLETED)));
+        RecordDocumentDTO document = service.documents(record.getRecordId()).get(0);
+        assertThat(document.resultVersion()).isNull();
+        assertThat(document.previousRevisions()).isEmpty();
+        org.mockito.Mockito.verify(results, org.mockito.Mockito.never())
+                .labResultRevisions(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
     @Test void documentsNeedRecordRead() {
         when(records.findById(record.getRecordId())).thenReturn(Optional.of(record));
         when(guard.requireRecord(record)).thenThrow(new ForbiddenOperationException("RECORD_READ_DENIED", "no"));
