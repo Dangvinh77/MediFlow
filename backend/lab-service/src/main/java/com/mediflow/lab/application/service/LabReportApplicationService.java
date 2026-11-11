@@ -40,10 +40,20 @@ public class LabReportApplicationService {
     private final AuthenticatedStaffContextPort staff;
     private final Clock clock;
     private final boolean enabled;
+    private final com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens;
 
+    /** Unit fixtures that do not exercise specimens. */
+    public LabReportApplicationService(LabTestRepositoryPort tests, LabReportRepositoryPort reports,
+            LabCatalogPort catalog, AuthenticatedStaffContextPort staff, Clock clock, boolean enabled) {
+        this(tests, reports, catalog, staff, clock, enabled, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
     public LabReportApplicationService(LabTestRepositoryPort tests, LabReportRepositoryPort reports,
             LabCatalogPort catalog, AuthenticatedStaffContextPort staff, @Qualifier("labClock") Clock clock,
-            @Value("${mediflow.v2.lab-review:false}") boolean enabled) {
+            @Value("${mediflow.v2.lab-review:false}") boolean enabled,
+            com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens) {
+        this.specimens = specimens;
         this.tests = tests;
         this.reports = reports;
         this.catalog = catalog;
@@ -83,6 +93,9 @@ public class LabReportApplicationService {
         tests.findByIdForUpdate(testId).orElseThrow(() -> new LabTestNotFoundException(testId));
         LabReport report = openReport(testId);
         int expected = request.draftRevision();
+        if (specimens != null && !specimens.hasAcceptedSpecimen(testId)) {
+            throw new LabRuleException("LAB_SPECIMEN_REQUIRED", "Chưa có mẫu bệnh phẩm được tiếp nhận cho xét nghiệm này");
+        }
         report.submit(expected, template(report), actor, clock.instant());
         reports.update(report, expected);
         return LabReportDTO.of(report);

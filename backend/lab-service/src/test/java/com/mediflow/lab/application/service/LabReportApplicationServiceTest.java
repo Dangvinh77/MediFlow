@@ -56,6 +56,25 @@ class LabReportApplicationServiceTest {
         return new LabReportApplicationService(tests, reports, catalog, staff, Clock.fixed(AT, ZoneOffset.UTC), enabled);
     }
 
+    @Test void submissionNeedsAnAcceptedSpecimen() {
+        service(true);
+        com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens =
+                mock(com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort.class);
+        when(specimens.hasAcceptedSpecimen(testId)).thenReturn(false);
+        LabReportApplicationService gated = new LabReportApplicationService(tests, reports, catalog, staff,
+                Clock.fixed(AT, ZoneOffset.UTC), true, specimens);
+        LabReport draft = LabReport.open(testId, 1, "GLU", 1, null, AT);
+        draft.saveDraft(0, List.of(), null, LocalDate.of(2026, 11, 11), tech, AT);
+        when(reports.forUpdate(testId)).thenReturn(Optional.of(draft));
+
+        assertThatThrownBy(() -> gated.submit(testId,
+                new com.mediflow.lab.application.dto.request.LabReportRequests.SubmitLabReportRequest(1)))
+                .isInstanceOfSatisfying(com.mediflow.lab.domain.exception.LabRuleException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("LAB_SPECIMEN_REQUIRED"));
+        assertThat(draft.getStatus()).isEqualTo(com.mediflow.lab.domain.model.LabReportStatus.DRAFT);
+        verify(reports, never()).update(any(), anyInt());
+    }
+
     @Test void disabledWorkflowIsNotFound() {
         assertThatThrownBy(() -> service(false).saveDraft(testId, new SaveLabReportDraftRequest(0, List.of(), null, null)))
                 .isInstanceOf(ResourceNotFoundException.class).extracting("code").isEqualTo("LAB_REVIEW_DISABLED");
