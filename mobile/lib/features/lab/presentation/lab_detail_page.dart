@@ -57,6 +57,7 @@ class _LabDetailState extends State<_LabDetail> {
   String? _resolvedTemplateTestId;
   int _templateRequest = 0;
   bool _templateLoading = false;
+  bool _legacyResults = false;
   bool _structuredDraftDirty = false;
   final _structuredEntryKey = GlobalKey<LabTemplateResultEntryState>();
   bool busy = false, uncertain = false;
@@ -109,11 +110,27 @@ class _LabDetailState extends State<_LabDetail> {
           uncertain = false;
         });
         await _syncTemplate(data);
+        await _checkLegacyResults(data);
       }
     } catch (e) {
       if (mounted && widget.id == requestedId) setState(() => error = e);
     } finally {
       if (mounted && widget.id == requestedId) setState(() => busy = false);
+    }
+  }
+
+  /// Results saved before the catalogue have no template; a disabled catalogue says nothing.
+  Future<void> _checkLegacyResults(LabDetail detail) async {
+    var legacy = false;
+    if (detail.results.isNotEmpty) {
+      try {
+        legacy = (await widget.workflow.template(detail.id)).template == null;
+      } catch (_) {
+        legacy = false;
+      }
+    }
+    if (mounted && widget.id == detail.id && legacy != _legacyResults) {
+      setState(() => _legacyResults = legacy);
     }
   }
 
@@ -324,6 +341,11 @@ class _LabDetailState extends State<_LabDetail> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text('Kết luận: ${v.conclusion}'),
+                    ),
+                  if (_legacyResults && v.results.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Chip(label: Text('Chưa gắn template')),
                     ),
                   for (final row in v.results)
                     Card(

@@ -8,6 +8,7 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import 'lab_detail_page.dart';
 import 'lab_labels.dart';
+import 'lab_review_page.dart';
 import '../domain/lab_test.dart';
 
 final labRepositoryProvider = Provider<LabRepository>(
@@ -27,6 +28,17 @@ class LabPage extends ConsumerStatefulWidget {
 class _LabPageState extends ConsumerState<LabPage> {
   String? _status;
   Object? _identity;
+  void _open(BuildContext context, String title, Widget page) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: page,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final find = ref.watch(findLabTestsProvider);
@@ -35,8 +47,41 @@ class _LabPageState extends ConsumerState<LabPage> {
       _identity = access?.sessionIdentity;
       _status = access?.role == 'LAB_TECH' ? 'READY' : null;
     }
+    final role = access?.role;
+    final canWorklist = role == 'LAB_TECH' || role == 'ADMIN';
+    final canCritical = role == 'LAB_TECH' || role == 'DOCTOR';
     return Column(
       children: [
+        if (canWorklist || canCritical)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (canWorklist)
+                  OutlinedButton.icon(
+                    onPressed: () => _open(
+                      context,
+                      'Danh sách việc xét nghiệm',
+                      const LabWorklistPage(),
+                    ),
+                    icon: const Icon(Icons.checklist),
+                    label: const Text('Danh sách việc'),
+                  ),
+                if (canCritical)
+                  OutlinedButton.icon(
+                    onPressed: () => _open(
+                      context,
+                      'Cảnh báo kết quả nguy cấp',
+                      const CriticalNoticesPage(),
+                    ),
+                    icon: const Icon(Icons.warning_amber_rounded),
+                    label: const Text('Cảnh báo nguy cấp'),
+                  ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.all(16),
           child: DropdownButtonFormField<String>(

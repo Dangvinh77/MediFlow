@@ -21,7 +21,8 @@ class RecordDocumentsSection extends ConsumerStatefulWidget {
       _RecordDocumentsSectionState();
 }
 
-class _RecordDocumentsSectionState extends ConsumerState<RecordDocumentsSection> {
+class _RecordDocumentsSectionState
+    extends ConsumerState<RecordDocumentsSection> {
   List<RecordDocument>? _documents;
   Object? _error;
   bool _loading = true;
@@ -54,7 +55,9 @@ class _RecordDocumentsSectionState extends ConsumerState<RecordDocumentsSection>
       _loading = true;
     });
     try {
-      if (repository == null) throw StateError('Không có nguồn tài liệu hồ sơ.');
+      if (repository == null) {
+        throw StateError('Không có nguồn tài liệu hồ sơ.');
+      }
       final documents = await repository.documents(recordId);
       if (mounted && generation == _generation && recordId == widget.recordId) {
         setState(() {
@@ -106,6 +109,22 @@ class _RecordDocumentsSectionState extends ConsumerState<RecordDocumentsSection>
                     children: [
                       Text(document.typeLabel),
                       Text(formatClinicalInstant(document.attachedAt)),
+                      if (document.resultVersion != null)
+                        Text('Phiên bản hiện tại: ${document.resultVersion}'),
+                      if (document.amendmentReason?.isNotEmpty == true)
+                        Text('Lý do đính chính: ${document.amendmentReason}'),
+                      for (final revision in document.previousRevisions) ...[
+                        const Text('Đã đính chính'),
+                        Text(
+                          '${revision.label ?? 'Phiên bản'}'
+                          '${revision.resultVersion == null ? '' : ' · phiên bản ${revision.resultVersion}'}',
+                        ),
+                        Text(revision.summary),
+                        if (revision.amendmentReason?.isNotEmpty == true)
+                          Text('Lý do đính chính: ${revision.amendmentReason}'),
+                        if (revision.sourceAt?.isNotEmpty == true)
+                          Text(formatClinicalInstant(revision.sourceAt!)),
+                      ],
                       if (document.afterConclusion)
                         const Text('Bổ sung sau khi kết thúc'),
                     ],
@@ -123,6 +142,11 @@ class _RecordDocumentsSectionState extends ConsumerState<RecordDocumentsSection>
   );
 
   Widget _failure() {
+    if (_error is ApiFailure &&
+        (_error as ApiFailure).status == 404 &&
+        (_error as ApiFailure).code == 'LAB_REVIEW_DISABLED') {
+      return const Text('Chức năng chưa được bật');
+    }
     if (_error is ApiFailure && (_error as ApiFailure).status == 403) {
       return const Text('Bạn không có quyền xem tài liệu của hồ sơ này.');
     }

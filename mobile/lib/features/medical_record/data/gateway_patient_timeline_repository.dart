@@ -45,12 +45,14 @@ class GatewayPatientTimelineRepository implements PatientTimelineRepository {
       throw const FormatException('Thông tin phân trang không hợp lệ.');
     }
     return TimelinePage(
-      entries: rawContent.map((item) {
-        if (item is! Map<String, dynamic>) {
-          throw const FormatException('Dữ liệu lượt khám không hợp lệ.');
-        }
-        return TimelineEntryDto.fromJson(item);
-      }).toList(growable: false),
+      entries: rawContent
+          .map((item) {
+            if (item is! Map<String, dynamic>) {
+              throw const FormatException('Dữ liệu lượt khám không hợp lệ.');
+            }
+            return TimelineEntryDto.fromJson(item);
+          })
+          .toList(growable: false),
       page: number,
       size: responseSize,
       totalPages: totalPages,
@@ -67,12 +69,14 @@ class GatewayPatientTimelineRepository implements PatientTimelineRepository {
     if (value is! List) {
       throw const FormatException('Phản hồi tài liệu hồ sơ không hợp lệ.');
     }
-    return value.map((item) {
-      if (item is! Map<String, dynamic>) {
-        throw const FormatException('Dữ liệu tài liệu không hợp lệ.');
-      }
-      return RecordDocumentDto.fromJson(item);
-    }).toList(growable: false);
+    return value
+        .map((item) {
+          if (item is! Map<String, dynamic>) {
+            throw const FormatException('Dữ liệu tài liệu không hợp lệ.');
+          }
+          return RecordDocumentDto.fromJson(item);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -151,12 +155,41 @@ abstract final class RecordDocumentDto {
     if (afterConclusion is! bool) {
       throw const FormatException('Dữ liệu afterConclusion không hợp lệ.');
     }
+    final resultVersion = _optionalVersion(json['resultVersion']);
+    final rawRevisions = json['previousRevisions'];
+    if (rawRevisions != null && rawRevisions is! List) {
+      throw const FormatException('Dữ liệu previousRevisions không hợp lệ.');
+    }
     return RecordDocument(
       type: type,
       referenceId: JsonReader.string(json, 'referenceId'),
       summary: JsonReader.string(json, 'summary'),
       attachedAt: JsonReader.string(json, 'attachedAt'),
       afterConclusion: afterConclusion,
+      resultVersion: resultVersion,
+      amendmentReason: JsonReader.optionalString(json, 'amendmentReason'),
+      previousRevisions: List.unmodifiable(
+        (rawRevisions as List? ?? const []).map((item) {
+          if (item is! Map<String, dynamic>) {
+            throw const FormatException('Dữ liệu revision không hợp lệ.');
+          }
+          return RecordDocumentRevision(
+            resultVersion: _optionalVersion(item['resultVersion']),
+            summary: JsonReader.string(item, 'summary'),
+            amendmentReason: JsonReader.optionalString(item, 'amendmentReason'),
+            sourceAt: JsonReader.optionalString(item, 'sourceAt'),
+            label: JsonReader.optionalString(item, 'label'),
+          );
+        }),
+      ),
     );
+  }
+
+  static int? _optionalVersion(Object? value) {
+    if (value == null) return null;
+    if (value is! int || value < 1) {
+      throw const FormatException('Dữ liệu resultVersion không hợp lệ.');
+    }
+    return value;
   }
 }

@@ -103,6 +103,33 @@ void main() {
     child: MaterialApp(home: Scaffold(body: child)),
   );
 
+  testWidgets('legacy lab result renders raw value with "chưa gắn template"', (
+    tester,
+  ) async {
+    final workflow = Workflow()
+      ..read = () async => LabDetail(
+        id: drugId,
+        patientId: otherDrugId,
+        recordId: otherDrugId,
+        departmentId: otherDrugId,
+        type: 'Công thức máu',
+        requestedDate: '2026-10-22',
+        status: 'COMPLETED',
+        paid: false,
+        version: 1,
+        clearanceId: rxId,
+        results: const [
+          LabResultDraft(indicator: 'Hb', value: 'Không có kết quả: mẫu vỡ'),
+        ],
+      );
+    await tester.pumpWidget(
+      host('legacy', const LabDetailPage(id: drugId), workflow: workflow),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Chưa gắn template'), findsOneWidget);
+    expect(find.textContaining('Không có kết quả: mẫu vỡ'), findsOneWidget);
+  });
+
   testWidgets(
     'enabled report opens outpatient statistics instead of legacy zeros',
     (tester) async {

@@ -48,16 +48,36 @@ class RecordDocument {
     required this.summary,
     required this.attachedAt,
     required this.afterConclusion,
+    this.resultVersion,
+    this.amendmentReason,
+    this.previousRevisions = const [],
   });
 
   final String type, referenceId, summary, attachedAt;
   final bool afterConclusion;
+  final int? resultVersion;
+  final String? amendmentReason;
+  final List<RecordDocumentRevision> previousRevisions;
 
   String get typeLabel => switch (type) {
     'LAB' => 'Kết quả xét nghiệm',
     'PRESCRIPTION' => 'Đơn thuốc',
     _ => type,
   };
+}
+
+class RecordDocumentRevision {
+  const RecordDocumentRevision({
+    required this.summary,
+    this.resultVersion,
+    this.amendmentReason,
+    this.sourceAt,
+    this.label,
+  });
+
+  final int? resultVersion;
+  final String summary;
+  final String? amendmentReason, sourceAt, label;
 }
 
 abstract interface class PatientTimelineRepository {
