@@ -147,7 +147,19 @@ public final class LabClinicalOrderContextAdapter implements LabClinicalOrderCon
         return Optional.of(new LabClinicalOrderContext(requestedId, uuid(data, "recordId"),
                 uuid(data, "patientId"), uuid(data, "requestingDoctorId"),
                 uuid(data, "requestingDepartmentId"), episodeType, uuid(data, "careEpisodeId"),
-                labType, requestedDate, priceCode, orderedAt, observedAt));
+                labType, requestedDate, priceCode, orderedAt, observedAt, optionalServiceCode(data)));
+    }
+
+    /** Absent or null before the v2.0 catalogue; otherwise a short non-blank code. */
+    private static String optionalServiceCode(JsonNode data) {
+        JsonNode node = data.get("serviceCode");
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (!node.isTextual() || node.textValue().isBlank() || node.textValue().length() > 32) {
+            throw new IllegalArgumentException("Invalid Clinical service code");
+        }
+        return node.textValue();
     }
 
     private static String text(JsonNode root, String field) {

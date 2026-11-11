@@ -20,12 +20,21 @@ public record CreateLabRequest(
         UUID sourceOrderId,
         CareEpisodeType careEpisodeType,
         UUID careEpisodeId,
-        @Size(max = 64) String priceCode
+        @Size(max = 64) String priceCode,
+        @Size(max = 32) String serviceCode
 ) {
+    /** Contract before the v2.0 catalogue: no service code. */
+    public CreateLabRequest(UUID recordId, UUID patientId, UUID requestingDepartmentId, String labType,
+                            LocalDate requestedDate, UUID sourceOrderId, CareEpisodeType careEpisodeType,
+                            UUID careEpisodeId, String priceCode) {
+        this(recordId, patientId, requestingDepartmentId, labType, requestedDate, sourceOrderId, careEpisodeType,
+                careEpisodeId, priceCode, null);
+    }
+
     /** Compatibility constructor for the existing version-0 request contract. */
     public CreateLabRequest(UUID recordId, UUID patientId, UUID requestingDepartmentId,
                             String labType, LocalDate requestedDate) {
         this(recordId, patientId, requestingDepartmentId, labType, requestedDate,
-                null, null, null, null);
+                null, null, null, null, null);
     }
 }

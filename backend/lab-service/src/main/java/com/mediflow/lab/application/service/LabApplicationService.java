@@ -209,6 +209,7 @@ public class LabApplicationService implements ManageLabTestUseCase,
                 && context.labType().equals(request.labType())
                 && context.requestedDate().equals(request.requestedDate())
                 && context.priceCode().equals(request.priceCode())
+                && java.util.Objects.equals(context.serviceCode(), request.serviceCode())
                 && context.orderedAt() != null && context.observedAt() != null;
     }
 

@@ -60,6 +60,7 @@ mediflow:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   v2:
     record-access-policy: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:false}
+    lab-catalog: ${MEDIFLOW_V2_LABCATALOG:false}
   lab:
     clinical-context:
       enabled: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:false}

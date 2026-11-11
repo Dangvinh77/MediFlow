@@ -16,7 +16,13 @@ import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
+import com.mediflow.lab.application.port.out.LabCatalogPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
+import com.mediflow.lab.domain.exception.LabRuleException;
+import com.mediflow.lab.domain.model.LabResultTemplate;
+import com.mediflow.lab.domain.model.LabServiceCatalogItem;
+import java.util.List;
+import java.util.Optional;
 import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.lab.domain.model.LabTest;
 import java.time.Clock;
@@ -77,5 +83,66 @@ class LabRequestCreationApplicationServiceTest {
                 .extracting(DuplicateResourceException::getCode).isEqualTo("LAB_DUPLICATE_SOURCE_ORDER");
         verify(tests, never()).save(any());
         verify(outbox, never()).append(any());
+    }
+
+    private final LabCatalogPort catalog = mock(LabCatalogPort.class);
+    private final LabRequestCreationApplicationService catalogService = new LabRequestCreationApplicationService(
+            tests, publisher, mapper, correlations, outbox, Clock.fixed(NOW, ZoneOffset.UTC), catalog, true);
+    private static final LabServiceCatalogItem CBC = new LabServiceCatalogItem("CBC", "Công thức máu", "HEMATOLOGY",
+            "WHOLE_BLOOD_EDTA", null, 4, "LAB-CBC", "CBC", true, true);
+
+    private CreateLabRequest catalogRequest(String serviceCode, String labType, String priceCode) {
+        return new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), labType,
+                LocalDate.of(2026, 9, 20), UUID.randomUUID(), CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(),
+                priceCode, serviceCode);
+    }
+
+    @Test
+    void catalogOn_pinsTheActiveTemplateVersionOfTheOrderedService() {
+        when(catalog.service("CBC")).thenReturn(Optional.of(CBC));
+        when(catalog.activeTemplate("CBC")).thenReturn(Optional.of(new LabResultTemplate("CBC", 3, "CBC", List.of())));
+        when(tests.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        catalogService.createCareFinance(catalogRequest("CBC", "Công thức máu", "LAB-CBC"), "c");
+
+        ArgumentCaptor<LabTest> saved = ArgumentCaptor.forClass(LabTest.class);
+        verify(tests).save(saved.capture());
+        verify(catalog).bind(saved.getValue().getTestId(), "CBC", "CBC", 3);
+    }
+
+    @Test
+    void catalogOn_requiresAServiceCode() {
+        assertThatThrownBy(() -> catalogService.createCareFinance(catalogRequest(null, "CBC", "LAB-CBC"), "c"))
+                .isInstanceOf(LabRuleException.class).extracting("code").isEqualTo("LAB_SERVICE_REQUIRED");
+        verify(tests, never()).save(any());
+    }
+
+    @Test
+    void catalogOn_rejectsUnknownOrInactiveServices() {
+        when(catalog.service("OLD")).thenReturn(Optional.of(new LabServiceCatalogItem("OLD", "Cũ", "HEMATOLOGY",
+                "SERUM", null, 4, "LAB-OLD", "OLD", false, false)));
+        assertThatThrownBy(() -> catalogService.createCareFinance(catalogRequest("NOPE", "x", "LAB-CBC"), "c"))
+                .extracting("code").isEqualTo("LAB_SERVICE_UNKNOWN");
+        assertThatThrownBy(() -> catalogService.createCareFinance(catalogRequest("OLD", "Cũ", "LAB-OLD"), "c"))
+                .extracting("code").isEqualTo("LAB_SERVICE_UNKNOWN");
+        verify(tests, never()).save(any());
+    }
+
+    @Test
+    void catalogOn_rejectsANameOrPriceThatDiffersFromTheCatalogue() {
+        when(catalog.service("CBC")).thenReturn(Optional.of(CBC));
+        assertThatThrownBy(() -> catalogService.createCareFinance(catalogRequest("CBC", "Công thức máu", "LAB-GLU"), "c"))
+                .extracting("code").isEqualTo("LAB_SERVICE_MISMATCH");
+        assertThatThrownBy(() -> catalogService.createCareFinance(catalogRequest("CBC", "CBC tự đặt", "LAB-CBC"), "c"))
+                .extracting("code").isEqualTo("LAB_SERVICE_MISMATCH");
+        verify(tests, never()).save(any());
+    }
+
+    @Test
+    void catalogOff_keepsTheFreeTextBehaviour() {
+        when(tests.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        service.createCareFinance(catalogRequest("CBC", "CBC", "LAB-CBC"), "c");
+        verify(tests).save(any());
+        verify(catalog, never()).bind(any(), any(), any(), org.mockito.ArgumentMatchers.anyInt());
     }
 }

@@ -11,7 +11,13 @@ import com.mediflow.lab.application.port.in.CreateLabRequestUseCase;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
+import com.mediflow.lab.application.port.out.LabCatalogPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
+import com.mediflow.lab.domain.exception.LabRuleException;
+import com.mediflow.lab.domain.model.LabResultTemplate;
+import com.mediflow.lab.domain.model.LabServiceCatalogItem;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import com.mediflow.lab.domain.model.LabTest;
 import java.time.Clock;
 import java.time.Instant;
@@ -29,16 +35,28 @@ public class LabRequestCreationApplicationService implements CreateLabRequestUse
     private final CorrelationIdProvider correlations;
     private final LabOutboxPort outbox;
     private final Clock clock;
+    private final LabCatalogPort catalog;
+    private final boolean catalogEnabled;
 
     public LabRequestCreationApplicationService(LabTestRepositoryPort tests,
             LabEventPublisherPort publisher, LabTestDtoMapper mapper, CorrelationIdProvider correlations,
             LabOutboxPort outbox, Clock clock) {
+        this(tests, publisher, mapper, correlations, outbox, clock, null, false);
+    }
+
+    @Autowired
+    public LabRequestCreationApplicationService(LabTestRepositoryPort tests,
+            LabEventPublisherPort publisher, LabTestDtoMapper mapper, CorrelationIdProvider correlations,
+            LabOutboxPort outbox, Clock clock, LabCatalogPort catalog,
+            @Value("${mediflow.v2.lab-catalog:false}") boolean catalogEnabled) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
         this.correlations = correlations;
         this.outbox = outbox;
         this.clock = clock;
+        this.catalog = catalog;
+        this.catalogEnabled = catalogEnabled && catalog != null;
     }
 
     @Override
@@ -58,9 +76,13 @@ public class LabRequestCreationApplicationService implements CreateLabRequestUse
             throw new DuplicateResourceException("LAB_DUPLICATE_SOURCE_ORDER",
                     "Lab request already exists for this Clinical source order");
         }
+        LabResultTemplate template = catalogEnabled ? catalogTemplate(request) : null;
         LabTest saved = tests.save(LabTest.createV2(request.recordId(), request.patientId(),
                 request.requestingDepartmentId(), request.sourceOrderId(), request.careEpisodeType(),
                 request.careEpisodeId(), request.labType(), request.priceCode(), request.requestedDate()));
+        if (template != null) {
+            catalog.bind(saved.getTestId(), request.serviceCode(), template.templateCode(), template.version());
+        }
         Instant occurredAt = clock.instant();
         LabRequestV2Payload payload = new LabRequestV2Payload(saved.getTestId(), saved.getPatientId(),
                 saved.getRecordId(), saved.getRequestingDepartmentId(), saved.getCareEpisodeType(),
@@ -70,5 +92,20 @@ public class LabRequestCreationApplicationService implements CreateLabRequestUse
                 occurredAt, correlationId == null ? correlations.currentOrCreate().toString() : correlationId,
                 "lab-service", payload));
         return mapper.toDto(saved);
+    }
+
+    /** The ordered service must be active and carry the same name and price code as the order. */
+    private LabResultTemplate catalogTemplate(CreateLabRequest request) {
+        if (request.serviceCode() == null || request.serviceCode().isBlank()) {
+            throw new LabRuleException("LAB_SERVICE_REQUIRED", "A Lab order must name a catalogue service");
+        }
+        LabServiceCatalogItem service = catalog.service(request.serviceCode()).filter(LabServiceCatalogItem::active)
+                .orElseThrow(() -> new LabRuleException("LAB_SERVICE_UNKNOWN", "Unknown or inactive Lab service"));
+        if (!service.name().equals(request.labType()) || !service.priceCode().equals(request.priceCode())) {
+            throw new LabRuleException("LAB_SERVICE_MISMATCH",
+                    "The ordered test name and price code must match the catalogue service");
+        }
+        return catalog.activeTemplate(service.templateCode())
+                .orElseThrow(() -> new LabRuleException("LAB_SERVICE_UNKNOWN", "The Lab service has no active template"));
     }
 }
