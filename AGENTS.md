@@ -55,7 +55,11 @@ including production fixes and verification. Earlier Huy/Hoàng Anh backend assi
 plans and evidence are historical; they do not block Vinh from fixing these modules. Context
 data authority, contract verification and deferred-runtime gates continue to apply.
 
-Frontend remains divided by service: Huy owns Pharmacy/Report, Hoàng Anh owns Organization/Patient,
+From 2026-11-12, per explicit user assignment, Vinh owns the whole project (backend, web, mobile,
+docs) to finish the presentation; the frontend split below is historical and no longer requires
+handoffs or ownership overrides. Technical boundaries still apply.
+
+Frontend was divided by service: Huy owns Pharmacy/Report, Hoàng Anh owns Organization/Patient,
 and Vinh owns Clinical/Lab plus Billing/Notification formerly assigned to Lộc. Exact paths are canonical
 in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
 
