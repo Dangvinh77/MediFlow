@@ -56,6 +56,33 @@ class LabReportApplicationServiceTest {
         return new LabReportApplicationService(tests, reports, catalog, staff, Clock.fixed(AT, ZoneOffset.UTC), enabled);
     }
 
+    @Test void clinicianSeesOnlyTheLatestReleasedRevision() {
+        LabReportApplicationService service = service(true);
+        when(staff.currentStaff()).thenReturn(Optional.of(new AuthenticatedStaffContext(UUID.randomUUID(), "DOCTOR")));
+        when(tests.findById(testId)).thenReturn(Optional.of(test));
+        LabReport released = LabReport.restore(UUID.randomUUID(), testId, 1,
+                com.mediflow.lab.domain.model.LabReportStatus.RELEASED, 2, "GLU", 1, List.of(), java.util.Map.of(), null,
+                LocalDate.of(2026, 11, 11), null, tech, tech, AT, null, null, UUID.randomUUID(), AT, AT, AT);
+        LabReport amendmentDraft = LabReport.open(testId, 2, "GLU", 1, "Nhập nhầm", AT);
+        when(reports.current(testId)).thenReturn(Optional.of(amendmentDraft));
+        when(reports.revisions(testId)).thenReturn(List.of(released, amendmentDraft));
+
+        assertThat(service.current(testId).resultVersion()).isEqualTo(1);
+        assertThat(service.current(testId).status()).isEqualTo("RELEASED");
+    }
+
+    @Test void clinicianGetsNotFoundWhileNothingIsReleased() {
+        LabReportApplicationService service = service(true);
+        when(staff.currentStaff()).thenReturn(Optional.of(new AuthenticatedStaffContext(UUID.randomUUID(), "NURSE")));
+        when(tests.findById(testId)).thenReturn(Optional.of(test));
+        LabReport draft = LabReport.open(testId, 1, "GLU", 1, null, AT);
+        when(reports.current(testId)).thenReturn(Optional.of(draft));
+        when(reports.revisions(testId)).thenReturn(List.of(draft));
+
+        assertThatThrownBy(() -> service.current(testId)).isInstanceOf(ResourceNotFoundException.class)
+                .extracting("code").isEqualTo("LAB_REPORT_NOT_FOUND");
+    }
+
     @Test void submissionNeedsAnAcceptedSpecimen() {
         service(true);
         com.mediflow.lab.application.port.out.LabSpecimenRepositoryPort specimens =

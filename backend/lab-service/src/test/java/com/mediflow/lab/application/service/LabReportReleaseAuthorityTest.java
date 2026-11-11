@@ -90,6 +90,7 @@ class LabReportReleaseAuthorityTest {
         when(test.getCareEpisodeId()).thenReturn(UUID.randomUUID());
         when(test.getLabType()).thenReturn("Glucose");
         when(tests.findById(testId)).thenReturn(Optional.of(test));
+        when(tests.findByIdForUpdate(testId)).thenReturn(Optional.of(test));
         when(notices.insertIfAbsent(any())).thenReturn(true);
         return new LabReportReleaseService(reports, catalog, staff, readers, authority, labs, correlations,
                 TransactionOperations.withoutTransaction(), Clock.fixed(AT, ZoneOffset.UTC), true, tests, notices, outbox);
@@ -101,6 +102,18 @@ class LabReportReleaseAuthorityTest {
                 LocalDate.of(2026, 11, 11), by, AT.minusSeconds(200));
         report.submit(1, template, by, AT.minusSeconds(100));
         return report;
+    }
+
+    /** Draft, submit and return lock lab_test then lab_report; release must take them in the same order. */
+    @Test void releaseLocksTheTestBeforeTheReport() {
+        LabReport report = submitted(writer);
+        when(authority.canRelease(eq(reviewerAccount), eq(reviewer), any())).thenReturn(true);
+
+        service(reviewer, report).release(testId);
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(tests, reports);
+        order.verify(tests).findByIdForUpdate(testId);
+        order.verify(reports).forUpdate(testId);
     }
 
     @Test void amendmentWriterCannotReleaseIt() {

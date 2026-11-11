@@ -3,9 +3,11 @@ package com.mediflow.lab.domain.model;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,7 @@ public final class LabReport {
     private String conclusion;
     private LocalDate performedDate;
     private UUID enteredBy;
+    private Set<UUID> authors = new LinkedHashSet<>();
     private UUID submittedBy;
     private Instant submittedAt;
     private UUID returnedBy;
@@ -77,6 +80,17 @@ public final class LabReport {
             Map<String, LabFlag> flags, String conclusion, LocalDate performedDate, String amendmentReason,
             UUID enteredBy, UUID submittedBy, Instant submittedAt, UUID returnedBy, String returnReason,
             UUID releasedBy, Instant releasedAt, Instant createdAt, Instant updatedAt) {
+        return restore(reportId, testId, resultVersion, status, draftRevision, templateCode, templateVersion, values,
+                flags, conclusion, performedDate, amendmentReason, enteredBy,
+                enteredBy == null ? Set.of() : Set.of(enteredBy), submittedBy, submittedAt, returnedBy, returnReason,
+                releasedBy, releasedAt, createdAt, updatedAt);
+    }
+
+    public static LabReport restore(UUID reportId, UUID testId, int resultVersion, LabReportStatus status,
+            int draftRevision, String templateCode, int templateVersion, List<LabValueInput> values,
+            Map<String, LabFlag> flags, String conclusion, LocalDate performedDate, String amendmentReason,
+            UUID enteredBy, Set<UUID> authors, UUID submittedBy, Instant submittedAt, UUID returnedBy,
+            String returnReason, UUID releasedBy, Instant releasedAt, Instant createdAt, Instant updatedAt) {
         LabReport report = new LabReport(reportId, testId, resultVersion, templateCode, templateVersion,
                 amendmentReason, createdAt);
         report.status = Objects.requireNonNull(status);
@@ -86,6 +100,10 @@ public final class LabReport {
         report.conclusion = conclusion;
         report.performedDate = performedDate;
         report.enteredBy = enteredBy;
+        report.authors = new LinkedHashSet<>(authors);
+        if (enteredBy != null) {
+            report.authors.add(enteredBy);
+        }
         report.submittedBy = submittedBy;
         report.submittedAt = submittedAt;
         report.returnedBy = returnedBy;
@@ -108,6 +126,7 @@ public final class LabReport {
         this.conclusion = conclusion;
         this.performedDate = performedDate;
         this.enteredBy = Objects.requireNonNull(actor);
+        this.authors.add(actor);
         this.draftRevision++;
         this.updatedAt = at;
     }
@@ -146,13 +165,13 @@ public final class LabReport {
         this.updatedAt = at;
     }
 
-    /** Releases the submitted revision; whoever entered or submitted it may not release it. */
+    /** Releases the submitted revision; whoever saved, entered or submitted it may not release it. */
     public void release(UUID actor, Map<String, LabFlag> flags, Instant at) {
         if (status != LabReportStatus.PENDING_REVIEW) {
             throw new DuplicateResourceException("LAB_REPORT_NOT_PENDING", "Báo cáo không ở trạng thái chờ duyệt");
         }
         Objects.requireNonNull(actor);
-        if (actor.equals(enteredBy) || actor.equals(submittedBy)) {
+        if (authors.contains(actor) || actor.equals(enteredBy) || actor.equals(submittedBy)) {
             throw new ForbiddenOperationException("LAB_SELF_RELEASE",
                     "Người nhập hoặc gửi duyệt không được tự phát hành kết quả");
         }
@@ -178,6 +197,8 @@ public final class LabReport {
     }
 
     public UUID getReportId() { return reportId; }
+    /** Everyone who saved a draft of this revision. */
+    public Set<UUID> getAuthors() { return Set.copyOf(authors); }
     public UUID getTestId() { return testId; }
     public int getResultVersion() { return resultVersion; }
     public LabReportStatus getStatus() { return status; }

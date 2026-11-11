@@ -63,6 +63,9 @@ mediflow:
     lab-catalog: ${MEDIFLOW_V2_LABCATALOG:false}
     lab-review: ${MEDIFLOW_V2_LAB_REVIEW:false}
     lab-amendment: ${MEDIFLOW_V2_LAB_AMENDMENT:false}
+  clients:
+    # Organization is hosted by core-service in the six-deployment topology (outpatient-mvp profile).
+    organization-service: ${MEDIFLOW_ORGANIZATION_SERVICE:organization-service}
   lab:
     clinical-context:
       enabled: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:false}

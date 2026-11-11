@@ -27,7 +27,7 @@ public class JdbcLabReportAdapter implements LabReportRepositoryPort {
     private static final String COLUMNS = """
             report_id, test_id, result_version, status, draft_revision, template_code, template_version, conclusion,
             performed_date, amendment_reason, entered_by, submitted_by, submitted_at, returned_by, return_reason,
-            released_by, released_at, created_at, updated_at""";
+            released_by, released_at, created_at, updated_at, authors""";
     private final JdbcTemplate jdbc;
 
     public JdbcLabReportAdapter(JdbcTemplate jdbc) {
@@ -58,11 +58,11 @@ public class JdbcLabReportAdapter implements LabReportRepositoryPort {
 
     @Override
     public void insert(LabReport r) {
-        jdbc.update("INSERT INTO lab_report(" + COLUMNS + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        jdbc.update("INSERT INTO lab_report(" + COLUMNS + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 r.getReportId(), r.getTestId(), r.getResultVersion(), r.getStatus().name(), r.getDraftRevision(),
                 r.getTemplateCode(), r.getTemplateVersion(), r.getConclusion(), date(r), r.getAmendmentReason(),
                 r.getEnteredBy(), r.getSubmittedBy(), ts(r.getSubmittedAt()), r.getReturnedBy(), r.getReturnReason(),
-                r.getReleasedBy(), ts(r.getReleasedAt()), ts(r.getCreatedAt()), ts(r.getUpdatedAt()));
+                r.getReleasedBy(), ts(r.getReleasedAt()), ts(r.getCreatedAt()), ts(r.getUpdatedAt()), authors(r));
         writeValues(r);
     }
 
@@ -70,11 +70,12 @@ public class JdbcLabReportAdapter implements LabReportRepositoryPort {
     public void update(LabReport r, int expectedDraftRevision) {
         int changed = jdbc.update("""
                 UPDATE lab_report SET status = ?, draft_revision = ?, conclusion = ?, performed_date = ?, entered_by = ?,
+                       authors = ?,
                        submitted_by = ?, submitted_at = ?, returned_by = ?, return_reason = ?, released_by = ?,
                        released_at = ?, updated_at = ?
                 WHERE report_id = ? AND draft_revision = ?
                 """, r.getStatus().name(), r.getDraftRevision(), r.getConclusion(), date(r), r.getEnteredBy(),
-                r.getSubmittedBy(), ts(r.getSubmittedAt()), r.getReturnedBy(), r.getReturnReason(), r.getReleasedBy(),
+                authors(r), r.getSubmittedBy(), ts(r.getSubmittedAt()), r.getReturnedBy(), r.getReturnReason(), r.getReleasedBy(),
                 ts(r.getReleasedAt()), ts(r.getUpdatedAt()), r.getReportId(), expectedDraftRevision);
         if (changed != 1) {
             throw new DuplicateResourceException("LAB_REPORT_STALE",
@@ -143,7 +144,19 @@ public class JdbcLabReportAdapter implements LabReportRepositoryPort {
                 rs.getObject("submitted_by", UUID.class), instant(rs, "submitted_at"),
                 rs.getObject("returned_by", UUID.class), rs.getString("return_reason"),
                 rs.getObject("released_by", UUID.class), instant(rs, "released_at"), instant(rs, "created_at"),
-                instant(rs, "updated_at"));
+                instant(rs, "updated_at"), authors(rs));
+    }
+
+    private static java.util.Set<UUID> authors(ResultSet rs) throws SQLException {
+        java.sql.Array array = rs.getArray("authors");
+        if (array == null) {
+            return java.util.Set.of();
+        }
+        return java.util.Set.of((UUID[]) array.getArray());
+    }
+
+    private UUID[] authors(LabReport r) {
+        return r.getAuthors().toArray(UUID[]::new);
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {
@@ -162,11 +175,12 @@ public class JdbcLabReportAdapter implements LabReportRepositoryPort {
     private record Row(UUID reportId, UUID testId, int resultVersion, LabReportStatus status, int draftRevision,
             String templateCode, int templateVersion, String conclusion, java.time.LocalDate performedDate,
             String amendmentReason, UUID enteredBy, UUID submittedBy, Instant submittedAt, UUID returnedBy,
-            String returnReason, UUID releasedBy, Instant releasedAt, Instant createdAt, Instant updatedAt) {
+            String returnReason, UUID releasedBy, Instant releasedAt, Instant createdAt, Instant updatedAt,
+            java.util.Set<UUID> authors) {
         LabReport toReport(List<LabValueInput> values, Map<String, LabFlag> flags) {
             return LabReport.restore(reportId, testId, resultVersion, status, draftRevision, templateCode,
-                    templateVersion, values, flags, conclusion, performedDate, amendmentReason, enteredBy, submittedBy,
-                    submittedAt, returnedBy, returnReason, releasedBy, releasedAt, createdAt, updatedAt);
+                    templateVersion, values, flags, conclusion, performedDate, amendmentReason, enteredBy, authors,
+                    submittedBy, submittedAt, returnedBy, returnReason, releasedBy, releasedAt, createdAt, updatedAt);
         }
     }
 }

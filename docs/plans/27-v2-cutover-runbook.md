@@ -23,7 +23,10 @@ Tất cả mặc định `false`.
 2. **`lab-catalog`**: bật Lab và Clinical cùng lúc (Clinical chỉ gửi mã dịch vụ khi Lab xác thực được).
 3. **`lab-review`**. Điều kiện: Organization đã cấp năng lực duyệt trả kết quả Lab cho **ít nhất hai** tài khoản
    LAB_TECH (đọc qua `GET /api/v2/org/lab-release-authority`; cấp bằng các endpoint năng lực nhân sự hiện có),
-   vì người duyệt phải khác người nhập.
+   vì người duyệt phải khác người nhập. Lab gọi Organization qua tên dịch vụ
+   `mediflow.clients.organization-service`: profile `outpatient-mvp` đặt sẵn `core-service`; triển khai khác đặt
+   `MEDIFLOW_ORGANIZATION_SERVICE`. Sai tên này thì mọi lần phát hành bị 403 `LAB_RELEASE_DENIED` (fail-closed).
+   Khi cờ bật, xét nghiệm đã gắn template không còn nhập kết quả qua v1 (409 `LAB_REVIEW_REQUIRED`), kể cả khi chưa có nháp.
 4. **`lab-amendment`**.
 
 ## Endpoint mới (Lab, Gateway đã bảo vệ)

@@ -90,6 +90,10 @@ public class LabReportReleaseService {
     }
 
     private LabReportDTO releaseLocked(UUID testId, UUID actor) {
+        // Same lock order as draft, submit and return: lab_test row first, then lab_report.
+        if (tests != null) {
+            tests.findByIdForUpdate(testId);
+        }
         LabReport report = reports.forUpdate(testId).filter(r -> r.getStatus() != LabReportStatus.RELEASED)
                 .orElseThrow(() -> new ResourceNotFoundException("LAB_REPORT_NOT_FOUND",
                         "Không có báo cáo đang chờ duyệt"));

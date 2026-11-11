@@ -61,6 +61,18 @@ class LabReportTest {
         return report;
     }
 
+    @Test void anEarlierAuthorCannotReleaseAfterSomeoneElseResaved() {
+        UUID other = UUID.randomUUID();
+        LabReport report = draft();
+        report.saveDraft(0, List.of(new LabValueInput("GLU", null, "5.2", null)), null, LocalDate.of(2026, 11, 11),
+                TECH, AT);
+        report.saveDraft(1, report.getValues(), null, report.getPerformedDate(), other, AT);
+        report.submit(2, GLU, other, AT);
+        assertThat(report.getAuthors()).containsExactlyInAnyOrder(TECH, other);
+        assertThatThrownBy(() -> report.release(TECH, java.util.Map.of(), AT))
+                .extracting("code").isEqualTo("LAB_SELF_RELEASE");
+    }
+
     @Test void pendingReviewCannotBeEdited() {
         LabReport report = submitted();
         assertThat(report.getStatus()).isEqualTo(LabReportStatus.PENDING_REVIEW);

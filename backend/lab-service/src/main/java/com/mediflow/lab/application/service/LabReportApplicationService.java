@@ -78,7 +78,12 @@ public class LabReportApplicationService {
         if (tests.findById(testId).isEmpty()) {
             throw new LabTestNotFoundException(testId);
         }
-        return reports.current(testId).map(LabReportDTO::of)
+        boolean labStaff = staff.currentStaff().map(s -> "LAB_TECH".equals(s.role())).orElse(false);
+        java.util.Optional<LabReport> visible = labStaff ? reports.current(testId)
+                // Clinicians read only what was released, never a draft or a pending amendment.
+                : reports.revisions(testId).stream().filter(r -> r.getStatus() == LabReportStatus.RELEASED)
+                        .reduce((earlier, later) -> later);
+        return visible.map(LabReportDTO::of)
                 .orElseThrow(() -> new ResourceNotFoundException("LAB_REPORT_NOT_FOUND", "Chưa có báo cáo kết quả"));
     }
 
