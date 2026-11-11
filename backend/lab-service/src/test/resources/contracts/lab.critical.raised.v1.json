@@ -1,0 +1,25 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000031",
+  "eventType": "lab.critical.raised",
+  "version": 1,
+  "occurredAt": "2026-11-11T06:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000037",
+  "producer": "lab-service",
+  "payload": {
+    "noticeId": "00000000-0000-4000-8000-000000000032",
+    "labId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "recordId": "00000000-0000-4000-8000-000000000004",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+    "labType": "Điện giải",
+    "resultVersion": 1,
+    "fieldCode": "K",
+    "label": "Kali",
+    "value": "7.2",
+    "unit": "mmol/L",
+    "flag": "CRITICAL_HIGH",
+    "releasedAt": "2026-11-11T06:00:00Z"
+  }
+}
