@@ -17,8 +17,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.mediflow.clinical.domain.model.ConsultationNote;
 import com.mediflow.clinical.domain.model.RecordHandover;
 import com.mediflow.clinical.domain.model.RecordHandoverStatus;
+import com.mediflow.clinical.infrastructure.persistence.adapter.JdbcConsultationNoteAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.JdbcPatientTimelineAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.JdbcRecordHandoverAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.PrescriptionContextReadAdapter;
@@ -80,6 +82,16 @@ class RecordCollaborationPostgresTest {
         var row = new JdbcPatientTimelineAdapter(jdbc).page(patient, null, null, null, 0, 20).rows().get(0);
         assertThat(row.doctorId()).isEqualTo(opener);
         assertThat(row.responsibleDoctorId()).isEqualTo(receiver);
+    }
+
+    @Test void consultationNotesRoundTripOldestFirst() {
+        UUID recordId = record(UUID.randomUUID(), UUID.randomUUID());
+        var notes = new JdbcConsultationNoteAdapter(jdbc);
+        UUID author = UUID.randomUUID();
+        notes.insert(ConsultationNote.write(recordId, author, "Hai", AT.plusSeconds(60)));
+        notes.insert(ConsultationNote.write(recordId, UUID.randomUUID(), "Một", AT));
+        assertThat(notes.findByRecord(recordId)).extracting(ConsultationNote::getOpinion).containsExactly("Một", "Hai");
+        assertThat(notes.findByRecord(recordId).get(1).getAuthorStaffId()).isEqualTo(author);
     }
 
     @Test void consultationNoteTableExists() {

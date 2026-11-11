@@ -188,6 +188,8 @@ clinical-service,GET,/api/v2/patients/{patientId}/treatment-courses,ADMIN|DOCTOR
 clinical-service,POST,/api/v2/records/{recordId}/handovers,DOCTOR,true
 clinical-service,GET,/api/v2/records/{recordId}/handovers,ADMIN|DOCTOR|NURSE,true
 clinical-service,PUT,/api/v2/records/{recordId}/handovers/{handoverId}/acceptance,DOCTOR,true
+clinical-service,POST,/api/v2/records/{recordId}/consultation-notes,DOCTOR,true
+clinical-service,GET,/api/v2/records/{recordId}/consultation-notes,ADMIN|DOCTOR|NURSE,true
 clinical-service,GET,/api/v2/records/{id}/lab-orders,ADMIN|DOCTOR|NURSE,true
 clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NURSE,true
 clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
