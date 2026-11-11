@@ -101,9 +101,10 @@ public class RecordHandoverApplicationService {
         staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         UUID receiver = request == null ? null : request.toDoctorId();
         requireColleague(receiver, record);
-        if (handovers.findPending(recordId).isPresent()) {
-            throw pendingExists();
-        }
+        handovers.findPending(recordId).ifPresent(pending -> {
+            pending.supersede();
+            handovers.supersede(pending);
+        });
         RecordHandover handover = RecordHandover.request(recordId, actor.staffId(), receiver,
                 request.reason(), request.pendingItems(), clock.instant());
         try {

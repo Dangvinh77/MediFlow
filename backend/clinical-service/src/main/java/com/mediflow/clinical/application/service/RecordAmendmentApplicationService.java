@@ -136,15 +136,23 @@ public class RecordAmendmentApplicationService {
             return List.of();
         }
         if (isReviewer(actor)) {
-            return pending.stream().map(item -> dto(item.amendment())).toList();
+            return logged(pending);
         }
         Map<UUID, Boolean> heads = new HashMap<>();
         for (UUID department : pending.stream().map(RecordAmendmentRepositoryPort.PendingAmendment::departmentId)
                 .collect(Collectors.toCollection(java.util.LinkedHashSet::new))) {
             heads.put(department, isHead(actor, department));
         }
-        return pending.stream().filter(item -> heads.getOrDefault(item.departmentId(), false))
-                .map(item -> dto(item.amendment())).toList();
+        return logged(pending.stream().filter(item -> heads.getOrDefault(item.departmentId(), false)).toList());
+    }
+
+    /** The queue shows original and amended text, so each listed record gets a read entry in the access log. */
+    private List<RecordAmendmentDTO> logged(List<RecordAmendmentRepositoryPort.PendingAmendment> shown) {
+        for (UUID recordId : shown.stream().map(item -> item.amendment().getRecordId())
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new))) {
+            records.findById(recordId).ifPresent(record -> readGuard.logReviewRead(record.getPatientId(), recordId));
+        }
+        return shown.stream().map(item -> dto(item.amendment())).toList();
     }
 
     private RecordAmendmentDTO requestNow(ActorIdentity actor, UUID recordId, RecordAmendmentRequest request) {

@@ -166,11 +166,13 @@ public final class MedicalRecord {
         update(symptoms, null);
     }
 
-    /** Writes symptoms and merges examination sections; only while the visit is open. */
+    /** Merges symptoms and examination sections: {@code null} keeps a field, an empty string clears it. */
     public void update(String symptoms, ClinicalContent change) {
         requireOpen();
         ClinicalContent next = content.merge(change);
-        this.symptoms = symptoms;
+        if (symptoms != null) {
+            this.symptoms = symptoms.isEmpty() ? null : symptoms;
+        }
         this.content = next;
         updatedAt = Instant.now();
     }

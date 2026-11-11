@@ -117,8 +117,20 @@ public class TreatmentCourseApplicationService {
         LocalDate today = LocalDate.now(clock.withZone(CLINIC_ZONE));
         return courses.findByPatient(patientId).stream()
                 .filter(view -> nurseDepartmentId == null || nurseDepartmentId.equals(view.course().getDepartmentId()))
-                .map(view -> dto(view, today))
+                .map(view -> nurseDepartmentId == null ? dto(view, today) : departmentView(view, nurseDepartmentId, today))
                 .toList();
+    }
+
+    /** A nurse sees a course of her department, but only its visits from that department. */
+    private TreatmentCourseDTO departmentView(CourseView view, UUID departmentId, LocalDate today) {
+        List<MedicalRecord> visible = view.course().getRecordIds().stream()
+                .map(records::findById).flatMap(java.util.Optional::stream)
+                .filter(record -> departmentId.equals(record.getDepartmentId()))
+                .toList();
+        LocalDate lastVisit = visible.stream().map(MedicalRecord::getExaminationDate)
+                .max(java.util.Comparator.naturalOrder()).orElse(null);
+        return dto(new CourseView(view.course(), lastVisit), today,
+                visible.stream().map(MedicalRecord::getRecordId).toList());
     }
 
     TreatmentCourseDTO openNow(ActorIdentity actor, OpenTreatmentCourseRequest request) {
@@ -183,12 +195,16 @@ public class TreatmentCourseApplicationService {
     }
 
     static TreatmentCourseDTO dto(CourseView view, LocalDate today) {
+        return dto(view, today, view.course().getRecordIds());
+    }
+
+    private static TreatmentCourseDTO dto(CourseView view, LocalDate today, List<UUID> recordIds) {
         TreatmentCourse course = view.course();
         boolean open = course.getStatus() == com.mediflow.clinical.domain.model.TreatmentCourseStatus.OPEN;
         return new TreatmentCourseDTO(course.getCourseId(), course.getPatientId(), course.getDepartmentId(),
                 course.getProblem(), course.getOpeningReason(), course.getResponsibleDoctorId(), course.getStatus().name(),
-                course.getRecordIds(), course.getOpenedAt(), view.lastVisitDate(),
-                open && TreatmentCourse.reviewDue(today, view.lastVisitDate()),
+                recordIds, course.getOpenedAt(), view.lastVisitDate(),
+                open && view.lastVisitDate() != null && TreatmentCourse.reviewDue(today, view.lastVisitDate()),
                 course.getClosureDecision() == null ? null : course.getClosureDecision().name(), course.getClosureNote(),
                 course.getClosedAt());
     }

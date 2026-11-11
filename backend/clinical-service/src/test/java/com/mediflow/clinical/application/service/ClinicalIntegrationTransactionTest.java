@@ -114,7 +114,7 @@ class ClinicalIntegrationTransactionTest {
             }
             externalResults.attach(recordId, ExternalResultType.LAB, labId, "Normal");
             return true;
-        }).when(attachments).attachLabResult(recordId, labId, "Normal");
+        }).when(attachments).attachLabResult(recordId, labId, "Normal", null);
 
         byte[] body = ("{\"eventId\":\"" + eventId + "\",\"eventType\":\"lab.result.created\","
                 + "\"recordId\":\"" + recordId + "\",\"labId\":\"" + labId

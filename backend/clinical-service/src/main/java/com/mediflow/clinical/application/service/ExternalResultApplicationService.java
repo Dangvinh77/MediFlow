@@ -26,20 +26,22 @@ public class ExternalResultApplicationService implements AttachExternalResultUse
     }
 
     @Override
-    public boolean attachLabResult(UUID recordId, UUID labTestId, String conclusion) {
-        return attach(recordId, ExternalResultType.LAB, labTestId, conclusion);
+    public boolean attachLabResult(UUID recordId, UUID labTestId, String conclusion, java.time.Instant reportedAt) {
+        return attach(recordId, ExternalResultType.LAB, labTestId, conclusion, reportedAt);
     }
 
     @Override
     public boolean attachPrescription(UUID recordId, UUID prescriptionId) {
-        return attach(recordId, ExternalResultType.PRESCRIPTION, prescriptionId, null);
+        return attach(recordId, ExternalResultType.PRESCRIPTION, prescriptionId, null, null);
     }
 
-    private boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary) {
+    private boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary,
+            java.time.Instant sourceAt) {
         Objects.requireNonNull(recordId, "recordId must not be null");
         Objects.requireNonNull(referenceId, "referenceId must not be null");
         records.findById(recordId).orElseThrow(() ->
                 new MedicalRecordNotFoundException("Medical record not found: " + recordId));
-        return externalResults.attach(recordId, type, referenceId, summary);
+        return sourceAt == null ? externalResults.attach(recordId, type, referenceId, summary)
+                : externalResults.attach(recordId, type, referenceId, summary, sourceAt);
     }
 }

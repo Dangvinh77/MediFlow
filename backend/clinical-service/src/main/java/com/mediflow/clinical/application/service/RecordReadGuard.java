@@ -50,6 +50,14 @@ public class RecordReadGuard {
         return requireAllowed(decision);
     }
 
+    /** Logs that an amendment reviewer was shown clinical text of this record; the caller already authorized it. */
+    public void logReviewRead(UUID patientId, UUID recordId) {
+        ActorIdentity actor = currentActor();
+        Instant at = Instant.now();
+        append(actor, patientId, recordId, "READ", RecordReadDecision.allow("AMENDMENT_REVIEW"),
+                correlationIds.currentOrCreate().toString(), at);
+    }
+
     /** Logs and returns a decision for an actor named by a trusted internal caller. */
     public RecordReadDecision decideForActor(ActorIdentity actor, UUID patientId) {
         Instant at = Instant.now();

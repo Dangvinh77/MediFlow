@@ -95,10 +95,20 @@ public class OutpatientRegistrationApplicationService {
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void completeExamination(Appointment appointment, Instant at) {
+        completeExamination(appointment, at, null);
+    }
+
+    /**
+     * Ends the registration for the record's responsible doctor. After a handover that is the receiver, not the
+     * doctor of the consultation session; {@code null} means the session doctor.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void completeExamination(Appointment appointment, Instant at, java.util.UUID responsibleDoctorId) {
         var before = lockRegistration(appointment.getAppointmentId());
         var session = lockSession(before.sessionId());
         var actor = requireHumanActor("DOCTOR");
-        requireAssignedDoctor(actor, session);
+        requireAssignedDoctor(actor, session,
+                responsibleDoctorId == null ? session.configuration().doctorId() : responsibleDoctorId);
         if (!before.patientId().equals(appointment.getPatientId())) notFoundRegistration();
         var after = domain(() -> before.complete(at));
         if (clinicIntake.enabled()) completeRoomTicket(before.registrationId(), at);
@@ -671,7 +681,11 @@ public class OutpatientRegistrationApplicationService {
     }
 
     void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {
-        if (actor.staffId() == null || !actor.staffId().equals(session.configuration().doctorId())) {
+        requireAssignedDoctor(actor, session, session.configuration().doctorId());
+    }
+
+    private void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session, java.util.UUID doctorId) {
+        if (actor.staffId() == null || !actor.staffId().equals(doctorId)) {
             notFoundRegistration();
         }
         var snapshot = authority.currentDoctorAuthority(actor.accountId(), correlationIds.currentOrCreate().toString());

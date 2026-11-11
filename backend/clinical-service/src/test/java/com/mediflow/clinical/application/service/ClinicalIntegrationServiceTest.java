@@ -28,12 +28,27 @@ class ClinicalIntegrationServiceTest {
     void onLabResultCreated_legacyV0AttachesOnce() {
         LabResultCreatedCommand command = new LabResultCreatedCommand(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
-        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), null))
                 .thenReturn(true);
 
         service.onLabResultCreated(command);
 
-        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion());
+        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion(), null);
+    }
+
+    @Test
+    void onLabResultCreated_keepsTheTimeLabReportedTheResult() {
+        java.time.Instant reported = java.time.Instant.parse("2026-11-10T03:00:00Z");
+        LabResultCreatedCommand legacy = new LabResultCreatedCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
+        LabResultCreatedCommand command = new LabResultCreatedCommand(legacy.eventId(), legacy.recordId(), legacy.labId(),
+                legacy.conclusion(), 0, null, null, null, null, null, reported);
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), reported))
+                .thenReturn(true);
+
+        service.onLabResultCreated(command);
+
+        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion(), reported);
     }
 
     @Test
@@ -51,12 +66,12 @@ class ClinicalIntegrationServiceTest {
         LabResultCreatedCommand command = new LabResultCreatedCommand(UUID.randomUUID(), recordId,
                 UUID.randomUUID(), "Normal", 1, patientId, departmentId,
                 CareEpisodeType.OUTPATIENT_VISIT, appointmentId, 1);
-        when(attachments.attachLabResult(recordId, command.labId(), "Normal")).thenReturn(true);
+        when(attachments.attachLabResult(recordId, command.labId(), "Normal", null)).thenReturn(true);
 
         service.onLabResultCreated(command);
 
         verify(records).findByIdForUpdate(recordId);
-        verify(attachments).attachLabResult(recordId, command.labId(), "Normal");
+        verify(attachments).attachLabResult(recordId, command.labId(), "Normal", null);
     }
 
     @Test
@@ -81,7 +96,7 @@ class ClinicalIntegrationServiceTest {
     void onLabResultCreated_missingMaterialEffectIsAConflict() {
         LabResultCreatedCommand command = new LabResultCreatedCommand(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
-        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), null))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> service.onLabResultCreated(command))

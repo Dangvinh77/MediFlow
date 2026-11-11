@@ -62,6 +62,14 @@ public final class RecordHandover {
         acceptedAt = at;
     }
 
+    /** A pending request gives way to a newer one, so a wrong or absent receiver never blocks the visit. */
+    public void supersede() {
+        if (status != RecordHandoverStatus.PENDING) {
+            throw invalid("Only a pending handover can be replaced");
+        }
+        status = RecordHandoverStatus.SUPERSEDED;
+    }
+
     private static boolean text(String value, int max) {
         return value != null && !value.isBlank() && value.strip().length() <= max;
     }

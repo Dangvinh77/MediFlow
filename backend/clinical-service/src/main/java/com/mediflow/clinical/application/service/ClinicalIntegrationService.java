@@ -48,7 +48,7 @@ public class ClinicalIntegrationService implements ReactToLabResultUseCase, Reac
         } else if (command.sourceVersion() != 0) {
             throw new ConsumerInboxConflictException("unsupported lab result contract version");
         }
-        if (!attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion())) {
+        if (!attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), command.occurredAt())) {
             throw new ConsumerInboxConflictException("lab result attachment produced no new effect");
         }
     }

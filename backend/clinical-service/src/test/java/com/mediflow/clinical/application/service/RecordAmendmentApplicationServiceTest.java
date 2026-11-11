@@ -289,6 +289,18 @@ class RecordAmendmentApplicationServiceTest {
         assertThat(service.pending()).isEmpty();
     }
 
+    @Test void pendingQueueLogsAReviewReadForEachListedRecord() {
+        RecordAmendment byAuthor = pendingBy(author);
+        when(amendments.findPending()).thenReturn(List.of(new PendingAmendment(byAuthor, department)));
+        as(head, "DOCTOR");
+        assertThat(service.pending()).hasSize(1);
+        org.mockito.Mockito.verify(guard).logReviewRead(record.getPatientId(), record.getRecordId());
+        as(colleague, "DOCTOR");
+        org.mockito.Mockito.clearInvocations(guard);
+        assertThat(service.pending()).isEmpty();
+        org.mockito.Mockito.verify(guard, org.mockito.Mockito.never()).logReviewRead(any(), any());
+    }
+
     @Test void decisionIsFinal() {
         RecordAmendment amendment = pendingBy(author);
         as(head, "DOCTOR");

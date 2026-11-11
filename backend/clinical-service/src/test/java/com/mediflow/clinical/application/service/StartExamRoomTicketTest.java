@@ -132,6 +132,23 @@ class StartExamRoomTicketTest {
         verify(tickets, never()).update(any(), any());
     }
 
+    @Test void handoverReceiverCompletesTheRegistration() {
+        var inExam = h.stub(registration.startExam(IntakeHarness.NOW));
+        var started = h.stubAppointment(inExam, session);
+        UUID receiver = UUID.randomUUID();
+        h.actAs("DOCTOR", receiver, session.configuration().departmentId());
+        service(false).completeExamination(started, IntakeHarness.NOW, receiver);
+        verify(h.registrations).update(any(), any(), any(), any(), eq("COMPLETED"), any());
+    }
+
+    @Test void sessionDoctorCannotCompleteAfterHandingOver() {
+        var inExam = h.stub(registration.startExam(IntakeHarness.NOW));
+        var started = h.stubAppointment(inExam, session);
+        UUID receiver = UUID.randomUUID();
+        assertThatThrownBy(() -> service(false).completeExamination(started, IntakeHarness.NOW, receiver));
+        verify(h.registrations, never()).update(any(), any(), any(), any(), any(), any());
+    }
+
     @Test void cancellingRegistrationCancelsTicketWithReason() {
         h.actAsNurse();
         ticket();

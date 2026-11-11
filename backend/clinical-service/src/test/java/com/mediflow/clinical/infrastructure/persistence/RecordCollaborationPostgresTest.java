@@ -55,12 +55,18 @@ class RecordCollaborationPostgresTest {
         assertThatThrownBy(() -> handovers.insert(RecordHandover.request(recordId, doctor, UUID.randomUUID(), "Hết ca", "Chờ", AT)))
                 .isInstanceOf(DataIntegrityViolationException.class);
 
-        RecordHandover locked = handovers.findByIdForUpdate(first.getHandoverId()).orElseThrow();
-        locked.accept(first.getToDoctorId(), AT);
+        first.supersede();
+        handovers.supersede(first);
+        RecordHandover second = RecordHandover.request(recordId, doctor, UUID.randomUUID(), "Đổi người nhận", "Chờ", AT.plusSeconds(1));
+        handovers.insert(second);
+        assertThat(handovers.findPending(recordId)).map(RecordHandover::getHandoverId).contains(second.getHandoverId());
+
+        RecordHandover locked = handovers.findByIdForUpdate(second.getHandoverId()).orElseThrow();
+        locked.accept(second.getToDoctorId(), AT);
         handovers.accept(locked);
         assertThat(handovers.findPending(recordId)).isEmpty();
-        assertThat(handovers.findByRecord(recordId)).singleElement()
-                .satisfies(h -> assertThat(h.getStatus()).isEqualTo(RecordHandoverStatus.ACCEPTED));
+        assertThat(handovers.findByRecord(recordId)).extracting(RecordHandover::getStatus)
+                .containsExactly(RecordHandoverStatus.SUPERSEDED, RecordHandoverStatus.ACCEPTED);
     }
 
     @Test void prescriptionContextReturnsResponsibleDoctor() {

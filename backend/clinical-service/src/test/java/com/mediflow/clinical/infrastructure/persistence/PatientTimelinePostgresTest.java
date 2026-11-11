@@ -121,4 +121,13 @@ class PatientTimelinePostgresTest {
             assertThat(document.attachedAt()).isNotNull();
         });
     }
+
+    @Test void documentsUseTheTimeTheSourceProducedThem() {
+        UUID record = legacy(UUID.randomUUID(), UUID.randomUUID(), "2026-11-01", "COMPLETED");
+        var results = new ExternalResultPersistenceAdapter(null, jdbc);
+        java.time.Instant reported = java.time.Instant.parse("2026-11-01T02:00:00Z");
+        results.attach(record, ExternalResultType.LAB, UUID.randomUUID(), "Bình thường", reported);
+        assertThat(results.findByRecord(record)).singleElement()
+                .satisfies(document -> assertThat(document.attachedAt()).isEqualTo(reported));
+    }
 }

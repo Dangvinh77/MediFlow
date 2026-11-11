@@ -10,7 +10,12 @@ import com.mediflow.clinical.domain.model.ExternalResultType;
 public interface ExternalResultRepositoryPort {
 
     /** Repeating the same record, type and reference must have no additional effect. */
-    boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary);
+    default boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary) {
+        return attach(recordId, type, referenceId, summary, null);
+    }
+
+    /** {@code sourceAt} is when the source produced the reference; {@code null} means the arrival time. */
+    boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary, Instant sourceAt);
 
     /** Every reference attached to a record, oldest first. */
     List<AttachedDocument> findByRecord(UUID recordId);

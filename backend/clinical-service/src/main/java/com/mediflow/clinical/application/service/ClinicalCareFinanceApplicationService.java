@@ -355,7 +355,7 @@ public class ClinicalCareFinanceApplicationService
         Instant now = clock.instant();
         AppointmentStatus oldStatus = appointment.getStatus();
         record.closeWithoutConclusion(request.reason(), request.note(), actors.current().staffId(), now);
-        scheduledRegistrations.completeExamination(appointment, now);
+        scheduledRegistrations.completeExamination(appointment, now, record.responsibleDoctorId());
         appointment.completeScheduled(now);
         MedicalRecord savedRecord = records.save(record);
         Appointment savedAppointment = appointments.save(appointment);
@@ -395,7 +395,7 @@ public class ClinicalCareFinanceApplicationService
         record.complete(request.disposition(), request.dispositionNote(), now);
         if (appointment.getCareContractVersion() == 2) {
             requireScheduledLifecycle();
-            scheduledRegistrations.completeExamination(appointment, now);
+            scheduledRegistrations.completeExamination(appointment, now, record.responsibleDoctorId());
             appointment.completeScheduled(now);
         }
         else appointment.complete(now);

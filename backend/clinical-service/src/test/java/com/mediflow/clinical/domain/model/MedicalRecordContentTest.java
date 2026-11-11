@@ -40,6 +40,19 @@ class MedicalRecordContentTest {
         assertThat(record.getPresentIllness()).isNull();
     }
 
+    @Test void nullSymptomsKeepWhenOnlyASectionChanges() {
+        MedicalRecord record = open();
+        record.update(null, content(null, "Ho ba ngày"));
+        assertThat(record.getSymptoms()).isEqualTo("Sốt");
+        assertThat(record.getPresentIllness()).isEqualTo("Ho ba ngày");
+    }
+
+    @Test void emptySymptomsClear() {
+        MedicalRecord record = open();
+        record.update("", null);
+        assertThat(record.getSymptoms()).isNull();
+    }
+
     @Test void sectionOver4000IsRefused() {
         MedicalRecord record = open();
         assertThatThrownBy(() -> record.update("Sốt", content("x".repeat(4001), null)))

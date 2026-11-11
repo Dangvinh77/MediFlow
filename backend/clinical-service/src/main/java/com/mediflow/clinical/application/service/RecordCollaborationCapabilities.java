@@ -54,7 +54,7 @@ public class RecordCollaborationCapabilities {
         boolean inDepartment = staff.departmentOf(staffId).map(record.getDepartmentId()::equals).orElse(false);
         boolean responsible = staffId.equals(record.responsibleDoctorId());
         RecordHandover pending = open ? handovers.findPending(record.getRecordId()).orElse(null) : null;
-        boolean canHandover = open && responsible && inDepartment && pending == null;
+        boolean canHandover = open && responsible && inDepartment;
         boolean canAccept = pending != null && staffId.equals(pending.getToDoctorId());
         boolean canNote = open && canRead;
         boolean canAmend = !open && inDepartment

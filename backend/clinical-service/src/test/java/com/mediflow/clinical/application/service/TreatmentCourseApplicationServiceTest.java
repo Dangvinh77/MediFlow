@@ -200,6 +200,20 @@ class TreatmentCourseApplicationServiceTest {
         });
     }
 
+    @Test void nurseSeesOnlyVisitsOfHerDepartmentInACourse() {
+        TreatmentCourse course = TreatmentCourse.open(patient, department, "P", "R", doctor, first.getRecordId(), NOW);
+        MedicalRecord elsewhere = record(patient, UUID.randomUUID());
+        course.addVisit(elsewhere.getRecordId(), doctor, NOW);
+        when(records.findById(elsewhere.getRecordId())).thenReturn(Optional.of(elsewhere));
+        when(courses.findByPatient(patient)).thenReturn(List.of(new CourseView(course, LocalDate.parse("2026-11-20"))));
+        when(guard.requirePatient(patient)).thenReturn(
+                com.mediflow.clinical.application.dto.authority.RecordReadDecision.allowDepartment("NURSE", department));
+        assertThat(service.forPatient(patient)).singleElement().satisfies(dto -> {
+            assertThat(dto.recordIds()).containsExactly(first.getRecordId());
+            assertThat(dto.lastVisitDate()).isEqualTo(first.getExaminationDate());
+        });
+    }
+
     @Test void courseEmitsNoEvent() {
         assertThat(Arrays.stream(TreatmentCourseApplicationService.class.getConstructors())
                 .flatMap(constructor -> Arrays.stream(constructor.getParameterTypes())))

@@ -15,6 +15,8 @@ public interface RecordHandoverRepositoryPort {
 
     void accept(RecordHandover handover);
 
+    void supersede(RecordHandover handover);
+
     /** Oldest first. */
     List<RecordHandover> findByRecord(UUID recordId);
 }

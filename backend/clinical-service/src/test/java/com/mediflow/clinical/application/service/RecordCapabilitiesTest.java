@@ -205,7 +205,7 @@ class RecordCapabilitiesTest {
                 RecordHandover.request(record.getRecordId(), ASSIGNED_DOCTOR, receiver, "Het ca", "Cho ket qua", CREATED)));
 
         actor(ASSIGNED_DOCTOR, "DOCTOR");
-        assertThat(service.capabilities(record.getRecordId()).canHandover()).isFalse();
+        assertThat(service.capabilities(record.getRecordId()).canHandover()).isTrue();
         actor(receiver, "DOCTOR");
         assertThat(service.capabilities(record.getRecordId()).canAcceptHandover()).isTrue();
     }

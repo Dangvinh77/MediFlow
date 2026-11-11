@@ -101,11 +101,13 @@ class RecordHandoverApplicationServiceTest {
                 .isInstanceOf(ForbiddenOperationException.class);
     }
 
-    @Test void onlyOnePendingHandover() {
-        when(handovers.findPending(record.getRecordId())).thenReturn(Optional.of(
-                RecordHandover.request(record.getRecordId(), doctor, receiver, "Hết ca", "Chờ", NOW)));
-        assertThatThrownBy(() -> service.request(record.getRecordId(), request(receiver), "k"))
-                .extracting("code").isEqualTo("HANDOVER_PENDING_EXISTS");
+    @Test void newRequestSupersedesThePendingOne() {
+        RecordHandover old = RecordHandover.request(record.getRecordId(), doctor, UUID.randomUUID(), "Hết ca", "Chờ", NOW);
+        when(handovers.findPending(record.getRecordId())).thenReturn(Optional.of(old));
+        service.request(record.getRecordId(), request(receiver), "k");
+        org.mockito.Mockito.verify(handovers).supersede(old);
+        assertThat(old.getStatus()).isEqualTo(com.mediflow.clinical.domain.model.RecordHandoverStatus.SUPERSEDED);
+        org.mockito.Mockito.verify(handovers).insert(org.mockito.ArgumentMatchers.argThat(h -> h.getToDoctorId().equals(receiver)));
     }
 
     @Test void closedRecordCannotBeHandedOver() {

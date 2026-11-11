@@ -45,6 +45,12 @@ public class JdbcRecordHandoverAdapter implements RecordHandoverRepositoryPort {
     }
 
     @Override
+    public void supersede(RecordHandover h) {
+        jdbc.update("UPDATE record_handover SET status = ? WHERE handover_id = ? AND status = 'PENDING'",
+                h.getStatus().name(), h.getHandoverId());
+    }
+
+    @Override
     public void accept(RecordHandover h) {
         jdbc.update("UPDATE record_handover SET status = ?, accepted_at = ? WHERE handover_id = ? AND status = 'PENDING'",
                 h.getStatus().name(), Timestamp.from(h.getAcceptedAt()), h.getHandoverId());
