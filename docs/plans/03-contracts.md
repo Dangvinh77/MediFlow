@@ -1303,6 +1303,16 @@ và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách en
   Gateway chặn từ ngoài.
 - `RecordCapabilitiesDTO` thêm `canHandover`, `canAcceptHandover`, `canAddConsultationNote`, `canAmend`,
   `canDecideAmendments`, vắng mặt khi `record-amendment` tắt; chỉ là gợi ý màn hình, lệnh vẫn kiểm lại.
+- Bàn giao: người nhận đã chấp nhận ghi, kê đơn, hoàn tất và đóng lượt; phiếu đăng ký kết thúc theo bác sĩ phụ trách,
+  không theo bác sĩ của buổi khám. Bác sĩ phụ trách gửi yêu cầu mới thì yêu cầu đang chờ chuyển `SUPERSEDED`
+  (`RecordHandoverDTO.status`: `PENDING|ACCEPTED|SUPERSEDED`); `HANDOVER_PENDING_EXISTS` chỉ còn khi hai yêu cầu
+  ghi cùng lúc.
+- `PUT /api/v1/records/{id}`: `symptoms` và sáu mục nội dung cùng quy tắc, `null`/vắng là giữ, chuỗi rỗng là xóa.
+- Danh sách tài liệu dùng thời điểm nguồn tạo ra kết quả (`occurredAt` của `lab.result.created`, cột `source_at`),
+  không dùng lúc Clinical nhận sự kiện; `afterConclusion` so thời điểm đó với lúc kết thúc lượt.
+- Điều dưỡng xem quá trình điều trị chỉ thấy `recordIds` và `lastVisitDate` của các lượt thuộc khoa mình.
+- Hàng chờ đính chính (`GET /api/v2/amendments/pending`) có nội dung lâm sàng, nên mỗi hồ sơ được trả về ghi một dòng
+  `READ` với cơ sở `AMENDMENT_REVIEW` vào nhật ký đọc hồ sơ.
 - In và xuất hồ sơ (VIEW-03) để lần sau: tách bản một lượt với lịch sử, giữ tác giả, thời điểm, đính chính và kiểm quyền
   xuất riêng.
 

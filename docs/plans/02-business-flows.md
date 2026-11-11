@@ -360,7 +360,8 @@ Dòng thời gian, nội dung khám có cấu trúc, danh sách tài liệu và 
 - **Quá trình điều trị:** bác sĩ chủ động mở và gắn từng lượt; không gộp hồi tố, không sao chép chẩn đoán hay đơn
   thuốc. Chỉ gắn được lượt của cùng bệnh nhân. Đóng quá trình phải có quyết định và ghi chú.
 - **Bàn giao:** bác sĩ phụ trách bàn giao lượt đang mở cho bác sĩ khác, kèm lý do và việc đang chờ. Người nhận
-  chấp nhận thì thành bác sĩ phụ trách; từ đó chỉ người nhận ghi hồ sơ, kê đơn và đóng lượt. `doctorId` của hồ sơ
+  chấp nhận thì thành bác sĩ phụ trách; từ đó chỉ người nhận ghi hồ sơ, kê đơn, hoàn tất và đóng lượt. Gửi nhầm
+  người thì bác sĩ phụ trách gửi yêu cầu mới; yêu cầu cũ thành "đã thay bằng yêu cầu mới". `doctorId` của hồ sơ
   và của sự kiện vẫn là bác sĩ mở hồ sơ; `careEpisodeId` của chỉ định không đổi.
 - **Hội chẩn:** mỗi bác sĩ đọc được hồ sơ ghi ý kiến riêng khi lượt còn mở; ghi chú chỉ thêm, giữ tác giả.
 - **Đính chính:** hồ sơ đã kết thúc không bị sửa. Bác sĩ phụ trách, hoặc bác sĩ được giao, gửi đính chính cho một

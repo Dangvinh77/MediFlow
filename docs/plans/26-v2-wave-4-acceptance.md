@@ -27,7 +27,7 @@ của Organization không có cờ.
 ## Nghiệm thu qua Gateway trên DB sạch
 
 Compose project riêng `mediflow-w2`, `down -v` rồi dựng lại, seed demo, bật hai cờ. Mọi lệnh nghiệp vụ đi qua Gateway
-với tài khoản demo thật. Bật cờ 22/22; sau đó khởi động lại Clinical không có cờ, 2/2.
+với tài khoản demo thật. Sau lượt sửa: bật cờ 23/23; sau đó khởi động lại Clinical không có cờ, 2/2.
 
 | Kịch bản | Kết quả |
 |---|---|
@@ -40,6 +40,7 @@ với tài khoản demo thật. Bật cờ 22/22; sau đó khởi động lại 
 | Bàn giao, người nhận chấp nhận | 201, 200; `responsibleDoctorId` là người nhận, `doctorId` vẫn là bác sĩ mở |
 | Bác sĩ cũ ghi, người nhận ghi | 403 `CLINICAL_DOCTOR_NOT_ASSIGNED`; 200 |
 | Người nhận kê đơn ngoại trú qua Pharmacy | 201 |
+| Người nhận hoàn tất lượt | 200 (trước lượt sửa: 404, xem dưới) |
 | `careEpisodeId` của chỉ định Lab sau bàn giao | Không đổi, vẫn là mã lượt |
 | Hai bác sĩ ghi hội chẩn | 201, 201; mỗi ghi chú đúng tác giả |
 | Gửi đính chính hồ sơ đã hoàn tất | 201; cột gốc trong DB không đổi |
@@ -51,10 +52,23 @@ với tài khoản demo thật. Bật cờ 22/22; sau đó khởi động lại 
 | Thu hồi quyền rồi duyệt đính chính khác | 200; 403 `AMENDMENT_DECISION_DENIED` |
 | Điều dưỡng thêm dị ứng, bác sĩ lượt sau xem | 201; có trong `active` |
 | Đánh dấu nhập nhầm thiếu lý do, rồi có lý do | 422 `ALLERGY_INVALID`; 200, vẫn còn trong danh sách với `ENTERED_IN_ERROR` |
-| Tài liệu Lab của lượt | Có kết quả Lab; kết quả về trước khi hoàn tất không bị đánh dấu `afterConclusion` |
+| Tài liệu Lab của lượt | Có kết quả Lab; kết quả Lab trả trước khi hoàn tất không bị đánh dấu `afterConclusion` |
 | Phí khám | Mỗi lượt đúng 1 dòng `EXAM` trong `charge` |
 | Tắt cờ: handovers, consultation-notes, amendments, amendments/pending, treatment-courses | Cả năm 404 |
 | Tắt cờ: `capabilities` | 200, không có năm cờ cộng tác |
+
+## Sửa sau review độc lập
+
+| Vấn đề | Cách sửa | Bằng chứng |
+|---|---|---|
+| Người nhận bàn giao không hoàn tất hay đóng được lượt: phiếu đăng ký vẫn đòi bác sĩ của buổi khám (404). Lần chạy đầu không kiểm mã trả về nên không thấy | Phiếu đăng ký kết thúc theo bác sĩ phụ trách của hồ sơ | `StartExamRoomTicketTest.handoverReceiverCompletesTheRegistration`, `sessionDoctorCannotCompleteAfterHandingOver`; Gateway 200 |
+| Sửa riêng một mục nội dung (web, mobile) xóa mất triệu chứng | `symptoms` theo quy tắc chung: `null` giữ, chuỗi rỗng xóa; web và mobile gửi `""` khi xóa | `MedicalRecordContentTest.nullSymptomsKeepWhenOnlyASectionChanges`, `emptySymptomsClear`; test web và mobile |
+| Bàn giao gửi nhầm người thì treo mãi | Yêu cầu mới của bác sĩ phụ trách thay yêu cầu đang chờ (`SUPERSEDED`, migration V24); web và mobile hiện "Đã thay bằng yêu cầu mới" | `RecordHandoverApplicationServiceTest.newRequestSupersedesThePendingOne`, `RecordCollaborationPostgresTest`, `RecordCapabilitiesTest`, test web và mobile |
+| Điều dưỡng thấy mã lượt khoa khác trong quá trình điều trị | Lọc `recordIds` và `lastVisitDate` theo khoa của điều dưỡng | `TreatmentCourseApplicationServiceTest.nurseSeesOnlyVisitsOfHerDepartmentInACourse` |
+| Hàng chờ đính chính trả nội dung lâm sàng mà không ghi nhật ký đọc | Mỗi hồ sơ trả về ghi một dòng `READ`, cơ sở `AMENDMENT_REVIEW` | `RecordAmendmentApplicationServiceTest.pendingQueueLogsAReviewReadForEachListedRecord` |
+| Phát hiện khi chạy lại Gateway: kết quả Lab trả trước khi hoàn tất bị đánh dấu "bổ sung sau khi kết thúc" vì Clinical nhận sự kiện chậm hơn lúc kết thúc | Lưu `occurredAt` của `lab.result.created` vào `attached_result.source_at` (migration V25) và so thời điểm đó | `PatientTimelinePostgresTest.documentsUseTheTimeTheSourceProducedThem`, `ClinicalIntegrationServiceTest.onLabResultCreated_keepsTheTimeLabReportedTheResult`; Gateway đạt |
+
+Sau khi sửa: Clinical 1091/1091, web 1577/1577 (typecheck, lint sạch), mobile 741/741.
 
 ## Giới hạn của bằng chứng
 
