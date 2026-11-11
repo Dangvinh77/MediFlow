@@ -9,4 +9,11 @@ import java.time.LocalDate;
 public record CreateClinicalLabOrderRequest(
         @NotBlank @Size(max = 50) String labType,
         @NotNull LocalDate requestedDate,
-        @NotBlank @Size(max = 64) String priceCode) {}
+        @NotBlank @Size(max = 64) String priceCode,
+        @Size(max = 32) String serviceCode) {
+
+    /** Pre-catalogue form; Lab ignores the missing service code while {@code mediflow.v2.lab-catalog} is off. */
+    public CreateClinicalLabOrderRequest(String labType, LocalDate requestedDate, String priceCode) {
+        this(labType, requestedDate, priceCode, null);
+    }
+}

@@ -58,6 +58,7 @@ public class ClinicalLabOrderPersistenceAdapter implements ClinicalLabOrderRepos
                 .requestedDate(order.requestedDate())
                 .priceCode(order.priceCode())
                 .orderedAt(order.orderedAt())
+                .serviceCode(order.serviceCode())
                 .build();
     }
 
@@ -65,6 +66,6 @@ public class ClinicalLabOrderPersistenceAdapter implements ClinicalLabOrderRepos
         return new ClinicalLabOrder(entity.getSourceOrderId(), entity.getRecordId(), entity.getPatientId(),
                 entity.getRequestingDoctorId(), entity.getRequestingDepartmentId(), entity.getCareEpisodeType(),
                 entity.getCareEpisodeId(), entity.getLabType(), entity.getRequestedDate(), entity.getPriceCode(),
-                entity.getOrderedAt());
+                entity.getOrderedAt(), entity.getServiceCode());
     }
 }

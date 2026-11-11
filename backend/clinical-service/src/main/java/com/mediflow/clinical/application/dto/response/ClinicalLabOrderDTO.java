@@ -17,4 +17,13 @@ public record ClinicalLabOrderDTO(
         String labType,
         LocalDate requestedDate,
         String priceCode,
-        Instant orderedAt) {}
+        Instant orderedAt,
+        String serviceCode) {
+
+    public ClinicalLabOrderDTO(UUID sourceOrderId, UUID recordId, UUID patientId, UUID requestingDoctorId,
+                               UUID requestingDepartmentId, CareEpisodeType careEpisodeType, UUID careEpisodeId,
+                               String labType, LocalDate requestedDate, String priceCode, Instant orderedAt) {
+        this(sourceOrderId, recordId, patientId, requestingDoctorId, requestingDepartmentId, careEpisodeType,
+                careEpisodeId, labType, requestedDate, priceCode, orderedAt, null);
+    }
+}

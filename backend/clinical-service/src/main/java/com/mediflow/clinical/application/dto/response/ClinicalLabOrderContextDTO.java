@@ -19,7 +19,17 @@ public record ClinicalLabOrderContextDTO(
         LocalDate requestedDate,
         String priceCode,
         Instant orderedAt,
-        Instant observedAt) {
+        Instant observedAt,
+        String serviceCode) {
+
+    public ClinicalLabOrderContextDTO(boolean exists, UUID sourceOrderId, UUID recordId, UUID patientId,
+                                      UUID requestingDoctorId, UUID requestingDepartmentId,
+                                      CareEpisodeType careEpisodeType, UUID careEpisodeId, String labType,
+                                      LocalDate requestedDate, String priceCode, Instant orderedAt,
+                                      Instant observedAt) {
+        this(exists, sourceOrderId, recordId, patientId, requestingDoctorId, requestingDepartmentId, careEpisodeType,
+                careEpisodeId, labType, requestedDate, priceCode, orderedAt, observedAt, null);
+    }
 
     public static ClinicalLabOrderContextDTO absent(UUID id, Instant observedAt) {
         return new ClinicalLabOrderContextDTO(false, id, null, null, null, null, null, null,
