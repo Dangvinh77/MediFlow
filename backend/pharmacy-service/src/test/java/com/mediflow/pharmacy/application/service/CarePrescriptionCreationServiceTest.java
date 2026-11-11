@@ -124,6 +124,14 @@ class CarePrescriptionCreationServiceTest {
         assertThatThrownBy(() -> service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a"))).hasMessageContaining("expiry");
         verifyNoInteractions(prescriptions, slips, capture);
     }
+    // Treatment courses live only in Clinical: a prescription is keyed by the visit record, never by a course.
+    @Test void prescriptionKeepsRecordIdNotCourseId() {
+        UUID record = UUID.randomUUID();
+        service.createCare(key, withRecord(record), context(record));
+        verify(prescriptions).save(argThat(p -> record.equals(p.getRecordId())));
+        assertThat(java.util.Arrays.stream(com.mediflow.pharmacy.domain.model.Prescription.class.getDeclaredFields())
+                .map(java.lang.reflect.Field::getName)).noneMatch(name -> name.toLowerCase().contains("course"));
+    }
     @Test void create_contextCheckedPinsExactRecordAndDoesNotChangeHeldPriceOrReceiptBehavior() {
         UUID record = UUID.randomUUID();
         var command = withRecord(record);

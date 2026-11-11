@@ -3,9 +3,11 @@ package com.mediflow.clinical.application.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,11 +55,23 @@ public class RecordAccessApplicationService {
     private final CorrelationIdProvider correlationIds;
     private final boolean outpatientMvpEnabled;
     private final boolean policyEnabled;
+    private final RecordCollaborationCapabilities collaboration;
 
     public RecordAccessApplicationService(MedicalRecordRepositoryPort records, AppointmentRepositoryPort appointments,
             RecordAccessDeclarationPort declarations, RecordAccessLogPort log, RecordReadPolicy readPolicy,
             CurrentClinicalActorPort actors, CorrelationIdProvider correlationIds,
             OutpatientMvpMode outpatientMvpMode, RecordAccessPolicyMode recordAccessPolicyMode) {
+        this(records, appointments, declarations, log, readPolicy, actors, correlationIds, outpatientMvpMode,
+                recordAccessPolicyMode, Optional.empty());
+    }
+
+    @Autowired
+    public RecordAccessApplicationService(MedicalRecordRepositoryPort records, AppointmentRepositoryPort appointments,
+            RecordAccessDeclarationPort declarations, RecordAccessLogPort log, RecordReadPolicy readPolicy,
+            CurrentClinicalActorPort actors, CorrelationIdProvider correlationIds,
+            OutpatientMvpMode outpatientMvpMode, RecordAccessPolicyMode recordAccessPolicyMode,
+            Optional<RecordCollaborationCapabilities> collaboration) {
+        this.collaboration = collaboration.orElse(null);
         this.records = records;
         this.appointments = appointments;
         this.declarations = declarations;
@@ -102,8 +116,14 @@ public class RecordAccessApplicationService {
                 .isPresent();
         String writeBlocked = writeBlockedReason(actor, record, inExam);
         boolean canWrite = writeBlocked == null;
-        return new RecordCapabilitiesDTO(recordId, record.getPatientId(), read.allowed(), read.basis(), canWrite, canWrite && inExam, false,
-                writeBlocked);
+        if (collaboration == null) {
+            return new RecordCapabilitiesDTO(recordId, record.getPatientId(), read.allowed(), read.basis(), canWrite,
+                    canWrite && inExam, false, writeBlocked);
+        }
+        var flags = collaboration.resolve(actor, record, read.allowed());
+        return new RecordCapabilitiesDTO(recordId, record.getPatientId(), read.allowed(), read.basis(), canWrite,
+                canWrite && inExam, flags.canAmend(), writeBlocked, flags.canHandover(), flags.canAcceptHandover(),
+                flags.canAddConsultationNote(), flags.canAmend(), flags.canDecideAmendments());
     }
 
     private String writeBlockedReason(ActorIdentity actor, MedicalRecord record, boolean inExam) {

@@ -26,6 +26,13 @@ import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
 import com.mediflow.clinical.application.port.out.RecordAccessDeclarationPort;
 import com.mediflow.clinical.application.port.out.RecordAccessLogPort;
 import com.mediflow.clinical.application.port.out.RecordAccessPolicyMode;
+import com.mediflow.clinical.application.port.out.RecordAmendmentRepositoryPort;
+import com.mediflow.clinical.application.port.out.RecordHandoverRepositoryPort;
+import com.mediflow.clinical.application.port.out.RecordReviewAuthorityPort;
+import com.mediflow.clinical.application.port.out.SchedulingAuthorityPort;
+import com.mediflow.clinical.application.port.out.StaffLookupPort;
+import com.mediflow.clinical.application.dto.authority.SchedulingAuthoritySnapshot;
+import com.mediflow.clinical.domain.model.RecordHandover;
 import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.Diagnosis;
@@ -135,6 +142,138 @@ class RecordCapabilitiesTest {
         assertThat(capabilities.canRead()).isTrue();
         assertThat(capabilities.readBasis()).isEqualTo("LEGACY_ROLE");
         assertThat(capabilities.canWriteContent()).isTrue();
+    }
+
+    private final RecordHandoverRepositoryPort handovers = mock(RecordHandoverRepositoryPort.class);
+    private final RecordAmendmentRepositoryPort amendments = mock(RecordAmendmentRepositoryPort.class);
+    private final StaffLookupPort staff = mock(StaffLookupPort.class);
+    private final SchedulingAuthorityPort authority = mock(SchedulingAuthorityPort.class);
+    private final RecordReviewAuthorityPort review = mock(RecordReviewAuthorityPort.class);
+
+    private RecordAccessApplicationService collaborative() {
+        org.mockito.Mockito.lenient().when(staff.departmentOf(any())).thenReturn(Optional.of(DEPARTMENT));
+        org.mockito.Mockito.lenient().when(handovers.findPending(any())).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(amendments.findAssignment(any(), any())).thenReturn(Optional.empty());
+        return new RecordAccessApplicationService(records, appointments, mock(RecordAccessDeclarationPort.class),
+                mock(RecordAccessLogPort.class), readPolicy, actors, correlations, new OutpatientMvpMode(true),
+                new RecordAccessPolicyMode(true), Optional.of(new RecordCollaborationCapabilities(handovers, amendments,
+                        staff, authority, review, correlations)));
+    }
+
+    private MedicalRecord completedRecord() {
+        return store(MedicalRecord.restore(UUID.randomUUID(), PATIENT, ASSIGNED_DOCTOR, DEPARTMENT,
+                LocalDate.of(2026, 11, 1), "symptoms", APPOINTMENT, List.of(Diagnosis.create("Viem hong", "mo ta", "J02")),
+                CREATED, CREATED, MedicalRecordStatus.COMPLETED, RecordDisposition.values()[0], null, CREATED));
+    }
+
+    @Test
+    void capabilitiesAbsentWhenAmendmentFlagOff() {
+        MedicalRecord record = openRecord();
+        appointment(AppointmentStatus.IN_EXAM);
+        actor(ASSIGNED_DOCTOR, "DOCTOR");
+
+        RecordCapabilitiesDTO capabilities = service(true, true).capabilities(record.getRecordId());
+
+        assertThat(capabilities.canHandover()).isNull();
+        assertThat(capabilities.canAcceptHandover()).isNull();
+        assertThat(capabilities.canAddConsultationNote()).isNull();
+        assertThat(capabilities.canAmend()).isNull();
+        assertThat(capabilities.canDecideAmendments()).isNull();
+    }
+
+    @Test
+    void responsibleDoctorCanHandoverAndAddNote() {
+        MedicalRecord record = openRecord();
+        appointment(AppointmentStatus.IN_EXAM);
+        actor(ASSIGNED_DOCTOR, "DOCTOR");
+
+        RecordCapabilitiesDTO capabilities = collaborative().capabilities(record.getRecordId());
+
+        assertThat(capabilities.canHandover()).isTrue();
+        assertThat(capabilities.canAddConsultationNote()).isTrue();
+        assertThat(capabilities.canAcceptHandover()).isFalse();
+        assertThat(capabilities.canAmend()).isFalse();
+    }
+
+    @Test
+    void pendingHandoverBlocksAnotherAndReceiverCanAccept() {
+        MedicalRecord record = openRecord();
+        appointment(AppointmentStatus.IN_EXAM);
+        UUID receiver = UUID.randomUUID();
+        RecordAccessApplicationService service = collaborative();
+        when(handovers.findPending(record.getRecordId())).thenReturn(Optional.of(
+                RecordHandover.request(record.getRecordId(), ASSIGNED_DOCTOR, receiver, "Het ca", "Cho ket qua", CREATED)));
+
+        actor(ASSIGNED_DOCTOR, "DOCTOR");
+        assertThat(service.capabilities(record.getRecordId()).canHandover()).isFalse();
+        actor(receiver, "DOCTOR");
+        assertThat(service.capabilities(record.getRecordId()).canAcceptHandover()).isTrue();
+    }
+
+    @Test
+    void finishedRecordAuthorCanAmend() {
+        MedicalRecord record = completedRecord();
+        appointment(AppointmentStatus.COMPLETED);
+        actor(ASSIGNED_DOCTOR, "DOCTOR");
+
+        RecordCapabilitiesDTO capabilities = collaborative().capabilities(record.getRecordId());
+
+        assertThat(capabilities.canAmend()).isTrue();
+        assertThat(capabilities.canRequestAmendment()).isTrue();
+        assertThat(capabilities.canHandover()).isFalse();
+        assertThat(capabilities.canAddConsultationNote()).isFalse();
+    }
+
+    @Test
+    void headCanDecideAmendments() {
+        MedicalRecord record = completedRecord();
+        appointment(AppointmentStatus.COMPLETED);
+        UUID head = UUID.randomUUID();
+        actor(head, "DOCTOR");
+        when(authority.authority(any(), any(), any())).thenReturn(new SchedulingAuthoritySnapshot(UUID.randomUUID(), true,
+                true, "DOCTOR", head, true, DEPARTMENT, true, true, 1L, CREATED));
+
+        RecordCapabilitiesDTO capabilities = collaborative().capabilities(record.getRecordId());
+
+        assertThat(capabilities.canDecideAmendments()).isTrue();
+        assertThat(capabilities.canAmend()).isFalse();
+    }
+
+    @Test
+    void recordReviewerCanDecideAmendments() {
+        MedicalRecord record = completedRecord();
+        appointment(AppointmentStatus.COMPLETED);
+        actor(UUID.randomUUID(), "DOCTOR");
+        when(review.canReviewRecords(any(), any())).thenReturn(true);
+
+        assertThat(collaborative().capabilities(record.getRecordId()).canDecideAmendments()).isTrue();
+    }
+
+    @Test
+    void authorityOutageHidesDecisionWithoutFailingCapabilities() {
+        MedicalRecord record = completedRecord();
+        appointment(AppointmentStatus.COMPLETED);
+        actor(UUID.randomUUID(), "DOCTOR");
+        when(authority.authority(any(), any(), any())).thenThrow(new IllegalStateException("timed out"));
+        when(review.canReviewRecords(any(), any())).thenThrow(new IllegalStateException("timed out"));
+
+        assertThat(collaborative().capabilities(record.getRecordId()).canDecideAmendments()).isFalse();
+    }
+
+    @Test
+    void nurseHasNoCollaborationCapability() {
+        MedicalRecord record = openRecord();
+        appointment(AppointmentStatus.IN_EXAM);
+        actor(UUID.randomUUID(), "NURSE");
+
+        RecordCapabilitiesDTO capabilities = collaborative().capabilities(record.getRecordId());
+
+        assertThat(capabilities.canHandover()).isFalse();
+        assertThat(capabilities.canAcceptHandover()).isFalse();
+        assertThat(capabilities.canAddConsultationNote()).isFalse();
+        assertThat(capabilities.canAmend()).isFalse();
+        assertThat(capabilities.canDecideAmendments()).isFalse();
+        org.mockito.Mockito.verifyNoInteractions(authority, review);
     }
 
     private RecordAccessApplicationService service(boolean policyEnabled, boolean mvpEnabled) {

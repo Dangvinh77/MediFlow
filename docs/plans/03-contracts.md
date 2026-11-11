@@ -1276,3 +1276,38 @@ API dưới đây chỉ tồn tại khi cả `mediflow.clinical.scheduling.enabl
 Mã lỗi: `CLINIC_DESK_SCOPE_DENIED` (403); `ROOM_TICKET_EXISTS`, `TICKET_STATE_CONFLICT`, `SHIFT_CANCELLED`, `REGISTRATION_PAYMENT_IN_PROGRESS` (409); `ROOM_TICKET_NOT_ELIGIBLE`, `ROOM_TICKET_WRONG_DATE`, `CLINICAL_ROOM_TICKET_REQUIRED`, `SESSION_DATE_PAST`, `SESSION_SHIFT_CONFLICT`, `VITAL_SIGNS_INVALID`, `VITAL_SIGNS_REASON_REQUIRED`, `RESCHEDULE_CONFIRMATION_REQUIRED`, `RESCHEDULE_TARGET_INVALID` (422).
 
 Wire: `queueNumber` giữ tên, kiểu và ý nghĩa; sau flag được cấp theo khoa và ngày khám. `roomQueueNumber` trên `OutpatientRegistrationDTO` và `RegistrationSummary` chỉ có khi đã cấp số phòng. Sự kiện `outpatient.registration.changed` có trường tùy chọn `reschedule` chỉ ở revision đổi lịch, gồm `actorAccountId`, `actorStaffId`, `reason`, `previousSessionId`, `previousDoctorId`, `previousRoomId`, `previousSessionDate`, `previousStartTime`, `rescheduledAt`. Billing và Notification phải được triển khai trước khi bật flag ở Clinical.
+
+## Cấu trúc hồ sơ, quá trình, bàn giao, hội chẩn, đính chính và dị ứng — Đợt 4 (11/11/2026)
+
+Flag: `mediflow.v2.treatment-course` (quá trình điều trị) và `mediflow.v2.record-amendment` (bàn giao, hội chẩn,
+đính chính), mặc định `false`; tắt thì endpoint trả 404. Nội dung khám có cấu trúc, dòng thời gian, tài liệu của lượt
+và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách endpoint và DTO đầy đủ ở kế hoạch
+[`2026-11-11-v2-wave-4-record-structure.md`](../superpowers/plans/2026-11-11-v2-wave-4-record-structure.md), mục
+"Hợp đồng API mới".
+
+- Quá trình điều trị, bàn giao, hội chẩn, đính chính và sổ dị ứng **không phát sự kiện**. Report vẫn đếm lượt hoàn tất
+  theo `recordId` từ `medicalrecord.completed`; giao lại cùng sự kiện mang cùng `eventId` và `sourceId`.
+- `MedicalRecordDTO.doctorId` luôn là bác sĩ mở lượt; `responsibleDoctorId` chỉ có khi đã bàn giao và khác `doctorId`.
+  Sự kiện hoàn tất giữ bác sĩ mở lượt. Quyền ghi lượt đang mở theo bác sĩ phụ trách hiện tại.
+- Ngữ cảnh kê đơn (`PrescriptionContextDTO.doctorId`) trả bác sĩ phụ trách hiện tại; Pharmacy chỉ cho đúng người đó
+  kê đơn. Đơn thuốc giữ `recordId` của lượt, không bao giờ là `courseId`.
+- Chỉ định Lab tạo sau bàn giao vẫn ghi bác sĩ mở lượt là người chỉ định vì kiểm tra hoàn tất Lab gắn với
+  `record.doctorId`; người nhận bàn giao được quyền tạo chỉ định. `careEpisodeId` và khóa tính phí không đổi.
+- Đính chính được duyệt không sửa bản gốc, `doctorId`, `appointmentId`, `completedAt`, chẩn đoán hay kết quả đã gắn.
+  Khi đính chính ảnh hưởng điều trị, bác sĩ kê đơn thay thế theo quy trình Pharmacy; hệ thống không tự sửa đơn hay hoàn
+  kho. `contentHash` là SHA-256 hex của `section + "\n" + originalText + "\n" + amendedText + "\n" + reason`, chỉ có khi
+  `APPROVED`, là xác nhận nội bộ.
+- Người duyệt: trưởng khoa của khoa hồ sơ (`canManageSchedules`) hoặc bác sĩ có năng lực `MEDICAL_RECORD_REVIEW` do
+  ADMIN cấp ở Core. Người gửi không tự duyệt (403 `AMENDMENT_SELF_DECISION`). Không xác minh được quyền thì từ chối,
+  không coi là "không có quyền". Endpoint nội bộ `GET /api/v2/org/record-review-authority` chỉ cho `clinical-service`,
+  Gateway chặn từ ngoài.
+- `RecordCapabilitiesDTO` thêm `canHandover`, `canAcceptHandover`, `canAddConsultationNote`, `canAmend`,
+  `canDecideAmendments`, vắng mặt khi `record-amendment` tắt; chỉ là gợi ý màn hình, lệnh vẫn kiểm lại.
+- In và xuất hồ sơ (VIEW-03) để lần sau: tách bản một lượt với lịch sử, giữ tác giả, thời điểm, đính chính và kiểm quyền
+  xuất riêng.
+
+Mã lỗi mới: `RECORD_CONTENT_INVALID`, `ALLERGY_INVALID`, `TREATMENT_COURSE_INVALID`, `HANDOVER_INVALID`,
+`HANDOVER_PENDING_EXISTS`, `CONSULTATION_NOTE_INVALID`, `AMENDMENT_INVALID`, `AMENDMENT_RECORD_OPEN`,
+`AMENDMENT_ALREADY_DECIDED` (422); `AMENDMENT_SELF_DECISION`, `AMENDMENT_AUTHOR_NOT_ELIGIBLE`,
+`AMENDMENT_DECISION_DENIED`, `AMENDMENT_ASSIGNMENT_DENIED` (403); `HANDOVER_NOT_FOUND`, `AMENDMENT_NOT_FOUND`,
+`ALLERGY_NOT_FOUND`, `TREATMENT_COURSE_NOT_FOUND` (404); `RECORD_REVIEW_AUTHORITY_UNAVAILABLE` (503).
