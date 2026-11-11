@@ -69,6 +69,13 @@ class SchedulingRouteConfigurationTest {
     }
 
     @Test
+    void v2LabRoutesTargetLab() {
+        for (String path : new String[]{"/api/v2/lab/catalog", "/api/v2/lab/123/template"}) {
+            assertThat(matching(path)).as(path).containsExactly("lb://lab-service");
+        }
+    }
+
+    @Test
     void clinicIntakeRoutesAbsentWhenSchedulingOff() {
         new org.springframework.boot.test.context.runner.ApplicationContextRunner()
                 .withUserConfiguration(com.mediflow.gateway.config.SchedulingRouteConfiguration.class)

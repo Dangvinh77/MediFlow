@@ -204,3 +204,5 @@ clinical-service,POST,/api/v2/outpatient-registrations/{id}/reschedule,ADMIN|NUR
 clinical-service,GET,/api/v2/consultation-sessions/{id}/impact,ADMIN|DOCTOR,true
 clinical-service,GET,/api/v2/doctor-work-shifts/{id}/impact,ADMIN|DOCTOR,true
 billing-service,GET,/api/v2/billing/registration-settlements,ADMIN|CASHIER,true
+lab-service,GET,/api/v2/lab/catalog,ADMIN|DOCTOR|NURSE|LAB_TECH,true
+lab-service,GET,/api/v2/lab/{testId}/template,ADMIN|DOCTOR|NURSE|LAB_TECH,true

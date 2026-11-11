@@ -51,6 +51,7 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/billing/payment-requests/*/zero-payable-eligibility",
                         "/api/v2/billing/payment-requests/*/lab-zero-payable-eligibility")
                         .uri("lb://billing-service"))
+                .route("v2-lab", route -> route.path("/api/v2/lab/**").uri("lb://lab-service"))
                 .build();
     }
 }
