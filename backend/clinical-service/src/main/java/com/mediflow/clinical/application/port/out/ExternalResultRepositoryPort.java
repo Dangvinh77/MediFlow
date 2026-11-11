@@ -1,5 +1,7 @@
 package com.mediflow.clinical.application.port.out;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.mediflow.clinical.domain.model.ExternalResultType;
@@ -9,4 +11,9 @@ public interface ExternalResultRepositoryPort {
 
     /** Repeating the same record, type and reference must have no additional effect. */
     boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary);
+
+    /** Every reference attached to a record, oldest first. */
+    List<AttachedDocument> findByRecord(UUID recordId);
+
+    record AttachedDocument(String type, UUID referenceId, String summary, Instant attachedAt) {}
 }
