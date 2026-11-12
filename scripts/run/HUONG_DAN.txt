@@ -35,6 +35,23 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
     http://<IP-máy>:3000
 - Giữ cửa sổ frontend mở khi sử dụng.
 
+3b. HỘP THƯ DEMO (MỞ BẰNG ĐƯỜNG DẪN)
+- Hộp thư demo không nằm trong menu của ứng dụng. Gõ thẳng đường dẫn vào
+  trình duyệt, không cần đăng nhập:
+    http://<IP-máy>:3000/demo-mailbox     (qua Wi-Fi, dùng cho cả điện thoại)
+    http://127.0.0.1:3000/demo-mailbox    (chạy -LocalOnly)
+- Dùng cùng origin với URL frontend in trong cửa sổ start-frontend.bat, để các
+  nút trong thư (đặt lại mật khẩu, kích hoạt tài khoản) mở đúng trang.
+- Cách dùng: lọc theo vai trò hoặc gõ email/họ tên -> chọn tài khoản seed ->
+  bấm vào thư để xem nội dung. Chỉ có thư của tài khoản seed; thư gửi tới
+  email thật thì xem trong hộp thư thật đó.
+- Điều kiện bật: smtp.local.env ở thư mục gốc có dòng
+    MEDIFLOW_DEMO_MAILBOX_ENABLED=true
+  rồi khởi động lại start-backend.bat. Nếu trang báo "Hộp thư demo chưa được
+  bật trong môi trường này" thì kiểm tra dòng này. Kiểm tra nhanh qua Gateway:
+    http://<IP-máy>:28080/api/v1/demo/mailbox/config   -> "enabled":true
+- Chỉ bật trong môi trường demo/local; không bật trên hệ thống thật.
+
 4. ĐIỆN THOẠI CÙNG WI-FI / CHẠY RIÊNG TRÊN MÁY
 - Mặc định launcher chọn IP LAN và cho phép truy cập qua Wi-Fi.
 - Chọn IP cụ thể (thay bằng IP thật của máy Windows), dùng cho cả hai lệnh:
