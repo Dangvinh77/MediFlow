@@ -14,6 +14,11 @@ The shared instructions are imported from `AGENTS.md` above. What follows is Cla
 - `frontend.md` → `frontend/**` — the Next.js rules, so backend sessions don't carry them.
 - `flutter.md` → `mobile/**` — the Flutter rules.
 
+One rule has no path scope and loads every session:
+
+- `model-routing.md` — which model and effort each kind of task gets, the Fable escalation gate,
+  and token discipline. Personal main-session model/effort belong in `.claude/settings.local.json`.
+
 There is also a nested `frontend/CLAUDE.md` (which imports `frontend/AGENTS.md`). Note that nested
 CLAUDE.md files are **not** re-injected after `/compact`; the path-scoped rule is the reliable one.
 
@@ -45,7 +50,8 @@ Or run `scripts\setup-understand-anything.bat` / `scripts/setup-understand-anyth
 
 ## Vendored tooling
 
-- Agents: `.claude/agents/` — `spring-boot-engineer`, `java-architect`, `code-reviewer`, `test-engineer` (all backend).
+- Agents: `.claude/agents/` — `spring-boot-engineer`, `java-architect`, `code-reviewer`, `test-engineer` (all backend);
+  `fast-explorer`, `routine-coder`, `fable-advisor` (model-pinned routing workers, Claude-only — see `.claude/rules/model-routing.md`).
 - Commands: `.claude/commands/` — `/new-service`, `/index-codebase`, `/review-pr`.
 - Skill: `.claude/skills/new-microservice/`.
 - Shared settings: `.claude/settings.json` (committed). Machine-specific: `.claude/settings.local.json` (gitignored).
