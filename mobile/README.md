@@ -106,6 +106,27 @@ Kiểm tra kết nối bằng trình duyệt điện thoại tại `http://<IP-m
 
 Thiết lập iOS Debug dựa trên [Apple ATS](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowsarbitraryloads) và [quyền mạng nội bộ](https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription). Đây là cấu hình demo HTTP; bản phát hành dùng Gateway HTTPS.
 
+## Build APK Android bằng GitHub Actions
+
+Workflow [Mobile Android APK](../.github/workflows/mobile-android-apk.yml) chạy trên Ubuntu với
+Java 17 và Flutter **3.47.0**, cùng trigger như workflow iOS. Build thủ công tại
+**Actions → Mobile Android APK → Run workflow**.
+
+- `gateway_url`: giống iOS — URL Gateway của máy backend, kết thúc bằng `/api`, ví dụ
+  `http://172.16.2.55:28080/api`. Bỏ trống thì dùng variable `MOBILE_GATEWAY_URL`, rồi
+  `http://192.168.1.3:28080/api`. Emulator dùng `10.0.2.2` thay cho localhost.
+- `build_mode`: mặc định `debug`, bản duy nhất cho phép HTTP LAN (manifest debug). Trên Android
+  bản debug mở được từ màn hình chính. `profile`/`release` yêu cầu Gateway HTTPS.
+- Tải artifact `mediflow-android-<mode>-<run>`, chép `mediflow-<mode>.apk` sang điện thoại và cho
+  phép "Cài ứng dụng không rõ nguồn gốc". APK ký bằng debug key của runner; nếu Android báo xung đột
+  chữ ký thì gỡ bản MediFlow cũ trước. Đây không phải bản phát hành Play Store.
+
+## Icon ứng dụng
+
+Icon Android (gồm adaptive icon), iOS, web và Windows được tạo từ mark trong
+`frontend/public/brand/mediflow-icon.svg`. Sau khi `pnpm install` trong `frontend/`, chạy lại bằng
+`node mobile/tool/generate_app_icons.mjs`.
+
 ## Build IPA chưa ký bằng GitHub Actions
 
 Workflow [Mobile iOS unsigned IPA](../.github/workflows/mobile-ios-unsigned.yml) dùng
