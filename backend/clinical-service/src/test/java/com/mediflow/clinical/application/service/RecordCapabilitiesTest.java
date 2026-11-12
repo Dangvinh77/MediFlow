@@ -219,9 +219,28 @@ class RecordCapabilitiesTest {
         RecordCapabilitiesDTO capabilities = collaborative().capabilities(record.getRecordId());
 
         assertThat(capabilities.canAmend()).isTrue();
-        assertThat(capabilities.canRequestAmendment()).isTrue();
+        assertThat(capabilities.canRequestAmendment()).isFalse();
+        assertThat(capabilities.canApplyAmendment()).isTrue();
         assertThat(capabilities.canHandover()).isFalse();
         assertThat(capabilities.canAddConsultationNote()).isFalse();
+    }
+
+    @Test
+    void headAssignedDoctorRequestsIndependentReviewInsteadOfApplyingDirectly() {
+        MedicalRecord record = completedRecord();
+        appointment(AppointmentStatus.COMPLETED);
+        RecordAccessApplicationService service = collaborative();
+        UUID assigned = UUID.randomUUID();
+        actor(assigned, "DOCTOR");
+        when(amendments.findAssignment(record.getRecordId(), assigned)).thenReturn(Optional.of(
+                com.mediflow.clinical.domain.model.AmendmentAssignment.create(record.getRecordId(), assigned,
+                        UUID.randomUUID(), "Bác sĩ phụ trách đã chuyển khoa", CREATED)));
+
+        RecordCapabilitiesDTO capabilities = service.capabilities(record.getRecordId());
+
+        assertThat(capabilities.canAmend()).isTrue();
+        assertThat(capabilities.canRequestAmendment()).isTrue();
+        assertThat(capabilities.canApplyAmendment()).isFalse();
     }
 
     @Test
@@ -237,6 +256,7 @@ class RecordCapabilitiesTest {
 
         assertThat(capabilities.canDecideAmendments()).isTrue();
         assertThat(capabilities.canAmend()).isFalse();
+        assertThat(capabilities.canApplyAmendment()).isFalse();
     }
 
     @Test

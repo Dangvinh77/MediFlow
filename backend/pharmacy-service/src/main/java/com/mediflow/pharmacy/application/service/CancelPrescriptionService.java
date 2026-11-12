@@ -110,7 +110,7 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
         }
 
         List<StockReservation> reservations = reservationRepository
-                .findByPrescriptionForUpdate(command.prescriptionId());
+                .findReservedByPrescriptionForUpdate(command.prescriptionId());
         requireAllReserved(reservations, prescription);
 
         Instant cancelledAt = Instant.now(clock);

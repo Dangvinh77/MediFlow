@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,7 +85,7 @@ class ReportPage extends ConsumerWidget {
         (access.role == 'ADMIN' ||
             (access.role == 'DOCTOR' && lockedDepartmentId != null));
     if (!allowed) {
-      return const Center(child: Text('Bạn không có quyền xem báo cáo.'));
+      return const Center(child: LText('Bạn không có quyền xem báo cáo.'));
     }
     return _ReportWorkspace(
       key: ValueKey((access.sessionIdentity, lockedDepartmentId)),
@@ -224,12 +226,12 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
       readOnly: true,
       onTap: () => date(from),
       decoration: InputDecoration(
-        labelText: switch (kind) {
+        labelText: AppL10n.text(context, switch (kind) {
           ReportKind.daily => 'Ngày báo cáo',
           ReportKind.monthly => 'Chọn tháng',
           ReportKind.outpatientMonthly => 'Chọn năm',
           _ => 'Từ ngày',
-        },
+        }),
         suffixIcon: const Icon(Icons.calendar_month),
       ),
     ),
@@ -241,8 +243,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         controller: to,
         readOnly: true,
         onTap: () => date(to),
-        decoration: const InputDecoration(
-          labelText: 'Đến ngày',
+        decoration: InputDecoration(
+          labelText: AppL10n.text(context, 'Đến ngày'),
           suffixIcon: Icon(Icons.calendar_month),
         ),
       ),
@@ -308,19 +310,19 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(report.title, style: text.titleLarge),
+                    LText(report.title, style: text.titleLarge),
                     const Chip(
                       avatar: Icon(Icons.verified_outlined, size: 18),
-                      label: Text('Đã đối soát'),
+                      label: LText('Đã đối soát'),
                     ),
                     if (synthetic)
                       const Chip(
                         avatar: Icon(Icons.science_outlined, size: 18),
-                        label: Text('Dữ liệu mô phỏng'),
+                        label: LText('Dữ liệu mô phỏng'),
                       ),
                   ],
                 ),
-                Text('${report.rows.length} kỳ · $currency'),
+                LText('${report.rows.length} kỳ · $currency'),
                 if (report.departmentId != null)
                   ReferenceLabel(
                     kind: ReferenceKind.department,
@@ -334,13 +336,13 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         if (report.note != null)
           Card(
             child: ExpansionTile(
-              title: const Text('Nguồn và đối soát'),
+              title: const LText('Nguồn và đối soát'),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(report.note!),
+                    child: LText(report.note!),
                   ),
                 ),
               ],
@@ -349,8 +351,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         if (report.rows.isNotEmpty)
           Card(
             child: ExpansionTile(
-              title: const Text('Xu hướng đã đối soát'),
-              subtitle: const Text('Mở để xem dòng tiền và hoạt động theo kỳ'),
+              title: const LText('Xu hướng đã đối soát'),
+              subtitle: const LText('Mở để xem dòng tiền và hoạt động theo kỳ'),
               children: [
                 Padding(
                   padding: const EdgeInsets.all(12),
@@ -362,14 +364,14 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         if (report.rows.isEmpty)
           const Padding(
             padding: EdgeInsets.all(16),
-            child: Text('Chưa có số liệu trong khoảng đã chọn.'),
+            child: LText('Chưa có số liệu trong khoảng đã chọn.'),
           ),
         for (final row in report.rows)
           Card(
             margin: const EdgeInsets.symmetric(vertical: 6),
             child: ExpansionTile(
-              title: Text(row.title),
-              subtitle: Text(outpatientPeriodSummary(row, currency)),
+              title: LText(row.title),
+              subtitle: LText(outpatientPeriodSummary(row, currency)),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -380,8 +382,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
                           padding: const EdgeInsets.symmetric(vertical: 5),
                           child: Row(
                             children: [
-                              Expanded(child: Text(metric.key)),
-                              Text(
+                              Expanded(child: LText(metric.key)),
+                              LText(
                                 _number(metric.value),
                                 style: text.titleMedium,
                               ),
@@ -406,7 +408,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
+        LText(
           'Thống kê hoạt động',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
@@ -420,7 +422,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
             ))
               DropdownMenuItem(
                 value: k,
-                child: Text(
+                child: LText(
                   reportTitles[k]!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -433,15 +435,17 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
                   kind = k!;
                   changed();
                 },
-          decoration: const InputDecoration(labelText: 'Loại báo cáo'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Loại báo cáo'),
+          ),
         ),
         const SizedBox(height: 8),
         if (isOutpatient)
           Card(
             child: ExpansionTile(
               key: ValueKey('reconciled-filters-$kind'),
-              title: const Text('Bộ lọc đối soát'),
-              subtitle: Text(
+              title: const LText('Bộ lọc đối soát'),
+              subtitle: LText(
                 '$selectedPeriodSummary · ${widget.lockedDepartmentId != null
                     ? 'Khoa phụ trách'
                     : department == null
@@ -467,7 +471,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         FilledButton.icon(
           onPressed: loading ? null : load,
           icon: const Icon(Icons.bar_chart),
-          label: const Text('Xem báo cáo'),
+          label: const LText('Xem báo cáo'),
         ),
         if (loading)
           const Padding(
@@ -485,7 +489,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
         ],
         if (data != null && !isOutpatient) ...[
           const SizedBox(height: 24),
-          Text(data!.title, style: Theme.of(context).textTheme.titleLarge),
+          LText(data!.title, style: Theme.of(context).textTheme.titleLarge),
           if (data!.departmentId != null)
             ReferenceLabel(
               kind: ReferenceKind.department,
@@ -495,12 +499,12 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
           if (data!.note != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(data!.note!),
+              child: LText(data!.note!),
             ),
           if (data!.rows.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Text('Chưa có số liệu trong khoảng đã chọn.'),
+              child: LText('Chưa có số liệu trong khoảng đã chọn.'),
             ),
           for (final row in data!.rows)
             Card(
@@ -510,7 +514,7 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LText(
                       row.title,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
@@ -520,8 +524,8 @@ class _ReportWorkspaceState extends State<_ReportWorkspace> {
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Row(
                           children: [
-                            Expanded(child: Text(metric.key)),
-                            Text(
+                            Expanded(child: LText(metric.key)),
+                            LText(
                               _number(metric.value),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),

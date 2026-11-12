@@ -80,4 +80,34 @@ void main() {
       expect(result.dispensedActorType, isNotNull);
     },
   );
+  test('edit retry preserves PUT payload and idempotency header', () async {
+    final intent = PrescriptionEditIntent(
+      UpdatePrescription(
+        expectedRevision: 2,
+        lines: [
+          const RequestedPrescriptionLine(
+            drugId: drugId,
+            quantity: 3,
+            dosage: 'Sau ăn',
+          ),
+        ],
+      ),
+    );
+    adapter.networkFailure = true;
+    await expectLater(
+      repository.updatePrescription(rxId, intent),
+      throwsA(isA<ApiFailure>()),
+    );
+    adapter.networkFailure = false;
+    adapter.data = prescriptionJson()..['revision'] = 3;
+    final result = await repository.updatePrescription(rxId, intent);
+    expect(result.revision, 3);
+    expect(adapter.requests, hasLength(2));
+    for (final request in adapter.requests) {
+      expect(request.method, 'PUT');
+      expect(request.uri.path, '/api/v1/pharmacy/prescriptions/$rxId');
+      expect(request.headers['Idempotency-Key'], intent.key);
+      expect(request.data, PrescriptionRequestDto.update(intent));
+    }
+  });
 }

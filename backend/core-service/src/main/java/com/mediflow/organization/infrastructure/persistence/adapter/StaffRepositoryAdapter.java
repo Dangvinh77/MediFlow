@@ -15,6 +15,7 @@ import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaR
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Locale;
 
 /**
  *
@@ -34,6 +35,16 @@ public class StaffRepositoryAdapter
     @Override
     public Optional<Staff> findByIdForUpdate(UUID staffId) {
         return jpaRepository.findByIdForUpdate(staffId).map(this::toDomain);
+    }
+
+    @Override
+    public boolean existsByEmail(String normalizedEmail) {
+        return jpaRepository.existsByNormalizedEmail(normalizeEmail(normalizedEmail));
+    }
+
+    @Override
+    public boolean existsByEmailAndStaffIdNot(String normalizedEmail, UUID staffId) {
+        return jpaRepository.existsByNormalizedEmailAndStaffIdNot(normalizeEmail(normalizedEmail), staffId);
     }
 
     private final StaffJpaRepository jpaRepository;
@@ -77,6 +88,11 @@ public class StaffRepositoryAdapter
             Staff staff) {
 
         StaffEntity entity = toEntity(staff);
+        jpaRepository.findById(staff.getStaffId()).ifPresent(existing -> {
+            if (sameEmail(existing.getEmail(), staff.getEmail())) {
+                entity.setEmailUniqueKey(existing.getEmailUniqueKey());
+            }
+        });
 
         // CreateStaffService can persist an idempotency receipt through JDBC in the
         // same transaction immediately after this call. Flush the new staff row so
@@ -84,6 +100,14 @@ public class StaffRepositoryAdapter
         StaffEntity savedEntity = jpaRepository.saveAndFlush(entity);
 
         return toDomain(savedEntity);
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean sameEmail(String first, String second) {
+        return java.util.Objects.equals(normalizeEmail(first), normalizeEmail(second));
     }
 
         private Staff toDomain(StaffEntity entity) {

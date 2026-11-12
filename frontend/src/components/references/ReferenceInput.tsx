@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 import { useEffect, useRef, useState, type InputHTMLAttributes, type Ref } from "react";
 import { useReferenceDirectory, type ReferencePage } from "./ReferenceProvider";
 import { controlClassName } from "@/components/ui/Field";
@@ -15,6 +17,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
 }
 
 function Picker({ kind, scope, onValueChange, value, directory, ...props }: ReferenceInputProps & { directory: ReturnType<typeof useReferenceDirectory> }) {
+  const { localize } = useLocale();
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<{ id: string; label: string } | null>(null);
   const [result, setResult] = useState<ReferencePage | null>(null);
@@ -59,8 +62,8 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
   }
 
   if (!directory.canSearch(kind)) return <div className="space-y-2">
-    <p className="text-sm text-muted-foreground">Chưa có quyền tìm kiếm thông tin này. Dùng mã tham chiếu đã được cung cấp.</p>
-    <details><summary className="cursor-pointer text-sm text-primary">Nhập mã tham chiếu</summary><input {...props} value={value} onChange={event => onValueChange(event.target.value)} /></details>
+    <p className="text-sm text-muted-foreground"><L10n>{"Chưa có quyền tìm kiếm thông tin này. Dùng mã tham chiếu đã được cung cấp."}</L10n></p>
+    <details><summary className="cursor-pointer text-sm text-primary"><L10n>{"Nhập mã tham chiếu"}</L10n></summary><input {...props} value={value} onChange={event => onValueChange(event.target.value)} /></details>
   </div>;
 
   return <div ref={pickerRef} className="relative min-w-0 w-full space-y-2" onKeyDown={event => {
@@ -71,19 +74,19 @@ function Picker({ kind, scope, onValueChange, value, directory, ...props }: Refe
     }
   }}>
     <div className="flex min-w-0 w-full gap-2">
-      <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={chosen?.id === value && !containsUuid(chosen.label) ? chosen.label : undefined} value={chosen?.id === value ? (containsUuid(chosen.label) ? `Đã chọn ${referenceNames[kind] ?? "tham chiếu"}` : chosen.label) : query} placeholder={props.placeholder ?? "Nhập tên hoặc thông tin để tìm"} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
+      <input {...props} className={`${controlClassName} min-w-0 flex-1 ${props.className ?? ""}`} title={localize(chosen?.id === value && !containsUuid(chosen.label) ? chosen.label : undefined)} value={chosen?.id === value ? (containsUuid(chosen.label) ? `Đã chọn ${referenceNames[kind] ?? "tham chiếu"}` : chosen.label) : query} placeholder={localize(props.placeholder ?? "Nhập tên hoặc thông tin để tìm")} autoComplete="off" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} onChange={event => {
         generation.current++; setBusy(false); setChosen(null); setQuery(event.target.value); setResult(null); setError(null); onValueChange("");
       }} />
-      <button type="button" aria-label="Tìm lựa chọn" disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-control-border px-3 text-sm text-primary transition-colors hover:border-primary hover:bg-surface-muted disabled:opacity-50">{busy ? "Đang tìm…" : "Tìm"}</button>
+      <button type="button" aria-label={localize("Tìm lựa chọn")} disabled={props.disabled || busy} onClick={() => void search()} className="min-h-11 shrink-0 rounded-lg border border-control-border px-3 text-sm text-primary transition-colors hover:border-primary hover:bg-surface-muted disabled:opacity-50"><L10nValue>{busy ? "Đang tìm…" : "Tìm"}</L10nValue></button>
     </div>
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {result ? <div aria-live="polite" className="animate-dropdown-in absolute left-0 top-full z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-lg motion-reduce:animate-none">
-      <button type="button" onClick={() => { generation.current++; setResult(null); pickerRef.current?.querySelector("input")?.focus(); }} className="mb-1 min-h-11 w-full rounded px-3 text-right text-xs text-muted-foreground hover:bg-surface-muted">Đóng danh sách</button>
-      {result.hint ? <p className="mb-2 text-xs text-muted-foreground">{result.hint}</p> : null}
-      {!result.items.length ? <p className="text-sm text-muted-foreground">Không có kết quả phù hợp.</p> : <ul className="max-h-60 overflow-y-auto">{result.items.map(option => <li key={option.id}><button type="button" disabled={props.disabled} onClick={() => {
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{result ? <div aria-live="polite" className="animate-dropdown-in absolute left-0 top-full z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-lg motion-reduce:animate-none">
+      <button type="button" onClick={() => { generation.current++; setResult(null); pickerRef.current?.querySelector("input")?.focus(); }} className="mb-1 min-h-11 w-full rounded px-3 text-right text-xs text-muted-foreground hover:bg-surface-muted"><L10n>{"Đóng danh sách"}</L10n></button>
+      <L10nValue>{result.hint ? <p className="mb-2 text-xs text-muted-foreground">{result.hint}</p> : null}</L10nValue>
+      <L10nValue>{!result.items.length ? <p className="text-sm text-muted-foreground"><L10n>{"Không có kết quả phù hợp."}</L10n></p> : <ul className="max-h-60 overflow-y-auto"><L10nValue>{result.items.map(option => <li key={option.id}><button type="button" disabled={props.disabled} onClick={() => {
         generation.current++; setChosen(option); setQuery(""); setResult(null); onValueChange(option.id); pickerRef.current?.querySelector("input")?.focus();
-      }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">{containsUuid(option.label) ? `Thông tin ${referenceNames[kind] ?? "tham chiếu"} (chưa có tên)` : option.label}</button></li>)}</ul>}
-      <div className="flex gap-3">{page > 0 ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page - 1)} className="min-h-11 text-sm text-primary">Trang trước</button> : null}{result.hasMore ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page + 1)} className="min-h-11 text-sm text-primary">Trang sau</button> : null}</div>
-    </div> : null}
+      }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary"><L10nValue>{containsUuid(option.label) ? `Thông tin ${referenceNames[kind] ?? "tham chiếu"} (chưa có tên)` : option.label}</L10nValue></button></li>)}</L10nValue></ul>}</L10nValue>
+      <div className="flex gap-3"><L10nValue>{page > 0 ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page - 1)} className="min-h-11 text-sm text-primary"><L10n>{"Trang trước"}</L10n></button> : null}</L10nValue><L10nValue>{result.hasMore ? <button type="button" disabled={busy || props.disabled} onClick={() => void search(page + 1)} className="min-h-11 text-sm text-primary">Trang sau</button> : null}</L10nValue></div>
+    </div> : null}</L10nValue>
   </div>;
 }

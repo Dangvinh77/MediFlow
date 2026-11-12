@@ -1,3 +1,5 @@
+import '../l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
@@ -70,8 +72,10 @@ class _PagedListState<T> extends State<PagedList<T>> {
       );
     }
     if (_loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải dữ liệu'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải dữ liệu'),
+        ),
       );
     }
     final page = _page!;
@@ -89,7 +93,7 @@ class _PagedListState<T> extends State<PagedList<T>> {
                         child: StateMessage(
                           icon: Icons.inbox_outlined,
                           color: Wayfinding.home,
-                          child: Text(
+                          child: LText(
                             'Chưa có dữ liệu phù hợp.',
                             textAlign: TextAlign.center,
                           ),
@@ -118,18 +122,18 @@ class _PagedListState<T> extends State<PagedList<T>> {
               spacing: 12,
               children: [
                 IconButton(
-                  tooltip: 'Trang trước',
+                  tooltip: AppL10n.text(context, 'Trang trước'),
                   onPressed: page.number > 0
                       ? () => _load(page.number - 1)
                       : null,
                   icon: const Icon(Icons.chevron_left),
                 ),
-                Text(
+                LText(
                   'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} kết quả',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 IconButton(
-                  tooltip: 'Trang sau',
+                  tooltip: AppL10n.text(context, 'Trang sau'),
                   onPressed: page.hasNext ? () => _load(page.number + 1) : null,
                   icon: const Icon(Icons.chevron_right),
                 ),

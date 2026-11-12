@@ -350,8 +350,8 @@ còn lại đã được xử lý. Không tạo state CLOSED trên API hiện t�
 
 ### 7.1. Hồ sơ nhiều lượt, bàn giao, hội chẩn và đính chính — Đợt 4 v2.0
 
-Hai cờ, mặc định tắt: `mediflow.v2.treatment-course` cho quá trình điều trị, `mediflow.v2.record-amendment`
-cho bàn giao, hội chẩn và đính chính. Tắt cờ thì các endpoint này trả 404 và màn hình ẩn phần tương ứng.
+`mediflow.v2.treatment-course` cho quá trình điều trị mặc định tắt. `mediflow.v2.record-amendment`
+cho bàn giao, hội chẩn và đính chính đang bật trong cấu hình MVP. Tắt cờ thì các endpoint này trả 404 và màn hình ẩn phần tương ứng.
 Dòng thời gian, nội dung khám có cấu trúc, danh sách tài liệu và sổ dị ứng không có cờ.
 
 - **Dòng thời gian:** hồ sơ bệnh nhân hiện từng lượt theo ngày, khoa, bác sĩ, loại lượt và kết quả. Điều dưỡng
@@ -364,9 +364,13 @@ Dòng thời gian, nội dung khám có cấu trúc, danh sách tài liệu và 
   người thì bác sĩ phụ trách gửi yêu cầu mới; yêu cầu cũ thành "đã thay bằng yêu cầu mới". `doctorId` của hồ sơ
   và của sự kiện vẫn là bác sĩ mở hồ sơ; `careEpisodeId` của chỉ định không đổi.
 - **Hội chẩn:** mỗi bác sĩ đọc được hồ sơ ghi ý kiến riêng khi lượt còn mở; ghi chú chỉ thêm, giữ tác giả.
-- **Đính chính:** hồ sơ đã kết thúc không bị sửa. Bác sĩ phụ trách, hoặc bác sĩ được giao, gửi đính chính cho một
-  mục kèm lý do. Trưởng khoa, hoặc bác sĩ được ADMIN cấp `MEDICAL_RECORD_REVIEW`, duyệt hoặc từ chối; không ai tự
-  duyệt đính chính của mình. Bản duyệt có mã băm nội dung để xác nhận nội bộ.
+- **Đính chính:** hồ sơ đã kết thúc không bị ghi đè. Bác sĩ phụ trách đính chính trực tiếp mục của chính mình, bắt
+  buộc ghi lý do; bản sửa có trạng thái `APPLIED`, người thực hiện, thời điểm và mã băm trong lịch sử bất biến. Giá
+  trị mới nhất theo từng mục là nội dung có hiệu lực và được hiển thị cùng nội dung gốc trong hồ sơ nhân viên và kết
+  quả bệnh nhân. Bác sĩ khác chỉ gửi được khi trưởng khoa phân công; yêu cầu đó ở trạng thái `PENDING` và cần trưởng
+  khoa hoặc bác sĩ được ADMIN cấp `MEDICAL_RECORD_REVIEW` duyệt/từ chối. Người gửi yêu cầu đang chờ không tự quyết
+  được. Đính chính không mở lại lượt, thay đổi phí, đơn thuốc hoặc kết quả đã gắn; bác sĩ kê đơn thay thế theo quy
+  trình Pharmacy nếu cần.
 - **Sổ dị ứng:** theo bệnh nhân, không theo lượt. Điều dưỡng và bác sĩ thêm; chỉ bác sĩ đổi trạng thái, có lý do.
   Dị ứng nhập nhầm vẫn còn trong lịch sử.
 - **Tài liệu:** mỗi lượt có danh sách kết quả Lab và đơn thuốc chỉ đọc; tài liệu về sau thời điểm kết thúc được

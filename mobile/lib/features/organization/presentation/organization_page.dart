@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
@@ -129,8 +131,8 @@ class _DepartmentSectionState extends State<DepartmentSection> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Tìm khoa phòng',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Tìm khoa phòng'),
                   prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (value) => setState(() => _keyword = value.trim()),
@@ -140,7 +142,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
                 spacing: 8,
                 children: [
                   FilterChip(
-                    label: const Text('Chỉ đang hoạt động'),
+                    label: const LText('Chỉ đang hoạt động'),
                     selected: _activeOnly,
                     onSelected: (value) {
                       setState(() => _activeOnly = value);
@@ -151,10 +153,10 @@ class _DepartmentSectionState extends State<DepartmentSection> {
                     FilledButton.tonalIcon(
                       onPressed: () => _openEditor(context),
                       icon: const Icon(Icons.add),
-                      label: const Text('Thêm khoa phòng'),
+                      label: const LText('Thêm khoa phòng'),
                     ),
                   IconButton(
-                    tooltip: 'Làm mới khoa phòng',
+                    tooltip: AppL10n.text(context, 'Làm mới khoa phòng'),
                     onPressed: _loading ? null : _load,
                     icon: const Icon(Icons.refresh),
                   ),
@@ -181,7 +183,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
                           children: const [
                             Padding(
                               padding: EdgeInsets.all(24),
-                              child: Text('Chưa có khoa phòng phù hợp.'),
+                              child: LText('Chưa có khoa phòng phù hợp.'),
                             ),
                           ],
                         )
@@ -194,8 +196,8 @@ class _DepartmentSectionState extends State<DepartmentSection> {
                             final department = items[index];
                             return Card(
                               child: ListTile(
-                                title: Text(department.name),
-                                subtitle: Text(
+                                title: LText(department.name),
+                                subtitle: LText(
                                   '${department.abbreviation} · ${department.type}\n${department.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}',
                                 ),
                                 isThreeLine: true,
@@ -216,7 +218,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Khoa phòng')),
+          appBar: AppBar(title: const LText('Khoa phòng')),
           body: DepartmentDetailPage(departmentId: id),
         ),
       ),
@@ -228,7 +230,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Thêm khoa phòng')),
+          appBar: AppBar(title: const LText('Thêm khoa phòng')),
           body: DepartmentEditorPage(
             onSaved: () => Navigator.of(context).pop(),
           ),
@@ -309,13 +311,18 @@ class _StaffSectionState extends State<StaffSection> {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: _departmentId ?? '',
-                decoration: const InputDecoration(labelText: 'Khoa phòng'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Khoa phòng'),
+                ),
                 items: [
-                  const DropdownMenuItem(value: '', child: Text('Tất cả khoa')),
+                  const DropdownMenuItem(
+                    value: '',
+                    child: LText('Tất cả khoa'),
+                  ),
                   for (final department in _departments!)
                     DropdownMenuItem(
                       value: department.id,
-                      child: Text(
+                      child: LText(
                         department.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -332,16 +339,18 @@ class _StaffSectionState extends State<StaffSection> {
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _jobTitle ?? '',
-              decoration: const InputDecoration(labelText: 'Chức danh'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Chức danh'),
+              ),
               items: [
                 const DropdownMenuItem(
                   value: '',
-                  child: Text('Tất cả chức danh'),
+                  child: LText('Tất cả chức danh'),
                 ),
                 for (final title in staffJobTitles)
                   DropdownMenuItem(
                     value: title,
-                    child: Text(
+                    child: LText(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -360,10 +369,10 @@ class _StaffSectionState extends State<StaffSection> {
                   FilledButton.tonalIcon(
                     onPressed: () => _openEditor(context),
                     icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Thêm nhân viên'),
+                    label: const LText('Thêm nhân viên'),
                   ),
                 IconButton(
-                  tooltip: 'Làm mới nhân sự',
+                  tooltip: AppL10n.text(context, 'Làm mới nhân sự'),
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -393,7 +402,7 @@ class _StaffSectionState extends State<StaffSection> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Nhân viên')),
+          appBar: AppBar(title: const LText('Nhân viên')),
           body: StaffDetailPage(staffId: id),
         ),
       ),
@@ -405,7 +414,7 @@ class _StaffSectionState extends State<StaffSection> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Thêm nhân viên')),
+          appBar: AppBar(title: const LText('Thêm nhân viên')),
           body: StaffEditorPage(onSaved: () => Navigator.of(context).pop()),
         ),
       ),
@@ -435,8 +444,8 @@ class _StaffResults extends StatelessWidget {
     ),
     itemBuilder: (context, staff) => Card(
       child: ListTile(
-        title: Text(staff.name),
-        subtitle: Text(
+        title: LText(staff.name),
+        subtitle: LText(
           '${staff.jobTitle} · ${staff.active ? 'Đang làm việc' : 'Ngừng hoạt động'}',
         ),
         isThreeLine: true,
@@ -465,7 +474,7 @@ class _AdminOrganizationBoundary extends StatelessWidget {
     builder: (repository, access) => access.role == 'ADMIN'
         ? builder(repository, access)
         : const Center(
-            child: Text('Chỉ quản trị viên được quản lý tài khoản.'),
+            child: LText('Chỉ quản trị viên được quản lý tài khoản.'),
           ),
   );
 }
@@ -503,8 +512,8 @@ class _AccountPanelState extends State<_AccountPanel> {
       if (_result != null)
         Card(
           child: ListTile(
-            title: Text('Tài khoản ${_result!.username}'),
-            subtitle: Text(
+            title: LText('Tài khoản ${_result!.username}'),
+            subtitle: LText(
               '${_result!.role} · ${_result!.active ? 'Đang hoạt động' : 'Đã khóa'}',
             ),
           ),
@@ -526,12 +535,12 @@ class _AccountPanelState extends State<_AccountPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
+                LText(
                   'Tạo tài khoản',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                const LText(
                   'Tài khoản PATIENT gắn mã bệnh nhân; các vai trò khác gắn mã nhân viên.',
                 ),
                 const SizedBox(height: 12),
@@ -539,8 +548,8 @@ class _AccountPanelState extends State<_AccountPanel> {
                   controller: _username,
                   keyboardType: TextInputType.emailAddress,
                   maxLength: 254,
-                  decoration: const InputDecoration(
-                    labelText: 'Email đăng nhập',
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Email đăng nhập'),
                   ),
                   validator: (value) =>
                       value == null ||
@@ -551,7 +560,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                       : null,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                const LText(
                   'Hệ thống tạo mật khẩu tạm và gửi hướng dẫn qua email. Không nhập hoặc chia sẻ mật khẩu tại đây.',
                 ),
                 const SizedBox(height: 12),
@@ -559,12 +568,14 @@ class _AccountPanelState extends State<_AccountPanel> {
                   key: const ValueKey('account-create-role'),
                   isExpanded: true,
                   initialValue: _role,
-                  decoration: const InputDecoration(labelText: 'Vai trò'),
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Vai trò'),
+                  ),
                   items: [
                     for (final role in accountRoles)
                       DropdownMenuItem(
                         value: role,
-                        child: Text(
+                        child: LText(
                           role,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -591,14 +602,14 @@ class _AccountPanelState extends State<_AccountPanel> {
                 if (_uncertainCreate)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
+                    child: LText(
                       'Kết quả tạo chưa xác định. Không gửi lại biểu mẫu này để tránh tạo trùng tài khoản.',
                     ),
                   ),
                 FilledButton.icon(
                   onPressed: _saving || _uncertainCreate ? null : _create,
                   icon: const Icon(Icons.person_add_alt_1),
-                  label: const Text('Tạo tài khoản'),
+                  label: const LText('Tạo tài khoản'),
                 ),
               ],
             ),
@@ -611,22 +622,22 @@ class _AccountPanelState extends State<_AccountPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LText(
                 'Khóa hoặc mở tài khoản',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               if (_selectedAccount == null)
-                const Text(
+                const LText(
                   'Chọn tài khoản trong danh sách để quản lý trạng thái.',
                 )
               else
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(
+                  title: LText(
                     'Tài khoản được chọn: ${_selectedAccount!.username}',
                   ),
-                  subtitle: Text(
+                  subtitle: LText(
                     '${_selectedAccount!.role} · ${_selectedAccount!.active ? 'Đang hoạt động' : 'Đã khóa'}',
                   ),
                 ),
@@ -637,10 +648,15 @@ class _AccountPanelState extends State<_AccountPanel> {
                 ),
                 isExpanded: true,
                 initialValue: _active,
-                decoration: const InputDecoration(labelText: 'Trạng thái'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Trạng thái'),
+                ),
                 items: const [
-                  DropdownMenuItem(value: true, child: Text('Đang hoạt động')),
-                  DropdownMenuItem(value: false, child: Text('Khóa tài khoản')),
+                  DropdownMenuItem(value: true, child: LText('Đang hoạt động')),
+                  DropdownMenuItem(
+                    value: false,
+                    child: LText('Khóa tài khoản'),
+                  ),
                 ],
                 onChanged: _saving
                     ? null
@@ -652,7 +668,7 @@ class _AccountPanelState extends State<_AccountPanel> {
                     ? null
                     : _updateStatus,
                 icon: const Icon(Icons.manage_accounts_outlined),
-                label: const Text('Cập nhật trạng thái'),
+                label: const LText('Cập nhật trạng thái'),
               ),
             ],
           ),
@@ -724,7 +740,7 @@ class _AccountPanelState extends State<_AccountPanel> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Chi tiết tài khoản')),
+          appBar: AppBar(title: const LText('Chi tiết tài khoản')),
           body: AccountDetailPage(accountId: account.id),
         ),
       ),
@@ -862,7 +878,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          LText(
             'Danh sách tài khoản',
             style: Theme.of(context).textTheme.titleLarge,
           ),
@@ -872,8 +888,8 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
             controller: _keyword,
             maxLength: 254,
             enabled: !_loading && !widget.disabled,
-            decoration: const InputDecoration(
-              labelText: 'Email đăng nhập',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Email đăng nhập'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -882,13 +898,15 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
             key: const ValueKey('account-search-role'),
             isExpanded: true,
             initialValue: _roleFilter,
-            decoration: const InputDecoration(labelText: 'Lọc vai trò'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Lọc vai trò'),
+            ),
             items: [
-              const DropdownMenuItem(value: '', child: Text('Tất cả')),
+              const DropdownMenuItem(value: '', child: LText('Tất cả')),
               for (final role in accountSearchRoles)
                 DropdownMenuItem(
                   value: role,
-                  child: Text(
+                  child: LText(
                     role,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -904,11 +922,13 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
             key: const ValueKey('account-search-active'),
             isExpanded: true,
             initialValue: _activeFilter,
-            decoration: const InputDecoration(labelText: 'Lọc trạng thái'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Lọc trạng thái'),
+            ),
             items: const [
-              DropdownMenuItem(value: '', child: Text('Tất cả')),
-              DropdownMenuItem(value: 'true', child: Text('Đang hoạt động')),
-              DropdownMenuItem(value: 'false', child: Text('Đã khóa')),
+              DropdownMenuItem(value: '', child: LText('Tất cả')),
+              DropdownMenuItem(value: 'true', child: LText('Đang hoạt động')),
+              DropdownMenuItem(value: 'false', child: LText('Đã khóa')),
             ],
             onChanged: _loading || widget.disabled
                 ? null
@@ -920,7 +940,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
             child: FilledButton.icon(
               onPressed: _loading || widget.disabled ? null : _search,
               icon: const Icon(Icons.search),
-              label: const Text('Tìm tài khoản'),
+              label: const LText('Tìm tài khoản'),
             ),
           ),
           const Divider(height: 28),
@@ -931,25 +951,25 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
           else if (_accounts == null || _accounts!.items.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('Không tìm thấy tài khoản.'),
+              child: LText('Không tìm thấy tài khoản.'),
             )
           else ...[
-            Text('${_accounts!.totalElements} tài khoản'),
+            LText('${_accounts!.totalElements} tài khoản'),
             for (final account in _accounts!.items)
               Card(
                 child: ListTile(
-                  title: Text(account.username),
+                  title: LText(account.username),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LText(
                         '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
                       ),
                       TextButton(
                         onPressed: widget.disabled
                             ? null
                             : () => widget.onOpen(account),
-                        child: const Text('Xem chi tiết'),
+                        child: const LText('Xem chi tiết'),
                       ),
                     ],
                   ),
@@ -957,7 +977,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
                     onPressed: widget.disabled
                         ? null
                         : () => widget.onSelect(account),
-                    child: Text(
+                    child: LText(
                       widget.selectedId == account.id
                           ? 'Đang chọn'
                           : 'Chọn ${account.username}',
@@ -980,9 +1000,9 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
                             active: _requestActive,
                             page: _accounts!.number - 1,
                           ),
-                    child: const Text('Trang trước'),
+                    child: const LText('Trang trước'),
                   ),
-                  Text(
+                  LText(
                     'Trang ${_accounts!.number + 1} / ${_accounts!.totalPages}',
                   ),
                   TextButton(
@@ -994,7 +1014,7 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
                             active: _requestActive,
                             page: _accounts!.number + 1,
                           ),
-                    child: const Text('Trang sau'),
+                    child: const LText('Trang sau'),
                   ),
                 ],
               ),

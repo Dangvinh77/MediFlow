@@ -39,7 +39,7 @@ public class PharmacyEventOutboxJpaEntity {
     private short careContractVersion;
 
     @Column(name = "care_lifecycle_order")
-    private Short careLifecycleOrder;
+    private Integer careLifecycleOrder;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

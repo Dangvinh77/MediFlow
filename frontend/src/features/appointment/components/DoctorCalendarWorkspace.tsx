@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
@@ -40,6 +42,7 @@ export function DoctorCalendarWorkspace({ enabled, clinicIntakeEnabled = false }
 }
 
 function DoctorCalendarWorkspaceContent({ enabled, clinicIntakeEnabled }: { enabled: boolean; clinicIntakeEnabled: boolean }) {
+  const { localize } = useLocale();
   const [view, setView] = useState<"day" | "week">("day");
   const [date, setDate] = useState(todayInVietnam);
   const [calendar, setCalendar] = useState<DoctorCalendarDTO | null>(null);
@@ -113,45 +116,45 @@ function DoctorCalendarWorkspaceContent({ enabled, clinicIntakeEnabled }: { enab
     }
   }
 
-  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Lịch khám chưa được mở.</p>;
+  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground"><L10n>{"Lịch khám chưa được mở."}</L10n></p>;
 
   return <div className="space-y-6">
     <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">Bộ lọc lịch khám</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Ca được phân công cho biết bạn trực giờ nào, phòng nào. Buổi khám là phần trong ca nhận bệnh nhân; mở từng buổi để xem phiếu.</p>
+      <h2 className="text-lg font-semibold"><L10n>{"Bộ lọc lịch khám"}</L10n></h2>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Ca được phân công cho biết bạn trực giờ nào, phòng nào. Buổi khám là phần trong ca nhận bệnh nhân; mở từng buổi để xem phiếu."}</L10n></p>
       <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void loadCalendar(); }}>
-        <label className="text-sm font-medium" htmlFor="doctor-calendar-view"><span className="mb-1 block">Chế độ lịch</span>
+        <label className="text-sm font-medium" htmlFor="doctor-calendar-view"><span className="mb-1 block"><L10n>{"Chế độ lịch"}</L10n></span>
           <select id="doctor-calendar-view" value={view} onChange={event => setView(event.target.value as "day" | "week")} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
-            <option value="day">Theo ngày</option><option value="week">Theo tuần</option>
+            <option value="day"><L10n>{"Theo ngày"}</L10n></option><option value="week"><L10n>{"Theo tuần"}</L10n></option>
           </select>
         </label>
-        <ScheduleDateInput label="Ngày tham chiếu" id="doctor-calendar-date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal" />
-        <Button type="submit" loading={loading}>Tải lịch của tôi</Button>
+        <ScheduleDateInput label={localize("Ngày tham chiếu")} id="doctor-calendar-date" required value={date} onChange={event => setDate(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal" />
+        <Button type="submit" loading={loading}><L10n>{"Tải lịch của tôi"}</L10n></Button>
       </form>
-      {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadCalendar()} /> : null}
-      {calendar ? <>
-        <p role="status" className="mt-4 text-sm text-muted-foreground">{formatLocalDate(calendar.fromDate)} – {formatLocalDate(calendar.toDate)} · {calendar.timezone}</p>
-        {shifts?.length ? <div className="mt-3 rounded-lg bg-surface-muted p-3 text-sm"><h3 className="font-semibold">Ca được phân công</h3><ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1">{shifts.map(shift => <li key={shift.shiftId}>{formatLocalDate(shift.shiftDate)} · {shift.startTime}–{shift.endTime} · <ReferenceText kind="room" value={shift.roomId} fallback="Phòng khám" /></li>)}</ul></div> : null}
-        {calendar.sessions.length ? <ul className="mt-3 grid gap-3 lg:grid-cols-2">
-          {calendar.sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span className="text-sm">{sessionStatusLabels[session.status]}</span></div>
+      <L10nValue>{error ? <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={() => void loadCalendar()} /> : null}</L10nValue>
+      <L10nValue>{calendar ? <>
+        <p role="status" className="mt-4 text-sm text-muted-foreground"><L10nValue>{formatLocalDate(calendar.fromDate)}</L10nValue> – <L10nValue>{formatLocalDate(calendar.toDate)}</L10nValue> · {calendar.timezone}</p>
+        <L10nValue>{shifts?.length ? <div className="mt-3 rounded-lg bg-surface-muted p-3 text-sm"><h3 className="font-semibold"><L10n>{"Ca được phân công"}</L10n></h3><ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1"><L10nValue>{shifts.map(shift => <li key={shift.shiftId}><L10nValue>{formatLocalDate(shift.shiftDate)}</L10nValue> · {shift.startTime}–{shift.endTime} · <ReferenceText kind="room" value={shift.roomId} fallback="Phòng khám" /></li>)}</L10nValue></ul></div> : null}</L10nValue>
+        <L10nValue>{calendar.sessions.length ? <ul className="mt-3 grid gap-3 lg:grid-cols-2">
+          <L10nValue>{calendar.sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4">
+            <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold"><L10nValue>{formatLocalDate(session.sessionDate)}</L10nValue> · {session.startTime}–{session.endTime}</h3><span className="text-sm"><L10nValue>{sessionStatusLabels[session.status]}</L10nValue></span></div>
             <p className="text-sm"><ReferenceText kind="department" value={session.departmentId} fallback="Khoa khám" /> · <ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></p>
-            <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{session.confirmedCount} đã xác nhận · {session.availableCount} còn chỗ</p><Button type="button" aria-pressed={selectedSession === session.sessionId} onClick={() => void loadRegistrations(session.sessionId)}>Xem phiếu</Button></div>
-          </li>)}
-        </ul> : <p role="status" className="mt-3 text-sm text-muted-foreground">Không có buổi khám trong khoảng này.</p>}
-      </> : null}
+            <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{session.confirmedCount}<L10n>{" đã xác nhận · "}</L10n>{session.availableCount}<L10n>{" còn chỗ"}</L10n></p><Button type="button" aria-pressed={selectedSession === session.sessionId} onClick={() => void loadRegistrations(session.sessionId)}><L10n>{"Xem phiếu"}</L10n></Button></div>
+          </li>)}</L10nValue>
+        </ul> : <p role="status" className="mt-3 text-sm text-muted-foreground"><L10n>{"Không có buổi khám trong khoảng này."}</L10n></p>}</L10nValue>
+      </> : null}</L10nValue>
     </section>
 
-    {selectedSession ? <section className="rounded-xl border border-border bg-surface p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">Phiếu của buổi {calendar?.sessions.filter(session => session.sessionId === selectedSession).map(session => `${formatLocalDate(session.sessionDate)} · ${session.startTime}–${session.endTime}`)}</h2><Button type="button" loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải lại</Button></div>
-      {registrationError ? <AsyncState kind="error" message={registrationError.message} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession)} /> : null}
-      {registrationLoading ? <AsyncState kind="loading" message="Đang tải phiếu khám…" /> : null}
-      {registrations ? registrations.length ? <ul className="mt-3 divide-y divide-border">{registrations.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
-        <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p className="text-muted-foreground">{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"} · {registrationStatusLabels[item.status]}</p></div>
-        <div className="space-y-1"><p>{item.checkedInAt ? "Đã đến" : "Chưa đến"} · {queueNumberText(item.queueNumber, clinicIntakeEnabled)}{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? ` · ${roomNumberText(item.roomQueueNumber)}` : ""}</p><p className="text-muted-foreground">{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</p></div>
-        <Link href={`/appointments/${encodeURIComponent(item.registrationId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted">Xem phiếu khám</Link>
-      </li>)}</ul> : <p role="status" className="mt-3 text-sm text-muted-foreground">Buổi này chưa có phiếu.</p> : null}
-      {registrations && registrationPages > 1 ? <nav aria-label="Trang phiếu buổi khám" className="mt-4 flex items-center justify-between gap-3"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}>Trang trước</Button><span className="text-sm">Trang {registrationPage + 1} / {registrationPages}</span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}
-    </section> : null}
+    <L10nValue>{selectedSession ? <section className="rounded-xl border border-border bg-surface p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold"><L10n>{"Phiếu của buổi "}</L10n><L10nValue>{calendar?.sessions.filter(session => session.sessionId === selectedSession).map(session => `${formatLocalDate(session.sessionDate)} · ${session.startTime}–${session.endTime}`)}</L10nValue></h2><Button type="button" loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}><L10n>{"Tải lại"}</L10n></Button></div>
+      <L10nValue>{registrationError ? <AsyncState kind="error" message={localize(registrationError.message)} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession)} /> : null}</L10nValue>
+      <L10nValue>{registrationLoading ? <AsyncState kind="loading" message={localize("Đang tải phiếu khám…")} /> : null}</L10nValue>
+      <L10nValue>{registrations ? registrations.length ? <ul className="mt-3 divide-y divide-border"><L10nValue>{registrations.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
+        <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p className="text-muted-foreground"><L10nValue>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</L10nValue> · <L10nValue>{registrationStatusLabels[item.status]}</L10nValue></p></div>
+        <div className="space-y-1"><p><L10nValue>{item.checkedInAt ? "Đã đến" : "Chưa đến"}</L10nValue> · <L10nValue>{queueNumberText(item.queueNumber, clinicIntakeEnabled)}</L10nValue><L10nValue>{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? ` · ${roomNumberText(item.roomQueueNumber)}` : ""}</L10nValue></p><p className="text-muted-foreground"><L10nValue>{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</L10nValue></p></div>
+        <Link href={`/appointments/${encodeURIComponent(item.registrationId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted"><L10n>{"Xem phiếu khám"}</L10n></Link>
+      </li>)}</L10nValue></ul> : <p role="status" className="mt-3 text-sm text-muted-foreground"><L10n>{"Buổi này chưa có phiếu."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{registrations && registrationPages > 1 ? <nav aria-label={localize("Trang phiếu buổi khám")} className="mt-4 flex items-center justify-between gap-3"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}><L10n>{"Trang trước"}</L10n></Button><span className="text-sm">Trang <L10nValue>{registrationPage + 1}</L10nValue> / <L10nValue>{registrationPages}</L10nValue></span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}</L10nValue>
+    </section> : null}</L10nValue>
   </div>;
 }

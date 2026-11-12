@@ -9,6 +9,18 @@ class Diagnosis {
   final String? description, icdCode;
 }
 
+class EffectiveRecordCorrection {
+  const EffectiveRecordCorrection({
+    required this.section,
+    required this.originalText,
+    required this.correctedText,
+    required this.reason,
+    required this.appliedAt,
+  });
+
+  final String section, originalText, correctedText, reason, appliedAt;
+}
+
 class MedicalRecord {
   const MedicalRecord({
     required this.id,
@@ -36,6 +48,7 @@ class MedicalRecord {
     this.closureNote,
     this.closedAt,
     this.previousRecordId,
+    this.effectiveCorrections = const [],
   });
 
   final String id, patientId, doctorId, departmentId, examinationDate;
@@ -46,6 +59,7 @@ class MedicalRecord {
   final String? physicalExam, advice, responsibleDoctorId;
   final String? disposition, dispositionNote, completedAt;
   final String? closureReason, closureNote, closedAt, previousRecordId;
+  final List<EffectiveRecordCorrection> effectiveCorrections;
 }
 
 class DiagnosisDraft {
@@ -148,6 +162,7 @@ class RecordCapabilities {
     this.canAcceptHandover,
     this.canAddConsultationNote,
     this.canAmend,
+    this.canApplyAmendment,
     this.canDecideAmendments,
   });
 
@@ -162,6 +177,7 @@ class RecordCapabilities {
       canAcceptHandover = null,
       canAddConsultationNote = null,
       canAmend = null,
+      canApplyAmendment = null,
       canDecideAmendments = null;
 
   final String recordId;
@@ -170,13 +186,14 @@ class RecordCapabilities {
 
   /// Collaboration flags are null (absent) while the server feature is off.
   final bool? canHandover, canAcceptHandover, canAddConsultationNote;
-  final bool? canAmend, canDecideAmendments;
+  final bool? canAmend, canApplyAmendment, canDecideAmendments;
 
   bool get collaborationAvailable =>
       canHandover != null ||
       canAcceptHandover != null ||
       canAddConsultationNote != null ||
       canAmend != null ||
+      canApplyAmendment != null ||
       canDecideAmendments != null;
 }
 

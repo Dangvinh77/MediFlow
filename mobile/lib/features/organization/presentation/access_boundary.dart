@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,11 +26,11 @@ class OrganizationBoundary extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     final repository = ref.watch(organizationRepositoryProvider);
     if (access == null) {
-      return const Center(child: Text('Phiên đăng nhập chưa sẵn sàng.'));
+      return const Center(child: LText('Phiên đăng nhập chưa sẵn sàng.'));
     }
     if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
       return const Center(
-        child: Text('Bạn không có quyền xem thông tin tổ chức.'),
+        child: LText('Bạn không có quyền xem thông tin tổ chức.'),
       );
     }
     return KeyedSubtree(
@@ -48,7 +50,7 @@ class OrganizationField extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 128, child: Text(label)),
+        SizedBox(width: 128, child: LText(label)),
         Expanded(
           child: SelectableText(value?.isNotEmpty == true ? value! : '—'),
         ),

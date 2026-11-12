@@ -31,6 +31,7 @@ class PharmacyOutpatientApiConfigurationTest {
                     if (flags == 63) {
                         assertThat(context).hasSingleBean(CreateOutpatientPrescriptionUseCase.class);
                         assertThat(context).hasSingleBean(OutpatientPrescriptionLifecycleUseCase.class);
+                        assertThat(context).hasSingleBean(com.mediflow.pharmacy.application.service.PublicOutpatientPrescriptionRevisionService.class);
                     } else {
                         assertThat(context).doesNotHaveBean(CreateOutpatientPrescriptionUseCase.class);
                         assertThat(context).doesNotHaveBean(OutpatientPrescriptionLifecycleUseCase.class);
@@ -65,7 +66,15 @@ class PharmacyOutpatientApiConfigurationTest {
                 .withBean(DispenseCarePrescriptionUseCase.class, () -> mock(DispenseCarePrescriptionUseCase.class))
                 .withBean(RecordCareStockFailureUseCase.class, () -> mock(RecordCareStockFailureUseCase.class))
                 .withBean(CancelCarePrescriptionUseCase.class, () -> mock(CancelCarePrescriptionUseCase.class))
-                .withBean(ExpireCarePrescriptionUseCase.class, () -> mock(ExpireCarePrescriptionUseCase.class));
+                .withBean(ExpireCarePrescriptionUseCase.class, () -> mock(ExpireCarePrescriptionUseCase.class))
+                .withBean(com.mediflow.pharmacy.application.port.out.PrescriptionIdentityPort.class,
+                        () -> mock(com.mediflow.pharmacy.application.port.out.PrescriptionIdentityPort.class))
+                .withBean(com.mediflow.pharmacy.application.service.CarePrescriptionRevisionTransactionService.class,
+                        () -> mock(com.mediflow.pharmacy.application.service.CarePrescriptionRevisionTransactionService.class))
+                .withBean(com.mediflow.pharmacy.application.port.out.PrescriptionRevisionBillingPort.class,
+                        () -> mock(com.mediflow.pharmacy.application.port.out.PrescriptionRevisionBillingPort.class))
+                .withBean(com.mediflow.pharmacy.application.port.out.PrescriptionRevisionOperationPort.class,
+                        () -> mock(com.mediflow.pharmacy.application.port.out.PrescriptionRevisionOperationPort.class));
     }
 
     private String[] gates(int flags) {

@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { RecordBreadcrumb } from "@/features/patient/components/RecordLayout";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -10,5 +12,5 @@ interface Props { params: Promise<{ patientId: string }>; searchParams: Promise<
 
 export default async function PatientDetailPage({ params, searchParams }: Props) {
   const { patientId } = await params; const { notice } = await searchParams; const id = patientId.trim();
-  return <PageShell title="Chi tiết bệnh nhân" description="Hồ sơ định danh và thông tin liên hệ."><RecordBreadcrumb href="/patients" parent="Bệnh nhân" current="Chi tiết bệnh nhân" />{!isUuid(id) ? <section role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">Mã bệnh nhân không phải UUID hợp lệ.</section> : <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}><PatientProfileWorkspace patientId={id} notice={notice === "created" || notice === "updated" ? notice : undefined} /></RoleGate>}</PageShell>;
+  return <PageShell title="Chi tiết bệnh nhân" description="Hồ sơ định danh và thông tin liên hệ."><RecordBreadcrumb href="/patients" parent="Bệnh nhân" current="Chi tiết bệnh nhân" /><L10nValue>{!isUuid(id) ? <section role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger"><L10n>{"Mã bệnh nhân không phải UUID hợp lệ."}</L10n></section> : <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}><PatientProfileWorkspace patientId={id} notice={notice === "created" || notice === "updated" ? notice : undefined} /></RoleGate>}</L10nValue></PageShell>;
 }

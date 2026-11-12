@@ -5,6 +5,7 @@ import com.mediflow.organization.domain.exception.InvalidAccountException;
 import com.mediflow.patient.application.dto.response.PatientDTO;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
 import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
+import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.domain.model.Gender;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -17,8 +18,9 @@ import static org.mockito.Mockito.when;
 
 class PatientAccountIdentityAdapterTest {
     private final GetPatientUseCase patients = mock(GetPatientUseCase.class);
+    private final ReadPatientIdentityUseCase patientIdentity = mock(ReadPatientIdentityUseCase.class);
     private final PatientAccountIdentityPort identity = new PatientAccountIdentityAdapter(
-            patients, mock(UpdatePatientUseCase.class));
+            patients, mock(UpdatePatientUseCase.class), patientIdentity);
 
     @Test
     void permitsEmailChangeForAnActivePatientProfile() {

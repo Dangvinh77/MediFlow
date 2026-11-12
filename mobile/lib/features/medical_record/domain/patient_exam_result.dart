@@ -6,6 +6,18 @@ class PatientDiagnosis {
   final String? description, icdCode;
 }
 
+class PatientEffectiveCorrection {
+  const PatientEffectiveCorrection({
+    required this.section,
+    required this.originalText,
+    required this.correctedText,
+    required this.reason,
+    required this.appliedAt,
+  });
+
+  final String section, originalText, correctedText, reason, appliedAt;
+}
+
 /// Released patient summary, deliberately separate from the staff record model.
 class PatientExamResult {
   const PatientExamResult({
@@ -18,10 +30,12 @@ class PatientExamResult {
     this.symptoms,
     this.disposition,
     this.dispositionNote,
+    this.effectiveCorrections = const [],
   });
   final String id, doctorId, departmentId, examinationDate, completedAt;
   final String? symptoms, disposition, dispositionNote;
   final List<PatientDiagnosis> diagnoses;
+  final List<PatientEffectiveCorrection> effectiveCorrections;
 }
 
 abstract interface class PatientExamResultsRepository {

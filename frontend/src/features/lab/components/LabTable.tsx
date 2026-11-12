@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -67,6 +69,7 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", initialEpisodeType = "OUTPATIENT_VISIT", initialStatus, initialDepartmentId = "", initialPage = 0 }: { outpatientEnabled?: boolean; initialEpisodeId?: string; initialEpisodeType?: LabCareEpisodeType; initialStatus?: LabTestStatus | ""; initialDepartmentId?: string; initialPage?: number }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const requestSequence = useRef(0);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
@@ -180,53 +183,47 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
 
   return (
     <section className="mt-6">
-      {role === "ADMIN" || role === "DOCTOR" ? (
+      <L10nValue>{role === "ADMIN" || role === "DOCTOR" ? (
         <div className="mb-5 flex justify-end">
-          <Link href={outpatientEnabled ? "/records" : "/lab/new"} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-            Tạo yêu cầu xét nghiệm
-          </Link>
+          <Link href={outpatientEnabled ? "/records" : "/lab/new"} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"><L10n>{"Tạo yêu cầu xét nghiệm"}</L10n></Link>
         </div>
-      ) : null}
-      {episodeScoped ? <p className="mb-4 border-l-2 border-primary pl-3 text-sm text-muted-foreground">Xét nghiệm thuộc đợt chăm sóc đang xem. Bộ lọc giữ nguyên đợt chăm sóc khi chọn tất cả trạng thái.</p> : null}
+      ) : null}</L10nValue>
+      <L10nValue>{episodeScoped ? <p className="mb-4 border-l-2 border-primary pl-3 text-sm text-muted-foreground"><L10n>{"Xét nghiệm thuộc đợt chăm sóc đang xem. Bộ lọc giữ nguyên đợt chăm sóc khi chọn tất cả trạng thái."}</L10n></p> : null}</L10nValue>
       <form onSubmit={onFilter} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4">
-        {clinicalReader ? <div className="min-w-0 flex-1">
-          <label htmlFor="lab-department" className="mb-1 block text-sm font-medium">
-            Khoa yêu cầu
-          </label>
+        <L10nValue>{clinicalReader ? <div className="min-w-0 flex-1">
+          <label htmlFor="lab-department" className="mb-1 block text-sm font-medium"><L10n>{"Khoa yêu cầu"}</L10n></label>
           <ReferenceInput kind="department"
             id="lab-department"
             value={departmentId}
             onValueChange={(selectedId) => setDepartmentId(selectedId)}
-            placeholder="Chọn khoa yêu cầu"
+            placeholder={localize("Chọn khoa yêu cầu")}
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
-        </div> : null}
+        </div> : null}</L10nValue>
         <div>
-          <label htmlFor="lab-status" className="mb-1 block text-sm font-medium">
-            Trạng thái
-          </label>
+          <label htmlFor="lab-status" className="mb-1 block text-sm font-medium"><L10n>{"Trạng thái"}</L10n></label>
           <select
             id="lab-status"
             value={status}
             onChange={(event) => setStatus(event.target.value as LabTestStatus | "")}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <option value="">Mọi trạng thái</option>
-            {LAB_STATUSES.map((value) => (
+            <option value=""><L10n>{"Mọi trạng thái"}</L10n></option>
+            <L10nValue>{LAB_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {labStatusPresentation[value].label}
+                <L10nValue>{labStatusPresentation[value].label}</L10nValue>
               </option>
-            ))}
+            ))}</L10nValue>
           </select>
         </div>
         <details className="order-last w-full border-t border-border pt-2">
-        <summary className="cursor-pointer py-2 text-sm text-muted-foreground">Tra cứu nâng cao và hỗ trợ</summary>
+        <summary className="cursor-pointer py-2 text-sm text-muted-foreground"><L10n>{"Tra cứu nâng cao và hỗ trợ"}</L10n></summary>
         <div className="grid gap-3 py-3 sm:grid-cols-2">
-        {!clinicalReader ? <div><label htmlFor="lab-department-support" className="mb-1 block text-sm font-medium">Mã khoa</label><ReferenceInput kind="department" id="lab-department-support" value={departmentId} onValueChange={setDepartmentId} /></div> : null}
+        <L10nValue>{!clinicalReader ? <div><label htmlFor="lab-department-support" className="mb-1 block text-sm font-medium"><L10n>{"Mã khoa"}</L10n></label><ReferenceInput kind="department" id="lab-department-support" value={departmentId} onValueChange={setDepartmentId} /></div> : null}</L10nValue>
         <div>
-          <label htmlFor="lab-episode-type" className="mb-1 block text-sm font-medium">Loại đợt</label>
+          <label htmlFor="lab-episode-type" className="mb-1 block text-sm font-medium"><L10n>{"Loại đợt"}</L10n></label>
           <select
             id="lab-episode-type"
             disabled={episodeScoped}
@@ -234,19 +231,19 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             onChange={(event) => setEpisodeType(event.target.value as LabCareEpisodeType | "")}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <option value="">Mọi loại</option>
-            <option value="OUTPATIENT_VISIT">Ngoại trú</option>
-            <option value="ADMISSION">Nội trú</option>
+            <option value=""><L10n>{"Mọi loại"}</L10n></option>
+            <option value="OUTPATIENT_VISIT"><L10n>{"Ngoại trú"}</L10n></option>
+            <option value="ADMISSION"><L10n>{"Nội trú"}</L10n></option>
           </select>
         </div>
         <div className="min-w-0 flex-1">
-          <label htmlFor="lab-episode-id" className="mb-1 block text-sm font-medium">Mã đợt chăm sóc</label>
+          <label htmlFor="lab-episode-id" className="mb-1 block text-sm font-medium"><L10n>{"Mã đợt chăm sóc"}</L10n></label>
           <input
             id="lab-episode-id"
             readOnly={episodeScoped}
             value={episodeId}
             onChange={(event) => setEpisodeId(event.target.value)}
-            placeholder="UUID đợt chăm sóc"
+            placeholder={localize("UUID đợt chăm sóc")}
             aria-describedby={validationError ? "lab-filter-error" : undefined}
             aria-invalid={validationError ? true : undefined}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -258,59 +255,55 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
           type="submit"
           disabled={loading}
           className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Lọc
-        </button>
+        ><L10n>{"Lọc"}</L10n></button>
         <button
           type="button"
           onClick={onReset}
           disabled={loading}
           className="min-h-11 rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Tất cả
-        </button>
+        ><L10n>{"Tất cả"}</L10n></button>
       </form>
 
-      {validationError ? (
+      <L10nValue>{validationError ? (
         <p id="lab-filter-error" role="alert" className="mt-2 text-sm text-danger">
-          {validationError}
+          <L10nValue>{validationError}</L10nValue>
         </p>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {loading && tests.length === 0 ? (
-        <AsyncState kind="loading" message="Đang tải xét nghiệm…" />
-      ) : null}
+      <L10nValue>{loading && tests.length === 0 ? (
+        <AsyncState kind="loading" message={localize("Đang tải xét nghiệm…")} />
+      ) : null}</L10nValue>
 
-      {!loading && error ? (
+      <L10nValue>{!loading && error ? (
         <AsyncState
           kind="error"
-          message={error.message}
+          message={localize(error.message)}
           correlationId={error.correlationId}
           onRetry={() => void loadTests(lastRequest.page, lastRequest.filters)}
         />
-      ) : null}
+      ) : null}</L10nValue>
 
-      {!loading && !error && tests.length === 0 ? (
-        <AsyncState kind="empty" message="Chưa có yêu cầu xét nghiệm phù hợp." />
-      ) : null}
+      <L10nValue>{!loading && !error && tests.length === 0 ? (
+        <AsyncState kind="empty" message={localize("Chưa có yêu cầu xét nghiệm phù hợp.")} />
+      ) : null}</L10nValue>
 
-      {!error && tests.length > 0 ? (
+      <L10nValue>{!error && tests.length > 0 ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className={`w-full text-left text-sm ${clinicalReader ? "min-w-4xl" : "min-w-2xl"}`}>
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Ngày yêu cầu</th>
-                  <th scope="col" className="px-4 py-3">Loại</th>
-                  <th scope="col" className="px-4 py-3">Bệnh nhân</th>
-                  {clinicalReader ? <th scope="col" className="px-4 py-3">Hồ sơ</th> : null}
-                  <th scope="col" className="px-4 py-3">Trạng thái</th>
-                  <th scope="col" className="px-4 py-3">Thanh toán</th>
-                  <th scope="col" className="px-4 py-3">Kết luận</th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Ngày yêu cầu"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Loại"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Bệnh nhân"}</L10n></th>
+                  <L10nValue>{clinicalReader ? <th scope="col" className="px-4 py-3"><L10n>{"Hồ sơ"}</L10n></th> : null}</L10nValue>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Trạng thái"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Thanh toán"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Kết luận"}</L10n></th>
                 </tr>
               </thead>
               <tbody>
-                {tests.map((test) => {
+                <L10nValue>{tests.map((test) => {
                   const lifecycle = labStatusPresentation[test.status] ?? {
                     label: "Không xác định",
                     tone: "neutral" as const,
@@ -321,31 +314,31 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
                       key={test.testId}
                       className="border-b border-border align-top last:border-0"
                     >
-                      <td className="px-4 py-3">{formatLocalDate(test.requestedDate)}</td>
+                      <td className="px-4 py-3"><L10nValue>{formatLocalDate(test.requestedDate)}</L10nValue></td>
                       <td className="px-4 py-3 font-medium">
-                        {role !== null && detailRoles.includes(role) ? (
+                        <L10nValue>{role !== null && detailRoles.includes(role) ? (
                           <Link
                             href={`/lab/${test.testId}?returnTo=${encodeURIComponent(labQueueHref(lastRequest.filters, lastRequest.page))}`}
                             className="text-primary underline-offset-4 hover:underline"
                           >
                             {test.labType}
                           </Link>
-                        ) : test.labType}
+                        ) : test.labType}</L10nValue>
                       </td>
                       <td className="px-4 py-3"><ReferenceText kind="patient" value={test.patientId} fallback="Bệnh nhân" /></td>
-                      {clinicalReader ? <td className="px-4 py-3 text-muted-foreground"><ReferenceText kind="record" value={test.recordId} fallback="Hồ sơ khám" /></td> : null}
+                      <L10nValue>{clinicalReader ? <td className="px-4 py-3 text-muted-foreground"><ReferenceText kind="record" value={test.recordId} fallback="Hồ sơ khám" /></td> : null}</L10nValue>
                       <td className="px-4 py-3">
-                        <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
+                        <StatusBadge tone={lifecycle.tone}><L10nValue>{lifecycle.label}</L10nValue></StatusBadge>
                       </td>
                       <td className="px-4 py-3">
                         <FinancialStatus test={test} />
                       </td>
                       <td className="max-w-md whitespace-normal px-4 py-3">
-                        {test.conclusion ?? "—"}
+                        <L10nValue>{test.conclusion ?? "—"}</L10nValue>
                       </td>
                     </tr>
                   );
-                })}
+                })}</L10nValue>
               </tbody>
             </table>
           </div>
@@ -357,7 +350,7 @@ export function LabTable({ outpatientEnabled = false, initialEpisodeId = "", ini
             onPageChange={(page) => void loadTests(page, activeFilters)}
           />
         </>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

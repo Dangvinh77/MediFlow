@@ -73,12 +73,13 @@ export interface CreateStaffRequest {
   specialization: string | null;
   licenseNumber: string | null;
   phoneNumber: string | null;
-  email: string | null;
+  email: string;
 }
 
-export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId" | "identityNumber"> & {
+export type UpdateStaffRequest = Omit<CreateStaffRequest, "departmentId" | "identityNumber" | "email"> & {
   identityNumber?: string;
   identityChangeReason?: string;
+  email: string | null;
 };
 
 export interface MailDelivery { messageId: string; status: "PENDING" | "SENT" | "FAILED" }

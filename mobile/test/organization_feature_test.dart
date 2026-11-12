@@ -280,6 +280,25 @@ Widget host(
 );
 
 void main() {
+  test('staff creation requires email before calling the repository', () {
+    final repository = OrganizationStub();
+    expect(
+      () => SaveStaff(repository).create(
+        const StaffDraft(
+          name: 'Binh',
+          departmentId: departmentId,
+          jobTitle: 'NURSE',
+          specialization: null,
+          licenseNumber: null,
+          phoneNumber: null,
+          email: null,
+        ),
+      ),
+      throwsArgumentError,
+    );
+    expect(repository.staffCreates, 0);
+  });
+
   test('organization DTOs and mutation bodies mirror Core wire names', () {
     expect(OrganizationDto.department(departmentJson()).id, departmentId);
     expect(OrganizationDto.staff(staffJson()).departmentId, departmentId);
@@ -324,10 +343,18 @@ void main() {
           specialization: null,
           licenseNumber: null,
           phoneNumber: null,
-          email: null,
+          email: ' Staff@Example.test ',
         ),
       ),
-      containsPair('departmentId', departmentId),
+      {
+        'fullName': 'Binh',
+        'departmentId': departmentId,
+        'jobTitle': 'NURSE',
+        'specialization': null,
+        'licenseNumber': null,
+        'phoneNumber': null,
+        'email': 'staff@example.test',
+      },
     );
     expect(
       OrganizationDto.updateStaffBody(
@@ -724,6 +751,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nội tổng quát').last);
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Lưu thay đổi'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Lưu thay đổi'));
       await tester.pumpAndSettle();
       expect(repository.staffUpdates, 1);
@@ -777,6 +806,8 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<String>).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nội tổng quát').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Lưu thay đổi'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Lưu thay đổi'));
       await tester.pump();

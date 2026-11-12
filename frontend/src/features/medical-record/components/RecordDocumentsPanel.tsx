@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -40,6 +42,7 @@ export function RecordDocumentsPanel({
   recordId: string;
   sourceHref?: (document: RecordDocumentDTO) => string | undefined;
 }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [retryToken, setRetryToken] = useState(0);
   const key = `${recordId}:${retryToken}`;
@@ -69,50 +72,50 @@ export function RecordDocumentsPanel({
   const current = state.key === key ? state : { key, status: "loading" as const };
   return (
     <section aria-labelledby="record-documents-heading" className="space-y-3 border-t border-border pt-4">
-      <h2 id="record-documents-heading" className="text-lg font-semibold">Tài liệu của lượt khám</h2>
-      {current.status === "loading" ? <AsyncState kind="loading" message="Đang tải tài liệu của lượt khám…" /> : null}
-      {current.status === "error" ? <AsyncState kind="error" message={current.message} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}
-      {current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground">Bạn không có quyền xem tài liệu của hồ sơ này.</p> : null}
-      {current.status === "empty" ? <AsyncState kind="empty" message="Chưa có tài liệu cho lượt khám này." /> : null}
-      {current.status === "success" ? (
+      <h2 id="record-documents-heading" className="text-lg font-semibold"><L10n>{"Tài liệu của lượt khám"}</L10n></h2>
+      <L10nValue>{current.status === "loading" ? <AsyncState kind="loading" message={localize("Đang tải tài liệu của lượt khám…")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "error" ? <AsyncState kind="error" message={localize(current.message)} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}</L10nValue>
+      <L10nValue>{current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Bạn không có quyền xem tài liệu của hồ sơ này."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{current.status === "empty" ? <AsyncState kind="empty" message={localize("Chưa có tài liệu cho lượt khám này.")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "success" ? (
         <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
-          {current.documents.map((document) => {
+          <L10nValue>{current.documents.map((document) => {
             const href = sourceHref?.(document);
             return (
               <li key={`${document.type}:${document.referenceId}`} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">{documentTypeLabels[document.type]}</p>
-                  {href ? <Link href={href} className="font-medium text-primary underline-offset-4 hover:underline">{document.summary || documentTypeLabels[document.type]}</Link>
-                    : <p className="font-medium">{document.summary || documentTypeLabels[document.type]}</p>}
-                  {document.type === "LAB" && document.resultVersion != null ? (
-                    <p className="mt-1 text-sm text-muted-foreground">Phiên bản kết quả hiện tại: {document.resultVersion}</p>
-                  ) : null}
-                  {document.type === "LAB" && document.amendmentReason ? (
-                    <p className="mt-1 text-sm text-muted-foreground">Lý do đính chính: {document.amendmentReason}</p>
-                  ) : null}
-                  {document.type === "LAB" && document.previousRevisions?.length ? (
-                    <section className="mt-3 rounded-lg border border-border bg-surface-muted/40 p-3" aria-label="Đã đính chính">
-                      <h3 className="text-sm font-semibold">Đã đính chính</h3>
+                  <p className="text-xs font-medium text-muted-foreground"><L10nValue>{documentTypeLabels[document.type]}</L10nValue></p>
+                  <L10nValue>{href ? <Link href={href} className="font-medium text-primary underline-offset-4 hover:underline"><L10nValue>{document.summary || documentTypeLabels[document.type]}</L10nValue></Link>
+                    : <p className="font-medium"><L10nValue>{document.summary || documentTypeLabels[document.type]}</L10nValue></p>}</L10nValue>
+                  <L10nValue>{document.type === "LAB" && document.resultVersion != null ? (
+                    <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Phiên bản kết quả hiện tại: "}</L10n>{document.resultVersion}</p>
+                  ) : null}</L10nValue>
+                  <L10nValue>{document.type === "LAB" && document.amendmentReason ? (
+                    <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Lý do đính chính: "}</L10n>{document.amendmentReason}</p>
+                  ) : null}</L10nValue>
+                  <L10nValue>{document.type === "LAB" && document.previousRevisions?.length ? (
+                    <section className="mt-3 rounded-lg border border-border bg-surface-muted/40 p-3" aria-label={localize("Đã đính chính")}>
+                      <h3 className="text-sm font-semibold"><L10n>{"Đã đính chính"}</L10n></h3>
                       <ul className="mt-2 space-y-2">
-                        {document.previousRevisions.map((revision) => (
+                        <L10nValue>{document.previousRevisions.map((revision) => (
                           <li key={`${revision.resultVersion}:${revision.sourceAt}`} className="border-t border-border pt-2 text-sm first:border-0 first:pt-0">
-                            <p className="font-medium">{revision.label || "Đã đính chính"} · phiên bản {revision.resultVersion}</p>
+                            <p className="font-medium"><L10nValue>{revision.label || "Đã đính chính"}</L10nValue><L10n>{" · phiên bản "}</L10n>{revision.resultVersion}</p>
                             <p>{revision.summary}</p>
-                            {revision.amendmentReason ? <p className="text-muted-foreground">Lý do: {revision.amendmentReason}</p> : null}
-                            <time dateTime={revision.sourceAt} className="text-xs text-muted-foreground">{formatClinicalInstant(revision.sourceAt)}</time>
+                            <L10nValue>{revision.amendmentReason ? <p className="text-muted-foreground"><L10n>{"Lý do: "}</L10n>{revision.amendmentReason}</p> : null}</L10nValue>
+                            <time dateTime={revision.sourceAt} className="text-xs text-muted-foreground"><L10nValue>{formatClinicalInstant(revision.sourceAt)}</L10nValue></time>
                           </li>
-                        ))}
+                        ))}</L10nValue>
                       </ul>
                     </section>
-                  ) : null}
-                  {document.afterConclusion ? <p className="mt-1 text-sm text-warning">Bổ sung sau khi kết thúc</p> : null}
+                  ) : null}</L10nValue>
+                  <L10nValue>{document.afterConclusion ? <p className="mt-1 text-sm text-warning"><L10n>{"Bổ sung sau khi kết thúc"}</L10n></p> : null}</L10nValue>
                 </div>
-                <time dateTime={document.attachedAt} className="shrink-0 text-sm text-muted-foreground">{formatClinicalInstant(document.attachedAt)}</time>
+                <time dateTime={document.attachedAt} className="shrink-0 text-sm text-muted-foreground"><L10nValue>{formatClinicalInstant(document.attachedAt)}</L10nValue></time>
               </li>
             );
-          })}
+          })}</L10nValue>
         </ul>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

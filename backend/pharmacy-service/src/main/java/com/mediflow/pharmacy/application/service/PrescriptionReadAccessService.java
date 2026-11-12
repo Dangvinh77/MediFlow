@@ -75,7 +75,7 @@ public class PrescriptionReadAccessService {
     private static PrescriptionDTO withoutMedicationLines(PrescriptionDTO p) {
         return new PrescriptionDTO(p.prescriptionId(), p.recordId(), p.patientId(), p.doctorId(), p.departmentId(),
                 p.prescribedDate(), p.totalAmount(), List.of(), p.status(), p.dispenseStatus(), p.paymentConfirmed(),
-                p.cancelledAt(), p.cancelledBy(), p.cancellationReason(), p.createdAt(), p.updatedAt());
+                p.cancelledAt(), p.cancelledBy(), p.cancellationReason(), p.createdAt(), p.updatedAt(), p.revision());
     }
 
     private void requireActor(ActorIdentity actor) {

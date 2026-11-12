@@ -80,6 +80,29 @@ class RecordAmendmentPostgresTest {
                 "a".repeat(64), amendment.getAmendmentId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test void directApplyPersistsSelfAuditAndMonotonicEffectiveRevision() {
+        UUID recordId = record(UUID.randomUUID());
+        UUID author = UUID.randomUUID();
+        RecordAmendment first = RecordAmendment.request(recordId, AmendmentSection.SYMPTOMS, "Sốt", "Sốt cao",
+                "Bổ sung mức độ", author, null, AT);
+        first.applyByResponsibleDoctor(author, AT);
+        adapter.insert(first);
+
+        RecordAmendment second = RecordAmendment.request(recordId, AmendmentSection.SYMPTOMS, "Sốt cao",
+                "Sốt cao 39 độ", "Bổ sung nhiệt độ", author, null, AT);
+        second.applyByResponsibleDoctor(author, AT);
+        adapter.insert(second);
+
+        var applied = adapter.findByRecord(recordId).stream()
+                .filter(a -> a.getStatus() == RecordAmendmentStatus.APPLIED)
+                .sorted(java.util.Comparator.comparing(RecordAmendment::getEffectiveRevision))
+                .toList();
+        assertThat(applied).extracting(RecordAmendment::getEffectiveRevision).containsExactly(1L, 2L);
+        assertThat(applied.get(1).getOriginalText()).isEqualTo(applied.get(0).getAmendedText());
+        assertThat(applied.get(1).getDecidedByStaffId()).isEqualTo(author);
+        assertThat(applied.get(1).getContentHash()).isEqualTo(second.contentHash());
+    }
+
     @Test void assignmentRoundTrip() {
         UUID recordId = record(UUID.randomUUID());
         UUID assignee = UUID.randomUUID();

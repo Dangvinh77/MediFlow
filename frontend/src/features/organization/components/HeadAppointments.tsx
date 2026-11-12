@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -22,6 +24,7 @@ const appointmentErrors: Record<string, string> = {
 };
 
 export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: string; onSnapshot?: (snapshot: HeadAppointmentSnapshot) => void }) {
+  const { localize } = useLocale();
   const [snapshot, setSnapshot] = useState<HeadAppointmentSnapshot | null>(null);
   const [staffId, setStaffId] = useState(""); const [reason, setReason] = useState("");
   const [revoke, setRevoke] = useState(false); const [preview, setPreview] = useState(false);
@@ -103,36 +106,36 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
     } finally { if (active.current === context) { locked.current = false; if (isCurrent()) setBusy(false); } }
   }
   return <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
-    <h2 className="text-lg font-semibold">Bổ nhiệm trưởng khoa</h2>
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {success ? <p role="status" className="text-sm text-success">{success}</p> : null}
-    {!snapshot ? <><AsyncState kind="loading" message="Đang tải bổ nhiệm…" />{error ? <Button onClick={() => { setError(""); setAttempt(value => value + 1); }}>Tải lại bổ nhiệm</Button> : null}</> : <>
-      <p className="text-sm">Trưởng khoa đương nhiệm</p>
-      {snapshot.staffId ? <ReferenceText kind="doctor" value={snapshot.staffId} /> : <p className="text-sm text-muted-foreground">Chưa có trưởng khoa đương nhiệm.</p>}
-      <p className="text-xs text-muted-foreground">Phiên bản {snapshot.revision}</p>
+    <h2 className="text-lg font-semibold"><L10n>{"Bổ nhiệm trưởng khoa"}</L10n></h2>
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{success ? <p role="status" className="text-sm text-success"><L10nValue>{success}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{!snapshot ? <><AsyncState kind="loading" message={localize("Đang tải bổ nhiệm…")} /><L10nValue>{error ? <Button onClick={() => { setError(""); setAttempt(value => value + 1); }}><L10n>{"Tải lại bổ nhiệm"}</L10n></Button> : null}</L10nValue></> : <>
+      <p className="text-sm"><L10n>{"Trưởng khoa đương nhiệm"}</L10n></p>
+      <L10nValue>{snapshot.staffId ? <ReferenceText kind="doctor" value={snapshot.staffId} /> : <p className="text-sm text-muted-foreground"><L10n>{"Chưa có trưởng khoa đương nhiệm."}</L10n></p>}</L10nValue>
+      <p className="text-xs text-muted-foreground"><L10n>{"Phiên bản "}</L10n>{snapshot.revision}</p>
       <form onSubmit={event => { event.preventDefault(); void save(); }} onChangeCapture={markDirty} className="space-y-4">
         <fieldset disabled={busy || Boolean(pending)} className="space-y-3">
-          <legend className="text-sm font-medium">Bác sĩ của khoa</legend>
-          <p className="text-xs text-muted-foreground">Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.</p>
-          {doctorError ? <AsyncState kind="error" message={doctorError} onRetry={() => { setDoctorError(""); setDoctors(null); setDoctorAttempt(value => value + 1); }} />
-            : !doctors ? <AsyncState kind="loading" message="Đang tải bác sĩ của khoa…" />
-            : doctors.length === 0 ? <AsyncState kind="empty" message="Khoa chưa có bác sĩ đang làm việc." />
+          <legend className="text-sm font-medium"><L10n>{"Bác sĩ của khoa"}</L10n></legend>
+          <p className="text-xs text-muted-foreground"><L10n>{"Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa."}</L10n></p>
+          <L10nValue>{doctorError ? <AsyncState kind="error" message={localize(doctorError)} onRetry={() => { setDoctorError(""); setDoctors(null); setDoctorAttempt(value => value + 1); }} />
+            : !doctors ? <AsyncState kind="loading" message={localize("Đang tải bác sĩ của khoa…")} />
+            : doctors.length === 0 ? <AsyncState kind="empty" message={localize("Khoa chưa có bác sĩ đang làm việc.")} />
             : <div className="overflow-x-auto rounded-lg border border-border"><table className="w-full text-left text-sm">
-              <caption className="sr-only">Chọn bác sĩ để bổ nhiệm hoặc miễn nhiệm</caption>
-              <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only">Chọn</span></th><th scope="col" className="px-3 py-2">Họ tên</th><th scope="col" className="px-3 py-2">Chuyên môn</th><th scope="col" className="px-3 py-2">Chức vụ</th></tr></thead>
-              <tbody>{doctors.map(doctor => <tr key={doctor.staffId} className={`border-t border-border ${staffId === doctor.staffId ? "bg-primary/5" : ""}`}>
-                <td className="px-3 py-2"><input type="checkbox" aria-label={`Chọn ${doctor.fullName}`} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
+              <caption className="sr-only"><L10n>{"Chọn bác sĩ để bổ nhiệm hoặc miễn nhiệm"}</L10n></caption>
+              <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only"><L10n>{"Chọn"}</L10n></span></th><th scope="col" className="px-3 py-2"><L10n>{"Họ tên"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chuyên môn"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chức vụ"}</L10n></th></tr></thead>
+              <tbody><L10nValue>{doctors.map(doctor => <tr key={doctor.staffId} className={`border-t border-border ${staffId === doctor.staffId ? "bg-primary/5" : ""}`}>
+                <td className="px-3 py-2"><input type="checkbox" aria-label={localize(`Chọn ${doctor.fullName}`)} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
                 <td className="px-3 py-2 font-medium">{doctor.fullName}</td>
-                <td className="px-3 py-2">{doctor.specialization || "Chưa cập nhật"}</td>
-                <td className="px-3 py-2">{snapshot.staffId === doctor.staffId ? <StatusBadge tone="success">Trưởng khoa đương nhiệm</StatusBadge> : <span className="text-muted-foreground">Bác sĩ</span>}</td>
-              </tr>)}</tbody>
-            </table></div>}
-          <label className="block space-y-1 text-sm">Lý do<textarea aria-label="Lý do" required maxLength={500} value={reason} onChange={event => { setReason(event.target.value); setPreview(false); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label>
-          <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={!staffId || staffId === snapshot.staffId || !reason.trim()} onClick={() => { setRevoke(false); setPreview(true); }}>Bổ nhiệm</Button>{snapshot.staffId ? <Button type="button" variant="secondary" onClick={() => { setRevoke(true); setPreview(true); markDirty(); }}>Miễn nhiệm</Button> : null}</div>
+                <td className="px-3 py-2"><L10nValue>{doctor.specialization || "Chưa cập nhật"}</L10nValue></td>
+                <td className="px-3 py-2"><L10nValue>{snapshot.staffId === doctor.staffId ? <StatusBadge tone="success"><L10n>{"Trưởng khoa đương nhiệm"}</L10n></StatusBadge> : <span className="text-muted-foreground"><L10n>{"Bác sĩ"}</L10n></span>}</L10nValue></td>
+              </tr>)}</L10nValue></tbody>
+            </table></div>}</L10nValue>
+          <label className="block space-y-1 text-sm"><L10n>{"Lý do"}</L10n><textarea aria-label={localize("Lý do")} required maxLength={500} value={reason} onChange={event => { setReason(event.target.value); setPreview(false); }} className="block min-h-20 w-full rounded-lg border border-control-border bg-surface p-3" /></label>
+          <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={!staffId || staffId === snapshot.staffId || !reason.trim()} onClick={() => { setRevoke(false); setPreview(true); }}><L10n>{"Bổ nhiệm"}</L10n></Button><L10nValue>{snapshot.staffId ? <Button type="button" variant="secondary" onClick={() => { setRevoke(true); setPreview(true); markDirty(); }}><L10n>{"Miễn nhiệm"}</L10n></Button> : null}</L10nValue></div>
         </fieldset>
-        {preview || pending ? <div className="space-y-3 rounded-lg border border-border p-4"><p className="text-sm">{snapshot.staffId ? "Nhiệm kỳ hiện tại sẽ kết thúc khi xác nhận." : "Bắt đầu nhiệm kỳ trưởng khoa mới."}</p>{snapshot.staffId ? <div className="text-sm"><p>Người kết thúc nhiệm kỳ</p><ReferenceText kind="doctor" value={snapshot.staffId} /></div> : null}{!revoke && staffId ? <div className="text-sm"><p>Người được bổ nhiệm</p><ReferenceText kind="doctor" value={staffId} /></div> : null}<p className="whitespace-pre-wrap break-words text-sm">Lý do xác nhận: {pending?.reason ?? reason.trim()}</p>{pending ? <p role="status" className="text-sm">Kết quả chưa xác định. Chỉ gửi lại cùng yêu cầu để đối soát; nội dung đang được giữ nguyên.</p> : null}<Button type="submit" loading={busy} disabled={!reason.trim() || (!revoke && !staffId)}>{pending ? "Gửi lại cùng yêu cầu" : revoke ? "Xác nhận miễn nhiệm" : "Xác nhận bổ nhiệm"}</Button></div> : null}
+        <L10nValue>{preview || pending ? <div className="space-y-3 rounded-lg border border-border p-4"><p className="text-sm"><L10nValue>{snapshot.staffId ? "Nhiệm kỳ hiện tại sẽ kết thúc khi xác nhận." : "Bắt đầu nhiệm kỳ trưởng khoa mới."}</L10nValue></p><L10nValue>{snapshot.staffId ? <div className="text-sm"><p><L10n>{"Người kết thúc nhiệm kỳ"}</L10n></p><ReferenceText kind="doctor" value={snapshot.staffId} /></div> : null}</L10nValue><L10nValue>{!revoke && staffId ? <div className="text-sm"><p><L10n>{"Người được bổ nhiệm"}</L10n></p><ReferenceText kind="doctor" value={staffId} /></div> : null}</L10nValue><p className="whitespace-pre-wrap break-words text-sm"><L10n>{"Lý do xác nhận: "}</L10n><L10nValue>{pending?.reason ?? reason.trim()}</L10nValue></p><L10nValue>{pending ? <p role="status" className="text-sm"><L10n>{"Kết quả chưa xác định. Chỉ gửi lại cùng yêu cầu để đối soát; nội dung đang được giữ nguyên."}</L10n></p> : null}</L10nValue><Button type="submit" loading={busy} disabled={!reason.trim() || (!revoke && !staffId)}><L10nValue>{pending ? "Gửi lại cùng yêu cầu" : revoke ? "Xác nhận miễn nhiệm" : "Xác nhận bổ nhiệm"}</L10nValue></Button></div> : null}</L10nValue>
       </form>
-      <details><summary className="cursor-pointer text-sm font-medium">Lịch sử bổ nhiệm ({snapshot.history.length})</summary><p className="mt-2 text-xs text-muted-foreground">Giờ Việt Nam (UTC+7)</p><ul className="mt-3 space-y-2">{snapshot.history.map(item => <li key={item.appointmentId} className="rounded-lg border border-border p-3 text-sm"><ReferenceText kind="doctor" value={item.staffId} /><p className="mt-1 text-muted-foreground">{formatHistoryTime(item.startedAt)} – {item.endedAt ? formatHistoryTime(item.endedAt) : "Đang hiệu lực"}</p></li>)}</ul></details>
-    </>}
+      <details><summary className="cursor-pointer text-sm font-medium"><L10n>{"Lịch sử bổ nhiệm ("}</L10n>{snapshot.history.length})</summary><p className="mt-2 text-xs text-muted-foreground"><L10n>{"Giờ Việt Nam (UTC+7)"}</L10n></p><ul className="mt-3 space-y-2"><L10nValue>{snapshot.history.map(item => <li key={item.appointmentId} className="rounded-lg border border-border p-3 text-sm"><ReferenceText kind="doctor" value={item.staffId} /><p className="mt-1 text-muted-foreground"><L10nValue>{formatHistoryTime(item.startedAt)}</L10nValue> – <L10nValue>{item.endedAt ? formatHistoryTime(item.endedAt) : "Đang hiệu lực"}</L10nValue></p></li>)}</L10nValue></ul></details>
+    </>}</L10nValue>
   </section>;
 }

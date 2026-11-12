@@ -21,8 +21,12 @@ public final class PrescriptionCareEventFactory {
                 || prescription.getCareContext().contractVersion() != CareContractVersion.V1) {
             throw new IllegalArgumentException("A persisted V1 prescription is required");
         }
+        if (type == EventType.REVISED) {
+            throw new IllegalArgumentException("Use createRevision with a durable operation identity");
+        }
         PrescriptionStatus expected = switch (type) {
             case CREATED -> PrescriptionStatus.ACTIVE;
+            case REVISED -> PrescriptionStatus.ACTIVE;
             case FILLED -> PrescriptionStatus.FULFILLED;
             case CANCELLED -> PrescriptionStatus.CANCELLED;
             case EXPIRED -> PrescriptionStatus.EXPIRED;
@@ -51,5 +55,28 @@ public final class PrescriptionCareEventFactory {
                 type == EventType.FILLED ? at : null, type == EventType.DISPENSE_FAILED ? at : null,
                 type == EventType.CANCELLED ? at : null, type == EventType.EXPIRED ? at : null, reason);
         return new PrescriptionCareEvent(eventId, type, 1, at, correlationId, "pharmacy-service", payload);
+    }
+
+    /** Builds the immutable priced snapshot for one committed outpatient revision. */
+    public static PrescriptionCareEvent createRevision(UUID eventId, String correlationId,
+            Prescription prescription, UUID operationId, int previousRevision, Instant revisedAt) {
+        if (prescription == null || prescription.getPrescriptionId() == null || operationId == null
+                || prescription.getCareContext().contractVersion() != CareContractVersion.V1
+                || prescription.getCareContext().careContext() != com.mediflow.pharmacy.domain.model.enums.CareContext.OUTPATIENT
+                || prescription.getRevision() != previousRevision + 1 || revisedAt == null
+                || !revisedAt.equals(prescription.getRevisionAt())) {
+            throw new IllegalArgumentException("A persisted outpatient V1 revision is required");
+        }
+        var care = prescription.getCareContext();
+        var items = prescription.getLines().stream().sorted(java.util.Comparator.comparing(PrescriptionLine::getDrugId))
+                .map(line -> new PrescriptionCareEvent.Item(line.getDrugId(), line.getDrugNameSnapshot(),
+                        line.getQuantity(), line.getUnitPrice())).toList();
+        var payload = new PrescriptionCareEvent.Payload(prescription.getPrescriptionId(), prescription.getRecordId(),
+                care.admissionId(), prescription.getPatientId(), prescription.getDepartmentId(), care.careContext(),
+                care.episode().type(), care.episode().id(), "PRESCRIPTION", prescription.getPrescriptionId(), care.priceCode(),
+                items, prescription.getTotalAmount(), null, null, null, null, null, null, null,
+                operationId, previousRevision, prescription.getRevision(), revisedAt);
+        return new PrescriptionCareEvent(eventId, EventType.REVISED, 1, revisedAt,
+                correlationId, "pharmacy-service", payload);
     }
 }

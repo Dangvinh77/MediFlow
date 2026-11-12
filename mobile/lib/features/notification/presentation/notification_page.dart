@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -20,10 +22,10 @@ class NotificationPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     final repository = ref.watch(notificationRepositoryProvider);
     if (access == null || repository == null) {
-      return const Center(child: Text('Chức năng Thông báo chưa sẵn sàng.'));
+      return const Center(child: LText('Chức năng Thông báo chưa sẵn sàng.'));
     }
     if (!const {'ADMIN', 'NURSE', 'PATIENT'}.contains(access.role)) {
-      return const Center(child: Text('Bạn không có quyền xem thông báo.'));
+      return const Center(child: LText('Bạn không có quyền xem thông báo.'));
     }
     return KeyedSubtree(
       key: ValueKey((access.sessionIdentity, access.role, repository)),
@@ -164,7 +166,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LText(
                 'Lịch sử thông báo',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
@@ -182,7 +184,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                         },
                 ),
               if (widget.role == 'PATIENT')
-                Text(
+                LText(
                   widget.selfPatientId == null
                       ? 'Tài khoản chưa liên kết hồ sơ bệnh nhân. Vui lòng liên hệ tiếp nhận.'
                       : 'Thông báo dành cho bạn',
@@ -199,14 +201,14 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                         ? null
                         : () => _search(),
                     icon: const Icon(Icons.search),
-                    label: const Text('Tra cứu'),
+                    label: const LText('Tra cứu'),
                   ),
                   OutlinedButton.icon(
                     onPressed: _loading || _submitted == null
                         ? null
                         : () => _search(_requestedPage),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Làm mới'),
+                    label: const LText('Làm mới'),
                   ),
                 ],
               ),
@@ -225,7 +227,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                 )
               : _page == null
               ? Center(
-                  child: Text(
+                  child: LText(
                     widget.role == 'PATIENT'
                         ? 'Chưa có lịch sử thông báo để hiển thị.'
                         : 'Chọn bệnh nhân để xem lịch sử.',
@@ -248,7 +250,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                   children: const [
                     Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text(
+                      child: LText(
                         'Chưa có thông báo.',
                         textAlign: TextAlign.center,
                       ),
@@ -267,8 +269,8 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                     final item = page.items[index];
                     return Card(
                       child: ListTile(
-                        title: Text(item.title),
-                        subtitle: Text(
+                        title: LText(item.title),
+                        subtitle: LText(
                           '${notificationChannelLabel(item.channel)} · '
                           '${notificationStatusLabel(item.status)} · '
                           '${notificationTimeLabel(item.createdAt)}',
@@ -282,7 +284,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
                                 MaterialPageRoute<void>(
                                   builder: (_) => Scaffold(
                                     appBar: AppBar(
-                                      title: const Text('Chi tiết thông báo'),
+                                      title: const LText('Chi tiết thông báo'),
                                     ),
                                     body: NotificationDetailPage(
                                       notificationId: item.id,
@@ -302,7 +304,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
           alignment: WrapAlignment.center,
           children: [
             IconButton(
-              tooltip: 'Trang trước',
+              tooltip: AppL10n.text(context, 'Trang trước'),
               onPressed: page.number > 0
                   ? () => _search(page.number - 1)
                   : null,
@@ -310,12 +312,12 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage>
             ),
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text(
+              child: LText(
                 'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} thông báo',
               ),
             ),
             IconButton(
-              tooltip: 'Trang sau',
+              tooltip: AppL10n.text(context, 'Trang sau'),
               onPressed: page.hasNext ? () => _search(page.number + 1) : null,
               icon: const Icon(Icons.chevron_right),
             ),
@@ -414,9 +416,9 @@ class _NotificationSendPageState extends State<NotificationSendPage>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Gửi thông báo', style: Theme.of(context).textTheme.titleLarge),
+        LText('Gửi thông báo', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
-        const Text('Chọn bệnh nhân nhận thông báo.'),
+        const LText('Chọn bệnh nhân nhận thông báo.'),
         const SizedBox(height: 12),
         ReferencePicker(
           kind: ReferenceKind.patient,
@@ -430,8 +432,8 @@ class _NotificationSendPageState extends State<NotificationSendPage>
           controller: _title,
           enabled: !_locked,
           maxLength: 255,
-          decoration: const InputDecoration(
-            labelText: 'Tiêu đề',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Tiêu đề'),
             counterText: '',
           ),
         ),
@@ -440,16 +442,20 @@ class _NotificationSendPageState extends State<NotificationSendPage>
           enabled: !_locked,
           minLines: 3,
           maxLines: 6,
-          decoration: const InputDecoration(labelText: 'Nội dung'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Nội dung'),
+          ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _channel,
-          decoration: const InputDecoration(labelText: 'Kênh gửi'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Kênh gửi'),
+          ),
           items: const [
-            DropdownMenuItem(value: 'IN_APP', child: Text('Trong ứng dụng')),
-            DropdownMenuItem(value: 'EMAIL', child: Text('Email')),
-            DropdownMenuItem(value: 'SMS', child: Text('SMS')),
+            DropdownMenuItem(value: 'IN_APP', child: LText('Trong ứng dụng')),
+            DropdownMenuItem(value: 'EMAIL', child: LText('Email')),
+            DropdownMenuItem(value: 'SMS', child: LText('SMS')),
           ],
           onChanged: _locked
               ? null
@@ -465,9 +471,10 @@ class _NotificationSendPageState extends State<NotificationSendPage>
                 ? TextInputType.emailAddress
                 : TextInputType.phone,
             decoration: InputDecoration(
-              labelText: _channel == 'EMAIL'
-                  ? 'Email nhận'
-                  : 'Số điện thoại nhận',
+              labelText: AppL10n.text(
+                context,
+                _channel == 'EMAIL' ? 'Email nhận' : 'Số điện thoại nhận',
+              ),
             ),
           ),
         ],
@@ -475,30 +482,30 @@ class _NotificationSendPageState extends State<NotificationSendPage>
         if (_receipt != null) ...[
           Card(
             child: ListTile(
-              title: Text(
+              title: LText(
                 'Kết quả gửi: ${notificationStatusLabel(_receipt!.status)} · '
                 '${notificationChannelLabel(_receipt!.channel)}',
               ),
-              subtitle: const Text(
+              subtitle: const LText(
                 'Bạn có thể xem kết quả trong lịch sử thông báo.',
               ),
             ),
           ),
           if (_receipt!.failureReason != null)
-            Text(notificationFailureLabel(_receipt!.failureReason)),
+            LText(notificationFailureLabel(_receipt!.failureReason)),
           OutlinedButton(
             onPressed: _clearForNew,
-            child: const Text('Soạn thông báo khác'),
+            child: const LText('Soạn thông báo khác'),
           ),
         ] else if (_uncertain) ...[
-          const Text(
+          const LText(
             'Kết quả gửi chưa xác định. Hãy kiểm tra lịch sử thông báo của bệnh nhân trước khi gửi lại để tránh thông báo trùng.',
           ),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
             value: _reconciled,
             onChanged: (value) => setState(() => _reconciled = value ?? false),
-            title: const Text(
+            title: const LText(
               'Tôi đã kiểm tra lịch sử và xác nhận chưa có thông báo trùng.',
             ),
           ),
@@ -509,12 +516,12 @@ class _NotificationSendPageState extends State<NotificationSendPage>
                     _uncertain = false;
                     _error = null;
                   }),
-            child: const Text('Tiếp tục soạn sau khi kiểm tra'),
+            child: const LText('Tiếp tục soạn sau khi kiểm tra'),
           ),
         ] else
           FilledButton(
             onPressed: _busy ? null : _send,
-            child: Text(_busy ? 'Đang gửi…' : 'Gửi thông báo'),
+            child: LText(_busy ? 'Đang gửi…' : 'Gửi thông báo'),
           ),
       ],
     );

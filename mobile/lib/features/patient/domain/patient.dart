@@ -159,6 +159,9 @@ class SavePatient {
       throw ArgumentError('Số điện thoại phải gồm 10 đến 15 chữ số.');
     }
     final email = draft.email?.trim();
+    if (creating && (email == null || email.isEmpty)) {
+      throw ArgumentError('Email là bắt buộc.');
+    }
     if (email != null &&
         email.isNotEmpty &&
         (email.length > 254 ||

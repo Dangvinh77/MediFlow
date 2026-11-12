@@ -114,7 +114,7 @@ public class Staff {
                 specialization,
                 licenseNumber,
                 phoneNumber,
-                email,
+                normalizeEmail(email),
                 true,
                 now,
                 now, identityNumber);
@@ -189,7 +189,7 @@ public class Staff {
         this.specialization = specialization;
         this.licenseNumber = licenseNumber;
         this.phoneNumber = phoneNumber;
-        this.email = email;
+        this.email = normalizeEmail(email);
 
         this.updatedAt = Instant.now();
     }
@@ -304,6 +304,10 @@ public class Staff {
         }
 
         validateLicense(jobTitle, licenseNumber);
+    }
+
+    private static String normalizeEmail(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     // =========================================================

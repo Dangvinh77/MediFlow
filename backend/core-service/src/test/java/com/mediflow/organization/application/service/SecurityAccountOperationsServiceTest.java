@@ -233,6 +233,7 @@ class SecurityAccountOperationsServiceTest {
         when(accounts.findByOwner(null, patientId)).thenReturn(java.util.List.of(target));
         when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
         when(accounts.existsByEmail("new@example.test")).thenReturn(false);
+        when(patients.emailAvailable(patientId, "new@example.test")).thenReturn(true);
         when(accounts.save(target)).thenReturn(target);
         when(accounts.credentialVersion(target.getAccountId())).thenReturn(4L);
         when(patients.displayName(patientId)).thenReturn("Patient One");

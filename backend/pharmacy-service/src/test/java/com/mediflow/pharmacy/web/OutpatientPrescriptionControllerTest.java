@@ -66,6 +66,8 @@ class OutpatientPrescriptionControllerTest {
     @MockBean private DispensePrescriptionUseCase dispenser;
     @MockBean private OutpatientPrescriptionLifecycleUseCase lifecycle;
     @MockBean private GetPrescribingContextUseCase prescribingContext;
+    @MockBean private com.mediflow.pharmacy.application.service.PublicOutpatientPrescriptionRevisionService revisions;
+    @MockBean private com.mediflow.pharmacy.application.port.out.PrescriptionRevisionOperationPort revisionOperations;
 
     @Test
     void createUsesCheckedWriterSignedActorAndStableCommandIdentity() throws Exception {

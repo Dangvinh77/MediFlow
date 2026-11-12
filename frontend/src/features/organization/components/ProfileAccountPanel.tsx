@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -31,6 +33,7 @@ export function ProfileAccountPanel(props: ProfileAccountPanelProps) {
 }
 
 function ProfileAccountWorkspace({ ownerType, ownerId, profileActive = true, jobTitle, onProfileChanged, role }: ProfileAccountPanelProps & { role: ReturnType<typeof getRole> }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const lookupKey = JSON.stringify([ownerType, ownerId, jobTitle, role, attempt]);
@@ -97,24 +100,24 @@ function ProfileAccountWorkspace({ ownerType, ownerId, profileActive = true, job
   }
 
   if (role !== "ADMIN" && !(ownerType === "patient" && role === "NURSE")) return null;
-  if (lookup.status === "loading") return <section className="mt-6 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Tài khoản hồ sơ</h2><AsyncState kind="loading" message="Đang kiểm tra tài khoản…" /></section>;
-  if (lookup.status === "error") return <section className="mt-6 space-y-3 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Tài khoản hồ sơ</h2><p role="alert" className="text-sm text-danger">{lookup.message}</p><Button type="button" onClick={() => setAttempt(value => value + 1)}>Thử tải lại tài khoản</Button></section>;
+  if (lookup.status === "loading") return <section className="mt-6 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold"><L10n>{"Tài khoản hồ sơ"}</L10n></h2><AsyncState kind="loading" message={localize("Đang kiểm tra tài khoản…")} /></section>;
+  if (lookup.status === "error") return <section className="mt-6 space-y-3 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold"><L10n>{"Tài khoản hồ sơ"}</L10n></h2><p role="alert" className="text-sm text-danger"><L10nValue>{lookup.message}</L10nValue></p><Button type="button" onClick={() => setAttempt(value => value + 1)}><L10n>{"Thử tải lại tài khoản"}</L10n></Button></section>;
 
   const { account, profileEmail, emailSyncPending } = lookup.value;
   return <section className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-5">
-    <div><h2 className="text-lg font-semibold">Tài khoản hồ sơ</h2><p className="mt-1 text-sm text-muted-foreground">{profileEmail ? `Email hồ sơ: ${profileEmail}` : "Hồ sơ chưa có email để tạo hoặc khôi phục tài khoản."}</p></div>
-    {emailSyncPending ? <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3"><p role="status" className="text-sm text-warning">Email hồ sơ và email đăng nhập đang chờ đồng bộ. Hãy kiểm tra lại trước khi cấp hoặc khôi phục mật khẩu. Bạn có thể xác minh email đúng và lưu kèm lý do để đồng bộ lại.</p><Button type="button" onClick={() => { setAttempt(value => value + 1); onProfileChanged?.(); }}>Kiểm tra đồng bộ email</Button></div> : null}
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {account ? <>
-      <p className={`text-sm ${account.isActive ? "text-success" : "text-warning"}`}>{account.isActive ? "Tài khoản đang hoạt động" : "Tài khoản đã khóa"}</p>
-      <p className="text-sm text-muted-foreground">Email đăng nhập: {account.username}</p>
-      {!profileActive ? <p role="status" className="text-sm text-warning">Hồ sơ đã ngừng hoạt động. Các thao tác gửi mật khẩu tạm đang bị khóa.</p> : null}
+    <div><h2 className="text-lg font-semibold"><L10n>{"Tài khoản hồ sơ"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10nValue>{profileEmail ? `Email hồ sơ: ${profileEmail}` : "Hồ sơ chưa có email để tạo hoặc khôi phục tài khoản."}</L10nValue></p></div>
+    <L10nValue>{emailSyncPending ? <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3"><p role="status" className="text-sm text-warning"><L10n>{"Email hồ sơ và email đăng nhập đang chờ đồng bộ. Hãy kiểm tra lại trước khi cấp hoặc khôi phục mật khẩu. Bạn có thể xác minh email đúng và lưu kèm lý do để đồng bộ lại."}</L10n></p><Button type="button" onClick={() => { setAttempt(value => value + 1); onProfileChanged?.(); }}><L10n>{"Kiểm tra đồng bộ email"}</L10n></Button></div> : null}</L10nValue>
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{account ? <>
+      <p className={`text-sm ${account.isActive ? "text-success" : "text-warning"}`}><L10nValue>{account.isActive ? "Tài khoản đang hoạt động" : "Tài khoản đã khóa"}</L10nValue></p>
+      <p className="text-sm text-muted-foreground"><L10n>{"Email đăng nhập: "}</L10n>{account.username}</p>
+      <L10nValue>{!profileActive ? <p role="status" className="text-sm text-warning"><L10n>{"Hồ sơ đã ngừng hoạt động. Các thao tác gửi mật khẩu tạm đang bị khóa."}</L10n></p> : null}</L10nValue>
       <AdminAccountSecurity key={`${ownerType}:${ownerId}:${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} patientIdForMail={ownerType === "patient" ? ownerId : undefined} emailSyncPending={ownerType === "patient" && emailSyncPending} allowEmailChange={profileActive && (role === "ADMIN" || (ownerType === "patient" && role === "NURSE"))} disablePasswordActions={!profileActive || emailSyncPending || (ownerType === "patient" && !account.isActive)} onEmailChanged={() => { setAttempt(value => value + 1); onProfileChanged?.(); }} />
     </> : <>
-      <p className="text-sm text-muted-foreground">{profileEmail ? "Tài khoản được tạo bằng email hồ sơ; mật khẩu ban đầu được gửi qua thư." : "Cập nhật email hồ sơ trước khi tạo tài khoản."}</p>
+      <p className="text-sm text-muted-foreground"><L10nValue>{profileEmail ? "Tài khoản được tạo bằng email hồ sơ; mật khẩu ban đầu được gửi qua thư." : "Cập nhật email hồ sơ trước khi tạo tài khoản."}</L10nValue></p>
       <Button type="button" variant="primary" loading={busy} disabled={busy || !profileActive || !profileEmail || emailSyncPending || (ownerType === "staff" && !jobTitle)} onClick={() => void issue()}>
-        {ownerType === "patient" ? "Cấp tài khoản bệnh nhân" : "Cấp tài khoản nhân sự"}
+        <L10nValue>{ownerType === "patient" ? "Cấp tài khoản bệnh nhân" : "Cấp tài khoản nhân sự"}</L10nValue>
       </Button>
-    </>}
+    </>}</L10nValue>
   </section>;
 }

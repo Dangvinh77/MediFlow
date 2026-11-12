@@ -25,7 +25,7 @@ import com.mediflow.clinical.domain.model.RecordHandover;
 @ConditionalOnProperty(prefix = "mediflow.v2", name = "record-amendment", havingValue = "true")
 public class RecordCollaborationCapabilities {
     public record Flags(boolean canHandover, boolean canAcceptHandover, boolean canAddConsultationNote, boolean canAmend,
-            boolean canDecideAmendments) {}
+            boolean canRequestAmendment, boolean canApplyAmendment, boolean canDecideAmendments) {}
 
     private final RecordHandoverRepositoryPort handovers;
     private final RecordAmendmentRepositoryPort amendments;
@@ -48,7 +48,7 @@ public class RecordCollaborationCapabilities {
     public Flags resolve(ActorIdentity actor, MedicalRecord record, boolean canRead) {
         UUID staffId = actor.staffId();
         if (!"DOCTOR".equals(actor.role()) || staffId == null) {
-            return new Flags(false, false, false, false, false);
+            return new Flags(false, false, false, false, false, false, false);
         }
         boolean open = record.getStatus() == MedicalRecordStatus.OPEN;
         boolean inDepartment = staff.departmentOf(staffId).map(record.getDepartmentId()::equals).orElse(false);
@@ -57,10 +57,12 @@ public class RecordCollaborationCapabilities {
         boolean canHandover = open && responsible && inDepartment;
         boolean canAccept = pending != null && staffId.equals(pending.getToDoctorId());
         boolean canNote = open && canRead;
-        boolean canAmend = !open && inDepartment
-                && (responsible || amendments.findAssignment(record.getRecordId(), staffId).isPresent());
+        boolean assigned = !responsible && amendments.findAssignment(record.getRecordId(), staffId).isPresent();
+        boolean canApply = !open && inDepartment && responsible;
+        boolean canRequest = !open && inDepartment && assigned;
+        boolean canAmend = canApply || canRequest;
         boolean canDecide = !open && canDecide(actor, record.getDepartmentId());
-        return new Flags(canHandover, canAccept, canNote, canAmend, canDecide);
+        return new Flags(canHandover, canAccept, canNote, canAmend, canRequest, canApply, canDecide);
     }
 
     private boolean canDecide(ActorIdentity actor, UUID departmentId) {

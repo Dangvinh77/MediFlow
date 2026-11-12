@@ -79,10 +79,13 @@ public class PrescriptionChargeRepositoryAdapter implements PrescriptionChargeRe
         }
         jdbc.update("""
                 INSERT INTO prescription_charge_source(prescription_id,source_fingerprint,account_id,charge_id,payment_request_id,invoice_id,
-                    care_context,record_id,created_at_iso,snapshot_fingerprint) VALUES (?,?,?,?,?,?,?,?,?,?)
-                """, command.prescriptionId(), command.sourceFingerprint(), account, chargeId, request, invoice, command.careContext(), command.recordId(), command.createdAt().toString(), command.snapshotFingerprint());
-        for (var item : command.items()) jdbc.update("INSERT INTO prescription_charge_item(prescription_id,drug_id,quantity,unit_price) VALUES (?,?,?,?)",
-                command.prescriptionId(), item.drugId(), item.quantity(), item.unitPrice());
+                    care_context,record_id,price_code,created_at_iso,snapshot_fingerprint) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """, command.prescriptionId(), command.sourceFingerprint(), account, chargeId, request, invoice,
+                command.careContext(), command.recordId(), command.priceCode(), command.createdAt().toString(), command.snapshotFingerprint());
+        for (var item : command.items()) jdbc.update("""
+                INSERT INTO prescription_charge_item(prescription_id,drug_id,drug_name,quantity,unit_price)
+                VALUES (?,?,?,?,?)
+                """, command.prescriptionId(), item.drugId(), item.drugName(), item.quantity(), item.unitPrice());
         return new IssuedCharge(chargeId, account, request, invoice);
     }
     private static void same(Object expected, Object actual) {

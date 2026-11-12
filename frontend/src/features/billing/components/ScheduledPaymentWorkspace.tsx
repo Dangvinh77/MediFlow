@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -57,6 +59,7 @@ export function ScheduledPaymentWorkspace(props: ScheduledPaymentWorkspaceProps)
 }
 
 function ScheduledPaymentSession({ enabled, quoteEnabled = false, zeroLiabilityEnabled = false }: ScheduledPaymentWorkspaceProps) {
+  const { localize } = useLocale();
   const [registrationId, setRegistrationId] = useState("");
   const [manualLookupOpen, setManualLookupOpen] = useState(false);
   const [request, setRequest] = useState<RegistrationPaymentRequestDTO | null>(null);
@@ -429,7 +432,7 @@ function ScheduledPaymentSession({ enabled, quoteEnabled = false, zeroLiabilityE
   }
 
   if (!enabled) {
-    return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tính năng thu phí lịch khám V2 chưa được mở.</p>;
+    return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground"><L10n>{"Tính năng thu phí lịch khám V2 chưa được mở."}</L10n></p>;
   }
 
   const hasDue = request !== null && (request.status === "PENDING" || request.status === "PARTIALLY_PAID") && positiveMoneyPattern.test(request.remainingAmount);
@@ -450,109 +453,109 @@ function ScheduledPaymentSession({ enabled, quoteEnabled = false, zeroLiabilityE
   return <div className="flex flex-col gap-6">
     <ScheduledPaymentQueue key={queueRevision} completedRegistrationIds={completedRegistrationIds} disabled={lookupBusy || paymentBusy || checkingOperation || refreshBusy || pending || uncertain} onSelect={id => { setManualLookupOpen(false); changeRegistrationId(id); void lookup(id); }} />
     <details open={manualLookupOpen} onToggle={event => setManualLookupOpen(event.currentTarget.open)} className="order-last rounded-xl border border-border bg-surface p-4">
-      <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Tra cứu phiếu được cung cấp</summary>
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Tra cứu phiếu được cung cấp"}</L10n></summary>
       <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void lookup(); }}>
         <label className="flex-1 space-y-1 text-sm font-medium" htmlFor="scheduled-registration-id">
-          <span>Mã phiếu đăng ký</span>
+          <span><L10n>{"Mã phiếu đăng ký"}</L10n></span>
           <input id="scheduled-registration-id" value={registrationId} onChange={event => changeRegistrationId(event.target.value)} disabled={lookupBusy || paymentBusy || checkingOperation || refreshBusy || pending || uncertain} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" autoComplete="off" />
         </label>
-        <Button type="submit" loading={lookupBusy} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain}>Tra cứu khoản thu</Button>
+        <Button type="submit" loading={lookupBusy} disabled={lookupBusy || paymentBusy || checkingOperation || pending || uncertain}><L10n>{"Tra cứu khoản thu"}</L10n></Button>
       </form>
     </details>
-    {lookupBusy ? <p role="status" className="text-sm text-muted-foreground">Đang kiểm tra khoản thu hiện hành…</p> : null}
-    {lookupError ? <AsyncState kind="error" message={lookupError.message} correlationId={lookupError.correlationId} onRetry={() => void lookup()} /> : null}
+    <L10nValue>{lookupBusy ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang kiểm tra khoản thu hiện hành…"}</L10n></p> : null}</L10nValue>
+    <L10nValue>{lookupError ? <AsyncState kind="error" message={localize(lookupError.message)} correlationId={lookupError.correlationId} onRetry={() => void lookup()} /> : null}</L10nValue>
 
-    {request ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
+    <L10nValue>{request ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div>
-        <h2 className="text-lg font-semibold">{completed ? "Khoản đã xử lý" : "Khoản phải thu"}</h2>
+        <h2 className="text-lg font-semibold"><L10nValue>{completed ? "Khoản đã xử lý" : "Khoản phải thu"}</L10nValue></h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div><dt className="text-muted-foreground">Khoa</dt><dd><ReferenceText kind="department" value={request.departmentId} fallback="Khoa" /></dd></div>
-          <div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={request.patientId} fallback="Bệnh nhân" /></dd></div>
+          <div><dt className="text-muted-foreground"><L10n>{"Bệnh nhân"}</L10n></dt><dd><ReferenceText kind="patient" value={request.patientId} fallback="Bệnh nhân" /></dd></div>
 
-          {!completed ? <>
-          <div><dt className="text-muted-foreground">Còn phải thu</dt><dd className="font-semibold">{formatDecimal(request.remainingAmount)} {request.currency}</dd></div>
-          <div><dt className="text-muted-foreground">Đã thu</dt><dd>{formatDecimal(request.paidAmount)} {request.currency}</dd></div>
-          <div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(request.expiresAt)}</dd></div>
-          <div><dt className="text-muted-foreground">Trạng thái</dt><dd>{{ PENDING: "Chờ thanh toán", PARTIALLY_PAID: "Đã thanh toán một phần", PAID: "Đã thanh toán", EXPIRED: "Hết hạn", CANCELLED: "Đã hủy" }[request.status] ?? "Cần kiểm tra"}</dd></div>
-          </> : null}
+          <L10nValue>{!completed ? <>
+          <div><dt className="text-muted-foreground"><L10n>{"Còn phải thu"}</L10n></dt><dd className="font-semibold"><L10nValue>{formatDecimal(request.remainingAmount)}</L10nValue> {request.currency}</dd></div>
+          <div><dt className="text-muted-foreground"><L10n>{"Đã thu"}</L10n></dt><dd><L10nValue>{formatDecimal(request.paidAmount)}</L10nValue> {request.currency}</dd></div>
+          <div><dt className="text-muted-foreground"><L10n>{"Hạn giữ chỗ"}</L10n></dt><dd><L10nValue>{formatInstant(request.expiresAt)}</L10nValue></dd></div>
+          <div><dt className="text-muted-foreground"><L10n>{"Trạng thái"}</L10n></dt><dd><L10nValue>{{ PENDING: "Chờ thanh toán", PARTIALLY_PAID: "Đã thanh toán một phần", PAID: "Đã thanh toán", EXPIRED: "Hết hạn", CANCELLED: "Đã hủy" }[request.status] ?? "Cần kiểm tra"}</L10nValue></dd></div>
+          </> : null}</L10nValue>
         </dl>
       </div>
 
-      {quoteEnabled && !completed ? <div className="space-y-3 border-t border-border pt-4">
-        {quote ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Chi tiết giá và hỗ trợ mô phỏng</summary><OutpatientQuoteBreakdown quote={quote} /></details> : null}
-        {quoteBusy ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
-        {quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; chỉ có thể tiếp tục thu số dư dương do Billing xác nhận.</p> : null}
-        {quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{quoteError.message}{quoteError.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{quoteError.correlationId}</span></span> : null}</p> : null}
-        {quoteExpired ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.</p> : null}
-        {quoteError ? <Button type="button" variant="secondary" loading={quoteBusy} disabled={quoteBusy || paymentBusy || pending} onClick={() => void loadQuote(request.paymentRequestId)}>Thử tải lại báo giá</Button> : null}
-      </div> : null}
+      <L10nValue>{quoteEnabled && !completed ? <div className="space-y-3 border-t border-border pt-4">
+        <L10nValue>{quote ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Chi tiết giá và hỗ trợ mô phỏng"}</L10n></summary><OutpatientQuoteBreakdown quote={quote} /></details> : null}</L10nValue>
+        <L10nValue>{quoteBusy ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang tải báo giá Billing…"}</L10n></p> : null}</L10nValue>
+        <L10nValue>{quoteUnavailable ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm"><L10n>{"Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; chỉ có thể tiếp tục thu số dư dương do Billing xác nhận."}</L10n></p> : null}</L10nValue>
+        <L10nValue>{quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><L10nValue>{quoteError.message}</L10nValue><L10nValue>{quoteError.correlationId ? <span className="mt-1 block text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{quoteError.correlationId}</span></span> : null}</L10nValue></p> : null}</L10nValue>
+        <L10nValue>{quoteExpired ? <p role="alert" className="text-sm text-danger"><L10n>{"Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục."}</L10n></p> : null}</L10nValue>
+        <L10nValue>{quoteError ? <Button type="button" variant="secondary" loading={quoteBusy} disabled={quoteBusy || paymentBusy || pending} onClick={() => void loadQuote(request.paymentRequestId)}><L10n>{"Thử tải lại báo giá"}</L10n></Button> : null}</L10nValue>
+      </div> : null}</L10nValue>
 
-      {completed ? <div className="space-y-3">
+      <L10nValue>{completed ? <div className="space-y-3">
         <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm">
-          {zeroConfirmed ? "Đã xác nhận nghĩa vụ 0 đồng." : paymentResult?.payment
+          <L10nValue>{zeroConfirmed ? "Đã xác nhận nghĩa vụ 0 đồng." : paymentResult?.payment
             ? `Đã thu ${formatDecimal(paymentResult.payment.amount)} ${paymentResult.payment.currency} · ${paymentResult.payment.paymentMethod === "CASH" ? "Tiền mặt" : "Chuyển khoản"}.`
-            : "Khoản phí đã được thanh toán."}
+            : "Khoản phí đã được thanh toán."}</L10nValue>
         </p>
-        {refreshBusy ? <p className="text-sm text-muted-foreground">Đang cập nhật trạng thái khoản thu…</p> : null}
-        {refreshError ? <div className="space-y-2"><p role="alert" className="text-sm text-warning">{refreshError}</p><Button type="button" disabled={refreshBusy} onClick={() => void refreshCompleted(request)}>Thử kiểm tra lại</Button></div> : null}
-        <Button type="button" variant="primary" disabled={refreshBusy || paymentBusy || checkingOperation} onClick={nextCollection}>Thu khoản tiếp theo</Button>
-      </div> : null}
-      {pending ? <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-        <p>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu để tránh thu trùng." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu để tránh thu trùng."}</p>
-        <Button className="mt-3" loading={checkingOperation} onClick={() => void checkOperation()}>Kiểm tra trạng thái giao dịch</Button>
-      </div> : null}
-      {closed ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm">Billing đã xác nhận giao dịch này được đóng mà chưa thu tiền. Tra cứu lại khoản thu trước khi thao tác tiếp.</p> : null}
-      {paymentError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-        <p>{paymentError.message}</p>
-        {paymentError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{paymentError.correlationId}</span></p> : null}
-        {uncertain ? <p className="mt-2">Chưa xác định kết quả thu tiền. Không tạo yêu cầu mới; hãy gửi lại chính yêu cầu này hoặc kiểm tra trạng thái.</p> : null}
-      </div> : null}
+        <L10nValue>{refreshBusy ? <p className="text-sm text-muted-foreground"><L10n>{"Đang cập nhật trạng thái khoản thu…"}</L10n></p> : null}</L10nValue>
+        <L10nValue>{refreshError ? <div className="space-y-2"><p role="alert" className="text-sm text-warning"><L10nValue>{refreshError}</L10nValue></p><Button type="button" disabled={refreshBusy} onClick={() => void refreshCompleted(request)}><L10n>{"Thử kiểm tra lại"}</L10n></Button></div> : null}</L10nValue>
+        <Button type="button" variant="primary" disabled={refreshBusy || paymentBusy || checkingOperation} onClick={nextCollection}><L10n>{"Thu khoản tiếp theo"}</L10n></Button>
+      </div> : null}</L10nValue>
+      <L10nValue>{pending ? <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        <p><L10nValue>{paymentResult?.operation.basis === "ZERO_LIABILITY" ? "Đang chờ Billing hoàn tất xác nhận nghĩa vụ 0. Giữ nguyên yêu cầu để tránh thu trùng." : "Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu thu để tránh thu trùng."}</L10nValue></p>
+        <Button className="mt-3" loading={checkingOperation} onClick={() => void checkOperation()}><L10n>{"Kiểm tra trạng thái giao dịch"}</L10n></Button>
+      </div> : null}</L10nValue>
+      <L10nValue>{closed ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm"><L10n>{"Billing đã xác nhận giao dịch này được đóng mà chưa thu tiền. Tra cứu lại khoản thu trước khi thao tác tiếp."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{paymentError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+        <p><L10nValue>{paymentError.message}</L10nValue></p>
+        <L10nValue>{paymentError.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{paymentError.correlationId}</span></p> : null}</L10nValue>
+        <L10nValue>{uncertain ? <p className="mt-2"><L10n>{"Chưa xác định kết quả thu tiền. Không tạo yêu cầu mới; hãy gửi lại chính yêu cầu này hoặc kiểm tra trạng thái."}</L10n></p> : null}</L10nValue>
+      </div> : null}</L10nValue>
 
       <details className="text-sm text-muted-foreground">
-        <summary className="min-h-8 cursor-pointer">Thông tin đối soát khoản thu</summary>
+        <summary className="min-h-8 cursor-pointer"><L10n>{"Thông tin đối soát khoản thu"}</L10n></summary>
         <dl className="mt-2 grid gap-2 break-all sm:grid-cols-2">
-          <SupportInfo label="Mã đăng ký" value={request.registrationId} />
-          <SupportInfo label="Mã yêu cầu" value={request.paymentRequestId} />
-          <SupportInfo label="Mã hóa đơn" value={request.invoiceId} />
-          <SupportInfo label="Mã tài khoản" value={request.accountId} />
-          <SupportInfo label="Mã giữ chỗ" value={request.reservationId} />
-          <SupportInfo label="Mã báo giá" value={paymentResult?.operation.quoteId ?? quote?.quoteId ?? null} />
-          <SupportInfo label="Mã thao tác" value={paymentResult?.operation.paymentOperationId ?? recoveredOperationId} />
-          <SupportInfo label="Mã giao dịch" value={paymentResult?.payment?.transactionId ?? paymentResult?.operation.transactionId ?? null} />
-          <SupportInfo label="Mã xác nhận 0 đồng" value={paymentResult?.clearanceId ?? null} />
+          <SupportInfo label={localize("Mã đăng ký")} value={request.registrationId} />
+          <SupportInfo label={localize("Mã yêu cầu")} value={request.paymentRequestId} />
+          <SupportInfo label={localize("Mã hóa đơn")} value={request.invoiceId} />
+          <SupportInfo label={localize("Mã tài khoản")} value={request.accountId} />
+          <SupportInfo label={localize("Mã giữ chỗ")} value={request.reservationId} />
+          <SupportInfo label={localize("Mã báo giá")} value={paymentResult?.operation.quoteId ?? quote?.quoteId ?? null} />
+          <SupportInfo label={localize("Mã thao tác")} value={paymentResult?.operation.paymentOperationId ?? recoveredOperationId} />
+          <SupportInfo label={localize("Mã giao dịch")} value={paymentResult?.payment?.transactionId ?? paymentResult?.operation.transactionId ?? null} />
+          <SupportInfo label={localize("Mã xác nhận 0 đồng")} value={paymentResult?.clearanceId ?? null} />
         </dl>
       </details>
 
-      {patientFormVisible ? <form className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); if (uncertain && lastIntent?.kind === "PATIENT_PAYMENT") void submit(lastIntent); else startPayment(); }}>
+      <L10nValue>{patientFormVisible ? <form className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); if (uncertain && lastIntent?.kind === "PATIENT_PAYMENT") void submit(lastIntent); else startPayment(); }}>
         <label className="space-y-1 text-sm font-medium" htmlFor="scheduled-payment-method">
-          <span>Hình thức thu</span>
+          <span><L10n>{"Hình thức thu"}</L10n></span>
           <select id="scheduled-payment-method" value={paymentMethod} onChange={event => setPaymentMethod(event.target.value as "CASH" | "BANK_TRANSFER")} disabled={paymentBusy || uncertain} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
-            <option value="CASH">Tiền mặt</option>
-            <option value="BANK_TRANSFER">Chuyển khoản, đối chiếu thủ công</option>
+            <option value="CASH"><L10n>{"Tiền mặt"}</L10n></option>
+            <option value="BANK_TRANSFER"><L10n>{"Chuyển khoản, đối chiếu thủ công"}</L10n></option>
           </select>
         </label>
-        {paymentMethod === "BANK_TRANSFER" ? <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="provider-reference">
-          <span>Mã đối chiếu chuyển khoản</span>
+        <L10nValue>{paymentMethod === "BANK_TRANSFER" ? <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="provider-reference">
+          <span><L10n>{"Mã đối chiếu chuyển khoản"}</L10n></span>
           <input id="provider-reference" value={providerReference} onChange={event => setProviderReference(event.target.value)} maxLength={120} disabled={paymentBusy || uncertain} required className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
-        </label> : null}
+        </label> : null}</L10nValue>
         <div className="sm:col-span-2">
-          <Button type="submit" loading={paymentBusy} disabled={quoteBlocksAction || uncertain && lastIntent?.kind !== "PATIENT_PAYMENT"}>{uncertain ? "Gửi lại cùng yêu cầu" : "Thu phí lịch khám"}</Button>
-          <p className="mt-2 text-xs text-muted-foreground">Số tiền được lấy nguyên văn từ Billing: {formatDecimal(request.remainingAmount)} {request.currency}. Giao dịch chưa hoàn tất sẽ giữ nguyên khóa để đối soát.</p>
+          <Button type="submit" loading={paymentBusy} disabled={quoteBlocksAction || uncertain && lastIntent?.kind !== "PATIENT_PAYMENT"}><L10nValue>{uncertain ? "Gửi lại cùng yêu cầu" : "Thu phí lịch khám"}</L10nValue></Button>
+          <p className="mt-2 text-xs text-muted-foreground"><L10n>{"Số tiền được lấy nguyên văn từ Billing: "}</L10n><L10nValue>{formatDecimal(request.remainingAmount)}</L10nValue> {request.currency}<L10n>{". Giao dịch chưa hoàn tất sẽ giữ nguyên khóa để đối soát."}</L10n></p>
         </div>
-      </form> : null}
-      {retryPatient && !patientFormVisible ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}>Gửi lại cùng yêu cầu thu</Button> : null}
-      {retryZero ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}>Gửi lại cùng lệnh xác nhận nghĩa vụ 0</Button> : null}
-      {canConfirmZero ? <div className="border-t border-border pt-4">
-        <p className="mb-3 text-sm">Báo giá hiện hành cho thấy người bệnh phải trả 0. Xác nhận nghĩa vụ này ghi nhận điều kiện thanh toán riêng, không ghi nhận tiền mặt.</p>
-        <Button type="button" variant="primary" loading={paymentBusy} onClick={startZeroLiability}>Xác nhận nghĩa vụ 0 đồng</Button>
-      </div> : null}
-      {quoteZero && quoteEnabled && !zeroLiabilityEnabled && !completed && !pending ? <p role="status" className="border-t border-border pt-4 text-sm text-warning">Báo giá là 0 đồng nhưng chức năng xác nhận nghĩa vụ 0 chưa được mở. Không thu tiền mặt.</p> : null}
-      {hasDue && (!Number.isSafeInteger(request.reservationRevision) || request.reservationRevision < 1) ? <p role="alert" className="border-t border-border pt-4 text-sm text-danger">Billing chưa cung cấp phiên bản giữ chỗ cần thiết. Chưa thể gửi giao dịch.</p> : null}
-      {!hasDue && !quoteZero && !completed && !pending && !closed ? <p role="status" className="border-t border-border pt-4 text-sm text-muted-foreground">Khoản này chưa sẵn sàng để thu hoặc không còn số dư dương.</p> : null}
-    </section> : null}
+      </form> : null}</L10nValue>
+      <L10nValue>{retryPatient && !patientFormVisible ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}><L10n>{"Gửi lại cùng yêu cầu thu"}</L10n></Button> : null}</L10nValue>
+      <L10nValue>{retryZero ? <Button type="button" variant="primary" loading={paymentBusy} onClick={() => void submit(lastIntent)}><L10n>{"Gửi lại cùng lệnh xác nhận nghĩa vụ 0"}</L10n></Button> : null}</L10nValue>
+      <L10nValue>{canConfirmZero ? <div className="border-t border-border pt-4">
+        <p className="mb-3 text-sm"><L10n>{"Báo giá hiện hành cho thấy người bệnh phải trả 0. Xác nhận nghĩa vụ này ghi nhận điều kiện thanh toán riêng, không ghi nhận tiền mặt."}</L10n></p>
+        <Button type="button" variant="primary" loading={paymentBusy} onClick={startZeroLiability}><L10n>{"Xác nhận nghĩa vụ 0 đồng"}</L10n></Button>
+      </div> : null}</L10nValue>
+      <L10nValue>{quoteZero && quoteEnabled && !zeroLiabilityEnabled && !completed && !pending ? <p role="status" className="border-t border-border pt-4 text-sm text-warning"><L10n>{"Báo giá là 0 đồng nhưng chức năng xác nhận nghĩa vụ 0 chưa được mở. Không thu tiền mặt."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{hasDue && (!Number.isSafeInteger(request.reservationRevision) || request.reservationRevision < 1) ? <p role="alert" className="border-t border-border pt-4 text-sm text-danger"><L10n>{"Billing chưa cung cấp phiên bản giữ chỗ cần thiết. Chưa thể gửi giao dịch."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{!hasDue && !quoteZero && !completed && !pending && !closed ? <p role="status" className="border-t border-border pt-4 text-sm text-muted-foreground"><L10n>{"Khoản này chưa sẵn sàng để thu hoặc không còn số dư dương."}</L10n></p> : null}</L10nValue>
+    </section> : null}</L10nValue>
   </div>;
 }
 
 function SupportInfo({ label, value }: { label: string; value: string | null }) {
-  return value ? <div><dt className="text-xs">{label}</dt><dd className="font-mono">{value}</dd></div> : null;
+  return value ? <div><dt className="text-xs"><L10nValue>{label}</L10nValue></dt><dd className="font-mono">{value}</dd></div> : null;
 }

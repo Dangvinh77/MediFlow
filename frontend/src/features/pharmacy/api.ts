@@ -15,6 +15,7 @@ import type {
   PrescribingContextDTO,
   PharmacyPatientIdentityDTO,
   PrescribingDoctorDTO,
+  UpdatePrescriptionRequest,
 } from "./types";
 
 // lib/api.ts prepends `/api`; feature APIs only declare the gateway resource path.
@@ -92,6 +93,12 @@ export const pharmacyApi = {
     return api.get<PrescriptionDTO>(
       `${BASE}/prescriptions/${prescriptionId}`,
     );
+  },
+
+  updatePrescription(prescriptionId: string, body: UpdatePrescriptionRequest, commandId: string) {
+    return api.put<PrescriptionDTO>(`${BASE}/prescriptions/${encodeURIComponent(prescriptionId)}`, body, {
+      idempotencyKey: commandId,
+    });
   },
 
   cancelPrescription(

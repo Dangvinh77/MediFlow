@@ -60,6 +60,7 @@ public class LedgerPaymentService {
         repository.lockIdempotencyKey(command.idempotencyKey());
         // The account lock serializes payments and allocations across all requests in an episode.
         var context = repository.lockRequest(requestId);
+        requireNoPendingPrescriptionRevision(context);
         if (labQuotedPayments != null && labQuotedPayments.isQuoteBoundLabRequest(requestId)) {
             throw new BillingRuleException("BILLING_QUOTE_PAYMENT_REQUIRED",
                     "Quote-bound outpatient Lab requests require the V2 Lab payment route");
@@ -82,6 +83,7 @@ public class LedgerPaymentService {
         repository.lockIdempotencyKey(command.idempotencyKey());
         labQuotedPayments.lockLabSource(requestId);
         var context = repository.lockRequest(requestId);
+        requireNoPendingPrescriptionRevision(context);
         var priorPayment = repository.findByIdempotencyKey(command.idempotencyKey());
         if (priorPayment.isPresent()) {
             var receipt = labQuotedPayments.findByIdempotencyKey(command.idempotencyKey())
@@ -266,6 +268,7 @@ public class LedgerPaymentService {
         else validate(command, operation.actorAccountId(), operation.correlationId());
         repository.lockIdempotencyKey(ledgerKey);
         var context = repository.lockRequest(operation.paymentRequestId());
+        requireNoPendingPrescriptionRevision(context);
         if (repository.findByIdempotencyKey(ledgerKey).isPresent()) {
             // Operation and ledger writes share one DB transaction. A prior ledger row without a
             // completed operation is therefore corruption, never permission to synthesize a receipt.
@@ -347,6 +350,15 @@ public class LedgerPaymentService {
         require(command.paymentMethod() != PaymentMethod.INSURANCE, "BILLING_INSURANCE_IS_NOT_CASH");
         require(command.providerReference() == null || command.providerReference().length() <= 120,
                 "BILLING_INVALID_PROVIDER_REFERENCE");
+    }
+
+    private void requireNoPendingPrescriptionRevision(LedgerPaymentRepositoryPort.PaymentContext context) {
+        var target = context.target();
+        if (target != null && target.prescriptionId() != null
+                && repository.hasPendingPrescriptionRevision(target.prescriptionId())) {
+            throw new BillingRuleException("BILLING_PRESCRIPTION_REVISION_PENDING",
+                    "BILLING_PRESCRIPTION_REVISION_PENDING");
+        }
     }
 
     private static void require(boolean valid, String code) {

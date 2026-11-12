@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,13 +25,13 @@ class PharmacyBoundary extends ConsumerWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('Chức năng Dược chưa sẵn sàng trên ứng dụng này.'),
+          child: LText('Chức năng Dược chưa sẵn sàng trên ứng dụng này.'),
         ),
       );
     }
     if (!access.canRead || (manageDrugs && !access.canManageDrugs)) {
       return Center(
-        child: Text(
+        child: LText(
           manageDrugs
               ? 'Bạn không có quyền thực hiện thao tác Dược này.'
               : 'Bạn không có quyền xem Dược.',

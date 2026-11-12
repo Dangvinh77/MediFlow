@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,12 +106,12 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          LText(
             'Cập nhật liên hệ của bạn',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 6),
-          const Text(
+          const LText(
             'Bạn có thể sửa điện thoại và địa chỉ. Email đăng nhập chỉ do quản trị viên cập nhật.',
           ),
           const SizedBox(height: 16),
@@ -120,9 +122,9 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
             keyboardType: TextInputType.phone,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             maxLength: 15,
-            decoration: const InputDecoration(
-              labelText: 'Điện thoại',
-              helperText: 'Nhập từ 10 đến 15 chữ số.',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Điện thoại'),
+              helperText: AppL10n.text(context, 'Nhập từ 10 đến 15 chữ số.'),
             ),
             onChanged: (_) => setState(() {
               _saved = false;
@@ -135,9 +137,12 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
             key: const ValueKey('self-profile-email'),
             initialValue: widget.profile.email ?? '',
             readOnly: true,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              helperText: 'Liên hệ quản trị viên nếu cần đổi email đăng nhập.',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Email'),
+              helperText: AppL10n.text(
+                context,
+                'Liên hệ quản trị viên nếu cần đổi email đăng nhập.',
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -148,7 +153,9 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
             minLines: 2,
             maxLines: 4,
             maxLength: 255,
-            decoration: const InputDecoration(labelText: 'Địa chỉ'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Địa chỉ'),
+            ),
             onChanged: (_) => setState(() {
               _saved = false;
               _error = null;
@@ -156,26 +163,26 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
             }),
           ),
           if (!widget.profile.active)
-            const Text(
+            const LText(
               'Hồ sơ đã ngừng hoạt động nên không thể cập nhật liên hệ.',
             ),
           if (_error case final error?) ...[
             const SizedBox(height: 8),
-            Text(error, key: const ValueKey('self-profile-save-error')),
+            LText(error, key: const ValueKey('self-profile-save-error')),
             if (_outcomeUnknown)
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: _busy ? null : widget.onReload,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Tải lại hồ sơ'),
+                  label: const LText('Tải lại hồ sơ'),
                 ),
               ),
           ],
           if (_saved)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text(
+              child: LText(
                 'Đã cập nhật thông tin liên hệ.',
                 key: ValueKey('self-profile-save-success'),
               ),
@@ -189,7 +196,7 @@ class _OwnStaffContactFormState extends ConsumerState<OwnStaffContactForm> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.save_outlined),
-            label: Text(_busy ? 'Đang lưu…' : 'Lưu thông tin liên hệ'),
+            label: LText(_busy ? 'Đang lưu…' : 'Lưu thông tin liên hệ'),
           ),
         ],
       ),

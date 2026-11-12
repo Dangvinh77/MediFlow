@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -36,6 +38,7 @@ interface RecordLabOrdersPanelProps {
 }
 
 export function RecordLabOrdersPanel({ recordId, cancelOrder, canWithdraw = false }: RecordLabOrdersPanelProps) {
+  const { localize } = useLocale();
   const command = useCommand();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [action, setAction] = useState<Action | null>(null);
@@ -86,19 +89,19 @@ export function RecordLabOrdersPanel({ recordId, cancelOrder, canWithdraw = fals
     void command.run(() => cancelOrder(action.testId as string, sent), done);
   }
 
-  if (state.kind === "loading") return <p role="status" className="mt-3 text-sm text-muted-foreground">Đang kiểm tra trạng thái xét nghiệm…</p>;
+  if (state.kind === "loading") return <p role="status" className="mt-3 text-sm text-muted-foreground"><L10n>{"Đang kiểm tra trạng thái xét nghiệm…"}</L10n></p>;
   if (state.kind === "unavailable") {
     return <div role="alert" className="mt-3 border-l-2 border-warning px-4 py-2 text-sm">
-      <p>Không kiểm tra được trạng thái xét nghiệm lúc này. Danh sách chỉ định có thể chưa đầy đủ.</p>
-      <Button type="button" variant="secondary" className="mt-2" onClick={() => { setState({ kind: "loading" }); load(); }}>Thử lại</Button>
+      <p><L10n>{"Không kiểm tra được trạng thái xét nghiệm lúc này. Danh sách chỉ định có thể chưa đầy đủ."}</L10n></p>
+      <Button type="button" variant="secondary" className="mt-2" onClick={() => { setState({ kind: "loading" }); load(); }}><L10n>{"Thử lại"}</L10n></Button>
     </div>;
   }
-  if (!state.orders.length) return <p className="mt-3 text-sm text-muted-foreground">Chưa có chỉ định xét nghiệm.</p>;
+  if (!state.orders.length) return <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Chưa có chỉ định xét nghiệm."}</L10n></p>;
 
   return <div className="mt-3 space-y-2">
     <CommandFeedback error={command.error} uncertain={command.uncertain} />
     <ul className="divide-y divide-border">
-      {state.orders.map((order) => {
+      <L10nValue>{state.orders.map((order) => {
         const presentation = statusPresentation[order.status] ?? { label: order.status, tone: "neutral" as StatusTone };
         const open = order.testId !== null && order.status !== "COMPLETED" && order.status !== "CANCELLED";
         const unreceived = order.testId === null && order.status === "NOT_RECEIVED";
@@ -106,27 +109,27 @@ export function RecordLabOrdersPanel({ recordId, cancelOrder, canWithdraw = fals
         return <li key={order.sourceOrderId} className="py-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-medium">{order.labType}</span>
-            <StatusBadge tone={presentation.tone}>{presentation.label}</StatusBadge>
+            <StatusBadge tone={presentation.tone}><L10nValue>{presentation.label}</L10nValue></StatusBadge>
           </div>
-          {open && cancelOrder && !editing ? <div className="mt-1 flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: order.testId, mode: "cancel" })}>Hủy chỉ định</Button>
-            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: order.testId, mode: "postpone" })}>Hoãn sang lần sau</Button>
-          </div> : null}
-          {unreceived && canWithdraw && !editing ? <div className="mt-1 flex flex-wrap items-center gap-2">
-            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: null, mode: "withdraw" })}>Rút chỉ định</Button>
-            <span className="text-xs text-muted-foreground">Lab chưa nhận chỉ định này nên có thể rút lại.</span>
-          </div> : null}
-          {editing ? <form onSubmit={submit} className="mt-2 space-y-2">
-            <Field label={reasonLabels[action.mode]} htmlFor={`lab-order-reason-${order.sourceOrderId}`} required>
+          <L10nValue>{open && cancelOrder && !editing ? <div className="mt-1 flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: order.testId, mode: "cancel" })}><L10n>{"Hủy chỉ định"}</L10n></Button>
+            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: order.testId, mode: "postpone" })}><L10n>{"Hoãn sang lần sau"}</L10n></Button>
+          </div> : null}</L10nValue>
+          <L10nValue>{unreceived && canWithdraw && !editing ? <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Button type="button" variant="secondary" disabled={command.busy || command.uncertain} onClick={() => begin({ orderId: order.sourceOrderId, testId: null, mode: "withdraw" })}><L10n>{"Rút chỉ định"}</L10n></Button>
+            <span className="text-xs text-muted-foreground"><L10n>{"Lab chưa nhận chỉ định này nên có thể rút lại."}</L10n></span>
+          </div> : null}</L10nValue>
+          <L10nValue>{editing ? <form onSubmit={submit} className="mt-2 space-y-2">
+            <Field label={localize(reasonLabels[action.mode])} htmlFor={`lab-order-reason-${order.sourceOrderId}`} required>
               <textarea id={`lab-order-reason-${order.sourceOrderId}`} rows={2} maxLength={400} className={controlClassName} value={reason} onChange={(event) => setReason(event.target.value)} />
             </Field>
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" variant="primary" loading={command.busy} disabled={!reason.trim() || command.uncertain}>Xác nhận</Button>
-              <Button type="button" variant="secondary" disabled={command.busy} onClick={() => setAction(null)}>Bỏ qua</Button>
+              <Button type="submit" variant="primary" loading={command.busy} disabled={!reason.trim() || command.uncertain}><L10n>{"Xác nhận"}</L10n></Button>
+              <Button type="button" variant="secondary" disabled={command.busy} onClick={() => setAction(null)}><L10n>{"Bỏ qua"}</L10n></Button>
             </div>
-          </form> : null}
+          </form> : null}</L10nValue>
         </li>;
-      })}
+      })}</L10nValue>
     </ul>
   </div>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -41,6 +43,7 @@ export function LabWorklist() {
 }
 
 function LabWorklistContent() {
+  const { localize } = useLocale();
   const router = useRouter();
   const [retryToken, setRetryToken] = useState(0);
   const [state, setState] = useState<WorklistState>({ key: -1, status: "loading" });
@@ -77,50 +80,49 @@ function LabWorklistContent() {
 
   return (
     <section className="space-y-4">
-      {current.status === "loading" ? <AsyncState kind="loading" message="Đang tải hàng đợi xét nghiệm…" /> : null}
-      {current.status === "disabled" ? <AsyncState kind="empty" message="Quy trình duyệt xét nghiệm hiện chưa được bật." /> : null}
-      {current.status === "error" ? <AsyncState kind="error" message={current.message} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}
-      {current.status === "success" ? <>
+      <L10nValue>{current.status === "loading" ? <AsyncState kind="loading" message={localize("Đang tải hàng đợi xét nghiệm…")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "disabled" ? <AsyncState kind="empty" message={localize("Quy trình duyệt xét nghiệm hiện chưa được bật.")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "error" ? <AsyncState kind="error" message={localize(current.message)} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}</L10nValue>
+      <L10nValue>{current.status === "success" ? <>
         <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4">
-          <label htmlFor="lab-worklist-group" className="min-w-56 space-y-1 text-sm font-medium">Nhóm xét nghiệm
-            <select id="lab-worklist-group" value={group} onChange={(event) => setGroup(event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2">
-              <option value="">Tất cả nhóm</option>
-              {groups.map((value) => <option key={value} value={value}>{value}</option>)}
+          <label htmlFor="lab-worklist-group" className="min-w-56 space-y-1 text-sm font-medium"><L10n>{"Nhóm xét nghiệm"}</L10n><select id="lab-worklist-group" value={group} onChange={(event) => setGroup(event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2">
+              <option value=""><L10n>{"Tất cả nhóm"}</L10n></option>
+              <L10nValue>{groups.map((value) => <option key={value} value={value}>{value}</option>)}</L10nValue>
             </select>
           </label>
-          <p className="text-sm text-muted-foreground">{filtered.length} xét nghiệm</p>
+          <p className="text-sm text-muted-foreground">{filtered.length}<L10n>{" xét nghiệm"}</L10n></p>
         </div>
-        {filtered.length === 0 ? <AsyncState kind="empty" message={group ? "Không có xét nghiệm trong nhóm đã chọn." : "Chưa có xét nghiệm trong hàng đợi."} /> : (
+        <L10nValue>{filtered.length === 0 ? <AsyncState kind="empty" message={localize(group ? "Không có xét nghiệm trong nhóm đã chọn." : "Chưa có xét nghiệm trong hàng đợi.")} /> : (
           <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-5xl text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Xét nghiệm</th>
-                  <th scope="col" className="px-4 py-3">Nhóm</th>
-                  <th scope="col" className="px-4 py-3">Trạng thái xét nghiệm</th>
-                  <th scope="col" className="px-4 py-3">Bệnh phẩm</th>
-                  <th scope="col" className="px-4 py-3">Phiếu kết quả</th>
-                  <th scope="col" className="px-4 py-3">Hạn xử lý</th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Xét nghiệm"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Nhóm"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Trạng thái xét nghiệm"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Bệnh phẩm"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Phiếu kết quả"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Hạn xử lý"}</L10n></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => <tr key={item.testId} className={`border-b border-border align-top last:border-0 ${item.overdue ? "bg-danger/10" : ""}`}>
+                <L10nValue>{filtered.map((item) => <tr key={item.testId} className={`border-b border-border align-top last:border-0 ${item.overdue ? "bg-danger/10" : ""}`}>
                   <td className="px-4 py-3">
-                    <Link href={`/lab/${encodeURIComponent(item.testId)}`} className="font-medium text-primary underline-offset-4 hover:underline">{item.serviceName || item.labType}</Link>
+                    <Link href={`/lab/${encodeURIComponent(item.testId)}`} className="font-medium text-primary underline-offset-4 hover:underline"><L10nValue>{item.serviceName || item.labType}</L10nValue></Link>
                     <p className="mt-1 text-xs text-muted-foreground">{item.serviceCode}</p>
-                    {item.overdue ? <span className="mt-2 inline-flex rounded-full bg-danger/15 px-2 py-1 text-xs font-semibold text-danger">Quá hạn</span> : null}
+                    <L10nValue>{item.overdue ? <span className="mt-2 inline-flex rounded-full bg-danger/15 px-2 py-1 text-xs font-semibold text-danger"><L10n>{"Quá hạn"}</L10n></span> : null}</L10nValue>
                   </td>
                   <td className="px-4 py-3">{item.displayGroup}</td>
-                  <td className="px-4 py-3">{testStatusLabels[item.testStatus] ?? "Không xác định"}</td>
-                  <td className="px-4 py-3">{specimenLabel(item.specimenStatus)}</td>
-                  <td className="px-4 py-3">{reportLabel(item.reportStatus)}{item.reportVersion !== null ? ` · Phiên bản ${item.reportVersion}` : ""}</td>
-                  <td className={`px-4 py-3 ${item.overdue ? "font-semibold text-danger" : "text-muted-foreground"}`}>{item.dueAt ? formatInstant(item.dueAt) : "Chưa có hạn"}</td>
-                </tr>)}
+                  <td className="px-4 py-3"><L10nValue>{testStatusLabels[item.testStatus] ?? "Không xác định"}</L10nValue></td>
+                  <td className="px-4 py-3"><L10nValue>{specimenLabel(item.specimenStatus)}</L10nValue></td>
+                  <td className="px-4 py-3"><L10nValue>{reportLabel(item.reportStatus)}</L10nValue><L10nValue>{item.reportVersion !== null ? ` · Phiên bản ${item.reportVersion}` : ""}</L10nValue></td>
+                  <td className={`px-4 py-3 ${item.overdue ? "font-semibold text-danger" : "text-muted-foreground"}`}><L10nValue>{item.dueAt ? formatInstant(item.dueAt) : "Chưa có hạn"}</L10nValue></td>
+                </tr>)}</L10nValue>
               </tbody>
             </table>
           </div>
-        )}
-      </> : null}
+        )}</L10nValue>
+      </> : null}</L10nValue>
     </section>
   );
 }

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +73,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
+                              LText(
                                 'Đăng nhập để tiếp tục công việc',
                                 style: theme.textTheme.titleLarge,
                               ),
@@ -82,9 +84,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 autofillHints: const [AutofillHints.email],
                                 keyboardType: TextInputType.emailAddress,
                                 maxLength: 254,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   counterText: '',
-                                  labelText: 'Email',
+                                  labelText: AppL10n.text(context, 'Email'),
                                   prefixIcon: Icon(Icons.email_outlined),
                                 ),
                                 textInputAction: TextInputAction.next,
@@ -101,12 +103,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 maxLength: 72,
                                 decoration: InputDecoration(
                                   counterText: '',
-                                  labelText: 'Mật khẩu',
+                                  labelText: AppL10n.text(context, 'Mật khẩu'),
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
-                                    tooltip: _obscure
-                                        ? 'Hiện mật khẩu'
-                                        : 'Ẩn mật khẩu',
+                                    tooltip: AppL10n.text(
+                                      context,
+                                      _obscure
+                                          ? 'Hiện mật khẩu'
+                                          : 'Ẩn mật khẩu',
+                                    ),
                                     onPressed: () =>
                                         setState(() => _obscure = !_obscure),
                                     icon: Icon(
@@ -128,7 +133,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 onPressed: session.isLoading ? null : _submit,
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
-                                  child: Text(
+                                  child: LText(
                                     session.isLoading
                                         ? 'Đang đăng nhập…'
                                         : 'Đăng nhập',
@@ -141,13 +146,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 onPressed: session.isLoading
                                     ? null
                                     : () => context.go('/forgot-password'),
-                                child: const Text('Quên mật khẩu?'),
+                                child: const LText('Quên mật khẩu?'),
                               ),
                               TextButton(
                                 onPressed: session.isLoading
                                     ? null
                                     : () => context.go('/reset-password'),
-                                child: const Text(
+                                child: const LText(
                                   'Tôi đã có liên kết khôi phục',
                                 ),
                               ),
@@ -184,13 +189,13 @@ class _LoginHeader extends StatelessWidget {
               const SizedBox(height: 36),
               const MediFlowMark(size: 60),
               const SizedBox(height: 16),
-              Text(
+              LText(
                 'MediFlow',
                 style: Theme.of(context).textTheme.headlineLarge
                     ?.copyWith(color: Colors.white),
               ),
               const SizedBox(height: 4),
-              Text(
+              LText(
                 'Quản lý khám ngoại trú',
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(color: Colors.white70),

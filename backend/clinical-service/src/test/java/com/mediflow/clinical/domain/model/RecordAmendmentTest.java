@@ -54,6 +54,23 @@ class RecordAmendmentTest {
         assertThat(amendment.getStatus()).isEqualTo(RecordAmendmentStatus.APPROVED);
     }
 
+    @Test void responsibleDoctorDirectApplyRecordsSameActorAndHash() {
+        RecordAmendment amendment = pending();
+        amendment.applyByResponsibleDoctor(author, AT);
+
+        assertThat(amendment.getStatus()).isEqualTo(RecordAmendmentStatus.APPLIED);
+        assertThat(amendment.getDecidedByStaffId()).isEqualTo(author);
+        assertThat(amendment.getDecisionNote()).contains("responsible doctor");
+        assertThat(amendment.getDecidedAt()).isEqualTo(AT);
+        assertThat(amendment.getContentHash()).isEqualTo(amendment.contentHash()).hasSize(64);
+    }
+
+    @Test void anotherDoctorCannotUseDirectApply() {
+        assertThatThrownBy(() -> pending().applyByResponsibleDoctor(head, AT))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .extracting("code").isEqualTo("AMENDMENT_DIRECT_APPLY_DENIED");
+    }
+
     @Test void rejectionNeedsNoteAndKeepsNoHash() {
         RecordAmendment amendment = pending();
         assertThatThrownBy(() -> amendment.reject(head, " ", AT)).extracting("code").isEqualTo("AMENDMENT_INVALID");

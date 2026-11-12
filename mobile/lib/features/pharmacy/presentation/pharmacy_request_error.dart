@@ -40,6 +40,10 @@ class PharmacyRequestError extends StatelessWidget {
 
 String _message(ApiFailure failure) {
   switch (failure.code) {
+    case 'BILLING_PRESCRIPTION_REVISION_PAYMENT_EXISTS':
+    case 'BILLING_PRESCRIPTION_REVISION_PAYMENT_IN_PROGRESS':
+    case 'PRESCRIPTION_ALREADY_PAID':
+      return 'Đơn thuốc đã có giao dịch hoặc đang được thu tiền. Hãy làm mới để kiểm tra.';
     case 'PHARMACY_CLEARANCE_REQUIRED':
       return 'Đơn chưa có xác nhận thanh toán hợp lệ. Vui lòng kiểm tra thanh toán rồi làm mới đơn.';
     case 'PRESCRIPTION_NOT_ACTIVE':

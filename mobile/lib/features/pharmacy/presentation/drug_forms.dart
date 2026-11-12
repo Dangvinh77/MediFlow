@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
@@ -173,10 +175,10 @@ class _DrugFormState extends State<_DrugForm> {
     final route = DialogRoute<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
+        title: LText(
           stock ? 'Xác nhận điều chỉnh tồn kho' : 'Xác nhận thêm thuốc',
         ),
-        content: Text(
+        content: LText(
           stock
               ? '${snapshot!.name}: ${adjust!.quantity > 0 ? 'tăng' : 'giảm'} ${adjust.quantity.abs()} ${snapshot!.unit}. Hệ thống sẽ kiểm tra số thuốc còn có thể sử dụng.'
               : 'Thêm ${create!.drugName} vào danh mục? Hệ thống sẽ kiểm tra giá và số lượng.',
@@ -184,11 +186,11 @@ class _DrugFormState extends State<_DrugForm> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận'),
+            child: const LText('Xác nhận'),
           ),
         ],
       ),
@@ -264,18 +266,18 @@ class _DrugFormState extends State<_DrugForm> {
                 semanticsLabel: 'Đang kiểm tra tồn kho',
               ),
             if (snapshot != null) ...[
-              Text(snapshot!.name),
-              Text('Tồn kho: ${snapshot!.stockQuantity}'),
+              LText(snapshot!.name),
+              LText('Tồn kho: ${snapshot!.stockQuantity}'),
             ],
             ExpansionTile(
-              title: const Text('Thông tin tra cứu'),
+              title: const LText('Thông tin tra cứu'),
               children: [SelectableText('Mã thuốc: ${widget.drugId}')],
             ),
           ],
           if (success != null)
             Semantics(
               liveRegion: true,
-              child: Text(
+              child: LText(
                 stock
                     ? 'Điều chỉnh thành công. Tồn kho: ${success!.stockQuantity}'
                     : 'Đã tạo thuốc. ${success!.name}',
@@ -290,13 +292,13 @@ class _DrugFormState extends State<_DrugForm> {
               ),
             ),
           if (uncertain)
-            const Text(
+            const LText(
               'Chưa rõ thao tác đã hoàn tất hay chưa. Vui lòng kiểm tra tồn kho trước khi thực hiện thao tác mới.',
             ),
           if (!stock && uncertain)
             OutlinedButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              child: const Text('Về danh mục để kiểm tra kết quả'),
+              child: const LText('Về danh mục để kiểm tra kết quả'),
             ),
           for (final entry in labels.entries)
             Padding(
@@ -318,11 +320,12 @@ class _DrugFormState extends State<_DrugForm> {
                       )
                     : TextInputType.text,
                 decoration: InputDecoration(
-                  labelText: entry.value,
-                  hintText: entry.key == 'expiryDate'
-                      ? 'Ví dụ: 2027-12-31'
-                      : null,
-                  errorText: fields[entry.key],
+                  labelText: AppL10n.text(context, entry.value),
+                  hintText: AppL10n.text(
+                    context,
+                    entry.key == 'expiryDate' ? 'Ví dụ: 2027-12-31' : null,
+                  ),
+                  errorText: AppL10n.text(context, fields[entry.key]),
                   border: const OutlineInputBorder(),
                 ),
                 onChanged: (_) {
@@ -334,7 +337,7 @@ class _DrugFormState extends State<_DrugForm> {
             ),
           FilledButton(
             onPressed: locked || (stock && snapshot == null) ? null : _submit,
-            child: Text(
+            child: LText(
               busy
                   ? 'Đang xử lý…'
                   : stock
@@ -345,7 +348,7 @@ class _DrugFormState extends State<_DrugForm> {
           if (stock) ...[
             OutlinedButton(
               onPressed: busy || loading || forbidden ? null : _refresh,
-              child: const Text('Kiểm tra lại tồn kho'),
+              child: const LText('Kiểm tra lại tồn kho'),
             ),
             if ((uncertain && refreshed) || success != null)
               TextButton(
@@ -361,7 +364,7 @@ class _DrugFormState extends State<_DrugForm> {
                     }
                   });
                 },
-                child: const Text('Bắt đầu điều chỉnh mới'),
+                child: const LText('Bắt đầu điều chỉnh mới'),
               ),
           ],
         ],

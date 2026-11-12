@@ -18,10 +18,35 @@ class GatewayPharmacyRepository
         PharmacyIdentityReader,
         PrescribingSourceReader,
         OutpatientPrescriptionWriter,
+        PrescriptionEditor,
         PrescriptionDispenser,
         PharmacyOutboxRepository {
   const GatewayPharmacyRepository(this.client);
   final ApiClient client;
+
+  @override
+  Future<Prescription> updatePrescription(
+    String id,
+    PrescriptionEditIntent intent,
+  ) async {
+    if (!isPharmacyId(id)) throw ArgumentError('Mã đơn thuốc không hợp lệ.');
+    intent.command.validate();
+    final result = PharmacyDto.prescription(
+      await client.putIdempotent(
+        '/v1/pharmacy/prescriptions/${Uri.encodeComponent(id)}',
+        PrescriptionRequestDto.update(intent),
+        idempotencyKey: intent.key,
+      ),
+    );
+    if (result.id.toLowerCase() != id.toLowerCase() ||
+        result.revision == null ||
+        result.revision! <= intent.command.expectedRevision) {
+      throw const FormatException(
+        'Chưa xác định được kết quả sửa đơn thuốc. Hãy gửi lại đúng lần sửa để kiểm tra.',
+      );
+    }
+    return result;
+  }
 
   @override
   Future<PharmacyOutboxReplay> replayOutbox(String eventId) async {

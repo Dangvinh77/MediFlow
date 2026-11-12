@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import Link from "next/link";
@@ -54,6 +56,7 @@ export function RecordPrescriptionWorkspace(props: RecordPrescriptionWorkspacePr
 }
 
 function WorkspaceContent({ recordId, patientId, canCreate, mode }: RecordPrescriptionWorkspaceProps) {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canReadPrescription");
   const [revision, setRevision] = useState(0);
   const [retry, setRetry] = useState(0);
@@ -90,39 +93,38 @@ function WorkspaceContent({ recordId, patientId, canCreate, mode }: RecordPrescr
   const created = () => setRevision(value => value + 1);
 
   return <div className="mt-3 space-y-4">
-    {result.status === "loading" && <AsyncState kind="loading" message="Đang tải đơn thuốc…" />}
+    <L10nValue>{result.status === "loading" && <AsyncState kind="loading" message={localize("Đang tải đơn thuốc…")} />}</L10nValue>
 
-    {result.message && <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-      <p>{result.message}</p>
-      {result.status === "error" && <Button type="button" variant="secondary" className="mt-3" onClick={() => setRetry(value => value + 1)}>Thử lại</Button>}
-    </div>}
+    <L10nValue>{result.message && <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+      <p><L10nValue>{result.message}</L10nValue></p>
+      <L10nValue>{result.status === "error" && <Button type="button" variant="secondary" className="mt-3" onClick={() => setRetry(value => value + 1)}><L10n>{"Thử lại"}</L10n></Button>}</L10nValue>
+    </div>}</L10nValue>
 
-    {ready && <>
-      {result.prescriptions?.length ? <ul className="space-y-2" aria-label="Đơn thuốc đã kê cho hồ sơ">
-        {result.prescriptions.map(rx => <li key={rx.prescriptionId}>
+    <L10nValue>{ready && <>
+      <L10nValue>{result.prescriptions?.length ? <ul className="space-y-2" aria-label={localize("Đơn thuốc đã kê cho hồ sơ")}>
+        <L10nValue>{result.prescriptions.map(rx => <li key={rx.prescriptionId}>
           <Link href={`/pharmacy/prescriptions/${rx.prescriptionId}?context=record`} className="block rounded-lg border border-border p-3 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-medium">{formatDate(rx.prescribedDate)}</span>
-              <StatusBadge tone={prescriptionStatusPresentation[rx.status].tone}>{prescriptionStatusPresentation[rx.status].label}</StatusBadge>
+              <span className="font-medium"><L10nValue>{formatDate(rx.prescribedDate)}</L10nValue></span>
+              <StatusBadge tone={prescriptionStatusPresentation[rx.status].tone}><L10nValue>{prescriptionStatusPresentation[rx.status].label}</L10nValue></StatusBadge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{rx.lines.map(line => `${line.drugName || "Thuốc trong đơn"} × ${line.quantity}`).join(" · ")}</p>
+            <p className="mt-1 text-sm text-muted-foreground"><L10nValue>{rx.lines.map(line => `${line.drugName || "Thuốc trong đơn"} × ${line.quantity}`).join(" · ")}</L10nValue></p>
           </Link>
-        </li>)}
-      </ul> : <p className="rounded-lg border border-border p-4 text-sm text-muted-foreground">Hồ sơ này chưa có đơn thuốc.</p>}
-      {truncated && <p className="text-sm text-muted-foreground">Bệnh nhân có nhiều đơn thuốc; <Link className="font-medium text-primary underline" href={`/pharmacy/prescriptions?patientId=${encodeURIComponent(patientId)}`}>xem đầy đủ theo bệnh nhân</Link>.</p>}
-    </>}
+        </li>)}</L10nValue>
+      </ul> : <p className="rounded-lg border border-border p-4 text-sm text-muted-foreground"><L10n>{"Hồ sơ này chưa có đơn thuốc."}</L10n></p>}</L10nValue>
+      <L10nValue>{truncated && <p className="text-sm text-muted-foreground"><L10n>{"Bệnh nhân có nhiều đơn thuốc; "}</L10n><Link className="font-medium text-primary underline" href={`/pharmacy/prescriptions?patientId=${encodeURIComponent(patientId)}`}><L10n>{"xem đầy đủ theo bệnh nhân"}</L10n></Link>.</p>}</L10nValue>
+    </>}</L10nValue>
 
-    {canPrescribe && mode && <details className="rounded-lg border border-border p-3">
-      <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground">Kê đơn cho lượt khám</summary>
+    <L10nValue>{canPrescribe && mode && <details className="rounded-lg border border-border p-3">
+      <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground"><L10n>{"Kê đơn cho lượt khám"}</L10n></summary>
       <div className="mt-3">
-        {mode === "outpatient"
+        <L10nValue>{mode === "outpatient"
           ? <CreatePrescriptionForm mode={mode} sourceRecordId={recordId} onCreated={created} />
-          : <p className="text-sm text-muted-foreground">
-            Chế độ kê đơn hiện hành chọn bệnh nhân và hồ sơ trong form. <Link className="font-medium text-primary underline" href={`/pharmacy/prescriptions/new?patientId=${encodeURIComponent(patientId)}&recordId=${encodeURIComponent(recordId)}`}>Mở form kê đơn của hồ sơ này</Link>.
-          </p>}
+          : <p className="text-sm text-muted-foreground"><L10n>{"Chế độ kê đơn hiện hành chọn bệnh nhân và hồ sơ trong form. "}</L10n><Link className="font-medium text-primary underline" href={`/pharmacy/prescriptions/new?patientId=${encodeURIComponent(patientId)}&recordId=${encodeURIComponent(recordId)}`}><L10n>{"Mở form kê đơn của hồ sơ này"}</L10n></Link>.
+          </p>}</L10nValue>
       </div>
-    </details>}
+    </details>}</L10nValue>
 
-    {canPrescribe && !mode && <p role="alert" className="text-sm text-danger">Chức năng kê đơn chưa sẵn sàng. Vui lòng liên hệ quản trị viên.</p>}
+    <L10nValue>{canPrescribe && !mode && <p role="alert" className="text-sm text-danger"><L10n>{"Chức năng kê đơn chưa sẵn sàng. Vui lòng liên hệ quản trị viên."}</L10n></p>}</L10nValue>
   </div>;
 }

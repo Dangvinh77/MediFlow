@@ -120,6 +120,64 @@ abstract interface class OutpatientPrescriptionWriter {
   Future<Prescription> createPrescription(PrescriptionIntent intent);
 }
 
+class UpdatePrescription {
+  UpdatePrescription({
+    required this.expectedRevision,
+    required List<RequestedPrescriptionLine> lines,
+  }) : lines = List.unmodifiable(lines);
+  final int expectedRevision;
+  final List<RequestedPrescriptionLine> lines;
+  void validate() {
+    final errors = <String, String>{};
+    if (expectedRevision < 0) {
+      errors['expectedRevision'] = 'Phiên bản đơn thuốc không hợp lệ.';
+    }
+    if (lines.isEmpty) errors['lines'] = 'Chọn ít nhất một thuốc từ danh mục.';
+    final seen = <String>{};
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (!isPharmacyId(line.drugId) ||
+          !seen.add(line.drugId.toLowerCase()) ||
+          line.quantity < 1 ||
+          line.quantity > 2147483647 ||
+          (line.dosage?.trim().isEmpty ?? true) ||
+          (line.dosage?.length ?? 0) > 255 ||
+          (line.note?.length ?? 0) > 500) {
+        errors['lines.$i'] =
+            'Vui lòng kiểm tra thuốc, số lượng và cách dùng ở dòng này.';
+      }
+    }
+    if (errors.isNotEmpty) throw PharmacyValidationException(errors);
+  }
+}
+
+class PrescriptionEditIntent {
+  PrescriptionEditIntent(this.command, {String? key})
+    : key = key ?? PrescriptionIntent._newKey() {
+    command.validate();
+    if (!isPharmacyId(this.key)) {
+      throw ArgumentError('Idempotency-Key phải là UUID.');
+    }
+  }
+  final UpdatePrescription command;
+  final String key;
+}
+
+abstract interface class PrescriptionEditor {
+  Future<Prescription> updatePrescription(
+    String id,
+    PrescriptionEditIntent intent,
+  );
+}
+
+bool canEditPrescription(Prescription rx, PharmacyMode mode) =>
+    mode == PharmacyMode.outpatient &&
+    rx.revision != null &&
+    rx.revision! >= 0 &&
+    rx.status == PrescriptionStatus.active &&
+    rx.dispenseStatus == DispenseStatus.pending &&
+    !rx.paymentConfirmed;
+
 /// Bind only when the shared Gateway client supports a truly bodyless PUT.
 abstract interface class PrescriptionDispenser {
   Future<DispenseResult> dispensePrescription(String prescriptionId);

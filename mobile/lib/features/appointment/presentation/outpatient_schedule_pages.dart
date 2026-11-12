@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -43,8 +45,8 @@ class _ScheduleFilter extends StatelessWidget {
     children: [
       SegmentedButton<bool>(
         segments: const [
-          ButtonSegment(value: false, label: Text('Theo ngày')),
-          ButtonSegment(value: true, label: Text('Theo tuần')),
+          ButtonSegment(value: false, label: LText('Theo ngày')),
+          ButtonSegment(value: true, label: LText('Theo tuần')),
         ],
         selected: {week},
         onSelectionChanged: (value) => onWeekChanged(value.single),
@@ -60,7 +62,7 @@ class _ScheduleFilter extends StatelessWidget {
           if (picked != null) onDateChanged(picked);
         },
         icon: const Icon(Icons.event),
-        label: Text(displayDate(isoDate(date))),
+        label: LText(displayDate(isoDate(date))),
       ),
     ],
   );
@@ -99,15 +101,15 @@ class _DoctorCalendarPageState extends ConsumerState<DoctorCalendarPage> {
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'DOCTOR') {
-      return const Center(child: Text('Chức năng dành cho bác sĩ.'));
+      return const Center(child: LText('Chức năng dành cho bác sĩ.'));
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
-      return const Center(child: Text(_notOpen));
+      return const Center(child: LText(_notOpen));
     }
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
+        LText(
           'Lịch khám của tôi',
           style: Theme.of(context).textTheme.titleLarge,
         ),
@@ -137,7 +139,7 @@ class _DoctorCalendarPageState extends ConsumerState<DoctorCalendarPage> {
               return const Center(child: MediFlowLoader());
             }
             if (calendar.sessions.isEmpty) {
-              return const Text('Không có buổi khám trong khoảng này.');
+              return const LText('Không có buổi khám trong khoảng này.');
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -169,11 +171,11 @@ class _SessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             '${displayDate(session.date)} · ${session.startTime}–${session.endTime}',
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          Text(sessionStatusLabels[session.status] ?? session.status),
+          LText(sessionStatusLabels[session.status] ?? session.status),
           ReferenceLabel(
             kind: ReferenceKind.department,
             id: session.departmentId,
@@ -184,7 +186,7 @@ class _SessionCard extends StatelessWidget {
             id: session.roomId,
             label: 'Phòng khám',
           ),
-          Text(
+          LText(
             '${session.confirmedCount} đã xác nhận · ${session.availableCount} còn chỗ',
           ),
           const SizedBox(height: 8),
@@ -199,7 +201,7 @@ class _SessionCard extends StatelessWidget {
                 ),
               ),
             ),
-            child: const Text('Xem phiếu của buổi'),
+            child: const LText('Xem phiếu của buổi'),
           ),
         ],
       ),
@@ -239,20 +241,20 @@ class _DoctorWorkShiftsPageState extends ConsumerState<DoctorWorkShiftsPage> {
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'DOCTOR') {
-      return const Center(child: Text('Chức năng dành cho bác sĩ.'));
+      return const Center(child: LText('Chức năng dành cho bác sĩ.'));
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
-      return const Center(child: Text('Lịch làm việc chưa được bật.'));
+      return const Center(child: LText('Lịch làm việc chưa được bật.'));
     }
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
+        LText(
           'Lịch làm việc của tôi',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 4),
-        const Text(
+        const LText(
           'Phân công giờ và phòng của bạn. Ca làm việc và buổi khám được quản lý riêng.',
         ),
         const SizedBox(height: 12),
@@ -281,7 +283,7 @@ class _DoctorWorkShiftsPageState extends ConsumerState<DoctorWorkShiftsPage> {
               return const Center(child: MediFlowLoader());
             }
             if (shifts.isEmpty) {
-              return const Text('Không có ca làm việc trong khoảng này.');
+              return const LText('Không có ca làm việc trong khoảng này.');
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -293,7 +295,7 @@ class _DoctorWorkShiftsPageState extends ConsumerState<DoctorWorkShiftsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LText(
                             '${displayDate(shift.date)} · ${shift.startTime}–${shift.endTime}',
                             style: Theme.of(context).textTheme.titleSmall,
                           ),
@@ -308,7 +310,7 @@ class _DoctorWorkShiftsPageState extends ConsumerState<DoctorWorkShiftsPage> {
                             label: 'Phòng khám',
                           ),
                           if (shift.status == 'CANCELLED')
-                            const Text('Ca đã hủy'),
+                            const LText('Ca đã hủy'),
                         ],
                       ),
                     ),
@@ -435,7 +437,7 @@ class _SessionRegistrationsPageState
     final repository = ref.watch(outpatientScheduleRepositoryProvider);
     final clinicIntake = ref.watch(clinicIntakeEnabledProvider);
     return Scaffold(
-      appBar: AppBar(title: Text('Phiếu buổi ${widget.title}')),
+      appBar: AppBar(title: LText('Phiếu buổi ${widget.title}')),
       body: PagedList<RegistrationRow>(
         key: ValueKey((widget.sessionId, _revision)),
         load: (page) =>
@@ -451,10 +453,10 @@ class _SessionRegistrationsPageState
                   id: row.patientId,
                   label: 'Bệnh nhân',
                 ),
-                Text(
+                LText(
                   '${row.visitType == 'FOLLOW_UP' ? 'Tái khám' : 'Khám mới'} · ${registrationStatusLabels[row.status] ?? row.status}',
                 ),
-                Text(
+                LText(
                   '${row.checkedInAt != null ? 'Đã đến' : 'Chưa đến'} · ${_rowNumbers(row, clinicIntake)}',
                 ),
                 if (_errorId == row.id && _error != null) RequestError(_error!),
@@ -464,7 +466,7 @@ class _SessionRegistrationsPageState
                   const SizedBox(height: 8),
                   FilledButton(
                     onPressed: _busyId == null ? () => _markArrival(row) : null,
-                    child: Text(
+                    child: LText(
                       _pending.containsKey(row.id)
                           ? 'Gửi lại ghi nhận đã đến'
                           : 'Ghi nhận đã đến',
@@ -480,7 +482,7 @@ class _SessionRegistrationsPageState
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: _busyId == null ? () => _reschedule(row) : null,
-                    child: const Text('Đổi lịch'),
+                    child: const LText('Đổi lịch'),
                   ),
                 ],
                 if (widget.onOpenRegistration != null) ...[
@@ -488,7 +490,7 @@ class _SessionRegistrationsPageState
                   OutlinedButton(
                     onPressed: () =>
                         widget.onOpenRegistration!(context, row.id),
-                    child: const Text('Xem phiếu'),
+                    child: const LText('Xem phiếu'),
                   ),
                 ],
               ],
@@ -516,11 +518,13 @@ class PatientRegistrationsPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'PATIENT') {
       return const Center(
-        child: Text('Chức năng dành cho bệnh nhân đăng nhập.'),
+        child: LText('Chức năng dành cho bệnh nhân đăng nhập.'),
       );
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
-      return const Center(child: Text('Tra cứu phiếu lịch khám chưa được mở.'));
+      return const Center(
+        child: LText('Tra cứu phiếu lịch khám chưa được mở.'),
+      );
     }
     final repository = ref.watch(outpatientScheduleRepositoryProvider);
     return PagedList<OutpatientRegistration>(
@@ -548,11 +552,11 @@ class _RegistrationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             '${item.visitType == 'FOLLOW_UP' ? 'Tái khám' : 'Khám mới'} · ${displayDate(item.sessionDate)} · ${item.startTime}–${item.endTime}',
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          Text(registrationStatusLabels[item.status] ?? item.status),
+          LText(registrationStatusLabels[item.status] ?? item.status),
           const SizedBox(height: 4),
           ReferenceLabel(
             kind: ReferenceKind.department,
@@ -569,26 +573,26 @@ class _RegistrationCard extends StatelessWidget {
             id: item.roomId,
             label: 'Phòng khám',
           ),
-          Text(
+          LText(
             'Hình thức: ${item.receptionMode == 'AT_COUNTER' ? 'Tiếp nhận tại quầy' : 'Đăng ký trước'}',
           ),
-          Text(
+          LText(
             '${queueNumberLabel(clinicIntake)}: ${item.queueNumber ?? 'Chưa cấp số trước khi xác nhận'}',
           ),
           if (clinicIntake && item.roomQueueNumber != null)
-            Text('$roomQueueNumberLabel: ${item.roomQueueNumber}'),
+            LText('$roomQueueNumberLabel: ${item.roomQueueNumber}'),
           if (item.status == 'AWAITING_PAYMENT') ...[
-            Text(
+            LText(
               'Hạn thanh toán giữ chỗ: ${_localTime(item.reservationExpiresAt)}',
             ),
             const SizedBox(height: 8),
-            const Text(
+            const LText(
               'Phiếu đang chờ thanh toán và xác nhận. Lịch hẹn chưa được xác nhận.',
             ),
           ],
           if (item.status == 'CONFIRMED') ...[
             const SizedBox(height: 8),
-            Text(
+            LText(
               item.checkedInAt != null
                   ? 'Đã ghi nhận bạn có mặt. Vui lòng chờ gọi tên theo hướng dẫn tại phòng khám.'
                   : 'Lịch khám đã xác nhận. Vui lòng đến quầy tiếp nhận vào ngày hẹn để ghi nhận có mặt.',
@@ -612,13 +616,13 @@ class _RegistrationFollowUp extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('Đề xuất tái khám', style: Theme.of(context).textTheme.titleSmall),
-      Text(
+      LText('Đề xuất tái khám', style: Theme.of(context).textTheme.titleSmall),
+      LText(
         'Khoảng ngày khuyến nghị: ${displayDate(followUp.recommendedFrom)} – ${displayDate(followUp.recommendedThrough)}',
       ),
-      Text('Lý do: ${followUp.reason}'),
+      LText('Lý do: ${followUp.reason}'),
       if (followUp.preparationInstructions case final instructions?)
-        Text('Hướng dẫn chuẩn bị: $instructions'),
+        LText('Hướng dẫn chuẩn bị: $instructions'),
     ],
   );
 }

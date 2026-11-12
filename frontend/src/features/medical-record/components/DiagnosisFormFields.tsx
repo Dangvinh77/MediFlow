@@ -1,3 +1,5 @@
+
+import { L10nValue } from "@/components/i18n/LocaleProvider";
 import type {
   DiagnosisFormValues,
   MedicalRecordFieldErrors,
@@ -88,11 +90,11 @@ function FormField({
   return (
     <div className={`flex flex-col gap-1${wide ? " md:col-span-2" : ""}`}>
       <label htmlFor={name} className="text-sm font-medium">
-        {label}{required ? <span aria-hidden="true"> *</span> : null}
+        <L10nValue>{label}</L10nValue><L10nValue>{required ? <span aria-hidden="true"> *</span> : null}</L10nValue>
       </label>
-      {children}
-      {error ? <p id={`${name}-error`} className="text-xs text-danger">{error}</p> : null}
-      {!error && hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      <L10nValue>{children}</L10nValue>
+      <L10nValue>{error ? <p id={`${name}-error`} className="text-xs text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{!error && hint ? <p className="text-xs text-muted-foreground"><L10nValue>{hint}</L10nValue></p> : null}</L10nValue>
     </div>
   );
 }

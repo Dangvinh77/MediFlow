@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -49,6 +51,7 @@ function outcomeUnknown(cause: unknown) {
 }
 
 export function ClinicQueueWorkspace({ enabled }: { enabled: boolean }) {
+  const { localize } = useLocale();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [date, setDate] = useState(vietnamToday);
   const [entries, setEntries] = useState<ClinicQueueEntryDTO[] | null>(null);
@@ -145,13 +148,13 @@ export function ClinicQueueWorkspace({ enabled }: { enabled: boolean }) {
     });
   }
 
-  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Quầy điều dưỡng khoa chưa được mở.</p>;
+  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground"><L10n>{"Quầy điều dưỡng khoa chưa được mở."}</L10n></p>;
 
   const locked = busy || Boolean(pending);
   const rooms = [...new Set((entries ?? []).map(entry => entry.roomId))];
 
   function actionButton(entry: ClinicQueueEntryDTO, type: ClinicTicketAdjustmentType) {
-    return <Button key={type} type="button" variant="secondary" disabled={locked} onClick={() => { setReason(""); setAdjusting({ registrationId: entry.registrationId, type }); }}>{adjustmentLabels[type]}</Button>;
+    return <Button key={type} type="button" variant="secondary" disabled={locked} onClick={() => { setReason(""); setAdjusting({ registrationId: entry.registrationId, type }); }}><L10nValue>{adjustmentLabels[type]}</L10nValue></Button>;
   }
 
   function row(entry: ClinicQueueEntryDTO) {
@@ -161,60 +164,59 @@ export function ClinicQueueWorkspace({ enabled }: { enabled: boolean }) {
     return <li key={entry.registrationId} className="space-y-2 py-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium"><ReferenceText kind="patient" value={entry.patientId} fallback="Bệnh nhân" /></span>
-        <span className="tabular-nums">{queueNumberText(entry.queueNumber, true)}{room ? ` · ${room}` : ""}</span>
-        {entry.priority ? <span className="font-semibold">Được ưu tiên</span> : null}
-        {entry.checkedInAt ? <span>{entry.vitalSignsRecorded ? "Đã có sinh hiệu" : "Chưa có sinh hiệu"}</span> : null}
-        {entry.calledAt ? <span>Đã gọi lúc {formatInstant(entry.calledAt)}</span> : null}
+        <span className="tabular-nums"><L10nValue>{queueNumberText(entry.queueNumber, true)}</L10nValue><L10nValue>{room ? ` · ${room}` : ""}</L10nValue></span>
+        <L10nValue>{entry.priority ? <span className="font-semibold"><L10n>{"Được ưu tiên"}</L10n></span> : null}</L10nValue>
+        <L10nValue>{entry.checkedInAt ? <span><L10nValue>{entry.vitalSignsRecorded ? "Đã có sinh hiệu" : "Chưa có sinh hiệu"}</L10nValue></span> : null}</L10nValue>
+        <L10nValue>{entry.calledAt ? <span><L10n>{"Đã gọi lúc "}</L10n><L10nValue>{formatInstant(entry.calledAt)}</L10nValue></span> : null}</L10nValue>
       </div>
-      {entry.continuationRequired ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-2">Buổi khám đã hết giờ nhưng lượt khám còn mở, cần xử lý tiếp.</p> : null}
+      <L10nValue>{entry.continuationRequired ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-2"><L10n>{"Buổi khám đã hết giờ nhưng lượt khám còn mở, cần xử lý tiếp."}</L10n></p> : null}</L10nValue>
       <div className="flex flex-wrap gap-2">
-        {entry.stage === "WAITING_ROOM_TICKET" && role === "NURSE" ? <Button type="button" variant="primary" disabled={locked} onClick={() => issue(entry)}>Cấp số phòng</Button> : null}
-        {inLine ? <Button type="button" variant="primary" disabled={locked} onClick={() => call(entry)}>{entry.stage === "CALLED" ? "Gọi lại" : "Gọi vào khám"}</Button> : null}
-        {inLine ? actionButton(entry, "LATE") : null}
-        {inLine ? actionButton(entry, "NO_SHOW") : null}
-        {entry.stage === "ABSENT" ? actionButton(entry, "RETURNED") : null}
-        {(inLine || entry.stage === "ABSENT") && !entry.priority ? actionButton(entry, "PRIORITY") : null}
-        {entry.checkedInAt && role === "NURSE" ? <Button type="button" variant="secondary" disabled={locked} onClick={() => setRecording(current => current === entry.registrationId ? null : entry.registrationId)}>Ghi sinh hiệu</Button> : null}
-        {entry.checkedInAt ? <Button type="button" variant="secondary" onClick={() => setViewing(current => current === entry.registrationId ? null : entry.registrationId)}>Xem sinh hiệu</Button> : null}
+        <L10nValue>{entry.stage === "WAITING_ROOM_TICKET" && role === "NURSE" ? <Button type="button" variant="primary" disabled={locked} onClick={() => issue(entry)}><L10n>{"Cấp số phòng"}</L10n></Button> : null}</L10nValue>
+        <L10nValue>{inLine ? <Button type="button" variant="primary" disabled={locked} onClick={() => call(entry)}><L10nValue>{entry.stage === "CALLED" ? "Gọi lại" : "Gọi vào khám"}</L10nValue></Button> : null}</L10nValue>
+        <L10nValue>{inLine ? actionButton(entry, "LATE") : null}</L10nValue>
+        <L10nValue>{inLine ? actionButton(entry, "NO_SHOW") : null}</L10nValue>
+        <L10nValue>{entry.stage === "ABSENT" ? actionButton(entry, "RETURNED") : null}</L10nValue>
+        <L10nValue>{(inLine || entry.stage === "ABSENT") && !entry.priority ? actionButton(entry, "PRIORITY") : null}</L10nValue>
+        <L10nValue>{entry.checkedInAt && role === "NURSE" ? <Button type="button" variant="secondary" disabled={locked} onClick={() => setRecording(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Ghi sinh hiệu"}</L10n></Button> : null}</L10nValue>
+        <L10nValue>{entry.checkedInAt ? <Button type="button" variant="secondary" onClick={() => setViewing(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Xem sinh hiệu"}</L10n></Button> : null}</L10nValue>
       </div>
-      {active ? <form className="space-y-2 rounded-lg border border-border p-3" onSubmit={event => { event.preventDefault(); adjust(entry, active.type); }}>
-        <p className="font-medium">{adjustmentLabels[active.type]}</p>
-        <label className="block space-y-1" htmlFor={`clinic-reason-${entry.registrationId}`}>Lý do
-          <textarea id={`clinic-reason-${entry.registrationId}`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
+      <L10nValue>{active ? <form className="space-y-2 rounded-lg border border-border p-3" onSubmit={event => { event.preventDefault(); adjust(entry, active.type); }}>
+        <p className="font-medium"><L10nValue>{adjustmentLabels[active.type]}</L10nValue></p>
+        <label className="block space-y-1" htmlFor={`clinic-reason-${entry.registrationId}`}><L10n>{"Lý do"}</L10n><textarea id={`clinic-reason-${entry.registrationId}`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
         </label>
-        <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary" loading={busy} disabled={locked || !reason.trim()}>Xác nhận</Button><Button type="button" disabled={locked} onClick={() => setAdjusting(null)}>Quay lại</Button></div>
-      </form> : null}
-      {recording === entry.registrationId ? <VitalSignForm registrationId={entry.registrationId} onSaved={() => { setRecording(null); setHistoryVersion(value => value + 1); setNotice("Đã lưu sinh hiệu."); void load(); }} /> : null}
-      {viewing === entry.registrationId ? <VitalSignHistory registrationId={entry.registrationId} refreshKey={historyVersion} /> : null}
+        <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary" loading={busy} disabled={locked || !reason.trim()}><L10n>{"Xác nhận"}</L10n></Button><Button type="button" disabled={locked} onClick={() => setAdjusting(null)}><L10n>{"Quay lại"}</L10n></Button></div>
+      </form> : null}</L10nValue>
+      <L10nValue>{recording === entry.registrationId ? <VitalSignForm registrationId={entry.registrationId} onSaved={() => { setRecording(null); setHistoryVersion(value => value + 1); setNotice("Đã lưu sinh hiệu."); void load(); }} /> : null}</L10nValue>
+      <L10nValue>{viewing === entry.registrationId ? <VitalSignHistory registrationId={entry.registrationId} refreshKey={historyVersion} /> : null}</L10nValue>
     </li>;
   }
 
   return <div className="space-y-5">
-    <form noValidate aria-label="Chọn ngày hàng đợi" className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-5" onSubmit={event => { event.preventDefault(); void load(); }}>
-      <ScheduleDateInput label="Ngày khám" required disabled={locked} value={date} onChange={event => { reads.current++; setLoading(false); setEntries(null); setDate(event.target.value); }} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
-      <Button type="submit" loading={loading} disabled={locked || !date}>Tải hàng đợi</Button>
+    <form noValidate aria-label={localize("Chọn ngày hàng đợi")} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-5" onSubmit={event => { event.preventDefault(); void load(); }}>
+      <ScheduleDateInput label={localize("Ngày khám")} required disabled={locked} value={date} onChange={event => { reads.current++; setLoading(false); setEntries(null); setDate(event.target.value); }} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+      <Button type="submit" loading={loading} disabled={locked || !date}><L10n>{"Tải hàng đợi"}</L10n></Button>
     </form>
-    {loadError ? loadError.denied
-      ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{loadError.message}</p>
-      : <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void load()} /> : null}
-    {notice ? <p role="status" className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">{notice}</p> : null}
-    {commandError ? <div role="alert" className="space-y-2 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-      <p>{commandError.message}</p>
-      {commandError.correlationId ? <p className="text-xs">Mã theo dõi: <span className="font-mono">{commandError.correlationId}</span></p> : null}
-      {pending ? <><p>Chưa xác định thao tác đã thực hiện hay chưa. Gửi lại đúng yêu cầu để tránh xử lý trùng.</p><Button type="button" loading={busy} onClick={() => void run(pending)}>Gửi lại cùng yêu cầu</Button></> : null}
-    </div> : null}
-    {entries && !entries.length && !loading ? <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Không có bệnh nhân trong hàng đợi của ngày này.</p> : null}
-    {rooms.map(roomId => {
+    <L10nValue>{loadError ? loadError.denied
+      ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10nValue>{loadError.message}</L10nValue></p>
+      : <AsyncState kind="error" message={localize(loadError.message)} correlationId={loadError.correlationId} onRetry={() => void load()} /> : null}</L10nValue>
+    <L10nValue>{notice ? <p role="status" className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{commandError ? <div role="alert" className="space-y-2 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+      <p><L10nValue>{commandError.message}</L10nValue></p>
+      <L10nValue>{commandError.correlationId ? <p className="text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{commandError.correlationId}</span></p> : null}</L10nValue>
+      <L10nValue>{pending ? <><p><L10n>{"Chưa xác định thao tác đã thực hiện hay chưa. Gửi lại đúng yêu cầu để tránh xử lý trùng."}</L10n></p><Button type="button" loading={busy} onClick={() => void run(pending)}><L10n>{"Gửi lại cùng yêu cầu"}</L10n></Button></> : null}</L10nValue>
+    </div> : null}</L10nValue>
+    <L10nValue>{entries && !entries.length && !loading ? <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground"><L10n>{"Không có bệnh nhân trong hàng đợi của ngày này."}</L10n></p> : null}</L10nValue>
+    <L10nValue>{rooms.map(roomId => {
       const roomEntries = (entries ?? []).filter(entry => entry.roomId === roomId);
       const headingId = `clinic-room-${roomId}`;
       return <section key={roomId} aria-labelledby={headingId} className="space-y-3 rounded-xl border border-border bg-surface p-5">
         <h2 id={headingId} className="text-lg font-semibold"><ReferenceText kind="room" value={roomId} fallback="Phòng khám" /></h2>
-        {groups.map(group => {
+        <L10nValue>{groups.map(group => {
           const items = roomEntries.filter(entry => group.stages.includes(entry.stage));
           if (!items.length) return null;
-          return <div key={group.title}><h3 className="font-semibold">{group.title}</h3><ul aria-label={group.title} className="divide-y divide-border">{items.map(row)}</ul></div>;
-        })}
+          return <div key={group.title}><h3 className="font-semibold"><L10nValue>{group.title}</L10nValue></h3><ul aria-label={localize(group.title)} className="divide-y divide-border"><L10nValue>{items.map(row)}</L10nValue></ul></div>;
+        })}</L10nValue>
       </section>;
-    })}
+    })}</L10nValue>
   </div>;
 }

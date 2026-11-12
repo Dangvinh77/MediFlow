@@ -236,7 +236,7 @@ public class CareDispenseTransactionService implements DispenseCarePrescriptionU
 
     private LockedStock lockStock(UUID prescriptionId, List<PrescriptionLine> lines) {
         var expected = lines.stream().map(PrescriptionLine::getDrugId).collect(Collectors.toSet());
-        var snapshot = reservations.findByPrescription(prescriptionId);
+        var snapshot = reservations.findReservedByPrescription(prescriptionId);
         if (lines.isEmpty() || expected.size() != lines.size() || snapshot.size() != lines.size()
                 || !snapshot.stream().map(StockReservation::getDrugId).collect(Collectors.toSet()).equals(expected)) {
             throw reservationInvalid();

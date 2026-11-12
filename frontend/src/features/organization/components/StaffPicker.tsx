@@ -1,4 +1,6 @@
 "use client";
+import { useLocale } from "@/components/i18n/LocaleProvider";
+
 import { useCallback } from "react";
 import { getSessionKey } from "@/lib/session";
 import { RecordPicker } from "./RecordPicker";
@@ -11,6 +13,7 @@ const jobTitleLabels: Record<JobTitle, string> = {
 export function StaffPicker({ value, onChange, departmentId, jobTitle, disabled = false, id = "doctorId", label = "Bác sĩ", required = false }: {
   value: string; onChange: (id: string) => void; departmentId?: string; jobTitle?: JobTitle; disabled?: boolean; id?: string; label?: string; required?: boolean;
 }) {
+  const { localize } = useLocale();
   const load = useCallback(async (keyword: string, page: number) => {
     const session = getSessionKey();
     const [result, departments] = await Promise.all([
@@ -28,5 +31,5 @@ export function StaffPicker({ value, onChange, departmentId, jobTitle, disabled 
       totalPages: result.totalPages,
     };
   }, [departmentId, jobTitle]);
-  return <RecordPicker key={`${departmentId ?? "all"}:${jobTitle ?? "all"}`} id={id} label={label} value={value} onChange={onChange} disabled={disabled} load={load} required={required} />;
+  return <RecordPicker key={`${departmentId ?? "all"}:${jobTitle ?? "all"}`} id={id} label={localize(label)} value={value} onChange={onChange} disabled={disabled} load={load} required={required} />;
 }

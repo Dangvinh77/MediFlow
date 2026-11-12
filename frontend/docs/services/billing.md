@@ -1,5 +1,14 @@
 # Frontend Service: Billing
 
+## Bỏ giao diện hoàn tiền — 12/11/2026
+
+Theo yêu cầu người dùng, web bỏ route `/billing/refunds`, mục điều hướng và các form
+tra cứu/ghi nhận hoàn tiền; URL cũ chuyển về `/billing` để không rơi vào route mã hóa đơn.
+Mobile bỏ tab và màn hình hoàn tiền. Các API, dữ liệu,
+trạng thái giao dịch lịch sử và số liệu báo cáo vẫn phản ánh dữ liệu nguồn đã ghi nhận.
+Các mục hoàn tiền ở checkpoint cũ bên dưới chỉ mô tả lịch sử triển khai.
+
+
 ## Cashier work queue — 2026-11-02
 
 `/billing/payment-requests` now starts with the Billing-owned Lab/Rx queue, filtered by

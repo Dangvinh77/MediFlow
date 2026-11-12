@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -18,6 +20,7 @@ import { AccountStaffLink } from "./AccountStaffLink";
 
 /** Route composition keys this component by account and signed-in session. */
 export function AccountDetail({ accountId, renderPatientLink }: { accountId: string; renderPatientLink?: (patientId: string) => ReactNode }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const mounted = useRef(true);
   const submitting = useRef(false);
@@ -65,22 +68,22 @@ export function AccountDetail({ accountId, renderPatientLink }: { accountId: str
     } finally { submitting.current = false; if (mounted.current && getSessionKey() === session) setBusy(false); }
   }
 
-  if (!account) return <div className="mt-6">{error ? <AsyncState kind="error" message={error} onRetry={reload} /> : <AsyncState kind="loading" message="Đang tải chi tiết tài khoản…" />}</div>;
+  if (!account) return <div className="mt-6"><L10nValue>{error ? <AsyncState kind="error" message={localize(error)} onRetry={reload} /> : <AsyncState kind="loading" message={localize("Đang tải chi tiết tài khoản…")} />}</L10nValue></div>;
   return <section className="mt-6 space-y-5">
     <RecordIdentity name={account.username} subtitle={accountRoleLabels[account.role]} />
-    <DetailSection title="Chi tiết tài khoản">
-      <Info label="Email đăng nhập" value={account.username} /><Info label="Vai trò" value={accountRoleLabels[account.role]} />
-      <Info label="Trạng thái" value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />
-      <div><dt className="text-sm text-muted-foreground">Hồ sơ liên kết</dt><dd className="mt-1.5 break-words text-sm leading-6">{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}>Bệnh nhân: Xem hồ sơ</Link> : "Chưa liên kết"}</dd></div>
-      <Info label="Mã tài khoản" value={account.accountId} /><Info label="Lần đăng nhập gần nhất" value={formatInstant(account.lastLoginAt)} />
-      <Info label="Ngày tạo" value={formatInstant(account.createdAt)} /><Info label="Cập nhật lần cuối" value={formatInstant(account.updatedAt)} />
+    <DetailSection title={localize("Chi tiết tài khoản")}>
+      <Info label={localize("Email đăng nhập")} value={account.username} /><Info label={localize("Vai trò")} value={accountRoleLabels[account.role]} />
+      <Info label={localize("Trạng thái")} value={account.isActive ? "Active — Đang hoạt động" : "Inactive — Đã khóa"} />
+      <div><dt className="text-sm text-muted-foreground"><L10n>{"Hồ sơ liên kết"}</L10n></dt><dd className="mt-1.5 break-words text-sm leading-6"><L10nValue>{account.staffId ? <AccountStaffLink key={account.staffId} staffId={account.staffId} /> : account.patientId ? renderPatientLink?.(account.patientId) ?? <Link className="text-primary underline" href={`/patients/${account.patientId}`}><L10n>{"Bệnh nhân: Xem hồ sơ"}</L10n></Link> : "Chưa liên kết"}</L10nValue></dd></div>
+      <Info label={localize("Mã tài khoản")} value={account.accountId} /><Info label={localize("Lần đăng nhập gần nhất")} value={formatInstant(account.lastLoginAt)} />
+      <Info label={localize("Ngày tạo")} value={formatInstant(account.createdAt)} /><Info label={localize("Cập nhật lần cuối")} value={formatInstant(account.updatedAt)} />
     </DetailSection>
-    <div className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Trạng thái truy cập</h2><p className="text-sm text-muted-foreground">Tài khoản inactive không thể đăng nhập hoặc gia hạn phiên. Phiên truy cập đã cấp sẽ bị từ chối ngay ở yêu cầu tiếp theo sau khi tài khoản bị khóa.</p><Button type="button" variant="primary" disabled={unknown || confirmation !== null} loading={busy} onClick={() => void updateStatus(!account.isActive)}>{account.isActive ? "Inactive tài khoản" : "Active tài khoản"}</Button></div>
-    {confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="status-confirm-title" aria-describedby="status-confirm-message" className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 id="status-confirm-title" className="font-semibold">Xác nhận active tài khoản</h2><p id="status-confirm-message">{confirmation}</p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}>Hủy</Button><Button type="button" loading={busy} onClick={() => void updateStatus(true, true)}>Tiếp tục active tài khoản</Button></div></div> : null}
-    {error ? <div role="alert" className="space-y-3 text-sm text-danger"><p>{error}</p>{unknown ? <Button type="button" onClick={reload}>Tải lại trạng thái</Button> : null}</div> : null}
-    {success ? <p role="status" className="text-sm text-success">{success}</p> : null}
-    {account.role !== "SYSTEM" && !busy && !unknown && !confirmation ? <AdminAccountSecurity key={`${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} onEmailChanged={reload} /> : null}
+    <div className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold"><L10n>{"Trạng thái truy cập"}</L10n></h2><p className="text-sm text-muted-foreground"><L10n>{"Tài khoản inactive không thể đăng nhập hoặc gia hạn phiên. Phiên truy cập đã cấp sẽ bị từ chối ngay ở yêu cầu tiếp theo sau khi tài khoản bị khóa."}</L10n></p><Button type="button" variant="primary" disabled={unknown || confirmation !== null} loading={busy} onClick={() => void updateStatus(!account.isActive)}><L10nValue>{account.isActive ? "Inactive tài khoản" : "Active tài khoản"}</L10nValue></Button></div>
+    <L10nValue>{confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="status-confirm-title" aria-describedby="status-confirm-message" className="space-y-4 rounded-xl border border-border bg-surface p-5"><h2 id="status-confirm-title" className="font-semibold"><L10n>{"Xác nhận active tài khoản"}</L10n></h2><p id="status-confirm-message"><L10nValue>{confirmation}</L10nValue></p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}><L10n>{"Hủy"}</L10n></Button><Button type="button" loading={busy} onClick={() => void updateStatus(true, true)}><L10n>{"Tiếp tục active tài khoản"}</L10n></Button></div></div> : null}</L10nValue>
+    <L10nValue>{error ? <div role="alert" className="space-y-3 text-sm text-danger"><p><L10nValue>{error}</L10nValue></p><L10nValue>{unknown ? <Button type="button" onClick={reload}><L10n>{"Tải lại trạng thái"}</L10n></Button> : null}</L10nValue></div> : null}</L10nValue>
+    <L10nValue>{success ? <p role="status" className="text-sm text-success"><L10nValue>{success}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{account.role !== "SYSTEM" && !busy && !unknown && !confirmation ? <AdminAccountSecurity key={`${account.accountId}:${account.username}`} accountId={account.accountId} username={account.username} onEmailChanged={reload} /> : null}</L10nValue>
   </section>;
 }
 
-function Info({ label, value }: { label: string; value: string }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value}</dd></div>; }
+function Info({ label, value }: { label: string; value: string }) { return <div><dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className="mt-1.5 break-words text-sm leading-6">{value}</dd></div>; }

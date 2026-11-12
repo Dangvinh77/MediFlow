@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { NotificationDetail } from "@/features/notification/components/NotificationDetail";
@@ -10,5 +12,5 @@ export default async function Page({ params, searchParams }: Props) {
   const backPatientId = patientId?.trim();
   // Preserve the list's search context so "Quay lại tra cứu" restores it instead of landing on a blank lookup form.
   const backHref = backPatientId && isUuid(backPatientId) ? `/notifications?patientId=${backPatientId}${page ? `&page=${encodeURIComponent(page)}` : ""}` : "/notifications";
-  return <PageShell title="Chi tiết thông báo" description="Nội dung và trạng thái gửi.">{!isUuid(id) ? <p role="alert" className="mt-6 text-danger">Mã thông báo không hợp lệ.</p> : <RoleGate allowed={["ADMIN", "PATIENT"]}><NotificationDetail notificationId={id} notice={notice === "sent" ? "sent" : undefined} backHref={backHref} /></RoleGate>}</PageShell>;
+  return <PageShell title="Chi tiết thông báo" description="Nội dung và trạng thái gửi."><L10nValue>{!isUuid(id) ? <p role="alert" className="mt-6 text-danger"><L10n>{"Mã thông báo không hợp lệ."}</L10n></p> : <RoleGate allowed={["ADMIN", "PATIENT"]}><NotificationDetail notificationId={id} notice={notice === "sent" ? "sent" : undefined} backHref={backHref} /></RoleGate>}</L10nValue></PageShell>;
 }

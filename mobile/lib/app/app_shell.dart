@@ -1,3 +1,5 @@
+import '../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,7 +62,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             systemOverlayStyle: SystemUiOverlayStyle.light,
             shape: const Border(),
             titleSpacing: wide ? 20 : 0,
-            title: Text(
+            title: LText(
               location == '/account/password'
                   ? 'Đổi mật khẩu'
                   : location == '/profile'
@@ -73,12 +75,12 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
             actions: [
               IconButton(
-                tooltip: 'Hồ sơ cá nhân',
+                tooltip: AppL10n.text(context, 'Hồ sơ cá nhân'),
                 onPressed: () => context.go('/profile'),
                 icon: const Icon(Icons.account_circle_outlined),
               ),
               IconButton(
-                tooltip: 'Đăng xuất',
+                tooltip: AppL10n.text(context, 'Đăng xuất'),
                 onPressed: () => ref.read(sessionProvider.notifier).signOut(),
                 icon: const Icon(Icons.logout),
               ),
@@ -184,13 +186,13 @@ class _BottomBar extends StatelessWidget {
             }
           },
           destinations: [
-            const NavigationDestination(
+            const LNavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Tổng quan',
             ),
             for (final module in tabs)
-              NavigationDestination(
+              LNavigationDestination(
                 icon: Icon(module.icon),
                 selectedIcon: Icon(
                   module.icon,
@@ -198,7 +200,7 @@ class _BottomBar extends StatelessWidget {
                 ),
                 label: module.bottomLabel,
               ),
-            const NavigationDestination(icon: Icon(Icons.menu), label: 'Thêm'),
+            const LNavigationDestination(icon: Icon(Icons.menu), label: 'Thêm'),
           ],
         ),
       ),
@@ -244,13 +246,13 @@ class _Navigation extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LText(
                       'MediFlow',
                       style: Theme.of(context).textTheme.titleLarge
                           ?.copyWith(color: Colors.white),
                     ),
                     if (role != null)
-                      Text(
+                      LText(
                         roleLabel(role!),
                         style: Theme.of(context).textTheme.bodySmall
                             ?.copyWith(color: Colors.white70),
@@ -319,7 +321,7 @@ class HomePage extends ConsumerWidget {
         _HomeHeader(role: role),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-          child: Text(
+          child: LText(
             'Không gian làm việc',
             style: Theme.of(context).textTheme.titleLarge,
           ),
@@ -366,12 +368,12 @@ class _HomeHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LText(
                     role == null ? 'Xin chào' : 'Xin chào, ${roleLabel(role!)}',
                     style: text.headlineMedium?.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LText(
                     _todayLabel(DateTime.now()),
                     style: text.bodyMedium?.copyWith(color: Colors.white70),
                   ),

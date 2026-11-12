@@ -1,5 +1,24 @@
 # Frontend Workboard
 
+## Điều chỉnh hồ sơ, đơn thuốc và thanh toán — 2026-11-12
+
+Theo yêu cầu người dùng và phân công toàn dự án cho Vinh ngày 12/11:
+
+- Gỡ màn hình/thao tác hoàn tiền; URL cũ `/billing/refunds` chuyển về `/billing`.
+  Lịch sử giao dịch và số liệu báo cáo đã ghi nhận vẫn hiển thị đúng bản chất.
+- Đơn thuốc ngoại trú đang hoạt động/chờ xuất có thể sửa dòng thuốc trước thanh toán.
+  Lưu kèm phiên bản và mã thao tác; Billing kiểm tra cả tiền đã thu một phần và
+  lần thu đang xử lý. Đơn legacy và response chưa có phiên bản giữ trạng thái chỉ đọc.
+- Bác sĩ phụ trách đính chính hồ sơ completed với lý do bắt buộc, lưu lịch sử và
+  hiển thị nội dung đang có hiệu lực. Bác sĩ khác tiếp tục theo quyền và quy trình duyệt.
+- Tạo nhân sự/bệnh nhân yêu cầu email hợp lệ, không trùng sau chuẩn hóa trong từng
+  loại hồ sơ, kể cả bệnh nhân chưa có tài khoản.
+- Việt/Anh dùng chung danh mục bản dịch; tiếng Việt mặc định. Hướng dẫn thêm UI:
+  [localization](../../docs/localization.md).
+
+Chi tiết hợp đồng/kiểm tra tại các hướng dẫn context; kết quả local không thay
+thế nghiệm thu toàn bộ luồng qua Gateway trên môi trường triển khai.
+
 ## Bỏ role Quản lý — 2026-11-07
 
 Trưởng khoa (DOCTOR có bổ nhiệm) thay MANAGER: mục "Báo cáo khoa" nằm trong khu Quản lý khoa,

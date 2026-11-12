@@ -67,6 +67,12 @@ public class StaffEntity {
         @Column(name = "email", length = 254)
     private String email;
 
+    @Column(name = "email_unique_key", length = 254)
+    private String emailUniqueKey;
+
+    public String getEmailUniqueKey() { return emailUniqueKey; }
+    public void setEmailUniqueKey(String emailUniqueKey) { this.emailUniqueKey = emailUniqueKey; }
+
         @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private StaffStatus status;
@@ -102,6 +108,8 @@ public class StaffEntity {
         this.licenseNumber = licenseNumber;
         this.phoneNumber = phoneNumber;
         this.email = email;
+        this.emailUniqueKey = email == null || email.isBlank()
+                ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;

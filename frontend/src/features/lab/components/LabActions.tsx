@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
@@ -31,6 +33,7 @@ export function LabActions(props: LabActionsProps) {
 }
 
 function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing = false, reviewWorkflow = false, onReviewRequired }: LabActionsProps) {
+  const { localize } = useLocale();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const command = useCommand();
   const busy = command.busy;
@@ -165,71 +168,71 @@ function LabActionsContent({ test, onUpdated, onRefreshBlockedChange, refreshing
 
   return (
     <section className="border-b border-border py-5">
-      <h2 className="text-lg font-semibold">Thao tác xét nghiệm</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Chỉ bắt đầu khi đã có xác nhận tài chính. Kiểm tra đúng bệnh nhân và chỉ số trước khi lưu kết quả.</p>
+      <h2 className="text-lg font-semibold"><L10n>{"Thao tác xét nghiệm"}</L10n></h2>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ bắt đầu khi đã có xác nhận tài chính. Kiểm tra đúng bệnh nhân và chỉ số trước khi lưu kết quả."}</L10n></p>
       <fieldset disabled={busy || command.uncertain || refreshing} className="min-w-0 space-y-4">
       <div className="mt-4 flex flex-wrap gap-2">
-        {canStart ? <Button type="button" variant="primary" loading={busy} onClick={() => void start()}>Bắt đầu xét nghiệm</Button> : null}
-        {canEnterResults && mode === null ? <Button type="button" variant="primary" disabled={busy} onClick={openResults}>Nhập kết quả</Button> : null}
-        {canCancelCurrent && mode === null ? <details className="self-center"><summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Thao tác khác</summary><div className="py-2"><Button type="button" variant="ghost" disabled={busy} onClick={() => { setMode("cancel"); setValidationError(null); }}>Hủy xét nghiệm</Button></div></details> : null}
+        <L10nValue>{canStart ? <Button type="button" variant="primary" loading={busy} onClick={() => void start()}><L10n>{"Bắt đầu xét nghiệm"}</L10n></Button> : null}</L10nValue>
+        <L10nValue>{canEnterResults && mode === null ? <Button type="button" variant="primary" disabled={busy} onClick={openResults}><L10n>{"Nhập kết quả"}</L10n></Button> : null}</L10nValue>
+        <L10nValue>{canCancelCurrent && mode === null ? <details className="self-center"><summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground"><L10n>{"Thao tác khác"}</L10n></summary><div className="py-2"><Button type="button" variant="ghost" disabled={busy} onClick={() => { setMode("cancel"); setValidationError(null); }}><L10n>{"Hủy xét nghiệm"}</L10n></Button></div></details> : null}</L10nValue>
       </div>
 
       <CommandFeedback error={command.error} uncertain={command.uncertain} />
-      {validationError ? <p role="alert" className="mt-3 text-sm text-danger">{validationError}</p> : null}
+      <L10nValue>{validationError ? <p role="alert" className="mt-3 text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
 
-      {mode === "results" && templateState === "loading" ? <div className="mt-5 space-y-2 text-sm text-muted-foreground">
-        <p role="status" aria-busy="true">Đang tải mẫu kết quả…</p>
-        <Button type="button" variant="ghost" onClick={() => setMode(null)}>Quay lại</Button>
-      </div> : null}
-      {mode === "results" && templateState === "error" ? <div role="alert" className="mt-5 space-y-2 text-sm text-danger">
-        <p>Không tải được mẫu kết quả: {templateError}</p>
-        <Button type="button" variant="ghost" onClick={retryTemplate}>Thử tải mẫu lại</Button>
-        <Button type="button" variant="ghost" onClick={() => setMode(null)}>Quay lại</Button>
-      </div> : null}
-      {mode === "results" && templateState === "structured" && template ? <form onSubmit={submitResults} className="mt-5 space-y-4 border-t border-border pt-5">
-        <PatientContextBanner label="Đối chiếu bệnh nhân trước khi nhập kết quả" patientId={test.patientId} departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu">
-          <p className="text-sm font-medium">{test.labType} · Đối chiếu đúng người và phiếu trước khi lưu</p>
+      <L10nValue>{mode === "results" && templateState === "loading" ? <div className="mt-5 space-y-2 text-sm text-muted-foreground">
+        <p role="status" aria-busy="true"><L10n>{"Đang tải mẫu kết quả…"}</L10n></p>
+        <Button type="button" variant="ghost" onClick={() => setMode(null)}><L10n>{"Quay lại"}</L10n></Button>
+      </div> : null}</L10nValue>
+      <L10nValue>{mode === "results" && templateState === "error" ? <div role="alert" className="mt-5 space-y-2 text-sm text-danger">
+        <p><L10n>{"Không tải được mẫu kết quả: "}</L10n><L10nValue>{templateError}</L10nValue></p>
+        <Button type="button" variant="ghost" onClick={retryTemplate}><L10n>{"Thử tải mẫu lại"}</L10n></Button>
+        <Button type="button" variant="ghost" onClick={() => setMode(null)}><L10n>{"Quay lại"}</L10n></Button>
+      </div> : null}</L10nValue>
+      <L10nValue>{mode === "results" && templateState === "structured" && template ? <form onSubmit={submitResults} className="mt-5 space-y-4 border-t border-border pt-5">
+        <PatientContextBanner label={localize("Đối chiếu bệnh nhân trước khi nhập kết quả")} patientId={test.patientId} departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu">
+          <p className="text-sm font-medium">{test.labType}<L10n>{" · Đối chiếu đúng người và phiếu trước khi lưu"}</L10n></p>
         </PatientContextBanner>
-        <h3 className="font-semibold">{template.name} · Kết quả chỉ số</h3>
+        <h3 className="font-semibold">{template.name}<L10n>{" · Kết quả chỉ số"}</L10n></h3>
         <LabTemplateResults fields={template.fields} drafts={templateDrafts} onDraftChange={updateTemplateDraft} />
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Ngày thực hiện" htmlFor="lab-performed-date" required><input id="lab-performed-date" type="date" value={performedDate} onChange={(event) => setPerformedDate(event.target.value)} className={controlClassName} /></Field>
-          <Field label="Kết luận" htmlFor="lab-conclusion"><textarea id="lab-conclusion" maxLength={4000} rows={3} value={conclusion} onChange={(event) => setConclusion(event.target.value)} className={controlClassName} /></Field>
+          <Field label={localize("Ngày thực hiện")} htmlFor="lab-performed-date" required><input id="lab-performed-date" type="date" value={performedDate} onChange={(event) => setPerformedDate(event.target.value)} className={controlClassName} /></Field>
+          <Field label={localize("Kết luận")} htmlFor="lab-conclusion"><textarea id="lab-conclusion" maxLength={4000} rows={3} value={conclusion} onChange={(event) => setConclusion(event.target.value)} className={controlClassName} /></Field>
         </div>
-        <div className="flex gap-2"><Button type="submit" variant="primary" loading={busy}>Lưu kết quả</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
-      </form> : null}
+        <div className="flex gap-2"><Button type="submit" variant="primary" loading={busy}><L10n>{"Lưu kết quả"}</L10n></Button><Button type="button" disabled={busy} onClick={() => setMode(null)}><L10n>{"Quay lại"}</L10n></Button></div>
+      </form> : null}</L10nValue>
 
-      {mode === "results" && templateState === "legacy" ? (
+      <L10nValue>{mode === "results" && templateState === "legacy" ? (
         <form onSubmit={submitResults} className="mt-5 space-y-4 border-t border-border pt-5">
-          <PatientContextBanner label="Đối chiếu bệnh nhân trước khi nhập kết quả" patientId={test.patientId} departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu">
-            <p className="text-sm font-medium">{test.labType} · Đối chiếu đúng người và phiếu trước khi lưu</p>
+          <PatientContextBanner label={localize("Đối chiếu bệnh nhân trước khi nhập kết quả")} patientId={test.patientId} departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu">
+            <p className="text-sm font-medium">{test.labType}<L10n>{" · Đối chiếu đúng người và phiếu trước khi lưu"}</L10n></p>
           </PatientContextBanner>
-          <div className="flex items-center justify-between"><h3 className="font-semibold">Kết quả chỉ số</h3><Button type="button" variant="ghost" onClick={() => setResults((current) => [...current, emptyResult()])}>Thêm chỉ số</Button></div>
-          {results.map((result, index) => (
+          <div className="flex items-center justify-between"><h3 className="font-semibold"><L10n>{"Kết quả chỉ số"}</L10n></h3><Button type="button" variant="ghost" onClick={() => setResults((current) => [...current, emptyResult()])}><L10n>{"Thêm chỉ số"}</L10n></Button></div>
+          <L10nValue>{results.map((result, index) => (
             <div key={index} className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-4">
-              <Field label="Chỉ số" htmlFor={`result-indicator-${index}`} required><input id={`result-indicator-${index}`} maxLength={100} value={result.indicator} onChange={(event) => updateResult(index, "indicator", event.target.value)} className={controlClassName} /></Field>
-              <Field label="Giá trị" htmlFor={`result-value-${index}`} required><input id={`result-value-${index}`} maxLength={50} value={result.value} onChange={(event) => updateResult(index, "value", event.target.value)} className={controlClassName} /></Field>
-              <Field label="Đơn vị" htmlFor={`result-unit-${index}`}><input id={`result-unit-${index}`} maxLength={20} value={result.unit ?? ""} onChange={(event) => updateResult(index, "unit", event.target.value)} className={controlClassName} /></Field>
-              <Field label="Khoảng tham chiếu" htmlFor={`result-range-${index}`}><input id={`result-range-${index}`} maxLength={50} value={result.referenceRange ?? ""} onChange={(event) => updateResult(index, "referenceRange", event.target.value)} className={controlClassName} /></Field>
-              {results.length > 1 ? <Button type="button" variant="ghost" className="md:col-span-4 md:justify-self-start" onClick={() => setResults((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Xóa chỉ số</Button> : null}
+              <Field label={localize("Chỉ số")} htmlFor={`result-indicator-${index}`} required><input id={`result-indicator-${index}`} maxLength={100} value={result.indicator} onChange={(event) => updateResult(index, "indicator", event.target.value)} className={controlClassName} /></Field>
+              <Field label={localize("Giá trị")} htmlFor={`result-value-${index}`} required><input id={`result-value-${index}`} maxLength={50} value={result.value} onChange={(event) => updateResult(index, "value", event.target.value)} className={controlClassName} /></Field>
+              <Field label={localize("Đơn vị")} htmlFor={`result-unit-${index}`}><input id={`result-unit-${index}`} maxLength={20} value={result.unit ?? ""} onChange={(event) => updateResult(index, "unit", event.target.value)} className={controlClassName} /></Field>
+              <Field label={localize("Khoảng tham chiếu")} htmlFor={`result-range-${index}`}><input id={`result-range-${index}`} maxLength={50} value={result.referenceRange ?? ""} onChange={(event) => updateResult(index, "referenceRange", event.target.value)} className={controlClassName} /></Field>
+              <L10nValue>{results.length > 1 ? <Button type="button" variant="ghost" className="md:col-span-4 md:justify-self-start" onClick={() => setResults((current) => current.filter((_, itemIndex) => itemIndex !== index))}><L10n>{"Xóa chỉ số"}</L10n></Button> : null}</L10nValue>
             </div>
-          ))}
+          ))}</L10nValue>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Ngày thực hiện" htmlFor="lab-performed-date" required><input id="lab-performed-date" type="date" value={performedDate} onChange={(event) => setPerformedDate(event.target.value)} className={controlClassName} /></Field>
-            <Field label="Kết luận" htmlFor="lab-conclusion"><textarea id="lab-conclusion" maxLength={4000} rows={3} value={conclusion} onChange={(event) => setConclusion(event.target.value)} className={controlClassName} /></Field>
+            <Field label={localize("Ngày thực hiện")} htmlFor="lab-performed-date" required><input id="lab-performed-date" type="date" value={performedDate} onChange={(event) => setPerformedDate(event.target.value)} className={controlClassName} /></Field>
+            <Field label={localize("Kết luận")} htmlFor="lab-conclusion"><textarea id="lab-conclusion" maxLength={4000} rows={3} value={conclusion} onChange={(event) => setConclusion(event.target.value)} className={controlClassName} /></Field>
           </div>
-          <div className="flex gap-2"><Button type="submit" variant="primary" loading={busy}>Lưu kết quả</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
+          <div className="flex gap-2"><Button type="submit" variant="primary" loading={busy}><L10n>{"Lưu kết quả"}</L10n></Button><Button type="button" disabled={busy} onClick={() => setMode(null)}><L10n>{"Quay lại"}</L10n></Button></div>
         </form>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {mode === "cancel" ? (
+      <L10nValue>{mode === "cancel" ? (
         <form onSubmit={submitCancel} className="mt-5 grid gap-4 border-t border-border pt-5 md:grid-cols-2">
-          <p className="text-sm text-muted-foreground md:col-span-2">Người hủy được ghi nhận theo tài khoản đang đăng nhập. Hủy xét nghiệm sẽ dừng xử lý chỉ định; thao tác này không tự hoàn tiền. Nếu đã thu tiền, thu ngân đối soát và xử lý khoản hoàn riêng.</p>
-          {test.status === "IN_PROGRESS" ? <p className="text-sm text-warning md:col-span-2">Xét nghiệm đang thực hiện. Hãy trao đổi với bộ phận xét nghiệm trước khi xác nhận hủy.</p> : null}
-          <Field label="Lý do hủy" htmlFor="lab-cancel-reason" required><textarea id="lab-cancel-reason" required maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} className={controlClassName} /></Field>
-          <div className="flex gap-2 md:col-span-2"><Button type="submit" variant="danger" loading={busy}>Xác nhận hủy</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
+          <p className="text-sm text-muted-foreground md:col-span-2"><L10n>{"Người hủy được ghi nhận theo tài khoản đang đăng nhập. Hủy xét nghiệm sẽ dừng xử lý chỉ định; thao tác này không tự hoàn tiền. Nếu đã thu tiền, thu ngân đối soát và xử lý khoản hoàn riêng."}</L10n></p>
+          <L10nValue>{test.status === "IN_PROGRESS" ? <p className="text-sm text-warning md:col-span-2"><L10n>{"Xét nghiệm đang thực hiện. Hãy trao đổi với bộ phận xét nghiệm trước khi xác nhận hủy."}</L10n></p> : null}</L10nValue>
+          <Field label={localize("Lý do hủy")} htmlFor="lab-cancel-reason" required><textarea id="lab-cancel-reason" required maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} className={controlClassName} /></Field>
+          <div className="flex gap-2 md:col-span-2"><Button type="submit" variant="danger" loading={busy}><L10n>{"Xác nhận hủy"}</L10n></Button><Button type="button" disabled={busy} onClick={() => setMode(null)}><L10n>{"Quay lại"}</L10n></Button></div>
         </form>
-      ) : null}
+      ) : null}</L10nValue>
       </fieldset>
     </section>
   );

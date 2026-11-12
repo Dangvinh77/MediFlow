@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -199,25 +201,25 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
           required: true,
           onChanged: widget.locked || widget.sourceLocked ? null : _patient,
         ),
-      if (patientId == null) const Text('Chọn bệnh nhân để tải hồ sơ khám.'),
+      if (patientId == null) const LText('Chọn bệnh nhân để tải hồ sơ khám.'),
       if (!_hasFixedSource && records.isNotEmpty)
         InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'Hồ sơ khám',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Hồ sơ khám'),
             border: OutlineInputBorder(),
           ),
           child: records.length == 1 && !hasMore
-              ? Text(records.single.name)
+              ? LText(records.single.name)
               : DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     isExpanded: true,
                     value: recordId,
-                    hint: const Text('Chọn hồ sơ của bệnh nhân'),
+                    hint: const LText('Chọn hồ sơ của bệnh nhân'),
                     items: records
                         .map(
                           (item) => DropdownMenuItem(
                             value: item.id,
-                            child: Text(
+                            child: LText(
                               item.name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -238,14 +240,14 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
           onPressed: widget.locked || widget.sourceLocked || loading
               ? null
               : () => _records(more: true),
-          child: const Text('Tải thêm hồ sơ'),
+          child: const LText('Tải thêm hồ sơ'),
         ),
       if (loading)
         const LinearProgressIndicator(
           semanticsLabel: 'Đang lấy thông tin kê đơn',
         ),
       if (patientId != null && !loading && error == null && records.isEmpty)
-        const Text('Bệnh nhân chưa có hồ sơ khám để kê đơn.'),
+        const LText('Bệnh nhân chưa có hồ sơ khám để kê đơn.'),
       if (error != null)
         PharmacyRequestError(
           error!,
@@ -264,7 +266,7 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
       if (source case final value?) ...[
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
-          child: Text(
+          child: LText(
             'Bác sĩ, khoa và lượt khám được lấy từ hồ sơ, không chọn riêng.',
           ),
         ),
@@ -278,20 +280,22 @@ class _SourceFieldsState extends ConsumerState<PrescriptionSourceFields> {
           id: value.departmentId,
           label: 'Khoa khám',
         ),
-        const Text('Đã liên kết lượt khám ngoại trú từ hồ sơ.'),
+        const LText('Đã liên kết lượt khám ngoại trú từ hồ sơ.'),
         if (value.priceCodes.length > 1)
-          const Text(
+          const LText(
             'Nếu chưa rõ nhóm giá, hãy hỏi bộ phận thu ngân trước khi chọn.',
           ),
         if (value.priceCodes.length > 1)
           DropdownButtonFormField<String>(
             initialValue: priceCode,
-            decoration: const InputDecoration(labelText: 'Nhóm giá thuốc'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Nhóm giá thuốc'),
+            ),
             items: [
               for (var index = 0; index < value.priceCodes.length; index++)
                 DropdownMenuItem(
                   value: value.priceCodes[index],
-                  child: Text(
+                  child: LText(
                     value.priceCodes[index] == 'RX-DEFAULT'
                         ? 'Giá thuốc thông thường'
                         : 'Nhóm giá thuốc ${index + 1}',

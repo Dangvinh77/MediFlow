@@ -73,10 +73,17 @@ public class UpdateStaffService implements UpdateStaffUseCase {
                     "Remove or reassign the department head before changing their professional title");
         }
 
-        String normalizedEmail = email == null ? staff.getEmail() : email.trim();
-        if (!java.util.Objects.equals(normalizedEmail, staff.getEmail())
+        String normalizedEmail = email == null ? staff.getEmail() : normalizeAndRequireEmail(email);
+        boolean emailChanged = !sameEmail(normalizedEmail, staff.getEmail());
+        if (emailChanged
                 && accounts != null && accounts.existsByStaffId(staffId)) {
             throw new InvalidStaffDataException("Staff with a linked account must change email from account management");
+        }
+        if (emailChanged
+                && normalizedEmail != null
+                && staffRepository.existsByEmailAndStaffIdNot(normalizedEmail, staffId)) {
+            throw new com.mediflow.common.exception.DuplicateResourceException(
+                    "STAFF_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ nhân viên khác");
         }
         staff.update(
                 fullName,
@@ -108,5 +115,22 @@ public class UpdateStaffService implements UpdateStaffUseCase {
                     saved.getUpdatedAt() == null ? Instant.now() : saved.getUpdatedAt());
         }
         return saved;
+    }
+
+    private static String normalizeAndRequireEmail(String email) {
+        if (email.isBlank()) throw new InvalidStaffDataException("Staff email must not be blank");
+        String normalized = email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized.length() > 254 || !normalized.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidStaffDataException("Staff email must be valid");
+        }
+        return normalized;
+    }
+
+    private static boolean sameEmail(String first, String second) {
+        return java.util.Objects.equals(normalizeEmail(first), normalizeEmail(second));
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null || email.isBlank() ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

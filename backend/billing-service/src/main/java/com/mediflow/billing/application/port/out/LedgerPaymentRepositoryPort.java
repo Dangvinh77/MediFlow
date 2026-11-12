@@ -14,6 +14,8 @@ import com.mediflow.billing.domain.model.PaymentTransaction;
 public interface LedgerPaymentRepositoryPort {
     /** Prevents legacy V1 cash entry from bypassing a reservation-backed operation. */
     default boolean isScheduledPaymentRequest(UUID requestId) { return false; }
+    /** Revision fences and cash collection serialize through the same locked request/account. */
+    default boolean hasPendingPrescriptionRevision(UUID prescriptionId) { return false; }
     void lockIdempotencyKey(String key);
     PaymentContext lockRequest(UUID requestId);
     void verifyRequestTargets(PaymentContext context);

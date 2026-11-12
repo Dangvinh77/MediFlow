@@ -13,6 +13,7 @@ import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.UpdateOutpatientPrescriptionUseCase;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
@@ -78,6 +79,9 @@ class PrescriptionControllerTest {
 
     @MockBean
     private DispensePrescriptionUseCase dispensePrescriptionUseCase;
+
+    @MockBean
+    private UpdateOutpatientPrescriptionUseCase updatePrescriptionUseCase;
 
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "DOCTOR"})
@@ -250,6 +254,26 @@ class PrescriptionControllerTest {
         verifyNoInteractions(getPrescriptionUseCase);
     }
 
+    @Test
+    void update_unpaidPrescription_returnsUpdatedRevision() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID drugId = UUID.randomUUID();
+        when(updatePrescriptionUseCase.update(any(com.mediflow.pharmacy.application.dto.command.UpdatePrescriptionCommand.class)))
+                .thenReturn(prescriptionDto(prescriptionId, 1));
+        mockMvc.perform(put(BASE_PATH + "/" + prescriptionId)
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR"))
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "expectedRevision", 0,
+                                "lines", List.of(java.util.Map.of(
+                                        "drugId", drugId,
+                                        "quantity", 2,
+                                        "dosage", "Ngày 2 lần"))))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.revision").value(1));
+    }
+
     /** ADMIN và PHARMACIST được xuất thủ công với actor/correlation lấy từ request đã xác thực. */
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "PHARMACIST"})
@@ -326,6 +350,10 @@ class PrescriptionControllerTest {
     }
 
     private PrescriptionDTO prescriptionDto(UUID prescriptionId) {
+        return prescriptionDto(prescriptionId, 0);
+    }
+
+    private PrescriptionDTO prescriptionDto(UUID prescriptionId, int revision) {
         UUID drugId = UUID.randomUUID();
         return new PrescriptionDTO(
                 prescriptionId,
@@ -351,6 +379,7 @@ class PrescriptionControllerTest {
                 null,
                 null,
                 Instant.now(),
-                null);
+                null,
+                revision);
     }
 }

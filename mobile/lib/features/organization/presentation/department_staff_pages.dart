@@ -1,3 +1,4 @@
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -99,7 +100,7 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
+          LText(
             department.name,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
@@ -123,7 +124,7 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
             OutlinedButton.icon(
               onPressed: () => _edit(department),
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Chỉnh sửa khoa phòng'),
+              label: const LText('Chỉnh sửa khoa phòng'),
             ),
           if (widget.access.role == 'ADMIN' && department.type == 'CLINICAL')
             Consumer(
@@ -147,7 +148,7 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Chỉnh sửa khoa phòng')),
+          appBar: AppBar(title: const LText('Chỉnh sửa khoa phòng')),
           body: DepartmentEditorPage(
             departmentId: department.id,
             onSaved: () => Navigator.of(context).pop(),
@@ -172,7 +173,7 @@ class DepartmentEditorPage extends StatelessWidget {
     builder: (repository, access) {
       if (access.role != 'ADMIN') {
         return const Center(
-          child: Text('Chỉ quản trị viên được sửa khoa phòng.'),
+          child: LText('Chỉ quản trị viên được sửa khoa phòng.'),
         );
       }
       return KeyedSubtree(
@@ -277,7 +278,7 @@ class _DepartmentFormState extends State<_DepartmentForm> {
       );
     }
     if (_editing && _loaded == null) {
-      return const Center(child: Text('Không thể tải khoa phòng.'));
+      return const Center(child: LText('Không thể tải khoa phòng.'));
     }
     return Form(
       key: _form,
@@ -288,7 +289,9 @@ class _DepartmentFormState extends State<_DepartmentForm> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Tên khoa phòng *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Tên khoa phòng *'),
+              ),
               maxLength: 100,
               validator: (value) =>
                   value == null ||
@@ -301,7 +304,9 @@ class _DepartmentFormState extends State<_DepartmentForm> {
             if (!_editing)
               TextFormField(
                 controller: _abbreviation,
-                decoration: const InputDecoration(labelText: 'Mã viết tắt *'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mã viết tắt *'),
+                ),
                 maxLength: 20,
                 validator: (value) =>
                     value == null ||
@@ -312,21 +317,26 @@ class _DepartmentFormState extends State<_DepartmentForm> {
               )
             else
               InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Mã viết tắt (không đổi qua API hiện tại)',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(
+                    context,
+                    'Mã viết tắt (không đổi qua API hiện tại)',
+                  ),
                 ),
-                child: Text(_loaded!.abbreviation),
+                child: LText(_loaded!.abbreviation),
               ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Loại khoa phòng *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Loại khoa phòng *'),
+              ),
               items: [
                 for (final type in departmentTypes)
                   DropdownMenuItem(
                     value: type,
-                    child: Text(
+                    child: LText(
                       type,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -339,7 +349,9 @@ class _DepartmentFormState extends State<_DepartmentForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _location,
-              decoration: const InputDecoration(labelText: 'Địa điểm'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Địa điểm'),
+              ),
               maxLength: 255,
             ),
             const SizedBox(height: 12),
@@ -354,7 +366,7 @@ class _DepartmentFormState extends State<_DepartmentForm> {
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Đang hoạt động'),
+                title: const LText('Đang hoạt động'),
                 value: _active,
                 onChanged: (value) => setState(() => _active = value),
               ),
@@ -364,7 +376,7 @@ class _DepartmentFormState extends State<_DepartmentForm> {
               RequestError(_saveError!),
             ],
             if (_uncertainCreate)
-              const Text(
+              const LText(
                 'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
               ),
             const SizedBox(height: 12),
@@ -376,12 +388,12 @@ class _DepartmentFormState extends State<_DepartmentForm> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save_outlined),
-              label: Text(_editing ? 'Lưu khoa phòng' : 'Tạo khoa phòng'),
+              label: LText(_editing ? 'Lưu khoa phòng' : 'Tạo khoa phòng'),
             ),
             if (_uncertainCreate)
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Quay lại danh sách'),
+                child: const LText('Quay lại danh sách'),
               ),
           ],
         ),
@@ -507,7 +519,7 @@ class _StaffDetailState extends State<_StaffDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(staff.name, style: Theme.of(context).textTheme.headlineSmall),
+          LText(staff.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
           ReferenceLabel(
             kind: ReferenceKind.department,
@@ -545,7 +557,7 @@ class _StaffDetailState extends State<_StaffDetail> {
             OutlinedButton.icon(
               onPressed: () => _edit(staff),
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Chỉnh sửa hoặc chuyển khoa'),
+              label: const LText('Chỉnh sửa hoặc chuyển khoa'),
             ),
         ],
       ),
@@ -556,7 +568,7 @@ class _StaffDetailState extends State<_StaffDetail> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Chỉnh sửa nhân viên')),
+          appBar: AppBar(title: const LText('Chỉnh sửa nhân viên')),
           body: StaffEditorPage(
             staffId: staff.id,
             onSaved: () => Navigator.of(context).pop(),
@@ -576,7 +588,9 @@ class StaffEditorPage extends StatelessWidget {
   Widget build(BuildContext context) => OrganizationBoundary(
     builder: (repository, access) {
       if (access.role != 'ADMIN') {
-        return const Center(child: Text('Chỉ quản trị viên được sửa nhân sự.'));
+        return const Center(
+          child: LText('Chỉ quản trị viên được sửa nhân sự.'),
+        );
       }
       return KeyedSubtree(
         key: ValueKey((staffId, access.sessionIdentity, repository)),
@@ -707,7 +721,7 @@ class _StaffFormState extends State<_StaffForm> {
       );
     }
     if (_editing && _loaded == null) {
-      return const Center(child: Text('Không thể tải hồ sơ nhân viên.'));
+      return const Center(child: LText('Không thể tải hồ sơ nhân viên.'));
     }
     if (!_editing && _loadingDepartments) {
       return const Center(child: MediFlowLoader());
@@ -724,7 +738,7 @@ class _StaffFormState extends State<_StaffForm> {
     }
     if (!_editing && (_departments?.isEmpty ?? true)) {
       return const Center(
-        child: Text('Cần có ít nhất một khoa phòng trước khi tạo nhân viên.'),
+        child: LText('Cần có ít nhất một khoa phòng trước khi tạo nhân viên.'),
       );
     }
     return Form(
@@ -736,7 +750,9 @@ class _StaffFormState extends State<_StaffForm> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Họ tên *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Họ tên *'),
+              ),
               maxLength: 100,
               validator: (value) =>
                   value == null ||
@@ -751,13 +767,16 @@ class _StaffFormState extends State<_StaffForm> {
                 isExpanded: true,
                 initialValue: _departmentId,
                 decoration: InputDecoration(
-                  labelText: _editing ? 'Khoa phòng' : 'Khoa phòng *',
+                  labelText: AppL10n.text(
+                    context,
+                    _editing ? 'Khoa phòng' : 'Khoa phòng *',
+                  ),
                 ),
                 items: [
                   for (final department in _departments ?? const <Department>[])
                     DropdownMenuItem(
                       value: department.id,
-                      child: Text(
+                      child: LText(
                         '${department.name}${department.active ? '' : ' (ngừng hoạt động)'}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -772,13 +791,13 @@ class _StaffFormState extends State<_StaffForm> {
               )
             else
               InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Khoa phòng hiện tại',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Khoa phòng hiện tại'),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_loaded!.departmentId),
+                    LText(_loaded!.departmentId),
                     if (_departmentError != null)
                       RequestError(
                         _departmentError!,
@@ -795,12 +814,14 @@ class _StaffFormState extends State<_StaffForm> {
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _jobTitle,
-              decoration: const InputDecoration(labelText: 'Chức danh *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Chức danh *'),
+              ),
               items: [
                 for (final title in staffJobTitles)
                   DropdownMenuItem(
                     value: title,
-                    child: Text(
+                    child: LText(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -813,19 +834,25 @@ class _StaffFormState extends State<_StaffForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _specialization,
-              decoration: const InputDecoration(labelText: 'Chuyên môn'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Chuyên môn'),
+              ),
               maxLength: 100,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _license,
-              decoration: const InputDecoration(labelText: 'Số chứng chỉ'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Số chứng chỉ'),
+              ),
               maxLength: 50,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _phone,
-              decoration: const InputDecoration(labelText: 'Điện thoại'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Điện thoại'),
+              ),
               keyboardType: TextInputType.phone,
               validator: (value) =>
                   value != null &&
@@ -837,12 +864,24 @@ class _StaffFormState extends State<_StaffForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(
+                  context,
+                  !_editing || (_loaded?.email?.trim().isNotEmpty ?? false)
+                      ? 'Email *'
+                      : 'Email',
+                ),
+              ),
               keyboardType: TextInputType.emailAddress,
+              maxLength: 254,
               validator: (value) =>
+                  (!_editing || (_loaded?.email?.trim().isNotEmpty ?? false)) &&
+                      (value == null || value.trim().isEmpty)
+                  ? 'Email là bắt buộc.'
+                  :
                   value != null &&
                       value.trim().isNotEmpty &&
-                      (value.trim().length > 100 ||
+                      (value.trim().length > 254 ||
                           !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
                               .hasMatch(value.trim()))
                   ? 'Email không hợp lệ.'
@@ -857,11 +896,11 @@ class _StaffFormState extends State<_StaffForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      const LText(
                         'Thông tin nhân viên đã được lưu; chuyển khoa chưa hoàn tất.',
                       ),
-                      Text(_saveError.toString()),
-                      const Text(
+                      LText(_saveError.toString()),
+                      const LText(
                         'Hãy xử lý điều kiện chuyển khoa rồi chỉ thử lại thao tác chuyển, không gửi lại phần cập nhật hồ sơ.',
                       ),
                     ],
@@ -871,7 +910,7 @@ class _StaffFormState extends State<_StaffForm> {
             else if (_saveError != null)
               RequestError(_saveError!),
             if (_uncertainCreate)
-              const Text(
+              const LText(
                 'Kết quả tạo chưa xác định. Quay lại danh sách và làm mới trước khi thử lại để tránh tạo trùng.',
               ),
             const SizedBox(height: 12),
@@ -892,7 +931,7 @@ class _StaffFormState extends State<_StaffForm> {
                           ? Icons.save_outlined
                           : Icons.swap_horiz,
                     ),
-              label: Text(
+              label: LText(
                 _savedProfile != null
                     ? 'Chỉ thử chuyển khoa'
                     : _editing
@@ -903,7 +942,7 @@ class _StaffFormState extends State<_StaffForm> {
             if (_uncertainCreate)
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Quay lại danh sách'),
+                child: const LText('Quay lại danh sách'),
               ),
           ],
         ),

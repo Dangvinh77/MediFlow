@@ -2,6 +2,7 @@ package com.mediflow.billing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mediflow.billing.application.dto.command.PrescriptionChargeCommand;
 import com.mediflow.billing.application.dto.request.CompleteLedgerPaymentRequest;
 import com.mediflow.billing.application.port.in.IssuePrescriptionChargeUseCase;
 import com.mediflow.billing.application.port.in.ProcessLedgerPaymentUseCase;
@@ -9,6 +10,9 @@ import com.mediflow.billing.domain.model.PaymentMethod;
 import com.mediflow.billing.infrastructure.messaging.PrescriptionChargeDecoder;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -24,6 +28,11 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -31,11 +40,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 
 @Testcontainers
-@SpringBootTest(properties = {"eureka.client.enabled=false", "mediflow.billing.ledger.enabled=true",
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"eureka.client.enabled=false", "mediflow.billing.ledger.enabled=true",
         "mediflow.jwt.secret=billing-integration-test-only-key-at-least-32-bytes",
         "mediflow.billing.prescription-charge-consumer.enabled=true", "mediflow.billing.outbox.enabled=false",
         "mediflow.billing.prescription-charges.allowed-price-codes=RX-DEFAULT",
@@ -43,6 +54,7 @@ import static org.awaitility.Awaitility.await;
         "mediflow.billing.outbox.metrics-enabled=false", "mediflow.billing.outbox.maintenance-enabled=false",
         "spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.publisher-confirm-type=simple"})
 class PrescriptionChargeRabbitIntegrationTest {
+    private static final String SECRET = "billing-integration-test-only-key-at-least-32-bytes";
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
     @Container static final RabbitMQContainer MQ = new RabbitMQContainer("rabbitmq:3.13-alpine");
     @DynamicPropertySource static void properties(DynamicPropertyRegistry r) {
@@ -59,6 +71,7 @@ class PrescriptionChargeRabbitIntegrationTest {
     @Autowired ProcessLedgerPaymentUseCase payments;
     @Autowired PrescriptionChargeDecoder decoder;
     @Autowired ObjectMapper mapper;
+    @Autowired TestRestTemplate http;
     @Autowired com.mediflow.billing.application.port.in.ApplyPrescriptionTerminalUseCase terminals;
     @Autowired com.mediflow.billing.application.port.in.RefundLedgerPaymentUseCase refunds;
     @Autowired com.mediflow.billing.application.port.in.GetPrescriptionAdjustmentUseCase adjustments;
@@ -196,6 +209,142 @@ class PrescriptionChargeRabbitIntegrationTest {
         }
         assertThat(count("BILLING_ACCOUNT")).isOne(); assertThat(count("CHARGE")).isEqualTo(2);
         assertThat(count("PAYMENT_REQUEST_CHARGE")).isEqualTo(2); assertThat(count("BILLING_EVENT_OUTBOX")).isEqualTo(2);
+    }
+
+    @Test void prepare_pendingFenceBlocksLedgerPayment_commitUpdatesExactChargeAndReplays() throws Exception {
+        var source = issueOutpatient();
+        UUID operationId = UUID.randomUUID();
+        var body = revisionBody(source, 0);
+
+        var prepared = revise(source.prescriptionId(), operationId, "prepare", body);
+        assertThat(prepared.getStatusCode()).as(prepared.getBody()).isEqualTo(HttpStatus.OK);
+        assertThatThrownBy(() -> payments.complete(sourceRequest(source), payment("while-revision-pending", "100"), UUID.randomUUID(), "blocked"))
+                .hasMessageContaining("BILLING_PRESCRIPTION_REVISION_PENDING");
+
+        var committed = revise(source.prescriptionId(), operationId, "commit", body);
+        var replay = revise(source.prescriptionId(), operationId, "commit", body);
+        assertThat(committed.getStatusCode()).as(committed.getBody()).isEqualTo(HttpStatus.OK);
+        assertThat(replay.getStatusCode()).as(replay.getBody()).isEqualTo(HttpStatus.OK);
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription_charge_source WHERE prescription_id=?", Long.class,
+                source.prescriptionId())).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("SELECT gross_amount FROM CHARGE WHERE source_id=?", BigDecimal.class,
+                source.prescriptionId())).isEqualByComparingTo("3000");
+        assertThat(jdbc.queryForObject("SELECT requested_amount FROM PAYMENT_REQUEST WHERE payment_request_id=?", BigDecimal.class,
+                sourceRequest(source))).isEqualByComparingTo("3000");
+        assertThat(jdbc.queryForObject("SELECT requested_amount FROM PAYMENT_REQUEST_CHARGE WHERE payment_request_id=?", BigDecimal.class,
+                sourceRequest(source))).isEqualByComparingTo("3000");
+        assertThat(jdbc.queryForObject("SELECT quantity FROM prescription_charge_item WHERE prescription_id=?", Integer.class,
+                source.prescriptionId())).isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT drug_name FROM prescription_charge_item WHERE prescription_id=?", String.class,
+                source.prescriptionId())).isEqualTo(source.items().getFirst().drugName());
+        assertThat(count("prescription_charge_revision_operation")).isOne();
+
+        UUID secondOperation = UUID.randomUUID();
+        var secondBody = revisionBody(source, 1);
+        assertThat(revise(source.prescriptionId(), secondOperation, "prepare", secondBody).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(revise(source.prescriptionId(), secondOperation, "commit", secondBody).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription_charge_source WHERE prescription_id=?", Long.class,
+                source.prescriptionId())).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("SELECT gross_amount FROM CHARGE WHERE source_id=?", BigDecimal.class,
+                source.prescriptionId())).isEqualByComparingTo("4000");
+        assertThat(count("prescription_charge_revision_operation")).isEqualTo(2);
+    }
+
+    @Test void revisedEventFinalizesPreparedFenceAndExactRetriesPreserveTerminalSnapshot() throws Exception {
+        var source = issueOutpatient();
+        UUID operationId = UUID.randomUUID();
+        var body = revisionBody(source, 0);
+        assertThat(revise(source.prescriptionId(), operationId, "prepare", body).getStatusCode()).isEqualTo(HttpStatus.OK);
+        byte[] event = revisedEvent(source, operationId, body);
+        listener().start();
+        rabbit.send("mediflow.events", "prescription.revised", new Message(event, new MessageProperties()));
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            assertThat(jdbc.queryForObject("SELECT revision FROM prescription_charge_source WHERE prescription_id=?", Long.class,
+                    source.prescriptionId())).isEqualTo(1L);
+            assertThat(jdbc.queryForObject("SELECT status FROM prescription_charge_revision_operation WHERE operation_id=?",
+                    String.class, operationId)).isEqualTo("FINALIZED");
+        });
+        listener().stop();
+
+        assertThat(revise(source.prescriptionId(), operationId, "commit", body).getStatusCode()).isEqualTo(HttpStatus.OK);
+        listener().start();
+        rabbit.send("mediflow.events", "prescription.revised", new Message(event, new MessageProperties()));
+        await().during(Duration.ofMillis(300)).atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                assertThat(jdbc.queryForObject("SELECT revision FROM prescription_charge_source WHERE prescription_id=?", Long.class,
+                        source.prescriptionId())).isEqualTo(1L));
+        listener().stop();
+        assertThat(count("prescription_charge_revision_operation")).isOne();
+
+        var terminalEvent = terminalAfterRevision(source, event, "prescription.cancelled");
+        var terminalCommand = decoder.decodeTerminal("prescription.cancelled", terminalEvent);
+        assertThat(terminalCommand.snapshot().snapshotFingerprint())
+                .as("terminal payload must prove the current revised snapshot")
+                .isEqualTo(jdbc.queryForObject("SELECT snapshot_fingerprint FROM prescription_charge_source WHERE prescription_id=?",
+                        String.class, source.prescriptionId()));
+        terminals.apply(terminalCommand);
+        assertThat(terminalStatus()).isEqualTo("APPLIED");
+        assertThatCode(() -> charges.issue(source)).doesNotThrowAnyException();
+    }
+
+    @Test void prepare_afterPartialPaymentIsRejectedAndStaleRevisionCannotFence() throws Exception {
+        var source = issueOutpatient();
+        payments.complete(sourceRequest(source), payment("partial-before-edit", "100"), UUID.randomUUID(), "partial");
+        var paid = revise(source.prescriptionId(), UUID.randomUUID(), "prepare", revisionBody(source, 0));
+        assertThat(paid.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(mapper.readTree(paid.getBody()).path("error").path("code").asText())
+                .isEqualTo("BILLING_PRESCRIPTION_REVISION_PAYMENT_EXISTS");
+        assertThat(count("prescription_charge_revision_operation")).isZero();
+
+        var fresh = decoder.decode("prescription.created", mapper.writeValueAsBytes(nextPrescription(outpatient())));
+        charges.issue(fresh);
+        UUID operationId = UUID.randomUUID();
+        var current = revisionBody(fresh, 0);
+        assertThat(revise(fresh.prescriptionId(), operationId, "prepare", current).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(revise(fresh.prescriptionId(), operationId, "commit", current).getStatusCode()).isEqualTo(HttpStatus.OK);
+        var stale = revise(fresh.prescriptionId(), UUID.randomUUID(), "prepare", revisionBody(fresh, 0));
+        assertThat(stale.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(mapper.readTree(stale.getBody()).path("error").path("code").asText())
+                .isEqualTo("BILLING_PRESCRIPTION_REVISION_STALE");
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription_charge_source WHERE prescription_id=?", Long.class,
+                fresh.prescriptionId())).isEqualTo(1L);
+    }
+
+    @Test void prepare_racesPaymentUnderRequestAndAccountLocks() throws Exception {
+        var source = issueOutpatient();
+        UUID operationId = UUID.randomUUID();
+        var body = revisionBody(source, 0);
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var preparation = workers.submit(() -> {
+                start.await();
+                return revise(source.prescriptionId(), operationId, "prepare", body);
+            });
+            var payment = workers.submit(() -> {
+                start.await();
+                try {
+                    payments.complete(sourceRequest(source), payment("race-payment", "2000"), UUID.randomUUID(), "race");
+                    return "PAID";
+                } catch (com.mediflow.billing.domain.exception.BillingRuleException rejected) {
+                    return rejected.getCode();
+                }
+            });
+            start.countDown();
+            var prepared = preparation.get(10, TimeUnit.SECONDS);
+            var paid = payment.get(10, TimeUnit.SECONDS);
+            boolean prepareWon = prepared.getStatusCode() == HttpStatus.OK;
+            assertThat(prepareWon ^ "PAID".equals(paid)).isTrue();
+            if (prepareWon) {
+                assertThat(paid).isEqualTo("BILLING_PRESCRIPTION_REVISION_PENDING");
+                assertThat(count("PAYMENT_TRANSACTION")).isZero();
+                assertThat(count("prescription_charge_revision_operation")).isOne();
+            } else {
+                assertThat(prepared.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                assertThat(mapper.readTree(prepared.getBody()).path("error").path("code").asText())
+                        .isEqualTo("BILLING_PRESCRIPTION_REVISION_PAYMENT_EXISTS");
+                assertThat(paid).isEqualTo("PAID");
+                assertThat(count("prescription_charge_revision_operation")).isZero();
+            }
+        }
     }
     @Test void adapter_withoutTransaction_rejectsBeforeDeliveryClaim() throws Exception {
         var c = decoder.decode("prescription.created", outpatient());
@@ -395,6 +544,78 @@ class PrescriptionChargeRabbitIntegrationTest {
     }
     private byte[] outpatient() throws Exception {
         return PrescriptionChargeContractTest.outpatientFixture();
+    }
+    private PrescriptionChargeCommand issueOutpatient() throws Exception {
+        var source = decoder.decode("prescription.created", outpatient());
+        charges.issue(source);
+        return source;
+    }
+    private UUID sourceRequest(PrescriptionChargeCommand source) {
+        return jdbc.queryForObject("SELECT payment_request_id FROM prescription_charge_source WHERE prescription_id=?",
+                UUID.class, source.prescriptionId());
+    }
+    private ObjectNode revisionBody(PrescriptionChargeCommand source, long expectedRevision) {
+        var body = mapper.createObjectNode();
+        body.put("expectedRevision", expectedRevision).put("revision", expectedRevision + 1)
+                .put("patientId", source.patientId().toString()).put("departmentId", source.departmentId().toString())
+                .put("careEpisodeType", source.careEpisodeType()).put("careEpisodeId", source.careEpisodeId().toString())
+                .put("priceCode", source.priceCode());
+        if (source.recordId() == null) body.putNull("recordId"); else body.put("recordId", source.recordId().toString());
+        var items = body.putArray("items");
+        BigDecimal total = BigDecimal.ZERO;
+        for (int i = 0; i < source.items().size(); i++) {
+            var item = source.items().get(i);
+            int quantity = i == 0 ? item.quantity() + (int) expectedRevision + 1 : item.quantity();
+            total = total.add(item.unitPrice().multiply(BigDecimal.valueOf(quantity)));
+            items.addObject().put("drugId", item.drugId().toString()).put("drugName", item.drugName())
+                    .put("quantity", quantity).put("unitPrice", item.unitPrice());
+        }
+        body.put("totalAmount", total);
+        return body;
+    }
+    private ResponseEntity<String> revise(UUID prescriptionId, UUID operationId, String action, ObjectNode body) {
+        return http.postForEntity("/internal/api/v1/billing/prescription-revisions/" + prescriptionId + "/"
+                        + operationId + "/" + action,
+                new HttpEntity<>(body, revisionHeaders()), String.class);
+    }
+    private byte[] revisedEvent(PrescriptionChargeCommand source, UUID operationId, ObjectNode body) throws Exception {
+        var revisedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var root = mapper.createObjectNode().put("eventId", UUID.randomUUID().toString())
+                .put("eventType", "prescription.revised").put("version", 1)
+                .put("occurredAt", revisedAt.toString()).put("correlationId", "rx-revision-test")
+                .put("producer", "pharmacy-service");
+        var payload = root.putObject("payload").put("prescriptionId", source.prescriptionId().toString())
+                .put("patientId", source.patientId().toString()).put("departmentId", source.departmentId().toString())
+                .put("careContext", "OUTPATIENT").put("careEpisodeType", source.careEpisodeType())
+                .put("careEpisodeId", source.careEpisodeId().toString()).put("sourceType", "PRESCRIPTION")
+                .put("sourceId", source.prescriptionId().toString()).put("priceCode", source.priceCode())
+                .put("revisionOperationId", operationId.toString())
+                .put("previousRevision", body.path("expectedRevision").asLong())
+                .put("revision", body.path("revision").asLong()).put("revisedAt", revisedAt.toString());
+        // Pharmacy writes NON_NULL payloads: absent recordId/admissionId, never explicit nulls.
+        if (source.recordId() != null) payload.put("recordId", source.recordId().toString());
+        payload.set("items", body.get("items").deepCopy());
+        payload.set("totalAmount", body.get("totalAmount").deepCopy());
+        return mapper.writeValueAsBytes(root);
+    }
+    private byte[] terminalAfterRevision(PrescriptionChargeCommand source, byte[] event, String key) throws Exception {
+        var root = tree(PrescriptionTerminalContractTest.fixture(key));
+        var payload = (ObjectNode) root.path("payload");
+        var revised = (ObjectNode) tree(event).path("payload");
+        for (String field : List.of("prescriptionId", "recordId", "admissionId", "patientId", "departmentId",
+                "careContext", "careEpisodeType", "careEpisodeId", "sourceType", "sourceId", "priceCode", "items", "totalAmount")) {
+            if (revised.has(field)) payload.set(field, revised.get(field).deepCopy()); else payload.remove(field);
+        }
+        return mapper.writeValueAsBytes(root);
+    }
+    private HttpHeaders revisionHeaders() {
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        var headers = new HttpHeaders();
+        headers.set("X-Correlation-Id", "prescription-revision-integration");
+        headers.setBearerAuth(Jwts.builder().subject("pharmacy-service").claim("role", "SYSTEM").claim("type", "service")
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact());
+        return headers;
     }
     private ObjectNode tree(byte[] bytes) throws Exception { return (ObjectNode) mapper.readTree(bytes); }
     private CompleteLedgerPaymentRequest payment(String key, String amount) { return new CompleteLedgerPaymentRequest(key, new BigDecimal(amount), "VND", PaymentMethod.CASH, null); }

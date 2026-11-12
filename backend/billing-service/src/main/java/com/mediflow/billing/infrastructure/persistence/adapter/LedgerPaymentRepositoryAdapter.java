@@ -34,6 +34,14 @@ public class LedgerPaymentRepositoryAdapter implements LedgerPaymentRepositoryPo
     }
 
     @Override
+    public boolean hasPendingPrescriptionRevision(UUID prescriptionId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM prescription_charge_revision_operation
+                               WHERE prescription_id=? AND status='PREPARED')
+                """, Boolean.class, prescriptionId));
+    }
+
+    @Override
     public void lockIdempotencyKey(String key) {
         jdbc.execute("SET LOCAL lock_timeout = '3s'");
         // Cross-account key reuse must serialize before acquiring an account lock.

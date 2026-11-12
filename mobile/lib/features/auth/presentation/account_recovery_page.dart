@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,7 +70,7 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       leading: BackButton(onPressed: () => context.go('/login')),
-      title: Text(widget.reset ? 'Đặt lại mật khẩu' : 'Quên mật khẩu'),
+      title: LText(widget.reset ? 'Đặt lại mật khẩu' : 'Quên mật khẩu'),
     ),
     body: SafeArea(
       child: Center(
@@ -81,7 +83,7 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (done) ...[
-                    Text(
+                    LText(
                       widget.reset
                           ? 'Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.'
                           : 'Nếu email đủ điều kiện, hệ thống sẽ gửi hướng dẫn khôi phục. Kiểm tra cả thư rác.',
@@ -90,10 +92,10 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                     if (!widget.reset)
                       OutlinedButton(
                         onPressed: () => context.go('/reset-password'),
-                        child: const Text('Tôi đã có liên kết khôi phục'),
+                        child: const LText('Tôi đã có liên kết khôi phục'),
                       ),
                   ] else ...[
-                    Text(
+                    LText(
                       widget.reset
                           ? 'Dán liên kết trong email để đặt lại mật khẩu. Liên kết chỉ dùng một lần và có thời hạn.'
                           : 'Nhập email đăng nhập để nhận hướng dẫn khôi phục tài khoản.',
@@ -106,7 +108,9 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         maxLength: 254,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: InputDecoration(
+                          labelText: AppL10n.text(context, 'Email'),
+                        ),
                       ),
                     if (widget.reset) ...[
                       TextField(
@@ -114,8 +118,11 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                         enabled: !busy,
                         autocorrect: false,
                         enableSuggestions: false,
-                        decoration: const InputDecoration(
-                          labelText: 'Liên kết hoặc mã khôi phục',
+                        decoration: InputDecoration(
+                          labelText: AppL10n.text(
+                            context,
+                            'Liên kết hoặc mã khôi phục',
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -125,8 +132,8 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                         obscureText: true,
                         maxLength: 72,
                         autofillHints: const [AutofillHints.newPassword],
-                        decoration: const InputDecoration(
-                          labelText: 'Mật khẩu mới',
+                        decoration: InputDecoration(
+                          labelText: AppL10n.text(context, 'Mật khẩu mới'),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -135,15 +142,18 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                         enabled: !busy,
                         obscureText: true,
                         maxLength: 72,
-                        decoration: const InputDecoration(
-                          labelText: 'Xác nhận mật khẩu mới',
+                        decoration: InputDecoration(
+                          labelText: AppL10n.text(
+                            context,
+                            'Xác nhận mật khẩu mới',
+                          ),
                         ),
                       ),
                     ],
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: busy ? null : submit,
-                      child: Text(
+                      child: LText(
                         busy
                             ? 'Đang gửi…'
                             : widget.reset
@@ -155,7 +165,7 @@ class _AccountRecoveryPageState extends ConsumerState<AccountRecoveryPage> {
                   ],
                   TextButton(
                     onPressed: busy ? null : () => context.go('/login'),
-                    child: const Text('Về đăng nhập'),
+                    child: const LText('Về đăng nhập'),
                   ),
                 ],
               ),

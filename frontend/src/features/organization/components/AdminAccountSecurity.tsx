@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +27,7 @@ interface AdminAccountSecurityProps {
 }
 
 export function AdminAccountSecurity({ accountId, username, patientIdForMail, allowEmailChange = true, emailSyncPending = false, disablePasswordActions = false, onEmailChanged }: AdminAccountSecurityProps) {
+  const { localize } = useLocale();
   const alive = useRef(true), lock = useRef(false);
   const [delivery, setDelivery] = useState<MailDelivery | null>(null);
   const [busy, setBusy] = useState(false);
@@ -125,18 +128,18 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
   const unchangedEmail = email.trim().toLowerCase() === username.toLowerCase();
   function submitEmail(event: FormEvent) { event.preventDefault(); if ((!unchangedEmail || emailSyncPending) && reason.trim()) void action("email"); }
   return <section className="space-y-5 rounded-xl border border-border bg-surface p-5 sm:p-6">
-    <h2 className="text-lg font-semibold">Bảo mật & gửi email tài khoản</h2>
-    <p className="text-sm leading-6 text-muted-foreground">Sau khi xác minh người yêu cầu, bạn có thể cấp mật khẩu tạm và gửi hướng dẫn đến email đăng nhập. Email giả của seed được chuyển vào hộp thư demo.</p>
-    {delivery ? <p role="status" aria-live="polite" className={`rounded-lg p-3 text-sm ${statusTone[delivery.status]}`}>Thư mật khẩu tạm: <strong>{labels[delivery.status]}</strong>{delivery.status === "PENDING" && stalled ? " — máy chủ email phản hồi chậm, có thể gửi lại thư." : null}</p> : null}
-    {notice ? <p role="status" className="text-sm leading-6 text-success">{notice}</p> : null}
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {disablePasswordActions ? <p role="status" className="text-sm text-warning">Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh.</p> : null}
-    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp lại mật khẩu vừa rồi" : "Cấp lại mật khẩu tạm qua email"}</Button>{delivery && (delivery.status === "FAILED" || (delivery.status === "PENDING" && stalled)) ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
-    {emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning">Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục.</p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}>Kiểm tra kết quả đổi email</Button></div> : null}
-    {unknown ? <p className="text-sm text-warning">Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại.</p> : null}
-    {allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
-      <h3 className="font-semibold">Đổi email đăng nhập</h3><p className="text-sm text-muted-foreground">{patientIdForMail ? "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ." : "Chỉ quản trị viên được đổi email tại trang quản lý tài khoản."} Kiểm tra kỹ người sở hữu trước khi lưu.</p>
-      <fieldset disabled={busy || unknown || emailUnknown} className="grid gap-4 sm:grid-cols-2"><Field label="Email đăng nhập mới" htmlFor="admin-account-email"><input id="admin-account-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className={controlClassName} /></Field><Field label="Lý do thay đổi email" htmlFor="admin-email-reason"><input id="admin-email-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} className={controlClassName} /></Field><div><Button type="submit" disabled={(unchangedEmail && !emailSyncPending) || !reason.trim()} loading={busy}>Lưu email mới</Button></div></fieldset>
-    </form> : null}
+    <h2 className="text-lg font-semibold"><L10n>{"Bảo mật & gửi email tài khoản"}</L10n></h2>
+    <p className="text-sm leading-6 text-muted-foreground"><L10n>{"Sau khi xác minh người yêu cầu, bạn có thể cấp mật khẩu tạm và gửi hướng dẫn đến email đăng nhập. Email giả của seed được chuyển vào hộp thư demo."}</L10n></p>
+    <L10nValue>{delivery ? <p role="status" aria-live="polite" className={`rounded-lg p-3 text-sm ${statusTone[delivery.status]}`}><L10n>{"Thư mật khẩu tạm: "}</L10n><strong><L10nValue>{labels[delivery.status]}</L10nValue></strong><L10nValue>{delivery.status === "PENDING" && stalled ? " — máy chủ email phản hồi chậm, có thể gửi lại thư." : null}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{notice ? <p role="status" className="text-sm leading-6 text-success"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{disablePasswordActions ? <p role="status" className="text-sm text-warning"><L10n>{"Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh."}</L10n></p> : null}</L10nValue>
+    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}><L10nValue>{unknown ? "Đối soát lần cấp lại mật khẩu vừa rồi" : "Cấp lại mật khẩu tạm qua email"}</L10nValue></Button><L10nValue>{delivery && (delivery.status === "FAILED" || (delivery.status === "PENDING" && stalled)) ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}><L10n>{"Gửi lại thư"}</L10n></Button> : null}</L10nValue></div>
+    <L10nValue>{emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning"><L10n>{"Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục."}</L10n></p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}><L10n>{"Kiểm tra kết quả đổi email"}</L10n></Button></div> : null}</L10nValue>
+    <L10nValue>{unknown ? <p className="text-sm text-warning"><L10n>{"Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại."}</L10n></p> : null}</L10nValue>
+    <L10nValue>{allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">
+      <h3 className="font-semibold"><L10n>{"Đổi email đăng nhập"}</L10n></h3><p className="text-sm text-muted-foreground"><L10nValue>{patientIdForMail ? "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ." : "Chỉ quản trị viên được đổi email tại trang quản lý tài khoản."}</L10nValue><L10n>{" Kiểm tra kỹ người sở hữu trước khi lưu."}</L10n></p>
+      <fieldset disabled={busy || unknown || emailUnknown} className="grid gap-4 sm:grid-cols-2"><Field label={localize("Email đăng nhập mới")} htmlFor="admin-account-email"><input id="admin-account-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className={controlClassName} /></Field><Field label={localize("Lý do thay đổi email")} htmlFor="admin-email-reason"><input id="admin-email-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} className={controlClassName} /></Field><div><Button type="submit" disabled={(unchangedEmail && !emailSyncPending) || !reason.trim()} loading={busy}><L10n>{"Lưu email mới"}</L10n></Button></div></fieldset>
+    </form> : null}</L10nValue>
   </section>;
 }

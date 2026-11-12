@@ -14,8 +14,8 @@ import com.mediflow.common.exception.ForbiddenOperationException;
 import lombok.Getter;
 
 /**
- * A proposed correction of one section of a finished visit. The visit itself never changes: readers see the original
- * next to each approved amendment.
+ * A correction of one section of a finished visit. The visit itself never changes: readers see the original next to
+ * the latest applied correction, while the immutable amendment rows retain the complete history.
  */
 @Getter
 public final class RecordAmendment {
@@ -33,10 +33,19 @@ public final class RecordAmendment {
     private String decisionNote;
     private Instant decidedAt;
     private String contentHash;
+    private Long effectiveRevision;
 
     private RecordAmendment(UUID amendmentId, UUID recordId, AmendmentSection section, String originalText,
             String amendedText, String reason, UUID authorStaffId, UUID assignedByStaffId, RecordAmendmentStatus status,
             Instant requestedAt, UUID decidedByStaffId, String decisionNote, Instant decidedAt, String contentHash) {
+        this(amendmentId, recordId, section, originalText, amendedText, reason, authorStaffId, assignedByStaffId, status,
+                requestedAt, decidedByStaffId, decisionNote, decidedAt, contentHash, null);
+    }
+
+    private RecordAmendment(UUID amendmentId, UUID recordId, AmendmentSection section, String originalText,
+            String amendedText, String reason, UUID authorStaffId, UUID assignedByStaffId, RecordAmendmentStatus status,
+            Instant requestedAt, UUID decidedByStaffId, String decisionNote, Instant decidedAt, String contentHash,
+            Long effectiveRevision) {
         this.amendmentId = amendmentId;
         this.recordId = recordId;
         this.section = section;
@@ -51,6 +60,7 @@ public final class RecordAmendment {
         this.decisionNote = decisionNote;
         this.decidedAt = decidedAt;
         this.contentHash = contentHash;
+        this.effectiveRevision = effectiveRevision;
     }
 
     public static RecordAmendment request(UUID recordId, AmendmentSection section, String originalText,
@@ -71,6 +81,15 @@ public final class RecordAmendment {
         return new RecordAmendment(Objects.requireNonNull(amendmentId), recordId, section, originalText, amendedText, reason,
                 authorStaffId, assignedByStaffId, Objects.requireNonNull(status), requestedAt, decidedByStaffId,
                 decisionNote, decidedAt, contentHash);
+    }
+
+    public static RecordAmendment restore(UUID amendmentId, UUID recordId, AmendmentSection section, String originalText,
+            String amendedText, String reason, UUID authorStaffId, UUID assignedByStaffId, RecordAmendmentStatus status,
+            Instant requestedAt, UUID decidedByStaffId, String decisionNote, Instant decidedAt, String contentHash,
+            Long effectiveRevision) {
+        return new RecordAmendment(Objects.requireNonNull(amendmentId), recordId, section, originalText, amendedText,
+                reason, authorStaffId, assignedByStaffId, Objects.requireNonNull(status), requestedAt, decidedByStaffId,
+                decisionNote, decidedAt, contentHash, effectiveRevision);
     }
 
     /** Refuses a decision that is already taken or that the author would take on their own amendment. */
@@ -100,7 +119,23 @@ public final class RecordAmendment {
         decide(RecordAmendmentStatus.REJECTED, staffId, note.strip(), at);
     }
 
-    /** SHA-256 hex of section, original, amended text and reason; stored only once approved. */
+    /** Applies a responsible doctor's correction directly and records the author as the explicit decision actor. */
+    public void applyByResponsibleDoctor(UUID staffId, Instant at) {
+        if (status != RecordAmendmentStatus.PENDING) {
+            throw new InvalidClinicalDataException("AMENDMENT_ALREADY_DECIDED", "This amendment is already decided");
+        }
+        if (staffId == null || !staffId.equals(authorStaffId)) {
+            throw new ForbiddenOperationException("AMENDMENT_DIRECT_APPLY_DENIED",
+                    "Only the responsible doctor who authored this correction may apply it directly");
+        }
+        if (at == null) {
+            throw invalid("An applied correction needs an application time");
+        }
+        decide(RecordAmendmentStatus.APPLIED, staffId, "Applied directly by the responsible doctor.", at);
+        contentHash = contentHash();
+    }
+
+    /** SHA-256 hex of section, original, amended text and reason; stored only after approval or direct application. */
     public String contentHash() {
         String content = section.name() + "\n" + originalText + "\n" + amendedText + "\n" + reason;
         try {

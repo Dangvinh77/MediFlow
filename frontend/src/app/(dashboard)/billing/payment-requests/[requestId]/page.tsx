@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { LedgerPaymentForm } from "@/features/billing/components/LedgerPaymentForm";
@@ -13,13 +15,13 @@ export default async function Page({ params }: Props) {
 
   return (
     <PageShell title="Thanh toán khoản phí" description="Xác nhận số tiền và hình thức thanh toán cho khoản phí đã chọn.">
-      {!isUuid(id) ? (
-        <p role="alert" className="mt-6 text-danger">Mã khoản phí không hợp lệ.</p>
+      <L10nValue>{!isUuid(id) ? (
+        <p role="alert" className="mt-6 text-danger"><L10n>{"Mã khoản phí không hợp lệ."}</L10n></p>
       ) : (
         <RoleGate allowed={["ADMIN", "CASHIER"]}>
           <LedgerPaymentForm requestId={id} />
         </RoleGate>
-      )}
+      )}</L10nValue>
     </PageShell>
   );
 }

@@ -11,6 +11,7 @@ import com.mediflow.clinical.application.dto.request.AddDiagnosisRequest;
 import com.mediflow.clinical.application.dto.request.CreateRecordRequest;
 import com.mediflow.clinical.application.dto.request.UpdateRecordRequest;
 import com.mediflow.clinical.application.dto.response.DiagnosisDTO;
+import com.mediflow.clinical.application.dto.response.EffectiveRecordCorrectionDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.clinical.application.event.DiagnosisAddedEvent;
@@ -25,6 +26,7 @@ import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
 import com.mediflow.clinical.application.port.out.RecordAccessPolicyMode;
+import com.mediflow.clinical.application.port.out.RecordAmendmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
@@ -48,16 +50,18 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     private final boolean outpatientMvpEnabled;
     private final RecordReadGuard readGuard;
     private final boolean recordAccessPolicyEnabled;
+    private final RecordAmendmentRepositoryPort amendments;
 
     @Autowired
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
+                                           RecordAmendmentRepositoryPort amendments,
                                            PatientLookupPort patients, StaffLookupPort staff,
                                            ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
                                            CorrelationIdProvider correlationIds,
                                            CurrentClinicalActorPort actors, OutpatientMvpMode outpatientMvpMode,
                                            RecordReadGuard readGuard, RecordAccessPolicyMode recordAccessPolicyMode) {
         this(appointments, records, patients, staff, publisher, mapper, correlationIds,
-                actors, outpatientMvpMode.enabled(), readGuard, recordAccessPolicyMode.enabled());
+                actors, outpatientMvpMode.enabled(), readGuard, recordAccessPolicyMode.enabled(), amendments);
     }
 
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
@@ -66,7 +70,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
                                            CorrelationIdProvider correlationIds,
                                            CurrentClinicalActorPort actors, boolean outpatientMvpEnabled) {
         this(appointments, records, patients, staff, publisher, mapper, correlationIds,
-                actors, outpatientMvpEnabled, null, false);
+                actors, outpatientMvpEnabled, null, false, null);
     }
 
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
@@ -75,8 +79,20 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
                                            CorrelationIdProvider correlationIds,
                                            CurrentClinicalActorPort actors, boolean outpatientMvpEnabled,
                                            RecordReadGuard readGuard, boolean recordAccessPolicyEnabled) {
+        this(appointments, records, patients, staff, publisher, mapper, correlationIds, actors, outpatientMvpEnabled,
+                readGuard, recordAccessPolicyEnabled, null);
+    }
+
+    public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
+                                           PatientLookupPort patients, StaffLookupPort staff,
+                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
+                                           CorrelationIdProvider correlationIds,
+                                           CurrentClinicalActorPort actors, boolean outpatientMvpEnabled,
+                                           RecordReadGuard readGuard, boolean recordAccessPolicyEnabled,
+                                           RecordAmendmentRepositoryPort amendments) {
         this.readGuard = readGuard;
         this.recordAccessPolicyEnabled = recordAccessPolicyEnabled;
+        this.amendments = amendments;
         this.appointments = appointments;
         this.records = records;
         this.patients = patients;
@@ -154,19 +170,29 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
         if (recordAccessPolicyEnabled) {
             readGuard.requireRecord(record);
         }
-        return mapper.toDto(record);
+        return withEffectiveCorrections(record, mapper.toDto(record));
     }
 
     @Override
     public List<MedicalRecordDTO> byPatient(UUID patientId) {
         if (!recordAccessPolicyEnabled) {
-            return records.findByPatient(patientId).stream().map(mapper::toDto).toList();
+            return records.findByPatient(patientId).stream()
+                    .map(record -> withEffectiveCorrections(record, mapper.toDto(record))).toList();
         }
         UUID nurseDepartmentId = readGuard.requirePatient(patientId).nurseDepartmentId();
         return records.findByPatient(patientId).stream()
                 .filter(record -> nurseDepartmentId == null || nurseDepartmentId.equals(record.getDepartmentId()))
-                .map(mapper::toDto)
+                .map(record -> withEffectiveCorrections(record, mapper.toDto(record)))
                 .toList();
+    }
+
+    private MedicalRecordDTO withEffectiveCorrections(MedicalRecord record, MedicalRecordDTO dto) {
+        if (amendments == null) {
+            return dto;
+        }
+        List<EffectiveRecordCorrectionDTO> effective = EffectiveRecordCorrections.latestPerSection(
+                amendments.findByRecord(record.getRecordId()));
+        return MedicalRecordDTO.withEffectiveCorrections(dto, effective);
     }
 
     @Override

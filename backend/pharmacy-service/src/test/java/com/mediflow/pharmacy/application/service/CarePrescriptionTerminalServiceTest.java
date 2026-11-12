@@ -50,7 +50,7 @@ class CarePrescriptionTerminalServiceTest {
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(prescriptions.findByIdForUpdate(prescription.getPrescriptionId())).thenReturn(Optional.of(prescription));
         when(slips.findByPrescriptionForUpdate(prescription.getPrescriptionId())).thenReturn(Optional.of(slip));
-        when(reservations.findByPrescriptionForUpdate(prescription.getPrescriptionId())).thenReturn(List.of(reservation));
+        when(reservations.findReservedByPrescriptionForUpdate(prescription.getPrescriptionId())).thenReturn(List.of(reservation));
         doAnswer(call -> {
             PrescriptionCareEvent event = call.getArgument(0);
             when(writer.findHeld(event.payload().prescriptionId(), event.eventType())).thenReturn(Optional.of(event));
@@ -106,7 +106,7 @@ class CarePrescriptionTerminalServiceTest {
         verifyNoInteractions(prescriptions, slips, reservations, writer);
     }
     @Test void cancel_missingWholeReservation_rejectsBeforeMutation() {
-        when(reservations.findByPrescriptionForUpdate(prescription.getPrescriptionId())).thenReturn(List.of());
+        when(reservations.findReservedByPrescriptionForUpdate(prescription.getPrescriptionId())).thenReturn(List.of());
         assertThatThrownBy(() -> cancel(doctor, "Reason")).hasMessageContaining("Whole-order");
         assertThat(prescription.isActive()).isTrue();
         verify(writer, never()).storeHeld(any());
@@ -122,7 +122,7 @@ class CarePrescriptionTerminalServiceTest {
         verify(writer, never()).storeHeld(any());
     }
     @Test void expiry_waitCrossesBoundary_usesClockAfterLocksThenReplayNoOp() {
-        when(reservations.findByPrescriptionForUpdate(prescription.getPrescriptionId())).thenAnswer(call -> {
+        when(reservations.findReservedByPrescriptionForUpdate(prescription.getPrescriptionId())).thenAnswer(call -> {
             when(clock.instant()).thenReturn(reservation.getExpiresAt());
             return List.of(reservation);
         });

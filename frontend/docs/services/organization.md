@@ -26,6 +26,12 @@ exist for both resources. `ADMIN` can create/update departments, create/update/t
 use `/organization/accounts` to create or lock/unlock an account. Service-only lookup and credential
 verification endpoints remain outside the browser UI.
 
+Creating a Staff profile requires a valid email of at most 254 characters. Core trims and
+lowercases it and reserves it uniquely within the Organization context, independently of whether
+an account is issued. Duplicate email returns `409 STAFF_EMAIL_DUPLICATE`. Editing a valid email
+uses the same check; an existing legacy profile with no email can be updated without changing it.
+Archived or inactive records continue to reserve any email already assigned to them.
+
 ## Owner queue
 
 - `FE-ORG-01` — `DONE`: department detail/create/update with exact roles and fields.

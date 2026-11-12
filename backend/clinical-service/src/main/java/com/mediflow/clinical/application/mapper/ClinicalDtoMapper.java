@@ -16,6 +16,7 @@ public interface ClinicalDtoMapper {
     AppointmentDTO toDto(Appointment appointment);
     @Mapping(target = "responsibleDoctorId", expression =
             "java(record.responsibleDoctorId().equals(record.getDoctorId()) ? null : record.responsibleDoctorId())")
+    @Mapping(target = "effectiveCorrections", ignore = true)
     MedicalRecordDTO toDto(MedicalRecord record);
     DiagnosisDTO toDto(Diagnosis diagnosis);
 

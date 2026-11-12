@@ -21,6 +21,7 @@ class ProvisionPatientAccountServiceTest {
 
     @Test void derivesCredentialsAndForcesPatientRole() {
         when(patients.email(patient)).thenReturn("patient@example.test");
+        when(patients.emailAvailable(patient, "patient@example.test")).thenReturn(true);
         var account = Account.create(UUID.randomUUID(), "patient@example.test", "hash", null, patient, Role.PATIENT);
         account.requirePasswordChange();
         when(creator.issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false))
@@ -33,6 +34,7 @@ class ProvisionPatientAccountServiceTest {
         order.verify(accounts).lockOwner(null, patient);
         order.verify(accounts).existsByPatientId(patient);
         order.verify(patients).email(patient);
+        order.verify(patients).emailAvailable(patient, "patient@example.test");
         order.verify(creator).issueWithIdempotency(actor, "key", "patient@example.test", null, patient, Role.PATIENT, false);
     }
 
@@ -59,6 +61,17 @@ class ProvisionPatientAccountServiceTest {
         when(patients.email(patient)).thenThrow(new IllegalArgumentException("Patient unavailable"));
         assertThatThrownBy(() -> new ProvisionPatientAccountService(accounts, receipts, creator, patients)
                 .provision(actor, "key", patient)).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(creator);
+    }
+
+    @Test void refusesIssuanceWhenAnotherPatientAlreadyUsesTheEmail() {
+        when(patients.email(patient)).thenReturn("patient@example.test");
+        when(patients.emailAvailable(patient, "patient@example.test")).thenReturn(false);
+
+        assertThatThrownBy(() -> new ProvisionPatientAccountService(accounts, receipts, creator, patients)
+                .provision(actor, "key", patient))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "PATIENT_EMAIL_DUPLICATE");
         verifyNoInteractions(creator);
     }
 }

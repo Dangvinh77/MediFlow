@@ -1,3 +1,5 @@
+import '../l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../theme/medical_colors.dart';
@@ -16,9 +18,9 @@ class FeatureWorkspace extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            LText(title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text(
+            const LText(
               'Chức năng trên ứng dụng di động đang được phát triển.',
               textAlign: TextAlign.center,
             ),

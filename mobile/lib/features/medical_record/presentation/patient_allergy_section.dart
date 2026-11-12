@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -8,8 +10,9 @@ import '../domain/exam_lifecycle.dart';
 import '../domain/patient_timeline.dart';
 import 'medical_record_formatters.dart';
 
-final patientAllergyRepositoryProvider =
-    Provider<PatientAllergyRepository?>((ref) => null);
+final patientAllergyRepositoryProvider = Provider<PatientAllergyRepository?>(
+  (ref) => null,
+);
 
 class PatientAllergySection extends ConsumerStatefulWidget {
   const PatientAllergySection({
@@ -84,14 +87,18 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
     try {
       if (repository == null) throw StateError('Không có kết nối sổ dị ứng.');
       final result = await repository.list(patientId);
-      if (mounted && generation == _generation && patientId == widget.patientId) {
+      if (mounted &&
+          generation == _generation &&
+          patientId == widget.patientId) {
         setState(() {
           _allergies = result;
           _loading = false;
         });
       }
     } catch (error) {
-      if (mounted && generation == _generation && patientId == widget.patientId) {
+      if (mounted &&
+          generation == _generation &&
+          patientId == widget.patientId) {
         setState(() {
           _error = error;
           _loading = false;
@@ -104,15 +111,21 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
     if (_addBusy) return;
     final repository = ref.read(patientAllergyRepositoryProvider);
     if (repository == null) return;
-    final intent = _addIntent ?? _AllergyAddIntent(
-      substance: _substance.text.trim(),
-      reaction: _reaction.text.trim().isEmpty ? null : _reaction.text.trim(),
-      severity: _severity,
-      sourceRecordId: widget.sourceRecordId,
-      key: newExamCommandKey(),
-    );
+    final intent =
+        _addIntent ??
+        _AllergyAddIntent(
+          substance: _substance.text.trim(),
+          reaction: _reaction.text.trim().isEmpty
+              ? null
+              : _reaction.text.trim(),
+          severity: _severity,
+          sourceRecordId: widget.sourceRecordId,
+          key: newExamCommandKey(),
+        );
     if (intent.substance.isEmpty || intent.substance.length > 200) {
-      setState(() => _commandError = 'Tên dị nguyên phải có từ 1 đến 200 ký tự.');
+      setState(
+        () => _commandError = 'Tên dị nguyên phải có từ 1 đến 200 ký tự.',
+      );
       return;
     }
     if ((intent.reaction?.length ?? 0) > 500) {
@@ -175,12 +188,14 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
       setState(() => _commandError = 'Nhập lý do từ 1 đến 500 ký tự.');
       return;
     }
-    final intent = _statusIntent ?? _AllergyStatusIntent(
-      allergyId: allergy.allergyId,
-      status: status,
-      reason: reason,
-      key: newExamCommandKey(),
-    );
+    final intent =
+        _statusIntent ??
+        _AllergyStatusIntent(
+          allergyId: allergy.allergyId,
+          status: status,
+          reason: reason,
+          key: newExamCommandKey(),
+        );
     setState(() {
       _statusIntent = intent;
       _statusBusy = true;
@@ -223,7 +238,10 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Dị ứng của bệnh nhân', style: Theme.of(context).textTheme.titleMedium),
+          LText(
+            'Dị ứng của bệnh nhân',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           if (_loading)
             const Center(child: MediFlowLoader())
@@ -231,7 +249,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
             _loadFailure()
           else if (_allergies case final allergies?) ...[
             if (allergies.active.isEmpty)
-              const Text('Chưa ghi nhận dị ứng')
+              const LText('Chưa ghi nhận dị ứng')
             else
               for (final allergy in allergies.active) _allergyRow(allergy),
             if (_commandError != null) NoticeBox(_commandError!),
@@ -246,7 +264,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                       _commandError = null;
                     }),
                     icon: const Icon(Icons.add),
-                    label: const Text('Thêm dị ứng'),
+                    label: const LText('Thêm dị ứng'),
                   ),
                 )
               else
@@ -255,7 +273,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
             if (allergies.inactive.isNotEmpty)
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('Dị ứng đã ngừng hoặc nhập nhầm'),
+                title: const LText('Dị ứng đã ngừng hoặc nhập nhầm'),
                 children: [
                   for (final allergy in allergies.inactive)
                     _allergyRow(allergy, inactive: true),
@@ -265,7 +283,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
         ],
       ),
     ),
-    );
+  );
 
   Widget _allergyRow(PatientAllergy allergy, {bool inactive = false}) {
     final editing = _editingStatusId == allergy.allergyId;
@@ -276,24 +294,24 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(allergy.substance),
+            title: LText(allergy.substance),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (allergy.reaction?.isNotEmpty == true)
-                  Text('Phản ứng: ${allergy.reaction}'),
-                Text('Mức độ: ${_severityLabel(allergy.severity)}'),
-                Text('Ghi nhận: ${formatClinicalInstant(allergy.recordedAt)}'),
+                  LText('Phản ứng: ${allergy.reaction}'),
+                LText('Mức độ: ${_severityLabel(allergy.severity)}'),
+                LText('Ghi nhận: ${formatClinicalInstant(allergy.recordedAt)}'),
                 if (allergy.sourceRecordId != null)
-                  Text('Nguồn hồ sơ: ${allergy.sourceRecordId}'),
+                  LText('Nguồn hồ sơ: ${allergy.sourceRecordId}'),
                 if (inactive) ...[
-                  Text('Trạng thái: ${_statusLabel(allergy.status)}'),
+                  LText('Trạng thái: ${_statusLabel(allergy.status)}'),
                   if (allergy.statusReason?.isNotEmpty == true)
-                    Text('Lý do: ${allergy.statusReason}'),
+                    LText('Lý do: ${allergy.statusReason}'),
                   if (allergy.statusChangedByStaffId != null)
-                    Text('Cập nhật bởi: ${allergy.statusChangedByStaffId}'),
+                    LText('Cập nhật bởi: ${allergy.statusChangedByStaffId}'),
                   if (allergy.statusChangedAt != null)
-                    Text(
+                    LText(
                       'Cập nhật lúc: ${formatClinicalInstant(allergy.statusChangedAt!)}',
                     ),
                 ],
@@ -306,7 +324,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                     children: [
                       IconButton(
                         key: const Key('allergy-entered-in-error'),
-                        tooltip: 'Đánh dấu nhập nhầm',
+                        tooltip: AppL10n.text(context, 'Đánh dấu nhập nhầm'),
                         onPressed: _statusBusy
                             ? null
                             : () => _startStatusChange(
@@ -317,7 +335,10 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                       ),
                       IconButton(
                         key: const Key('allergy-resolved'),
-                        tooltip: 'Đánh dấu đã hết dị ứng',
+                        tooltip: AppL10n.text(
+                          context,
+                          'Đánh dấu đã hết dị ứng',
+                        ),
                         onPressed: _statusBusy
                             ? null
                             : () => _startStatusChange(allergy, 'RESOLVED'),
@@ -339,9 +360,12 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                     enabled: !_statusBusy && _statusIntent == null,
                     maxLength: 500,
                     decoration: InputDecoration(
-                      labelText: _editingStatusValue == 'RESOLVED'
-                          ? 'Lý do cập nhật trạng thái dị ứng *'
-                          : 'Lý do nhập nhầm dị ứng *',
+                      labelText: AppL10n.text(
+                        context,
+                        _editingStatusValue == 'RESOLVED'
+                            ? 'Lý do cập nhật trạng thái dị ứng *'
+                            : 'Lý do nhập nhầm dị ứng *',
+                      ),
                     ),
                   ),
                   Wrap(
@@ -349,7 +373,8 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                     children: [
                       FilledButton(
                         key: const Key('allergy-status-submit'),
-                        onPressed: _statusBusy ||
+                        onPressed:
+                            _statusBusy ||
                                 (_statusIntent == null &&
                                     _statusReason.text.trim().isEmpty)
                             ? null
@@ -357,7 +382,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                                 allergy,
                                 _editingStatusValue ?? 'ENTERED_IN_ERROR',
                               ),
-                        child: Text(
+                        child: LText(
                           _statusIntent != null
                               ? 'Gửi lại cùng yêu cầu'
                               : _editingStatusValue == 'RESOLVED'
@@ -373,7 +398,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                                 _editingStatusValue = null;
                                 _statusIntent = null;
                               }),
-                        child: const Text('Hủy'),
+                        child: const LText('Hủy'),
                       ),
                     ],
                   ),
@@ -394,24 +419,28 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
         onChanged: (_) => setState(() {}),
         enabled: !_addBusy && _addIntent == null,
         maxLength: 200,
-        decoration: const InputDecoration(labelText: 'Tên dị nguyên *'),
+        decoration: InputDecoration(
+          labelText: AppL10n.text(context, 'Tên dị nguyên *'),
+        ),
       ),
       TextField(
         key: const Key('allergy-reaction'),
         controller: _reaction,
         enabled: !_addBusy && _addIntent == null,
         maxLength: 500,
-        decoration: const InputDecoration(labelText: 'Phản ứng'),
+        decoration: InputDecoration(
+          labelText: AppL10n.text(context, 'Phản ứng'),
+        ),
       ),
       DropdownButtonFormField<String>(
         key: const Key('allergy-severity'),
         initialValue: _severity,
-        decoration: const InputDecoration(labelText: 'Mức độ'),
+        decoration: InputDecoration(labelText: AppL10n.text(context, 'Mức độ')),
         items: const [
-          DropdownMenuItem(value: 'MILD', child: Text('Nhẹ')),
-          DropdownMenuItem(value: 'MODERATE', child: Text('Vừa')),
-          DropdownMenuItem(value: 'SEVERE', child: Text('Nặng')),
-          DropdownMenuItem(value: 'UNKNOWN', child: Text('Chưa rõ')),
+          DropdownMenuItem(value: 'MILD', child: LText('Nhẹ')),
+          DropdownMenuItem(value: 'MODERATE', child: LText('Vừa')),
+          DropdownMenuItem(value: 'SEVERE', child: LText('Nặng')),
+          DropdownMenuItem(value: 'UNKNOWN', child: LText('Chưa rõ')),
         ],
         onChanged: _addBusy || _addIntent != null
             ? null
@@ -422,11 +451,12 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
         children: [
           FilledButton(
             key: const Key('allergy-submit'),
-            onPressed: _addBusy ||
+            onPressed:
+                _addBusy ||
                     (_addIntent == null && _substance.text.trim().isEmpty)
                 ? null
                 : _saveAllergy,
-            child: Text(
+            child: LText(
               _addIntent == null ? 'Lưu dị ứng' : 'Gửi lại cùng yêu cầu',
             ),
           ),
@@ -438,7 +468,7 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
                       _showAdd = false;
                       _commandError = null;
                     }),
-              child: const Text('Hủy'),
+              child: const LText('Hủy'),
             ),
         ],
       ),
@@ -447,17 +477,17 @@ class _PatientAllergySectionState extends ConsumerState<PatientAllergySection> {
 
   Widget _loadFailure() {
     if (_error is ApiFailure && (_error as ApiFailure).status == 403) {
-      return const Text('Bạn không có quyền xem sổ dị ứng của bệnh nhân này.');
+      return const LText('Bạn không có quyền xem sổ dị ứng của bệnh nhân này.');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Không tải được sổ dị ứng của bệnh nhân.'),
+        const LText('Không tải được sổ dị ứng của bệnh nhân.'),
         TextButton.icon(
           key: const Key('patient-allergy-retry'),
           onPressed: _load,
           icon: const Icon(Icons.refresh),
-          label: const Text('Thử lại'),
+          label: const LText('Thử lại'),
         ),
       ],
     );

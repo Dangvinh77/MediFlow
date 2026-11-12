@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -44,14 +46,14 @@ class PharmacyPage extends ConsumerWidget {
                 () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Kê đơn ngoại trú')),
+                      appBar: AppBar(title: const LText('Kê đơn ngoại trú')),
                       body: CreatePrescriptionPage(
                         onCreated: (rx) =>
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute<void>(
                                 builder: (_) => Scaffold(
                                   appBar: AppBar(
-                                    title: const Text('Chi tiết đơn thuốc'),
+                                    title: const LText('Chi tiết đơn thuốc'),
                                   ),
                                   body: PrescriptionDetailPage(
                                     prescriptionId: rx.id,
@@ -70,7 +72,7 @@ class PharmacyPage extends ConsumerWidget {
           ? () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Khôi phục đồng bộ')),
+                  appBar: AppBar(title: const LText('Khôi phục đồng bộ')),
                   body: const PharmacyOutboxPage(),
                 ),
               ),
@@ -81,7 +83,7 @@ class PharmacyPage extends ConsumerWidget {
           () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Tra cứu đơn thuốc')),
+                appBar: AppBar(title: const LText('Tra cứu đơn thuốc')),
                 body: const PrescriptionLookupPage(),
               ),
             ),
@@ -91,14 +93,14 @@ class PharmacyPage extends ConsumerWidget {
                 () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Thêm thuốc')),
+                      appBar: AppBar(title: const LText('Thêm thuốc')),
                       body: CreateDrugPage(
                         onCreated: (drug) {
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute<void>(
                               builder: (_) => Scaffold(
                                 appBar: AppBar(
-                                  title: const Text('Chi tiết thuốc'),
+                                  title: const LText('Chi tiết thuốc'),
                                 ),
                                 body: DrugDetailPage(drugId: drug.id),
                               ),
@@ -116,7 +118,7 @@ class PharmacyPage extends ConsumerWidget {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Chi tiết thuốc')),
+                  appBar: AppBar(title: const LText('Chi tiết thuốc')),
                   body: DrugDetailPage(drugId: id),
                 ),
               ),
@@ -210,8 +212,8 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                 TextField(
                   controller: _keyword,
                   textInputAction: TextInputAction.search,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên thuốc',
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Tên thuốc'),
                     border: OutlineInputBorder(),
                   ),
                   onSubmitted: (_) => _search(),
@@ -225,37 +227,37 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                       FilledButton.icon(
                         onPressed: widget.onCreate,
                         icon: const Icon(Icons.add),
-                        label: const Text('Thêm thuốc'),
+                        label: const LText('Thêm thuốc'),
                       ),
                     if (widget.onPrescribe != null)
                       FilledButton.icon(
                         onPressed: widget.onPrescribe,
                         icon: const Icon(Icons.edit_note),
-                        label: const Text('Kê đơn ngoại trú'),
+                        label: const LText('Kê đơn ngoại trú'),
                       ),
                     OutlinedButton(
                       onPressed: widget.onLookup,
-                      child: const Text('Tra cứu đơn'),
+                      child: const LText('Tra cứu đơn'),
                     ),
                     if (widget.onOutbox != null)
                       OutlinedButton(
                         onPressed: widget.onOutbox,
-                        child: const Text('Khôi phục đồng bộ'),
+                        child: const LText('Khôi phục đồng bộ'),
                       ),
                     FilledButton.icon(
                       onPressed: _search,
                       icon: const Icon(Icons.search),
-                      label: const Text('Tìm kiếm'),
+                      label: const LText('Tìm kiếm'),
                     ),
                     OutlinedButton.icon(
                       onPressed: _loading ? null : () => _load(_requestedPage),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Làm mới'),
+                      label: const LText('Làm mới'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
+                LText(
                   _submitted == null
                       ? 'Danh mục thuốc'
                       : 'Kết quả cho: $_submitted',
@@ -268,8 +270,13 @@ class _DrugCatalogState extends State<_DrugCatalog> {
       Expanded(
         flex: 3,
         child: _loading
-            ? const Center(
-                child: MediFlowLoader(semanticLabel: 'Đang tải danh mục thuốc'),
+            ? Center(
+                child: MediFlowLoader(
+                  semanticLabel: AppL10n.text(
+                    context,
+                    'Đang tải danh mục thuốc',
+                  ),
+                ),
               )
             : _error != null
             ? SingleChildScrollView(
@@ -296,7 +303,7 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                   children: const [
                     Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Không tìm thấy thuốc phù hợp.'),
+                      child: LText('Không tìm thấy thuốc phù hợp.'),
                     ),
                   ],
                 )
@@ -316,24 +323,24 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              LText(
                                 drug.name,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 4),
-                              Text('${drug.price} đồng / ${drug.unit}'),
-                              Text('Tồn kho: ${drug.stockQuantity}'),
-                              Text(
+                              LText('${drug.price} đồng / ${drug.unit}'),
+                              LText('Tồn kho: ${drug.stockQuantity}'),
+                              LText(
                                 'Hạn dùng: ${pharmacyDate(drug.expiryDate)}',
                               ),
                               if (drug.stockQuantity == 0)
-                                const Text('Hết hàng'),
-                              if (drug.isLowStock) const Text('Sắp hết thuốc'),
+                                const LText('Hết hàng'),
+                              if (drug.isLowStock) const LText('Sắp hết thuốc'),
                               const SizedBox(height: 4),
                               const Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('Xem chi tiết'),
+                                  LText('Xem chi tiết'),
                                   Icon(Icons.chevron_right),
                                 ],
                               ),
@@ -358,17 +365,17 @@ class _DrugCatalogState extends State<_DrugCatalog> {
                 spacing: 8,
                 children: [
                   IconButton(
-                    tooltip: 'Trang trước',
+                    tooltip: AppL10n.text(context, 'Trang trước'),
                     onPressed: page.number > 0
                         ? () => _load(page.number - 1)
                         : null,
                     icon: const Icon(Icons.chevron_left),
                   ),
-                  Text(
+                  LText(
                     'Trang ${page.number + 1}/${page.totalPages == 0 ? 1 : page.totalPages} · ${page.totalElements} thuốc',
                   ),
                   IconButton(
-                    tooltip: 'Trang sau',
+                    tooltip: AppL10n.text(context, 'Trang sau'),
                     onPressed: page.hasNext
                         ? () => _load(page.number + 1)
                         : null,
@@ -451,8 +458,10 @@ class _DrugDetailState extends State<_DrugDetail> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải thuốc'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải thuốc'),
+        ),
       );
     }
     if (_error != null) {
@@ -470,20 +479,20 @@ class _DrugDetailState extends State<_DrugDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(drug.name, style: Theme.of(context).textTheme.headlineSmall),
+          LText(drug.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
-          Text('Hoạt chất: ${drug.activeIngredient ?? 'Chưa cung cấp'}'),
-          Text('Đơn vị: ${drug.unit}'),
-          Text('Giá: ${drug.price} đồng'),
-          Text('Tồn kho: ${drug.stockQuantity}'),
-          Text('Báo sắp hết khi còn: ${drug.lowStockThreshold}'),
-          if (drug.stockQuantity == 0) const Text('Hết hàng'),
-          if (drug.isLowStock) const Text('Sắp hết thuốc'),
-          Text('Hạn dùng: ${pharmacyDate(drug.expiryDate)}'),
-          Text('Nhà sản xuất: ${drug.manufacturer ?? 'Chưa cung cấp'}'),
-          Text('Cập nhật: ${pharmacyDateTime(drug.updatedAt)}'),
+          LText('Hoạt chất: ${drug.activeIngredient ?? 'Chưa cung cấp'}'),
+          LText('Đơn vị: ${drug.unit}'),
+          LText('Giá: ${drug.price} đồng'),
+          LText('Tồn kho: ${drug.stockQuantity}'),
+          LText('Báo sắp hết khi còn: ${drug.lowStockThreshold}'),
+          if (drug.stockQuantity == 0) const LText('Hết hàng'),
+          if (drug.isLowStock) const LText('Sắp hết thuốc'),
+          LText('Hạn dùng: ${pharmacyDate(drug.expiryDate)}'),
+          LText('Nhà sản xuất: ${drug.manufacturer ?? 'Chưa cung cấp'}'),
+          LText('Cập nhật: ${pharmacyDateTime(drug.updatedAt)}'),
           ExpansionTile(
-            title: const Text('Thông tin tra cứu'),
+            title: const LText('Thông tin tra cứu'),
             children: [SelectableText('Mã thuốc: ${drug.id}')],
           ),
           const SizedBox(height: 16),
@@ -493,19 +502,19 @@ class _DrugDetailState extends State<_DrugDetail> {
                 await Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Điều chỉnh tồn kho')),
+                      appBar: AppBar(title: const LText('Điều chỉnh tồn kho')),
                       body: AdjustDrugStockPage(drugId: drug.id),
                     ),
                   ),
                 );
                 if (mounted) _load();
               },
-              child: const Text('Điều chỉnh tồn kho'),
+              child: const LText('Điều chỉnh tồn kho'),
             ),
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Làm mới thuốc'),
+            label: const LText('Làm mới thuốc'),
           ),
         ],
       ),

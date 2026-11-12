@@ -38,7 +38,7 @@ abstract final class PatientDto {
     'soCmnd': draft.identityNumber?.trim(),
     'diaChi': _nullable(draft.address),
     'soDienThoai': _nullable(draft.phoneNumber),
-    'email': _nullable(draft.email),
+    'email': _normalizedEmail(draft.email),
     'bhytSo': _nullable(draft.insuranceNumber),
   };
 
@@ -50,12 +50,17 @@ abstract final class PatientDto {
     if (draft.identityNumber != null) 'soCmnd': draft.identityNumber!.trim(),
     'diaChi': _nullable(draft.address),
     'soDienThoai': _nullable(draft.phoneNumber),
-    'email': _nullable(draft.email),
+    'email': _normalizedEmail(draft.email),
     'bhytSo': _nullable(draft.insuranceNumber),
   };
 
   static String? _nullable(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _normalizedEmail(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed.toLowerCase();
   }
 }

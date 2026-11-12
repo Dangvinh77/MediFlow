@@ -12,10 +12,15 @@ describe("Patient validation and wire mapping", () => {
   it.each(["2025-02-29", "2026-04-31", "2026-13-01", "2026-10-21", "", "1/1/2000"])("rejects invalid/future date %s", (ngaySinh) => {
     expect(validatePatientDraft({ ...draft, ngaySinh }, "2026-10-20")).toHaveProperty("ngaySinh");
   });
-  it("trims strings and the corrected identity, maps optional blanks to null", () => {
-    const input = { ...draft, hoTen: "  A  ", soCmnd: " 001 ", email: " ", diaChi: " ", soDienThoai: " 0901234567 " };
-    expect(patientCreateBody(input)).toMatchObject({ hoTen: "A", soCmnd: "001", email: null, diaChi: null, soDienThoai: "0901234567" });
+  it("normalizes required email and maps optional blanks to null", () => {
+    const input = { ...draft, hoTen: "  A  ", soCmnd: " 001 ", email: "  Patient@Example.com  ", diaChi: " ", soDienThoai: " 0901234567 " };
+    expect(patientCreateBody(input)).toMatchObject({ hoTen: "A", soCmnd: "001", email: "patient@example.com", diaChi: null, soDienThoai: "0901234567" });
     expect(patientUpdateBody(input)).toHaveProperty("soCmnd", "001");
+    expect(() => patientCreateBody({ ...input, email: " " })).toThrow("Email là bắt buộc.");
+  });
+  it("requires email on new patients while permitting an unchanged legacy email on edits", () => {
+    expect(validatePatientDraft({ ...draft, email: "" }, "2026-10-20", true)).toHaveProperty("email");
+    expect(validatePatientDraft({ ...draft, email: "" }, "2026-10-20", false)).not.toHaveProperty("email");
   });
   it("validates every field independently of HTML including identity when editing", () => {
     const errors = validatePatientDraft({ ...draft, hoTen: " ", soCmnd: "", gioiTinh: "X", diaChi: "x".repeat(256), email: "invalid", soDienThoai: "abc", bhytSo: "123" });

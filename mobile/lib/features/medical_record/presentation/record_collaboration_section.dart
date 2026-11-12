@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -170,10 +172,12 @@ class _CommandFormState extends State<CommandForm> {
               key: Key('cf-${widget.prefix}-${field.id}'),
               initialValue: _choices[field.id],
               isExpanded: true,
-              decoration: InputDecoration(labelText: field.label),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, field.label),
+              ),
               items: [
                 for (final entry in choices.entries)
-                  DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+                  DropdownMenuItem(value: entry.key, child: LText(entry.value)),
               ],
               onChanged: enabled
                   ? (value) => setState(() => _choices[field.id] = value)
@@ -186,12 +190,14 @@ class _CommandFormState extends State<CommandForm> {
               enabled: enabled,
               maxLength: field.maxLength,
               maxLines: field.maxLines,
-              decoration: InputDecoration(labelText: field.label),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, field.label),
+              ),
             ),
         if (_message != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
+            child: LText(
               _message!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
@@ -202,12 +208,14 @@ class _CommandFormState extends State<CommandForm> {
             FilledButton(
               key: widget.submitKey ?? Key('cf-${widget.prefix}-submit'),
               onPressed: _busy ? null : _submit,
-              child: Text(_locked ? 'Gửi lại cùng yêu cầu' : widget.submitLabel),
+              child: LText(
+                _locked ? 'Gửi lại cùng yêu cầu' : widget.submitLabel,
+              ),
             ),
             if (widget.onCancel != null && !_locked)
               TextButton(
                 onPressed: _busy ? null : widget.onCancel,
-                child: const Text('Hủy'),
+                child: const LText('Hủy'),
               ),
           ],
         ),
@@ -309,28 +317,28 @@ class _LoadPanelState<T> extends State<LoadPanel<T>> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
+            LText(widget.title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (_loading)
               const Center(child: MediFlowLoader())
             else if (error != null)
               if (error is ApiFailure && error.status == 403)
-                Text(widget.deniedText)
+                LText(widget.deniedText)
               else ...[
-                Text('Không tải được ${widget.noun}.'),
+                LText('Không tải được ${widget.noun}.'),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     key: Key('retry-${widget.id}'),
                     onPressed: _reload,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Thử lại'),
+                    label: const LText('Thử lại'),
                   ),
                 ),
               ]
             else if (items != null) ...[
               if (items.isEmpty)
-                Text(widget.emptyText)
+                LText(widget.emptyText)
               else
                 for (final item in items)
                   Padding(
@@ -371,9 +379,11 @@ class _RecordCollaborationSectionState
 
   void _onHandovers(List<RecordHandover> handovers, String? staffId) {
     final accepted = handovers.where((h) => h.status == 'ACCEPTED').toList()
-      ..sort((a, b) => (a.acceptedAt ?? a.requestedAt).compareTo(
-        b.acceptedAt ?? b.requestedAt,
-      ));
+      ..sort(
+        (a, b) => (a.acceptedAt ?? a.requestedAt).compareTo(
+          b.acceptedAt ?? b.requestedAt,
+        ),
+      );
     final former =
         staffId != null &&
         accepted.isNotEmpty &&
@@ -400,7 +410,7 @@ class _RecordCollaborationSectionState
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text(
+              child: LText(
                 'Hồ sơ đã bàn giao cho bác sĩ khác. Bạn chỉ có thể xem.',
               ),
             ),
@@ -436,7 +446,7 @@ class _RecordCollaborationSectionState
                   form: CommandForm(
                     prefix: 'handover',
                     submitLabel: 'Gửi bàn giao',
-                    fields: const [
+                    fields: [
                       CommandField('toDoctorId', 'Mã bác sĩ nhận bàn giao *'),
                       CommandField(
                         'reason',
@@ -496,11 +506,11 @@ class _RecordCollaborationSectionState
           itemBuilder: (context, note, reload) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LText(
                 '${note.authorStaffId} · ${formatClinicalInstant(note.createdAt)}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              Text(note.opinion),
+              LText(note.opinion),
             ],
           ),
           footer: (context, reload) =>
@@ -557,18 +567,21 @@ class _RecordCollaborationSectionState
                 amendment.authorStaffId != staffId,
             onChanged: () => setState(() => _amendmentRevision++),
           ),
-          footer: (context, reload) =>
-              readOnly || capabilities.canAmend != true
+          footer: (context, reload) => readOnly || capabilities.canAmend != true
               ? const SizedBox.shrink()
               : _formToggle(
                   toggleKey: 'toggle-amend',
-                  label: 'Đề nghị đính chính',
+                  label: capabilities.canApplyAmendment == true
+                      ? 'Sửa hồ sơ đã hoàn tất'
+                      : 'Đề nghị đính chính',
                   open: _showAmendForm,
                   onToggle: (value) => setState(() => _showAmendForm = value),
                   form: CommandForm(
                     prefix: 'amend',
-                    submitLabel: 'Gửi đề nghị đính chính',
-                    fields: const [
+                    submitLabel: capabilities.canApplyAmendment == true
+                        ? 'Áp dụng đính chính'
+                        : 'Gửi đề nghị đính chính',
+                    fields: [
                       CommandField(
                         'section',
                         'Mục cần đính chính *',
@@ -576,7 +589,9 @@ class _RecordCollaborationSectionState
                       ),
                       CommandField(
                         'amendedText',
-                        'Nội dung đính chính *',
+                        capabilities.canApplyAmendment == true
+                            ? 'Nội dung cần sửa *'
+                            : 'Nội dung đính chính *',
                         maxLength: 4000,
                         maxLines: 3,
                       ),
@@ -654,7 +669,7 @@ class _RecordCollaborationSectionState
           child: OutlinedButton(
             key: Key(toggleKey),
             onPressed: () => onToggle(true),
-            child: Text(label),
+            child: LText(label),
           ),
         );
 }
@@ -678,7 +693,7 @@ class _HandoverTile extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
+      LText(
         '${handover.fromDoctorId} → ${handover.toDoctorId} · '
         '${switch (handover.status) {
           'ACCEPTED' => 'Đã tiếp nhận',
@@ -687,9 +702,9 @@ class _HandoverTile extends StatelessWidget {
         }}',
         style: Theme.of(context).textTheme.bodySmall,
       ),
-      Text(handover.reason),
-      Text(handover.pendingItems),
-      Text(
+      LText(handover.reason),
+      LText(handover.pendingItems),
+      LText(
         'Gửi lúc ${formatClinicalInstant(handover.requestedAt)}',
         style: Theme.of(context).textTheme.bodySmall,
       ),
@@ -749,7 +764,7 @@ class _AmendmentCardState extends State<AmendmentCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             [
               amendmentSectionLabels[amendment.section] ?? amendment.section,
               if (widget.showRecord) 'Hồ sơ ${amendment.recordId}',
@@ -764,21 +779,37 @@ class _AmendmentCardState extends State<AmendmentCard> {
               Expanded(child: _side(theme, 'Bản gốc', amendment.originalText)),
               const SizedBox(width: 12),
               Expanded(
-                child: _side(theme, 'Bản đính chính', amendment.amendedText),
+                child: _side(
+                  theme,
+                  amendment.status == 'APPLIED' || amendment.status == 'APPROVED'
+                      ? 'Nội dung đã áp dụng'
+                      : 'Bản đính chính',
+                  amendment.amendedText,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Lý do', style: theme.textTheme.bodySmall),
-          Text(amendment.reason),
+          LText('Lý do', style: theme.textTheme.bodySmall),
+          LText(amendment.reason),
           if (amendment.decisionNote?.trim().isNotEmpty == true) ...[
-            Text('Ghi chú quyết định', style: theme.textTheme.bodySmall),
-            Text(amendment.decisionNote!),
+            LText('Ghi chú quyết định', style: theme.textTheme.bodySmall),
+            LText(amendment.decisionNote!),
           ],
           if (amendment.status == 'APPROVED') ...[
-            const Text('Đã xác nhận nội bộ'),
+            const LText('Đã xác nhận nội bộ'),
             if (hash != null && hash.isNotEmpty)
-              Text(
+              LText(
+                'Mã băm nội dung: ${hash.length > 12 ? hash.substring(0, 12) : hash}',
+                style: theme.textTheme.bodySmall,
+              ),
+          ],
+          if (amendment.status == 'APPLIED') ...[
+            LText(
+              'Đã áp dụng trực tiếp bởi bác sĩ phụ trách · ${amendment.decidedByStaffId ?? amendment.authorStaffId} · ${amendment.decidedAt == null ? '' : formatClinicalInstant(amendment.decidedAt!)}',
+            ),
+            if (hash != null && hash.isNotEmpty)
+              LText(
                 'Mã băm nội dung: ${hash.length > 12 ? hash.substring(0, 12) : hash}',
                 style: theme.textTheme.bodySmall,
               ),
@@ -786,7 +817,9 @@ class _AmendmentCardState extends State<AmendmentCard> {
           if (widget.canDecide)
             _deciding
                 ? CommandForm(
-                    prefix: widget.keyPrefix == 'amendment' ? 'decide' : 'pending-decide',
+                    prefix: widget.keyPrefix == 'amendment'
+                        ? 'decide'
+                        : 'pending-decide',
                     submitLabel: 'Gửi quyết định',
                     fields: const [
                       CommandField(
@@ -811,8 +844,8 @@ class _AmendmentCardState extends State<AmendmentCard> {
                       }
                       return null;
                     },
-                    onSubmit: (values, key) => widget.repository
-                        .decideAmendment(
+                    onSubmit: (values, key) =>
+                        widget.repository.decideAmendment(
                           amendment.recordId,
                           amendment.amendmentId,
                           decision: values['decision']!,
@@ -832,7 +865,7 @@ class _AmendmentCardState extends State<AmendmentCard> {
                         '${widget.keyPrefix}-decide-${amendment.amendmentId}',
                       ),
                       onPressed: () => setState(() => _deciding = true),
-                      child: const Text('Duyệt hoặc từ chối'),
+                      child: const LText('Duyệt hoặc từ chối'),
                     ),
                   ),
         ],
@@ -843,8 +876,8 @@ class _AmendmentCardState extends State<AmendmentCard> {
   Widget _side(ThemeData theme, String title, String text) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(title, style: theme.textTheme.bodySmall),
-      Text(text),
+      LText(title, style: theme.textTheme.bodySmall),
+      LText(text),
     ],
   );
 
@@ -852,6 +885,7 @@ class _AmendmentCardState extends State<AmendmentCard> {
     'PENDING' => 'Chờ duyệt',
     'APPROVED' => 'Đã duyệt',
     'REJECTED' => 'Đã từ chối',
+    'APPLIED' => 'Đã áp dụng bởi bác sĩ phụ trách',
     _ => status,
   };
 }

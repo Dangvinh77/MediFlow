@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
@@ -65,7 +67,7 @@ function getRequestError(cause: unknown): RequestError {
 function Identifier({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
       <dd className="mt-1 break-all font-mono text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : label === "Hồ sơ khám" ? "record" : undefined} value={value} fallback={label} technical /></dd>
     </div>
   );
@@ -78,6 +80,7 @@ export function LabDetail({ testId, notice, returnTo }: LabDetailProps) {
 }
 
 function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
+  const { localize } = useLocale();
   const backHref = safeLabReturn(returnTo);
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
@@ -142,23 +145,23 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
     };
   }, [requestKey, router, testId]);
 
-  if (loading && state.status !== "success") return <AsyncState kind="loading" message="Đang tải chi tiết xét nghiệm…" />;
+  if (loading && state.status !== "success") return <AsyncState kind="loading" message={localize("Đang tải chi tiết xét nghiệm…")} />;
 
   if (state.status === "not-found") {
     return (
       <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Không tìm thấy xét nghiệm</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Yêu cầu có thể đã bị xóa hoặc mã truy cập không còn hợp lệ.</p>
-        <Link href={backHref} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
+        <h2 className="text-lg font-semibold"><L10n>{"Không tìm thấy xét nghiệm"}</L10n></h2>
+        <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Yêu cầu có thể đã bị xóa hoặc mã truy cập không còn hợp lệ."}</L10n></p>
+        <Link href={backHref} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Quay lại danh sách"}</L10n></Link>
       </section>
     );
   }
 
   if (state.status === "error") {
-    return <AsyncState kind="error" message={state.error.message} correlationId={state.error.correlationId} onRetry={retry} />;
+    return <AsyncState kind="error" message={localize(state.error.message)} correlationId={state.error.correlationId} onRetry={retry} />;
   }
 
-  if (state.status !== "success") return <AsyncState kind="empty" message="Không có dữ liệu xét nghiệm." />;
+  if (state.status !== "success") return <AsyncState kind="empty" message={localize("Không có dữ liệu xét nghiệm.")} />;
 
   const test = state.test;
   const lifecycle = statusPresentation[test.status];
@@ -166,17 +169,15 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
 
   return (
     <section className="mt-6 space-y-6">
-      {notice === "created" ? (
-        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          Đã tạo yêu cầu xét nghiệm thành công.
-        </p>
-      ) : null}
-      <PatientContextBanner label="Ngữ cảnh xét nghiệm" patientId={test.patientId}
+      <L10nValue>{notice === "created" ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10n>{"Đã tạo yêu cầu xét nghiệm thành công."}</L10n></p>
+      ) : null}</L10nValue>
+      <PatientContextBanner label={localize("Ngữ cảnh xét nghiệm")} patientId={test.patientId}
         departmentId={test.requestingDepartmentId} date={test.requestedDate} dateLabel="Ngày yêu cầu" className="sticky top-18 z-20">
         <div className="space-y-2">
           <p className="font-semibold">{test.labType}</p>
           <div className="flex flex-wrap gap-2">
-          <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
+          <StatusBadge tone={lifecycle.tone}><L10nValue>{lifecycle.label}</L10nValue></StatusBadge>
           <FinancialStatus test={test} />
           </div>
         </div>
@@ -191,62 +192,62 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
         onReviewRequired={() => setReviewToken((value) => value + 1)}
       />
 
-      {review.status === "report" || review.status === "none" ? (
+      <L10nValue>{review.status === "report" || review.status === "none" ? (
         <LabReportWorkflowPanel key={reviewToken} test={test}
           initialReport={review.status === "report" ? review.report : null} onChanged={retry} />
-      ) : null}
-      {review.status === "report" || review.status === "none" ? <SpecimenPanel testId={test.testId} /> : null}
+      ) : null}</L10nValue>
+      <L10nValue>{review.status === "report" || review.status === "none" ? <SpecimenPanel testId={test.testId} /> : null}</L10nValue>
 
       <dl className="grid gap-5 border-b border-border py-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div><dt className="text-sm text-muted-foreground">Hình thức khám</dt><dd className="mt-1 text-sm">{test.careEpisodeType === "OUTPATIENT_VISIT" ? "Ngoại trú" : test.careEpisodeType === "ADMISSION" ? "Nội trú" : "Chưa có thông tin"}</dd></div>
-        <div><dt className="text-sm text-muted-foreground">Ngày yêu cầu</dt><dd className="mt-1 text-sm">{formatLocalDate(test.requestedDate)}</dd></div>
-        <div><dt className="text-sm text-muted-foreground">Ngày thực hiện</dt><dd className="mt-1 text-sm">{test.performedDate ? formatLocalDate(test.performedDate) : "Chưa thực hiện"}</dd></div>
+        <div><dt className="text-sm text-muted-foreground"><L10n>{"Hình thức khám"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{test.careEpisodeType === "OUTPATIENT_VISIT" ? "Ngoại trú" : test.careEpisodeType === "ADMISSION" ? "Nội trú" : "Chưa có thông tin"}</L10nValue></dd></div>
+        <div><dt className="text-sm text-muted-foreground"><L10n>{"Ngày yêu cầu"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{formatLocalDate(test.requestedDate)}</L10nValue></dd></div>
+        <div><dt className="text-sm text-muted-foreground"><L10n>{"Ngày thực hiện"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{test.performedDate ? formatLocalDate(test.performedDate) : "Chưa thực hiện"}</L10nValue></dd></div>
       </dl>
 
       <section className="border-b border-border py-5">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold">Kết quả xét nghiệm</h2>
-          {legacyTemplate && results.length > 0 ? <StatusBadge tone="neutral">Chưa gắn template</StatusBadge> : null}
+          <h2 className="text-lg font-semibold"><L10n>{"Kết quả xét nghiệm"}</L10n></h2>
+          <L10nValue>{legacyTemplate && results.length > 0 ? <StatusBadge tone="neutral"><L10n>{"Chưa gắn template"}</L10n></StatusBadge> : null}</L10nValue>
         </div>
-        {results.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có chỉ số kết quả.</p> : (
+        <L10nValue>{results.length === 0 ? <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Chưa có chỉ số kết quả."}</L10n></p> : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-border"><tr><th scope="col" className="px-3 py-2">Chỉ số</th><th scope="col" className="px-3 py-2">Giá trị</th><th scope="col" className="px-3 py-2">Đơn vị</th><th scope="col" className="px-3 py-2">Khoảng tham chiếu</th></tr></thead>
-              <tbody>{results.map((result) => <tr key={result.resultId} className="border-b border-border last:border-0"><td className="px-3 py-3 font-medium">{result.indicator}</td><td className="px-3 py-3">{result.value}</td><td className="px-3 py-3">{result.unit ?? "—"}</td><td className="px-3 py-3">{result.referenceRange ?? "—"}</td></tr>)}</tbody>
+              <thead className="border-b border-border"><tr><th scope="col" className="px-3 py-2"><L10n>{"Chỉ số"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Giá trị"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Đơn vị"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Khoảng tham chiếu"}</L10n></th></tr></thead>
+              <tbody><L10nValue>{results.map((result) => <tr key={result.resultId} className="border-b border-border last:border-0"><td className="px-3 py-3 font-medium">{result.indicator}</td><td className="px-3 py-3">{result.value}</td><td className="px-3 py-3"><L10nValue>{result.unit ?? "—"}</L10nValue></td><td className="px-3 py-3"><L10nValue>{result.referenceRange ?? "—"}</L10nValue></td></tr>)}</L10nValue></tbody>
             </table>
           </div>
-        )}
-        <div className="mt-5 border-t border-border pt-4"><h3 className="text-sm font-semibold">Kết luận</h3><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{test.conclusion ?? "Chưa có kết luận."}</p></div>
+        )}</L10nValue>
+        <div className="mt-5 border-t border-border pt-4"><h3 className="text-sm font-semibold"><L10n>{"Kết luận"}</L10n></h3><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground"><L10nValue>{test.conclusion ?? "Chưa có kết luận."}</L10nValue></p></div>
       </section>
 
-      {refreshError ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger"><p>{refreshError.message}</p>{refreshError.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã hỗ trợ: {refreshError.correlationId}</p></details> : null}<p className="mt-1 text-xs">Đang hiển thị thông tin đã tải trước đó. Cập nhật lại trước khi tiếp tục xử lý.</p></div> : null}
-      <div className="flex flex-wrap items-center gap-3"><Button type="button" variant="ghost" disabled={refreshBlocked || loading} onClick={retry}>Cập nhật trạng thái xét nghiệm</Button>{refreshBlocked ? <p className="text-xs text-muted-foreground">Lưu hoặc đóng biểu mẫu trước khi cập nhật.</p> : null}{loading ? <p role="status" className="text-sm text-muted-foreground">Đang cập nhật…</p> : null}</div>
+      <L10nValue>{refreshError ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger"><p><L10nValue>{refreshError.message}</L10nValue></p><L10nValue>{refreshError.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã hỗ trợ: "}</L10n>{refreshError.correlationId}</p></details> : null}</L10nValue><p className="mt-1 text-xs"><L10n>{"Đang hiển thị thông tin đã tải trước đó. Cập nhật lại trước khi tiếp tục xử lý."}</L10n></p></div> : null}</L10nValue>
+      <div className="flex flex-wrap items-center gap-3"><Button type="button" variant="ghost" disabled={refreshBlocked || loading} onClick={retry}><L10n>{"Cập nhật trạng thái xét nghiệm"}</L10n></Button><L10nValue>{refreshBlocked ? <p className="text-xs text-muted-foreground"><L10n>{"Lưu hoặc đóng biểu mẫu trước khi cập nhật."}</L10n></p> : null}</L10nValue><L10nValue>{loading ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang cập nhật…"}</L10n></p> : null}</L10nValue></div>
 
       <details className="border-t border-border py-3">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin bàn giao thu ngân và hỗ trợ</summary>
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Thông tin bàn giao thu ngân và hỗ trợ"}</L10n></summary>
         <dl className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <Identifier label="Mã xét nghiệm" value={test.testId} />
-        <Identifier label="Hồ sơ khám" value={test.recordId} />
-        <Identifier label="Khoa yêu cầu" value={test.requestingDepartmentId} />
-        <Identifier label="Nguồn chỉ định" value={test.sourceOrderId} />
-        <Identifier label="Đợt chăm sóc" value={test.careEpisodeId} />
-        <Identifier label="Xác nhận tài chính" value={test.clearanceId} />
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã giá</dt><dd className="mt-1 text-sm">{test.priceCode ?? "—"}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phiên bản dữ liệu</dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(test.createdAt)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cập nhật</dt><dd className="mt-1 text-sm">{formatInstant(test.updatedAt)}</dd></div>
+        <Identifier label={localize("Mã xét nghiệm")} value={test.testId} />
+        <Identifier label={localize("Hồ sơ khám")} value={test.recordId} />
+        <Identifier label={localize("Khoa yêu cầu")} value={test.requestingDepartmentId} />
+        <Identifier label={localize("Nguồn chỉ định")} value={test.sourceOrderId} />
+        <Identifier label={localize("Đợt chăm sóc")} value={test.careEpisodeId} />
+        <Identifier label={localize("Xác nhận tài chính")} value={test.clearanceId} />
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Mã giá"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{test.priceCode ?? "—"}</L10nValue></dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Phiên bản dữ liệu"}</L10n></dt><dd className="mt-1 text-sm">{test.careContractVersion} / {test.resultVersion}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Ngày tạo"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{formatInstant(test.createdAt)}</L10nValue></dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Cập nhật"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{formatInstant(test.updatedAt)}</L10nValue></dd></div>
         </dl>
-        <p className="mt-2 text-sm text-muted-foreground">Thu ngân mở “Thu phí xét nghiệm &amp; thuốc”, tìm bệnh nhân và cập nhật hàng chờ. Các mã dưới đây dùng khi cần hỗ trợ đối soát; nhấp vào ô để chọn và sao chép.</p>
+        <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Thu ngân mở “Thu phí xét nghiệm &amp; thuốc”, tìm bệnh nhân và cập nhật hàng chờ. Các mã dưới đây dùng khi cần hỗ trợ đối soát; nhấp vào ô để chọn và sao chép."}</L10n></p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {[["test", "Mã xét nghiệm bàn giao", test.testId], ["patient", "Mã bệnh nhân bàn giao", test.patientId], ["episode", "Mã đợt chăm sóc bàn giao", test.careEpisodeId]].map(([key, label, value]) => <label key={key} htmlFor={`lab-handoff-${key}`} className="space-y-1 text-sm">{label}
-            {value ? <input id={`lab-handoff-${key}`} readOnly value={value} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" /> : <span className="block text-warning">Chưa có mã đợt chăm sóc. Liên hệ bộ phận chỉ định để đối soát.</span>}
-          </label>)}
+          <L10nValue>{[["test", "Mã xét nghiệm bàn giao", test.testId], ["patient", "Mã bệnh nhân bàn giao", test.patientId], ["episode", "Mã đợt chăm sóc bàn giao", test.careEpisodeId]].map(([key, label, value]) => <label key={key} htmlFor={`lab-handoff-${key}`} className="space-y-1 text-sm"><L10nValue>{label}</L10nValue>
+            <L10nValue>{value ? <input id={`lab-handoff-${key}`} readOnly value={value} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" /> : <span className="block text-warning"><L10n>{"Chưa có mã đợt chăm sóc. Liên hệ bộ phận chỉ định để đối soát."}</L10n></span>}</L10nValue>
+          </label>)}</L10nValue>
         </div>
       </details>
 
 
-      {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs"><ReferenceText value={test.emergencyOverrideId} fallback="Phê duyệt ngoại lệ" /></p></section> : null}
-      <Link href={backHref} className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
+      <L10nValue>{test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium"><L10n>{"Có phê duyệt ngoại lệ khẩn cấp"}</L10n></p><p className="mt-1 break-all font-mono text-xs"><ReferenceText value={test.emergencyOverrideId} fallback="Phê duyệt ngoại lệ" /></p></section> : null}</L10nValue>
+      <Link href={backHref} className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Quay lại danh sách"}</L10n></Link>
     </section>
   );
 }

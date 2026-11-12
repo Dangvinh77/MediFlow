@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { formatLocalDate } from "@/lib/format";
@@ -50,21 +52,22 @@ function barPath(x: number, y: number, width: number, height: number, radius: nu
 export function ChartCard({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: ReactNode; className?: string }) {
   return <figure className={`min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5 ${className}`}>
     <figcaption>
-      <span className="block font-semibold">{title}</span>
-      {subtitle && <span className="mt-0.5 block text-sm text-muted-foreground">{subtitle}</span>}
+      <span className="block font-semibold"><L10nValue>{title}</L10nValue></span>
+      <L10nValue>{subtitle && <span className="mt-0.5 block text-sm text-muted-foreground"><L10nValue>{subtitle}</L10nValue></span>}</L10nValue>
     </figcaption>
-    {children}
+    <L10nValue>{children}</L10nValue>
   </figure>;
 }
 
 export function ChartLegend({ items }: { items: { label: string; color: string; dashed?: boolean; line?: boolean }[] }) {
-  return <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground" aria-label="Chú giải">
-    {items.map(item => <li key={item.label} className="inline-flex items-center gap-2">
-      {item.line
+  const { localize } = useLocale();
+  return <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground" aria-label={localize("Chú giải")}>
+    <L10nValue>{items.map(item => <li key={item.label} className="inline-flex items-center gap-2">
+      <L10nValue>{item.line
         ? <svg width="20" height="10" aria-hidden="true" className={item.color}><line x1="0" x2="20" y1="5" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray={item.dashed ? "5 3" : undefined} /></svg>
-        : <svg width="10" height="10" aria-hidden="true" className={item.color}><rect width="10" height="10" rx="2" fill="currentColor" /></svg>}
-      {item.label}
-    </li>)}
+        : <svg width="10" height="10" aria-hidden="true" className={item.color}><rect width="10" height="10" rx="2" fill="currentColor" /></svg>}</L10nValue>
+      <L10nValue>{item.label}</L10nValue>
+    </li>)}</L10nValue>
   </ul>;
 }
 
@@ -72,15 +75,15 @@ function Tooltip({ x, width, title, rows, footer }: { x: number; width: number; 
   const boxWidth = 196;
   const left = Math.min(Math.max(x - boxWidth / 2, 0), width - boxWidth);
   return <div role="status" style={{ left, width: boxWidth }} className="pointer-events-none absolute top-0 z-10 rounded-lg border border-border bg-surface p-2 text-xs shadow-md">
-    <p className="font-semibold">{title}</p>
+    <p className="font-semibold"><L10nValue>{title}</L10nValue></p>
     <dl className="mt-1 space-y-0.5">
-      {rows.map(row => <div key={row.label} className="flex items-center justify-between gap-3">
+      <L10nValue>{rows.map(row => <div key={row.label} className="flex items-center justify-between gap-3">
         <dt className="inline-flex min-w-0 items-center gap-1.5 text-muted-foreground">
-          <svg width="8" height="8" aria-hidden="true" className={`shrink-0 ${row.color}`}><rect width="8" height="8" rx="2" fill="currentColor" /></svg>{row.label}
+          <svg width="8" height="8" aria-hidden="true" className={`shrink-0 ${row.color}`}><rect width="8" height="8" rx="2" fill="currentColor" /></svg><L10nValue>{row.label}</L10nValue>
         </dt>
         <dd className="font-medium tabular-nums">{row.value}</dd>
-      </div>)}
-      {footer && <div className="flex justify-between gap-3 border-t border-border pt-0.5"><dt className="text-muted-foreground">{footer.label}</dt><dd className="font-semibold tabular-nums">{footer.value}</dd></div>}
+      </div>)}</L10nValue>
+      <L10nValue>{footer && <div className="flex justify-between gap-3 border-t border-border pt-0.5"><dt className="text-muted-foreground"><L10nValue>{footer.label}</L10nValue></dt><dd className="font-semibold tabular-nums">{footer.value}</dd></div>}</L10nValue>
     </dl>
   </div>;
 }
@@ -101,6 +104,7 @@ export function CartesianChart({ kind, labels, series, format, description, nega
   negativeColor?: string;
   height?: number;
 }) {
+  const { localize } = useLocale();
   const { ref, width } = useChartWidth();
   const titleId = useId();
   const [hover, setHover] = useState<number | null>(null);
@@ -129,7 +133,7 @@ export function CartesianChart({ kind, labels, series, format, description, nega
       if (kind === "stacked") {
         let base = 0;
         const topMost = series.reduce((last, item, order) => (item.values[index] ? order : last), -1);
-        return <g key={label}>{series.map((item, order) => {
+        return <g key={label}><L10nValue>{series.map((item, order) => {
           const value = item.values[index] ?? 0;
           if (value <= 0) return null;
           const yTop = y(base + value), yBase = y(base);
@@ -140,15 +144,15 @@ export function CartesianChart({ kind, labels, series, format, description, nega
             ? barPath(center(index) - barWidth / 2, yTop, barWidth, segment, 4)
             : `M${center(index) - barWidth / 2},${yTop}h${barWidth}v${segment}h${-barWidth}Z`;
           return <path key={item.label} d={shape} fill="currentColor" className={item.color} />;
-        })}</g>;
+        })}</L10nValue></g>;
       }
       if (kind === "grouped") {
         const groupWidth = barWidth * series.length + 2 * (series.length - 1);
-        return <g key={label}>{series.map((item, order) => {
+        return <g key={label}><L10nValue>{series.map((item, order) => {
           const value = item.values[index];
           if (value === null || value === undefined || value <= 0) return null;
           return <path key={item.label} d={barPath(center(index) - groupWidth / 2 + order * (barWidth + 2), y(value), barWidth, bottom - y(value), 4)} fill="currentColor" className={item.color} />;
-        })}</g>;
+        })}</L10nValue></g>;
       }
       const value = series[0].values[index];
       if (value === null || value === undefined || value === 0) return null;
@@ -165,12 +169,12 @@ export function CartesianChart({ kind, labels, series, format, description, nega
       const path = points.map(([x, py]) => `${x},${py}`).join(" ");
       const [lastX, lastY] = points[points.length - 1];
       return <g key={item.label} className={item.color}>
-        {series.length === 1 && points.length > 1 && <polygon points={`${points[0][0]},${bottom} ${path} ${lastX},${bottom}`} fill="currentColor" fillOpacity=".12" />}
+        <L10nValue>{series.length === 1 && points.length > 1 && <polygon points={`${points[0][0]},${bottom} ${path} ${lastX},${bottom}`} fill="currentColor" fillOpacity=".12" />}</L10nValue>
         <polyline points={path} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={item.dashed ? "6 4" : undefined} />
-        {hover !== null && item.values[hover] !== null && item.values[hover] !== undefined
+        <L10nValue>{hover !== null && item.values[hover] !== null && item.values[hover] !== undefined
           ? <circle cx={center(hover)} cy={y(item.values[hover] as number)} r="4" fill="currentColor" stroke="var(--surface)" strokeWidth="2" />
-          : <circle cx={lastX} cy={lastY} r="3.5" fill="currentColor" stroke="var(--surface)" strokeWidth="2" />}
-        {series.length > 1 && <text x={Math.min(lastX, right - 2)} y={lastY - 8 + order * 18} textAnchor="end" className="fill-foreground text-[11px] font-medium">{item.label}</text>}
+          : <circle cx={lastX} cy={lastY} r="3.5" fill="currentColor" stroke="var(--surface)" strokeWidth="2" />}</L10nValue>
+        <L10nValue>{series.length > 1 && <text x={Math.min(lastX, right - 2)} y={lastY - 8 + order * 18} textAnchor="end" className="fill-foreground text-[11px] font-medium"><L10nValue>{item.label}</L10nValue></text>}</L10nValue>
       </g>;
     });
   }
@@ -182,17 +186,17 @@ export function CartesianChart({ kind, labels, series, format, description, nega
   return <div ref={ref} className="relative mt-3 min-w-0">
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby={titleId} className="block max-w-full touch-pan-y"
       onPointerMove={onPointer} onPointerDown={onPointer} onPointerLeave={() => setHover(null)}>
-      <title id={titleId}>{description}</title>
-      {ticks.map(tick => <g key={tick}>
+      <title id={titleId}><L10nValue>{description}</L10nValue></title>
+      <L10nValue>{ticks.map(tick => <g key={tick}>
         <line x1={left} x2={right} y1={y(tick)} y2={y(tick)} className={tick === 0 ? "stroke-control-border" : "stroke-border"} strokeDasharray={tick === 0 ? undefined : "2 4"} />
-        <text x={left - 6} y={y(tick) + 4} textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">{compact(tick)}</text>
-      </g>)}
-      {hover !== null && <rect x={left + hover * band} y={top} width={band} height={bottom - top} className="fill-foreground/5" />}
-      {kind === "line" ? lines() : bars()}
-      {labels.map((label, index) => index % stride === 0 && <text key={label} x={center(index)} y={height - 6} textAnchor="middle" className="fill-muted-foreground text-[11px]">{label}</text>)}
+        <text x={left - 6} y={y(tick) + 4} textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums"><L10nValue>{compact(tick)}</L10nValue></text>
+      </g>)}</L10nValue>
+      <L10nValue>{hover !== null && <rect x={left + hover * band} y={top} width={band} height={bottom - top} className="fill-foreground/5" />}</L10nValue>
+      <L10nValue>{kind === "line" ? lines() : bars()}</L10nValue>
+      <L10nValue>{labels.map((label, index) => index % stride === 0 && <text key={label} x={center(index)} y={height - 6} textAnchor="middle" className="fill-muted-foreground text-[11px]"><L10nValue>{label}</L10nValue></text>)}</L10nValue>
     </svg>
-    {hover !== null && tooltipRows.length > 0 && <Tooltip x={center(hover)} width={width} title={labels[hover]} rows={tooltipRows}
-      footer={kind === "stacked" ? { label: "Tổng", value: format(totals[hover]) } : undefined} />}
+    <L10nValue>{hover !== null && tooltipRows.length > 0 && <Tooltip x={center(hover)} width={width} title={localize(labels[hover])} rows={tooltipRows}
+      footer={kind === "stacked" ? { label: "Tổng", value: format(totals[hover]) } : undefined} />}</L10nValue>
   </div>;
 }
 
@@ -211,41 +215,43 @@ export function Sparkline({ values }: { values: (number | null)[] }) {
 
 /** One whole, at a glance: share printed on each block where it fits, names in the legend. */
 export function SegmentedBar({ parts, format, description }: { parts: { label: string; color: string; value: number }[]; format: (value: number) => string; description: string }) {
+  const { localize } = useLocale();
   const total = parts.reduce((sum, part) => sum + part.value, 0);
   const visible = parts.filter(part => part.value > 0);
   return <div className="mt-4">
-    <div role="img" aria-label={description} className="flex h-14 gap-0.5 overflow-hidden rounded-lg">
-      {visible.map(part => {
+    <div role="img" aria-label={localize(description)} className="flex h-14 gap-0.5 overflow-hidden rounded-lg">
+      <L10nValue>{visible.map(part => {
         const share = total > 0 ? (part.value / total) * 100 : 0;
-        return <div key={part.label} style={{ width: `${share}%` }} title={`${part.label}: ${format(part.value)}`} className={`flex min-w-1 items-center justify-center bg-current ${part.color}`}>
-          {share >= 9 && <span className="text-sm font-semibold tabular-nums text-white">{Math.round(share)}%</span>}
+        return <div key={part.label} style={{ width: `${share}%` }} title={localize(`${part.label}: ${format(part.value)}`)} className={`flex min-w-1 items-center justify-center bg-current ${part.color}`}>
+          <L10nValue>{share >= 9 && <span className="text-sm font-semibold tabular-nums text-white"><L10nValue>{Math.round(share)}</L10nValue>%</span>}</L10nValue>
         </div>;
-      })}
+      })}</L10nValue>
     </div>
     <dl className="mt-3 space-y-1.5 text-sm">
-      {visible.map(part => <div key={part.label} className="flex items-center justify-between gap-3">
+      <L10nValue>{visible.map(part => <div key={part.label} className="flex items-center justify-between gap-3">
         <dt className="inline-flex items-center gap-2 text-muted-foreground">
-          <svg width="10" height="10" aria-hidden="true" className={part.color}><rect width="10" height="10" rx="2" fill="currentColor" /></svg>{part.label}
+          <svg width="10" height="10" aria-hidden="true" className={part.color}><rect width="10" height="10" rx="2" fill="currentColor" /></svg><L10nValue>{part.label}</L10nValue>
         </dt>
-        <dd className="font-medium tabular-nums">{format(part.value)}</dd>
-      </div>)}
+        <dd className="font-medium tabular-nums"><L10nValue>{format(part.value)}</L10nValue></dd>
+      </div>)}</L10nValue>
     </dl>
   </div>;
 }
 
 /** Ranked horizontal bars, one hue: a shared baseline compares parts more exactly than slices. */
 export function RankedBars({ rows, format, label = "Xếp hạng theo khoa" }: { rows: { id: string; label: ReactNode; value: number; note?: string }[]; format: (value: number) => string; label?: string }) {
+  const { localize } = useLocale();
   const max = Math.max(1, ...rows.map(row => row.value));
-  return <ul className="mt-4 space-y-3" aria-label={label}>
-    {rows.map(row => <li key={row.id} className="min-w-0">
+  return <ul className="mt-4 space-y-3" aria-label={localize(label)}>
+    <L10nValue>{rows.map(row => <li key={row.id} className="min-w-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-        <span className="min-w-0 font-medium">{row.label}</span>
-        <span className="tabular-nums text-muted-foreground">{format(row.value)}{row.note ? ` · ${row.note}` : ""}</span>
+        <span className="min-w-0 font-medium"><L10nValue>{row.label}</L10nValue></span>
+        <span className="tabular-nums text-muted-foreground"><L10nValue>{format(row.value)}</L10nValue><L10nValue>{row.note ? ` · ${row.note}` : ""}</L10nValue></span>
       </div>
       <div className="mt-1 h-3 rounded-full bg-surface-muted">
         <div style={{ width: `${(row.value / max) * 100}%` }} className="h-full rounded-full bg-chart-1" />
       </div>
-    </li>)}
+    </li>)}</L10nValue>
   </ul>;
 }
 
@@ -261,10 +267,10 @@ export function Dumbbell({ rows, format, baseLabel, compareLabel }: {
   return <div className="mt-3">
     <ChartLegend items={[{ label: compareLabel, color: "text-chart-neutral" }, { label: baseLabel, color: "text-chart-1" }]} />
     <ul className="mt-3 space-y-4">
-      {rows.map(row => <li key={row.id} className="min-w-0">
+      <L10nValue>{rows.map(row => <li key={row.id} className="min-w-0">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-          <span className="min-w-0 font-medium">{row.label}</span>
-          <span className="tabular-nums text-muted-foreground">{format(row.compare)} → {format(row.base)}</span>
+          <span className="min-w-0 font-medium"><L10nValue>{row.label}</L10nValue></span>
+          <span className="tabular-nums text-muted-foreground"><L10nValue>{format(row.compare)}</L10nValue> → <L10nValue>{format(row.base)}</L10nValue></span>
         </div>
         <div aria-hidden="true" className="relative mx-1.5 mt-2 h-3">
           <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
@@ -272,7 +278,7 @@ export function Dumbbell({ rows, format, baseLabel, compareLabel }: {
           <span style={{ left: position(row.compare) }} className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-chart-neutral" />
           <span style={{ left: position(row.base) }} className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-chart-1" />
         </div>
-      </li>)}
+      </li>)}</L10nValue>
     </ul>
   </div>;
 }
@@ -282,6 +288,7 @@ const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 /** Sequential, one hue, more is darker. Zero days keep the muted surface so gaps read as gaps. */
 export function CalendarHeatmap({ days, unit, description }: { days: { date: string; value: number }[]; unit: string; description: string }) {
+  const { localize } = useLocale();
   const { ref, width } = useChartWidth();
   const titleId = useId();
   const [hover, setHover] = useState<{ date: string; value: number; x: number } | null>(null);
@@ -295,22 +302,22 @@ export function CalendarHeatmap({ days, unit, description }: { days: { date: str
   const months = cells.filter(item => item.date.endsWith("-01"));
   return <div ref={ref} className="relative mt-3 min-w-0">
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby={titleId} className="block max-w-full" onPointerLeave={() => setHover(null)}>
-      <title id={titleId}>{description}</title>
-      {months.map(item => <text key={item.date} x={left + item.week * cell} y={10} className="fill-muted-foreground text-[11px]">T{Number(item.date.slice(5, 7))}</text>)}
-      {WEEKDAYS.map((label, index) => index % 2 === 0 && <text key={label} x={0} y={top + index * cell + size - 1} className="fill-muted-foreground text-[10px]">{label}</text>)}
-      {cells.map(item => {
+      <title id={titleId}><L10nValue>{description}</L10nValue></title>
+      <L10nValue>{months.map(item => <text key={item.date} x={left + item.week * cell} y={10} className="fill-muted-foreground text-[11px]">T<L10nValue>{Number(item.date.slice(5, 7))}</L10nValue></text>)}</L10nValue>
+      <L10nValue>{WEEKDAYS.map((label, index) => index % 2 === 0 && <text key={label} x={0} y={top + index * cell + size - 1} className="fill-muted-foreground text-[10px]"><L10nValue>{label}</L10nValue></text>)}</L10nValue>
+      <L10nValue>{cells.map(item => {
         const x = left + item.week * cell;
         const step = HEAT_STEPS[Math.min(HEAT_STEPS.length - 1, Math.floor(((item.value - 1) / max) * HEAT_STEPS.length))];
         return <rect key={item.date} x={x} y={top + item.weekday * cell} width={size} height={size} rx={2}
           className={item.value > 0 ? "text-chart-1" : "fill-surface-muted"} fill={item.value > 0 ? "currentColor" : undefined} fillOpacity={item.value > 0 ? step : undefined}
           onPointerEnter={() => setHover({ date: item.date, value: item.value, x: x + size / 2 })} />;
-      })}
+      })}</L10nValue>
     </svg>
     <div className="mt-2 flex items-center justify-end gap-1 text-[11px] text-muted-foreground" aria-hidden="true">
-      <span className="mr-1">Ít</span>
-      {HEAT_STEPS.map(step => <svg key={step} width="11" height="11" className="text-chart-1"><rect width="11" height="11" rx="2" fill="currentColor" fillOpacity={step} /></svg>)}
-      <span className="ml-1">Nhiều · cao nhất {max} {unit}/ngày</span>
+      <span className="mr-1"><L10n>{"Ít"}</L10n></span>
+      <L10nValue>{HEAT_STEPS.map(step => <svg key={step} width="11" height="11" className="text-chart-1"><rect width="11" height="11" rx="2" fill="currentColor" fillOpacity={step} /></svg>)}</L10nValue>
+      <span className="ml-1"><L10n>{"Nhiều · cao nhất "}</L10n><L10nValue>{max}</L10nValue> <L10nValue>{unit}</L10nValue><L10n>{"/ngày"}</L10n></span>
     </div>
-    {hover && <Tooltip x={hover.x} width={width} title={formatLocalDate(hover.date)} rows={[{ label: unit, color: "text-chart-1", value: String(hover.value) }]} />}
+    <L10nValue>{hover && <Tooltip x={hover.x} width={width} title={localize(formatLocalDate(hover.date))} rows={[{ label: unit, color: "text-chart-1", value: String(hover.value) }]} />}</L10nValue>
   </div>;
 }

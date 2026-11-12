@@ -44,7 +44,37 @@ class PatientWriteApplicationServiceTest {
 
         assertThat(dto.maBenhNhan()).isNotNull();
         assertThat(dto.hoTen()).isEqualTo("Nguyen Van A");
+        assertThat(dto.email()).isEqualTo("a@example.com");
         verify(events).publishCreated(any());
+    }
+
+    @Test
+    void createRejectsAnEmailAlreadyUsedAfterCaseAndWhitespaceNormalization() {
+        when(repository.existsByEmail("a@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(new CreatePatientRequest("Nguyen Van A",
+                LocalDate.of(1990, 1, 1), Gender.M, "001", "Hanoi", "0900000000",
+                "  A@Example.com  ", null)))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "PATIENT_EMAIL_DUPLICATE");
+        verify(repository, never()).save(any());
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void editRejectsAnEmailOwnedByAnotherPatient() {
+        Patient patient = Patient.create("Nguyen Van A", LocalDate.of(1990, 1, 1), Gender.M,
+                "001", "Hanoi", "0900000000", "a@example.com", null);
+        when(repository.findByIdForUpdate(patient.patientId())).thenReturn(Optional.of(patient));
+        when(repository.existsByEmailAndPatientIdNot("other@example.com", patient.patientId())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(patient.patientId(), new UpdatePatientRequest(
+                "Nguyen Van A", patient.dateOfBirth(), patient.gender(), "Hanoi", null,
+                "Other@Example.com", null, null, null)))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "PATIENT_EMAIL_DUPLICATE");
+        assertThat(patient.email()).isEqualTo("a@example.com");
+        verify(repository, never()).save(any());
     }
 
     @Test

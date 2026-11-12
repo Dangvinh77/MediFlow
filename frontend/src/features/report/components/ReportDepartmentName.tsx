@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
@@ -38,7 +40,7 @@ export function ReportDepartmentProvider({ children }: { children: ReactNode }) 
       return request;
     };
   });
-  return <DepartmentContext.Provider value={lookup}>{children}</DepartmentContext.Provider>;
+  return <DepartmentContext.Provider value={lookup}><L10nValue>{children}</L10nValue></DepartmentContext.Provider>;
 }
 
 export function ReportDepartmentName({ id, showId = false }: { id?: string | null; showId?: boolean }) {
@@ -52,12 +54,12 @@ export function ReportDepartmentName({ id, showId = false }: { id?: string | nul
     const timer = setTimeout(() => { void lookup(id, attempt).then(result => { if (active) setResolved({ key, result }); }); }, 300);
     return () => { active = false; clearTimeout(timer); };
   }, [id, lookup, attempt, key]);
-  if (!id) return <span>Toàn bệnh viện</span>;
-  if (!uuid.test(id)) return <span>Thông tin khoa không hợp lệ</span>;
+  if (!id) return <span><L10n>{"Toàn bệnh viện"}</L10n></span>;
+  if (!uuid.test(id)) return <span><L10n>{"Thông tin khoa không hợp lệ"}</L10n></span>;
   const result = resolved?.key === key ? resolved.result : null;
   return <span className="inline-block align-top" aria-live="polite">
-    <span className="block break-words">{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên khoa…"}</span>
-    {showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu</summary><code className="block break-all">{id}</code></details>}
-    {result && "error" in result && result.error === "Chưa tải được tên khoa" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu tên khoa lại</button>}
+    <span className="block break-words"><L10nValue>{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên khoa…"}</L10nValue></span>
+    <L10nValue>{showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer"><L10n>{"Mã tham chiếu"}</L10n></summary><code className="block break-all">{id}</code></details>}</L10nValue>
+    <L10nValue>{result && "error" in result && result.error === "Chưa tải được tên khoa" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Tra cứu tên khoa lại"}</L10n></button>}</L10nValue>
   </span>;
 }

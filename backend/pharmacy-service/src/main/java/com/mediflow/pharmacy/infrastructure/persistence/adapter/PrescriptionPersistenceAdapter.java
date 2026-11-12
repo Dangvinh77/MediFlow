@@ -83,7 +83,8 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 e.getDepartmentId(), e.getPrescribedDate(), e.getTotalAmount(), lines,
                 e.getStatus(), e.getCancelledAt(), e.getCancelledBy(), e.getCancellationReason(),
                 e.getCreatedAt(), e.getUpdatedAt(), careContext,
-                e.getLifecycleAtIso() == null ? null : java.time.Instant.parse(e.getLifecycleAtIso()));
+                e.getLifecycleAtIso() == null ? null : java.time.Instant.parse(e.getLifecycleAtIso()), e.getRevision(),
+                e.getRevisionAtIso() == null ? null : java.time.Instant.parse(e.getRevisionAtIso()));
     }
 
     private PrescriptionLine toDomainLine(PrescriptionLineJpaEntity l) {
@@ -100,6 +101,8 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 .departmentId(p.getDepartmentId())
                 .prescribedDate(p.getPrescribedDate())
                 .totalAmount(p.getTotalAmount())
+                .revision(p.getRevision())
+                .revisionAtIso(p.getRevisionAt() == null ? null : p.getRevisionAt().toString())
                 .careContractVersion((short) p.getCareContext().contractVersion().value())
                 .careContext(p.getCareContext().careContext())
                 .careEpisodeType(p.getCareContext().episode() == null

@@ -44,7 +44,17 @@ public class PatientGlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Void>> integrity(DataIntegrityViolationException ex) {
-        return build(HttpStatus.CONFLICT, "PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
+        String constraint = findConstraint(ex);
+        if ("ux_patient_email_key".equals(constraint)) {
+            return build(HttpStatus.CONFLICT, "PATIENT_EMAIL_DUPLICATE",
+                    "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+        }
+        if ("patient_identity_number_key".equals(constraint)
+                || "uq_patient_identity_number".equals(constraint)
+                || "uk_patient_identity_number".equals(constraint)) {
+            return build(HttpStatus.CONFLICT, "PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
+        }
+        return build(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "Request violates a data constraint");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -88,5 +98,24 @@ public class PatientGlobalExceptionHandler {
                                                     java.util.List<ApiResponse.ErrorDetail> details) {
         return ResponseEntity.status(status).body(ApiResponse.fail(new ApiError(code, message, details),
                 correlationIds.currentOrCreate().toString()));
+    }
+
+    private static String findConstraint(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof org.hibernate.exception.ConstraintViolationException violation
+                    && violation.getConstraintName() != null) {
+                return violation.getConstraintName();
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                for (String known : new String[] { "ux_patient_email_key", "patient_identity_number_key",
+                        "uq_patient_identity_number", "uk_patient_identity_number" }) {
+                    if (message.contains(known)) return known;
+                }
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 }

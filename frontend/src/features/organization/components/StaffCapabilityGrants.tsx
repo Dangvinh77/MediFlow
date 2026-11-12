@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -30,6 +32,7 @@ const buttonClass =
 
 /** ADMIN panel: grant or revoke explicit capabilities. The backend re-checks role and eligibility. */
 export function StaffCapabilityGrants({ staffId }: { staffId: string }) {
+  const { localize } = useLocale();
   const [grants, setGrants] = useState<StaffCapabilityGrantDTO[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -65,39 +68,37 @@ export function StaffCapabilityGrants({ staffId }: { staffId: string }) {
   }
 
   return <section aria-labelledby="capability-heading" className="rounded-xl border border-border bg-surface p-5">
-    <h2 id="capability-heading" className="text-base font-semibold">Quyền đặc biệt</h2>
-    <p className="mt-1 text-sm text-muted-foreground">Quyền phát hành kết quả xét nghiệm và duyệt bệnh án không đi kèm vai trò; quản trị viên cấp riêng cho từng người.</p>
-    {notice ? <p role="status" className="mt-3 text-sm text-success">{notice}</p> : null}
-    {actionError ? <p role="alert" className="mt-3 text-sm text-danger">{actionError}</p> : null}
-    {loadError ? <p role="alert" className="mt-3 text-sm text-danger">{loadError} <button type="button" className="text-primary underline" onClick={() => void load()}>Tải lại</button></p> : null}
-    {grants === null && !loadError ? <p className="mt-3 text-sm text-muted-foreground">Đang tải quyền…</p> : null}
-    {grants && grants.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có quyền đặc biệt nào.</p> : null}
-    {grants && grants.length > 0 ? <ul className="mt-3 divide-y divide-border">{grants.map(row => <li key={row.grantId} className="py-3 text-sm">
+    <h2 id="capability-heading" className="text-base font-semibold"><L10n>{"Quyền đặc biệt"}</L10n></h2>
+    <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Quyền phát hành kết quả xét nghiệm và duyệt bệnh án không đi kèm vai trò; quản trị viên cấp riêng cho từng người."}</L10n></p>
+    <L10nValue>{notice ? <p role="status" className="mt-3 text-sm text-success"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{actionError ? <p role="alert" className="mt-3 text-sm text-danger"><L10nValue>{actionError}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{loadError ? <p role="alert" className="mt-3 text-sm text-danger"><L10nValue>{loadError}</L10nValue> <button type="button" className="text-primary underline" onClick={() => void load()}><L10n>{"Tải lại"}</L10n></button></p> : null}</L10nValue>
+    <L10nValue>{grants === null && !loadError ? <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Đang tải quyền…"}</L10n></p> : null}</L10nValue>
+    <L10nValue>{grants && grants.length === 0 ? <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Chưa có quyền đặc biệt nào."}</L10n></p> : null}</L10nValue>
+    <L10nValue>{grants && grants.length > 0 ? <ul className="mt-3 divide-y divide-border"><L10nValue>{grants.map(row => <li key={row.grantId} className="py-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">{capabilityLabels[row.capability] ?? row.capability}</span>
-        <span className={`rounded-full px-2 py-0.5 text-xs ${row.revokedAt ? "bg-surface-muted text-muted-foreground" : "bg-success/10 text-success"}`}>{row.revokedAt ? "Đã thu hồi" : "Đang hiệu lực"}</span>
+        <span className="font-medium"><L10nValue>{capabilityLabels[row.capability] ?? row.capability}</L10nValue></span>
+        <span className={`rounded-full px-2 py-0.5 text-xs ${row.revokedAt ? "bg-surface-muted text-muted-foreground" : "bg-success/10 text-success"}`}><L10nValue>{row.revokedAt ? "Đã thu hồi" : "Đang hiệu lực"}</L10nValue></span>
       </div>
-      <p className="mt-1 text-muted-foreground">Cấp lúc {time(row.grantedAt)} — {row.grantReason}</p>
-      {row.revokedAt
-        ? <p className="text-muted-foreground">Thu hồi lúc {time(row.revokedAt)} — {row.revocationReason}</p>
+      <p className="mt-1 text-muted-foreground"><L10n>{"Cấp lúc "}</L10n><L10nValue>{time(row.grantedAt)}</L10nValue> — {row.grantReason}</p>
+      <L10nValue>{row.revokedAt
+        ? <p className="text-muted-foreground"><L10n>{"Thu hồi lúc "}</L10n><L10nValue>{time(row.revokedAt)}</L10nValue> — {row.revocationReason}</p>
         : revoking === row.grantId
           ? <div className="mt-2 flex flex-wrap gap-2">
-              <input aria-label="Lý do thu hồi" className={inputClass} value={revokeReason} maxLength={500} onChange={e => setRevokeReason(e.target.value)} />
-              <button type="button" className={buttonClass} disabled={busy} onClick={() => void revoke(row.grantId)}>Xác nhận thu hồi</button>
-              <button type="button" className="text-sm underline" onClick={() => { setRevoking(null); setRevokeReason(""); }}>Hủy</button>
+              <input aria-label={localize("Lý do thu hồi")} className={inputClass} value={revokeReason} maxLength={500} onChange={e => setRevokeReason(e.target.value)} />
+              <button type="button" className={buttonClass} disabled={busy} onClick={() => void revoke(row.grantId)}><L10n>{"Xác nhận thu hồi"}</L10n></button>
+              <button type="button" className="text-sm underline" onClick={() => { setRevoking(null); setRevokeReason(""); }}><L10n>{"Hủy"}</L10n></button>
             </div>
-          : <button type="button" className="mt-2 text-sm text-danger underline" onClick={() => { setRevoking(row.grantId); setRevokeReason(""); setActionError(null); }}>Thu hồi</button>}
-    </li>)}</ul> : null}
+          : <button type="button" className="mt-2 text-sm text-danger underline" onClick={() => { setRevoking(row.grantId); setRevokeReason(""); setActionError(null); }}><L10n>{"Thu hồi"}</L10n></button>}</L10nValue>
+    </li>)}</L10nValue></ul> : null}</L10nValue>
     <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={e => void grant(e)}>
-      <label className="flex flex-col gap-1 text-sm">Quyền
-        <select className={inputClass} value={capability} onChange={e => setCapability(e.target.value as StaffCapability)}>
-          {(Object.keys(capabilityLabels) as StaffCapability[]).map(key => <option key={key} value={key}>{capabilityLabels[key]}</option>)}
+      <label className="flex flex-col gap-1 text-sm"><L10n>{"Quyền"}</L10n><select className={inputClass} value={capability} onChange={e => setCapability(e.target.value as StaffCapability)}>
+          <L10nValue>{(Object.keys(capabilityLabels) as StaffCapability[]).map(key => <option key={key} value={key}><L10nValue>{capabilityLabels[key]}</L10nValue></option>)}</L10nValue>
         </select>
       </label>
-      <label className="flex flex-1 flex-col gap-1 text-sm">Lý do cấp
-        <input className={inputClass} value={reason} maxLength={500} onChange={e => setReason(e.target.value)} />
+      <label className="flex flex-1 flex-col gap-1 text-sm"><L10n>{"Lý do cấp"}</L10n><input className={inputClass} value={reason} maxLength={500} onChange={e => setReason(e.target.value)} />
       </label>
-      <button type="submit" className={buttonClass} disabled={busy}>Cấp quyền</button>
+      <button type="submit" className={buttonClass} disabled={busy}><L10n>{"Cấp quyền"}</L10n></button>
     </form>
   </section>;
 }

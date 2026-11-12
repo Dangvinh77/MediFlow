@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -38,8 +40,9 @@ function errorMessage(cause: unknown): string {
 }
 
 function CatalogFallback() {
+  const { localize } = useLocale();
   return (
-    <section className="mt-6" aria-busy="true" aria-label="Đang tải danh mục thuốc">
+    <section className="mt-6" aria-busy="true" aria-label={localize("Đang tải danh mục thuốc")}>
       <div className="h-11 animate-pulse rounded-lg bg-surface-muted" />
       <div className="mt-6 h-64 animate-pulse rounded-xl bg-surface-muted" />
     </section>
@@ -54,6 +57,7 @@ export function DrugCatalog() {
 }
 
 function DrugCatalogContent() {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canReadDrugs");
   const pathname = usePathname();
   const router = useRouter();
@@ -163,67 +167,65 @@ function DrugCatalogContent() {
   const hasData = Boolean(!loading && !error && result && result.content.length > 0);
 
   return (
-    <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-busy={loading} aria-label="Danh mục thuốc">
+    <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-busy={loading} aria-label={localize("Danh mục thuốc")}>
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <h2 className="text-base font-semibold" aria-live="polite">
-            {!loading && !error && result ? result.totalElements.toLocaleString("vi-VN") + " thuốc" : "Danh mục thuốc"}
+            <L10nValue>{!loading && !error && result ? result.totalElements.toLocaleString("vi-VN") + " thuốc" : "Danh mục thuốc"}</L10nValue>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            {keyword ? "Tìm theo tên: “" + keyword + "”" : "Giá và tồn kho hiện tại"}
+            <L10nValue>{keyword ? "Tìm theo tên: “" + keyword + "”" : "Giá và tồn kho hiện tại"}</L10nValue>
           </p>
         </div>
         <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-center xl:w-3/5">
           <div className="min-w-0 flex-1">
-            <label htmlFor="drug-keyword" className="sr-only">Tìm theo tên thuốc</label>
-            <input maxLength={200} key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Tên thuốc hoặc hoạt chất" className={controlClassName} />
+            <label htmlFor="drug-keyword" className="sr-only"><L10n>{"Tìm theo tên thuốc"}</L10n></label>
+            <input maxLength={200} key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder={localize("Tên thuốc hoặc hoạt chất")} className={controlClassName} />
           </div>
           <div>
-            <label htmlFor="drug-filter" className="sr-only">Tình trạng thuốc</label>
+            <label htmlFor="drug-filter" className="sr-only"><L10n>{"Tình trạng thuốc"}</L10n></label>
             <select id="drug-filter" value={filter ?? "ALL"} className={controlClassName}
               disabled={requestError?.key === requestKey && requestError.forbidden}
               onChange={event => updateQuery({ filter: event.target.value as DrugCatalogFilter, page: 0 })}>
-              {Object.entries(DRUG_CATALOG_FILTERS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <L10nValue>{Object.entries(DRUG_CATALOG_FILTERS).map(([value, label]) => <option key={value} value={value}><L10nValue>{label}</L10nValue></option>)}</L10nValue>
             </select>
           </div>
-          <Button type="submit" variant="primary" disabled={loading || (requestError?.key === requestKey && requestError.forbidden)}>Tìm kiếm</Button>
+          <Button type="submit" variant="primary" disabled={loading || (requestError?.key === requestKey && requestError.forbidden)}><L10n>{"Tìm kiếm"}</L10n></Button>
         </form>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <p>Tìm được cả tên thuốc và hoạt chất. Tồn kho là số lượng hiện có, có thể gồm thuốc đang giữ cho đơn.</p>
-        {(keyword || filter) && <Button type="button" disabled={requestError?.forbidden}
-          onClick={() => updateQuery({ keyword: "", filter: "ALL", page: 0 })}>Xóa bộ lọc</Button>}
+        <p><L10n>{"Tìm được cả tên thuốc và hoạt chất. Tồn kho là số lượng hiện có, có thể gồm thuốc đang giữ cho đơn."}</L10n></p>
+        <L10nValue>{(keyword || filter) && <Button type="button" disabled={requestError?.forbidden}
+          onClick={() => updateQuery({ keyword: "", filter: "ALL", page: 0 })}><L10n>{"Xóa bộ lọc"}</L10n></Button>}</L10nValue>
       </div>
-      {loading && <CatalogFallback />}
-      {error && (
+      <L10nValue>{loading && <CatalogFallback />}</L10nValue>
+      <L10nValue>{error && (
         <div role="alert" className="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-          <p>{error}</p>
-          {!requestError?.forbidden && <Button type="button" className="mt-3" onClick={() => setRetryToken((value) => value + 1)}>Thử lại</Button>}
+          <p><L10nValue>{error}</L10nValue></p>
+          <L10nValue>{!requestError?.forbidden && <Button type="button" className="mt-3" onClick={() => setRetryToken((value) => value + 1)}><L10n>{"Thử lại"}</L10n></Button>}</L10nValue>
         </div>
-      )}
-      {!loading && !error && result && result.content.length === 0 && (
+      )}</L10nValue>
+      <L10nValue>{!loading && !error && result && result.content.length === 0 && (
         <p role="status" className="py-8 text-sm text-muted-foreground">
-          {keyword.trim() || filter ? "Không tìm thấy thuốc phù hợp. Thử đổi tên, hoạt chất hoặc xóa bộ lọc." : "Chưa có thuốc trong danh mục. Người quản lý nhà thuốc cần bổ sung danh mục để bắt đầu."}
+          <L10nValue>{keyword.trim() || filter ? "Không tìm thấy thuốc phù hợp. Thử đổi tên, hoạt chất hoặc xóa bộ lọc." : "Chưa có thuốc trong danh mục. Người quản lý nhà thuốc cần bổ sung danh mục để bắt đầu."}</L10nValue>
         </p>
-      )}
-      {hasData && result && (
+      )}</L10nValue>
+      <L10nValue>{hasData && result && (
         <>
           <DrugTable drugs={result.content} />
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-xs text-muted-foreground">
-                Hiển thị {(result.number * result.size + 1).toLocaleString("vi-VN")}–{(result.number * result.size + result.content.length).toLocaleString("vi-VN")} trong {result.totalElements.toLocaleString("vi-VN")} thuốc
-              </p>
-              <label htmlFor="drug-page-size" className="sr-only">Số dòng</label>
+              <p className="text-xs text-muted-foreground"><L10n>{"Hiển thị "}</L10n><L10nValue>{(result.number * result.size + 1).toLocaleString("vi-VN")}</L10nValue>–<L10nValue>{(result.number * result.size + result.content.length).toLocaleString("vi-VN")}</L10nValue> trong <L10nValue>{result.totalElements.toLocaleString("vi-VN")}</L10nValue><L10n>{" thuốc"}</L10n></p>
+              <label htmlFor="drug-page-size" className="sr-only"><L10n>{"Số dòng"}</L10n></label>
               <select id="drug-page-size" value={query.size} onChange={(event) => selectSize(event.target.value)} className={`${controlClassName} w-auto`}>
-                {DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}>{size} / trang</option>)}
+                <L10nValue>{DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}><L10nValue>{size}</L10nValue> / trang</option>)}</L10nValue>
               </select>
             </div>
             <Pagination page={result.number} totalPages={result.totalPages} totalElements={result.totalElements} loading={loading} onPageChange={(page) => updateQuery({ page })} />
           </div>
         </>
-      )}
+      )}</L10nValue>
     </section>
   );
 }

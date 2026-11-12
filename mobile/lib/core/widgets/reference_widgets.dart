@@ -1,3 +1,5 @@
+import '../l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -50,19 +52,19 @@ class ReferenceLabel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
     if (!canReadReference(access?.role, kind)) {
-      return Text('$label: Không có quyền tra cứu tên');
+      return LText('$label: Không có quyền tra cứu tên');
     }
     final result = ref.watch(referenceNameProvider((kind, id)));
     return result.when(
-      data: (item) => Text('$label: ${item.name}${keyDate(item, kind)}'),
-      loading: () => Text('$label: Đang tải…'),
+      data: (item) => LText('$label: ${item.name}${keyDate(item, kind)}'),
+      loading: () => LText('$label: Đang tải…'),
       error: (error, _) => Row(
         children: [
-          Expanded(child: Text('$label: ${referenceError(error)}')),
+          Expanded(child: LText('$label: ${referenceError(error)}')),
           if (error is! ApiFailure ||
               !const [401, 403, 404].contains(error.status))
             IconButton(
-              tooltip: 'Thử lại',
+              tooltip: AppL10n.text(context, 'Thử lại'),
               onPressed: () =>
                   ref.invalidate(referenceNameProvider((kind, id))),
               icon: const Icon(Icons.refresh),
@@ -103,14 +105,14 @@ class ReferencePicker extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: InputDecorator(
           decoration: InputDecoration(
-            labelText: label,
+            labelText: AppL10n.text(context, label),
             border: const OutlineInputBorder(),
-            errorText: field.errorText,
+            errorText: AppL10n.text(context, field.errorText),
           ),
           child: Row(
             children: [
               Expanded(
-                child: Text(
+                child: LText(
                   !allowed
                       ? 'Không có quyền tra cứu tên'
                       : value == null
@@ -124,7 +126,7 @@ class ReferencePicker extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Chọn $label',
+                tooltip: AppL10n.text(context, 'Chọn $label'),
                 onPressed: !allowed || onChanged == null
                     ? null
                     : () async {
@@ -150,7 +152,7 @@ class ReferencePicker extends ConsumerWidget {
               ),
               if (value != null && onChanged != null)
                 IconButton(
-                  tooltip: 'Bỏ chọn',
+                  tooltip: AppL10n.text(context, 'Bỏ chọn'),
                   onPressed: () {
                     field.didChange(null);
                     onChanged!(null);
@@ -232,11 +234,11 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.sessionIdentity != identity) {
-      return const AlertDialog(content: Text('Phiên đăng nhập đã thay đổi.'));
+      return const AlertDialog(content: LText('Phiên đăng nhập đã thay đổi.'));
     }
     return AlertDialog(
       scrollable: true,
-      title: Text('Chọn ${widget.label}'),
+      title: LText('Chọn ${widget.label}'),
       content: SizedBox(
         width: 480,
         height: 480,
@@ -244,8 +246,8 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
           children: [
             TextField(
               controller: query,
-              decoration: const InputDecoration(
-                labelText: 'Tìm theo tên',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Tìm theo tên'),
                 prefixIcon: Icon(Icons.search),
               ),
               onSubmitted: (_) {
@@ -262,7 +264,7 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
                         page = 0;
                         load();
                       },
-                child: const Text('Tìm kiếm'),
+                child: const LText('Tìm kiếm'),
               ),
             ),
             Expanded(
@@ -273,36 +275,36 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          LText(
                             error is ArgumentError
                                 ? (error as ArgumentError).message.toString()
                                 : referenceError(error!),
                           ),
                           TextButton(
                             onPressed: load,
-                            child: const Text('Thử lại'),
+                            child: const LText('Thử lại'),
                           ),
                         ],
                       ),
                     )
                   : result!.items.isEmpty
                   ? const Center(
-                      child: Text('Không có kết quả trên trang này.'),
+                      child: LText('Không có kết quả trên trang này.'),
                     )
                   : ListView(
                       children: [
                         for (final item in result!.items)
                           ListTile(
-                            title: Text(item.name),
+                            title: LText(item.name),
                             subtitle: item.detail == null
                                 ? null
-                                : Text(item.detail!),
+                                : LText(item.detail!),
                             onTap: () => Navigator.pop(context, item),
                           ),
                       ],
                     ),
             ),
-            const Text(
+            const LText(
               'Tên được lọc theo từng trang. Dùng trang sau để xem thêm.',
               style: TextStyle(fontSize: 12),
             ),
@@ -317,9 +319,9 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
                           page--;
                           load();
                         },
-                  child: const Text('Trước'),
+                  child: const LText('Trước'),
                 ),
-                Text('Trang ${page + 1}'),
+                LText('Trang ${page + 1}'),
                 TextButton(
                   onPressed: loading || result?.hasMore != true
                       ? null
@@ -327,7 +329,7 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
                           page++;
                           load();
                         },
-                  child: const Text('Sau'),
+                  child: const LText('Sau'),
                 ),
               ],
             ),
@@ -337,7 +339,7 @@ class _ReferenceDialogState extends ConsumerState<_ReferenceDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Đóng'),
+          child: const LText('Đóng'),
         ),
       ],
     );

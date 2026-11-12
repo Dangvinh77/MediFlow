@@ -22,9 +22,13 @@ export interface CreatePatientRequest {
   soCmnd: string;
   diaChi: string | null;
   soDienThoai: string | null;
-  email: string | null;
+  email: string;
   bhytSo: string | null;
 }
 
 /** Omitted/null soCmnd preserves the current number for older clients. */
-export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd"> & { soCmnd?: string | null; lyDoThayDoiDinhDanh?: string | null };
+export type UpdatePatientRequest = Omit<CreatePatientRequest, "soCmnd" | "email"> & {
+  email: string | null;
+  soCmnd?: string | null;
+  lyDoThayDoiDinhDanh?: string | null;
+};

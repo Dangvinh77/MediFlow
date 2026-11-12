@@ -13,6 +13,10 @@ public interface StaffRepository {
     PageResult<Staff> searchDirectory(UUID departmentId, JobTitle jobTitle, String keyword, boolean activeOnly, boolean includeIdentity, PageQuery pageQuery);
     Optional<Staff> findByIdForUpdate(UUID staffId);
 
+    boolean existsByEmail(String normalizedEmail);
+
+    boolean existsByEmailAndStaffIdNot(String normalizedEmail, UUID staffId);
+
         boolean existsByDepartmentIdAndActiveTrue(UUID departmentId);
 
         Optional<Staff> findById(UUID staffId);

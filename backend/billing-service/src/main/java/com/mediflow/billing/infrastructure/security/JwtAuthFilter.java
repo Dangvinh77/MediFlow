@@ -78,20 +78,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     "/api/v2/billing/payment-operations/[0-9a-fA-F-]{36}");
             boolean scheduledOperationClose = "POST".equals(request.getMethod()) && request.getRequestURI().matches(
                     "/api/v2/billing/payment-operations/[0-9a-fA-F-]{36}/close-if-unpaid");
+            boolean prescriptionRevisionCall = "POST".equals(request.getMethod()) && request.getRequestURI().matches(
+                    "/internal/api/v1/billing/prescription-revisions/[0-9a-fA-F-]{36}/[0-9a-fA-F-]{36}/(prepare|commit|abort)");
             boolean clearanceServiceCall = lookup || executionStart;
             boolean serviceToken = JwtClaims.SERVICE_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class));
             boolean scheduledServiceCall = (scheduledOperationLookup || scheduledOperationClose)
                     && (serviceToken || "SYSTEM".equals(role));
-            if (clearanceServiceCall || scheduledServiceCall || serviceToken || "SYSTEM".equals(role)) {
+            if (clearanceServiceCall || scheduledServiceCall || prescriptionRevisionCall || serviceToken || "SYSTEM".equals(role)) {
                 var issued = claims.getIssuedAt();
                 var expires = claims.getExpiration();
                 var now = java.time.Instant.now();
-                boolean permittedCaller = scheduledServiceCall ? "clinical-service".equals(subject)
+                boolean permittedCaller = prescriptionRevisionCall ? "pharmacy-service".equals(subject)
+                        : scheduledServiceCall ? "clinical-service".equals(subject)
                         : executionStart
                             ? "clinical-service".equals(subject) || "lab-service".equals(subject)
                             : "surgery-service".equals(subject) || "pharmacy-service".equals(subject)
                                 || "clinical-service".equals(subject) || "lab-service".equals(subject);
-                if ((!clearanceServiceCall && !scheduledServiceCall) || !serviceToken || !"SYSTEM".equals(role) || !permittedCaller
+                if ((!clearanceServiceCall && !scheduledServiceCall && !prescriptionRevisionCall)
+                        || !serviceToken || !"SYSTEM".equals(role) || !permittedCaller
                         || issued == null || expires == null || !expires.after(issued)
                         || expires.toInstant().isAfter(issued.toInstant().plusSeconds(60))
                         || issued.toInstant().isAfter(now.plusSeconds(5))) {
@@ -103,6 +107,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             "^/api/v2/billing/payment-operations/([^/]+).*$", "$1");
                     try {
                         if (!java.util.UUID.fromString(operationId).toString().equalsIgnoreCase(operationId)) {
+                            SecurityContextHolder.clearContext();
+                            return;
+                        }
+                    } catch (IllegalArgumentException malformed) {
+                        SecurityContextHolder.clearContext();
+                        return;
+                    }
+                }
+                if (prescriptionRevisionCall) {
+                    String[] path = request.getRequestURI().split("/");
+                    try {
+                        if (path.length != 9 || !java.util.UUID.fromString(path[6]).toString().equalsIgnoreCase(path[6])
+                                || !java.util.UUID.fromString(path[7]).toString().equalsIgnoreCase(path[7])) {
                             SecurityContextHolder.clearContext();
                             return;
                         }

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -36,11 +38,11 @@ class _PatientBoundary extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     final repository = ref.watch(patientRepositoryProvider);
     if (access == null) {
-      return const Center(child: Text('Phiên đăng nhập chưa sẵn sàng.'));
+      return const Center(child: LText('Phiên đăng nhập chưa sẵn sàng.'));
     }
     if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
       return const Center(
-        child: Text('Bạn không có quyền xem hồ sơ bệnh nhân.'),
+        child: LText('Bạn không có quyền xem hồ sơ bệnh nhân.'),
       );
     }
     return KeyedSubtree(
@@ -167,8 +169,11 @@ class _PatientListState extends State<_PatientList> {
             TextField(
               controller: _keyword,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                labelText: 'Tìm theo tên hoặc mã bệnh nhân',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(
+                  context,
+                  'Tìm theo tên hoặc mã bệnh nhân',
+                ),
                 prefixIcon: Icon(Icons.search),
               ),
               onSubmitted: (_) => _search(),
@@ -181,15 +186,15 @@ class _PatientListState extends State<_PatientList> {
                 FilledButton.icon(
                   onPressed: _search,
                   icon: const Icon(Icons.search),
-                  label: const Text('Tìm kiếm'),
+                  label: const LText('Tìm kiếm'),
                 ),
                 OutlinedButton.icon(
                   onPressed: _clearSearch,
                   icon: const Icon(Icons.clear),
-                  label: const Text('Xóa tìm kiếm'),
+                  label: const LText('Xóa tìm kiếm'),
                 ),
                 IconButton(
-                  tooltip: 'Làm mới danh sách',
+                  tooltip: AppL10n.text(context, 'Làm mới danh sách'),
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -197,7 +202,7 @@ class _PatientListState extends State<_PatientList> {
                   FilledButton.tonalIcon(
                     onPressed: () => _openEditor(context),
                     icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Thêm bệnh nhân'),
+                    label: const LText('Thêm bệnh nhân'),
                   ),
               ],
             ),
@@ -216,8 +221,8 @@ class _PatientListState extends State<_PatientList> {
                 Icons.person_outline,
                 color: Wayfinding.patient,
               ),
-              title: Text(patient.name),
-              subtitle: Text('CCCD/CMND: ${patient.identityNumber}'),
+              title: LText(patient.name),
+              subtitle: LText('CCCD/CMND: ${patient.identityNumber}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openDetail(context, patient.id),
             ),
@@ -250,7 +255,7 @@ class _PatientListState extends State<_PatientList> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Hồ sơ bệnh nhân')),
+          appBar: AppBar(title: const LText('Hồ sơ bệnh nhân')),
           body: PatientDetailPage(
             patientId: id,
             accountPanelBuilder: widget.accountPanelBuilder,
@@ -266,7 +271,7 @@ class _PatientListState extends State<_PatientList> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Thêm bệnh nhân')),
+          appBar: AppBar(title: const LText('Thêm bệnh nhân')),
           body: PatientEditorPage(onSaved: () => Navigator.of(context).pop()),
         ),
       ),
@@ -362,8 +367,10 @@ class _PatientDetailState extends State<_PatientDetail> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải bệnh nhân'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải bệnh nhân'),
+        ),
       );
     }
     if (_error != null) {
@@ -378,10 +385,10 @@ class _PatientDetailState extends State<_PatientDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(patient.name, style: Theme.of(context).textTheme.headlineSmall),
+          LText(patient.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 16),
           ExpansionTile(
-            title: const Text('Thông tin kỹ thuật'),
+            title: const LText('Thông tin kỹ thuật'),
             children: [_PatientField('Mã bệnh nhân', patient.id)],
           ),
           _PatientField('Ngày sinh', patient.birthDate),
@@ -411,13 +418,13 @@ class _PatientDetailState extends State<_PatientDetail> {
                 OutlinedButton.icon(
                   onPressed: _deleting ? null : () => _edit(patient),
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Chỉnh sửa hồ sơ'),
+                  label: const LText('Chỉnh sửa hồ sơ'),
                 ),
               if (widget.access.role == 'ADMIN')
                 FilledButton.tonalIcon(
                   onPressed: _deleting ? null : () => _confirmDelete(patient),
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Xóa hồ sơ'),
+                  label: const LText('Xóa hồ sơ'),
                 ),
               if (!patient.archived &&
                   widget.onRegisterPatient != null &&
@@ -427,7 +434,7 @@ class _PatientDetailState extends State<_PatientDetail> {
                       ? null
                       : () => widget.onRegisterPatient!(patient.id),
                   icon: const Icon(Icons.event_available_outlined),
-                  label: const Text('Đăng ký khám'),
+                  label: const LText('Đăng ký khám'),
                 ),
             ],
           ),
@@ -441,7 +448,7 @@ class _PatientDetailState extends State<_PatientDetail> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Chỉnh sửa bệnh nhân')),
+          appBar: AppBar(title: const LText('Chỉnh sửa bệnh nhân')),
           body: PatientEditorPage(
             patientId: patient.id,
             onSaved: () => Navigator.of(context).pop(),
@@ -467,29 +474,29 @@ class _PatientDetailState extends State<_PatientDetail> {
           if (access?.sessionIdentity != widget.access.sessionIdentity ||
               access?.role != 'ADMIN') {
             return AlertDialog(
-              title: const Text('Phiên đăng nhập đã thay đổi'),
-              content: const Text('Đóng hộp thoại này trước khi tiếp tục.'),
+              title: const LText('Phiên đăng nhập đã thay đổi'),
+              content: const LText('Đóng hộp thoại này trước khi tiếp tục.'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Đóng'),
+                  child: const LText('Đóng'),
                 ),
               ],
             );
           }
           return AlertDialog(
-            title: const Text('Xóa hồ sơ bệnh nhân?'),
-            content: Text('Hồ sơ của ${patient.name} sẽ bị xóa.'),
+            title: const LText('Xóa hồ sơ bệnh nhân?'),
+            content: LText('Hồ sơ của ${patient.name} sẽ bị xóa.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Hủy'),
+                child: const LText('Hủy'),
               ),
               FilledButton(
                 onPressed: () =>
                     Navigator.of(dialogContext)
                         .pop(belongsToCurrentAdminSession()),
-                child: const Text('Xóa hồ sơ'),
+                child: const LText('Xóa hồ sơ'),
               ),
             ],
           );
@@ -522,7 +529,7 @@ class _PatientField extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 120, child: Text(label)),
+        SizedBox(width: 120, child: LText(label)),
         Expanded(
           child: SelectableText(value?.isNotEmpty == true ? value! : '—'),
         ),
@@ -545,7 +552,7 @@ class PatientEditorPage extends StatelessWidget {
   Widget build(BuildContext context) => _PatientBoundary(
     builder: (repository, access) {
       if (!const {'ADMIN', 'NURSE'}.contains(access.role)) {
-        return const Center(child: Text('Bạn không có quyền thay đổi hồ sơ.'));
+        return const Center(child: LText('Bạn không có quyền thay đổi hồ sơ.'));
       }
       return KeyedSubtree(
         key: ValueKey((access.sessionIdentity, repository, patientId)),
@@ -645,8 +652,10 @@ class _PatientFormState extends State<_PatientForm> {
   @override
   Widget build(BuildContext context) {
     if (_editing && _loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải hồ sơ'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải hồ sơ'),
+        ),
       );
     }
     if (_editing && _loadError != null) {
@@ -658,7 +667,7 @@ class _PatientFormState extends State<_PatientForm> {
       );
     }
     if (_editing && _loaded == null) {
-      return const Center(child: Text('Không thể mở hồ sơ bệnh nhân.'));
+      return const Center(child: LText('Không thể mở hồ sơ bệnh nhân.'));
     }
     return Form(
       key: _form,
@@ -669,7 +678,9 @@ class _PatientFormState extends State<_PatientForm> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Họ và tên *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Họ và tên *'),
+              ),
               maxLength: 100,
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Vui lòng nhập họ tên.'
@@ -681,7 +692,9 @@ class _PatientFormState extends State<_PatientForm> {
             TextFormField(
               controller: _birthDate,
               readOnly: true,
-              decoration: const InputDecoration(labelText: 'Ngày sinh *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Ngày sinh *'),
+              ),
               onTap: _pickBirthDate,
               validator: (value) => isValidPatientBirthDate(value ?? '')
                   ? null
@@ -691,17 +704,21 @@ class _PatientFormState extends State<_PatientForm> {
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _gender,
-              decoration: const InputDecoration(labelText: 'Giới tính *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Giới tính *'),
+              ),
               items: const [
-                DropdownMenuItem(value: 'M', child: Text('Nam')),
-                DropdownMenuItem(value: 'F', child: Text('Nữ')),
+                DropdownMenuItem(value: 'M', child: LText('Nam')),
+                DropdownMenuItem(value: 'F', child: LText('Nữ')),
               ],
               onChanged: (value) => setState(() => _gender = value ?? 'M'),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _identity,
-              decoration: const InputDecoration(labelText: 'CCCD/CMND *'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'CCCD/CMND *'),
+              ),
               maxLength: 20,
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Vui lòng nhập số CCCD/CMND.'
@@ -712,7 +729,9 @@ class _PatientFormState extends State<_PatientForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _phone,
-              decoration: const InputDecoration(labelText: 'Điện thoại'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Điện thoại'),
+              ),
               keyboardType: TextInputType.phone,
               validator: (value) =>
                   value != null &&
@@ -724,10 +743,21 @@ class _PatientFormState extends State<_PatientForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(
+                  context,
+                  !_editing || (_loaded?.email?.trim().isNotEmpty ?? false)
+                      ? 'Email *'
+                      : 'Email',
+                ),
+              ),
               keyboardType: TextInputType.emailAddress,
               maxLength: 254,
               validator: (value) =>
+                  (!_editing || (_loaded?.email?.trim().isNotEmpty ?? false)) &&
+                      (value == null || value.trim().isEmpty)
+                  ? 'Email là bắt buộc.'
+                  :
                   value != null &&
                       value.trim().isNotEmpty &&
                       (value.trim().length > 254 ||
@@ -739,21 +769,25 @@ class _PatientFormState extends State<_PatientForm> {
             if (_editing)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text(
+                child: LText(
                   'Email của tài khoản đã cấp được đổi trong mục Tài khoản của hồ sơ. Nếu chưa có tài khoản, cập nhật email tại đây rồi cấp tài khoản.',
                 ),
               ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _address,
-              decoration: const InputDecoration(labelText: 'Địa chỉ'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Địa chỉ'),
+              ),
               maxLength: 255,
               maxLines: 2,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _insurance,
-              decoration: const InputDecoration(labelText: 'Mã BHYT'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Mã BHYT'),
+              ),
               validator: (value) =>
                   value != null &&
                       value.trim().isNotEmpty &&
@@ -768,7 +802,7 @@ class _PatientFormState extends State<_PatientForm> {
             if (_uncertainCreate)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text(
+                child: LText(
                   'Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.',
                 ),
               ),
@@ -781,12 +815,12 @@ class _PatientFormState extends State<_PatientForm> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save_outlined),
-              label: Text(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
+              label: LText(_editing ? 'Lưu thay đổi' : 'Tạo bệnh nhân'),
             ),
             if (_uncertainCreate)
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Quay lại danh sách để làm mới'),
+                child: const LText('Quay lại danh sách để làm mới'),
               ),
           ],
         ),

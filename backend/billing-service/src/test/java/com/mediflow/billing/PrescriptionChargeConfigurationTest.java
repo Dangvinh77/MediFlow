@@ -48,6 +48,10 @@ class PrescriptionChargeConfigurationTest {
                 .withBean(PrescriptionTerminalRepositoryPort.class, () -> mock(PrescriptionTerminalRepositoryPort.class))
                 .withBean(PrescriptionChargeWirePort.class, () -> mock(PrescriptionChargeWirePort.class))
                 .withBean(LedgerEventPort.class, () -> mock(LedgerEventPort.class))
+                .withBean(com.mediflow.billing.application.port.out.PrescriptionRevisionRepositoryPort.class,
+                        () -> mock(com.mediflow.billing.application.port.out.PrescriptionRevisionRepositoryPort.class))
+                .withBean(com.mediflow.billing.application.port.out.PrescriptionRevisionFingerprintPort.class,
+                        () -> mock(com.mediflow.billing.application.port.out.PrescriptionRevisionFingerprintPort.class))
                 .withPropertyValues("mediflow.billing.prescription-charges.allowed-price-codes=RX-DEFAULT");
     }
 }

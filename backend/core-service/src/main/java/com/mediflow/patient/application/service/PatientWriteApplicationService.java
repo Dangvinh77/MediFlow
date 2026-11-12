@@ -2,6 +2,7 @@ package com.mediflow.patient.application.service;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Locale;
 import com.mediflow.patient.domain.exception.InvalidPatientDataException;
 import com.mediflow.patient.application.event.PatientArchivedEvent;
 import com.mediflow.patient.application.port.out.PatientIdentityAuditPort;
@@ -51,6 +52,11 @@ public class PatientWriteApplicationService
     @Override
     @Transactional("patientTransactionManager")
     public PatientDTO create(CreatePatientRequest request) {
+        String normalizedEmail = normalizeAndRequireEmail(request.email());
+        if (patients.existsByEmail(normalizedEmail)) {
+            throw new DuplicateResourceException(
+                    "PATIENT_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+        }
         String identityNumber = request.soCmnd();
         if (identityNumber != null && patients.existsByIdentityNumber(identityNumber.trim())) {
             throw new DuplicateResourceException(
@@ -59,7 +65,7 @@ public class PatientWriteApplicationService
 
         Patient saved = patients.save(Patient.create(
                 request.hoTen(), request.ngaySinh(), request.gioiTinh(), request.soCmnd(),
-                request.diaChi(), request.soDienThoai(), request.email(), request.bhytSo()));
+                request.diaChi(), request.soDienThoai(), normalizedEmail, request.bhytSo()));
         events.publishCreated(new PatientCreatedEvent(
                 UUID.randomUUID(), saved.createdAt(), correlationIds.currentOrCreate().toString(),
                 saved.patientId(), saved.fullName(), saved.email(), saved.phoneNumber()));
@@ -75,6 +81,12 @@ public class PatientWriteApplicationService
             throw new InvalidPatientDataException(
                     "PATIENT_ARCHIVED", "Hồ sơ đã lưu trữ, không thể chỉnh sửa");
         }
+        String requestedEmail = request.email() == null ? patient.email() : normalizeAndRequireEmail(request.email());
+        if (!Objects.equals(normalizeEmail(patient.email()), normalizeEmail(requestedEmail))
+                && patients.existsByEmailAndPatientIdNot(requestedEmail, patientId)) {
+            throw new DuplicateResourceException(
+                    "PATIENT_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+        }
         String identityNumber = request.soCmnd() == null ? patient.identityNumber() : request.soCmnd().trim();
         boolean identityChanged = !Objects.equals(identityNumber, patient.identityNumber())
                 || !Objects.equals(request.ngaySinh(), patient.dateOfBirth());
@@ -89,7 +101,7 @@ public class PatientWriteApplicationService
             throw new DuplicateResourceException("PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
         }
         patient.update(request.hoTen(), request.ngaySinh(), request.gioiTinh(), request.diaChi(),
-                request.soDienThoai(), request.email() == null ? patient.email() : request.email(),
+                request.soDienThoai(), requestedEmail,
                 request.bhytSo(), identityNumber);
         Patient saved = patients.save(patient);
         if (identityChanged) {
@@ -110,9 +122,14 @@ public class PatientWriteApplicationService
         if (patient.archived()) {
             throw new InvalidPatientDataException("PATIENT_ARCHIVED", "Hồ sơ đã lưu trữ, không thể đồng bộ email");
         }
-        if (java.util.Objects.equals(patient.email(), email)) return mapper.toDto(patient);
+        String normalizedEmail = normalizeAndRequireEmail(email);
+        if (Objects.equals(normalizeEmail(patient.email()), normalizedEmail)) return mapper.toDto(patient);
+        if (patients.existsByEmailAndPatientIdNot(normalizedEmail, patientId)) {
+            throw new DuplicateResourceException(
+                    "PATIENT_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+        }
         patient.update(patient.fullName(), patient.dateOfBirth(), patient.gender(), patient.address(),
-                patient.phoneNumber(), email, patient.healthInsuranceNumber(), patient.identityNumber());
+                patient.phoneNumber(), normalizedEmail, patient.healthInsuranceNumber(), patient.identityNumber());
         Patient saved = patients.save(patient);
         events.publishUpdated(new PatientUpdatedEvent(UUID.randomUUID(), saved.updatedAt(),
                 correlationIds.currentOrCreate().toString(), saved.patientId(), saved.fullName(),
@@ -129,5 +146,20 @@ public class PatientWriteApplicationService
         Patient saved = patients.save(patient);
         events.publishArchived(new PatientArchivedEvent(
                 UUID.randomUUID(), saved.updatedAt(), correlationIds.currentOrCreate().toString(), patientId));
+    }
+
+    private static String normalizeAndRequireEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new InvalidPatientDataException("PATIENT_EMAIL_REQUIRED", "Email không được để trống");
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        if (normalized.length() > 254 || !normalized.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidPatientDataException("PATIENT_EMAIL_INVALID", "Email không đúng định dạng");
+        }
+        return normalized;
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null || email.isBlank() ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,7 +20,7 @@ class MyLabResultsPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'PATIENT') {
       return const Center(
-        child: Text('Chức năng dành cho bệnh nhân đăng nhập.'),
+        child: LText('Chức năng dành cho bệnh nhân đăng nhập.'),
       );
     }
     final repository = ref.watch(patientLabResultsProvider);
@@ -29,17 +31,17 @@ class MyLabResultsPage extends ConsumerWidget {
           error is! ApiFailure || !const [401, 403].contains(error.status),
       itemBuilder: (context, result) => Card(
         child: ExpansionTile(
-          title: Text(result.labType),
-          subtitle: Text('Thực hiện: ${result.performedDate}'),
+          title: LText(result.labType),
+          subtitle: LText('Thực hiện: ${result.performedDate}'),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
           childrenPadding: const EdgeInsets.all(16),
           children: [
-            Text('Ngày yêu cầu: ${result.requestedDate}'),
+            LText('Ngày yêu cầu: ${result.requestedDate}'),
             for (final value in result.results)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(value.indicator),
-                subtitle: Text(
+                title: LText(value.indicator),
+                subtitle: LText(
                   [
                     'Kết quả: ${value.value}${value.unit == null ? '' : ' ${value.unit}'}',
                     if (value.referenceRange != null)
@@ -48,7 +50,7 @@ class MyLabResultsPage extends ConsumerWidget {
                 ),
               ),
             if (result.conclusion case final conclusion?)
-              Text('Kết luận: $conclusion'),
+              LText('Kết luận: $conclusion'),
           ],
         ),
       ),

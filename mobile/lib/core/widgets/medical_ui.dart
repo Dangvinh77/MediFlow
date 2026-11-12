@@ -1,3 +1,5 @@
+import '../l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../theme/medical_colors.dart';
@@ -221,7 +223,7 @@ class StatusPill extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
+            child: LText(
               label,
               style: Theme.of(context).textTheme.labelMedium
                   ?.copyWith(color: color, fontWeight: FontWeight.w600),
@@ -255,7 +257,7 @@ class NoticeBox extends StatelessWidget {
         children: [
           Icon(Icons.warning_amber_rounded, color: color, size: 20),
           Expanded(
-            child: Text(message, style: TextStyle(color: color)),
+            child: LText(message, style: TextStyle(color: color)),
           ),
         ],
       ),

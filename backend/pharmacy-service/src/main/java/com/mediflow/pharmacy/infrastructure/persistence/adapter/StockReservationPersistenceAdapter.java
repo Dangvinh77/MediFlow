@@ -36,6 +36,12 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
         return jpaRepo.findByPrescriptionId(prescriptionId).stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public List<StockReservation> findReservedByPrescription(UUID prescriptionId) {
+        return jpaRepo.findByPrescriptionIdAndStatusOrderByDrugId(prescriptionId, ReservationStatus.RESERVED)
+                .stream().map(this::toDomain).toList();
+    }
+
     /** {@inheritDoc} */
     @Override
     public List<StockReservation> findByPrescriptionForUpdate(UUID prescriptionId) {
@@ -43,6 +49,12 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
                 .stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<StockReservation> findReservedByPrescriptionForUpdate(UUID prescriptionId) {
+        return jpaRepo.findReservedByPrescriptionIdForUpdate(prescriptionId, ReservationStatus.RESERVED)
+                .stream().map(this::toDomain).toList();
     }
 
     @Override

@@ -91,7 +91,7 @@ abstract final class OrganizationDto {
     'specialization': _nullable(draft.specialization),
     'licenseNumber': _nullable(draft.licenseNumber),
     'phoneNumber': _nullable(draft.phoneNumber),
-    'email': _nullable(draft.email),
+    'email': _normalizedEmail(draft.email),
   };
 
   static Map<String, Object?> updateStaffBody(StaffDraft draft) => {
@@ -100,7 +100,7 @@ abstract final class OrganizationDto {
     'specialization': _nullable(draft.specialization),
     'licenseNumber': _nullable(draft.licenseNumber),
     'phoneNumber': _nullable(draft.phoneNumber),
-    'email': _nullable(draft.email),
+    'email': _normalizedEmail(draft.email),
   };
 
   static Map<String, Object?> createAccountBody(AccountDraft draft) => {
@@ -132,5 +132,10 @@ abstract final class OrganizationDto {
   static String? _nullable(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _normalizedEmail(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed.toLowerCase();
   }
 }

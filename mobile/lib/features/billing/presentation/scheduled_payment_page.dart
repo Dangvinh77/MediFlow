@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -113,7 +115,7 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Thu phí khám')),
+            appBar: AppBar(title: const LText('Thu phí khám')),
             body: ScheduledPaymentCollectionPage(
               repository: widget.repository,
               recoveryStore: widget.recoveryStore,
@@ -139,9 +141,9 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Thu phí khám', style: Theme.of(context).textTheme.titleLarge),
+          LText('Thu phí khám', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
-          const Text('Chọn bệnh nhân trong hàng chờ để đối chiếu khoản phí.'),
+          const LText('Chọn bệnh nhân trong hàng chờ để đối chiếu khoản phí.'),
           const SizedBox(height: 12),
           ReferencePicker(
             kind: ReferenceKind.patient,
@@ -159,18 +161,18 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
             child: TextButton.icon(
               onPressed: () => setState(() => _revision++),
               icon: const Icon(Icons.refresh),
-              label: const Text('Cập nhật hàng chờ'),
+              label: const LText('Cập nhật hàng chờ'),
             ),
           ),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: const Text('Tra cứu theo mã đăng ký'),
+            title: const LText('Tra cứu theo mã đăng ký'),
             children: [
               TextField(
                 controller: _registrationId,
                 keyboardType: TextInputType.text,
-                decoration: const InputDecoration(
-                  labelText: 'Mã đăng ký (UUID)',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mã đăng ký (UUID)'),
                   border: OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _lookupManual(),
@@ -186,7 +188,7 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.search),
-                  label: const Text('Tra cứu phí khám'),
+                  label: const LText('Tra cứu phí khám'),
                 ),
               ),
             ],
@@ -221,15 +223,15 @@ class _ScheduledPaymentQueuePageState extends State<ScheduledPaymentQueuePage> {
                 id: item.departmentId,
                 label: 'Khoa',
               ),
-              Text('Tạo lúc: ${_localTime(item.createdAt)}'),
-              Text('Hạn giữ chỗ: ${_localTime(item.expiresAt)}'),
+              LText('Tạo lúc: ${_localTime(item.createdAt)}'),
+              LText('Hạn giữ chỗ: ${_localTime(item.expiresAt)}'),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _lookupBusy
                     ? null
                     : () => _open(item.registrationId),
                 icon: const Icon(Icons.payments_outlined),
-                label: const Text('Đối chiếu và thu phí'),
+                label: const LText('Đối chiếu và thu phí'),
               ),
             ],
           ),
@@ -708,7 +710,7 @@ class _ScheduledPaymentCollectionPageState
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Phí khám', style: Theme.of(context).textTheme.titleLarge),
+          LText('Phí khám', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -740,7 +742,7 @@ class _ScheduledPaymentCollectionPageState
             const SizedBox(height: 12),
             if (_quoteLoading) const LinearProgressIndicator(),
             if (_quoteUnavailable)
-              const Text(
+              const LText(
                 'Billing chưa có báo giá cho yêu cầu này. Có thể tiếp tục thu đúng số dư do Billing cung cấp.',
               ),
             if (_quoteError != null) ...[
@@ -749,46 +751,48 @@ class _ScheduledPaymentCollectionPageState
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: _quoteLoading ? null : _loadQuote,
-                  child: const Text('Thử tải lại báo giá'),
+                  child: const LText('Thử tải lại báo giá'),
                 ),
               ),
             ],
             if (_quote != null)
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('Chi tiết giá và hỗ trợ mô phỏng'),
-                subtitle: Text(
+                title: const LText('Chi tiết giá và hỗ trợ mô phỏng'),
+                subtitle: LText(
                   'Người bệnh phải trả: ${_quote!.patientPayable.format()} ${_quote!.currency}',
                 ),
                 children: [
                   for (final line in _quote!.lines)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(line.description),
-                      subtitle: Text(
+                      title: LText(line.description),
+                      subtitle: LText(
                         '${line.grossAmount.format()} − hỗ trợ ${line.supportAmount.format()}',
                       ),
-                      trailing: Text(line.patientPayable.format()),
+                      trailing: LText(line.patientPayable.format()),
                     ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Tổng cộng'),
-                    subtitle: Text(
+                    title: const LText('Tổng cộng'),
+                    subtitle: LText(
                       'Báo giá hết hạn: ${_localTime(_quote!.expiresAt)}',
                     ),
-                    trailing: Text(_quote!.patientPayable.format()),
+                    trailing: LText(_quote!.patientPayable.format()),
                   ),
                 ],
               ),
             if (_quote != null && _quoteExpired)
-              const Text('Báo giá đã hết hạn. Hãy tải lại trước khi tiếp tục.'),
+              const LText(
+                'Báo giá đã hết hạn. Hãy tải lại trước khi tiếp tục.',
+              ),
             if (!_completed &&
                 _quote != null &&
                 _quote!.patientPayable.minorUnits !=
                     request.remainingAmount.minorUnits)
               const Padding(
                 padding: EdgeInsets.only(top: 12),
-                child: Text(
+                child: LText(
                   'Số dư và báo giá Billing không khớp. Tra cứu lại khoản phí trước khi tiếp tục.',
                 ),
               ),
@@ -798,7 +802,7 @@ class _ScheduledPaymentCollectionPageState
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
+                child: LText(
                   _result!.operation.basis == 'ZERO_LIABILITY'
                       ? 'Đã xác nhận nghĩa vụ 0 đồng. Mã xác nhận: ${_result!.clearanceId ?? '—'}'
                       : 'Đã thu ${_result!.payment!.amount} ${_result!.payment!.currency} · ${_result!.payment!.paymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}. Mã giao dịch: ${_result!.payment!.transactionId}',
@@ -811,7 +815,7 @@ class _ScheduledPaymentCollectionPageState
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: _refreshAfterCompletion,
-                  child: const Text('Thử kiểm tra lại'),
+                  child: const LText('Thử kiểm tra lại'),
                 ),
               ),
             ],
@@ -819,31 +823,31 @@ class _ScheduledPaymentCollectionPageState
           if (_recovery?.operationId != null ||
               _result?.operation.status == 'PREPARING') ...[
             const SizedBox(height: 12),
-            const Text(
+            const LText(
               'Đang chờ Billing hoàn tất giao dịch. Giữ nguyên yêu cầu để tránh thu trùng.',
             ),
             FilledButton.icon(
               onPressed: _checking ? null : _checkOperation,
               icon: const Icon(Icons.refresh),
-              label: Text(
+              label: LText(
                 _checking ? 'Đang kiểm tra…' : 'Kiểm tra trạng thái giao dịch',
               ),
             ),
           ],
           if (_recovery != null && _recovery!.operationId == null) ...[
             const SizedBox(height: 12),
-            const Text(
+            const LText(
               'Kết quả yêu cầu trước chưa xác định. Gửi lại đúng lệnh đã khóa hoặc kiểm tra trạng thái trước khi xử lý khoản khác.',
             ),
             FilledButton(
               onPressed: _busy ? null : _retryFrozen,
-              child: const Text('Gửi lại đúng yêu cầu đã khóa'),
+              child: const LText('Gửi lại đúng yêu cầu đã khóa'),
             ),
           ],
           if (_recoveryLoading) ...[
             const SizedBox(height: 8),
             const LinearProgressIndicator(),
-            const Text('Đang kiểm tra yêu cầu thu đã lưu.'),
+            const LText('Đang kiểm tra yêu cầu thu đã lưu.'),
           ],
           if (_recoveryLoadError != null) ...[
             RequestError(_recoveryLoadError!),
@@ -851,14 +855,14 @@ class _ScheduledPaymentCollectionPageState
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: _recoveryLoading ? null : _retryRecoveryRead,
-                child: const Text('Thử kiểm tra yêu cầu đã lưu'),
+                child: const LText('Thử kiểm tra yêu cầu đã lưu'),
               ),
             ),
           ],
           if (_closed)
             const Padding(
               padding: EdgeInsets.only(top: 12),
-              child: Text(
+              child: LText(
                 'Billing đã xác nhận thao tác này được đóng mà chưa thu tiền. Hãy quay lại và tra cứu khoản thu trước khi thao tác tiếp.',
               ),
             ),
@@ -872,11 +876,14 @@ class _ScheduledPaymentCollectionPageState
               request.remainingAmount.minorUnits > 0) ...[
             const SizedBox(height: 16),
             InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Số tiền được Billing xác nhận',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(
+                  context,
+                  'Số tiền được Billing xác nhận',
+                ),
                 border: OutlineInputBorder(),
               ),
-              child: Text(
+              child: LText(
                 '${request.remainingAmount.format()} ${request.currency}',
               ),
             ),
@@ -885,7 +892,7 @@ class _ScheduledPaymentCollectionPageState
                 !widget.zeroPayableEnabled)
               const Padding(
                 padding: EdgeInsets.only(top: 12),
-                child: Text(
+                child: LText(
                   'Báo giá là 0 đồng nhưng chức năng xác nhận nghĩa vụ 0 chưa được mở. Không thu tiền mặt.',
                 ),
               ),
@@ -894,15 +901,15 @@ class _ScheduledPaymentCollectionPageState
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: _method,
-                decoration: const InputDecoration(
-                  labelText: 'Hình thức thu',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Hình thức thu'),
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
+                  DropdownMenuItem(value: 'CASH', child: LText('Tiền mặt')),
                   DropdownMenuItem(
                     value: 'BANK_TRANSFER',
-                    child: Text(
+                    child: LText(
                       'Chuyển khoản, đối chiếu thủ công',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -918,8 +925,11 @@ class _ScheduledPaymentCollectionPageState
                 TextFormField(
                   controller: _providerReference,
                   maxLength: 120,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã đối chiếu chuyển khoản *',
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(
+                      context,
+                      'Mã đối chiếu chuyển khoản *',
+                    ),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
@@ -939,7 +949,7 @@ class _ScheduledPaymentCollectionPageState
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.payments_outlined),
-                label: Text(_busy ? 'Đang thu…' : 'Thu phí khám'),
+                label: LText(_busy ? 'Đang thu…' : 'Thu phí khám'),
               ),
             ],
           ],
@@ -947,12 +957,12 @@ class _ScheduledPaymentCollectionPageState
           // live inside the amount block above.
           if (canConfirmZero) ...[
             const SizedBox(height: 12),
-            const Text(
+            const LText(
               'Báo giá xác nhận người bệnh không phải trả tiền. Xác nhận này không ghi nhận tiền mặt.',
             ),
             FilledButton(
               onPressed: _busy ? null : () => _confirmZeroLiability(),
-              child: const Text('Xác nhận nghĩa vụ 0 đồng'),
+              child: const LText('Xác nhận nghĩa vụ 0 đồng'),
             ),
           ],
           if (!_completed &&
@@ -961,24 +971,24 @@ class _ScheduledPaymentCollectionPageState
               !_quoteIsZero)
             const Padding(
               padding: EdgeInsets.only(top: 12),
-              child: Text('Khoản này chưa có số dư dương để thu.'),
+              child: LText('Khoản này chưa có số dư dương để thu.'),
             ),
           if (request.status == 'PAID')
             const Padding(
               padding: EdgeInsets.only(top: 12),
-              child: Text('Khoản phí đã được thanh toán.'),
+              child: LText('Khoản phí đã được thanh toán.'),
             ),
           if (request.status == 'EXPIRED' || request.status == 'CANCELLED')
             const Padding(
               padding: EdgeInsets.only(top: 12),
-              child: Text(
+              child: LText(
                 'Khoản giữ chỗ đã hết hạn hoặc bị hủy; không thể thu.',
               ),
             ),
           const SizedBox(height: 16),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: const Text('Thông tin đối soát khoản thu'),
+            title: const LText('Thông tin đối soát khoản thu'),
             children: [
               _detail('Mã đăng ký', request.registrationId),
               _detail('Mã yêu cầu', request.paymentRequestId),
@@ -1012,7 +1022,7 @@ class _ScheduledPaymentCollectionPageState
       children: [
         SizedBox(
           width: 112,
-          child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
+          child: LText(label, maxLines: 2, overflow: TextOverflow.ellipsis),
         ),
         const SizedBox(width: 8),
         Expanded(child: SelectableText(value)),

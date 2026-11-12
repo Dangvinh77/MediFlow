@@ -1,3 +1,4 @@
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -97,18 +98,18 @@ class _BillingReportsPageState extends State<BillingReportsPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Phát lại sự kiện Billing?'),
-        content: const Text(
+        title: const LText('Phát lại sự kiện Billing?'),
+        content: const LText(
           'Chỉ tiếp tục nếu bạn đã kiểm tra sự kiện cần đưa lại vào xử lý.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: const LText('Hủy'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Phát lại'),
+            child: const LText('Phát lại'),
           ),
         ],
       ),
@@ -156,18 +157,22 @@ class _BillingReportsPageState extends State<BillingReportsPage>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
+        LText(
           'Doanh thu theo khoa',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _from,
-          decoration: const InputDecoration(labelText: 'Từ ngày (YYYY-MM-DD)'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Từ ngày (YYYY-MM-DD)'),
+          ),
         ),
         TextField(
           controller: _to,
-          decoration: const InputDecoration(labelText: 'Đến ngày (YYYY-MM-DD)'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Đến ngày (YYYY-MM-DD)'),
+          ),
         ),
         ReferencePicker(
           kind: ReferenceKind.department,
@@ -181,7 +186,7 @@ class _BillingReportsPageState extends State<BillingReportsPage>
         FilledButton.icon(
           onPressed: _loading ? null : _load,
           icon: const Icon(Icons.query_stats),
-          label: Text(_loading ? 'Đang tải…' : 'Xem báo cáo'),
+          label: LText(_loading ? 'Đang tải…' : 'Xem báo cáo'),
         ),
         if (_loading) const Center(child: MediFlowLoader()),
         if (_error != null)
@@ -197,7 +202,7 @@ class _BillingReportsPageState extends State<BillingReportsPage>
           ),
         if (_rows != null && !_loading) ...[
           if (_rows!.isEmpty)
-            const Text('Không có doanh thu trong khoảng thời gian này.'),
+            const LText('Không có doanh thu trong khoảng thời gian này.'),
           for (final row in _rows!)
             Card(
               child: ListTile(
@@ -206,32 +211,34 @@ class _BillingReportsPageState extends State<BillingReportsPage>
                   id: row.departmentId,
                   label: 'Khoa',
                 ),
-                subtitle: Text('Số hóa đơn: ${row.invoiceCount}'),
-                trailing: Text(row.totalRevenue.format()),
+                subtitle: LText('Số hóa đơn: ${row.invoiceCount}'),
+                trailing: LText(row.totalRevenue.format()),
               ),
             ),
         ],
         if (widget.role == 'ADMIN') ...[
           const Divider(height: 36),
-          Text(
+          LText(
             'Quản trị outbox',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const Text(
+          const LText(
             'Chỉ phát lại sự kiện đã được kiểm tra; lệnh này không gửi thông báo cho người bệnh.',
           ),
           TextField(
             controller: _eventId,
             enabled: !_replaying && !_replayUncertain,
-            decoration: const InputDecoration(labelText: 'Mã sự kiện (UUID)'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Mã sự kiện (UUID)'),
+            ),
           ),
           const SizedBox(height: 8),
           FilledButton(
             onPressed: _replaying || _replayUncertain ? null : _replay,
-            child: Text(_replaying ? 'Đang phát lại…' : 'Phát lại sự kiện'),
+            child: LText(_replaying ? 'Đang phát lại…' : 'Phát lại sự kiện'),
           ),
           if (_replayResult != null)
-            Text(
+            LText(
               'Đã phát lại: ${_replayResult!.eventId} · ${_replayResult!.replayed ? 'Có' : 'Không'}',
             ),
           if (_replayError != null) RequestError(_replayError!),
@@ -239,12 +246,12 @@ class _BillingReportsPageState extends State<BillingReportsPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                const LText(
                   'Kết quả chưa xác định. Đã khóa lệnh với cùng mã sự kiện để đối soát.',
                 ),
                 OutlinedButton(
                   onPressed: _replaying ? null : _confirmReplaySameEvent,
-                  child: const Text('Xác nhận thử lại cùng mã sự kiện'),
+                  child: const LText('Xác nhận thử lại cùng mã sự kiện'),
                 ),
               ],
             ),

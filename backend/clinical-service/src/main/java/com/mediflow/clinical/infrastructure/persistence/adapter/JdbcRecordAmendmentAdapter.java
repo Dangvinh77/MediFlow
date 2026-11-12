@@ -21,7 +21,7 @@ import com.mediflow.clinical.domain.model.RecordAmendmentStatus;
 public class JdbcRecordAmendmentAdapter implements RecordAmendmentRepositoryPort {
     private static final String COLUMNS = "a.amendment_id, a.record_id, a.section, a.original_text, a.amended_text, a.reason, "
             + "a.author_staff_id, a.assigned_by_staff_id, a.status, a.requested_at, a.decided_by_staff_id, a.decision_note, "
-            + "a.decided_at, a.content_hash";
+            + "a.decided_at, a.content_hash, a.effective_revision";
     private final JdbcTemplate jdbc;
 
     public JdbcRecordAmendmentAdapter(JdbcTemplate jdbc) {
@@ -30,12 +30,16 @@ public class JdbcRecordAmendmentAdapter implements RecordAmendmentRepositoryPort
 
     @Override
     public void insert(RecordAmendment a) {
+        Long effectiveRevision = a.getStatus() == RecordAmendmentStatus.APPLIED
+                ? nextEffectiveRevision(a.getRecordId()) : null;
         jdbc.update("""
                 INSERT INTO record_amendment(amendment_id, record_id, section, original_text, amended_text, reason,
-                    author_staff_id, assigned_by_staff_id, status, requested_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+                    author_staff_id, assigned_by_staff_id, status, requested_at, decided_by_staff_id, decision_note,
+                    decided_at, content_hash, effective_revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, a.getAmendmentId(), a.getRecordId(), a.getSection().name(), a.getOriginalText(), a.getAmendedText(),
                 a.getReason(), a.getAuthorStaffId(), a.getAssignedByStaffId(), a.getStatus().name(),
-                Timestamp.from(a.getRequestedAt()));
+                Timestamp.from(a.getRequestedAt()), a.getDecidedByStaffId(), a.getDecisionNote(),
+                a.getDecidedAt() == null ? null : Timestamp.from(a.getDecidedAt()), a.getContentHash(), effectiveRevision);
     }
 
     @Override
@@ -46,11 +50,13 @@ public class JdbcRecordAmendmentAdapter implements RecordAmendmentRepositoryPort
 
     @Override
     public void decide(RecordAmendment a) {
+        Long effectiveRevision = a.getStatus() == RecordAmendmentStatus.APPROVED
+                ? nextEffectiveRevision(a.getRecordId()) : null;
         jdbc.update("""
                 UPDATE record_amendment SET status = ?, decided_by_staff_id = ?, decision_note = ?, decided_at = ?,
-                    content_hash = ? WHERE amendment_id = ? AND status = 'PENDING'
+                    content_hash = ?, effective_revision = ? WHERE amendment_id = ? AND status = 'PENDING'
                 """, a.getStatus().name(), a.getDecidedByStaffId(), a.getDecisionNote(), Timestamp.from(a.getDecidedAt()),
-                a.getContentHash(), a.getAmendmentId());
+                a.getContentHash(), effectiveRevision, a.getAmendmentId());
     }
 
     @Override
@@ -110,7 +116,14 @@ public class JdbcRecordAmendmentAdapter implements RecordAmendmentRepositoryPort
                 rs.getString("amended_text"), rs.getString("reason"), rs.getObject("author_staff_id", UUID.class),
                 rs.getObject("assigned_by_staff_id", UUID.class), RecordAmendmentStatus.valueOf(rs.getString("status")),
                 rs.getTimestamp("requested_at").toInstant(), rs.getObject("decided_by_staff_id", UUID.class),
-                rs.getString("decision_note"), instant(rs, "decided_at"), rs.getString("content_hash"));
+                rs.getString("decision_note"), instant(rs, "decided_at"), rs.getString("content_hash"),
+                (Long) rs.getObject("effective_revision"));
+    }
+
+    private long nextEffectiveRevision(UUID recordId) {
+        Long next = jdbc.queryForObject("SELECT COALESCE(MAX(effective_revision), 0) + 1 "
+                + "FROM record_amendment WHERE record_id = ?", Long.class, recordId);
+        return next == null ? 1L : next;
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {

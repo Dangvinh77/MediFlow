@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -35,10 +37,7 @@ String _localTime(String? raw) {
 
 /// ADMIN view of one account: identity, access state and credential actions.
 class AccountDetailPage extends ConsumerStatefulWidget {
-  const AccountDetailPage({
-    super.key,
-    required this.accountId,
-  });
+  const AccountDetailPage({super.key, required this.accountId});
 
   final String accountId;
 
@@ -132,7 +131,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelMedium),
+        LText(label, style: Theme.of(context).textTheme.labelMedium),
         SelectableText(value),
       ],
     ),
@@ -142,7 +141,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'ADMIN') {
-      return const Center(child: Text('Bạn không có quyền xem tài khoản.'));
+      return const Center(child: LText('Bạn không có quyền xem tài khoản.'));
     }
     final account = _account;
     if (_loadError != null) {
@@ -165,8 +164,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(account.username, style: Theme.of(context).textTheme.titleLarge),
-        Text(_roleLabels[account.role] ?? account.role),
+        LText(account.username, style: Theme.of(context).textTheme.titleLarge),
+        LText(_roleLabels[account.role] ?? account.role),
         const SizedBox(height: 12),
         _field('Trạng thái', account.active ? 'Đang hoạt động' : 'Đã khóa'),
         if (account.staffId case final staffId?)
@@ -194,12 +193,12 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
         _field('Ngày tạo', _localTime(account.createdAt)),
         _field('Cập nhật lần cuối', _localTime(account.updatedAt)),
         const Divider(height: 24),
-        Text(
+        LText(
           'Trạng thái truy cập',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 4),
-        const Text(
+        const LText(
           'Tài khoản bị khóa không thể đăng nhập hoặc gia hạn phiên. Phiên đã cấp sẽ bị từ chối ở yêu cầu tiếp theo.',
         ),
         const SizedBox(height: 8),
@@ -207,14 +206,14 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
         if (_unknown)
           OutlinedButton(
             onPressed: _load,
-            child: const Text('Tải lại trạng thái'),
+            child: const LText('Tải lại trạng thái'),
           )
         else if (_confirmation != null) ...[
-          Text(
+          LText(
             'Xác nhận mở lại tài khoản',
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          Text(_confirmation!),
+          LText(_confirmation!),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -224,23 +223,25 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                 onPressed: _busy
                     ? null
                     : () => setState(() => _confirmation = null),
-                child: const Text('Hủy'),
+                child: const LText('Hủy'),
               ),
               FilledButton(
                 onPressed: _busy ? null : () => _setStatus(true, replace: true),
-                child: const Text('Tiếp tục mở lại tài khoản'),
+                child: const LText('Tiếp tục mở lại tài khoản'),
               ),
             ],
           ),
         ] else
           FilledButton(
             onPressed: _busy ? null : () => _setStatus(!account.active),
-            child: Text(account.active ? 'Khóa tài khoản' : 'Mở lại tài khoản'),
+            child: LText(
+              account.active ? 'Khóa tài khoản' : 'Mở lại tài khoản',
+            ),
           ),
         if (_notice != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(_notice!),
+            child: LText(_notice!),
           ),
         if (account.role != 'SYSTEM' &&
             owner != null &&

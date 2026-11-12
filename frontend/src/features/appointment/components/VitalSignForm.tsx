@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useRef, useState, type FormEvent } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -51,6 +53,7 @@ function outcomeUnknown(cause: unknown) {
 }
 
 export function VitalSignForm({ registrationId, onSaved }: { registrationId: string; onSaved: () => void }) {
+  const { localize } = useLocale();
   const [values, setValues] = useState(emptyValues);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -81,14 +84,13 @@ export function VitalSignForm({ registrationId, onSaved }: { registrationId: str
   }
 
   const locked = busy || Boolean(pending);
-  return <form noValidate aria-label="Ghi sinh hiệu" onSubmit={submit} className="space-y-3 rounded-lg border border-border p-3 text-sm">
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{fields.map(field => <label key={field.name} className="space-y-1 font-medium" htmlFor={`${registrationId}-${field.name}`}>{field.label}
+  return <form noValidate aria-label={localize("Ghi sinh hiệu")} onSubmit={submit} className="space-y-3 rounded-lg border border-border p-3 text-sm">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><L10nValue>{fields.map(field => <label key={field.name} className="space-y-1 font-medium" htmlFor={`${registrationId}-${field.name}`}><L10nValue>{field.label}</L10nValue>
       <input id={`${registrationId}-${field.name}`} inputMode={field.decimal ? "decimal" : "numeric"} disabled={locked} value={values[field.name]} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal tabular-nums" />
-    </label>)}</div>
-    <label className="block space-y-1 font-medium" htmlFor={`${registrationId}-not-measured`}>Lý do chưa đo đủ
-      <textarea id={`${registrationId}-not-measured`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
+    </label>)}</L10nValue></div>
+    <label className="block space-y-1 font-medium" htmlFor={`${registrationId}-not-measured`}><L10n>{"Lý do chưa đo đủ"}</L10n><textarea id={`${registrationId}-not-measured`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
     </label>
-    {error ? <div role="alert" className="rounded-lg border border-border p-3 font-medium"><p>{error}</p>{pending ? <p className="mt-1 font-normal">Chưa xác định sinh hiệu đã được lưu hay chưa. Gửi lại đúng yêu cầu để tránh ghi trùng.</p> : null}</div> : null}
-    <Button type="submit" variant="primary" loading={busy}>{pending ? "Gửi lại cùng yêu cầu" : "Lưu sinh hiệu"}</Button>
+    <L10nValue>{error ? <div role="alert" className="rounded-lg border border-border p-3 font-medium"><p><L10nValue>{error}</L10nValue></p><L10nValue>{pending ? <p className="mt-1 font-normal"><L10n>{"Chưa xác định sinh hiệu đã được lưu hay chưa. Gửi lại đúng yêu cầu để tránh ghi trùng."}</L10n></p> : null}</L10nValue></div> : null}</L10nValue>
+    <Button type="submit" variant="primary" loading={busy}><L10nValue>{pending ? "Gửi lại cùng yêu cầu" : "Lưu sinh hiệu"}</L10nValue></Button>
   </form>;
 }

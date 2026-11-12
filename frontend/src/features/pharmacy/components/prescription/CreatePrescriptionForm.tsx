@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -104,6 +106,7 @@ export function CreatePrescriptionForm({ mode = "outpatient", initialPatientId, 
 }
 
 function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId, sourceRecordId, onCreated }: { mode: "outpatient" | "legacy"; actorToken: string | null; initialPatientId: string; initialRecordId: string; sourceRecordId: string; onCreated?: (prescription: PrescriptionDTO) => void }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const directory = useReferenceDirectory();
   const role = useSyncExternalStore(
@@ -395,14 +398,12 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
   }
 
   if (role === null) {
-    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
+    return <AsyncState kind="loading" message={localize("Đang kiểm tra quyền…")} />;
   }
 
   if (!capabilities.canCreatePrescription) {
     return (
-      <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-        Tài khoản của bạn không có quyền tạo đơn thuốc.
-      </p>
+      <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10n>{"Tài khoản của bạn không có quyền tạo đơn thuốc."}</L10n></p>
     );
   }
 
@@ -415,58 +416,58 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
 
   return (
     <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6">
-      {formError && (
+      <L10nValue>{formError && (
         <div ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
-          {formError}
+          <L10nValue>{formError}</L10nValue>
         </div>
-      )}
+      )}</L10nValue>
 
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
-        <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
+        <h2 id="prescription-context-title" className="text-base font-semibold"><L10n>{"Thông tin kê đơn"}</L10n></h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {sourceRecordId ? "Hệ thống xác minh bệnh nhân, hồ sơ khám, bác sĩ và lượt khám từ hồ sơ nguồn." : "Chọn bệnh nhân, hồ sơ khám và bác sĩ phụ trách. Kiểm tra thông tin trước khi kê thuốc."}
+          <L10nValue>{sourceRecordId ? "Hệ thống xác minh bệnh nhân, hồ sơ khám, bác sĩ và lượt khám từ hồ sơ nguồn." : "Chọn bệnh nhân, hồ sơ khám và bác sĩ phụ trách. Kiểm tra thông tin trước khi kê thuốc."}</L10nValue>
         </p>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-          {!sourceRecordId ? <Field label="Bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
-            <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="Tìm bệnh nhân theo tên" />
-            {!directory && <PharmacyIdentity kind="patient" id={values.patientId.trim()} />}
-          </Field> : <div><p className="text-sm font-medium">Bệnh nhân</p>{isUuid(values.patientId) ? <PharmacyIdentity kind="patient" id={values.patientId} /> : <p className="mt-2 text-sm text-muted-foreground">Đang lấy từ hồ sơ nguồn…</p>}</div>}
-          {!sourceRecordId ? <Field label="Hồ sơ khám" htmlFor="recordId" error={validationErrors.fields.recordId} required>
+          <L10nValue>{!sourceRecordId ? <Field label={localize("Bệnh nhân")} htmlFor="patientId" error={validationErrors.fields.patientId} required>
+            <ReferenceInput kind="patient" id="patientId" {...field("patientId")} value={values.patientId} onValueChange={(id) => updateField("patientId", id)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder={localize("Tìm bệnh nhân theo tên")} />
+            <L10nValue>{!directory && <PharmacyIdentity kind="patient" id={values.patientId.trim()} />}</L10nValue>
+          </Field> : <div><p className="text-sm font-medium"><L10n>{"Bệnh nhân"}</L10n></p><L10nValue>{isUuid(values.patientId) ? <PharmacyIdentity kind="patient" id={values.patientId} /> : <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Đang lấy từ hồ sơ nguồn…"}</L10n></p>}</L10nValue></div>}</L10nValue>
+          <L10nValue>{!sourceRecordId ? <Field label={localize("Hồ sơ khám")} htmlFor="recordId" error={validationErrors.fields.recordId} required>
             <PrescriptionRecordPicker patientId={values.patientId} id="recordId" {...field("recordId")} value={values.recordId} onValueChange={(id) => updateField("recordId", id)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} />
-          </Field> : <div><p className="text-sm font-medium">Hồ sơ khám</p><p className="mt-2 text-sm text-muted-foreground">Đã khóa theo hồ sơ hiện tại</p></div>}
-          {mode === "legacy" && <>
-          <Field label="Bác sĩ kê đơn" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
-            <ReferenceInput kind="doctor" id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="Tìm bác sĩ theo tên" />
-            {!directory && <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} />}
+          </Field> : <div><p className="text-sm font-medium"><L10n>{"Hồ sơ khám"}</L10n></p><p className="mt-2 text-sm text-muted-foreground"><L10n>{"Đã khóa theo hồ sơ hiện tại"}</L10n></p></div>}</L10nValue>
+          <L10nValue>{mode === "legacy" && <>
+          <Field label={localize("Bác sĩ kê đơn")} htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
+            <ReferenceInput kind="doctor" id="doctorId" {...field("doctorId")} value={values.doctorId} onValueChange={(id) => updateField("doctorId", id)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder={localize("Tìm bác sĩ theo tên")} />
+            <L10nValue>{!directory && <PharmacyIdentity kind="doctor" id={values.doctorId.trim()} />}</L10nValue>
           </Field>
-          <Field label="Khoa khám" htmlFor="departmentId" error={validationErrors.fields.departmentId} required hint="Khoa được lấy theo bác sĩ, không chọn riêng.">
-            <input id="departmentId" {...field("departmentId")} readOnly value={doctor?.label ?? ""} placeholder={!values.doctorId ? "Chọn bác sĩ trước" : doctor?.error ? "Chưa xác nhận được khoa" : !isUuid(values.doctorId) ? "Hãy chọn bác sĩ hợp lệ" : "Đang lấy khoa của bác sĩ…"} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} />
-            {!directory && doctor?.departmentId && <PharmacyIdentity kind="department" id={doctor.departmentId} />}
-            {doctor?.error && <div role="alert" className="text-sm text-danger">{doctor.error} <Button type="button" disabled={locked} onClick={() => { setDoctorResult(null); setDoctorRetry(value => value + 1); }}>Thử lấy khoa lại</Button></div>}
+          <Field label={localize("Khoa khám")} htmlFor="departmentId" error={validationErrors.fields.departmentId} required hint="Khoa được lấy theo bác sĩ, không chọn riêng.">
+            <input id="departmentId" {...field("departmentId")} readOnly value={doctor?.label ?? ""} placeholder={localize(!values.doctorId ? "Chọn bác sĩ trước" : doctor?.error ? "Chưa xác nhận được khoa" : !isUuid(values.doctorId) ? "Hãy chọn bác sĩ hợp lệ" : "Đang lấy khoa của bác sĩ…")} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} />
+            <L10nValue>{!directory && doctor?.departmentId && <PharmacyIdentity kind="department" id={doctor.departmentId} />}</L10nValue>
+            <L10nValue>{doctor?.error && <div role="alert" className="text-sm text-danger"><L10nValue>{doctor.error}</L10nValue> <Button type="button" disabled={locked} onClick={() => { setDoctorResult(null); setDoctorRetry(value => value + 1); }}><L10n>{"Thử lấy khoa lại"}</L10n></Button></div>}</L10nValue>
           </Field>
-          </>}
-          <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
+          </>}</L10nValue>
+          <Field label={localize("Ngày kê đơn")} htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
             <input id="prescribedDate" type="date" max={today} {...field("prescribedDate")} value={values.prescribedDate} onChange={(event) => updateField("prescribedDate", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.prescribedDate))} />
           </Field>
-          {mode === "outpatient" && <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm md:col-span-2" aria-live="polite">
-            {!values.recordId ? <p>Chọn hồ sơ khám. Hệ thống sẽ tự lấy bác sĩ, khoa và lượt khám liên quan.</p>
-              : !context ? <p role="status">Đang xác nhận thông tin hồ sơ khám…</p>
-              : context.error ? <div role="alert">{context.error} <Button type="button" variant="secondary" disabled={locked} onClick={() => { setContextResult(null); setContextRetry(value => value + 1); }}>Thử tải lại hồ sơ</Button></div>
+          <L10nValue>{mode === "outpatient" && <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm md:col-span-2" aria-live="polite">
+            <L10nValue>{!values.recordId ? <p><L10n>{"Chọn hồ sơ khám. Hệ thống sẽ tự lấy bác sĩ, khoa và lượt khám liên quan."}</L10n></p>
+              : !context ? <p role="status"><L10n>{"Đang xác nhận thông tin hồ sơ khám…"}</L10n></p>
+              : context.error ? <div role="alert"><L10nValue>{context.error}</L10nValue> <Button type="button" variant="secondary" disabled={locked} onClick={() => { setContextResult(null); setContextRetry(value => value + 1); }}><L10n>{"Thử tải lại hồ sơ"}</L10n></Button></div>
               : <div className="space-y-3">
-                <p className="font-medium text-success">Đã lấy thông tin kê đơn từ hồ sơ khám.</p>
+                <p className="font-medium text-success"><L10n>{"Đã lấy thông tin kê đơn từ hồ sơ khám."}</L10n></p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div><p className="text-muted-foreground">Bác sĩ phụ trách</p><PharmacyIdentity kind="doctor" id={values.doctorId} /></div>
-                  <div><p className="text-muted-foreground">Khoa khám</p><PharmacyIdentity kind="department" id={values.departmentId} /></div>
+                  <div><p className="text-muted-foreground"><L10n>{"Bác sĩ phụ trách"}</L10n></p><PharmacyIdentity kind="doctor" id={values.doctorId} /></div>
+                  <div><p className="text-muted-foreground"><L10n>{"Khoa khám"}</L10n></p><PharmacyIdentity kind="department" id={values.departmentId} /></div>
                 </div>
-                {context.data && context.data.priceCodes.length > 1 && <Field label="Nhóm thu tiền thuốc" htmlFor="priceCode" error={validationErrors.fields.priceCode} required>
+                <L10nValue>{context.data && context.data.priceCodes.length > 1 && <Field label={localize("Nhóm thu tiền thuốc")} htmlFor="priceCode" error={validationErrors.fields.priceCode} required>
                   <select id="priceCode" {...field("priceCode")} className={controlClassName} value={values.priceCode} onChange={event => updateField("priceCode", event.target.value)}>
-                    <option value="">Chọn nhóm thu đã cấu hình</option>
-                    {context.data.priceCodes.map(code => <option key={code} value={code}>{code}</option>)}
+                    <option value=""><L10n>{"Chọn nhóm thu đã cấu hình"}</L10n></option>
+                    <L10nValue>{context.data.priceCodes.map(code => <option key={code} value={code}>{code}</option>)}</L10nValue>
                   </select>
-                </Field>}
-                <p className="text-muted-foreground">Lượt khám đã được hệ thống cung cấp.</p>
-              </div>}
-          </div>}
+                </Field>}</L10nValue>
+                <p className="text-muted-foreground"><L10n>{"Lượt khám đã được hệ thống cung cấp."}</L10n></p>
+              </div>}</L10nValue>
+          </div>}</L10nValue>
         </div>
       </section>
 
@@ -490,25 +491,25 @@ function PrescriptionForm({ mode, actorToken, initialPatientId, initialRecordId,
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        {createdPrescription && <div role="status" aria-label="Đã tạo đơn thuốc" className="w-full rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          <p className="font-semibold">Đã tạo đơn thuốc từ hồ sơ này.</p>
-          <p className="mt-1">Mã đơn: <span className="font-mono">{createdPrescription.prescriptionId}</span></p>
-          <Link className="mt-2 inline-flex min-h-10 items-center font-medium underline underline-offset-4" href={`/pharmacy/prescriptions/${createdPrescription.prescriptionId}`}>Mở chi tiết đơn thuốc</Link>
-        </div>}
+        <L10nValue>{createdPrescription && <div role="status" aria-label={localize("Đã tạo đơn thuốc")} className="w-full rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          <p className="font-semibold"><L10n>{"Đã tạo đơn thuốc từ hồ sơ này."}</L10n></p>
+          <p className="mt-1"><L10n>{"Mã đơn: "}</L10n><span className="font-mono">{createdPrescription.prescriptionId}</span></p>
+          <Link className="mt-2 inline-flex min-h-10 items-center font-medium underline underline-offset-4" href={`/pharmacy/prescriptions/${createdPrescription.prescriptionId}`}><L10n>{"Mở chi tiết đơn thuốc"}</L10n></Link>
+        </div>}</L10nValue>
         <Button
           type="submit"
           loading={submitting}
           disabled={created || (mode === "outpatient" && !context?.data)}
           variant="primary"
         >
-          {created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}
+          <L10nValue>{created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}</L10nValue>
         </Button>
-        {uncertain && !sourceRecordId && <Button type="button" disabled={submitting} onClick={() => {
+        <L10nValue>{uncertain && !sourceRecordId && <Button type="button" disabled={submitting} onClick={() => {
           focusTarget.current = "patientId";
           intent.current = null; setUncertain(false); setValues(createEmptyOutpatientPrescriptionForm());
           setValidationErrors({ fields: {}, lines: {} }); setFormError(null);
-        }}>Đã kiểm tra đơn cũ, bắt đầu đơn mới</Button>}
-        <Link href="/pharmacy/prescriptions" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu đơn thuốc</Link>
+        }}><L10n>{"Đã kiểm tra đơn cũ, bắt đầu đơn mới"}</L10n></Button>}</L10nValue>
+        <Link href="/pharmacy/prescriptions" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Tra cứu đơn thuốc"}</L10n></Link>
       </div>
     </form>
   );

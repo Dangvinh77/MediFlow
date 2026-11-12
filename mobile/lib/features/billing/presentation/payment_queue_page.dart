@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/paged_list.dart';
@@ -33,7 +35,7 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Thu tiền')),
+          appBar: AppBar(title: const LText('Thu tiền')),
           body: LedgerPaymentPage(
             repository: widget.repository,
             labQuotes: widget.labQuotes,
@@ -72,13 +74,18 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _purpose ?? '',
-              decoration: const InputDecoration(labelText: 'Loại khoản thu'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Loại khoản thu'),
+              ),
               items: const [
-                DropdownMenuItem(value: '', child: Text('Xét nghiệm và thuốc')),
-                DropdownMenuItem(value: 'LAB_TEST', child: Text('Xét nghiệm')),
+                DropdownMenuItem(
+                  value: '',
+                  child: LText('Xét nghiệm và thuốc'),
+                ),
+                DropdownMenuItem(value: 'LAB_TEST', child: LText('Xét nghiệm')),
                 DropdownMenuItem(
                   value: 'PRESCRIPTION',
-                  child: Text('Đơn thuốc'),
+                  child: LText('Đơn thuốc'),
                 ),
               ],
               onChanged: (value) =>
@@ -90,11 +97,11 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
                 TextButton.icon(
                   onPressed: () => setState(() => _revision++),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Cập nhật hàng chờ'),
+                  label: const LText('Cập nhật hàng chờ'),
                 ),
                 TextButton(
                   onPressed: () => _open(null),
-                  child: const Text('Tra cứu bằng mã bàn giao'),
+                  child: const LText('Tra cứu bằng mã bàn giao'),
                 ),
               ],
             ),
@@ -122,7 +129,7 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
                       id: request.patientId,
                       label: 'Bệnh nhân',
                     ),
-                    Text(
+                    LText(
                       request.purpose == 'LAB_TEST'
                           ? 'Xét nghiệm'
                           : 'Đơn thuốc',
@@ -132,14 +139,14 @@ class _PaymentQueuePageState extends State<PaymentQueuePage> {
                       id: request.departmentId,
                       label: 'Khoa',
                     ),
-                    Text(
+                    LText(
                       'Còn phải thu: ${request.remainingAmount.format()} ${request.currency}',
                     ),
                     if (request.expiresAt != null)
-                      Text('Hạn xử lý: ${request.expiresAt}'),
+                      LText('Hạn xử lý: ${request.expiresAt}'),
                     FilledButton(
                       onPressed: () => _open(request),
-                      child: const Text('Đối chiếu và thu tiền'),
+                      child: const LText('Đối chiếu và thu tiền'),
                     ),
                   ],
                 ),

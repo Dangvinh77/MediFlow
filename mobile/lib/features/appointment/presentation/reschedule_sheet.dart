@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -144,11 +146,11 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Đổi lịch', style: Theme.of(context).textTheme.titleMedium),
+            LText('Đổi lịch', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            const Text('Buổi khám mới'),
+            const LText('Buổi khám mới'),
             if (options.$2.isEmpty)
-              const Text('Không có buổi nào còn chỗ trong 30 ngày tới.'),
+              const LText('Không có buổi nào còn chỗ trong 30 ngày tới.'),
             for (final item in options.$2)
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -157,7 +159,7 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
                 trailing: item.id == _target?.id
                     ? const Icon(Icons.check)
                     : null,
-                title: Text(
+                title: LText(
                   '${item.date} · ${_clock(item.startTime)}–${_clock(item.endTime)} · Còn ${item.availableCount}/${item.capacity} chỗ',
                 ),
                 subtitle: ReferenceLabel(
@@ -173,8 +175,8 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
               enabled: !locked,
               maxLength: 500,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Lý do đổi lịch',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Lý do đổi lịch'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -182,25 +184,25 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
               value: _confirmed,
-              title: const Text('Bệnh nhân đã đồng ý với lịch mới.'),
+              title: const LText('Bệnh nhân đã đồng ý với lịch mới.'),
               onChanged: locked
                   ? null
                   : (value) => setState(() => _confirmed = value ?? false),
             ),
             if (_issue != null)
-              Text(
+              LText(
                 _issue!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             if (_error != null) RequestError(_error!),
             if (_pending != null)
-              const Text(
+              const LText(
                 'Chưa xác định lịch đã được đổi hay chưa. Gửi lại đúng yêu cầu để tránh xử lý trùng.',
               ),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy ? null : () => _submit(options.$1),
-              child: Text(
+              child: LText(
                 _pending != null ? 'Gửi lại cùng yêu cầu' : 'Xác nhận đổi lịch',
               ),
             ),
@@ -227,12 +229,12 @@ class ScheduleImpactSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LText(
           'Bệnh nhân bị ảnh hưởng',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 4),
-        Text(
+        LText(
           'Đang giữ chỗ: ${impact.heldCount} · Đang thanh toán: ${impact.paymentLockedCount} · Đã xác nhận: ${impact.confirmedCount} · Đã dùng: ${impact.consumedCount}',
         ),
         const SizedBox(height: 8),
@@ -247,7 +249,7 @@ class ScheduleImpactSheet extends StatelessWidget {
                   id: row.patientId,
                   label: 'Bệnh nhân',
                 ),
-                Text(
+                LText(
                   [
                     registrationStatusLabels[row.status] ?? row.status,
                     clinicNumbersText(row.queueNumber, row.roomQueueNumber),
@@ -261,7 +263,7 @@ class ScheduleImpactSheet extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(confirmLabel!),
+              child: LText(confirmLabel!),
             ),
           ),
       ],

@@ -157,6 +157,7 @@ abstract final class PharmacyDto {
       status: prescriptionStatus(json),
       dispenseStatus: dispenseStatus(json, 'dispenseStatus'),
       paymentConfirmed: json['paymentConfirmed'] as bool,
+      revision: json['revision'] == null ? null : integer(json, 'revision'),
       cancelledAt: optionalInstant(json, 'cancelledAt'),
       cancelledBy: optionalId(json, 'cancelledBy'),
       cancellationReason: optionalText(json, 'cancellationReason'),

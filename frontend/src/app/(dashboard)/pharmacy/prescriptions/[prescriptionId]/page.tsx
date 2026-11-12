@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
@@ -31,16 +33,16 @@ export default async function PrescriptionDetailPage({
       title="Chi tiết đơn thuốc"
       description="Thông tin đơn thuốc và trạng thái xuất thuốc."
     >
-      {!isUuid(id) ? (
+      <L10nValue>{!isUuid(id) ? (
         <section className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">
-          <h2 className="text-lg font-semibold">Mã đơn không hợp lệ</h2>
-          <p className="mt-2">Vui lòng kiểm tra mã trên đơn thuốc hoặc quay lại trang tra cứu.</p>
+          <h2 className="text-lg font-semibold"><L10n>{"Mã đơn không hợp lệ"}</L10n></h2>
+          <p className="mt-2"><L10n>{"Vui lòng kiểm tra mã trên đơn thuốc hoặc quay lại trang tra cứu."}</L10n></p>
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
           <PrescriptionDetail prescriptionId={id} mode={mode} context={context} />
         </RoleGate>
-      )}
+      )}</L10nValue>
     </PharmacyPageShell>
   );
 }

@@ -180,6 +180,18 @@ describe("CreatePrescriptionForm", () => {
     await waitFor(() => expect(screen.getByText("Paracetamol", { selector: "div" })).toHaveFocus());
     expect(screen.getByText("Thuốc đã ngừng dùng")).toBeVisible();
   });
+  it("does not let delayed dosage-dialog focus override a server field error", async () => {
+    const frames: FrameRequestCallback[] = [];
+    const frame = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(callback => { frames.push(callback); return frames.length; });
+    try {
+      mocks.create.mockRejectedValue(new ApiRequestError("Không hợp lệ", 400, "VALIDATION_ERROR", [{ field: "lines[0].drugId", message: "Thuốc đã ngừng dùng" }]));
+      render(<CreatePrescriptionForm mode="legacy" />); await validForm(); submit();
+      const target = screen.getByText("Paracetamol", { selector: "div" });
+      await waitFor(() => expect(target).toHaveFocus());
+      act(() => frames.forEach(callback => callback(0)));
+      expect(target).toHaveFocus();
+    } finally { frame.mockRestore(); }
+  });
   it.each(["lines[0].quantity", "lines.0.quantity"])("maps server %s errors to the current row and focuses after enabling fields", async field => {
     mocks.create.mockRejectedValue(new ApiRequestError("Không hợp lệ", 400, "VALIDATION_ERROR", [{ field, message: "Kiểm tra dòng thuốc" }], "rx-validation"));
     render(<CreatePrescriptionForm mode="legacy" />); await validForm(); submit();

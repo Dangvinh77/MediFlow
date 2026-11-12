@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -34,6 +36,7 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function RevenueReport() {
+  const { localize } = useLocale();
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
   const [fromDate, setFromDate] = useState(today);
@@ -83,62 +86,62 @@ export function RevenueReport() {
   return (
     <section className="mt-6">
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        <Field label="Từ ngày" htmlFor="revenue-from-date" required>
+        <Field label={localize("Từ ngày")} htmlFor="revenue-from-date" required>
           <input id="revenue-from-date" required type="date" max={toDate || undefined} value={fromDate} onChange={(event) => setFromDate(event.target.value)} className={controlClassName} />
         </Field>
-        <Field label="Đến ngày" htmlFor="revenue-to-date" required>
+        <Field label={localize("Đến ngày")} htmlFor="revenue-to-date" required>
           <input id="revenue-to-date" required type="date" min={fromDate || undefined} value={toDate} onChange={(event) => setToDate(event.target.value)} className={controlClassName} />
         </Field>
-        <Field label="Khoa (tuỳ chọn)" htmlFor="revenue-department-id" hint="Để trống xem mọi khoa, hoặc gõ vài chữ rồi bấm 'Tìm' và chọn 1 khoa trong danh sách hiện ra.">
+        <Field label={localize("Khoa (tuỳ chọn)")} htmlFor="revenue-department-id" hint="Để trống xem mọi khoa, hoặc gõ vài chữ rồi bấm 'Tìm' và chọn 1 khoa trong danh sách hiện ra.">
           <ReferenceInput kind="department" id="revenue-department-id" value={departmentId} onValueChange={(selectedId) => setDepartmentId(selectedId)} placeholder="UUID khoa" className={controlClassName} />
         </Field>
         <div className="flex shrink-0 gap-2 sm:mt-[1.625rem]">
-          <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
-          <Button type="button" disabled={loading} onClick={() => router.back()}>Quay lại</Button>
+          <Button type="submit" variant="primary" loading={loading}><L10n>{"Xem báo cáo"}</L10n></Button>
+          <Button type="button" disabled={loading} onClick={() => router.back()}><L10n>{"Quay lại"}</L10n></Button>
         </div>
       </form>
 
-      {validationError ? <p role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
+      <L10nValue>{validationError ? <p role="alert" className="mt-2 text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
 
-      {loading ? <AsyncState kind="loading" message="Đang tải báo cáo doanh thu…" /> : null}
+      <L10nValue>{loading ? <AsyncState kind="loading" message={localize("Đang tải báo cáo doanh thu…")} /> : null}</L10nValue>
 
-      {!loading && error ? (
-        <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => lastQuery && void load(lastQuery)} />
-      ) : null}
+      <L10nValue>{!loading && error ? (
+        <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={() => lastQuery && void load(lastQuery)} />
+      ) : null}</L10nValue>
 
-      {!loading && !error && rows !== null && rows.length === 0 ? (
-        <AsyncState kind="empty" message="Không có doanh thu đã thanh toán trong khoảng ngày này." />
-      ) : null}
+      <L10nValue>{!loading && !error && rows !== null && rows.length === 0 ? (
+        <AsyncState kind="empty" message={localize("Không có doanh thu đã thanh toán trong khoảng ngày này.")} />
+      ) : null}</L10nValue>
 
-      {!loading && !error && rows && rows.length > 0 ? (
+      <L10nValue>{!loading && !error && rows && rows.length > 0 ? (
         <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="border-b border-border bg-surface-muted">
               <tr>
                 <th scope="col" className="px-4 py-3">Khoa</th>
-                <th scope="col" className="px-4 py-3">Số hóa đơn</th>
+                <th scope="col" className="px-4 py-3"><L10n>{"Số hóa đơn"}</L10n></th>
                 <th scope="col" className="px-4 py-3">Doanh thu</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              <L10nValue>{rows.map((row) => (
                 <tr key={row.departmentId} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={row.departmentId} fallback="Khoa" /></td>
                   <td className="px-4 py-3">{row.invoiceCount}</td>
-                  <td className="px-4 py-3 font-medium">{formatDecimal(row.totalRevenue)}</td>
+                  <td className="px-4 py-3 font-medium"><L10nValue>{formatDecimal(row.totalRevenue)}</L10nValue></td>
                 </tr>
-              ))}
+              ))}</L10nValue>
             </tbody>
             <tfoot>
               <tr className="border-t border-border bg-surface-muted font-semibold">
-                <td className="px-4 py-3">Tổng</td>
-                <td className="px-4 py-3">{rows.reduce((sum, row) => sum + row.invoiceCount, 0)}</td>
-                <td className="px-4 py-3">{formatDecimal(totalRevenue)}</td>
+                <td className="px-4 py-3"><L10n>{"Tổng"}</L10n></td>
+                <td className="px-4 py-3"><L10nValue>{rows.reduce((sum, row) => sum + row.invoiceCount, 0)}</L10nValue></td>
+                <td className="px-4 py-3"><L10nValue>{formatDecimal(totalRevenue)}</L10nValue></td>
               </tr>
             </tfoot>
           </table>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

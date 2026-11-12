@@ -1,6 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/l10n/app_preferences.dart';
+
 import '../core/providers.dart';
 import '../core/domain/workspace_access.dart';
 import '../features/auth/data/gateway_auth_repository.dart';
@@ -68,6 +70,7 @@ final _pharmacyAdapterProvider = Provider(
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  preferenceStoreProvider.overrideWithValue(const _StoredPreferences()),
   examLifecycleRepositoryProvider.overrideWith(
     (ref) => GatewayExamLifecycleRepository(ref.watch(apiClientProvider)),
   ),
@@ -228,3 +231,13 @@ final appOverrides = [
     (ref) => GatewayNotificationRepository(ref.watch(apiClientProvider)),
   ),
 ];
+
+class _StoredPreferences implements PreferenceStore {
+  const _StoredPreferences();
+  static const _storage = FlutterSecureStorage();
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+  @override
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
+}

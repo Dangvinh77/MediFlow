@@ -48,6 +48,8 @@ class PatientServiceIntegrationTest {
     @Autowired com.mediflow.patient.application.port.out.PatientAccountOwnerLockPort patientAccountOwnerLock;
     @Autowired @org.springframework.beans.factory.annotation.Qualifier("organizationDataSource")
     javax.sql.DataSource organizationSource;
+    @Autowired @org.springframework.beans.factory.annotation.Qualifier("patientDataSource")
+    javax.sql.DataSource patientSource;
 
     @Test void concurrentNurseIssuanceReplaysAndNeverReplacesEvenInactiveAccount() throws Exception {
         var patient = createPatient.create(new CreatePatientRequest("Portal Patient",
@@ -287,7 +289,7 @@ class PatientServiceIntegrationTest {
 
     private PatientDTO newPatient(String name) {
         return createPatient.create(new CreatePatientRequest(name, LocalDate.of(1990, 1, 2), Gender.M,
-                UUID.randomUUID().toString().substring(0, 20), "Address", "0901234567", "audit@example.com", null));
+                UUID.randomUUID().toString().substring(0, 20), "Address", "0901234567", UUID.randomUUID() + "@example.test", null));
     }
 
     private com.mediflow.patient.application.dto.request.UpdatePatientRequest correction(PatientDTO patient, String name) {
@@ -402,9 +404,9 @@ class PatientServiceIntegrationTest {
     void concurrentCorrectionsCannotAssignOneIdentityToTwoPatients() throws Exception {
         String prefix = UUID.randomUUID().toString().substring(0, 8);
         PatientDTO first = createPatient.create(new CreatePatientRequest("Race A", LocalDate.of(1990, 1, 1),
-                Gender.M, prefix + "-a", null, null, null, null));
+                Gender.M, prefix + "-a", null, null, "race-a-" + UUID.randomUUID() + "@example.test", null));
         PatientDTO second = createPatient.create(new CreatePatientRequest("Race B", LocalDate.of(1990, 1, 1),
-                Gender.F, prefix + "-b", null, null, null, null));
+                Gender.F, prefix + "-b", null, null, "race-b-" + UUID.randomUUID() + "@example.test", null));
         var actor = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         var start = new java.util.concurrent.CyclicBarrier(2);
         try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
@@ -442,9 +444,9 @@ class PatientServiceIntegrationTest {
     void correctsIdentityInPostgresAndRejectsAnotherPatientsNumber() {
         String prefix = UUID.randomUUID().toString().substring(0, 8);
         PatientDTO first = createPatient.create(new CreatePatientRequest("Identity A", LocalDate.of(1990, 1, 1),
-                Gender.M, prefix + "-old", null, null, null, null));
+                Gender.M, prefix + "-old", null, null, "identity-a-" + UUID.randomUUID() + "@example.test", null));
         PatientDTO second = createPatient.create(new CreatePatientRequest("Identity B", LocalDate.of(1990, 1, 1),
-                Gender.F, prefix + "-other", null, null, null, null));
+                Gender.F, prefix + "-other", null, null, "identity-b-" + UUID.randomUUID() + "@example.test", null));
         var correction = new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
                 first.hoTen(), first.ngaySinh(), first.gioiTinh(), null, null, null, null, prefix + "-new", "Verified original identity");
         var persistedCreatedAt = patientRepository.findById(first.maBenhNhan()).orElseThrow().getCreatedAt();

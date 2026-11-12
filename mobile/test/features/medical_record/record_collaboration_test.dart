@@ -64,6 +64,7 @@ RecordAmendment _amendmentModel({
   String status = 'PENDING',
   String author = _other,
   String? hash,
+  String? decisionNote,
 }) => RecordAmendment(
   amendmentId: _amendment,
   recordId: _record,
@@ -74,6 +75,8 @@ RecordAmendment _amendmentModel({
   authorStaffId: author,
   status: status,
   requestedAt: '2026-11-10T02:00:00Z',
+  decidedByStaffId: status == 'APPLIED' ? author : null,
+  decisionNote: decisionNote,
   contentHash: hash,
 );
 
@@ -221,6 +224,7 @@ RecordCapabilities _caps({
   bool? accept,
   bool? note,
   bool? amend,
+  bool? apply,
   bool? decide,
 }) => RecordCapabilities(
   recordId: _record,
@@ -232,6 +236,7 @@ RecordCapabilities _caps({
   canAcceptHandover: accept,
   canAddConsultationNote: note,
   canAmend: amend,
+  canApplyAmendment: apply,
   canDecideAmendments: decide,
 );
 
@@ -687,6 +692,44 @@ void main() {
       for (final banned in ['chữ ký', 'ký số', 'hợp pháp']) {
         expect(find.textContaining(banned), findsNothing);
       }
+    });
+
+    testWidgets('directlyAppliedAmendmentShowsAuthorAndAppliedStatus', (
+      tester,
+    ) async {
+      final repository = CollabFake()
+        ..onAmendments = () async => [
+          _amendmentModel(
+            status: 'APPLIED',
+            author: _me,
+            hash: _hash,
+            decisionNote:
+                'Applied directly by the responsible doctor.',
+          ),
+        ];
+      await _pump(tester, repository, capabilities: _caps(amend: true));
+      expect(
+        find.textContaining('Đã áp dụng trực tiếp bởi bác sĩ phụ trách'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Applied directly by the responsible doctor.'),
+        findsOneWidget,
+      );
+      expect(find.text('Đã xác nhận nội bộ'), findsNothing);
+      expect(find.text('Bản đính chính'), findsNothing);
+      expect(find.text('Nội dung đã áp dụng'), findsOneWidget);
+    });
+
+    testWidgets('responsible doctor gets a direct apply form with required reason', (tester) async {
+      final repository = CollabFake();
+      await _pump(tester, repository, capabilities: _caps(amend: true, apply: true));
+      await _tap(tester, 'toggle-amend');
+      expect(find.text('Áp dụng đính chính'), findsOneWidget);
+      expect(find.text('Nội dung cần sửa *'), findsOneWidget);
+      await _tap(tester, 'cf-amend-submit');
+      expect(repository.commands, isEmpty);
+      expect(find.text('Nhập nội dung đính chính.'), findsOneWidget);
     });
 
     testWidgets('pending queue is shown to reviewers only', (tester) async {

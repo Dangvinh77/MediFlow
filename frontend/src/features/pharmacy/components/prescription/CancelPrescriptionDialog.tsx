@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,6 +38,7 @@ function errorMessage(cause: ApiRequestError): string {
 
 /** Inline confirmation; it leaves the rest of the page available to keyboard users. */
 export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, onConflict }: CancelPrescriptionDialogProps) {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canCancelPrescription");
   const router = useRouter();
   const reasonRef = useRef<HTMLTextAreaElement>(null);
@@ -116,24 +119,22 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
       onKeyDown={event => {
         if (event.key === "Escape" && !submittingRef.current) { event.preventDefault(); onClose(); }
       }}>
-      <h4 id="cancel-prescription-title" className="font-semibold">Xác nhận hủy đơn thuốc</h4>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Đơn thuốc đang xem sẽ được hủy. Số lượng đang giữ cho đơn sẽ được giải phóng theo kết quả xử lý.
-      </p>
-      {formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{formError}</p>}
+      <h4 id="cancel-prescription-title" className="font-semibold"><L10n>{"Xác nhận hủy đơn thuốc"}</L10n></h4>
+      <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Đơn thuốc đang xem sẽ được hủy. Số lượng đang giữ cho đơn sẽ được giải phóng theo kết quả xử lý."}</L10n></p>
+      <L10nValue>{formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><L10nValue>{formError}</L10nValue></p>}</L10nValue>
       <form onSubmit={submit} noValidate className="mt-4 space-y-4">
-        <Field label="Lý do hủy" htmlFor="cancel-prescription-reason" error={fieldError ?? undefined} required>
+        <Field label={localize("Lý do hủy")} htmlFor="cancel-prescription-reason" error={fieldError ?? undefined} required>
           <textarea ref={reasonRef} id="cancel-prescription-reason" value={reason} maxLength={500}
             disabled={submitting} aria-required="true" aria-invalid={Boolean(fieldError) || undefined}
             aria-describedby={fieldError ? "cancel-prescription-reason-error" : "cancel-prescription-reason-hint"}
             onChange={event => { setReason(event.target.value); setFieldError(null); setFormError(null); }}
             className={`${controlClassName} min-h-24 resize-y${fieldError ? " border-danger" : ""}`}
-            placeholder="Nhập lý do từ 1 đến 500 ký tự" />
+            placeholder={localize("Nhập lý do từ 1 đến 500 ký tự")} />
           <p id="cancel-prescription-reason-hint" className="text-right text-xs text-muted-foreground">{reason.length}/500</p>
         </Field>
         <div className="flex flex-wrap gap-3">
-          <Button type="button" onClick={onClose} disabled={submitting}>Đóng</Button>
-          <Button type="submit" variant="danger" loading={submitting} disabled={forbidden}>Xác nhận hủy đơn</Button>
+          <Button type="button" onClick={onClose} disabled={submitting}><L10n>{"Đóng"}</L10n></Button>
+          <Button type="submit" variant="danger" loading={submitting} disabled={forbidden}><L10n>{"Xác nhận hủy đơn"}</L10n></Button>
         </div>
       </form>
     </section>

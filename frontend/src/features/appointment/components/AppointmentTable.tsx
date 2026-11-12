@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -45,6 +47,7 @@ function getRequestError(cause: unknown): RequestError {
 
 /** Patient directory labels read "Họ tên · dd/mm/yyyy"; show the name and birth year in separate columns. */
 function PatientCells({ patientId }: { patientId: string }) {
+  const { localize } = useLocale();
   const directory = useReferenceDirectory();
   const [resolved, setResolved] = useState<{ id: string; label: string | null } | null>(null);
   useEffect(() => {
@@ -62,13 +65,14 @@ function PatientCells({ patientId }: { patientId: string }) {
   const birthYear = label && separator > 0 ? /(\d{4})\s*$/.exec(label.slice(separator + 3))?.[1] ?? null : null;
   return <>
     <td className="min-w-36 max-w-44 px-3 py-3">
-      {name && !containsUuid(name) ? <span className="block truncate font-medium" title={name}>{name}</span> : <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" />}
+      <L10nValue>{name && !containsUuid(name) ? <span className="block truncate font-medium" title={localize(name)}>{name}</span> : <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" />}</L10nValue>
     </td>
-    <td className="whitespace-nowrap px-3 py-3 tabular-nums">{birthYear ?? "—"}</td>
+    <td className="whitespace-nowrap px-3 py-3 tabular-nums"><L10nValue>{birthYear ?? "—"}</L10nValue></td>
   </>;
 }
 
 export function AppointmentTable() {
+  const { localize } = useLocale();
   const router = useRouter();
   const requestSequence = useRef(0);
   const mounted = useRef(false);
@@ -153,16 +157,14 @@ export function AppointmentTable() {
 
   return (
     <section className="mt-6">
-      {canCreate ? (
+      <L10nValue>{canCreate ? (
         <div className="mb-4 flex justify-end">
           <Link
             href="/appointments/new"
             className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Tạo lịch hẹn
-          </Link>
+          ><L10n>{"Tạo lịch hẹn"}</L10n></Link>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
       <form onSubmit={onFilter} className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="appointment-department" className="mb-1 block text-sm font-medium">Khoa</label>
@@ -170,13 +172,13 @@ export function AppointmentTable() {
             id="appointment-department"
             value={departmentId}
             onValueChange={(selectedId) => setDepartmentId(selectedId)}
-            placeholder="Tìm theo tên khoa"
+            placeholder={localize("Tìm theo tên khoa")}
             aria-describedby={validationError ? "appointment-department-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
         <div>
-          <label htmlFor="appointment-date" className="mb-1 block text-sm font-medium">Ngày hẹn</label>
+          <label htmlFor="appointment-date" className="mb-1 block text-sm font-medium"><L10n>{"Ngày hẹn"}</L10n></label>
           <input
             id="appointment-date"
             type="date"
@@ -185,53 +187,53 @@ export function AppointmentTable() {
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
-        <button type="submit" disabled={loading} className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">Lọc</button>
-        <button type="button" onClick={onReset} disabled={loading} className="min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Tất cả</button>
+        <button type="submit" disabled={loading} className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><L10n>{"Lọc"}</L10n></button>
+        <button type="button" onClick={onReset} disabled={loading} className="min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"><L10n>{"Tất cả"}</L10n></button>
       </form>
-      {validationError ? <p id="appointment-department-error" role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
+      <L10nValue>{validationError ? <p id="appointment-department-error" role="alert" className="mt-2 text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
 
-      {loading && appointments.length === 0 ? <AsyncState kind="loading" message="Đang tải lịch hẹn…" /> : null}
-      {!loading && error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadAppointments(lastRequest.page, lastRequest.filters)} /> : null}
-      {!loading && !error && appointments.length === 0 ? <AsyncState kind="empty" message="Chưa có lịch hẹn phù hợp." /> : null}
+      <L10nValue>{loading && appointments.length === 0 ? <AsyncState kind="loading" message={localize("Đang tải lịch hẹn…")} /> : null}</L10nValue>
+      <L10nValue>{!loading && error ? <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={() => void loadAppointments(lastRequest.page, lastRequest.filters)} /> : null}</L10nValue>
+      <L10nValue>{!loading && !error && appointments.length === 0 ? <AsyncState kind="empty" message={localize("Chưa có lịch hẹn phù hợp.")} /> : null}</L10nValue>
 
-      {!error && appointments.length > 0 ? (
+      <L10nValue>{!error && appointments.length > 0 ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-4xl text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
-                <tr className="whitespace-nowrap"><th scope="col" className="px-3 py-3">Ngày</th><th scope="col" className="px-3 py-3">Giờ</th><th scope="col" className="px-3 py-3">Bệnh nhân</th><th scope="col" className="px-3 py-3">Năm sinh</th><th scope="col" className="px-3 py-3">Bác sĩ</th><th scope="col" className="px-3 py-3">Khoa</th><th scope="col" className="px-3 py-3">Trạng thái</th><th scope="col" className="px-3 py-3">Lý do</th><th scope="col" className="px-3 py-3 text-right">Chi tiết</th></tr>
+                <tr className="whitespace-nowrap"><th scope="col" className="px-3 py-3"><L10n>{"Ngày"}</L10n></th><th scope="col" className="px-3 py-3"><L10n>{"Giờ"}</L10n></th><th scope="col" className="px-3 py-3"><L10n>{"Bệnh nhân"}</L10n></th><th scope="col" className="px-3 py-3"><L10n>{"Năm sinh"}</L10n></th><th scope="col" className="px-3 py-3"><L10n>{"Bác sĩ"}</L10n></th><th scope="col" className="px-3 py-3">Khoa</th><th scope="col" className="px-3 py-3"><L10n>{"Trạng thái"}</L10n></th><th scope="col" className="px-3 py-3"><L10n>{"Lý do"}</L10n></th><th scope="col" className="px-3 py-3 text-right"><L10n>{"Chi tiết"}</L10n></th></tr>
               </thead>
               <tbody>
-                {appointments.map((appointment) => {
+                <L10nValue>{appointments.map((appointment) => {
                   const status = getAppointmentStatusPresentation(appointment);
                   return (
                     <tr key={appointment.appointmentId} className="border-b border-border align-top last:border-0">
-                      <td className="whitespace-nowrap px-3 py-3 tabular-nums">{formatLocalDate(appointment.appointmentDate)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 tabular-nums"><L10nValue>{formatLocalDate(appointment.appointmentDate)}</L10nValue></td>
                       <td className="whitespace-nowrap px-3 py-3 tabular-nums">{appointment.appointmentTime}</td>
                       <PatientCells patientId={appointment.patientId} />
                       <td className="min-w-28 px-3 py-3"><ReferenceText kind="doctor" value={appointment.doctorId} fallback="Bác sĩ" /></td>
                       <td className="min-w-32 px-3 py-3"><ReferenceText kind="department" value={appointment.departmentId} fallback="Khoa" /></td>
-                      <td className="whitespace-nowrap px-3 py-3"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></td>
-                      <td className="w-full min-w-40 max-w-72 px-3 py-3"><span className="line-clamp-2 wrap-anywhere" title={appointment.reason ?? undefined}>{appointment.reason ?? "—"}</span></td>
+                      <td className="whitespace-nowrap px-3 py-3"><StatusBadge tone={status.tone}><L10nValue>{status.label}</L10nValue></StatusBadge></td>
+                      <td className="w-full min-w-40 max-w-72 px-3 py-3"><span className="line-clamp-2 wrap-anywhere" title={localize(appointment.reason ?? undefined)}><L10nValue>{appointment.reason ?? "—"}</L10nValue></span></td>
                       <td className="whitespace-nowrap px-3 py-3 text-right">
-                        {canViewDetail ? (
+                        <L10nValue>{canViewDetail ? (
                           <Link
                             href={`/appointments/${appointment.appointmentId}`}
                             className="inline-flex min-h-9 items-center rounded-lg border border-control-border px-3 text-sm font-semibold text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                           >
                             Xem
                           </Link>
-                        ) : "—"}
+                        ) : "—"}</L10nValue>
                       </td>
                     </tr>
                   );
-                })}
+                })}</L10nValue>
               </tbody>
             </table>
           </div>
           <Pagination page={pageNumber} totalPages={totalPages} totalElements={totalElements} loading={loading} onPageChange={(page) => void loadAppointments(page, activeFilters)} />
         </>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

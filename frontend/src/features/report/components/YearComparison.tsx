@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { formatDecimal } from "@/lib/format";
 import { averagePerVisit, commonCutoff, completedMonthValues, cumulativeRevenue, figuresThrough, lastFullMonthIndex, MONTH_LABELS, monthlyValues, percentChange, revenueOf } from "../dashboardData";
 import type { OutpatientStatisticsDTO, OutpatientStatisticsFigures } from "../types";
@@ -8,17 +10,17 @@ import { compactMoney, money, revenueLines } from "./YearOverview";
 /** The arrow plus sign carry direction; a rise is not "good" for every measure, so no status colour. */
 function Delta({ current, previous }: { current: number; previous: number }) {
   const change = percentChange(current, previous);
-  if (change === null) return <span className="text-muted-foreground">Không có số năm so sánh</span>;
+  if (change === null) return <span className="text-muted-foreground"><L10n>{"Không có số năm so sánh"}</L10n></span>;
   const flat = Math.abs(change) < .05;
-  return <span className="font-medium tabular-nums">{flat ? "=" : change > 0 ? "▲" : "▼"} {Math.abs(change).toFixed(1).replace(".", ",")}%</span>;
+  return <span className="font-medium tabular-nums"><L10nValue>{flat ? "=" : change > 0 ? "▲" : "▼"}</L10nValue> <L10nValue>{Math.abs(change).toFixed(1).replace(".", ",")}</L10nValue>%</span>;
 }
 
 function CompareTile({ label, current, previous, format, compareYear }: { label: string; current: number; previous: number; format: (value: number) => string; compareYear: number }) {
   return <div className="min-w-0 rounded-xl border border-border bg-surface p-4">
-    <dt className="text-sm text-muted-foreground">{label}</dt>
-    <dd className="mt-1 text-2xl font-semibold tabular-nums">{format(current)}</dd>
+    <dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
+    <dd className="mt-1 text-2xl font-semibold tabular-nums"><L10nValue>{format(current)}</L10nValue></dd>
     <dd className="mt-1 text-sm"><Delta current={current} previous={previous} /></dd>
-    <dd className="mt-0.5 text-xs text-muted-foreground">Năm {compareYear}: {format(previous)}</dd>
+    <dd className="mt-0.5 text-xs text-muted-foreground"><L10n>{"Năm "}</L10n><L10nValue>{compareYear}</L10nValue>: <L10nValue>{format(previous)}</L10nValue></dd>
   </div>;
 }
 
@@ -64,8 +66,7 @@ export function YearComparison({ base, compare, baseYear, compareYear, basePerio
   ];
   const legend = pair(revenueOf).map(item => ({ label: item.label, color: item.color }));
   return <div className="space-y-4">
-    <p className="text-sm text-muted-foreground">
-      So sánh năm {baseYear} với {compareYear}, phần trăm tính trên {periodLabel}{partial ? " để hai năm cùng số ngày" : ""}.
+    <p className="text-sm text-muted-foreground"><L10n>{"So sánh năm "}</L10n><L10nValue>{baseYear}</L10nValue><L10n>{" với "}</L10n><L10nValue>{compareYear}</L10nValue><L10n>{", phần trăm tính trên "}</L10n><L10nValue>{periodLabel}</L10nValue><L10nValue>{partial ? " để hai năm cùng số ngày" : ""}</L10nValue>.
     </p>
     <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="So sánh tổng hợp">
       <CompareTile label="Doanh thu" current={revenueOf(baseTotal)} previous={revenueOf(compareTotal)} format={compactMoney} compareYear={compareYear} />
@@ -96,36 +97,36 @@ export function YearComparison({ base, compare, baseYear, compareYear, basePerio
         <Dumbbell baseLabel={String(baseYear)} compareLabel={String(compareYear)} format={value => compactMoney(value)}
           rows={revenueLines.filter(line => baseTotal[line.key] > 0 || compareTotal[line.key] > 0).map(line => ({ id: line.key, label: line.label, base: baseTotal[line.key], compare: compareTotal[line.key] }))} />
       </ChartCard>
-      {departments.length > 1 && <ChartCard title="Doanh thu theo khoa" subtitle={`Từ ${compareYear} sang ${baseYear}, ${periodLabel}`}>
+      <L10nValue>{departments.length > 1 && <ChartCard title="Doanh thu theo khoa" subtitle={`Từ ${compareYear} sang ${baseYear}, ${periodLabel}`}>
         <Dumbbell baseLabel={String(baseYear)} compareLabel={String(compareYear)} format={value => compactMoney(value)}
           rows={departments.map(id => ({ id, label: <ReportDepartmentName id={id} />, base: departmentRevenue(basePeriod, id), compare: departmentRevenue(comparePeriod, id) }))} />
-      </ChartCard>}
+      </ChartCard>}</L10nValue>
     </div>
     <ChartCard title="Bảng so sánh theo tháng" subtitle="Số liệu đầy đủ của các biểu đồ trên">
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[36rem] text-right text-sm tabular-nums">
           <thead className="border-b border-border text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="py-2 pr-3 text-left font-medium">Tháng</th>
-              <th scope="col" className="px-3 py-2 font-medium">Doanh thu {compareYear}</th>
-              <th scope="col" className="px-3 py-2 font-medium">Doanh thu {baseYear}</th>
-              <th scope="col" className="px-3 py-2 font-medium">Thay đổi</th>
-              <th scope="col" className="px-3 py-2 font-medium">Lượt khám {compareYear}</th>
-              <th scope="col" className="py-2 pl-3 font-medium">Lượt khám {baseYear}</th>
+              <th scope="col" className="py-2 pr-3 text-left font-medium"><L10n>{"Tháng"}</L10n></th>
+              <th scope="col" className="px-3 py-2 font-medium">Doanh thu <L10nValue>{compareYear}</L10nValue></th>
+              <th scope="col" className="px-3 py-2 font-medium">Doanh thu <L10nValue>{baseYear}</L10nValue></th>
+              <th scope="col" className="px-3 py-2 font-medium"><L10n>{"Thay đổi"}</L10n></th>
+              <th scope="col" className="px-3 py-2 font-medium"><L10n>{"Lượt khám "}</L10n><L10nValue>{compareYear}</L10nValue></th>
+              <th scope="col" className="py-2 pl-3 font-medium"><L10n>{"Lượt khám "}</L10n><L10nValue>{baseYear}</L10nValue></th>
             </tr>
           </thead>
           <tbody>
-            {MONTH_LABELS.map((label, index) => {
+            <L10nValue>{MONTH_LABELS.map((label, index) => {
               const baseValue = baseRevenue[index], compareValue = compareRevenue[index];
               return <tr key={label} className="border-b border-border last:border-0">
-                <th scope="row" className="py-2 pr-3 text-left font-medium">Tháng {index + 1}</th>
-                <td className="px-3 py-2">{compareValue === null ? "—" : compact(compareValue)}</td>
-                <td className="px-3 py-2">{baseValue === null ? "—" : compact(baseValue)}</td>
-                <td className="px-3 py-2">{monthlyGap[index] === null || baseValue === null || compareValue === null ? "—" : <Delta current={baseValue} previous={compareValue} />}</td>
-                <td className="px-3 py-2">{compareVisits[index] === null ? "—" : formatDecimal(compareVisits[index])}</td>
-                <td className="py-2 pl-3">{baseVisits[index] === null ? "—" : formatDecimal(baseVisits[index])}</td>
+                <th scope="row" className="py-2 pr-3 text-left font-medium"><L10n>{"Tháng "}</L10n><L10nValue>{index + 1}</L10nValue></th>
+                <td className="px-3 py-2"><L10nValue>{compareValue === null ? "—" : compact(compareValue)}</L10nValue></td>
+                <td className="px-3 py-2"><L10nValue>{baseValue === null ? "—" : compact(baseValue)}</L10nValue></td>
+                <td className="px-3 py-2"><L10nValue>{monthlyGap[index] === null || baseValue === null || compareValue === null ? "—" : <Delta current={baseValue} previous={compareValue} />}</L10nValue></td>
+                <td className="px-3 py-2"><L10nValue>{compareVisits[index] === null ? "—" : formatDecimal(compareVisits[index])}</L10nValue></td>
+                <td className="py-2 pl-3"><L10nValue>{baseVisits[index] === null ? "—" : formatDecimal(baseVisits[index])}</L10nValue></td>
               </tr>;
-            })}
+            })}</L10nValue>
           </tbody>
         </table>
       </div>

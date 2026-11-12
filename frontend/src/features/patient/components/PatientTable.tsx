@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -48,6 +50,7 @@ export function PatientTable(props: { notice?: "deleted" }) {
 }
 
 function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patients, setPatients] = useState<PatientDTO[]>([]);
@@ -121,58 +124,58 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
 
   return (
     <section>
-      {notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã lưu trữ bệnh nhân. Mã và dữ liệu hồ sơ vẫn được giữ lại.</p> : null}
-      <DataTableShell title="Hồ sơ bệnh nhân" description="Tra cứu theo họ tên hoặc CMND/CCCD. Mở hồ sơ để xem thông tin và cập nhật." actions={(role === "ADMIN" || role === "NURSE") ? <Link href="/patients/new" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Thêm bệnh nhân</Link> : undefined}>
+      <L10nValue>{notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10n>{"Đã lưu trữ bệnh nhân. Mã và dữ liệu hồ sơ vẫn được giữ lại."}</L10n></p> : null}</L10nValue>
+      <DataTableShell title={localize("Hồ sơ bệnh nhân")} description={localize("Tra cứu theo họ tên hoặc CMND/CCCD. Mở hồ sơ để xem thông tin và cập nhật.")} actions={(role === "ADMIN" || role === "NURSE") ? <Link href="/patients/new" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Thêm bệnh nhân"}</L10n></Link> : undefined}>
       <form onSubmit={onSearch} className="flex flex-col gap-3 border-t border-border p-5 sm:flex-row sm:items-end lg:px-6">
-        <div className="min-w-0 flex-1 sm:max-w-lg"><Field label="Từ khóa bệnh nhân" htmlFor="patient-keyword"><input id="patient-keyword" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Nhập họ tên hoặc CMND/CCCD" className={controlClassName} /></Field></div>
-        <Button type="submit" disabled={loading}>Tìm kiếm</Button>
-        <Button type="button" onClick={onReset} disabled={loading}>Xóa lọc</Button>
+        <div className="min-w-0 flex-1 sm:max-w-lg"><Field label={localize("Từ khóa bệnh nhân")} htmlFor="patient-keyword"><input id="patient-keyword" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder={localize("Nhập họ tên hoặc CMND/CCCD")} className={controlClassName} /></Field></div>
+        <Button type="submit" disabled={loading}><L10n>{"Tìm kiếm"}</L10n></Button>
+        <Button type="button" onClick={onReset} disabled={loading}><L10n>{"Xóa lọc"}</L10n></Button>
       </form>
 
-      {loading ? <AsyncState kind="loading" message="Đang tải bệnh nhân…" /> : null}
+      <L10nValue>{loading ? <AsyncState kind="loading" message={localize("Đang tải bệnh nhân…")} /> : null}</L10nValue>
 
-      {!loading && error ? (
+      <L10nValue>{!loading && error ? (
         <AsyncState
           kind="error"
-          message={error.message}
+          message={localize(error.message)}
           correlationId={error.correlationId}
           onRetry={() => void loadPatients(lastRequest.current)}
         />
-      ) : null}
+      ) : null}</L10nValue>
 
-      {!loading && !error && patients.length === 0 ? (
-        <AsyncState kind="empty" message="Chưa có bệnh nhân phù hợp." />
-      ) : null}
+      <L10nValue>{!loading && !error && patients.length === 0 ? (
+        <AsyncState kind="empty" message={localize("Chưa có bệnh nhân phù hợp.")} />
+      ) : null}</L10nValue>
 
-      {!loading && !error && patients.length > 0 ? (
+      <L10nValue>{!loading && !error && patients.length > 0 ? (
         <>
-          <p role="status" className="border-t border-border px-5 py-3 text-sm text-muted-foreground lg:px-6"><span className="font-semibold tabular-nums text-foreground">{totalElements}</span> hồ sơ{activeKeyword ? <> phù hợp với “{activeKeyword}”</> : null}</p>
+          <p role="status" className="border-t border-border px-5 py-3 text-sm text-muted-foreground lg:px-6"><span className="font-semibold tabular-nums text-foreground"><L10nValue>{totalElements}</L10nValue></span><L10n>{" hồ sơ"}</L10n><L10nValue>{activeKeyword ? <><L10n>{" phù hợp với “"}</L10n><L10nValue>{activeKeyword}</L10nValue>”</> : null}</L10nValue></p>
           <div className="overflow-x-auto border-t border-border">
-            <table className="w-full min-w-3xl text-left text-sm"><caption className="sr-only">Danh sách hồ sơ bệnh nhân</caption>
+            <table className="w-full min-w-3xl text-left text-sm"><caption className="sr-only"><L10n>{"Danh sách hồ sơ bệnh nhân"}</L10n></caption>
               <thead className="border-b border-border text-muted-foreground">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Họ tên</th>
-                  <th scope="col" className="px-4 py-3">Ngày sinh</th>
-                  <th scope="col" className="px-4 py-3">Giới tính</th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Họ tên"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Ngày sinh"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Giới tính"}</L10n></th>
                   <th scope="col" className="px-4 py-3">CMND/CCCD</th>
-                  <th scope="col" className="px-4 py-3">Điện thoại</th>
-                  <th scope="col" className="px-4 py-3">Thao tác</th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Điện thoại"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Thao tác"}</L10n></th>
                 </tr>
               </thead>
               <tbody>
-                {patients.map((patient) => (
+                <L10nValue>{patients.map((patient) => (
                   <tr
                     key={patient.maBenhNhan}
                     className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0"
                   >
-                    <td className="px-4 py-2 font-medium"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-foreground">{patient.hoTen.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><Link href={`/patients/${patient.maBenhNhan}`} className="rounded font-semibold underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{patient.hoTen}</Link></span></td>
-                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatLocalDate(patient.ngaySinh)}</td>
-                    <td className="px-4 py-2">{patient.gioiTinh === "M" ? "Nam" : "Nữ"}</td>
+                    <td className="px-4 py-2 font-medium"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-foreground"><L10nValue>{patient.hoTen.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</L10nValue></span><Link href={`/patients/${patient.maBenhNhan}`} className="rounded font-semibold underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{patient.hoTen}</Link></span></td>
+                    <td className="whitespace-nowrap px-4 py-2 tabular-nums"><L10nValue>{formatLocalDate(patient.ngaySinh)}</L10nValue></td>
+                    <td className="px-4 py-2"><L10nValue>{patient.gioiTinh === "M" ? "Nam" : "Nữ"}</L10nValue></td>
                     <td className="whitespace-nowrap px-4 py-2 tabular-nums">{patient.soCmnd}</td>
-                    <td className="px-4 py-2">{patient.soDienThoai ?? "—"}</td>
-                    <td className="px-4 py-2"><Link href={`/patients/${patient.maBenhNhan}`} aria-label={`Xem chi tiết ${patient.hoTen}`} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Xem chi tiết</Link></td>
+                    <td className="px-4 py-2"><L10nValue>{patient.soDienThoai ?? "—"}</L10nValue></td>
+                    <td className="px-4 py-2"><Link href={`/patients/${patient.maBenhNhan}`} aria-label={localize(`Xem chi tiết ${patient.hoTen}`)} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Xem chi tiết"}</L10n></Link></td>
                   </tr>
-                ))}
+                ))}</L10nValue>
               </tbody>
             </table>
           </div>
@@ -184,7 +187,7 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
             onPageChange={(page) => void loadPatients({ keyword: activeKeyword, page })}
           /></div>
         </>
-      ) : null}
+      ) : null}</L10nValue>
       </DataTableShell>
     </section>
   );

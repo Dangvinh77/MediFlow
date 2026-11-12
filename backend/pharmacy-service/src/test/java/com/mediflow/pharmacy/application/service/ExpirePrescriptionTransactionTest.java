@@ -46,7 +46,7 @@ class ExpirePrescriptionTransactionTest {
         PharmacyEventPublisherPort publisher = mock(PharmacyEventPublisherPort.class);
         when(prescriptions.findByIdForUpdate(id)).thenReturn(Optional.of(prescription));
         when(slips.findByPrescriptionForUpdate(id)).thenReturn(Optional.of(slip));
-        when(reservations.findByPrescriptionForUpdate(id)).thenReturn(List.of(reservation));
+        when(reservations.findReservedByPrescriptionForUpdate(id)).thenReturn(List.of(reservation));
 
         assertThat(new ExpirePrescriptionTransaction(prescriptions, slips, reservations, publisher)
                 .expire(id, Instant.parse("2026-09-13T00:00:00Z"))).isZero();
@@ -64,7 +64,7 @@ class ExpirePrescriptionTransactionTest {
         UUID drugId = UUID.randomUUID();
         when(prescriptions.findByIdForUpdate(id)).thenReturn(Optional.of(prescription(id, drugId, 2)));
         when(slips.findByPrescriptionForUpdate(id)).thenReturn(Optional.of(slip(id)));
-        when(reservations.findByPrescriptionForUpdate(id)).thenReturn(
+        when(reservations.findReservedByPrescriptionForUpdate(id)).thenReturn(
                 List.of(reservation(id, drugId, 2, Instant.parse("2026-09-12T00:00:00Z"))));
 
         new ExpirePrescriptionTransaction(prescriptions, slips, reservations, publisher)

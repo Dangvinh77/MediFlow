@@ -5,6 +5,11 @@ import { pharmacyApi } from "./api";
 import { prepareOutpatientPrescriptionIntent } from "./outpatientPrescriptionIntent";
 
 describe("Pharmacy HTTP contracts", () => {
+  it("sends only the edit version and lines, with a stable command header", () => {
+    const body = { expectedRevision: 3, lines: [{ drugId: "drug-id", quantity: 2, dosage: "Sau ăn" }] };
+    pharmacyApi.updatePrescription("rx/id", body, "command-id");
+    expect(mocks.put).toHaveBeenCalledWith("/v1/pharmacy/prescriptions/rx%2Fid", body, { idempotencyKey: "command-id" });
+  });
   it("resolves a prescribing doctor's department through Gateway", () => {
     pharmacyApi.getPrescribingDoctor("doctor/id");
     expect(mocks.get).toHaveBeenCalledWith("/v1/org/staff/doctor%2Fid");

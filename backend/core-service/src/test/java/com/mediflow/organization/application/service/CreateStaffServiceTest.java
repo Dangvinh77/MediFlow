@@ -67,4 +67,24 @@ class CreateStaffServiceTest {
         org.mockito.Mockito.verify(eventPublisher)
                 .publishStaffCreated(any(com.mediflow.organization.application.event.StaffCreatedEvent.class));
     }
+
+    @Test
+    void execute_duplicateEmailAfterNormalization_rejectsBeforeSaving() {
+        UUID departmentId = UUID.randomUUID();
+        Department department = Department.create(
+                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
+        when(staffRepository.existsByEmail("alex@example.com")).thenReturn(true);
+
+        CreateStaffService service = new CreateStaffService(
+                staffRepository, departmentRepository, eventPublisher);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.execute(
+                "Alex Morgan", departmentId, JobTitle.NURSE, null, null,
+                "0901234567", " Alex@Example.com ", "012345678901"))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class)
+                .hasFieldOrPropertyWithValue("code", "STAFF_EMAIL_DUPLICATE");
+        org.mockito.Mockito.verify(staffRepository, org.mockito.Mockito.never()).save(any());
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+    }
 }

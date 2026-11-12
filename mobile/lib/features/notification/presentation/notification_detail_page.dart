@@ -1,3 +1,4 @@
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -20,11 +21,11 @@ class NotificationDetailPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     final repository = ref.watch(notificationRepositoryProvider);
     if (access == null || repository == null) {
-      return const Center(child: Text('Phiên đăng nhập không còn hoạt động.'));
+      return const Center(child: LText('Phiên đăng nhập không còn hoạt động.'));
     }
     if (!const {'ADMIN', 'PATIENT'}.contains(access.role)) {
       return const Center(
-        child: Text('Bạn không có quyền xem chi tiết thông báo.'),
+        child: LText('Bạn không có quyền xem chi tiết thông báo.'),
       );
     }
     return KeyedSubtree(
@@ -102,8 +103,10 @@ class _NotificationDetailState extends State<_NotificationDetail> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải thông báo'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải thông báo'),
+        ),
       );
     }
     if (_error != null) {
@@ -119,32 +122,32 @@ class _NotificationDetailState extends State<_NotificationDetail> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
+          LText(item.title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
           ReferenceLabel(
             kind: ReferenceKind.patient,
             id: item.patientId,
             label: 'Người nhận',
           ),
-          Text('Kênh: ${notificationChannelLabel(item.channel)}'),
-          Text('Trạng thái: ${notificationStatusLabel(item.status)}'),
-          Text('Tạo lúc: ${notificationTimeLabel(item.createdAt)}'),
+          LText('Kênh: ${notificationChannelLabel(item.channel)}'),
+          LText('Trạng thái: ${notificationStatusLabel(item.status)}'),
+          LText('Tạo lúc: ${notificationTimeLabel(item.createdAt)}'),
           if (item.sentAt != null)
-            Text('Gửi lúc: ${notificationTimeLabel(item.sentAt!)}'),
+            LText('Gửi lúc: ${notificationTimeLabel(item.sentAt!)}'),
           if (item.failureReason != null)
-            Text(notificationFailureLabel(item.failureReason)),
+            LText(notificationFailureLabel(item.failureReason)),
           const SizedBox(height: 16),
-          const Text('Nội dung'),
+          const LText('Nội dung'),
           SelectableText(item.content),
           const SizedBox(height: 16),
           ExpansionTile(
-            title: const Text('Thông tin tra cứu'),
+            title: const LText('Thông tin tra cứu'),
             children: [SelectableText('Mã thông báo: ${item.id}')],
           ),
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Làm mới chi tiết'),
+            label: const LText('Làm mới chi tiết'),
           ),
         ],
       ),

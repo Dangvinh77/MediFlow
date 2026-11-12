@@ -381,7 +381,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Lịch sử thu'), findsOneWidget);
-      expect(find.text('Hoàn tiền'), findsOneWidget);
+      expect(find.text('Hoàn tiền'), findsNothing);
       expect(find.text('Phí khám'), findsNothing);
       expect(find.text('Báo cáo'), findsNothing);
       expect(find.text('Tra cứu khoản thu'), findsOneWidget);
@@ -1224,95 +1224,4 @@ void main() {
       expect(find.text('Thử kiểm tra lại'), findsNothing);
     },
   );
-
-  testWidgets(
-    'refund stays mounted while the write is pending and keeps its receipt',
-    (tester) async {
-      useTallViewport(tester);
-      final repository = BillingStub();
-      final pendingRefund = Completer<LedgerRefund>();
-      repository.onRecordRefund = (_, _) => pendingRefund.future;
-      await tester.pumpWidget(billingHost(repository));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Hoàn tiền'));
-      await tester.pumpAndSettle();
-      await enterField(tester, 'Mã đơn thuốc (UUID)', prescriptionId);
-      await tester.tap(find.text('Tra cứu nghĩa vụ'));
-      await tester.pumpAndSettle();
-      await enterField(tester, 'Số tiền đã hoàn (VND)', '15.00');
-      await enterField(tester, 'Lý do', 'Unused medication returned');
-      await tester.tap(find.byType(CheckboxListTile).last);
-      await tester.pump();
-      expect(
-        tester
-            .widget<CheckboxListTile>(find.byType(CheckboxListTile).last)
-            .value,
-        isTrue,
-      );
-      await tester.tap(find.text('Ghi nhận hoàn tiền'));
-      await tester.pump();
-      expect(repository.refundLookups, hasLength(1));
-      expect(find.text('Tải lại để kiểm tra trạng thái'), findsNothing);
-
-      pendingRefund.complete(ledgerRefund());
-      await tester.pumpAndSettle();
-      expect(repository.refundLookups, hasLength(2));
-      final receipt = find.textContaining('Biên nhận hoàn tiền · COMPLETED');
-      await ensureFinderVisible(tester, receipt);
-      expect(receipt, findsOneWidget);
-      expect(
-        find.textContaining('Giao dịch gốc: $transactionId'),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets('refund keeps the exact retry command across Billing tabs', (
-    tester,
-  ) async {
-    useTallViewport(tester);
-    final repository = BillingStub();
-    var attempts = 0;
-    repository.onRecordRefund = (_, _) {
-      attempts++;
-      if (attempts == 1) return Future.error(const ApiFailure('Timeout'));
-      return Future.value(ledgerRefund());
-    };
-    await tester.pumpWidget(billingHost(repository));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hoàn tiền'));
-    await tester.pumpAndSettle();
-    await enterField(tester, 'Mã đơn thuốc (UUID)', prescriptionId);
-    await tester.tap(find.text('Tra cứu nghĩa vụ'));
-    await tester.pumpAndSettle();
-    await enterField(tester, 'Số tiền đã hoàn (VND)', '15.00');
-    await enterField(tester, 'Lý do', 'Unused medication returned');
-    await tester.tap(find.byType(CheckboxListTile).last);
-    await tester.pump();
-    expect(
-      tester.widget<CheckboxListTile>(find.byType(CheckboxListTile).last).value,
-      isTrue,
-    );
-    await tester.tap(find.text('Ghi nhận hoàn tiền'));
-    await tester.pumpAndSettle();
-    expect(repository.refundRequests, hasLength(1));
-    final frozen = repository.refundRequests.single.body;
-
-    await tester.tap(find.text('Báo cáo'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hoàn tiền'));
-    await tester.pumpAndSettle();
-    expect(find.text('Gửi lại đúng lệnh hoàn tiền đã khóa'), findsOneWidget);
-    final retry = find.text('Gửi lại đúng lệnh hoàn tiền đã khóa');
-    await ensureFinderVisible(tester, retry);
-    await tester.tap(retry);
-    await tester.pumpAndSettle();
-
-    expect(repository.refundRequests, hasLength(2));
-    expect(repository.refundRequests.last.body, frozen);
-    expect(repository.refundLookups, hasLength(2));
-    final receipt = find.textContaining('Biên nhận hoàn tiền · COMPLETED');
-    await ensureFinderVisible(tester, receipt);
-    expect(receipt, findsOneWidget);
-  });
 }

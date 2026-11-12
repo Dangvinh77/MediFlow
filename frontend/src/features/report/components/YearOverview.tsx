@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { formatDecimal } from "@/lib/format";
 import { averagePerVisit, completedMonthValues, MONTH_LABELS, monthlyFigures, monthlyValues, revenueOf } from "../dashboardData";
 import type { OutpatientStatisticsDTO, OutpatientStatisticsFigures } from "../types";
@@ -20,10 +22,10 @@ export const compactMoney = (value: number) => `${compact(value)} ₫`;
 
 function StatTile({ label, value, note, trend }: { label: string; value: string; note?: string; trend?: (number | null)[] }) {
   return <div className="min-w-0 rounded-xl border border-border bg-surface p-4">
-    <dt className="text-sm text-muted-foreground">{label}</dt>
+    <dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
     <dd className="mt-1 text-2xl font-semibold tabular-nums">{value}</dd>
-    {note && <dd className="mt-0.5 text-xs text-muted-foreground">{note}</dd>}
-    {trend && <dd><Sparkline values={trend} /></dd>}
+    <L10nValue>{note && <dd className="mt-0.5 text-xs text-muted-foreground"><L10nValue>{note}</L10nValue></dd>}</L10nValue>
+    <L10nValue>{trend && <dd><Sparkline values={trend} /></dd>}</L10nValue>
   </div>;
 }
 
@@ -63,37 +65,37 @@ export function YearOverview({ report, year }: { report: OutpatientStatisticsDTO
     <ChartCard title="Mật độ lượt khám theo ngày" subtitle="Mỗi ô là một ngày, màu càng đậm càng đông; thấy rõ ngày nghỉ và mùa cao điểm">
       <CalendarHeatmap days={report.days.map(day => ({ date: day.date, value: day.completedVisits }))} unit="lượt" description={`Lịch lượt khám từng ngày năm ${year}.`} />
     </ChartCard>
-    {departments.length > 1 && <ChartCard title="Doanh thu theo khoa" subtitle="Xếp từ cao xuống thấp">
+    <L10nValue>{departments.length > 1 && <ChartCard title="Doanh thu theo khoa" subtitle="Xếp từ cao xuống thấp">
       <RankedBars format={money} rows={departments.map(row => ({ id: row.departmentId, label: <ReportDepartmentName id={row.departmentId} />, value: revenueOf(row), note: `${formatDecimal(row.completedVisits)} lượt` }))} />
-    </ChartCard>}
+    </ChartCard>}</L10nValue>
     <ChartCard title="Chi tiết doanh thu theo tháng" subtitle="Số liệu đầy đủ của các biểu đồ trên">
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[40rem] text-right text-sm tabular-nums">
           <thead className="border-b border-border text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="py-2 pr-3 text-left font-medium">Tháng</th>
-              <th scope="col" className="px-3 py-2 font-medium">Lượt khám</th>
-              {lines.map(line => <th key={line.key} scope="col" className="px-3 py-2 font-medium">{line.label}</th>)}
+              <th scope="col" className="py-2 pr-3 text-left font-medium"><L10n>{"Tháng"}</L10n></th>
+              <th scope="col" className="px-3 py-2 font-medium"><L10n>{"Lượt khám"}</L10n></th>
+              <L10nValue>{lines.map(line => <th key={line.key} scope="col" className="px-3 py-2 font-medium"><L10nValue>{line.label}</L10nValue></th>)}</L10nValue>
               <th scope="col" className="px-3 py-2 font-medium">Doanh thu</th>
-              <th scope="col" className="py-2 pl-3 font-medium">Đã hoàn</th>
+              <th scope="col" className="py-2 pl-3 font-medium"><L10n>{"Đã hoàn"}</L10n></th>
             </tr>
           </thead>
           <tbody>
-            {months.map((row, index) => revenueTrend[index] === null ? null : <tr key={MONTH_LABELS[index]} className="border-b border-border last:border-0">
-              <th scope="row" className="py-2 pr-3 text-left font-medium">Tháng {index + 1}</th>
-              <td className="px-3 py-2">{formatDecimal(row.completedVisits)}</td>
-              {lines.map(line => <td key={line.key} className="px-3 py-2">{formatDecimal(row[line.key])}</td>)}
-              <td className="px-3 py-2 font-medium">{formatDecimal(revenueOf(row))}</td>
-              <td className="py-2 pl-3">{formatDecimal(row.refunds)}</td>
-            </tr>)}
+            <L10nValue>{months.map((row, index) => revenueTrend[index] === null ? null : <tr key={MONTH_LABELS[index]} className="border-b border-border last:border-0">
+              <th scope="row" className="py-2 pr-3 text-left font-medium"><L10n>{"Tháng "}</L10n><L10nValue>{index + 1}</L10nValue></th>
+              <td className="px-3 py-2"><L10nValue>{formatDecimal(row.completedVisits)}</L10nValue></td>
+              <L10nValue>{lines.map(line => <td key={line.key} className="px-3 py-2"><L10nValue>{formatDecimal(row[line.key])}</L10nValue></td>)}</L10nValue>
+              <td className="px-3 py-2 font-medium"><L10nValue>{formatDecimal(revenueOf(row))}</L10nValue></td>
+              <td className="py-2 pl-3"><L10nValue>{formatDecimal(row.refunds)}</L10nValue></td>
+            </tr>)}</L10nValue>
           </tbody>
           <tfoot className="border-t border-control-border font-semibold">
             <tr>
-              <th scope="row" className="py-2 pr-3 text-left">Cả năm</th>
-              <td className="px-3 py-2">{formatDecimal(totals.completedVisits)}</td>
-              {lines.map(line => <td key={line.key} className="px-3 py-2">{formatDecimal(totals[line.key])}</td>)}
-              <td className="px-3 py-2">{formatDecimal(revenue)}</td>
-              <td className="py-2 pl-3">{formatDecimal(totals.refunds)}</td>
+              <th scope="row" className="py-2 pr-3 text-left"><L10n>{"Cả năm"}</L10n></th>
+              <td className="px-3 py-2"><L10nValue>{formatDecimal(totals.completedVisits)}</L10nValue></td>
+              <L10nValue>{lines.map(line => <td key={line.key} className="px-3 py-2"><L10nValue>{formatDecimal(totals[line.key])}</L10nValue></td>)}</L10nValue>
+              <td className="px-3 py-2"><L10nValue>{formatDecimal(revenue)}</L10nValue></td>
+              <td className="py-2 pl-3"><L10nValue>{formatDecimal(totals.refunds)}</L10nValue></td>
             </tr>
           </tfoot>
         </table>

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -103,7 +105,7 @@ export function CreateAppointmentForm() {
 
   return (
     <form onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {requestError ? <AppointmentMutationError {...requestError} /> : null}
+      <L10nValue>{requestError ? <AppointmentMutationError {...requestError} /> : null}</L10nValue>
       <AppointmentFormFields
         values={values}
         errors={fieldErrors}
@@ -117,12 +119,10 @@ export function CreateAppointmentForm() {
           disabled={submitting}
           className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Đang tạo…" : "Tạo lịch hẹn"}
+          <L10nValue>{submitting ? "Đang tạo…" : "Tạo lịch hẹn"}</L10nValue>
         </button>
-        <Link href="/appointments" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
-          Hủy
-        </Link>
-        <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
+        <Link href="/appointments" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Hủy"}</L10n></Link>
+        <p className="text-sm text-muted-foreground"><L10n>{"Các trường có dấu * là bắt buộc."}</L10n></p>
       </div>
     </form>
   );

@@ -71,7 +71,7 @@ mediflow:
     clinic-intake: ${MEDIFLOW_V2_CLINIC_INTAKE:false}
     treatment-course: ${MEDIFLOW_V2_TREATMENT_COURSE:false}
     lab-catalog: ${MEDIFLOW_V2_LABCATALOG:false}
-    record-amendment: ${MEDIFLOW_V2_RECORD_AMENDMENT:false}
+    record-amendment: ${MEDIFLOW_V2_RECORD_AMENDMENT:true}
   features:
     outpatient-mvp:
       enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}

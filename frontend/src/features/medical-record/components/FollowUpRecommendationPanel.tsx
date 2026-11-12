@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -35,6 +37,7 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
   canCreate: boolean;
   patientView?: boolean;
 }) {
+  const { localize } = useLocale();
   const [state, setState] = useState<RecommendationState>({ status: enabled ? "loading" : "empty" });
   const [recommendedFrom, setRecommendedFrom] = useState("");
   const [recommendedThrough, setRecommendedThrough] = useState("");
@@ -112,46 +115,42 @@ export function FollowUpRecommendationPanel({ recordId, enabled, canCreate, pati
   }
 
   if (!enabled) return null;
-  if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><AsyncState kind="loading" message="Đang tải đề xuất tái khám…" /></section>;
-  if (state.status === "denied") return <section className="border-t border-border py-5 text-sm text-muted-foreground"><p role="status">Bạn không có quyền xem đề xuất tái khám của hồ sơ này.</p></section>;
-  if (state.status === "error") return <section className="border-t border-border py-5 text-sm text-danger"><p role="alert">{state.error.message}</p>{state.error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.error.correlationId}</p></details> : null}<Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}>Tải lại đề xuất</Button></section>;
+  if (state.status === "loading") return <section className="rounded-xl border border-border bg-surface p-6"><AsyncState kind="loading" message={localize("Đang tải đề xuất tái khám…")} /></section>;
+  if (state.status === "denied") return <section className="border-t border-border py-5 text-sm text-muted-foreground"><p role="status"><L10n>{"Bạn không có quyền xem đề xuất tái khám của hồ sơ này."}</L10n></p></section>;
+  if (state.status === "error") return <section className="border-t border-border py-5 text-sm text-danger"><p role="alert"><L10nValue>{state.error.message}</L10nValue></p><L10nValue>{state.error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{state.error.correlationId}</p></details> : null}</L10nValue><Button type="button" variant="secondary" className="mt-3" onClick={() => { setState({ status: "loading" }); setRetryToken(value => value + 1); }}><L10n>{"Tải lại đề xuất"}</L10n></Button></section>;
   if (state.status === "loaded") {
     const recommendation = state.recommendation;
     return <section className="space-y-4 rounded-xl border border-border bg-surface p-6">
-      <div><h2 className="text-lg font-semibold">Đề xuất tái khám</h2><p className="mt-1 text-sm text-muted-foreground">Đề xuất đã lưu và không thể chỉnh sửa.</p></div>
+      <div><h2 className="text-lg font-semibold"><L10n>{"Đề xuất tái khám"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10n>{"Đề xuất đã lưu và không thể chỉnh sửa."}</L10n></p></div>
       <dl className="grid gap-4 sm:grid-cols-2">
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Khoảng ngày đề xuất</dt><dd className="mt-1 text-sm">{formatLocalDate(recommendation.recommendedFrom)} – {formatLocalDate(recommendation.recommendedThrough)}</dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bác sĩ ưu tiên</dt><dd className="mt-1"><ReferenceText kind="doctor" value={recommendation.preferredDoctorId} fallback="Bác sĩ ưu tiên" /></dd></div>
-        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ngày tạo</dt><dd className="mt-1 text-sm">{formatInstant(recommendation.createdAt)}</dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Khoảng ngày đề xuất"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{formatLocalDate(recommendation.recommendedFrom)}</L10nValue> – <L10nValue>{formatLocalDate(recommendation.recommendedThrough)}</L10nValue></dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Bác sĩ ưu tiên"}</L10n></dt><dd className="mt-1"><ReferenceText kind="doctor" value={recommendation.preferredDoctorId} fallback="Bác sĩ ưu tiên" /></dd></div>
+        <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Ngày tạo"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{formatInstant(recommendation.createdAt)}</L10nValue></dd></div>
       </dl>
-      {patientView ? <p className="text-sm text-muted-foreground">Liên hệ điều dưỡng để chọn buổi khám phù hợp.</p> : null}
+      <L10nValue>{patientView ? <p className="text-sm text-muted-foreground"><L10n>{"Liên hệ điều dưỡng để chọn buổi khám phù hợp."}</L10n></p> : null}</L10nValue>
       <details className="rounded-lg border border-border px-4 py-3 text-sm">
-        <summary className="min-h-8 cursor-pointer font-medium underline underline-offset-2">Thông tin đối chiếu</summary>
-        <dl className="mt-3"><div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Lượt khám nguồn</dt><dd className="mt-1 break-all font-mono">{recommendation.sourceRegistrationId}</dd></div></dl>
+        <summary className="min-h-8 cursor-pointer font-medium underline underline-offset-2"><L10n>{"Thông tin đối chiếu"}</L10n></summary>
+        <dl className="mt-3"><div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Lượt khám nguồn"}</L10n></dt><dd className="mt-1 break-all font-mono">{recommendation.sourceRegistrationId}</dd></div></dl>
       </details>
-      <div><h3 className="text-sm font-semibold">Lý do</h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.reason}</p></div>
-      {recommendation.preparationInstructions ? <div><h3 className="text-sm font-semibold">Hướng dẫn chuẩn bị</h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.preparationInstructions}</p></div> : null}
+      <div><h3 className="text-sm font-semibold"><L10n>{"Lý do"}</L10n></h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.reason}</p></div>
+      <L10nValue>{recommendation.preparationInstructions ? <div><h3 className="text-sm font-semibold"><L10n>{"Hướng dẫn chuẩn bị"}</L10n></h3><p className="mt-1 whitespace-pre-wrap text-sm">{recommendation.preparationInstructions}</p></div> : null}</L10nValue>
     </section>;
   }
 
   return <section className="space-y-4 rounded-xl border border-border bg-surface p-6">
-    <div><h2 className="text-lg font-semibold">Đề xuất tái khám</h2><p className="mt-1 text-sm text-muted-foreground">Một đề xuất bất biến cho hồ sơ V2 đã hoàn tất. Khoảng ngày là khuyến nghị; đăng ký ngoài khoảng sẽ được cảnh báo và không tự động từ chối.</p></div>
-    <p role="status" className="text-sm text-muted-foreground">Chưa có đề xuất tái khám.</p>
-    {canCreate ? <form className="grid gap-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); void submit(); }}>
-      <label className="space-y-1 text-sm font-medium" htmlFor="follow-up-from">Từ ngày khuyến nghị
-        <input id="follow-up-from" type="date" value={recommendedFrom} onChange={event => { setRecommendedFrom(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+    <div><h2 className="text-lg font-semibold"><L10n>{"Đề xuất tái khám"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10n>{"Một đề xuất bất biến cho hồ sơ V2 đã hoàn tất. Khoảng ngày là khuyến nghị; đăng ký ngoài khoảng sẽ được cảnh báo và không tự động từ chối."}</L10n></p></div>
+    <p role="status" className="text-sm text-muted-foreground"><L10n>{"Chưa có đề xuất tái khám."}</L10n></p>
+    <L10nValue>{canCreate ? <form className="grid gap-4 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); void submit(); }}>
+      <label className="space-y-1 text-sm font-medium" htmlFor="follow-up-from"><L10n>{"Từ ngày khuyến nghị"}</L10n><input id="follow-up-from" type="date" value={recommendedFrom} onChange={event => { setRecommendedFrom(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
       </label>
-      <label className="space-y-1 text-sm font-medium" htmlFor="follow-up-through">Đến ngày khuyến nghị
-        <input id="follow-up-through" type="date" value={recommendedThrough} onChange={event => { setRecommendedThrough(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
+      <label className="space-y-1 text-sm font-medium" htmlFor="follow-up-through"><L10n>{"Đến ngày khuyến nghị"}</L10n><input id="follow-up-through" type="date" value={recommendedThrough} onChange={event => { setRecommendedThrough(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3" />
       </label>
-      <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="follow-up-reason">Lý do tái khám
-        <textarea id="follow-up-reason" value={reason} maxLength={1000} onChange={event => { setReason(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
+      <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="follow-up-reason"><L10n>{"Lý do tái khám"}</L10n><textarea id="follow-up-reason" value={reason} maxLength={1000} onChange={event => { setReason(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
       </label>
-      <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="follow-up-preparation">Hướng dẫn chuẩn bị (không bắt buộc)
-        <textarea id="follow-up-preparation" value={preparationInstructions} maxLength={2000} onChange={event => { setPreparationInstructions(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
+      <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="follow-up-preparation"><L10n>{"Hướng dẫn chuẩn bị (không bắt buộc)"}</L10n><textarea id="follow-up-preparation" value={preparationInstructions} maxLength={2000} onChange={event => { setPreparationInstructions(event.target.value); setError(null); }} disabled={saving || Boolean(error?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
       </label>
-      {error ? <div role="alert" className="border-l-2 border-danger px-4 py-3 text-sm text-danger sm:col-span-2"><p>{error.message}</p>{error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {error.correlationId}</p></details> : null}{error.uncertain ? <p className="mt-2">Chưa xác định đã lưu đề xuất hay chưa. Gửi lại đúng lệnh để dùng cùng khóa idempotency.</p> : null}</div> : null}
-      <div className="sm:col-span-2"><Button type="submit" loading={saving}>{error?.uncertain ? "Gửi lại cùng đề xuất" : "Tạo đề xuất tái khám"}</Button></div>
-    </form> : <p className="text-sm text-muted-foreground">Chưa có đề xuất tái khám cho hồ sơ này.</p>}
+      <L10nValue>{error ? <div role="alert" className="border-l-2 border-danger px-4 py-3 text-sm text-danger sm:col-span-2"><p><L10nValue>{error.message}</L10nValue></p><L10nValue>{error.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{error.correlationId}</p></details> : null}</L10nValue><L10nValue>{error.uncertain ? <p className="mt-2"><L10n>{"Chưa xác định đã lưu đề xuất hay chưa. Gửi lại đúng lệnh để dùng cùng khóa idempotency."}</L10n></p> : null}</L10nValue></div> : null}</L10nValue>
+      <div className="sm:col-span-2"><Button type="submit" loading={saving}><L10nValue>{error?.uncertain ? "Gửi lại cùng đề xuất" : "Tạo đề xuất tái khám"}</L10nValue></Button></div>
+    </form> : <p className="text-sm text-muted-foreground"><L10n>{"Chưa có đề xuất tái khám cho hồ sơ này."}</L10n></p>}</L10nValue>
   </section>;
 }

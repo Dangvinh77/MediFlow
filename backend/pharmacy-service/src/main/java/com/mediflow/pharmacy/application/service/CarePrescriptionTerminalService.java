@@ -137,7 +137,7 @@ public class CarePrescriptionTerminalService implements CancelCarePrescriptionUs
     }
 
     private List<StockReservation> lockReservations(Prescription prescription) {
-        var locked = reservations.findByPrescriptionForUpdate(prescription.getPrescriptionId());
+        var locked = reservations.findReservedByPrescriptionForUpdate(prescription.getPrescriptionId());
         if (locked.size() != prescription.getLines().size() || locked.isEmpty()
                 || locked.stream().map(StockReservation::getDrugId).distinct().count() != locked.size()) {
             throw invalid("Whole-order reservation evidence is required");

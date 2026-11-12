@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
 
 import com.mediflow.organization.application.event.StaffCreatedEvent;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
@@ -146,6 +147,12 @@ public class CreateStaffService implements CreateStaffUseCase {
             throw new DepartmentInactiveException(departmentId);
         }
 
+        String normalizedEmail = normalizeAndRequireEmail(email);
+        if (staffRepository.existsByEmail(normalizedEmail)) {
+            throw new com.mediflow.common.exception.DuplicateResourceException(
+                    "STAFF_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ nhân viên khác");
+        }
+
         Staff staff = Staff.create(
                 fullName,
                 departmentId,
@@ -153,7 +160,7 @@ public class CreateStaffService implements CreateStaffUseCase {
                 specialization,
                 licenseNumber,
                 phoneNumber,
-                email,
+                normalizedEmail,
                 identityNumber
         );
 
@@ -173,6 +180,19 @@ public class CreateStaffService implements CreateStaffUseCase {
         );
 
         return savedStaff;
+    }
+
+    private static String normalizeAndRequireEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new com.mediflow.organization.domain.exception.InvalidStaffDataException(
+                    "Staff email must not be blank");
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        if (normalized.length() > 254 || !normalized.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new com.mediflow.organization.domain.exception.InvalidStaffDataException(
+                    "Staff email must be valid");
+        }
+        return normalized;
     }
 
     private String fingerprint(String fullName, UUID departmentId, JobTitle jobTitle,

@@ -35,7 +35,7 @@ function validDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-export function validatePatientDraft(draft: PatientDraft, today = patientToday()): PatientFieldErrors {
+export function validatePatientDraft(draft: PatientDraft, today = patientToday(), emailRequired = false): PatientFieldErrors {
   const errors: PatientFieldErrors = {};
   if (!draft.hoTen.trim() || draft.hoTen.trim().length > 100) errors.hoTen = "Họ tên phải có từ 1 đến 100 ký tự.";
   if (!validDate(draft.ngaySinh) || draft.ngaySinh > today) errors.ngaySinh = "Ngày sinh phải hợp lệ và không ở tương lai.";
@@ -43,7 +43,8 @@ export function validatePatientDraft(draft: PatientDraft, today = patientToday()
   if (!draft.soCmnd.trim() || draft.soCmnd.trim().length > 20) errors.soCmnd = "Số CMND/CCCD phải có từ 1 đến 20 ký tự.";
   if (draft.diaChi.trim().length > 255) errors.diaChi = "Địa chỉ tối đa 255 ký tự.";
   if (draft.soDienThoai.trim() && !/^\d{10,15}$/.test(draft.soDienThoai.trim())) errors.soDienThoai = "Số điện thoại phải gồm 10 đến 15 chữ số.";
-  if (draft.email.trim() && (draft.email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))) errors.email = "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
+  if (emailRequired && !draft.email.trim()) errors.email = "Email là bắt buộc.";
+  else if (draft.email.trim() && (draft.email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))) errors.email = "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
   if (draft.bhytSo.trim() && !/^\d{2}-\d{8}-\d$/.test(draft.bhytSo.trim())) errors.bhytSo = "Số BHYT phải có dạng 01-12345678-9 (2 số-8 số-1 số, có dấu gạch nối). Có thể để trống nếu chưa có.";
   return errors;
 }
@@ -52,10 +53,15 @@ export function patientUpdateBody(draft: PatientDraft): UpdatePatientRequest {
   if (draft.gioiTinh !== "M" && draft.gioiTinh !== "F") throw new Error("Giới tính không hợp lệ.");
   return { hoTen: draft.hoTen.trim(), ngaySinh: draft.ngaySinh, gioiTinh: draft.gioiTinh, soCmnd: draft.soCmnd.trim(),
     diaChi: draft.diaChi.trim() || null, soDienThoai: draft.soDienThoai.trim() || null,
-    email: draft.email.trim() || null, bhytSo: draft.bhytSo.trim() || null };
+    email: draft.email.trim() ? draft.email.trim().toLowerCase() : null, bhytSo: draft.bhytSo.trim() || null };
 }
 export function patientCreateBody(draft: PatientDraft): CreatePatientRequest {
-  return { ...patientUpdateBody(draft), soCmnd: draft.soCmnd.trim() };
+  const email = draft.email.trim().toLowerCase();
+  if (!email) throw new Error("Email là bắt buộc.");
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Email không đúng định dạng hoặc vượt quá 254 ký tự.");
+  }
+  return { ...patientUpdateBody(draft), email, soCmnd: draft.soCmnd.trim() };
 }
 
 export interface PatientFailure {
@@ -78,7 +84,8 @@ export function patientFailure(cause: unknown, mutation = false): PatientFailure
   const fieldsByCode: Record<string, keyof PatientDraft> = {
     PATIENT_CMND_DUPLICATE: "soCmnd", PATIENT_HOTEN_REQUIRED: "hoTen", PATIENT_NGAYSINH_FUTURE: "ngaySinh",
     PATIENT_GIOITINH_REQUIRED: "gioiTinh", PATIENT_SOCMND_REQUIRED: "soCmnd", PATIENT_SDT_INVALID: "soDienThoai",
-    PATIENT_EMAIL_INVALID: "email", PATIENT_BHYT_INVALID: "bhytSo",
+    PATIENT_EMAIL_INVALID: "email", PATIENT_EMAIL_REQUIRED: "email", PATIENT_EMAIL_DUPLICATE: "email",
+    PATIENT_BHYT_INVALID: "bhytSo",
   };
   if (apiError?.code && fieldsByCode[apiError.code]) fieldErrors[fieldsByCode[apiError.code]] = apiError.message;
   return {

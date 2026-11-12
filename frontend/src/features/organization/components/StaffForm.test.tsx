@@ -32,6 +32,10 @@ import { StaffForm } from "./StaffForm";
 
 const staffContractFixture: StaffDTO = { ...baseStaffFixture, licenseNumber: "LIC-001" };
 
+function enterValidStaffEmail() {
+  fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: "staff@example.test" } });
+}
+
 const targetDepartment: DepartmentDTO = {
   ...departmentContractFixture,
   departmentId: "00000000-0000-4000-8000-000000000005",
@@ -122,6 +126,7 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/^CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
     fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LICENSE-001" } });
+    enterValidStaffEmail();
     expect(screen.queryByRole("button", { name: "Lưu và tạo tài khoản" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tạo nhân sự" }));
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/organization/staff/${staffContractFixture.staffId}?notice=created`));
@@ -289,6 +294,7 @@ describe("StaffForm", () => {
       fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: identity } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: name } });
       fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
+      enterValidStaffEmail();
       fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
       await screen.findByRole("alert");
     }
@@ -311,6 +317,7 @@ describe("StaffForm", () => {
     await screen.findByLabelText(/CCCD/);
     fireEvent.change(screen.getByLabelText(/Số giấy phép/), { target: { value: "LIC-001" } });
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
+    enterValidStaffEmail();
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     expect(await screen.findByRole("alert")).toHaveTextContent("CCCD này đã có hồ sơ nhân sự");
     expect(screen.getByLabelText(/CCCD/)).toHaveValue("012345678901");
@@ -356,6 +363,7 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
+    enterValidStaffEmail();
     const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác nhận được kết quả tạo nhân sự");
@@ -381,6 +389,7 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
       fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
       fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
+      enterValidStaffEmail();
       fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
     }
     await submit();
@@ -455,6 +464,7 @@ describe("StaffForm", () => {
     fireEvent.change(screen.getByLabelText(/CCCD/), { target: { value: "012345678901" } });
     fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: " Nguyen Van A " } });
     fireEvent.change(screen.getByLabelText(/Đơn vị công tác/), { target: { value: departmentContractFixture.departmentId } });
+    enterValidStaffEmail();
     fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
 
     await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledWith({
@@ -465,7 +475,7 @@ describe("StaffForm", () => {
       specialization: null,
       licenseNumber: "LIC-001",
       phoneNumber: null,
-      email: null,
+      email: "staff@example.test",
     }, expect.any(String)));
     expect(mocks.router.push).toHaveBeenCalledWith(
       `/organization/staff/${staffContractFixture.staffId}?notice=created`,

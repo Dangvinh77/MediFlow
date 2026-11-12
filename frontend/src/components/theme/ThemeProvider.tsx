@@ -1,4 +1,6 @@
 "use client";
+import { L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
@@ -65,7 +67,7 @@ export function ThemeProvider({ children }: Readonly<{ children: React.ReactNode
     [theme, resolvedTheme],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={value}><L10nValue>{children}</L10nValue></ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

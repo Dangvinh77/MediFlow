@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
@@ -41,6 +43,7 @@ export function EditAppointmentForm({ appointmentId }: EditAppointmentFormProps)
 }
 
 function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps) {
+  const { localize } = useLocale();
   const router = useRouter();
   const active = useRef(true);
   const submissionLocked = useRef(false);
@@ -170,16 +173,14 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
   }
 
   if (loadState.status === "loading") {
-    return <AsyncState kind="loading" message="Đang tải lịch hẹn để chỉnh sửa…" />;
+    return <AsyncState kind="loading" message={localize("Đang tải lịch hẹn để chỉnh sửa…")} />;
   }
 
   if (loadState.status === "not-found") {
     return (
       <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Không tìm thấy lịch hẹn</h2>
-        <Link href="/appointments" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
-          Quay lại danh sách
-        </Link>
+        <h2 className="text-lg font-semibold"><L10n>{"Không tìm thấy lịch hẹn"}</L10n></h2>
+        <Link href="/appointments" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Quay lại danh sách"}</L10n></Link>
       </section>
     );
   }
@@ -188,10 +189,10 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
     return (
       <div className="mt-6 space-y-3">
         <AppointmentMutationError
-          message={loadState.error.message}
+          message={localize(loadState.error.message)}
           correlationId={loadState.error.correlationId}
         />
-        {loadState.error.retryable ? (
+        <L10nValue>{loadState.error.retryable ? (
           <button
             type="button"
             onClick={() => {
@@ -199,10 +200,8 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
               setRetryToken((value) => value + 1);
             }}
             className="min-h-10 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"
-          >
-            Thử lại
-          </button>
-        ) : null}
+          ><L10n>{"Thử lại"}</L10n></button>
+        ) : null}</L10nValue>
       </div>
     );
   }
@@ -210,23 +209,19 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
   if (loadState.appointment.status !== "PENDING") {
     return (
       <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Không thể chỉnh sửa lịch hẹn</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Chỉ lịch hẹn đang chờ tiếp nhận mới được đổi ngày, giờ hoặc lý do.
-        </p>
-        <Link href={`/appointments/${appointmentId}`} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
-          Xem chi tiết
-        </Link>
+        <h2 className="text-lg font-semibold"><L10n>{"Không thể chỉnh sửa lịch hẹn"}</L10n></h2>
+        <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Chỉ lịch hẹn đang chờ tiếp nhận mới được đổi ngày, giờ hoặc lý do."}</L10n></p>
+        <Link href={`/appointments/${appointmentId}`} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Xem chi tiết"}</L10n></Link>
       </section>
     );
   }
 
   return (
     <form onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {requestError ? <AppointmentMutationError {...requestError} /> : null}
+      <L10nValue>{requestError ? <AppointmentMutationError {...requestError} /> : null}</L10nValue>
       <dl className="grid gap-4 rounded-lg bg-surface-muted p-4 text-sm sm:grid-cols-3">
-        <Identifier label="Bệnh nhân" value={loadState.appointment.patientId} />
-        <Identifier label="Bác sĩ" value={loadState.appointment.doctorId} />
+        <Identifier label={localize("Bệnh nhân")} value={loadState.appointment.patientId} />
+        <Identifier label={localize("Bác sĩ")} value={loadState.appointment.doctorId} />
         <Identifier label="Khoa" value={loadState.appointment.departmentId} />
       </dl>
       <AppointmentFormFields
@@ -242,11 +237,9 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
           disabled={submitting}
           className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Đang lưu…" : "Lưu thay đổi"}
+          <L10nValue>{submitting ? "Đang lưu…" : "Lưu thay đổi"}</L10nValue>
         </button>
-        <Link href={`/appointments/${appointmentId}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
-          Hủy
-        </Link>
+        <Link href={`/appointments/${appointmentId}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Hủy"}</L10n></Link>
       </div>
     </form>
   );
@@ -255,7 +248,7 @@ function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps)
 function Identifier({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
       <dd className="mt-1 break-all font-mono text-xs"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : undefined} value={value} fallback={label} /></dd>
     </div>
   );

@@ -60,6 +60,7 @@ class OutpatientApiPostgresTest {
     @MockBean OutpatientPrescriptionContextPort clinical;
     @MockBean PrescriptionIdentityPort identities;
     @MockBean PrescriptionClearanceAuthorityPort authority;
+    @MockBean PrescriptionRevisionBillingPort revisionBilling;
     UUID patient,doctor,department,episode,record,account,drug;
 
     @BeforeEach void prepare() {
@@ -105,6 +106,92 @@ class OutpatientApiPostgresTest {
         create(UUID.randomUUID(),mapper.writeValueAsString(root),422);
         for(String table:List.of("prescription","prescription_line","stock_reservation","dispense_slip","care_prescription_creation","pharmacy_event_outbox")) assertThat(count(table)).as(table).isZero();
         assertThat(stock()).isEqualTo(10);
+    }
+
+    @Test void outpatientEditRepricesAndReplacesReservationsOnceAndRejectsStaleRevision() throws Exception {
+        UUID id = create(UUID.randomUUID(), request(drug, 2), 201);
+        UUID second = addDrug(10, new BigDecimal("25.00"));
+        jdbc.update("UPDATE drug SET price=75 WHERE drug_id=?", drug);
+        UUID key = UUID.randomUUID();
+        String body = mapper.writeValueAsString(Map.of("expectedRevision", 0, "lines", List.of(
+                Map.of("drugId", drug, "quantity", 3, "dosage", "three daily", "unitPrice", 0),
+                Map.of("drugId", second, "quantity", 2, "dosage", "as needed"))));
+
+        var response = update(id, key, body, 200);
+        var data = mapper.readTree(response).path("data");
+        assertThat(data.path("revision").asInt()).isEqualTo(1);
+        assertThat(data.path("totalAmount").decimalValue()).isEqualByComparingTo("275.00");
+        assertThat(jdbc.queryForObject("SELECT total_amount FROM prescription WHERE prescription_id=?", BigDecimal.class, id))
+                .isEqualByComparingTo("275.00");
+        assertThat(jdbc.queryForMap("SELECT quantity,unit_price FROM prescription_line WHERE prescription_id=? AND drug_id=?", id, drug))
+                .containsEntry("quantity", 3).containsEntry("unit_price", new BigDecimal("75.00"));
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription WHERE prescription_id=?", Integer.class, id)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT quantity FROM stock_reservation WHERE prescription_id=? AND drug_id=?", Integer.class, id, drug)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT quantity FROM stock_reservation WHERE prescription_id=? AND drug_id=?", Integer.class, id, second)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.revised' AND care_lifecycle_order=1", Long.class, id)).isOne();
+        var event = mapper.readTree(jdbc.queryForObject("SELECT payload FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.revised'", String.class, id));
+        assertThat(event.path("payload").path("previousRevision").asInt()).isZero();
+        assertThat(event.path("payload").path("revision").asInt()).isEqualTo(1);
+        assertThat(event.path("payload").path("items").findValues("unitPrice").stream()
+                .map(price -> price.decimalValue().stripTrailingZeros().toPlainString()).toList()).contains("75", "25");
+        assertThat(jdbc.queryForObject("SELECT operation_status FROM pharmacy_prescription_revision_operation WHERE operation_id=?", String.class, key)).isEqualTo("COMMITTED");
+        verify(revisionBilling, times(1)).prepare(eq(key), any(), anyString());
+        verify(revisionBilling, times(1)).commit(eq(key), any(), anyString());
+
+        assertThat(mapper.readTree(update(id, key, body, 200)).path("data")).isEqualTo(data);
+        update(id, UUID.randomUUID(), body, 409);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.revised'", Long.class, id)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_prescription_revision_operation WHERE prescription_id=?", Long.class, id)).isOne();
+        verify(revisionBilling, times(1)).prepare(any(), any(), anyString());
+    }
+
+    @Test void completedMedicalRecordStillAllowsExactPrescriberToEditUnpaidPrescription() throws Exception {
+        UUID id = create(UUID.randomUUID(), request(drug, 2), 201);
+        when(clinical.findRecord(eq(record), anyString())).thenReturn(new OutpatientPrescriptionContextPort.Observation(
+                true, record, patient, doctor, department, "OUTPATIENT_VISIT", episode, "COMPLETED", null, clock.instant()));
+        String body = mapper.writeValueAsString(Map.of("expectedRevision", 0,
+                "lines", List.of(Map.of("drugId", drug, "quantity", 1, "dosage", "reduced"))));
+        var data = mapper.readTree(update(id, UUID.randomUUID(), body, 200)).path("data");
+        assertThat(data.path("revision").asInt()).isEqualTo(1);
+        assertThat(data.path("totalAmount").decimalValue()).isEqualByComparingTo("50.00");
+    }
+
+    @Test void wrongPrescriberAndAlreadyPaidPrescriptionCannotCreateRevision() throws Exception {
+        UUID wrongOwnerId = create(UUID.randomUUID(), request(drug, 2), 201);
+        String body = mapper.writeValueAsString(Map.of("expectedRevision", 0,
+                "lines", List.of(Map.of("drugId", drug, "quantity", 1, "dosage", "reduced"))));
+        mvc.perform(put(PATH + "/" + wrongOwnerId)
+                .header("Authorization", token("DOCTOR", "access", UUID.randomUUID()))
+                .header("Idempotency-Key", UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription WHERE prescription_id=?", Integer.class, wrongOwnerId)).isZero();
+
+        UUID paidId = create(UUID.randomUUID(), request(drug, 2), 201);
+        seedGrant(paidId);
+        update(paidId, UUID.randomUUID(), body, 422);
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription WHERE prescription_id=?", Integer.class, paidId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_prescription_revision_operation WHERE prescription_id=?", Long.class, paidId)).isZero();
+        verify(revisionBilling, never()).prepare(eq(UUID.randomUUID()), any(), anyString());
+    }
+
+    @Test void partialPaymentRejectionAbortsBillingFenceWithoutApplyingLocalSnapshot() throws Exception {
+        UUID id = create(UUID.randomUUID(), request(drug, 2), 201);
+        UUID key = UUID.randomUUID();
+        String body = mapper.writeValueAsString(Map.of("expectedRevision", 0,
+                "lines", List.of(Map.of("drugId", drug, "quantity", 1, "dosage", "reduced"))));
+        doThrow(new com.mediflow.common.exception.BusinessRuleException(
+                "PRESCRIPTION_PARTIALLY_PAID", "Any collected payment locks this prescription"))
+                .when(revisionBilling).prepare(eq(key), any(), anyString());
+
+        var response = update(id, key, body, 422);
+        assertThat(mapper.readTree(response).path("error").path("code").asText()).isEqualTo("PRESCRIPTION_PARTIALLY_PAID");
+        assertThat(jdbc.queryForObject("SELECT revision FROM prescription WHERE prescription_id=?", Integer.class, id)).isZero();
+        assertThat(jdbc.queryForObject("SELECT total_amount FROM prescription WHERE prescription_id=?", BigDecimal.class, id))
+                .isEqualByComparingTo("100.00");
+        assertThat(jdbc.queryForObject("SELECT operation_status FROM pharmacy_prescription_revision_operation WHERE operation_id=?", String.class, key))
+                .isEqualTo("ABORTED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.revised'", Long.class, id)).isZero();
+        verify(revisionBilling).abort(eq(key), any(), anyString());
     }
     @Test void staleOrWrongEpisodeContextCannotClaimOrReserve()throws Exception {
         when(clinical.findRecord(eq(record),anyString())).thenReturn(contextProof(clock.instant().minusSeconds(31)));
@@ -365,6 +452,10 @@ class OutpatientApiPostgresTest {
     }
     private String dispense(UUID id,int status)throws Exception{var response=mvc.perform(put(PATH+"/"+id+"/dispense")
             .header("Authorization",token("PHARMACIST","access",doctor)).header("X-Correlation-Id","api-pg-dispense"))
+            .andReturn().getResponse();assertThat(response.getStatus()).as(response.getContentAsString()).isEqualTo(status);return response.getContentAsString();}
+    private String update(UUID id,UUID key,String body,int status)throws Exception{var response=mvc.perform(put(PATH+"/"+id)
+            .header("Authorization",token("DOCTOR","access",doctor)).header("X-Correlation-Id","api-pg-update")
+            .header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON).content(body))
             .andReturn().getResponse();assertThat(response.getStatus()).as(response.getContentAsString()).isEqualTo(status);return response.getContentAsString();}
     private UUID seedGrant(UUID id){UUID grant=UUID.randomUUID();new TransactionTemplate(transactions).executeWithoutResult(s->{
         grants.lockTarget(id);grants.store(new PrescriptionClearance(grant,UUID.randomUUID(),UUID.randomUUID(),id,patient,

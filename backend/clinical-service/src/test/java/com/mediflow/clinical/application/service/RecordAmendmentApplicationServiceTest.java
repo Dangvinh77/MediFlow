@@ -96,6 +96,7 @@ class RecordAmendmentApplicationServiceTest {
         lenient().when(records.findById(record.getRecordId())).thenReturn(Optional.of(record));
         lenient().when(records.findByIdForUpdate(record.getRecordId())).thenReturn(Optional.of(record));
         lenient().when(amendments.findAssignment(any(), any())).thenReturn(Optional.empty());
+        lenient().when(amendments.findByRecord(any())).thenReturn(List.of());
         lenient().when(idempotency.execute(anyString(), anyString(), anyString(), anyString(), anyString(), any(), anyInt(),
                 any(), any())).thenAnswer(call -> new IdempotentCommandPort.Result<>(
                         ((Supplier<?>) call.getArgument(8)).get(), call.getArgument(6), null, false));
@@ -147,6 +148,70 @@ class RecordAmendmentApplicationServiceTest {
         assertThat(saved.getOriginalText()).isEqualTo("Sốt");
         assertThat(saved.getAuthorStaffId()).isEqualTo(author);
         assertThat(saved.getAssignedByStaffId()).isNull();
+    }
+
+    @Test void responsibleDoctorAppliesCompletedRecordCorrectionWithAnExplicitAuditDecision() {
+        var result = service.request(record.getRecordId(), symptoms(), "k");
+
+        assertThat(result.data().status()).isEqualTo("APPLIED");
+        RecordAmendment saved = captureInsert();
+        assertThat(saved.getReason()).isEqualTo("Ghi thiếu nhiệt độ");
+        assertThat(saved.getAuthorStaffId()).isEqualTo(author);
+        assertThat(saved.getStatus().name()).isEqualTo("APPLIED");
+        assertThat(saved.getDecidedByStaffId()).isEqualTo(author);
+        assertThat(saved.getDecidedAt()).isEqualTo(NOW);
+        assertThat(saved.getDecisionNote()).containsIgnoringCase("responsible doctor");
+        assertThat(saved.getContentHash()).isEqualTo(saved.contentHash());
+        assertThat(record.getStatus()).isEqualTo(MedicalRecordStatus.COMPLETED);
+        assertThat(record.getSymptoms()).isEqualTo("Sốt");
+        verify(records, never()).save(any());
+    }
+
+    @Test void headAssignedDoctorStillNeedsIndependentReviewForAnotherDoctorsRecord() {
+        when(staff.departmentOf(author)).thenReturn(Optional.empty());
+        when(amendments.findAssignment(record.getRecordId(), colleague)).thenReturn(Optional.of(
+                AmendmentAssignment.create(record.getRecordId(), colleague, head, "Bác sĩ phụ trách đã chuyển khoa", NOW)));
+        as(colleague, "DOCTOR");
+
+        service.request(record.getRecordId(), symptoms(), "k");
+
+        RecordAmendment saved = captureInsert();
+        assertThat(saved.getStatus().name()).isEqualTo("PENDING");
+        assertThat(saved.getDecidedByStaffId()).isNull();
+        assertThat(saved.getAssignedByStaffId()).isEqualTo(head);
+    }
+
+    @Test void nextCorrectionSnapshotsTheLatestAcceptedValueAndRejectsAStaleOriginal() {
+        RecordAmendment earlier = RecordAmendment.request(record.getRecordId(), AmendmentSection.SYMPTOMS, "Sốt",
+                "Sốt cao 39 độ", "Bổ sung nhiệt độ", author, null, NOW);
+        earlier.applyByResponsibleDoctor(author, NOW);
+        when(amendments.findByRecord(record.getRecordId())).thenReturn(List.of(earlier));
+
+        service.request(record.getRecordId(),
+                new RecordAmendmentRequest(AmendmentSection.SYMPTOMS, "Sốt cao về chiều", "Bổ sung thời điểm",
+                        "Sốt cao 39 độ"), "k");
+        assertThat(captureInsert().getOriginalText()).isEqualTo("Sốt cao 39 độ");
+
+        assertThatThrownBy(() -> service.request(record.getRecordId(),
+                new RecordAmendmentRequest(AmendmentSection.SYMPTOMS, "Sốt cao", "Sửa lại",
+                        "Sốt"), "k2"))
+                .extracting("code").isEqualTo("AMENDMENT_STALE_SOURCE");
+    }
+
+    @Test void approvalCannotApplyARequestAgainstAValueThatHasSinceChanged() {
+        RecordAmendment pending = RecordAmendment.request(record.getRecordId(), AmendmentSection.SYMPTOMS, "Sốt",
+                "Sốt nhẹ", "Sửa mức độ", colleague, head, NOW);
+        when(amendments.findByIdForUpdate(pending.getAmendmentId())).thenReturn(Optional.of(pending));
+        RecordAmendment newer = RecordAmendment.request(record.getRecordId(), AmendmentSection.SYMPTOMS, "Sốt",
+                "Sốt cao 39 độ", "Bổ sung nhiệt độ", author, null, NOW);
+        newer.applyByResponsibleDoctor(author, NOW);
+        when(amendments.findByRecord(record.getRecordId())).thenReturn(List.of(newer, pending));
+        as(head, "DOCTOR");
+
+        assertThatThrownBy(() -> decide(pending, "APPROVED"))
+                .extracting("code").isEqualTo("AMENDMENT_STALE_SOURCE");
+        assertThat(pending.getStatus()).isEqualTo(RecordAmendmentStatus.PENDING);
+        verify(amendments, never()).decide(any());
     }
 
     @Test void diagnosisSectionSnapshotsDiagnosisList() {

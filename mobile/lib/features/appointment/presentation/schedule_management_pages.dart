@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -81,13 +83,13 @@ mixin ScheduleCommandRunner<T extends StatefulWidget> on State<T> {
   List<Widget> commandFeedback({required VoidCallback onResend}) => [
     if (commandError != null) RequestError(commandError!),
     if (pendingCommand != null) ...[
-      const Text(
+      const LText(
         'Kết quả chưa xác định. Nội dung đã khóa; gửi lại đúng yêu cầu để đối soát.',
       ),
       const SizedBox(height: 8),
       FilledButton(
         onPressed: commandBusy ? null : onResend,
-        child: const Text('Gửi lại cùng yêu cầu'),
+        child: const LText('Gửi lại cùng yêu cầu'),
       ),
     ],
   ];
@@ -127,8 +129,8 @@ class _RangeFilter extends StatelessWidget {
     children: [
       SegmentedButton<bool>(
         segments: const [
-          ButtonSegment(value: false, label: Text('Theo ngày')),
-          ButtonSegment(value: true, label: Text('Theo tuần')),
+          ButtonSegment(value: false, label: LText('Theo ngày')),
+          ButtonSegment(value: true, label: LText('Theo tuần')),
         ],
         selected: {week},
         onSelectionChanged: enabled
@@ -148,7 +150,7 @@ class _RangeFilter extends StatelessWidget {
               }
             : null,
         icon: const Icon(Icons.event),
-        label: Text(displayDate(isoDate(date))),
+        label: LText(displayDate(isoDate(date))),
       ),
     ],
   );
@@ -279,7 +281,7 @@ class _SessionAdministrationPanelState
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Text(
+      LText(
         'Lập và quản lý buổi khám',
         style: Theme.of(context).textTheme.titleMedium,
       ),
@@ -323,30 +325,33 @@ class _SessionAdministrationPanelState
                 ? null
                 : () => _openEditor(),
             icon: const Icon(Icons.add),
-            label: const Text('Tạo buổi khám'),
+            label: const LText('Tạo buổi khám'),
           ),
           OutlinedButton(
             onPressed: _departmentId == null || _loading ? null : _load,
-            child: const Text('Tải buổi đã lập'),
+            child: const LText('Tải buổi đã lập'),
           ),
         ],
       ),
       const SizedBox(height: 8),
       if (_departmentId == null)
-        const Text('Chọn khoa để xem các buổi khám.')
+        const LText('Chọn khoa để xem các buổi khám.')
       else if (_loading)
         const Center(child: MediFlowLoader())
       else if (_loadError != null)
         RequestError(_loadError!, onRetry: _load)
       else if (_sessions?.isEmpty == true)
-        const Text('Chưa có buổi khám trong bộ lọc.'),
+        const LText('Chưa có buổi khám trong bộ lọc.'),
       if (_sessions?.isNotEmpty == true) ...[
         TextField(
           controller: _statusReason,
           enabled: !commandLocked,
           maxLength: 500,
-          decoration: const InputDecoration(
-            labelText: 'Lý do ngừng, mở lại hoặc hủy buổi',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(
+              context,
+              'Lý do ngừng, mở lại hoặc hủy buổi',
+            ),
             border: OutlineInputBorder(),
           ),
         ),
@@ -366,11 +371,11 @@ class _SessionAdministrationPanelState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             '${displayDate(session.date)} · ${session.startTime}–${session.endTime}',
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          Text(sessionStatusLabels[session.status] ?? session.status),
+          LText(sessionStatusLabels[session.status] ?? session.status),
           ReferenceLabel(
             kind: ReferenceKind.doctor,
             id: session.doctorId,
@@ -381,7 +386,7 @@ class _SessionAdministrationPanelState
             id: session.roomId,
             label: 'Phòng khám',
           ),
-          Text(
+          LText(
             'Sức chứa ${session.capacity} · ${session.confirmedCount} đã xác nhận · ${session.availableCount} còn chỗ',
           ),
           if (session.status != 'CANCELLED') ...[
@@ -392,7 +397,7 @@ class _SessionAdministrationPanelState
               children: [
                 OutlinedButton(
                   onPressed: commandLocked ? null : () => _openEditor(session),
-                  child: const Text('Sửa'),
+                  child: const LText('Sửa'),
                 ),
                 OutlinedButton(
                   onPressed: commandLocked
@@ -401,7 +406,7 @@ class _SessionAdministrationPanelState
                           session,
                           session.status == 'OPEN' ? 'STOPPED' : 'OPEN',
                         ),
-                  child: Text(
+                  child: LText(
                     session.status == 'OPEN' ? 'Ngừng nhận' : 'Mở lại',
                   ),
                 ),
@@ -409,7 +414,7 @@ class _SessionAdministrationPanelState
                   onPressed: commandLocked
                       ? null
                       : () => _changeStatus(session, 'CANCELLED'),
-                  child: const Text('Hủy buổi'),
+                  child: const LText('Hủy buổi'),
                 ),
               ],
             ),
@@ -435,7 +440,7 @@ class _BreakRows extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text('Giờ nghỉ tùy chọn'),
+      const LText('Giờ nghỉ tùy chọn'),
       for (var index = 0; index < breaks.length; index++)
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -457,7 +462,7 @@ class _BreakRows extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Xóa giờ nghỉ',
+                tooltip: AppL10n.text(context, 'Xóa giờ nghỉ'),
                 onPressed: enabled
                     ? () {
                         breaks.removeAt(index);
@@ -476,7 +481,7 @@ class _BreakRows extends StatelessWidget {
                 onChanged();
               }
             : null,
-        child: const Text('Thêm giờ nghỉ'),
+        child: const LText('Thêm giờ nghỉ'),
       ),
     ],
   );
@@ -498,8 +503,8 @@ class _TimeField extends StatelessWidget {
     enabled: enabled,
     keyboardType: TextInputType.datetime,
     decoration: InputDecoration(
-      labelText: label,
-      hintText: 'HH:mm',
+      labelText: AppL10n.text(context, label),
+      hintText: AppL10n.text(context, 'HH:mm'),
       border: const OutlineInputBorder(),
     ),
   );
@@ -647,7 +652,7 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
       canPop: !commandLocked,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
+          title: LText(
             widget.session == null ? 'Tạo buổi khám' : 'Sửa buổi khám',
           ),
         ),
@@ -675,12 +680,14 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
                 initialValue: rooms.any((room) => room.id == _roomId)
                     ? _roomId
                     : null,
-                decoration: const InputDecoration(labelText: 'Phòng tư vấn'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Phòng tư vấn'),
+                ),
                 items: [
                   for (final room in rooms)
                     DropdownMenuItem(
                       value: room.id,
-                      child: Text(
+                      child: LText(
                         room.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -705,7 +712,7 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
                     }
                   : null,
               icon: const Icon(Icons.event),
-              label: Text('Ngày khám: ${displayDate(isoDate(_date))}'),
+              label: LText('Ngày khám: ${displayDate(isoDate(_date))}'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -732,8 +739,8 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
               controller: _capacity,
               enabled: enabled,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Sức chứa',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Sức chứa'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -749,8 +756,8 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
                 controller: _reason,
                 enabled: enabled,
                 maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Lý do sửa buổi',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do sửa buổi'),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -758,7 +765,7 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
             if (_issue != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                child: LText(
                   _issue!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
@@ -775,7 +782,7 @@ class _SessionEditorPageState extends ConsumerState<SessionEditorPage>
             if (pendingCommand == null)
               FilledButton(
                 onPressed: commandBusy ? null : _submit,
-                child: Text(
+                child: LText(
                   widget.session == null
                       ? 'Tạo buổi khám'
                       : 'Lưu thay đổi buổi',
@@ -795,10 +802,12 @@ class ScheduleManagementPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'ADMIN') {
-      return const Center(child: Text('Bạn không có quyền quản lý buổi khám.'));
+      return const Center(
+        child: LText('Bạn không có quyền quản lý buổi khám.'),
+      );
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
-      return const Center(child: Text('Quản lý lịch khám V2 chưa được mở.'));
+      return const Center(child: LText('Quản lý lịch khám V2 chưa được mở.'));
     }
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -831,10 +840,10 @@ class _DepartmentManagementPageState
   Widget build(BuildContext context) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'DOCTOR') {
-      return const Center(child: Text('Chức năng dành cho trưởng khoa.'));
+      return const Center(child: LText('Chức năng dành cho trưởng khoa.'));
     }
     if (!ref.watch(appConfigProvider).scheduledPaymentsEnabled) {
-      return const Center(child: Text('Quản lý lịch chưa được bật.'));
+      return const Center(child: LText('Quản lý lịch chưa được bật.'));
     }
     return FutureBuilder<List<ManagedDepartment>>(
       future: _departments,
@@ -856,7 +865,7 @@ class _DepartmentManagementPageState
         }
         if (departments.isEmpty) {
           return const Center(
-            child: Text(
+            child: LText(
               'Tài khoản không có bổ nhiệm trưởng khoa đang hiệu lực.',
             ),
           );
@@ -873,14 +882,14 @@ class _DepartmentManagementPageState
                   child: DropdownButtonFormField<String>(
                     isExpanded: true,
                     initialValue: departmentId,
-                    decoration: const InputDecoration(
-                      labelText: 'Khoa được bổ nhiệm',
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, 'Khoa được bổ nhiệm'),
                     ),
                     items: [
                       for (final department in departments)
                         DropdownMenuItem(
                           value: department.id,
-                          child: Text(department.name),
+                          child: LText(department.name),
                         ),
                     ],
                     onChanged: (value) => setState(() => _departmentId = value),
@@ -970,7 +979,7 @@ class _DepartmentSummaryPanelState
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Text('Hoạt động khoa', style: Theme.of(context).textTheme.titleMedium),
+      LText('Hoạt động khoa', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
       _RangeFilter(
         week: _week,
@@ -1013,8 +1022,8 @@ class _DepartmentSummaryPanelState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label),
-                      Text(
+                      LText(label),
+                      LText(
                         '$value',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
@@ -1161,12 +1170,12 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Text(
+      LText(
         'Lịch làm việc bác sĩ',
         style: Theme.of(context).textTheme.titleMedium,
       ),
       const SizedBox(height: 4),
-      const Text('Phân công bác sĩ, giờ và phòng trong khoa.'),
+      const LText('Phân công bác sĩ, giờ và phòng trong khoa.'),
       const SizedBox(height: 8),
       _RangeFilter(
         week: _week,
@@ -1186,24 +1195,24 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
         child: FilledButton.icon(
           onPressed: commandLocked ? null : () => _edit(),
           icon: const Icon(Icons.add),
-          label: const Text('Phân công giờ làm việc'),
+          label: const LText('Phân công giờ làm việc'),
         ),
       ),
-      if (_notice != null) Text(_notice!),
+      if (_notice != null) LText(_notice!),
       const SizedBox(height: 8),
       if (_loading)
         const Center(child: MediFlowLoader())
       else if (_loadError != null)
         RequestError(_loadError!, onRetry: _load)
       else if (_shifts?.isEmpty == true)
-        const Text('Không có giờ làm việc trong khoảng đã chọn.'),
+        const LText('Không có giờ làm việc trong khoảng đã chọn.'),
       if (_shifts?.isNotEmpty == true) ...[
         TextField(
           controller: _reason,
           enabled: !commandLocked,
           maxLength: 500,
-          decoration: const InputDecoration(
-            labelText: 'Lý do hủy giờ làm việc',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Lý do hủy giờ làm việc'),
             border: OutlineInputBorder(),
           ),
         ),
@@ -1223,7 +1232,7 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             '${displayDate(shift.date)} · ${shift.startTime}–${shift.endTime}',
             style: Theme.of(context).textTheme.titleSmall,
           ),
@@ -1237,7 +1246,7 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
             id: shift.roomId,
             label: 'Phòng khám',
           ),
-          Text(shift.status == 'ACTIVE' ? 'Đang hiệu lực' : 'Đã hủy'),
+          LText(shift.status == 'ACTIVE' ? 'Đang hiệu lực' : 'Đã hủy'),
           if (shift.status == 'ACTIVE') ...[
             const SizedBox(height: 8),
             Wrap(
@@ -1246,15 +1255,15 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
               children: [
                 OutlinedButton(
                   onPressed: commandLocked ? null : () => _edit(shift),
-                  child: const Text('Sửa giờ làm việc'),
+                  child: const LText('Sửa giờ làm việc'),
                 ),
                 FilledButton(
                   onPressed: commandLocked ? null : () => _sessionFrom(shift),
-                  child: const Text('Tạo buổi khám từ giờ làm việc'),
+                  child: const LText('Tạo buổi khám từ giờ làm việc'),
                 ),
                 OutlinedButton(
                   onPressed: commandLocked ? null : () => _cancel(shift),
-                  child: const Text('Hủy giờ làm việc'),
+                  child: const LText('Hủy giờ làm việc'),
                 ),
               ],
             ),
@@ -1369,7 +1378,7 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
       canPop: !commandLocked,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
+          title: LText(
             widget.shift == null
                 ? 'Phân công giờ làm việc'
                 : 'Sửa giờ làm việc',
@@ -1399,12 +1408,14 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
                 initialValue: rooms.any((room) => room.id == _roomId)
                     ? _roomId
                     : null,
-                decoration: const InputDecoration(labelText: 'Phòng tư vấn'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Phòng tư vấn'),
+                ),
                 items: [
                   for (final room in rooms)
                     DropdownMenuItem(
                       value: room.id,
-                      child: Text(
+                      child: LText(
                         room.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1429,7 +1440,7 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
                     }
                   : null,
               icon: const Icon(Icons.event),
-              label: Text('Ngày làm việc: ${displayDate(isoDate(_date))}'),
+              label: LText('Ngày làm việc: ${displayDate(isoDate(_date))}'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -1457,8 +1468,8 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
                 controller: _reason,
                 enabled: enabled,
                 maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Lý do sửa giờ làm việc',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do sửa giờ làm việc'),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -1466,7 +1477,7 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
             if (_issue != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                child: LText(
                   _issue!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
@@ -1483,7 +1494,7 @@ class _ShiftEditorPageState extends ConsumerState<ShiftEditorPage>
             if (pendingCommand == null)
               FilledButton(
                 onPressed: commandBusy ? null : _submit,
-                child: const Text('Lưu giờ làm việc'),
+                child: const LText('Lưu giờ làm việc'),
               ),
           ],
         ),
@@ -1560,11 +1571,11 @@ class _ShiftSessionPageState extends ConsumerState<ShiftSessionPage>
     return PopScope(
       canPop: !commandLocked,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Tạo buổi khám')),
+        appBar: AppBar(title: const LText('Tạo buổi khám')),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(
+            LText(
               'Buổi khám nằm trong giờ làm việc ${displayDate(shift.date)} · ${shift.startTime}–${shift.endTime}. Bác sĩ và phòng giữ theo phân công.',
             ),
             const SizedBox(height: 12),
@@ -1592,8 +1603,8 @@ class _ShiftSessionPageState extends ConsumerState<ShiftSessionPage>
               controller: _capacity,
               enabled: enabled,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Sức chứa buổi khám',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Sức chứa buổi khám'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -1606,7 +1617,7 @@ class _ShiftSessionPageState extends ConsumerState<ShiftSessionPage>
             if (_issue != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                child: LText(
                   _issue!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
@@ -1623,7 +1634,7 @@ class _ShiftSessionPageState extends ConsumerState<ShiftSessionPage>
             if (pendingCommand == null)
               FilledButton(
                 onPressed: commandBusy ? null : _submit,
-                child: const Text('Tạo buổi khám'),
+                child: const LText('Tạo buổi khám'),
               ),
           ],
         ),
@@ -1705,7 +1716,7 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            LText(
               'Bổ nhiệm trưởng khoa',
               style: Theme.of(context).textTheme.titleMedium,
             ),
@@ -1713,8 +1724,10 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
             if (_loadError != null)
               RequestError(_loadError!, onRetry: _load)
             else if (current == null)
-              const Center(
-                child: MediFlowLoader(semanticLabel: 'Đang tải bổ nhiệm'),
+              Center(
+                child: MediFlowLoader(
+                  semanticLabel: AppL10n.text(context, 'Đang tải bổ nhiệm'),
+                ),
               )
             else ...[
               if (current.staffId case final staffId?)
@@ -1724,7 +1737,7 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
                   label: 'Trưởng khoa đương nhiệm',
                 )
               else
-                const Text('Chưa có trưởng khoa đương nhiệm.'),
+                const LText('Chưa có trưởng khoa đương nhiệm.'),
               const SizedBox(height: 12),
               ReferencePicker(
                 kind: ReferenceKind.doctor,
@@ -1741,8 +1754,8 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
                 enabled: !commandLocked,
                 maxLength: 500,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: 'Lý do',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do'),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -1765,26 +1778,26 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
                               _reason.text.trim().isEmpty
                           ? null
                           : () => _save(staffId: _staffId),
-                      child: const Text('Xác nhận bổ nhiệm'),
+                      child: const LText('Xác nhận bổ nhiệm'),
                     ),
                     if (current.staffId != null)
                       OutlinedButton(
                         onPressed: commandBusy || _reason.text.trim().isEmpty
                             ? null
                             : () => _save(staffId: null),
-                        child: const Text('Miễn nhiệm trưởng khoa'),
+                        child: const LText('Miễn nhiệm trưởng khoa'),
                       ),
                   ],
                 ),
               if (_notice != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(_notice!),
+                  child: LText(_notice!),
                 ),
               if (current.history.isNotEmpty)
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
-                  title: Text('Lịch sử bổ nhiệm (${current.history.length})'),
+                  title: LText('Lịch sử bổ nhiệm (${current.history.length})'),
                   children: [
                     for (final term in current.history)
                       ListTile(
@@ -1794,7 +1807,7 @@ class _HeadAppointmentPanelState extends ConsumerState<HeadAppointmentPanel>
                           id: term.staffId,
                           label: 'Bác sĩ',
                         ),
-                        subtitle: Text(
+                        subtitle: LText(
                           '${_localTime(term.startedAt)} – ${term.endedAt == null ? 'nay' : _localTime(term.endedAt!)}',
                         ),
                       ),

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -44,6 +46,7 @@ export function LabQuotePaymentAction(props: LabQuotePaymentActionProps) {
 }
 
 function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, onLockChange, onCompleted }: LabQuotePaymentActionProps) {
+  const { localize } = useLocale();
   const [method, setMethod] = useState<"CASH" | "BANK_TRANSFER">("CASH");
   const [recovery, setRecovery] = useState<LabPaymentRecovery | null>(null);
   const [recoveryLoading, setRecoveryLoading] = useState(true);
@@ -173,14 +176,14 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
 
   if (result?.status === "COMPLETED") {
     return <div className="space-y-2 rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success">
-      <p role="status">Thanh toán thành công. Đã ghi nhận {formatDecimal(result.amount)} {result.currency}.</p>
+      <p role="status"><L10n>{"Thanh toán thành công. Đã ghi nhận "}</L10n><L10nValue>{formatDecimal(result.amount)}</L10nValue> {result.currency}.</p>
       <PaymentSupport payment={result} paymentRequestId={paymentRequestId} quoteId={resultQuoteId ?? quote.quoteId} />
     </div>;
   }
 
   if (result?.status === "FAILED") {
     return <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
-      <p role="status">Giao dịch chưa hoàn tất. Tra cứu lại yêu cầu phí trước khi tạo giao dịch khác.</p>
+      <p role="status"><L10n>{"Giao dịch chưa hoàn tất. Tra cứu lại yêu cầu phí trước khi tạo giao dịch khác."}</L10n></p>
       <PaymentSupport payment={result} paymentRequestId={paymentRequestId} quoteId={resultQuoteId ?? quote.quoteId} />
     </div>;
   }
@@ -195,38 +198,36 @@ function LabQuotePaymentActionSession({ paymentRequestId, quote, quoteCurrent, o
 
   return <section className="space-y-4 rounded-lg border border-border p-4">
     <div>
-      <h3 className="text-sm font-semibold">Thu nghĩa vụ theo báo giá</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Chỉ thu đúng số tiền người bệnh phải trả trong báo giá hiện hành; không cho phép nhập khoản thu một phần ở luồng LAB V2.</p>
+      <h3 className="text-sm font-semibold"><L10n>{"Thu nghĩa vụ theo báo giá"}</L10n></h3>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ thu đúng số tiền người bệnh phải trả trong báo giá hiện hành; không cho phép nhập khoản thu một phần ở luồng LAB V2."}</L10n></p>
     </div>
     <dl className="grid gap-3 text-sm sm:grid-cols-2">
-      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Số tiền</dt><dd className="mt-1 font-semibold">{formatDecimal(activeCommand.amount)} {activeCommand.currency}</dd></div>
-      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hình thức</dt><dd className="mt-1">{activeCommand.paymentMethod === "CASH" ? "Tiền mặt" : "Chuyển khoản"}</dd></div>
+      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Số tiền"}</L10n></dt><dd className="mt-1 font-semibold"><L10nValue>{formatDecimal(activeCommand.amount)}</L10nValue> {activeCommand.currency}</dd></div>
+      <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Hình thức"}</L10n></dt><dd className="mt-1"><L10nValue>{activeCommand.paymentMethod === "CASH" ? "Tiền mặt" : "Chuyển khoản"}</L10nValue></dd></div>
     </dl>
-    {error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
-      <p>{error.message}</p>
-      {error.correlationId ? <details className="mt-2 text-xs"><summary className="min-h-8 cursor-pointer">Mã theo dõi hỗ trợ</summary><p className="mt-1 break-all font-mono">{error.correlationId}</p></details> : null}
-      {error.uncertain ? <p className="mt-2">Giữ nguyên báo giá và yêu cầu thu; gửi lại đúng lệnh hiện tại để kiểm tra kết quả.</p> : null}
-    </div> : null}
-    {result ? <PaymentSupport payment={result} paymentRequestId={paymentRequestId} quoteId={resultQuoteId ?? quote.quoteId} /> : null}
-    {recoveryLoading ? <p role="status" className="text-sm text-muted-foreground">Đang kiểm tra giao dịch thu đang chờ…</p> : null}
-    {!awaitingOutcome && !recoveryLoading ? <Field label="Hình thức thanh toán" htmlFor="lab-quote-payment-method" required>
+    <L10nValue>{error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+      <p><L10nValue>{error.message}</L10nValue></p>
+      <L10nValue>{error.correlationId ? <details className="mt-2 text-xs"><summary className="min-h-8 cursor-pointer"><L10n>{"Mã theo dõi hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono">{error.correlationId}</p></details> : null}</L10nValue>
+      <L10nValue>{error.uncertain ? <p className="mt-2"><L10n>{"Giữ nguyên báo giá và yêu cầu thu; gửi lại đúng lệnh hiện tại để kiểm tra kết quả."}</L10n></p> : null}</L10nValue>
+    </div> : null}</L10nValue>
+    <L10nValue>{result ? <PaymentSupport payment={result} paymentRequestId={paymentRequestId} quoteId={resultQuoteId ?? quote.quoteId} /> : null}</L10nValue>
+    <L10nValue>{recoveryLoading ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang kiểm tra giao dịch thu đang chờ…"}</L10n></p> : null}</L10nValue>
+    <L10nValue>{!awaitingOutcome && !recoveryLoading ? <Field label={localize("Hình thức thanh toán")} htmlFor="lab-quote-payment-method" required>
       <select id="lab-quote-payment-method" value={method} onChange={(event) => { setMethod(event.target.value as "CASH" | "BANK_TRANSFER"); setError(null); }} disabled={busy} className={controlClassName}>
-        <option value="CASH">Tiền mặt</option>
-        <option value="BANK_TRANSFER">Chuyển khoản</option>
+        <option value="CASH"><L10n>{"Tiền mặt"}</L10n></option>
+        <option value="BANK_TRANSFER"><L10n>{"Chuyển khoản"}</L10n></option>
       </select>
-    </Field> : null}
-    {recovery ? <Button type="button" variant="primary" loading={busy} disabled={recoveryLoading || busy} onClick={() => void submit(recovery)}>
-      {result?.status === "PENDING" ? "Kiểm tra lại cùng giao dịch" : "Gửi lại cùng yêu cầu thu"}
-    </Button> : <Button type="button" variant="primary" loading={busy} disabled={!quoteCurrent || recoveryLoading || busy || awaitingOutcome} onClick={() => void submit(activeCommand)}>
-      Xác nhận thu theo báo giá
-    </Button>}
-    {!recovery && !quoteCurrent && !recoveryLoading ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi gửi lệnh thu.</p> : null}
+    </Field> : null}</L10nValue>
+    <L10nValue>{recovery ? <Button type="button" variant="primary" loading={busy} disabled={recoveryLoading || busy} onClick={() => void submit(recovery)}>
+      <L10nValue>{result?.status === "PENDING" ? "Kiểm tra lại cùng giao dịch" : "Gửi lại cùng yêu cầu thu"}</L10nValue>
+    </Button> : <Button type="button" variant="primary" loading={busy} disabled={!quoteCurrent || recoveryLoading || busy || awaitingOutcome} onClick={() => void submit(activeCommand)}><L10n>{"Xác nhận thu theo báo giá"}</L10n></Button>}</L10nValue>
+    <L10nValue>{!recovery && !quoteCurrent && !recoveryLoading ? <p role="alert" className="text-sm text-danger"><L10n>{"Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi gửi lệnh thu."}</L10n></p> : null}</L10nValue>
   </section>;
 }
 
 function PaymentSupport({ payment, paymentRequestId, quoteId }: { payment: LedgerPaymentDTO; paymentRequestId: string; quoteId: string }) {
   return <details className="text-xs text-muted-foreground">
-    <summary className="min-h-8 cursor-pointer">Thông tin đối soát giao dịch</summary>
-    <dl className="mt-2 space-y-1 break-all"><dt>Mã yêu cầu</dt><dd className="font-mono">{paymentRequestId}</dd><dt>Mã báo giá</dt><dd className="font-mono">{quoteId}</dd><dt>Mã giao dịch</dt><dd className="font-mono">{payment.transactionId}</dd></dl>
+    <summary className="min-h-8 cursor-pointer"><L10n>{"Thông tin đối soát giao dịch"}</L10n></summary>
+    <dl className="mt-2 space-y-1 break-all"><dt><L10n>{"Mã yêu cầu"}</L10n></dt><dd className="font-mono"><L10nValue>{paymentRequestId}</L10nValue></dd><dt><L10n>{"Mã báo giá"}</L10n></dt><dd className="font-mono"><L10nValue>{quoteId}</L10nValue></dd><dt><L10n>{"Mã giao dịch"}</L10n></dt><dd className="font-mono">{payment.transactionId}</dd></dl>
   </details>;
 }

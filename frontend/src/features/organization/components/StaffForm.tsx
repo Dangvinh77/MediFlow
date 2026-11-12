@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useUnsavedChanges } from "../use-unsaved-changes";
 import { useRouter } from "next/navigation";
@@ -24,10 +26,12 @@ export function StaffForm({ staffId }: Props) {
 }
 
 function StaffFormWorkspace({ staffId }: Props) {
+  const { localize } = useLocale();
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const [identityNumber, setIdentityNumber] = useState("");
   const [identityChangeReason, setIdentityChangeReason] = useState("");
   const [originalIdentity, setOriginalIdentity] = useState("");
+  const [originalEmail, setOriginalEmail] = useState<string | null>(null);
   const router = useRouter(); const editing = Boolean(staffId);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const [profile, setProfile] = useState<StaffProfile>({ dateOfBirth: null, gender: null, address: null, hireDate: null, qualification: null });
@@ -60,6 +64,7 @@ function StaffFormWorkspace({ staffId }: Props) {
         setLicenseNumber(staff.licenseNumber ?? "");
         setPhoneNumber(staff.phoneNumber ?? "");
         setEmail(staff.email ?? "");
+        setOriginalEmail(staff.email);
         setProfile({ dateOfBirth: staff.dateOfBirth ?? null, gender: staff.gender ?? null, address: staff.address ?? null, hireDate: staff.hireDate ?? null, qualification: staff.qualification ?? null });
       }
       setLoadedStaffId(staffId ?? "new");
@@ -82,6 +87,7 @@ function StaffFormWorkspace({ staffId }: Props) {
     setLicenseNumber(staff.licenseNumber ?? "");
     setPhoneNumber(staff.phoneNumber ?? "");
     setEmail(staff.email ?? "");
+    setOriginalEmail(staff.email);
         setProfile({ dateOfBirth: staff.dateOfBirth ?? null, gender: staff.gender ?? null, address: staff.address ?? null, hireDate: staff.hireDate ?? null, qualification: staff.qualification ?? null });
   }
 
@@ -103,12 +109,19 @@ function StaffFormWorkspace({ staffId }: Props) {
     const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     if (profile.dateOfBirth && profile.dateOfBirth >= localToday) { setError("Ngày sinh phải trước ngày hiện tại."); return; }
     if (profile.dateOfBirth && profile.hireDate && profile.hireDate <= profile.dateOfBirth) { setError("Ngày vào làm phải sau ngày sinh."); return; }
+    const normalizedEmail = email.trim().toLowerCase();
+    if ((!editing || Boolean(originalEmail?.trim())) && !normalizedEmail) {
+      setError("Email là bắt buộc."); return;
+    }
+    if (normalizedEmail && (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))) {
+      setError("Email không đúng định dạng."); return;
+    }
     submitting.current = true;
     setSaving(true); setError(null);
     const sessionToken = getSessionKey();
     // Capture the user's transfer intent before a save/read refreshes the baseline.
     const wantsTransfer = departmentId !== originalDepartment.current;
-    const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null, profile: { ...profile, address: profile.address?.trim() || null, qualification: profile.qualification?.trim() || null }, ...(editing && identityNumber.trim() !== originalIdentity ? { identityNumber: identityNumber.trim(), identityChangeReason: identityChangeReason.trim() } : {}) };
+    const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: normalizedEmail || null, profile: { ...profile, address: profile.address?.trim() || null, qualification: profile.qualification?.trim() || null }, ...(editing && identityNumber.trim() !== originalIdentity ? { identityNumber: identityNumber.trim(), identityChangeReason: identityChangeReason.trim() } : {}) };
     let creationIntent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     let completed = false;
     let profileWriteSent = false;
@@ -181,7 +194,7 @@ function StaffFormWorkspace({ staffId }: Props) {
         markSaved(); router.push(`/organization/staff/${updatedStaff.staffId}?notice=updated`);
         completed = true;
       } else {
-        const body = { ...shared, departmentId, identityNumber: identityNumber.trim() };
+        const body = { ...shared, email: normalizedEmail, departmentId, identityNumber: identityNumber.trim() };
         creationIntent = await prepareCreation("staff", sessionToken, body, body.identityNumber);
         if (!mounted.current || getSessionKey() !== sessionToken) { creationIntent.cancelUnsent(); return; }
         const staff = await organizationApi.createStaff(body, creationIntent.key);
@@ -221,13 +234,13 @@ function StaffFormWorkspace({ staffId }: Props) {
   const currentLoadError = loadError;
   if (currentLoadError && currentLoadError.key === (staffId ?? "new")) {
     const message = currentLoadError.message;
-    return <AsyncState kind="error" message={message} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
+    return <AsyncState kind="error" message={localize(message)} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
   }
-  if (loading || loadedStaffId !== (staffId ?? "new")) return <AsyncState kind="loading" message="Đang tải dữ liệu nhân sự…" />;
+  if (loading || loadedStaffId !== (staffId ?? "new")) return <AsyncState kind="loading" message={localize("Đang tải dữ liệu nhân sự…")} />;
   return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
-    {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
-    <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
-    {unknownSave && staffId ? <SaveOutcomeRecovery read={() => organizationApi.staffMember(staffId)}
+    <L10nValue>{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <p className="text-sm text-muted-foreground"><L10n>{"Các trường có dấu * là bắt buộc."}</L10n></p>
+    <L10nValue>{unknownSave && staffId ? <SaveOutcomeRecovery read={() => organizationApi.staffMember(staffId)}
       matches={staff => staffMatchesDraft(staff, unknownSave)} onUnauthorized={() => router.replace("/login")}
       onVerified={staff => {
         savedProfile.current = { fingerprint: JSON.stringify(unknownSave.body), session: getSessionKey() };
@@ -239,31 +252,31 @@ function StaffFormWorkspace({ staffId }: Props) {
         } else {
           markSaved(); router.push(`/organization/staff/${staff.staffId}?notice=updated`);
         }
-      }} /> : null}
+      }} /> : null}</L10nValue>
     <fieldset disabled={saving || Boolean(unknownSave)} className="min-w-0 space-y-5">
-      <FormSection title="Thông tin định danh" description="Họ tên và CCCD dùng để xác định hồ sơ nhân sự.">
-        <Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field>
-        <Field label="CCCD" htmlFor="staff-identity" required={!editing} hint="Nhập đủ 12 chữ số. Thay đổi CCCD không làm đổi email đăng nhập."><input id="staff-identity" required={!editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
-        {editing && identityNumber.trim() !== originalIdentity ? <Field label="Lý do thay đổi CCCD" htmlFor="staff-identity-reason" required><textarea id="staff-identity-reason" required maxLength={500} rows={3} value={identityChangeReason} onChange={event => setIdentityChangeReason(event.target.value)} className={controlClassName} /></Field> : null}
+      <FormSection title={localize("Thông tin định danh")} description={localize("Họ tên và CCCD dùng để xác định hồ sơ nhân sự.")}>
+        <Field label={localize("Họ tên")} htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("CCCD")} htmlFor="staff-identity" required={!editing} hint="Nhập đủ 12 chữ số. Thay đổi CCCD không làm đổi email đăng nhập."><input id="staff-identity" required={!editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={localize(editing && !identityNumber ? "Chưa có CCCD" : undefined)} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
+        <L10nValue>{editing && identityNumber.trim() !== originalIdentity ? <Field label={localize("Lý do thay đổi CCCD")} htmlFor="staff-identity-reason" required><textarea id="staff-identity-reason" required maxLength={500} rows={3} value={identityChangeReason} onChange={event => setIdentityChangeReason(event.target.value)} className={controlClassName} /></Field> : null}</L10nValue>
       </FormSection>
-      <FormSection title="Thông tin cá nhân bổ sung" description="Thông tin tùy chọn, chỉ admin và chính nhân viên được xem.">
-        <Field label="Ngày sinh" htmlFor="staff-birth"><input id="staff-birth" type="date" value={profile.dateOfBirth ?? ""} onChange={event => setProfile(previous => ({ ...previous, dateOfBirth: event.target.value || null }))} className={controlClassName} /></Field>
-        <Field label="Giới tính" htmlFor="staff-gender"><select id="staff-gender" value={profile.gender ?? ""} onChange={event => setProfile(previous => ({ ...previous, gender: (event.target.value || null) as StaffProfile["gender"] }))} className={controlClassName}><option value="">Chưa cập nhật</option><option value="MALE">Nam</option><option value="FEMALE">Nữ</option><option value="OTHER">Khác</option></select></Field>
-        <Field label="Địa chỉ liên hệ" htmlFor="staff-address"><input id="staff-address" maxLength={255} value={profile.address ?? ""} onChange={event => setProfile(previous => ({ ...previous, address: event.target.value || null }))} className={controlClassName} /></Field>
+      <FormSection title={localize("Thông tin cá nhân bổ sung")} description={localize("Thông tin tùy chọn, chỉ admin và chính nhân viên được xem.")}>
+        <Field label={localize("Ngày sinh")} htmlFor="staff-birth"><input id="staff-birth" type="date" value={profile.dateOfBirth ?? ""} onChange={event => setProfile(previous => ({ ...previous, dateOfBirth: event.target.value || null }))} className={controlClassName} /></Field>
+        <Field label={localize("Giới tính")} htmlFor="staff-gender"><select id="staff-gender" value={profile.gender ?? ""} onChange={event => setProfile(previous => ({ ...previous, gender: (event.target.value || null) as StaffProfile["gender"] }))} className={controlClassName}><option value=""><L10n>{"Chưa cập nhật"}</L10n></option><option value="MALE"><L10n>{"Nam"}</L10n></option><option value="FEMALE"><L10n>{"Nữ"}</L10n></option><option value="OTHER"><L10n>{"Khác"}</L10n></option></select></Field>
+        <Field label={localize("Địa chỉ liên hệ")} htmlFor="staff-address"><input id="staff-address" maxLength={255} value={profile.address ?? ""} onChange={event => setProfile(previous => ({ ...previous, address: event.target.value || null }))} className={controlClassName} /></Field>
       </FormSection>
-      <FormSection title="Phân công & chuyên môn" description="Khoa công tác, chức danh và thông tin hành nghề.">
-        <Field label="Đơn vị công tác" htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value="">Chọn khoa/phòng</option>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}{!department.active ? " (ngừng hoạt động)" : ""}</option>)}</select></Field>
-        <Field label="Chức danh" htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}>{jobs.map((job) => <option key={job.value} value={job.value}>{job.label}</option>)}</select></Field>
-        <Field label="Ngày vào làm" htmlFor="staff-hired"><input id="staff-hired" type="date" value={profile.hireDate ?? ""} onChange={event => setProfile(previous => ({ ...previous, hireDate: event.target.value || null }))} className={controlClassName} /></Field>
-        <Field label="Trình độ chuyên môn" htmlFor="staff-qualification"><input id="staff-qualification" maxLength={100} value={profile.qualification ?? ""} onChange={event => setProfile(previous => ({ ...previous, qualification: event.target.value || null }))} className={controlClassName} /></Field>
-        <Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Số giấy phép" htmlFor="staff-license" required={jobTitle === "DOCTOR"} hint={jobTitle === "DOCTOR" ? "Bắt buộc đối với bác sĩ." : undefined}><input id="staff-license" required={jobTitle === "DOCTOR"} maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field>
+      <FormSection title={localize("Phân công & chuyên môn")} description={localize("Khoa công tác, chức danh và thông tin hành nghề.")}>
+        <Field label={localize("Đơn vị công tác")} htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value=""><L10n>{"Chọn khoa/phòng"}</L10n></option><L10nValue>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}<L10nValue>{!department.active ? " (ngừng hoạt động)" : ""}</L10nValue></option>)}</L10nValue></select></Field>
+        <Field label={localize("Chức danh")} htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}><L10nValue>{jobs.map((job) => <option key={job.value} value={job.value}><L10nValue>{job.label}</L10nValue></option>)}</L10nValue></select></Field>
+        <Field label={localize("Ngày vào làm")} htmlFor="staff-hired"><input id="staff-hired" type="date" value={profile.hireDate ?? ""} onChange={event => setProfile(previous => ({ ...previous, hireDate: event.target.value || null }))} className={controlClassName} /></Field>
+        <Field label={localize("Trình độ chuyên môn")} htmlFor="staff-qualification"><input id="staff-qualification" maxLength={100} value={profile.qualification ?? ""} onChange={event => setProfile(previous => ({ ...previous, qualification: event.target.value || null }))} className={controlClassName} /></Field>
+        <Field label={localize("Chuyên môn")} htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Số giấy phép")} htmlFor="staff-license" required={jobTitle === "DOCTOR"} hint={jobTitle === "DOCTOR" ? "Bắt buộc đối với bác sĩ." : undefined}><input id="staff-license" required={jobTitle === "DOCTOR"} maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
-      <FormSection title="Thông tin liên hệ" description="Thông tin liên lạc của nhân sự.">
-        <Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Email" htmlFor="staff-email" hint="Sau khi lưu hồ sơ, quản lý tài khoản và email đăng nhập tại chi tiết hồ sơ nhân sự."><input id="staff-email" type="email" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
+      <FormSection title={localize("Thông tin liên hệ")} description={localize("Thông tin liên lạc của nhân sự.")}>
+        <Field label={localize("Số điện thoại")} htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Email")} htmlFor="staff-email" required={!editing || Boolean(originalEmail?.trim())} hint="Sau khi lưu hồ sơ, quản lý tài khoản và email đăng nhập tại chi tiết hồ sơ nhân sự."><input id="staff-email" type="email" autoComplete="email" required={!editing || Boolean(originalEmail?.trim())} maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}><L10n>{"Quay lại"}</L10n></Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave)}><L10nValue>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</L10nValue></Button></div>
   </form>;
 }

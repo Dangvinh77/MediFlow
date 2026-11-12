@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../domain/lab_catalog.dart';
@@ -136,13 +138,13 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
         if (shownRanges.any((range) => !range.reviewed))
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
-            child: Text('Khoảng tham chiếu demo, chưa được duyệt lâm sàng'),
+            child: LText('Khoảng tham chiếu demo, chưa được duyệt lâm sàng'),
           ),
         for (final field in _orderedFields) _fieldCard(field),
         if (_validationError case final error?)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(
+            child: LText(
               error,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
@@ -164,7 +166,7 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            LText(
               field.label,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -172,18 +174,20 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Đơn vị'),
-                  child: Text(field.unit!),
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Đơn vị'),
+                  ),
+                  child: LText(field.unit!),
                 ),
               ),
             if (range != null && range.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Khoảng tham chiếu',
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Khoảng tham chiếu'),
                   ),
-                  child: Text(range),
+                  child: LText(range),
                 ),
               ),
             if (field.allowsOperator)
@@ -192,14 +196,16 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
                 child: DropdownButtonFormField<String>(
                   key: ValueKey('operator-${field.fieldCode}'),
                   initialValue: input.operator,
-                  decoration: const InputDecoration(labelText: 'Toán tử'),
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Toán tử'),
+                  ),
                   items: [
                     const DropdownMenuItem(
                       value: '',
-                      child: Text('Không dùng'),
+                      child: LText('Không dùng'),
                     ),
                     for (final operator in _operators)
-                      DropdownMenuItem(value: operator, child: Text(operator)),
+                      DropdownMenuItem(value: operator, child: LText(operator)),
                   ],
                   onChanged: widget.enabled
                       ? (value) {
@@ -217,16 +223,19 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
                       key: ValueKey('value-${field.fieldCode}'),
                       initialValue: input.value.text,
                       decoration: InputDecoration(
-                        labelText: 'Kết quả${field.required ? ' *' : ''}',
+                        labelText: AppL10n.text(
+                          context,
+                          'Kết quả${field.required ? ' *' : ''}',
+                        ),
                       ),
                       items: [
                         if (!field.allowedOptions!.contains(''))
                           const DropdownMenuItem(
                             value: '',
-                            child: Text('Chọn kết quả'),
+                            child: LText('Chọn kết quả'),
                           ),
                         for (final option in field.allowedOptions!)
-                          DropdownMenuItem(value: option, child: Text(option)),
+                          DropdownMenuItem(value: option, child: LText(option)),
                       ],
                       onChanged: widget.enabled
                           ? (value) {
@@ -250,7 +259,10 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
                       minLines: field.valueType == 'TEXT' ? 3 : 1,
                       maxLines: field.valueType == 'TEXT' ? null : 1,
                       decoration: InputDecoration(
-                        labelText: 'Kết quả${field.required ? ' *' : ''}',
+                        labelText: AppL10n.text(
+                          context,
+                          'Kết quả${field.required ? ' *' : ''}',
+                        ),
                         border: const OutlineInputBorder(),
                       ),
                       onChanged: (_) {
@@ -266,8 +278,8 @@ class LabTemplateResultEntryState extends State<LabTemplateResultEntry> {
                 controller: input.reason,
                 enabled: widget.enabled,
                 maxLength: 50 - _noResultPrefix.length,
-                decoration: const InputDecoration(
-                  labelText: 'Lý do không có kết quả',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do không có kết quả'),
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (_) {

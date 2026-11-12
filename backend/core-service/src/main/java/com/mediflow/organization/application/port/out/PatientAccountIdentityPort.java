@@ -8,6 +8,9 @@ public interface PatientAccountIdentityPort {
 
     String email(UUID patientId);
 
+    /** Checks email uniqueness using Patient's public read authority. */
+    boolean emailAvailable(UUID patientId, String email);
+
     /** Reads the authoritative profile email as stored, without issuance eligibility rules. */
     String profileEmail(UUID patientId);
 

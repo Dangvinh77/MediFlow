@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useRef, useSyncExternalStore, useState } from "react";
@@ -60,8 +62,9 @@ function expiryPresentation(expiryDate: string) {
 }
 
 function DetailLoading() {
+  const { localize } = useLocale();
   return (
-    <section className="mt-6 space-y-4" aria-busy="true" aria-label="Đang tải thông tin thuốc">
+    <section className="mt-6 space-y-4" aria-busy="true" aria-label={localize("Đang tải thông tin thuốc")}>
       <div className="h-28 animate-pulse rounded-xl bg-surface-muted" />
       <div className="h-52 animate-pulse rounded-xl bg-surface-muted" />
     </section>
@@ -77,14 +80,12 @@ function DetailError({
 }) {
   return (
     <div role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-      <p>{message}</p>
-      {onRetry && <button
+      <p><L10nValue>{message}</L10nValue></p>
+      <L10nValue>{onRetry && <button
         type="button"
         onClick={onRetry}
         className="mt-3 rounded-lg border border-danger/40 px-3 py-2 font-medium hover:bg-danger/10"
-      >
-        Thử lại
-      </button>}
+      ><L10n>{"Thử lại"}</L10n></button>}</L10nValue>
     </div>
   );
 }
@@ -95,6 +96,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
 }
 
 function DrugDetailContent({ drugId }: DrugDetailProps) {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canReadDrugs");
   const router = useRouter();
   const role = useSyncExternalStore(
@@ -138,10 +140,10 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
 
   const uncertaintyNotice = uncertainAdjustment && (
     <section ref={uncertaintyRef} tabIndex={-1} aria-labelledby="stock-outcome-heading" className="mt-6 min-w-0 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-      <h3 id="stock-outcome-heading" className="font-semibold">Kết quả điều chỉnh cần đối chiếu</h3>
-      <p role="status" className="mt-2 break-words">{uncertainAdjustment.message}</p>
-      <p className="mt-2">Yêu cầu vừa gửi: {uncertainAdjustment.quantity > 0 ? "+" : ""}{uncertainAdjustment.quantity} {uncertainAdjustment.unit}.</p>
-      <p className="mt-2">Tồn kho tải lại không xác nhận lệnh trước đã thành công hay thất bại. Hãy đối chiếu kết quả trước khi lập điều chỉnh mới; không gửi lại số lượng cũ chỉ vì mất phản hồi.</p>
+      <h3 id="stock-outcome-heading" className="font-semibold"><L10n>{"Kết quả điều chỉnh cần đối chiếu"}</L10n></h3>
+      <p role="status" className="mt-2 break-words"><L10nValue>{uncertainAdjustment.message}</L10nValue></p>
+      <p className="mt-2"><L10n>{"Yêu cầu vừa gửi: "}</L10n><L10nValue>{uncertainAdjustment.quantity > 0 ? "+" : ""}</L10nValue>{uncertainAdjustment.quantity} {uncertainAdjustment.unit}.</p>
+      <p className="mt-2"><L10n>{"Tồn kho tải lại không xác nhận lệnh trước đã thành công hay thất bại. Hãy đối chiếu kết quả trước khi lập điều chỉnh mới; không gửi lại số lượng cũ chỉ vì mất phản hồi."}</L10n></p>
       <button
         type="button"
         disabled={loading || !drug}
@@ -151,9 +153,7 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
           setUncertainAdjustment(null);
         }}
         className="mt-3 min-h-11 rounded-lg border border-control-border bg-surface px-3 py-2 font-medium hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Đã đối chiếu kết quả
-      </button>
+      ><L10n>{"Đã đối chiếu kết quả"}</L10n></button>
     </section>
   );
 
@@ -203,27 +203,24 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
   }, [drugId, isCurrent, requestKey, router]);
 
   if (!isUuid(drugId)) {
-    return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Đường dẫn thuốc không hợp lệ. Vui lòng chọn lại thuốc từ danh mục.</p>;
+    return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10n>{"Đường dẫn thuốc không hợp lệ. Vui lòng chọn lại thuốc từ danh mục."}</L10n></p>;
   }
 
-  if (loading && !drug && !notFound && !error) return <>{uncertaintyNotice}<DetailLoading /></>;
+  if (loading && !drug && !notFound && !error) return <><L10nValue>{uncertaintyNotice}</L10nValue><DetailLoading /></>;
 
   if (notFound) {
     return (
       <>
-      {uncertaintyNotice}
+      <L10nValue>{uncertaintyNotice}</L10nValue>
       <section className="mt-6 rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Không tìm thấy thuốc</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Không có thuốc nào với mã <code className="break-all">{drugId}</code>.
+        <h2 className="text-lg font-semibold"><L10n>{"Không tìm thấy thuốc"}</L10n></h2>
+        <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Không có thuốc nào với mã "}</L10n><code className="break-all"><L10nValue>{drugId}</L10nValue></code>.
         </p>
-        {requestState.status === "not-found" && requestState.correlationId && <p className="mt-2 break-all text-sm text-muted-foreground">Mã tra cứu: {requestState.correlationId}</p>}
+        <L10nValue>{requestState.status === "not-found" && requestState.correlationId && <p className="mt-2 break-all text-sm text-muted-foreground"><L10n>{"Mã tra cứu: "}</L10n>{requestState.correlationId}</p>}</L10nValue>
         <Link
           href="/pharmacy/drugs"
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90"
-        >
-          Quay lại kho thuốc
-        </Link>
+        ><L10n>{"Quay lại kho thuốc"}</L10n></Link>
       </section>
       </>
     );
@@ -232,9 +229,9 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
   if (error) {
     return (
       <>
-      {uncertaintyNotice}
+      <L10nValue>{uncertaintyNotice}</L10nValue>
       <DetailError
-        message={error}
+        message={localize(error)}
         onRetry={requestState.status === "error" && requestState.forbidden ? undefined : () => setRetryToken((value) => value + 1)}
       />
       </>
@@ -249,50 +246,46 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
 
   return (
     <section className="mt-6 min-w-0 space-y-6 [overflow-wrap:anywhere]">
-      {uncertaintyNotice}
-      {loading && (
-        <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">
-          Đang tải tồn kho mới nhất…
-        </p>
-      )}
+      <L10nValue>{uncertaintyNotice}</L10nValue>
+      <L10nValue>{loading && (
+        <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info"><L10n>{"Đang tải tồn kho mới nhất…"}</L10n></p>
+      )}</L10nValue>
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="mt-1 break-words text-xl font-semibold">{drug.drugName}</h2>
           <p className="mt-1 break-words text-sm text-muted-foreground">
-            {drug.activeIngredient ?? "—"}
+            <L10nValue>{drug.activeIngredient ?? "—"}</L10nValue>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {capabilities.canCreateDrug && (
+          <L10nValue>{capabilities.canCreateDrug && (
             <Link
               href="/pharmacy/drugs/new"
               className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-muted"
-            >
-              Tạo thuốc
-            </Link>
-          )}
+            ><L10n>{"Tạo thuốc"}</L10n></Link>
+          )}</L10nValue>
         </div>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <section className="min-w-0 rounded-xl border border-border bg-surface p-6">
-          <h3 className="text-base font-semibold">Thông tin thuốc</h3>
+          <h3 className="text-base font-semibold"><L10n>{"Thông tin thuốc"}</L10n></h3>
           <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-            <div><dt className="text-xs text-muted-foreground">Hoạt chất</dt><dd className="mt-1">{drug.activeIngredient ?? "—"}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Đơn vị</dt><dd className="mt-1">{drug.unit || "—"}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Nhà sản xuất</dt><dd className="mt-1">{drug.manufacturer ?? "—"}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Hạn dùng</dt><dd className="mt-1 flex flex-wrap items-center gap-2">{formatDate(drug.expiryDate)}{expiry && <StatusBadge tone={expiry.tone}>{expiry.label}</StatusBadge>}</dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Hoạt chất"}</L10n></dt><dd className="mt-1"><L10nValue>{drug.activeIngredient ?? "—"}</L10nValue></dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Đơn vị"}</L10n></dt><dd className="mt-1"><L10nValue>{drug.unit || "—"}</L10nValue></dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Nhà sản xuất"}</L10n></dt><dd className="mt-1"><L10nValue>{drug.manufacturer ?? "—"}</L10nValue></dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Hạn dùng"}</L10n></dt><dd className="mt-1 flex flex-wrap items-center gap-2"><L10nValue>{formatDate(drug.expiryDate)}</L10nValue><L10nValue>{expiry && <StatusBadge tone={expiry.tone}><L10nValue>{expiry.label}</L10nValue></StatusBadge>}</L10nValue></dd></div>
           </dl>
         </section>
 
         <section className="min-w-0 rounded-xl border border-border bg-surface p-6">
-          <h3 className="text-base font-semibold">Giá và tồn kho</h3>
+          <h3 className="text-base font-semibold"><L10n>{"Giá và tồn kho"}</L10n></h3>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="text-xs text-muted-foreground">Đơn giá</dt><dd className="mt-1 font-semibold">{formatVnd(drug.price)}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Tồn hiện tại</dt><dd className="mt-1 flex flex-wrap items-center gap-2">{drug.stockQuantity}{drug.stockQuantity === 0 ? <StatusBadge tone="danger">Hết hàng</StatusBadge> : lowStock && <StatusBadge tone="warning">Tồn thấp</StatusBadge>}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Ngưỡng cảnh báo</dt><dd className="mt-1">{drug.lowStockThreshold}</dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Đơn giá"}</L10n></dt><dd className="mt-1 font-semibold"><L10nValue>{formatVnd(drug.price)}</L10nValue></dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Tồn hiện tại"}</L10n></dt><dd className="mt-1 flex flex-wrap items-center gap-2">{drug.stockQuantity}<L10nValue>{drug.stockQuantity === 0 ? <StatusBadge tone="danger"><L10n>{"Hết hàng"}</L10n></StatusBadge> : lowStock && <StatusBadge tone="warning"><L10n>{"Tồn thấp"}</L10n></StatusBadge>}</L10nValue></dd></div>
+            <div><dt className="text-xs text-muted-foreground"><L10n>{"Ngưỡng cảnh báo"}</L10n></dt><dd className="mt-1">{drug.lowStockThreshold}</dd></div>
           </dl>
-          {capabilities.canAdjustStock && (
+          <L10nValue>{capabilities.canAdjustStock && (
             <div ref={adjustmentContainerRef}>
             <AdjustStockForm
               drug={drug}
@@ -304,17 +297,17 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
               onUncertain={setUncertainAdjustment}
             />
             </div>
-          )}
+          )}</L10nValue>
         </section>
       </div>
 
       <section className="rounded-xl border border-border bg-surface p-6">
-        <h3 className="text-base font-semibold">Lịch sử bản ghi</h3>
+        <h3 className="text-base font-semibold"><L10n>{"Lịch sử bản ghi"}</L10n></h3>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div><dt className="text-xs text-muted-foreground">Tạo lúc</dt><dd className="mt-1">{formatDateTime(drug.createdAt)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Cập nhật lúc</dt><dd className="mt-1">{formatDateTime(drug.updatedAt)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground"><L10n>{"Tạo lúc"}</L10n></dt><dd className="mt-1"><L10nValue>{formatDateTime(drug.createdAt)}</L10nValue></dd></div>
+          <div><dt className="text-xs text-muted-foreground"><L10n>{"Cập nhật lúc"}</L10n></dt><dd className="mt-1"><L10nValue>{formatDateTime(drug.updatedAt)}</L10nValue></dd></div>
         </dl>
-        <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu khi cần hỗ trợ</summary><code className="mt-2 block break-all text-xs">{drug.drugId}</code></details>
+        <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer"><L10n>{"Mã tham chiếu khi cần hỗ trợ"}</L10n></summary><code className="mt-2 block break-all text-xs">{drug.drugId}</code></details>
       </section>
     </section>
   );

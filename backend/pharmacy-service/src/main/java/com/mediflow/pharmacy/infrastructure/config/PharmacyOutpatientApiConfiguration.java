@@ -4,6 +4,13 @@ import com.mediflow.pharmacy.application.port.in.CreateContextCheckedPrescriptio
 import com.mediflow.pharmacy.application.port.in.CreateOutpatientPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.application.service.PublicOutpatientPrescriptionCreationService;
+import com.mediflow.pharmacy.application.port.out.OutpatientPrescriptionContextPort;
+import com.mediflow.pharmacy.application.port.out.PrescriptionIdentityPort;
+import com.mediflow.pharmacy.application.port.out.PrescriptionRevisionBillingPort;
+import com.mediflow.pharmacy.application.service.CarePrescriptionRevisionTransactionService;
+import com.mediflow.pharmacy.application.service.PublicOutpatientPrescriptionRevisionService;
+import com.mediflow.pharmacy.infrastructure.scheduling.PrescriptionRevisionRecoveryScheduler;
+import com.mediflow.pharmacy.application.port.out.PrescriptionRevisionOperationPort;
 import com.mediflow.pharmacy.application.service.OutpatientPrescriptionLifecycleApplicationService;
 import com.mediflow.pharmacy.application.port.in.OutpatientPrescriptionLifecycleUseCase;
 import com.mediflow.pharmacy.application.port.in.DispenseCarePrescriptionUseCase;
@@ -36,6 +43,21 @@ public class PharmacyOutpatientApiConfiguration {
     CreateOutpatientPrescriptionUseCase publicOutpatientPrescriptionCreator(
             CreateContextCheckedPrescriptionUseCase writer, GetPrescriptionUseCase reader) {
         return new PublicOutpatientPrescriptionCreationService(writer, reader);
+    }
+
+    @Bean
+    PublicOutpatientPrescriptionRevisionService publicOutpatientPrescriptionRevisionService(
+            OutpatientPrescriptionContextPort contexts, PrescriptionIdentityPort identities,
+            PrescriptionRepositoryPort prescriptions, CarePrescriptionRevisionTransactionService transactions,
+            PrescriptionRevisionBillingPort billing, GetPrescriptionUseCase reader, java.time.Clock clock) {
+        return new PublicOutpatientPrescriptionRevisionService(contexts, identities, prescriptions,
+                transactions, billing, reader, clock);
+    }
+
+    @Bean
+    PrescriptionRevisionRecoveryScheduler prescriptionRevisionRecoveryScheduler(
+            PrescriptionRevisionOperationPort operations, PublicOutpatientPrescriptionRevisionService recovery) {
+        return new PrescriptionRevisionRecoveryScheduler(operations, recovery);
     }
 
     @Bean

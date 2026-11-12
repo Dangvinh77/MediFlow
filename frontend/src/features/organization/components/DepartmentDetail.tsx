@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +26,7 @@ export function DepartmentDetail({ departmentId, notice, schedulingEnabled = fal
 }
 
 function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = false }: { departmentId: string; notice?: "created" | "updated"; schedulingEnabled?: boolean }) {
+  const { localize } = useLocale();
   const router = useRouter(); const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole); const [department, setDepartment] = useState<DepartmentDTO | null>(null); const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const active = useRef({ mounted: false, session: getSessionKey() });
@@ -39,19 +42,19 @@ function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = f
   const unit = department ? department.departmentType === "CLINICAL" ? "khoa" : "bộ phận" : "khoa/bộ phận";
   const title = `Chi tiết ${unit}`;
   function layout(content: ReactNode) {
-    return <PageShell title={title} description="Thông tin tổ chức và trạng thái vận hành."><RecordBreadcrumb href="/organization" parent="Tổ chức" current={title} />{content}</PageShell>;
+    return <PageShell title={localize(title)} description={localize("Thông tin tổ chức và trạng thái vận hành.")}><RecordBreadcrumb href="/organization" parent="Tổ chức" current={title} /><L10nValue>{content}</L10nValue></PageShell>;
   }
-  if (error) return layout(<AsyncState kind="error" message={error} onRetry={() => { setError(null); setAttempt((value) => value + 1); }} />);
-  if (!department) return layout(<AsyncState kind="loading" message="Đang tải thông tin khoa/bộ phận…" />);
+  if (error) return layout(<AsyncState kind="error" message={localize(error)} onRetry={() => { setError(null); setAttempt((value) => value + 1); }} />);
+  if (!department) return layout(<AsyncState kind="loading" message={localize("Đang tải thông tin khoa/bộ phận…")} />);
   return layout(<section className="mt-6 space-y-5">
-    {notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">{notice === "created" ? `Đã tạo ${unit}.` : `Đã cập nhật ${unit}.`}</p> : null}
-    <RecordIdentity name={department.departmentName} subtitle={department.abbreviation}><StatusBadge tone={department.active ? "success" : "neutral"}>{department.active ? "Đang hoạt động" : "Ngừng hoạt động"}</StatusBadge>{role === "ADMIN" ? <Link href={`/organization/departments/${departmentId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Chỉnh sửa</Link> : null}</RecordIdentity>
-    <div className="flex flex-wrap gap-3"><Link href="/organization" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary">Quay lại</Link></div>
-    <DetailSection title={`Thông tin ${unit}`}><Info label={`Loại ${unit}`} value={labels[department.departmentType]} /><Info label={department.departmentType === "CLINICAL" ? "Địa điểm (văn phòng chung của khoa)" : "Địa điểm (phòng làm việc chung)"} value={department.location} /><Info label="Chức năng, nhiệm vụ" value={department.description} /><Info label="Điện thoại / máy lẻ" value={department.phoneNumber} /><Info label="Email liên hệ" value={department.email} /></DetailSection>
+    <L10nValue>{notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10nValue>{notice === "created" ? `Đã tạo ${unit}.` : `Đã cập nhật ${unit}.`}</L10nValue></p> : null}</L10nValue>
+    <RecordIdentity name={department.departmentName} subtitle={department.abbreviation}><StatusBadge tone={department.active ? "success" : "neutral"}><L10nValue>{department.active ? "Đang hoạt động" : "Ngừng hoạt động"}</L10nValue></StatusBadge><L10nValue>{role === "ADMIN" ? <Link href={`/organization/departments/${departmentId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Chỉnh sửa"}</L10n></Link> : null}</L10nValue></RecordIdentity>
+    <div className="flex flex-wrap gap-3"><Link href="/organization" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Quay lại"}</L10n></Link></div>
+    <DetailSection title={localize(`Thông tin ${unit}`)}><Info label={localize(`Loại ${unit}`)} value={labels[department.departmentType]} /><Info label={localize(department.departmentType === "CLINICAL" ? "Địa điểm (văn phòng chung của khoa)" : "Địa điểm (phòng làm việc chung)")} value={department.location} /><Info label={localize("Chức năng, nhiệm vụ")} value={department.description} /><Info label={localize("Điện thoại / máy lẻ")} value={department.phoneNumber} /><Info label={localize("Email liên hệ")} value={department.email} /></DetailSection>
     <DepartmentPeople key={departmentId} department={department} />
     <RoomDirectory key={`rooms:${departmentId}`} fixedDepartment={department} />
-    {schedulingEnabled && role === "ADMIN" && department.departmentType === "CLINICAL" ? <HeadAppointments key={`head:${departmentId}`} departmentId={departmentId} onSnapshot={synchronizeHead} /> : null}
+    <L10nValue>{schedulingEnabled && role === "ADMIN" && department.departmentType === "CLINICAL" ? <HeadAppointments key={`head:${departmentId}`} departmentId={departmentId} onSnapshot={synchronizeHead} /> : null}</L10nValue>
   </section>);
 }
 
-function Info({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className={`mt-1.5 break-words text-sm leading-6 ${mono ? "font-mono" : ""}`}>{value ?? "—"}</dd></div>; }
+function Info({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) { return <div><dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className={`mt-1.5 break-words text-sm leading-6 ${mono ? "font-mono" : ""}`}><L10nValue>{value ?? "—"}</L10nValue></dd></div>; }

@@ -23,6 +23,9 @@ public interface StockReservationRepositoryPort {
     /** Đọc giữ chỗ theo đơn — dispense cần biết đơn đã giữ những gì (tối đa 1 aggregate per drug). */
     List<StockReservation> findByPrescription(UUID prescriptionId);
 
+    /** Reads only the active stock claims backing the current prescription snapshot. */
+    List<StockReservation> findReservedByPrescription(UUID prescriptionId);
+
     /**
      * Đọc và khóa toàn bộ reservation của một đơn theo thứ tự {@code drugId} ổn định.
      *
@@ -33,6 +36,9 @@ public interface StockReservationRepositoryPort {
      * @return các reservation đã khóa
      */
     List<StockReservation> findByPrescriptionForUpdate(UUID prescriptionId);
+
+    /** Locks active stock claims only, used by V1 dispense/terminal transitions after prior edits. */
+    List<StockReservation> findReservedByPrescriptionForUpdate(UUID prescriptionId);
 
     /**
      * Tất cả giữ chỗ đang {@code RESERVED} của một thuốc — kê đơn dùng để tính

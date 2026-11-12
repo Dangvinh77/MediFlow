@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -8,6 +10,7 @@ import { ApiRequestError } from "@/lib/api";
 import { medicalRecordApi } from "../api";
 
 export function ExaminationRecordLink({ patientId, appointmentId, label = "Mở hồ sơ khám" }: { patientId: string; appointmentId: string; label?: string }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [retry, setRetry] = useState(0);
   const [state, setState] = useState<{ key: string; recordId?: string; message?: string; correlationId?: string | null; forbidden?: boolean }>({ key: "" });
@@ -26,10 +29,10 @@ export function ExaminationRecordLink({ patientId, appointmentId, label = "Mở 
     });
     return () => { active = false; };
   }, [appointmentId, key, patientId, router]);
-  if (state.key !== key) return <AsyncState kind="loading" message="Đang tìm hồ sơ của lịch hẹn…" />;
-  if (state.forbidden) return <p role="status" className="text-sm text-muted-foreground">Bạn không có quyền xem hồ sơ khám của lịch hẹn này.</p>;
+  if (state.key !== key) return <AsyncState kind="loading" message={localize("Đang tìm hồ sơ của lịch hẹn…")} />;
+  if (state.forbidden) return <p role="status" className="text-sm text-muted-foreground"><L10n>{"Bạn không có quyền xem hồ sơ khám của lịch hẹn này."}</L10n></p>;
   return <div className="flex flex-wrap items-center gap-2">
-    {state.recordId ? <Link className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={`/records/${state.recordId}`}>{label}</Link>
-      : <div><AsyncState kind="error" message={state.message ?? "Không thể tìm hồ sơ khám."} onRetry={() => setRetry((value) => value + 1)} />{state.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.correlationId}</p></details> : null}</div>}
+    <L10nValue>{state.recordId ? <Link className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={`/records/${state.recordId}`}><L10nValue>{label}</L10nValue></Link>
+      : <div><AsyncState kind="error" message={localize(state.message ?? "Không thể tìm hồ sơ khám.")} onRetry={() => setRetry((value) => value + 1)} /><L10nValue>{state.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{state.correlationId}</p></details> : null}</L10nValue></div>}</L10nValue>
   </div>;
 }

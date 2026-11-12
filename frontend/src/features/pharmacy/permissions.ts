@@ -94,6 +94,12 @@ export function canCancelPrescription(
   );
 }
 
+export function canEditPrescription(role: Role | null, prescription: PrescriptionDTO): boolean {
+  return getPharmacyCapabilities(role).canCreatePrescription && isMutablePrescription(prescription)
+    && !prescription.paymentConfirmed && Number.isSafeInteger(prescription.revision)
+    && prescription.revision! >= 0;
+}
+
 export function canDispensePrescription(
   role: Role | null,
   prescription: PrescriptionDTO,

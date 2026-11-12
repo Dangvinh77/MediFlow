@@ -1,3 +1,5 @@
+
+import { L10n } from "@/components/i18n/LocaleProvider";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
@@ -32,10 +34,8 @@ export default async function DrugDetailPage({
         description="Thông tin thuốc và các thao tác tồn kho."
       >
         <section className="mt-6 rounded-xl border border-border bg-surface p-6">
-          <h2 className="text-lg font-semibold">Mã thuốc không hợp lệ</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Vui lòng quay lại danh mục và chọn thuốc cần xem.
-          </p>
+          <h2 className="text-lg font-semibold"><L10n>{"Mã thuốc không hợp lệ"}</L10n></h2>
+          <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Vui lòng quay lại danh mục và chọn thuốc cần xem."}</L10n></p>
         </section>
       </PharmacyPageShell>
     );

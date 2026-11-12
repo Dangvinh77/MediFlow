@@ -1,3 +1,5 @@
+import '../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -85,9 +87,9 @@ class _ModuleTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(module.title, style: text.titleMedium),
+                LText(module.title, style: text.titleMedium),
                 const SizedBox(height: 2),
-                Text(
+                LText(
                   module.implemented ? module.description : 'Đang phát triển',
                   style: text.bodySmall?.copyWith(color: medical.mutedText),
                 ),
@@ -126,7 +128,7 @@ class ModuleNavTile extends StatelessWidget {
         minLeadingWidth: 34,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10),
         leading: IconBadge(icon, color: color, size: 34),
-        title: Text(
+        title: LText(
           title,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,

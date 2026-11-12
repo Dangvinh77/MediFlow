@@ -1,3 +1,5 @@
+import '../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -328,14 +330,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/forbidden',
             builder: (_, _) => const Center(
-              child: Text('Bạn không có quyền truy cập chức năng này.'),
+              child: LText('Bạn không có quyền truy cập chức năng này.'),
             ),
           ),
         ],
       ),
     ],
     errorBuilder: (_, _) =>
-        const Scaffold(body: Center(child: Text('Không tìm thấy trang.'))),
+        const Scaffold(body: Center(child: LText('Không tìm thấy trang.'))),
   );
   ref.onDispose(() {
     router.dispose();
@@ -355,7 +357,7 @@ class _PharmacyRoute extends StatelessWidget {
         children: [
           BackButton(onPressed: () => context.go('/pharmacy')),
           Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            child: LText(title, style: Theme.of(context).textTheme.titleLarge),
           ),
         ],
       ),

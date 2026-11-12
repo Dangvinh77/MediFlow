@@ -72,7 +72,7 @@ class OrganizationServiceIntegrationTest {
         }
         var retired = Staff.create("Đặng Ánh nghỉ", unit.getDepartmentId(), JobTitle.DOCTOR, null, "LIC", null, null, nextIdentityNumber());
         retired.deactivate(); staffStore.save(retired);
-        var literal = staffStore.save(Staff.create("Literal %_\\ Member", unit.getDepartmentId(), JobTitle.NURSE, null, null, null, null, nextIdentityNumber()));
+        var literal = staffStore.save(Staff.create("Literal %_\\ Member", unit.getDepartmentId(), JobTitle.NURSE, null, null, null, uniqueEmail(), nextIdentityNumber()));
         var ids = new java.util.ArrayList<UUID>();
         for (int page = 0; page < 4; page++) {
             var batch = staffStore.searchDirectory(unit.getDepartmentId(), JobTitle.DOCTOR, "dang anh", true, false, com.mediflow.common.api.PageQuery.of(page, 7));
@@ -211,14 +211,14 @@ class OrganizationServiceIntegrationTest {
         var department = createDepartmentUseCase.execute("Retry Office", "R" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), DepartmentType.ADMINISTRATIVE, null);
         UUID actor = UUID.randomUUID(); String key = UUID.randomUUID().toString(), identity = nextIdentityNumber();
         var profile = new com.mediflow.organization.domain.model.StaffProfile(null, null, "Original", null, "Degree");
-        var first = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, profile);
-        var replay = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, profile);
+        var first = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(identity), identity, profile);
+        var replay = createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(identity), identity, profile);
         assertThat(replay.replayed()).isTrue();
         assertThat(replay.staff().getStaffId()).isEqualTo(first.staff().getStaffId());
-        assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class, () -> createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity, com.mediflow.organization.domain.model.StaffProfile.EMPTY));
+        assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class, () -> createStaffUseCase.executeWithIdempotency(actor, key, "Member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(identity), identity, com.mediflow.organization.domain.model.StaffProfile.EMPTY));
         String legacyKey = UUID.randomUUID().toString(), legacyIdentity = nextIdentityNumber();
-        var legacy = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, legacyIdentity);
-        var compatible = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, legacyIdentity, com.mediflow.organization.domain.model.StaffProfile.EMPTY);
+        var legacy = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(legacyIdentity), legacyIdentity);
+        var compatible = createStaffUseCase.executeWithIdempotency(actor, legacyKey, "Legacy", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(legacyIdentity), legacyIdentity, com.mediflow.organization.domain.model.StaffProfile.EMPTY);
         assertThat(compatible.replayed()).isTrue();
         assertThat(compatible.staff().getStaffId()).isEqualTo(legacy.staff().getStaffId());
     }
@@ -235,7 +235,7 @@ class OrganizationServiceIntegrationTest {
         var department = createDepartmentUseCase.execute("Edited office", "B" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), DepartmentType.ADMINISTRATIVE, "Edited location",
                 new com.mediflow.organization.domain.model.DepartmentProfile(null, "9999", null));
         String identity = nextIdentityNumber();
-        var staff = createStaffUseCase.execute("Edited member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, null, identity);
+        var staff = createStaffUseCase.execute("Edited member", department.getDepartmentId(), JobTitle.ADMINISTRATIVE, null, null, null, emailFor(identity), identity);
         var jdbc = new JdbcTemplate(organizationDataSource);
         String unitKey = "backfill-dept-" + UUID.randomUUID(), staffKey = "backfill-staff-" + UUID.randomUUID();
         jdbc.update("insert into local_demo_seed_receipt(seed_key,entity_id) values (?,?)", unitKey, department.getDepartmentId());
@@ -274,6 +274,8 @@ class OrganizationServiceIntegrationTest {
     }
 
     private static final java.util.concurrent.atomic.AtomicLong IDENTITIES = new java.util.concurrent.atomic.AtomicLong(100000000000L);
+    private static String uniqueEmail() { return "staff-" + UUID.randomUUID() + "@example.test"; }
+    private static String emailFor(String identity) { return "staff-" + identity + "@example.test"; }
     private static String nextIdentityNumber() { return Long.toString(IDENTITIES.incrementAndGet()); }
 
 
@@ -488,7 +490,7 @@ class OrganizationServiceIntegrationTest {
 
     private com.mediflow.organization.domain.model.Staff newDoctor(UUID departmentId) {
         return createStaffUseCase.execute("Audit Doctor", departmentId, JobTitle.DOCTOR, "General",
-                "LIC-" + UUID.randomUUID(), null, null, nextIdentityNumber());
+                "LIC-" + UUID.randomUUID(), null, uniqueEmail(), nextIdentityNumber());
     }
 
     private void changeHead(com.mediflow.organization.domain.model.Department department, UUID head) {
@@ -497,7 +499,7 @@ class OrganizationServiceIntegrationTest {
             createAccountUseCase.execute("head." + UUID.randomUUID(), "HeadPassword123!", head, Role.DOCTOR);
         }
         var adminStaff = createStaffUseCase.execute("Appointment administrator", department.getDepartmentId(),
-                JobTitle.ADMINISTRATIVE, null, null, null, null, nextIdentityNumber());
+                JobTitle.ADMINISTRATIVE, null, null, null, uniqueEmail(), nextIdentityNumber());
         var admin = createAccountUseCase.execute("head.admin." + UUID.randomUUID(), "HeadAdmin123!", adminStaff.getStaffId(), Role.ADMIN);
         long revision = departmentHeads.get(admin.getAccountId(), Role.ADMIN, department.getDepartmentId()).revision();
         departmentHeads.replace(admin.getAccountId(), Role.ADMIN, department.getDepartmentId(),
@@ -672,7 +674,7 @@ class OrganizationServiceIntegrationTest {
                 null,
                 null,
                 null,
-                null, nextIdentityNumber());
+                uniqueEmail(), nextIdentityNumber());
 
         JdbcTemplate organizationJdbc = new JdbcTemplate(organizationDataSource);
         boolean eventTableExists = Boolean.TRUE.equals(organizationJdbc.queryForObject("""
@@ -719,10 +721,10 @@ class OrganizationServiceIntegrationTest {
         String key = UUID.randomUUID().toString();
         var first = createStaffUseCase.executeWithIdempotency(actor, key,
                 "Keyed Staff", department.getDepartmentId(), JobTitle.NURSE,
-                null, null, null, null, "012345678901");
+                null, null, null, emailFor("012345678901"), "012345678901");
         var replay = createStaffUseCase.executeWithIdempotency(actor, key,
                 "Keyed Staff", department.getDepartmentId(), JobTitle.NURSE,
-                null, null, null, null, "012345678901");
+                null, null, null, emailFor("012345678901"), "012345678901");
 
         assertThat(first.replayed()).isFalse();
         assertThat(replay.replayed()).isTrue();
@@ -738,11 +740,11 @@ class OrganizationServiceIntegrationTest {
         assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class,
                 () -> createStaffUseCase.executeWithIdempotency(actor, key,
                         "Different Staff", department.getDepartmentId(), JobTitle.NURSE,
-                        null, null, null, null, "012345678901"));
+                        null, null, null, emailFor("012345678901"), "012345678901"));
         assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class,
                 () -> createStaffUseCase.executeWithIdempotency(actor, key,
                         "Keyed Staff", department.getDepartmentId(), JobTitle.NURSE,
-                        null, null, null, null, "012345678902"));
+                        null, null, null, emailFor("012345678902"), "012345678902"));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM staff WHERE full_name IN (?,?)",
                 Integer.class, "Keyed Staff", "Different Staff")).isEqualTo(1);
     }
@@ -754,12 +756,12 @@ class OrganizationServiceIntegrationTest {
         String identity = nextIdentityNumber();
         var first = createStaffUseCase.executeWithIdempotency(actor, "first-" + identity,
                 "Original staff", department.getDepartmentId(), JobTitle.NURSE,
-                null, null, null, null, identity).staff();
+                null, null, null, emailFor(identity), identity).staff();
         String rejectedKey = "second-" + identity;
         var failure = assertThrows(DataIntegrityViolationException.class,
                 () -> createStaffUseCase.executeWithIdempotency(actor, rejectedKey,
                         "Different name", department.getDepartmentId(), JobTitle.NURSE,
-                        null, null, null, null, identity));
+                        null, null, null, uniqueEmail(), identity));
         var response = exceptionHandler.handleDataIntegrityViolation(failure);
         assertThat(response.getStatusCode().value()).isEqualTo(409);
         assertThat(response.getBody().error().code()).isEqualTo("STAFF_IDENTITY_DUPLICATE");
@@ -812,7 +814,7 @@ class OrganizationServiceIntegrationTest {
     private boolean createIdentityOrConflict(UUID departmentId, String identity) {
         try {
             createStaffUseCase.executeWithIdempotency(UUID.randomUUID(), UUID.randomUUID().toString(),
-                    "Concurrent staff", departmentId, JobTitle.NURSE, null, null, null, null, identity);
+                    "Concurrent staff", departmentId, JobTitle.NURSE, null, null, null, uniqueEmail(), identity);
             return true;
         } catch (DataIntegrityViolationException conflict) {
             assertThat(exceptionHandler.handleDataIntegrityViolation(conflict).getBody().error().code())
@@ -936,7 +938,7 @@ class OrganizationServiceIntegrationTest {
                 """);
         try {
             assertThrows(RuntimeException.class, () -> createStaffUseCase.execute(
-                    fullName, department.getDepartmentId(), JobTitle.NURSE, null, null, null, null, nextIdentityNumber()));
+                    fullName, department.getDepartmentId(), JobTitle.NURSE, null, null, null, uniqueEmail(), nextIdentityNumber()));
         } finally {
             jdbc.execute("DROP TRIGGER IF EXISTS test_fail_organization_event_outbox_insert ON organization_event_outbox");
             jdbc.execute("DROP FUNCTION IF EXISTS fail_organization_event_outbox_insert()");

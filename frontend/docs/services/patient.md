@@ -33,6 +33,13 @@ patient UUID; changing CCCD or birth date requires an audited reason (maximum 50
 Archived records are read-only and excluded from active search; conflicts preserve the draft for correction. The service-only existence lookup
 remains unavailable to browser code.
 
+Creating a Patient profile requires a valid email of at most 254 characters. Core trims and
+lowercases it and reserves it uniquely within the Patient context, independently of whether
+an account is issued. Duplicate email returns `409 PATIENT_EMAIL_DUPLICATE` and points back to
+the email field. Editing a valid email is checked the same way. Existing legacy profiles with
+missing email remain editable without changing that value; archived profiles still reserve any
+email they already have.
+
 ADMIN/NURSE can issue the initial patient account and continue registration from any successfully
 loaded active patient detail, including a plain `/patients/{id}` URL reopened from the list.
 The `notice` query only controls the saved confirmation. Onboarding actions remain hidden while

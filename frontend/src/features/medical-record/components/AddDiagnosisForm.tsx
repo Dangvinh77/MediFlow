@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -120,10 +122,10 @@ export function AddDiagnosisForm({ recordId, onCreated, disabled = false, isInte
   return (
     <form ref={formRef} onSubmit={submit} noValidate className="mt-4 space-y-4">
       <div>
-        <p className="mt-1 text-sm text-muted-foreground">Chẩn đoán được ghi trực tiếp vào hồ sơ đang mở.</p>
+        <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chẩn đoán được ghi trực tiếp vào hồ sơ đang mở."}</L10n></p>
       </div>
-      {success ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã thêm chẩn đoán thành công.</p> : null}
-      {requestError ? (
+      <L10nValue>{success ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10n>{"Đã thêm chẩn đoán thành công."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{requestError ? (
         <MedicalRecordMutationError
           {...requestError}
           disabled={disabled || submitting}
@@ -131,10 +133,10 @@ export function AddDiagnosisForm({ recordId, onCreated, disabled = false, isInte
             ? () => formRef.current?.requestSubmit()
             : undefined}
         />
-      ) : null}
+      ) : null}</L10nValue>
       <DiagnosisFormFields values={values} errors={errors} disabled={submitting || disabled} onChange={updateField} />
       <button type="submit" disabled={submitting || disabled} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-        {submitting ? "Đang thêm…" : "Thêm chẩn đoán"}
+        <L10nValue>{submitting ? "Đang thêm…" : "Thêm chẩn đoán"}</L10nValue>
       </button>
     </form>
   );

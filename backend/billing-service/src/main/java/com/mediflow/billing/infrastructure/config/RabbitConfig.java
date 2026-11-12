@@ -38,6 +38,7 @@ public class RabbitConfig {
 
     // Subscribe — bound to QUEUE below
     public static final String RK_PRESCRIPTION_CREATED = "prescription.created";
+    public static final String RK_PRESCRIPTION_REVISED = "prescription.revised";
     public static final String RK_PRESCRIPTION_FILLED = "prescription.filled";
     public static final String RK_PRESCRIPTION_DISPENSE_FAILED = "prescription.dispense.failed";
     public static final String RK_PRESCRIPTION_CANCELLED = "prescription.cancelled";
@@ -68,6 +69,7 @@ public class RabbitConfig {
 
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PRESCRIPTION_CREATED,
+            RK_PRESCRIPTION_REVISED,
             RK_PRESCRIPTION_FILLED,
             RK_PRESCRIPTION_DISPENSE_FAILED,
             RK_PRESCRIPTION_CANCELLED,

@@ -201,3 +201,19 @@ Repository đối chiếu identity detail trả về và giữ nguyên ApiFailur
 Không có dữ liệu fixture runtime hoặc bypass auth để xem UI. Provider overrides trong widget tests
 không là bằng chứng actual issuer/Gateway/native. Feature default không bind tiếp tục fail closed.
 MP-HUY-01–11 đóng code; integrated/native acceptance ở MP-HUY-12 được người dùng để sau.
+
+
+### Prescription revision — 2026-11-12
+
+Doctors can open **Sửa đơn thuốc** from an active, pending, unpaid outpatient
+prescription. The editor preserves patient/doctor/record identities and changes only
+catalogue drug lines, quantities, dosage and notes. Servers return a monotonic
+`revision`; deployments without it remain read-only for this action.
+
+The Gateway adapter sends `PUT /api/v1/pharmacy/prescriptions/{id}` with
+`{expectedRevision, lines}` and an `Idempotency-Key` UUID header. An uncertain reply
+freezes the draft and Back action and retries the exact same immutable intent.
+A payment or stale-revision conflict blocks further saving until the detail is
+reloaded. Billing is the authority for whether any payment has already started;
+the local `paymentConfirmed` read is only an initial UI hint. Pharmacy and Billing
+recheck authority, stock and payment under their transaction locks.

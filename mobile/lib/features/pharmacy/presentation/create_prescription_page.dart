@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -214,11 +216,11 @@ class _RecordPrescriptionResultsState
           child: TextButton.icon(
             onPressed: loading ? null : _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Tải lại đơn thuốc'),
+            label: const LText('Tải lại đơn thuốc'),
           ),
         ),
       if (!loading && error == null && prescriptions.isEmpty)
-        Text(
+        LText(
           hasMore
               ? 'Chưa thấy đơn thuốc của hồ sơ trong các trang đã tải.'
               : 'Chưa có đơn thuốc gắn với hồ sơ này.',
@@ -226,14 +228,14 @@ class _RecordPrescriptionResultsState
       for (final prescription in prescriptions)
         Card(
           child: ListTile(
-            title: Text(
+            title: LText(
               'Đơn thuốc · ${pharmacyDate(prescription.prescribedDate)}',
             ),
-            subtitle: Text(
+            subtitle: LText(
               '${prescriptionStatusText(prescription.status)}${_showAmount ? ' · ${prescription.totalAmount} đồng' : ''}\nMã đơn: ${prescription.id}',
             ),
             trailing: IconButton(
-              tooltip: 'Xem chi tiết đơn thuốc',
+              tooltip: AppL10n.text(context, 'Xem chi tiết đơn thuốc'),
               icon: const Icon(Icons.chevron_right),
               onPressed: loading
                   ? null
@@ -250,7 +252,7 @@ class _RecordPrescriptionResultsState
       if (hasMore)
         TextButton(
           onPressed: loading ? null : () => _load(more: true),
-          child: const Text('Tải thêm đơn thuốc'),
+          child: const LText('Tải thêm đơn thuốc'),
         ),
     ],
   );
@@ -274,23 +276,23 @@ class CreatePrescriptionPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if ((initialPatientId == null) != (initialRecordId == null)) {
       return const Center(
-        child: Text('Không thể kê đơn khi thiếu bệnh nhân hoặc hồ sơ nguồn.'),
+        child: LText('Không thể kê đơn khi thiếu bệnh nhân hoặc hồ sơ nguồn.'),
       );
     }
     return PharmacyBoundary(
       builder: (repository) {
         final access = ref.watch(pharmacyAccessProvider);
         if (access?.canPrescribe != true) {
-          return const Center(child: Text('Bạn không có quyền kê đơn.'));
+          return const Center(child: LText('Bạn không có quyền kê đơn.'));
         }
         if (ref.watch(pharmacyModeProvider) != PharmacyMode.outpatient) {
           return const Center(
-            child: Text('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
+            child: LText('Chức năng kê đơn ngoại trú chưa sẵn sàng.'),
           );
         }
         if (initialRecordId != null && repository is! PrescribingSourceReader) {
           return const Center(
-            child: Text('Chưa thể xác minh hồ sơ nguồn để kê đơn.'),
+            child: LText('Chưa thể xác minh hồ sơ nguồn để kê đơn.'),
           );
         }
         final writer = ref.watch(outpatientPrescriptionWriterProvider);
@@ -514,7 +516,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           if (needsScope)
             Padding(
               padding: const EdgeInsets.only(left: 12, bottom: 4),
-              child: Text(
+              child: LText(
                 patientScoped
                     ? 'Chọn bệnh nhân trước để tìm hồ sơ hoặc lượt khám.'
                     : 'Chọn khoa trước để tìm bác sĩ.',
@@ -523,7 +525,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           if (errors[key] != null)
             Padding(
               padding: const EdgeInsets.only(left: 12, bottom: 4),
-              child: Text(
+              child: LText(
                 errors[key]!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
@@ -622,13 +624,13 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LText(
                   '${i + 1}. ${line.drug.name}',
                   style: theme.textTheme.titleSmall,
                 ),
               ),
               IconButton(
-                tooltip: 'Bỏ dòng ${i + 1}',
+                tooltip: AppL10n.text(context, 'Bỏ dòng ${i + 1}'),
                 icon: const Icon(Icons.close),
                 onPressed: locked
                     ? null
@@ -661,11 +663,13 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                   enabled: !locked,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Số lượng dòng ${i + 1}',
+                    labelText: AppL10n.text(context, 'Số lượng dòng ${i + 1}'),
                     suffixText: line.drug.unit,
                     isDense: true,
-                    errorText:
-                        errors['lines.$i.quantity'] ?? errors['lines.$i'],
+                    errorText: AppL10n.text(
+                      context,
+                      errors['lines.$i.quantity'] ?? errors['lines.$i'],
+                    ),
                   ),
                 ),
                 TextField(
@@ -677,11 +681,11 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                   maxLines: 3,
                   onTap: () => _chooseDosage(line),
                   decoration: InputDecoration(
-                    labelText: 'Cách dùng dòng ${i + 1}',
-                    hintText: 'Chạm để chọn cách dùng',
+                    labelText: AppL10n.text(context, 'Cách dùng dòng ${i + 1}'),
+                    hintText: AppL10n.text(context, 'Chạm để chọn cách dùng'),
                     prefixIcon: const Icon(Icons.lock_outline, size: 18),
                     isDense: true,
-                    errorText: errors['lines.$i.dosage'],
+                    errorText: AppL10n.text(context, errors['lines.$i.dosage']),
                   ),
                 ),
                 TextField(
@@ -690,10 +694,10 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                   enabled: !locked,
                   maxLength: 500,
                   decoration: InputDecoration(
-                    labelText: 'Ghi chú dòng ${i + 1}',
+                    labelText: AppL10n.text(context, 'Ghi chú dòng ${i + 1}'),
                     isDense: true,
                     counterText: '',
-                    errorText: errors['lines.$i.note'],
+                    errorText: AppL10n.text(context, errors['lines.$i.note']),
                   ),
                 ),
               ],
@@ -779,7 +783,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
     final route = DialogRoute<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(retry ? 'Xác nhận gửi lại đơn' : 'Xác nhận kê đơn'),
+        title: LText(retry ? 'Xác nhận gửi lại đơn' : 'Xác nhận kê đơn'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,14 +810,14 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                 label: 'Khoa',
               ),
               if (widget.sourceReader != null)
-                const Text('Đã liên kết lượt khám ngoại trú từ hồ sơ.')
+                const LText('Đã liên kết lượt khám ngoại trú từ hồ sơ.')
               else
                 ReferenceLabel(
                   kind: ReferenceKind.appointment,
                   id: current.command.context.careEpisodeId,
                   label: 'Lượt khám',
                 ),
-              Text(
+              LText(
                 '${current.command.lines.length} thuốc trong đơn. Thông tin sẽ được kiểm tra khi tạo đơn.',
               ),
             ],
@@ -822,11 +826,11 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận kê đơn'),
+            child: const LText('Xác nhận kê đơn'),
           ),
         ],
       ),
@@ -901,24 +905,24 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
     if (!widget.canCreate && created == null && !holdWorkspace) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text('Hồ sơ đã hoàn tất; đơn thuốc chỉ được xem.'),
+        child: LText('Hồ sơ đã hoàn tất; đơn thuốc chỉ được xem.'),
       );
     }
     final fixedSource = widget.initialRecordId != null;
     final form = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        LText(
           'Kê đơn ngoại trú',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
-        Text(
+        LText(
           widget.sourceReader != null
               ? 'Chọn bệnh nhân và hồ sơ khám. Hệ thống tự lấy thông tin kê đơn liên quan.'
               : 'Chọn bệnh nhân, hồ sơ khám và bác sĩ theo thông tin đã được xác nhận. Kiểm tra đầy đủ lượt khám và nhóm thu trước khi tạo đơn.',
         ),
         if (widget.writer == null)
-          const Text(
+          const LText(
             'Chức năng tạo đơn hiện chưa sẵn sàng. Vui lòng thử lại sau.',
           ),
         if (widget.sourceReader != null)
@@ -950,11 +954,14 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                     focusNode: focuses[field.key],
                     enabled: !locked,
                     decoration: InputDecoration(
-                      labelText: field.value,
-                      helperText: field.key == 'prescribedDate'
-                          ? 'Nhập theo dạng năm-tháng-ngày.'
-                          : null,
-                      errorText: errors[field.key],
+                      labelText: AppL10n.text(context, field.value),
+                      helperText: AppL10n.text(
+                        context,
+                        field.key == 'prescribedDate'
+                            ? 'Nhập theo dạng năm-tháng-ngày.'
+                            : null,
+                      ),
+                      errorText: AppL10n.text(context, errors[field.key]),
                     ),
                   ),
           ),
@@ -963,24 +970,26 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
           focusNode: keywordFocus,
           enabled: !locked,
           onSubmitted: (_) => _search(),
-          decoration: const InputDecoration(labelText: 'Tìm thuốc để kê'),
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Tìm thuốc để kê'),
+          ),
         ),
         OutlinedButton(
           onPressed: locked || searching ? null : () => _search(),
-          child: const Text('Tìm trong danh mục'),
+          child: const LText('Tìm trong danh mục'),
         ),
         if (searching)
           const LinearProgressIndicator(semanticsLabel: 'Đang tìm thuốc'),
         if (searchError != null) PharmacyRequestError(searchError!),
         if (!searching && searchError == null && searched && drugs.isEmpty)
-          const Text('Không tìm thấy thuốc.'),
+          const LText('Không tìm thấy thuốc.'),
         for (final drug in drugs)
           Card(
             child: ListTile(
-              title: Text(drug.name),
-              subtitle: Text('${drug.unit} · Còn: ${drug.stockQuantity}'),
+              title: LText(drug.name),
+              subtitle: LText('${drug.unit} · Còn: ${drug.stockQuantity}'),
               trailing: IconButton(
-                tooltip: 'Chọn ${drug.name}',
+                tooltip: AppL10n.text(context, 'Chọn ${drug.name}'),
                 icon: const Icon(Icons.add),
                 onPressed:
                     locked ||
@@ -1009,13 +1018,13 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                 onPressed: locked || searching || page == 0
                     ? null
                     : () => _search(target: page - 1, submit: false),
-                child: const Text('Trang thuốc trước'),
+                child: const LText('Trang thuốc trước'),
               ),
               TextButton(
                 onPressed: locked || searching || page + 1 >= pages
                     ? null
                     : () => _search(target: page + 1, submit: false),
-                child: const Text('Trang thuốc sau'),
+                child: const LText('Trang thuốc sau'),
               ),
             ],
           ),
@@ -1048,11 +1057,11 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
             liveRegion: true,
             child: Column(
               children: [
-                if (errors['lines'] != null) Text(errors['lines']!),
+                if (errors['lines'] != null) LText(errors['lines']!),
                 if (commandError != null) ...[
                   PharmacyRequestError(commandError!),
                   if (intent != null)
-                    const Text(
+                    const LText(
                       'Chưa rõ đơn đã được tạo hay chưa. Vui lòng kiểm tra đơn trước khi gửi lần nữa.',
                     ),
                 ],
@@ -1060,18 +1069,18 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Đã tạo đơn thuốc thành công.'),
+                      const LText('Đã tạo đơn thuốc thành công.'),
                       if (created!.recordId case final recordId?)
                         ReferenceLabel(
                           kind: ReferenceKind.record,
                           id: recordId,
                           label: 'Hồ sơ đơn thuốc',
                         ),
-                      Text('Mã đơn thuốc: ${created!.id}'),
-                      Text(
+                      LText('Mã đơn thuốc: ${created!.id}'),
+                      LText(
                         'Trạng thái: ${prescriptionStatusText(created!.status)}',
                       ),
-                      Text('Số loại thuốc: ${created!.lines.length}'),
+                      LText('Số loại thuốc: ${created!.lines.length}'),
                     ],
                   ),
               ],
@@ -1081,12 +1090,12 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
         if (intent == null)
           FilledButton(
             onPressed: busy || widget.writer == null ? null : () => _submit(),
-            child: const Text('Tạo đơn thuốc'),
+            child: const LText('Tạo đơn thuốc'),
           ),
         if (intent != null && retryAllowed && created == null)
           FilledButton(
             onPressed: busy ? null : () => _submit(retry: true),
-            child: const Text('Thử gửi lại đơn này'),
+            child: const LText('Thử gửi lại đơn này'),
           ),
         if (intent != null && rejected && created == null)
           OutlinedButton(
@@ -1128,7 +1137,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
                       }
                     });
                   },
-            child: const Text('Sửa bản nháp bị từ chối'),
+            child: const LText('Sửa bản nháp bị từ chối'),
           ),
         if (busy && confirmation == null)
           const LinearProgressIndicator(semanticsLabel: 'Đang xử lý kê đơn'),
@@ -1143,7 +1152,7 @@ class _CreatePrescriptionState extends State<_CreatePrescription> {
         if (!didPop && holdWorkspace) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
+              content: LText(
                 'Kết quả kê đơn chưa rõ. Thử lại cùng yêu cầu trước khi rời hồ sơ.',
               ),
             ),

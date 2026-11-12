@@ -22,7 +22,7 @@ public class StockReservation {
     private final UUID reservationId;
     private final UUID drugId;
     private final UUID prescriptionId;
-    private final int quantity;
+    private int quantity;
     private ReservationStatus status;
     private final Instant createdAt;
     private final Instant expiresAt;
@@ -181,6 +181,33 @@ public class StockReservation {
         updatedAt = now;
     }
 
+    /** Adjusts a live hold to the new quantity of the same drug line. */
+    public void reviseQuantity(int replacementQuantity, Instant now) {
+        requireRevisionQuantity(replacementQuantity, now);
+        requireReserved();
+        if (isExpiredAt(now)) {
+            throw new StockReservationRuleException("RESERVATION_EXPIRED", "Expired stock cannot be kept by a prescription revision");
+        }
+        quantity = replacementQuantity;
+        updatedAt = now;
+    }
+
+    /** Reopens only a hold released by an earlier edit, preserving its original expiry time. */
+    public void renewAfterPrescriptionEdit(int replacementQuantity, Instant now) {
+        requireRevisionQuantity(replacementQuantity, now);
+        if (status != ReservationStatus.RELEASED || releaseReason != ReservationReleaseReason.PRESCRIPTION_EDITED
+                || isExpiredAt(now)) {
+            throw new StockReservationRuleException("RESERVATION_INVALID_TRANSITION",
+                    "Only an unexpired hold released by an earlier prescription edit can be restored");
+        }
+        status = ReservationStatus.RESERVED;
+        quantity = replacementQuantity;
+        releaseReason = null;
+        releasedBy = null;
+        releasedAt = null;
+        updatedAt = now;
+    }
+
     /**
      * Kết thúc một giữ chỗ đã quá TTL.
      *
@@ -225,6 +252,13 @@ public class StockReservation {
             throw new StockReservationRuleException(
                     "RESERVATION_INVALID_TRANSITION",
                     "Giữ chỗ không còn ở trạng thái RESERVED");
+        }
+    }
+
+    private static void requireRevisionQuantity(int quantity, Instant now) {
+        if (quantity <= 0 || now == null) {
+            throw new StockReservationRuleException("RESERVATION_QUANTITY_INVALID",
+                    "A positive replacement quantity and operation time are required");
         }
     }
 }

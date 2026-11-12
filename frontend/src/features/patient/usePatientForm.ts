@@ -21,6 +21,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
   const [validationError, setValidationError] = useState<PatientFailure | null>(null);
   const [revision, setRevision] = useState(0);
   const [originalIdentity, setOriginalIdentity] = useState<{ soCmnd: string; ngaySinh: string } | null>(null);
+  const [originalEmail, setOriginalEmail] = useState<string | null>(null);
   const [identityReason, setIdentityReason] = useState("");
   const mutation = usePatientMutation(patientId ?? "create");
 
@@ -35,6 +36,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
         setLoadError(patientFailure(new Error("Hồ sơ đã lưu trữ, không thể chỉnh sửa."))); return;
       }
       setOriginalIdentity({ soCmnd: patient.soCmnd, ngaySinh: patient.ngaySinh });
+      setOriginalEmail(patient.email);
       setForm(patientToDraft(patient)); setLoaded(true);
     }).catch((cause: unknown) => {
       if (!current()) return;
@@ -46,6 +48,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
   const error = validationError ?? mutation.error ?? loadError;
   const identityChanged = Boolean(patientId && originalIdentity &&
     (form.soCmnd.trim() !== originalIdentity.soCmnd || form.ngaySinh !== originalIdentity.ngaySinh));
+  const emailRequired = !patientId || Boolean(originalEmail?.trim());
   useEffect(() => { if (error?.status === 401) router.replace("/login"); }, [error, router]);
 
   function set<K extends keyof PatientDraft>(key: K, value: PatientDraft[K]) {
@@ -65,7 +68,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
     if (!patientPermissions(getRole()).write) {
       setValidationError(patientFailure(new Error("Bạn không có quyền lưu bệnh nhân."))); return;
     }
-    const errors = validatePatientDraft(form);
+    const errors = validatePatientDraft(form, undefined, emailRequired);
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       setValidationError(patientFailure(new Error(Object.values(errors)[0]))); return;
@@ -80,7 +83,7 @@ export function usePatientForm(patientId?: string, onSaved?: () => void) {
       (patient) => { onSaved?.(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`); });
   }
 
-  return { form, set, identityChanged, identityReason, setIdentityReason, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,
+  return { form, set, identityChanged, identityReason, setIdentityReason, emailRequired, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,
     outcomeUnknown: mutation.outcomeUnknown,
     error, fieldErrors: { ...mutation.error?.fieldErrors, ...fieldErrors }, save, retry };
 }

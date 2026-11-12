@@ -1,3 +1,5 @@
+
+import { L10n } from "@/components/i18n/LocaleProvider";
 import { RecordBreadcrumb } from "@/features/organization/components/RecordLayout";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
@@ -8,6 +10,6 @@ export default async function Page({ params, searchParams }: Props) {
   const { departmentId } = await params;
   const { notice } = await searchParams;
   const id = departmentId.trim();
-  if (!isUuid(id)) return <PageShell title="Chi tiết khoa/phòng" description="Thông tin tổ chức và trạng thái vận hành."><RecordBreadcrumb href="/organization" parent="Tổ chức" current="Chi tiết khoa/phòng" /><p role="alert" className="mt-6 text-danger">Mã khoa/phòng không hợp lệ.</p></PageShell>;
+  if (!isUuid(id)) return <PageShell title="Chi tiết khoa/phòng" description="Thông tin tổ chức và trạng thái vận hành."><RecordBreadcrumb href="/organization" parent="Tổ chức" current="Chi tiết khoa/phòng" /><p role="alert" className="mt-6 text-danger"><L10n>{"Mã khoa/phòng không hợp lệ."}</L10n></p></PageShell>;
   return <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}><DepartmentDetail schedulingEnabled={process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"} departmentId={id} notice={notice === "created" || notice === "updated" ? notice : undefined} /></RoleGate>;
 }

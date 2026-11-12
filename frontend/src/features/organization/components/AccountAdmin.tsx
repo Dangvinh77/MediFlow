@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, type ReactNode, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -16,6 +18,7 @@ import { StaffPicker } from "./StaffPicker";
 
 /** Account creation only; account management lives on the detail route. */
 export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initialOwnerId = "", initialOwnerType = "staff" }: { renderPatientPicker?: (value: string, onChange: (id: string) => void, disabled: boolean) => ReactNode; loadPatientIdentity?: (id: string) => Promise<string | null>; initialOwnerId?: string; initialOwnerType?: "staff" | "patient" }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const mounted = useRef(true);
   const submitting = useRef(false);
@@ -113,18 +116,18 @@ export function AccountAdmin({ renderPatientPicker, loadPatientIdentity, initial
   return <section className="mt-6 max-w-3xl space-y-5">
     <form onSubmit={create} className="rounded-xl border border-border bg-surface p-5 sm:p-6">
       <fieldset disabled={locked} className="space-y-5">
-        <div><h2 className="text-lg font-semibold">Thông tin tài khoản mới</h2><p className="mt-1 text-sm text-muted-foreground">Chọn hồ sơ liên kết để tự động xác định vai trò truy cập.</p></div>
-        <Field label="Email đăng nhập" htmlFor="account-username" required hint="Lấy từ email của hồ sơ được chọn."><input id="account-username" type="email" required maxLength={254} autoComplete="off" readOnly value={username} className={controlClassName} /></Field>
-        <p className="rounded-lg bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">Hệ thống sẽ gửi mật khẩu tạm và link đăng nhập đến email này. Người dùng phải đổi mật khẩu trong lần đăng nhập đầu tiên. Tài khoản seed nhận thư trong hộp thư demo.</p>
-        <Field label="Loại hồ sơ liên kết" htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value === "patient" ? "patient" : "staff"); selectOwner(""); }}><option value="staff">Nhân viên</option><option value="patient">Bệnh nhân</option></select></Field>
-        {ownerType === "staff" ? <StaffPicker id="account-owner" label="Nhân viên" value={ownerId} onChange={selectOwner} disabled={locked} required /> : renderPatientPicker ? renderPatientPicker(ownerId, selectOwner, locked) : <Field label="Mã bệnh nhân" htmlFor="account-owner" required><input id="account-owner" required className={controlClassName} value={ownerId} onChange={event => selectOwner(event.target.value)} /></Field>}
-        <Field label="Vai trò tự động" htmlFor="account-role" hint="Vai trò được xác định từ chức danh của nhân viên hoặc hồ sơ bệnh nhân."><input id="account-role" readOnly className={controlClassName} value={role ? accountRoleLabels[role] : ownerId ? "Đang tải chức danh…" : "Chưa chọn hồ sơ"} /></Field>
-        {staffError ? <div role="alert" className="text-sm text-danger">{staffError} <Button type="button" onClick={() => { setStaffError(null); setStaffAttempt(value => value + 1); }}>Tải lại hồ sơ</Button></div> : null}
-        <Button type="submit" variant="primary" loading={busy} disabled={!role || !isUuid(ownerId) || !username || Boolean(staffError)}>Tạo tài khoản</Button>
+        <div><h2 className="text-lg font-semibold"><L10n>{"Thông tin tài khoản mới"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chọn hồ sơ liên kết để tự động xác định vai trò truy cập."}</L10n></p></div>
+        <Field label={localize("Email đăng nhập")} htmlFor="account-username" required hint="Lấy từ email của hồ sơ được chọn."><input id="account-username" type="email" required maxLength={254} autoComplete="off" readOnly value={username} className={controlClassName} /></Field>
+        <p className="rounded-lg bg-primary/5 p-4 text-sm leading-6 text-muted-foreground"><L10n>{"Hệ thống sẽ gửi mật khẩu tạm và link đăng nhập đến email này. Người dùng phải đổi mật khẩu trong lần đăng nhập đầu tiên. Tài khoản seed nhận thư trong hộp thư demo."}</L10n></p>
+        <Field label={localize("Loại hồ sơ liên kết")} htmlFor="account-owner-type"><select id="account-owner-type" className={controlClassName} value={ownerType} onChange={event => { setOwnerType(event.target.value === "patient" ? "patient" : "staff"); selectOwner(""); }}><option value="staff"><L10n>{"Nhân viên"}</L10n></option><option value="patient"><L10n>{"Bệnh nhân"}</L10n></option></select></Field>
+        <L10nValue>{ownerType === "staff" ? <StaffPicker id="account-owner" label={localize("Nhân viên")} value={ownerId} onChange={selectOwner} disabled={locked} required /> : renderPatientPicker ? renderPatientPicker(ownerId, selectOwner, locked) : <Field label={localize("Mã bệnh nhân")} htmlFor="account-owner" required><input id="account-owner" required className={controlClassName} value={ownerId} onChange={event => selectOwner(event.target.value)} /></Field>}</L10nValue>
+        <Field label={localize("Vai trò tự động")} htmlFor="account-role" hint="Vai trò được xác định từ chức danh của nhân viên hoặc hồ sơ bệnh nhân."><input id="account-role" readOnly className={controlClassName} value={role ? accountRoleLabels[role] : ownerId ? "Đang tải chức danh…" : "Chưa chọn hồ sơ"} /></Field>
+        <L10nValue>{staffError ? <div role="alert" className="text-sm text-danger"><L10nValue>{staffError}</L10nValue> <Button type="button" onClick={() => { setStaffError(null); setStaffAttempt(value => value + 1); }}><L10n>{"Tải lại hồ sơ"}</L10n></Button></div> : null}</L10nValue>
+        <Button type="submit" variant="primary" loading={busy} disabled={!role || !isUuid(ownerId) || !username || Boolean(staffError)}><L10n>{"Tạo tài khoản"}</L10n></Button>
       </fieldset>
     </form>
-    {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
-    {unresolved ? <Button type="button" loading={busy} onClick={() => void send(unresolved)}>Thử lại yêu cầu tạo</Button> : null}
-    {confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-message" className="space-y-4 rounded-xl border border-warning/40 bg-surface p-5"><h2 id="account-confirm-title" className="font-semibold">Xác nhận thay tài khoản đang active</h2><p id="account-confirm-message" className="text-sm">{confirmation.message}</p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}>Hủy</Button><Button type="button" variant="primary" loading={busy} onClick={() => void send({ ...confirmation.body, replaceActiveAccount: true })}>Tiếp tục tạo tài khoản</Button></div></div> : null}
+    <L10nValue>{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{unresolved ? <Button type="button" loading={busy} onClick={() => void send(unresolved)}><L10n>{"Thử lại yêu cầu tạo"}</L10n></Button> : null}</L10nValue>
+    <L10nValue>{confirmation ? <div role="alertdialog" aria-modal="false" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-message" className="space-y-4 rounded-xl border border-warning/40 bg-surface p-5"><h2 id="account-confirm-title" className="font-semibold"><L10n>{"Xác nhận thay tài khoản đang active"}</L10n></h2><p id="account-confirm-message" className="text-sm"><L10nValue>{confirmation.message}</L10nValue></p><div className="flex flex-wrap gap-3"><Button type="button" disabled={busy} onClick={() => setConfirmation(null)}><L10n>{"Hủy"}</L10n></Button><Button type="button" variant="primary" loading={busy} onClick={() => void send({ ...confirmation.body, replaceActiveAccount: true })}><L10n>{"Tiếp tục tạo tài khoản"}</L10n></Button></div></div> : null}</L10nValue>
   </section>;
 }

@@ -91,7 +91,7 @@ public class ExpirePrescriptionTransaction {
         }
 
         List<StockReservation> reservations = reservationRepository
-                .findByPrescriptionForUpdate(prescriptionId);
+                .findReservedByPrescriptionForUpdate(prescriptionId);
         Set<UUID> expectedDrugIds = prescription.getLines().stream()
                 .map(PrescriptionLine::getDrugId)
                 .collect(Collectors.toSet());

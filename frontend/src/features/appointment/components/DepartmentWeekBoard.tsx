@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -13,6 +15,7 @@ const weekdays = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sá
 
 /** Read-only week of the whole department; changes happen on the sessions and shifts screens. */
 export function DepartmentWeekBoard({ departmentId, date }: { departmentId: string; date: string }) {
+  const { localize } = useLocale();
   const { fromDate, toDate } = shiftRange(date, "week");
   const [rows, setRows] = useState<ConsultationSessionDTO[] | null>(null);
   const [error, setError] = useState("");
@@ -36,21 +39,21 @@ export function DepartmentWeekBoard({ departmentId, date }: { departmentId: stri
     return { label, date: value.toISOString().slice(0, 10) };
   });
   return <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
-    <div><h2 className="text-lg font-semibold">Lịch toàn khoa trong tuần</h2><p className="mt-1 text-sm text-muted-foreground">Ai khám, ở phòng nào và còn bao nhiêu chỗ. Bấm một ngày để lập hoặc sửa buổi khám.</p></div>
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : !rows ? <p role="status" className="text-sm text-muted-foreground">Đang tải lịch toàn khoa…</p> :
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Lịch toàn khoa theo tuần"><div className="grid min-w-[70rem] grid-cols-7 gap-2">
-      {days.map(day => {
+    <div><h2 className="text-lg font-semibold"><L10n>{"Lịch toàn khoa trong tuần"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10n>{"Ai khám, ở phòng nào và còn bao nhiêu chỗ. Bấm một ngày để lập hoặc sửa buổi khám."}</L10n></p></div>
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : !rows ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang tải lịch toàn khoa…"}</L10n></p> :
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={localize("Lịch toàn khoa theo tuần")}><div className="grid min-w-[70rem] grid-cols-7 gap-2">
+      <L10nValue>{days.map(day => {
         const sessions = rows.filter(row => row.sessionDate === day.date).sort((a, b) => a.startTime.localeCompare(b.startTime));
         return <div key={day.date} className="min-w-0 space-y-2 rounded-lg border border-border p-2">
-          <Link href={`/appointments/department/sessions?date=${day.date}`} className="block rounded-md px-1 py-1 text-sm font-semibold hover:text-primary">{day.label}<span className="block text-xs font-normal text-muted-foreground">{formatLocalDate(day.date)}</span></Link>
-          {sessions.length ? sessions.map(row => <article key={row.sessionId} className="space-y-1 rounded-md bg-surface-muted p-2 text-xs">
+          <Link href={`/appointments/department/sessions?date=${day.date}`} className="block rounded-md px-1 py-1 text-sm font-semibold hover:text-primary"><L10nValue>{day.label}</L10nValue><span className="block text-xs font-normal text-muted-foreground"><L10nValue>{formatLocalDate(day.date)}</L10nValue></span></Link>
+          <L10nValue>{sessions.length ? sessions.map(row => <article key={row.sessionId} className="space-y-1 rounded-md bg-surface-muted p-2 text-xs">
             <p className="font-semibold">{row.startTime}–{row.endTime}</p>
             <p><ReferenceText kind="doctor" value={row.doctorId} fallback="Bác sĩ" /></p>
             <p className="text-muted-foreground"><ReferenceText kind="room" value={row.roomId} fallback="Phòng" /></p>
-            <p>{row.confirmedCount}/{row.capacity} đã xác nhận · {sessionStatusLabels[row.status]}</p>
-          </article>) : <p className="px-1 text-xs text-muted-foreground">Chưa có buổi</p>}
+            <p>{row.confirmedCount}/{row.capacity}<L10n>{" đã xác nhận · "}</L10n><L10nValue>{sessionStatusLabels[row.status]}</L10nValue></p>
+          </article>) : <p className="px-1 text-xs text-muted-foreground"><L10n>{"Chưa có buổi"}</L10n></p>}</L10nValue>
         </div>;
-      })}
-    </div></div>}
+      })}</L10nValue>
+    </div></div>}</L10nValue>
   </section>;
 }

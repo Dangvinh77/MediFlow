@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
@@ -59,6 +61,7 @@ export function EditMedicalRecordForm({ recordId }: EditMedicalRecordFormProps) 
 }
 
 function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) {
+  const { localize } = useLocale();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const active = useRef(true);
@@ -184,30 +187,30 @@ function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) 
     }
   }
 
-  if (loadState.status === "loading") return <AsyncState kind="loading" message="Đang tải hồ sơ để chỉnh sửa…" />;
+  if (loadState.status === "loading") return <AsyncState kind="loading" message={localize("Đang tải hồ sơ để chỉnh sửa…")} />;
   if (loadState.status === "not-found") {
-    return <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6"><h2 className="text-lg font-semibold">Không tìm thấy hồ sơ khám</h2><Link href="/records" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại tra cứu</Link></section>;
+    return <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6"><h2 className="text-lg font-semibold"><L10n>{"Không tìm thấy hồ sơ khám"}</L10n></h2><Link href="/records" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Quay lại tra cứu"}</L10n></Link></section>;
   }
   if (loadState.status === "forbidden") return <div className="mt-6"><MedicalRecordMutationError {...loadState.error} /></div>;
   if (loadState.status === "error") {
     return <div className="mt-6"><MedicalRecordMutationError {...loadState.error} onRetry={() => { setLoadState({ status: "loading" }); setRetryToken((value) => value + 1); }} /></div>;
   }
   if (loadState.record.status !== "OPEN") {
-    return <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6"><h2 className="text-lg font-semibold">Hồ sơ đã hoàn tất</h2><p className="mt-2 text-sm text-muted-foreground">Hồ sơ hoàn tất là bất biến và không thể sửa triệu chứng.</p><Link href={`/records/${recordId}`} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Xem chi tiết</Link></section>;
+    return <section role="status" className="mt-6 rounded-xl border border-border bg-surface p-6"><h2 className="text-lg font-semibold"><L10n>{"Hồ sơ đã hoàn tất"}</L10n></h2><p className="mt-2 text-sm text-muted-foreground"><L10n>{"Hồ sơ hoàn tất là bất biến và không thể sửa triệu chứng."}</L10n></p><Link href={`/records/${recordId}`} className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Xem chi tiết"}</L10n></Link></section>;
   }
 
   return (
     <form ref={formRef} onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {requestError ? <MedicalRecordMutationError {...requestError} onRetry={requestError.status === null || requestError.status >= 500 ? () => formRef.current?.requestSubmit() : undefined} /> : null}
+      <L10nValue>{requestError ? <MedicalRecordMutationError {...requestError} onRetry={requestError.status === null || requestError.status >= 500 ? () => formRef.current?.requestSubmit() : undefined} /> : null}</L10nValue>
       <dl className="grid gap-4 rounded-lg bg-surface-muted p-4 text-sm sm:grid-cols-3">
-        <Identifier label="Bệnh nhân" value={loadState.record.patientId} />
-        <Identifier label="Bác sĩ" value={loadState.record.doctorId} />
+        <Identifier label={localize("Bệnh nhân")} value={loadState.record.patientId} />
+        <Identifier label={localize("Bác sĩ")} value={loadState.record.doctorId} />
         <Identifier label="Khoa" value={loadState.record.departmentId} />
       </dl>
       <div className="flex flex-col gap-1">
-        <label htmlFor="symptoms" className="text-sm font-medium">Triệu chứng</label>
+        <label htmlFor="symptoms" className="text-sm font-medium"><L10n>{"Triệu chứng"}</L10n></label>
         <textarea id="symptoms" value={symptoms} maxLength={4000} rows={6} disabled={submitting || requestError?.uncertain === true} aria-invalid={errors.symptoms ? true : undefined} aria-describedby={errors.symptoms ? "symptoms-error" : undefined} onChange={(event) => { setSymptoms(event.target.value); setErrors({}); setRequestError(null); }} className={`${inputClass(Boolean(errors.symptoms))} resize-y`} />
-        {errors.symptoms ? <p id="symptoms-error" className="text-xs text-danger">{errors.symptoms}</p> : <p className="text-xs text-muted-foreground">{symptoms.length}/4000 ký tự</p>}
+        <L10nValue>{errors.symptoms ? <p id="symptoms-error" className="text-xs text-danger">{errors.symptoms}</p> : <p className="text-xs text-muted-foreground">{symptoms.length}<L10n>{"/4000 ký tự"}</L10n></p>}</L10nValue>
       </div>
       <ClinicalContentFields
         value={content}
@@ -215,13 +218,13 @@ function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) 
         onChange={(field, next) => { setContent((current) => ({ ...current, [field]: next })); setErrors({}); setRequestError(null); }}
       />
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={submitting || (requestError?.uncertain !== true && Boolean(Object.keys(errors).length))} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Đang lưu…" : requestError?.uncertain ? "Gửi lại cùng nội dung" : "Lưu thay đổi"}</button>
-        <Link href={`/records/${recordId}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Hủy</Link>
+        <button type="submit" disabled={submitting || (requestError?.uncertain !== true && Boolean(Object.keys(errors).length))} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><L10nValue>{submitting ? "Đang lưu…" : requestError?.uncertain ? "Gửi lại cùng nội dung" : "Lưu thay đổi"}</L10nValue></button>
+        <Link href={`/records/${recordId}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Hủy"}</L10n></Link>
       </div>
     </form>
   );
 }
 
 function Identifier({ label, value }: { label: string; value: string }) {
-  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-all text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : undefined} value={value} fallback={label} /></dd></div>;
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className="mt-1 break-all text-sm"><ReferenceText kind={label === "Bệnh nhân" ? "patient" : label === "Bác sĩ" ? "doctor" : label.startsWith("Khoa") ? "department" : undefined} value={value} fallback={label} /></dd></div>;
 }

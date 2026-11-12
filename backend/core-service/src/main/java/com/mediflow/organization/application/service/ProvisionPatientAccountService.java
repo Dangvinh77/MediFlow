@@ -69,6 +69,10 @@ public class ProvisionPatientAccountService {
             // If a correction wins first, issuance sees the committed email; if issuance wins,
             // the correction waits and then observes the newly linked account.
             email = patients.email(patientId);
+            if (!patients.emailAvailable(patientId, email)) {
+                throw new DuplicateResourceException("PATIENT_EMAIL_DUPLICATE",
+                        "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+            }
         }
         var creation = creator.issueWithIdempotency(actor, key, email, null, patientId, Role.PATIENT, false);
         MailDeliveryDTO delivery = null;

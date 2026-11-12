@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -82,7 +84,7 @@ class _RecordDocumentsSectionState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          LText(
             'Tài liệu của lượt khám',
             style: Theme.of(context).textTheme.titleMedium,
           ),
@@ -93,7 +95,7 @@ class _RecordDocumentsSectionState
             _failure()
           else if (_documents case final documents?)
             if (documents.isEmpty)
-              const Text('Chưa có tài liệu của lượt khám.')
+              const LText('Chưa có tài liệu của lượt khám.')
             else
               for (final document in documents)
                 ListTile(
@@ -103,30 +105,32 @@ class _RecordDocumentsSectionState
                         ? Icons.science_outlined
                         : Icons.medication_outlined,
                   ),
-                  title: Text(document.summary),
+                  title: LText(document.summary),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(document.typeLabel),
-                      Text(formatClinicalInstant(document.attachedAt)),
+                      LText(document.typeLabel),
+                      LText(formatClinicalInstant(document.attachedAt)),
                       if (document.resultVersion != null)
-                        Text('Phiên bản hiện tại: ${document.resultVersion}'),
+                        LText('Phiên bản hiện tại: ${document.resultVersion}'),
                       if (document.amendmentReason?.isNotEmpty == true)
-                        Text('Lý do đính chính: ${document.amendmentReason}'),
+                        LText('Lý do đính chính: ${document.amendmentReason}'),
                       for (final revision in document.previousRevisions) ...[
-                        const Text('Đã đính chính'),
-                        Text(
+                        const LText('Đã đính chính'),
+                        LText(
                           '${revision.label ?? 'Phiên bản'}'
                           '${revision.resultVersion == null ? '' : ' · phiên bản ${revision.resultVersion}'}',
                         ),
-                        Text(revision.summary),
+                        LText(revision.summary),
                         if (revision.amendmentReason?.isNotEmpty == true)
-                          Text('Lý do đính chính: ${revision.amendmentReason}'),
+                          LText(
+                            'Lý do đính chính: ${revision.amendmentReason}',
+                          ),
                         if (revision.sourceAt?.isNotEmpty == true)
-                          Text(formatClinicalInstant(revision.sourceAt!)),
+                          LText(formatClinicalInstant(revision.sourceAt!)),
                       ],
                       if (document.afterConclusion)
-                        const Text('Bổ sung sau khi kết thúc'),
+                        const LText('Bổ sung sau khi kết thúc'),
                     ],
                   ),
                   trailing: widget.onOpenSource == null
@@ -145,20 +149,20 @@ class _RecordDocumentsSectionState
     if (_error is ApiFailure &&
         (_error as ApiFailure).status == 404 &&
         (_error as ApiFailure).code == 'LAB_REVIEW_DISABLED') {
-      return const Text('Chức năng chưa được bật');
+      return const LText('Chức năng chưa được bật');
     }
     if (_error is ApiFailure && (_error as ApiFailure).status == 403) {
-      return const Text('Bạn không có quyền xem tài liệu của hồ sơ này.');
+      return const LText('Bạn không có quyền xem tài liệu của hồ sơ này.');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Không tải được tài liệu của lượt khám.'),
+        const LText('Không tải được tài liệu của lượt khám.'),
         TextButton.icon(
           key: const Key('record-documents-retry'),
           onPressed: _load,
           icon: const Icon(Icons.refresh),
-          label: const Text('Thử lại'),
+          label: const LText('Thử lại'),
         ),
       ],
     );

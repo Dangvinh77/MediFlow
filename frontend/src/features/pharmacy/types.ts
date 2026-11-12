@@ -99,6 +99,8 @@ export interface PrescriptionLineDTO {
 
 export interface PrescriptionDTO {
   prescriptionId: string;
+  /** Absent on older deployments; editing requires an authoritative revision. */
+  revision?: number;
   recordId: string | null;
   patientId: string;
   doctorId: string;
@@ -118,6 +120,11 @@ export interface PrescriptionDTO {
 
 export interface CancelPrescriptionRequest {
   reason: string;
+}
+
+export interface UpdatePrescriptionRequest {
+  expectedRevision: number;
+  lines: PrescriptionLineRequest[];
 }
 
 export interface CancelPrescriptionResult {

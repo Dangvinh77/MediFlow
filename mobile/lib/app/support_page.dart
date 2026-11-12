@@ -1,3 +1,5 @@
+import '../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,13 +19,13 @@ class SupportPage extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Báo cáo và thông báo cho công việc hằng ngày.'),
+        const LText('Báo cáo và thông báo cho công việc hằng ngày.'),
         const SizedBox(height: 16),
         if (available.isEmpty)
           const Card(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
+              child: LText(
                 'Tài khoản này chưa có quyền xem Báo cáo hoặc Thông báo.',
               ),
             ),

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { mustChangePassword } from "@/lib/session";
 import { refreshCapabilities, useCapabilities } from "@/lib/capabilities";
@@ -21,6 +23,7 @@ const getServerSnapshot = () => null;
 const getServerTokenSnapshot = () => undefined;
 
 export default function DashboardShell({ children, schedulingEnabled, clinicIntakeEnabled = false }: { children: ReactNode; schedulingEnabled: boolean; clinicIntakeEnabled?: boolean }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const passwordChangeRequired = useSyncExternalStore(subscribeToAuthChanges, mustChangePassword, () => false);
@@ -65,15 +68,15 @@ export default function DashboardShell({ children, schedulingEnabled, clinicInta
   }
 
   if (!authorized) {
-    return <FullScreenLoader label="Đang kiểm tra đăng nhập…" />;
+    return <FullScreenLoader label={localize("Đang kiểm tra đăng nhập…")} />;
   }
 
   if (passwordChangeRequired) {
     return <main className="mx-auto min-h-screen max-w-2xl px-5 py-10 sm:px-8">
-      <div className="mb-8 flex items-center justify-between gap-4"><span className="font-semibold">MediFlow</span><button type="button" onClick={onLogout} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Đăng xuất</button></div>
-      <h1 className="text-2xl font-semibold">Đổi mật khẩu để tiếp tục</h1>
-      <p className="mt-3 max-w-prose text-sm text-muted-foreground">Tài khoản đang sử dụng mật khẩu ban đầu. Bạn cần đặt mật khẩu riêng trước khi sử dụng hệ thống. Nếu thoát lúc này, lần đăng nhập tiếp theo vẫn cần đổi mật khẩu.</p>
-      {pathname === "/organization/security" ? children : <AsyncState kind="loading" message="Đang mở trang đổi mật khẩu…" />}
+      <div className="mb-8 flex items-center justify-between gap-4"><span className="font-semibold">MediFlow</span><button type="button" onClick={onLogout} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Đăng xuất"}</L10n></button></div>
+      <h1 className="text-2xl font-semibold"><L10n>{"Đổi mật khẩu để tiếp tục"}</L10n></h1>
+      <p className="mt-3 max-w-prose text-sm text-muted-foreground"><L10n>{"Tài khoản đang sử dụng mật khẩu ban đầu. Bạn cần đặt mật khẩu riêng trước khi sử dụng hệ thống. Nếu thoát lúc này, lần đăng nhập tiếp theo vẫn cần đổi mật khẩu."}</L10n></p>
+      <L10nValue>{pathname === "/organization/security" ? children : <AsyncState kind="loading" message={localize("Đang mở trang đổi mật khẩu…")} />}</L10nValue>
     </main>;
   }
 
@@ -94,10 +97,10 @@ export default function DashboardShell({ children, schedulingEnabled, clinicInta
           onOpenNavigation={() => setNavigationOpen(true)}
           workspaceHref={schedulingEnabled && canManage ? management ? "/appointments/my-calendar" : "/appointments/department" : undefined}
           onWorkspaceSwitch={event => { if (!management && professionalDraft.current && !window.confirm("Bạn có dữ liệu chưa lưu. Chuyển sang Quản lý khoa và bỏ các thay đổi?")) event.preventDefault(); }}
-          workspaceTitle={management && canManage ? `Trưởng khoa · ${capabilities.data?.managementDepartments.map(item => item.departmentName).join(", ")}` : undefined}
-          workspaceLabel={management ? "Về Khám bệnh" : "Sang Quản lý khoa"}
+          workspaceTitle={localize(management && canManage ? `Trưởng khoa · ${capabilities.data?.managementDepartments.map(item => item.departmentName).join(", ")}` : undefined)}
+          workspaceLabel={localize(management ? "Về Khám bệnh" : "Sang Quản lý khoa")}
         />
-        <Fragment key={`${token}:${role}:${management ? capabilities.data?.managementDepartments.map(item => `${item.appointmentId}:${item.revision}`).join() ?? "none" : "professional"}`}><DashboardReferences role={role}>{children}</DashboardReferences></Fragment>
+        <Fragment key={`${token}:${role}:${management ? capabilities.data?.managementDepartments.map(item => `${item.appointmentId}:${item.revision}`).join() ?? "none" : "professional"}`}><DashboardReferences role={role}><L10nValue>{children}</L10nValue></DashboardReferences></Fragment>
       </div>
     </div>
   );

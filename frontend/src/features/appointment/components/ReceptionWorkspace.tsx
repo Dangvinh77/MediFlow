@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -49,6 +51,7 @@ function uncertain(cause: unknown) {
 }
 
 export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initialPatientId = "" }: { enabled: boolean; clinicIntakeEnabled?: boolean; initialPatientId?: string }) {
+  const { localize } = useLocale();
   const [departmentId, setDepartmentId] = useState("");
   const [fromDate, setFromDate] = useState(vietnamToday);
   const [toDate, setToDate] = useState(vietnamToday);
@@ -431,7 +434,7 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
     }, 0);
   }
 
-  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Tính năng tiếp nhận theo lịch khám V2 chưa được mở.</p>;
+  if (!enabled) return <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground"><L10n>{"Tính năng tiếp nhận theo lịch khám V2 chưa được mở."}</L10n></p>;
 
   const submitBody = createError?.uncertain && lastCreateBody ? lastCreateBody : null;
   const selectedRecommendation = selectedFollowUpSource?.recommendation && useFollowUpRecommendation
@@ -444,68 +447,67 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
       || selectedSession!.sessionDate > selectedRecommendation!.recommendedThrough);
 
   return <div className="space-y-6">
-    <section aria-label="Bệnh nhân đăng ký khám" className="space-y-3 rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">1. Bệnh nhân</h2>
-      <ReferenceInput ref={patientField} kind="patient" value={patientId} onValueChange={changePatient} aria-label="Bệnh nhân" disabled={creating || Boolean(createError?.uncertain) || Boolean(createdRegistration)} />
-      {patientId ? <p className="text-sm"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p> : null}
-      <nav aria-label="Hồ sơ bệnh nhân tại quầy" className="flex flex-wrap items-center gap-2 text-sm">
-        {patientId ? <Link href={`/patients/${encodeURIComponent(patientId)}`} className={linkButton}>Xem hồ sơ bệnh nhân</Link> : null}
-        <Link href="/patients/new" className={linkButton}>Tạo hồ sơ bệnh nhân</Link>
-        <Link href="/patients" className={linkButton}>Tìm hồ sơ bệnh nhân</Link>
+    <section aria-label={localize("Bệnh nhân đăng ký khám")} className="space-y-3 rounded-xl border border-border bg-surface p-5">
+      <h2 className="text-lg font-semibold"><L10n>{"1. Bệnh nhân"}</L10n></h2>
+      <ReferenceInput ref={patientField} kind="patient" value={patientId} onValueChange={changePatient} aria-label={localize("Bệnh nhân")} disabled={creating || Boolean(createError?.uncertain) || Boolean(createdRegistration)} />
+      <L10nValue>{patientId ? <p className="text-sm"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p> : null}</L10nValue>
+      <nav aria-label={localize("Hồ sơ bệnh nhân tại quầy")} className="flex flex-wrap items-center gap-2 text-sm">
+        <L10nValue>{patientId ? <Link href={`/patients/${encodeURIComponent(patientId)}`} className={linkButton}><L10n>{"Xem hồ sơ bệnh nhân"}</L10n></Link> : null}</L10nValue>
+        <Link href="/patients/new" className={linkButton}><L10n>{"Tạo hồ sơ bệnh nhân"}</L10n></Link>
+        <Link href="/patients" className={linkButton}><L10n>{"Tìm hồ sơ bệnh nhân"}</L10n></Link>
       </nav>
     </section>
     <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold">2. Chọn buổi khám</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Mặc định xem lịch hôm nay. Chọn khoa, khoảng ngày rồi tải các buổi còn chỗ.</p>
-      <form noValidate aria-label="Lọc buổi khám" className="mt-4 rounded-lg border border-border bg-surface-muted p-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
+      <h2 className="text-lg font-semibold"><L10n>{"2. Chọn buổi khám"}</L10n></h2>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Mặc định xem lịch hôm nay. Chọn khoa, khoảng ngày rồi tải các buổi còn chỗ."}</L10n></p>
+      <form noValidate aria-label={localize("Lọc buổi khám")} className="mt-4 rounded-lg border border-border bg-surface-muted p-4" onSubmit={event => { event.preventDefault(); void loadSessions(); }}>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
           <div className="min-w-0 text-sm">
             <span className="mb-1 block font-medium">Khoa</span>
             <ReferenceInput kind="department" value={departmentId} onValueChange={onDepartmentChange} aria-label="Khoa" disabled={creating || Boolean(createError?.uncertain)} />
           </div>
           <div>
-            <ScheduleDateInput label="Từ ngày" id="reception-from-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className={dateInputClass} />
-            {dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.fromDate}</span> : null}
+            <ScheduleDateInput label={localize("Từ ngày")} id="reception-from-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.fromDate)} aria-describedby={dateErrors.fromDate ? "reception-from-error" : undefined} value={fromDate} onChange={event => setFromDate(event.target.value)} className={dateInputClass} />
+            <L10nValue>{dateErrors.fromDate ? <span id="reception-from-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.fromDate}</span> : null}</L10nValue>
           </div>
           <div>
-            <ScheduleDateInput label="Đến ngày" id="reception-to-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className={dateInputClass} />
-            {dateErrors.toDate ? <span id="reception-to-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.toDate}</span> : null}
+            <ScheduleDateInput label={localize("Đến ngày")} id="reception-to-date" required disabled={creating || Boolean(createError?.uncertain)} aria-invalid={Boolean(dateErrors.toDate)} aria-describedby={dateErrors.toDate ? "reception-to-error" : undefined} value={toDate} onChange={event => setToDate(event.target.value)} className={dateInputClass} />
+            <L10nValue>{dateErrors.toDate ? <span id="reception-to-error" role="alert" className="mt-1 block text-sm text-danger">{dateErrors.toDate}</span> : null}</L10nValue>
           </div>
-          <div className="flex items-start md:pt-6"><Button type="submit" variant="primary" className="w-full xl:w-auto" loading={loading} disabled={!departmentId || creating || Boolean(createError?.uncertain)}>Tải buổi khám</Button></div>
+          <div className="flex items-start md:pt-6"><Button type="submit" variant="primary" className="w-full xl:w-auto" loading={loading} disabled={!departmentId || creating || Boolean(createError?.uncertain)}><L10n>{"Tải buổi khám"}</L10n></Button></div>
         </div>
-        {fromDate !== vietnamToday() || toDate !== vietnamToday() ? <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
-          <span className="text-muted-foreground">Đang xem {formatLocalDate(fromDate)} – {formatLocalDate(toDate)}.</span>
+        <L10nValue>{fromDate !== vietnamToday() || toDate !== vietnamToday() ? <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
+          <span className="text-muted-foreground"><L10n>{"Đang xem "}</L10n><L10nValue>{formatLocalDate(fromDate)}</L10nValue> – <L10nValue>{formatLocalDate(toDate)}</L10nValue>.</span>
           <Button type="button" disabled={!departmentId || creating || loading || Boolean(createError?.uncertain)} onClick={() => {
             const today = vietnamToday(); setFromDate(today); setToDate(today);
             void loadSessions(0, { fromDate: today, toDate: today });
-          }}>Tiếp nhận hôm nay</Button>
-        </div> : null}
+          }}><L10n>{"Tiếp nhận hôm nay"}</L10n></Button>
+        </div> : null}</L10nValue>
       </form>
-      {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}
-      {!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch.</p> : null}
-      {!loading && !loadError && sessionsLoaded && sessions.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground">Chưa có buổi khám trong bộ lọc.</p> : null}
-      {sessions.length > 0 ? <><ul className="mt-4 grid gap-3 lg:grid-cols-2">
-        {sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4 text-sm">
-          <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{formatLocalDate(session.sessionDate)} · {session.startTime}–{session.endTime}</h3><span>{sessionStatusLabels[session.status]}</span></div>
+      <L10nValue>{loadError ? <AsyncState kind="error" message={localize(loadError.message)} correlationId={loadError.correlationId} onRetry={() => void loadSessions()} /> : null}</L10nValue>
+      <L10nValue>{!loading && !loadError && !sessionsLoaded ? <p role="status" className="mt-4 text-sm text-muted-foreground"><L10n>{"Chọn khoa và khoảng ngày, sau đó bấm Tải buổi khám để xem lịch."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{!loading && !loadError && sessionsLoaded && sessions.length === 0 ? <p role="status" className="mt-4 text-sm text-muted-foreground"><L10n>{"Chưa có buổi khám trong bộ lọc."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{sessions.length > 0 ? <><ul className="mt-4 grid gap-3 lg:grid-cols-2">
+        <L10nValue>{sessions.map(session => <li key={session.sessionId} className="space-y-3 rounded-lg border border-border p-4 text-sm">
+          <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold"><L10nValue>{formatLocalDate(session.sessionDate)}</L10nValue> · {session.startTime}–{session.endTime}</h3><span><L10nValue>{sessionStatusLabels[session.status]}</L10nValue></span></div>
           <p><ReferenceText kind="doctor" value={session.doctorId} fallback="Bác sĩ" /></p>
           <p><ReferenceText kind="department" value={session.departmentId} fallback="Khoa" /> · <ReferenceText kind="room" value={session.roomId} fallback="Phòng khám" /></p>
-          <div className="flex flex-wrap items-center justify-between gap-3"><span>{needsRefresh ? "Số chỗ đang chờ cập nhật" : `Còn ${session.availableCount} / ${session.capacity} chỗ`}{clinicIntakeEnabled && !needsRefresh && sessionAvailability(session, null) !== "AVAILABLE" ? <strong className="ml-2">{sessionAvailabilityLabels[sessionAvailability(session, null)]}</strong> : null}</span><Button type="button" disabled={creating || needsRefresh || Boolean(createError?.uncertain) || sessionAvailability(session, null) !== "AVAILABLE"} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}>Chọn buổi</Button></div>
-        </li>)}
-      </ul>{sessionPages > 1 ? <nav aria-label="Trang buổi khám" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}>Trang trước</Button><span>Trang {sessionPage + 1} / {sessionPages}</span><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</> : null}
+          <div className="flex flex-wrap items-center justify-between gap-3"><span><L10nValue>{needsRefresh ? "Số chỗ đang chờ cập nhật" : `Còn ${session.availableCount} / ${session.capacity} chỗ`}</L10nValue><L10nValue>{clinicIntakeEnabled && !needsRefresh && sessionAvailability(session, null) !== "AVAILABLE" ? <strong className="ml-2"><L10nValue>{sessionAvailabilityLabels[sessionAvailability(session, null)]}</L10nValue></strong> : null}</L10nValue></span><Button type="button" disabled={creating || needsRefresh || Boolean(createError?.uncertain) || sessionAvailability(session, null) !== "AVAILABLE"} onClick={() => { setRegistrationPage(0); setRegistrationPages(0); void loadRegistrations(session); }}><L10n>{"Chọn buổi"}</L10n></Button></div>
+        </li>)}</L10nValue>
+      </ul><L10nValue>{sessionPages > 1 ? <nav aria-label={localize("Trang buổi khám")} className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage === 0} onClick={() => void loadSessions(sessionPage - 1)}><L10n>{"Trang trước"}</L10n></Button><span>Trang <L10nValue>{sessionPage + 1}</L10nValue> / <L10nValue>{sessionPages}</L10nValue></span><Button type="button" disabled={creating || Boolean(createError?.uncertain) || loading || sessionPage + 1 >= sessionPages} onClick={() => void loadSessions(sessionPage + 1)}>Trang sau</Button></nav> : null}</L10nValue></> : null}</L10nValue>
     </section>
 
-    {selectedSession && patientId ? <section aria-label="Ngữ cảnh tiếp nhận" className="sticky top-18 z-20 rounded-xl border border-border bg-surface p-3 text-sm shadow-sm"><p className="font-semibold"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground">{formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}–{selectedSession.endTime} · <ReferenceText kind="department" value={selectedSession.departmentId} fallback="Khoa" /></p></section> : null}
+    <L10nValue>{selectedSession && patientId ? <section aria-label={localize("Ngữ cảnh tiếp nhận")} className="sticky top-18 z-20 rounded-xl border border-border bg-surface p-3 text-sm shadow-sm"><p className="font-semibold"><ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /></p><p className="mt-1 text-muted-foreground"><L10nValue>{formatLocalDate(selectedSession.sessionDate)}</L10nValue> · {selectedSession.startTime}–{selectedSession.endTime} · <ReferenceText kind="department" value={selectedSession.departmentId} fallback="Khoa" /></p></section> : null}</L10nValue>
 
-    {selectedSession ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
+    <L10nValue>{selectedSession ? <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Tiếp nhận vào buổi {formatLocalDate(selectedSession.sessionDate)} · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground">{needsRefresh ? "Đang cập nhật số chỗ." : `Còn ${selectedSession.availableCount} chỗ.`} Tiếp nhận tại quầy ghi nhận bệnh nhân có mặt. Phiếu được xác nhận sau khi hoàn tất thanh toán.</p></div>
-        <Button type="button" variant="secondary" disabled={creating || needsRefresh || Boolean(createError?.uncertain)} loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}>Tải phiếu trong buổi</Button>
+        <div><h2 className="text-lg font-semibold"><L10n>{"Tiếp nhận vào buổi "}</L10n><L10nValue>{formatLocalDate(selectedSession.sessionDate)}</L10nValue> · {selectedSession.startTime}</h2><p className="mt-1 text-sm text-muted-foreground"><L10nValue>{needsRefresh ? "Đang cập nhật số chỗ." : `Còn ${selectedSession.availableCount} chỗ.`}</L10nValue><L10n>{" Tiếp nhận tại quầy ghi nhận bệnh nhân có mặt. Phiếu được xác nhận sau khi hoàn tất thanh toán."}</L10n></p></div>
+        <Button type="button" variant="secondary" disabled={creating || needsRefresh || Boolean(createError?.uncertain)} loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}><L10n>{"Tải phiếu trong buổi"}</L10n></Button>
       </div>
 
       <form className="border-t border-border pt-4" onSubmit={event => { event.preventDefault(); if (submitBody) void submitRegistration(submitBody); else register(); }}>
         <fieldset disabled={Boolean(createdRegistration)} className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1 text-sm font-medium" htmlFor="reception-visit-type">Loại lượt khám
-          <select id="reception-visit-type" value={visitType} onChange={event => {
+        <label className="space-y-1 text-sm font-medium" htmlFor="reception-visit-type"><L10n>{"Loại lượt khám"}</L10n><select id="reception-visit-type" value={visitType} onChange={event => {
             followUpSourceGeneration.current++;
             setCreatedRegistration(null);
             setVisitType(event.target.value as "NEW_VISIT" | "FOLLOW_UP"); setCreateError(null);
@@ -513,114 +515,108 @@ export function ReceptionWorkspace({ enabled, clinicIntakeEnabled = false, initi
             setUseFollowUpRecommendation(true); setReason(""); setReplacementReason(""); setPatientAgreedToDoctorReplacement(false);
             resetReturnVisit();
           }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
-            <option value="NEW_VISIT">Khám đợt mới</option><option value="FOLLOW_UP">Tái khám từ lượt đã hoàn tất</option>
+            <option value="NEW_VISIT"><L10n>{"Khám đợt mới"}</L10n></option><option value="FOLLOW_UP"><L10n>{"Tái khám từ lượt đã hoàn tất"}</L10n></option>
           </select>
         </label>
-        <label className="space-y-1 text-sm font-medium" htmlFor="reception-mode">Hình thức tiếp nhận
-          <select id="reception-mode" value={receptionMode} onChange={event => setReceptionMode(event.target.value as "AT_COUNTER" | "PREBOOKED")} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
-            <option value="AT_COUNTER">Đang có mặt tại quầy</option><option value="PREBOOKED">Đăng ký trước, sẽ đến sau</option>
+        <label className="space-y-1 text-sm font-medium" htmlFor="reception-mode"><L10n>{"Hình thức tiếp nhận"}</L10n><select id="reception-mode" value={receptionMode} onChange={event => setReceptionMode(event.target.value as "AT_COUNTER" | "PREBOOKED")} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3">
+            <option value="AT_COUNTER"><L10n>{"Đang có mặt tại quầy"}</L10n></option><option value="PREBOOKED"><L10n>{"Đăng ký trước, sẽ đến sau"}</L10n></option>
           </select>
         </label>
-        {visitType === "FOLLOW_UP" ? <section className="space-y-3 rounded-lg border border-border p-4 sm:col-span-2">
+        <L10nValue>{visitType === "FOLLOW_UP" ? <section className="space-y-3 rounded-lg border border-border p-4 sm:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 className="font-semibold">Lượt khám trước</h3><p className="text-sm text-muted-foreground">Chỉ chọn lượt khám theo lịch đã hoàn tất của cùng bệnh nhân và khoa.</p></div>
-            <Button type="button" loading={followUpSourceLoading} disabled={!patientId.trim() || creating || Boolean(createError?.uncertain)} onClick={() => void loadFollowUpSources(0)}>Tìm lượt khám trước</Button>
+            <div><h3 className="font-semibold"><L10n>{"Lượt khám trước"}</L10n></h3><p className="text-sm text-muted-foreground"><L10n>{"Chỉ chọn lượt khám theo lịch đã hoàn tất của cùng bệnh nhân và khoa."}</L10n></p></div>
+            <Button type="button" loading={followUpSourceLoading} disabled={!patientId.trim() || creating || Boolean(createError?.uncertain)} onClick={() => void loadFollowUpSources(0)}><L10n>{"Tìm lượt khám trước"}</L10n></Button>
           </div>
-          {followUpSourceError ? <AsyncState kind="error" message={followUpSourceError.message} correlationId={followUpSourceError.correlationId} onRetry={() => void loadFollowUpSources(followUpSourcePage)} /> : null}
-          {followUpSources ? followUpSources.length ? <ul className="divide-y divide-border rounded-lg border border-border">{followUpSources.map(source => {
+          <L10nValue>{followUpSourceError ? <AsyncState kind="error" message={localize(followUpSourceError.message)} correlationId={followUpSourceError.correlationId} onRetry={() => void loadFollowUpSources(followUpSourcePage)} /> : null}</L10nValue>
+          <L10nValue>{followUpSources ? followUpSources.length ? <ul className="divide-y divide-border rounded-lg border border-border"><L10nValue>{followUpSources.map(source => {
             const sameDepartment = source.departmentId === selectedSession.departmentId;
             const selected = selectedFollowUpSource?.registrationId === source.registrationId;
             return <li key={source.registrationId} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
-              <div className="min-w-64 flex-1"><p className="font-medium">Lượt khám hoàn tất {formatInstant(source.completedAt)}</p><p className="mt-1 text-muted-foreground">Hoàn tất {formatInstant(source.completedAt)} · Khoa <ReferenceText kind="department" value={source.departmentId} fallback="Khoa" /> · Bác sĩ <ReferenceText kind="doctor" value={source.doctorId} fallback="Bác sĩ" /></p><p className="mt-1 text-muted-foreground">{source.recommendation ? `Có đề xuất: ${formatLocalDate(source.recommendation.recommendedFrom)} – ${formatLocalDate(source.recommendation.recommendedThrough)}` : "Không có đề xuất bác sĩ; cần ghi lý do tự tái khám."}</p></div>
+              <div className="min-w-64 flex-1"><p className="font-medium"><L10n>{"Lượt khám hoàn tất "}</L10n><L10nValue>{formatInstant(source.completedAt)}</L10nValue></p><p className="mt-1 text-muted-foreground"><L10n>{"Hoàn tất "}</L10n><L10nValue>{formatInstant(source.completedAt)}</L10nValue> · Khoa <ReferenceText kind="department" value={source.departmentId} fallback="Khoa" /><L10n>{" · Bác sĩ "}</L10n><ReferenceText kind="doctor" value={source.doctorId} fallback="Bác sĩ" /></p><p className="mt-1 text-muted-foreground"><L10nValue>{source.recommendation ? `Có đề xuất: ${formatLocalDate(source.recommendation.recommendedFrom)} – ${formatLocalDate(source.recommendation.recommendedThrough)}` : "Không có đề xuất bác sĩ; cần ghi lý do tự tái khám."}</L10nValue></p></div>
               <Button type="button" aria-pressed={selected} disabled={!sameDepartment || creating || Boolean(createError?.uncertain)} onClick={() => {
                 setSelectedFollowUpSource(source); setUseFollowUpRecommendation(Boolean(source.recommendation)); setCreateError(null);
                 setPatientAgreedToDoctorReplacement(false); setReplacementReason("");
-              }}>{sameDepartment ? selected ? "Đã chọn" : "Chọn lượt khám trước" : "Khác khoa"}</Button>
+              }}><L10nValue>{sameDepartment ? selected ? "Đã chọn" : "Chọn lượt khám trước" : "Khác khoa"}</L10nValue></Button>
             </li>;
-          })}</ul> : <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground">Không có lượt khám theo lịch đã hoàn tất trong trang này.</p> : null}
-          {followUpSourcePages > 1 ? <nav aria-label="Trang lượt khám trước" className="flex items-center justify-between text-sm"><Button type="button" disabled={followUpSourceLoading || followUpSourcePage === 0} onClick={() => void loadFollowUpSources(followUpSourcePage - 1)}>Trang trước</Button><span>Trang {followUpSourcePage + 1} / {followUpSourcePages}</span><Button type="button" disabled={followUpSourceLoading || followUpSourcePage + 1 >= followUpSourcePages} onClick={() => void loadFollowUpSources(followUpSourcePage + 1)}>Trang sau</Button></nav> : null}
-          {selectedFollowUpSource ? <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-            <p role="status">Đã chọn lượt nguồn hoàn tất {formatInstant(selectedFollowUpSource.completedAt)} · <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /> · <ReferenceText kind="department" value={selectedFollowUpSource.departmentId} fallback="Khoa" /> · <ReferenceText kind="doctor" value={selectedFollowUpSource.doctorId} fallback="Bác sĩ lượt trước" />. Chưa đăng ký tái khám cho đến khi gửi và được xác nhận.</p>
-            {selectedFollowUpSource.recommendation ? <>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={useFollowUpRecommendation} onChange={event => { setUseFollowUpRecommendation(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} />Dùng đề xuất của bác sĩ</label>
-              {selectedRecommendation ? <><p>Thời gian khuyến nghị: {formatLocalDate(selectedRecommendation.recommendedFrom)} – {formatLocalDate(selectedRecommendation.recommendedThrough)}</p><p className="whitespace-pre-wrap">{selectedRecommendation.reason}</p>{selectedRecommendation.preparationInstructions ? <p className="whitespace-pre-wrap text-muted-foreground">Chuẩn bị: {selectedRecommendation.preparationInstructions}</p> : null}</> : null}
-            </> : <p>Không có đề xuất bác sĩ; cần ghi lý do tái khám để đăng ký tự quay lại.</p>}
-            {recommendationOutOfWindow ? <p role="status" className="rounded-md border border-warning/40 bg-warning/10 p-3 text-warning">Ngày buổi khám nằm ngoài thời gian bác sĩ khuyến nghị. Có thể tiếp tục nếu bệnh nhân muốn đăng ký.</p> : null}
-            {doctorReplacement ? <div className="space-y-2 border-t border-border pt-3">
-              <label className="block space-y-1 font-medium" htmlFor="follow-up-replacement-reason">Lý do chọn bác sĩ khác
-                <textarea id="follow-up-replacement-reason" value={replacementReason} maxLength={1000} onChange={event => { setReplacementReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
+          })}</L10nValue></ul> : <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground"><L10n>{"Không có lượt khám theo lịch đã hoàn tất trong trang này."}</L10n></p> : null}</L10nValue>
+          <L10nValue>{followUpSourcePages > 1 ? <nav aria-label={localize("Trang lượt khám trước")} className="flex items-center justify-between text-sm"><Button type="button" disabled={followUpSourceLoading || followUpSourcePage === 0} onClick={() => void loadFollowUpSources(followUpSourcePage - 1)}><L10n>{"Trang trước"}</L10n></Button><span>Trang <L10nValue>{followUpSourcePage + 1}</L10nValue> / <L10nValue>{followUpSourcePages}</L10nValue></span><Button type="button" disabled={followUpSourceLoading || followUpSourcePage + 1 >= followUpSourcePages} onClick={() => void loadFollowUpSources(followUpSourcePage + 1)}>Trang sau</Button></nav> : null}</L10nValue>
+          <L10nValue>{selectedFollowUpSource ? <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+            <p role="status"><L10n>{"Đã chọn lượt nguồn hoàn tất "}</L10n><L10nValue>{formatInstant(selectedFollowUpSource.completedAt)}</L10nValue> · <ReferenceText kind="patient" value={patientId} fallback="Bệnh nhân" /> · <ReferenceText kind="department" value={selectedFollowUpSource.departmentId} fallback="Khoa" /> · <ReferenceText kind="doctor" value={selectedFollowUpSource.doctorId} fallback="Bác sĩ lượt trước" /><L10n>{". Chưa đăng ký tái khám cho đến khi gửi và được xác nhận."}</L10n></p>
+            <L10nValue>{selectedFollowUpSource.recommendation ? <>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={useFollowUpRecommendation} onChange={event => { setUseFollowUpRecommendation(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} /><L10n>{"Dùng đề xuất của bác sĩ"}</L10n></label>
+              <L10nValue>{selectedRecommendation ? <><p><L10n>{"Thời gian khuyến nghị: "}</L10n><L10nValue>{formatLocalDate(selectedRecommendation.recommendedFrom)}</L10nValue> – <L10nValue>{formatLocalDate(selectedRecommendation.recommendedThrough)}</L10nValue></p><p className="whitespace-pre-wrap">{selectedRecommendation.reason}</p><L10nValue>{selectedRecommendation.preparationInstructions ? <p className="whitespace-pre-wrap text-muted-foreground"><L10n>{"Chuẩn bị: "}</L10n>{selectedRecommendation.preparationInstructions}</p> : null}</L10nValue></> : null}</L10nValue>
+            </> : <p><L10n>{"Không có đề xuất bác sĩ; cần ghi lý do tái khám để đăng ký tự quay lại."}</L10n></p>}</L10nValue>
+            <L10nValue>{recommendationOutOfWindow ? <p role="status" className="rounded-md border border-warning/40 bg-warning/10 p-3 text-warning"><L10n>{"Ngày buổi khám nằm ngoài thời gian bác sĩ khuyến nghị. Có thể tiếp tục nếu bệnh nhân muốn đăng ký."}</L10n></p> : null}</L10nValue>
+            <L10nValue>{doctorReplacement ? <div className="space-y-2 border-t border-border pt-3">
+              <label className="block space-y-1 font-medium" htmlFor="follow-up-replacement-reason"><L10n>{"Lý do chọn bác sĩ khác"}</L10n><textarea id="follow-up-replacement-reason" value={replacementReason} maxLength={1000} onChange={event => { setReplacementReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
               </label>
-              <label className="flex items-start gap-2"><input type="checkbox" checked={patientAgreedToDoctorReplacement} onChange={event => { setPatientAgreedToDoctorReplacement(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} /><span>Bệnh nhân đồng ý được tiếp nhận bởi bác sĩ đã chọn.</span></label>
-            </div> : null}
-          </div> : null}
-        </section> : null}
-        <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="reception-reason">{visitType === "FOLLOW_UP" ? selectedRecommendation ? "Lý do đăng ký tái khám (nếu có)" : "Lý do đăng ký tái khám" : "Ghi chú tùy chọn"}
+              <label className="flex items-start gap-2"><input type="checkbox" checked={patientAgreedToDoctorReplacement} onChange={event => { setPatientAgreedToDoctorReplacement(event.target.checked); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} /><span><L10n>{"Bệnh nhân đồng ý được tiếp nhận bởi bác sĩ đã chọn."}</L10n></span></label>
+            </div> : null}</L10nValue>
+          </div> : null}</L10nValue>
+        </section> : null}</L10nValue>
+        <label className="space-y-1 text-sm font-medium sm:col-span-2" htmlFor="reception-reason"><L10nValue>{visitType === "FOLLOW_UP" ? selectedRecommendation ? "Lý do đăng ký tái khám (nếu có)" : "Lý do đăng ký tái khám" : "Ghi chú tùy chọn"}</L10nValue>
           <textarea id="reception-reason" value={reason} maxLength={1000} onChange={event => { setReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
         </label>
-        {visitType === "NEW_VISIT" ? <section aria-label="Quay lại sau lượt đã kết thúc" className="space-y-3 rounded-lg border border-border p-4 text-sm sm:col-span-2">
+        <L10nValue>{visitType === "NEW_VISIT" ? <section aria-label={localize("Quay lại sau lượt đã kết thúc")} className="space-y-3 rounded-lg border border-border p-4 text-sm sm:col-span-2">
           <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={isReturnVisit} disabled={!patientId.trim() || creating || Boolean(createError?.uncertain)} onChange={event => {
             setCreateError(null);
             if (event.target.checked) { setIsReturnVisit(true); void loadReturnSources(); } else resetReturnVisit();
-          }} />Bệnh nhân quay lại sau lượt đã kết thúc</label>
-          {returnSourceError ? <AsyncState kind="error" message={returnSourceError.message} correlationId={returnSourceError.correlationId} onRetry={() => void loadReturnSources()} /> : null}
-          {isReturnVisit && !returnSources && !returnSourceError ? <AsyncState kind="loading" message="Đang tải các lượt đã kết thúc…" /> : null}
-          {isReturnVisit && returnSources ? returnSources.length ? <>
-            <label className="block space-y-1 font-medium" htmlFor="reception-return-source">Lượt đã kết thúc
-              <select id="reception-return-source" value={returnSourceId} onChange={event => { setReturnSourceId(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
-                <option value="">Chọn lượt</option>
-                {returnSources.map(record => <option key={record.recordId} value={record.recordId}>{formatLocalDate(record.examinationDate)} · {returnSourceLabels[record.status]}</option>)}
+          }} /><L10n>{"Bệnh nhân quay lại sau lượt đã kết thúc"}</L10n></label>
+          <L10nValue>{returnSourceError ? <AsyncState kind="error" message={localize(returnSourceError.message)} correlationId={returnSourceError.correlationId} onRetry={() => void loadReturnSources()} /> : null}</L10nValue>
+          <L10nValue>{isReturnVisit && !returnSources && !returnSourceError ? <AsyncState kind="loading" message={localize("Đang tải các lượt đã kết thúc…")} /> : null}</L10nValue>
+          <L10nValue>{isReturnVisit && returnSources ? returnSources.length ? <>
+            <label className="block space-y-1 font-medium" htmlFor="reception-return-source"><L10n>{"Lượt đã kết thúc"}</L10n><select id="reception-return-source" value={returnSourceId} onChange={event => { setReturnSourceId(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal">
+                <option value=""><L10n>{"Chọn lượt"}</L10n></option>
+                <L10nValue>{returnSources.map(record => <option key={record.recordId} value={record.recordId}><L10nValue>{formatLocalDate(record.examinationDate)}</L10nValue> · <L10nValue>{returnSourceLabels[record.status]}</L10nValue></option>)}</L10nValue>
               </select>
             </label>
-            <label className="block space-y-1 font-medium" htmlFor="reception-return-reason">Lý do quay lại
-              <textarea id="reception-return-reason" value={returnReason} maxLength={500} onChange={event => { setReturnReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
+            <label className="block space-y-1 font-medium" htmlFor="reception-return-reason"><L10n>{"Lý do quay lại"}</L10n><textarea id="reception-return-reason" value={returnReason} maxLength={500} onChange={event => { setReturnReason(event.target.value); setCreateError(null); }} disabled={creating || Boolean(createError?.uncertain)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
             </label>
-          </> : <p role="status" className="text-muted-foreground">Bệnh nhân chưa có lượt nào đã kết thúc.</p> : null}
-        </section> : null}
-        {isUuid(patientId.trim()) && !createdRegistration ? <OpenVisitNotice key={patientId.trim()} patientId={patientId.trim()} departmentId={selectedSession.departmentId} reason={independentReason} onReasonChange={value => { setIndependentReason(value); setCreateError(null); }} onSameDepartmentChange={setSameDepartmentOpen} forceReason={forceIndependentReason} disabled={creating || Boolean(createError?.uncertain)} /> : null}
-        {createError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2">
-          <p>{createError.message}</p>{createError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{createError.correlationId}</span></p> : null}
-          {createError.uncertain ? <p className="mt-2">Chưa xác định phiếu đã được tạo hay chưa. Hãy gửi lại đúng yêu cầu để dùng cùng khóa idempotency.</p> : null}
-        </div> : null}
-        <div className="sm:col-span-2"><Button type="submit" loading={creating} disabled={needsRefresh || Boolean(createdRegistration) || !patientId.trim()}>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</Button>{visitType === "FOLLOW_UP" ? <p className="mt-2 text-xs text-muted-foreground">Tái khám liên kết lượt đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối.</p> : null}</div>
+          </> : <p role="status" className="text-muted-foreground"><L10n>{"Bệnh nhân chưa có lượt nào đã kết thúc."}</L10n></p> : null}</L10nValue>
+        </section> : null}</L10nValue>
+        <L10nValue>{isUuid(patientId.trim()) && !createdRegistration ? <OpenVisitNotice key={patientId.trim()} patientId={patientId.trim()} departmentId={selectedSession.departmentId} reason={independentReason} onReasonChange={value => { setIndependentReason(value); setCreateError(null); }} onSameDepartmentChange={setSameDepartmentOpen} forceReason={forceIndependentReason} disabled={creating || Boolean(createError?.uncertain)} /> : null}</L10nValue>
+        <L10nValue>{createError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger sm:col-span-2">
+          <p><L10nValue>{createError.message}</L10nValue></p><L10nValue>{createError.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{createError.correlationId}</span></p> : null}</L10nValue>
+          <L10nValue>{createError.uncertain ? <p className="mt-2"><L10n>{"Chưa xác định phiếu đã được tạo hay chưa. Hãy gửi lại đúng yêu cầu để dùng cùng khóa idempotency."}</L10n></p> : null}</L10nValue>
+        </div> : null}</L10nValue>
+        <div className="sm:col-span-2"><Button type="submit" loading={creating} disabled={needsRefresh || Boolean(createdRegistration) || !patientId.trim()}><L10nValue>{submitBody ? "Gửi lại cùng yêu cầu" : "Đăng ký và giữ chỗ"}</L10nValue></Button><L10nValue>{visitType === "FOLLOW_UP" ? <p className="mt-2 text-xs text-muted-foreground"><L10n>{"Tái khám liên kết lượt đã hoàn tất; ngày ngoài khuyến nghị được cảnh báo nhưng không tự động từ chối."}</L10n></p> : null}</L10nValue></div>
         </fieldset>
       </form>
 
-      {createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <p role="status" className="font-semibold">{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : registrationStatusLabels[createdRegistration.status]}</p>
-        <Button type="button" disabled={needsRefresh || creating || releasing || Boolean(pendingRelease)} onClick={nextPatient}>Tiếp nhận bệnh nhân tiếp theo</Button>
-        <p className="mt-2">Chuyển bệnh nhân sang quầy thu ngân trước hạn giữ chỗ. Có thể bàn giao mã phiếu dưới đây để tra cứu đúng lượt.</p>
-        <label className="mt-3 block space-y-1" htmlFor="reception-handoff-id">Mã phiếu bàn giao thu ngân
-          <input id="reception-handoff-id" readOnly value={createdRegistration.registrationId} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" />
+      <L10nValue>{createdRegistration ? <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+        <p role="status" className="font-semibold"><L10nValue>{createdRegistration.status === "AWAITING_PAYMENT" ? "Đang chờ thu tiền" : registrationStatusLabels[createdRegistration.status]}</L10nValue></p>
+        <Button type="button" disabled={needsRefresh || creating || releasing || Boolean(pendingRelease)} onClick={nextPatient}><L10n>{"Tiếp nhận bệnh nhân tiếp theo"}</L10n></Button>
+        <p className="mt-2"><L10n>{"Chuyển bệnh nhân sang quầy thu ngân trước hạn giữ chỗ. Có thể bàn giao mã phiếu dưới đây để tra cứu đúng lượt."}</L10n></p>
+        <label className="mt-3 block space-y-1" htmlFor="reception-handoff-id"><L10n>{"Mã phiếu bàn giao thu ngân"}</L10n><input id="reception-handoff-id" readOnly value={createdRegistration.registrationId} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-mono text-sm" />
         </label>
-        <Link href={`/appointments/${encodeURIComponent(createdRegistration.registrationId)}`} className={`mt-3 ${linkButton}`}>Mở phiếu khám vừa đăng ký</Link>
-        <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground">Bệnh nhân</dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground">Hạn giữ chỗ</dt><dd>{formatInstant(createdRegistration.reservationExpiresAt)}</dd></div><div><dt className="text-muted-foreground">Bác sĩ</dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground">{queueNumberLabel(clinicIntakeEnabled)}</dt><dd>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</dd></div>{clinicIntakeEnabled && roomNumberText(createdRegistration.roomQueueNumber) ? <div><dt className="text-muted-foreground">Số phòng</dt><dd>{createdRegistration.roomQueueNumber}</dd></div> : null}</dl>
-        {clinicIntakeEnabled && createdRegistration.reservationStatus === "PAYMENT_LOCKED" ? <p role="status" className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3">Phiếu đang được thanh toán nên chưa thể trả chỗ.</p> : null}
-        {clinicIntakeEnabled && createdRegistration.reservationStatus === "HELD" ? <div className="mt-3 space-y-2 border-t border-border pt-3">
-          <label className="block space-y-1 font-medium" htmlFor="reception-release-reason">Lý do trả chỗ
-            <input id="reception-release-reason" maxLength={500} value={releaseReason} disabled={releasing || Boolean(pendingRelease)} onChange={event => setReleaseReason(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal" />
+        <Link href={`/appointments/${encodeURIComponent(createdRegistration.registrationId)}`} className={`mt-3 ${linkButton}`}><L10n>{"Mở phiếu khám vừa đăng ký"}</L10n></Link>
+        <dl className="mt-3 grid gap-2 sm:grid-cols-2"><div><dt className="text-muted-foreground"><L10n>{"Bệnh nhân"}</L10n></dt><dd><ReferenceText kind="patient" value={createdRegistration.patientId} fallback="Bệnh nhân" /></dd></div><div><dt className="text-muted-foreground"><L10n>{"Hạn giữ chỗ"}</L10n></dt><dd><L10nValue>{formatInstant(createdRegistration.reservationExpiresAt)}</L10nValue></dd></div><div><dt className="text-muted-foreground"><L10n>{"Bác sĩ"}</L10n></dt><dd><ReferenceText kind="doctor" value={createdRegistration.doctorId} fallback="Bác sĩ" /></dd></div><div><dt className="text-muted-foreground"><L10nValue>{queueNumberLabel(clinicIntakeEnabled)}</L10nValue></dt><dd><L10nValue>{createdRegistration.queueNumber ?? "Chưa cấp trước khi xác nhận"}</L10nValue></dd></div><L10nValue>{clinicIntakeEnabled && roomNumberText(createdRegistration.roomQueueNumber) ? <div><dt className="text-muted-foreground"><L10n>{"Số phòng"}</L10n></dt><dd>{createdRegistration.roomQueueNumber}</dd></div> : null}</L10nValue></dl>
+        <L10nValue>{clinicIntakeEnabled && createdRegistration.reservationStatus === "PAYMENT_LOCKED" ? <p role="status" className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3"><L10n>{"Phiếu đang được thanh toán nên chưa thể trả chỗ."}</L10n></p> : null}</L10nValue>
+        <L10nValue>{clinicIntakeEnabled && createdRegistration.reservationStatus === "HELD" ? <div className="mt-3 space-y-2 border-t border-border pt-3">
+          <label className="block space-y-1 font-medium" htmlFor="reception-release-reason"><L10n>{"Lý do trả chỗ"}</L10n><input id="reception-release-reason" maxLength={500} value={releaseReason} disabled={releasing || Boolean(pendingRelease)} onChange={event => setReleaseReason(event.target.value)} className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 font-normal" />
           </label>
-          {releaseError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-danger"><p>{releaseError.message}</p>{releaseError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{releaseError.correlationId}</span></p> : null}{releaseError.uncertain ? <p className="mt-2">Chưa xác định chỗ đã được trả hay chưa. Gửi lại đúng yêu cầu để tránh xử lý trùng.</p> : null}</div> : null}
-          <Button type="button" variant="danger" loading={releasing} disabled={needsRefresh || (!pendingRelease && !releaseReason.trim())} onClick={() => void releaseHold()}>{pendingRelease ? "Gửi lại cùng yêu cầu trả chỗ" : "Trả chỗ đã giữ"}</Button>
-        </div> : null}
-      </div> : null}
+          <L10nValue>{releaseError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-danger"><p><L10nValue>{releaseError.message}</L10nValue></p><L10nValue>{releaseError.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{releaseError.correlationId}</span></p> : null}</L10nValue><L10nValue>{releaseError.uncertain ? <p className="mt-2"><L10n>{"Chưa xác định chỗ đã được trả hay chưa. Gửi lại đúng yêu cầu để tránh xử lý trùng."}</L10n></p> : null}</L10nValue></div> : null}</L10nValue>
+          <Button type="button" variant="danger" loading={releasing} disabled={needsRefresh || (!pendingRelease && !releaseReason.trim())} onClick={() => void releaseHold()}><L10nValue>{pendingRelease ? "Gửi lại cùng yêu cầu trả chỗ" : "Trả chỗ đã giữ"}</L10nValue></Button>
+        </div> : null}</L10nValue>
+      </div> : null}</L10nValue>
 
-      {needsRefresh ? <div role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-        <p>{refreshError ? refreshMessages[refreshKind].failed : refreshMessages[refreshKind].running}</p>
-        {refreshError ? <Button type="button" loading={refreshing} onClick={() => void refreshAfterRegistration(selectedSession, refreshKind)}>Cập nhật danh sách và số chỗ</Button> : null}
-      </div> : null}
-      {rescheduleNotice ? <p role="status" className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">{rescheduleNotice}</p> : null}
-      {registrationError ? <AsyncState kind="error" message={registrationError.message} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession, registrationPage)} /> : null}
-      {registrationList ? <section aria-label="Phiếu trong buổi" className="border-t border-border pt-4"><h3 className="font-semibold">Phiếu trong buổi</h3>
-        {registrationList.length ? <ul className="mt-3 divide-y divide-border">{registrationList.map(item => <li key={item.registrationId} className="py-3 text-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2"><span><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></span><span>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</span><span>{clinicIntakeEnabled ? registrationOutcomeLabel(item) : registrationStatusLabels[item.status]}</span><span>{queueNumberText(item.queueNumber, clinicIntakeEnabled)}</span>{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? <span>{roomNumberText(item.roomQueueNumber)}</span> : null}{item.readyForExam ? <span>Sẵn sàng khám</span> : null}
-            {item.checkedInAt ? <span role="status">Đã ghi nhận khách đến</span> : item.status === "CONFIRMED" ? <Button type="button" loading={arrivalBusyId === item.registrationId} disabled={Boolean(arrivalBusyId)} onClick={() => void recordArrival(item)}>{arrivalError?.registrationId === item.registrationId && arrivalError.uncertain ? "Gửi lại cùng lệnh đến" : "Ghi nhận đã đến"}</Button> : null}
-            {clinicIntakeEnabled && (item.status === "AWAITING_PAYMENT" || item.status === "CONFIRMED") ? <Button type="button" variant="secondary" disabled={needsRefresh || Boolean(arrivalBusyId) || Boolean(rescheduling)} onClick={() => { setRescheduleNotice(null); setRescheduling(item.registrationId); }}>Đổi lịch</Button> : null}
+      <L10nValue>{needsRefresh ? <div role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        <p><L10nValue>{refreshError ? refreshMessages[refreshKind].failed : refreshMessages[refreshKind].running}</L10nValue></p>
+        <L10nValue>{refreshError ? <Button type="button" loading={refreshing} onClick={() => void refreshAfterRegistration(selectedSession, refreshKind)}><L10n>{"Cập nhật danh sách và số chỗ"}</L10n></Button> : null}</L10nValue>
+      </div> : null}</L10nValue>
+      <L10nValue>{rescheduleNotice ? <p role="status" className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"><L10nValue>{rescheduleNotice}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{registrationError ? <AsyncState kind="error" message={localize(registrationError.message)} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession, registrationPage)} /> : null}</L10nValue>
+      <L10nValue>{registrationList ? <section aria-label={localize("Phiếu trong buổi")} className="border-t border-border pt-4"><h3 className="font-semibold"><L10n>{"Phiếu trong buổi"}</L10n></h3>
+        <L10nValue>{registrationList.length ? <ul className="mt-3 divide-y divide-border"><L10nValue>{registrationList.map(item => <li key={item.registrationId} className="py-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2"><span><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></span><span><L10nValue>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</L10nValue></span><span><L10nValue>{clinicIntakeEnabled ? registrationOutcomeLabel(item) : registrationStatusLabels[item.status]}</L10nValue></span><span><L10nValue>{queueNumberText(item.queueNumber, clinicIntakeEnabled)}</L10nValue></span><L10nValue>{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? <span><L10nValue>{roomNumberText(item.roomQueueNumber)}</L10nValue></span> : null}</L10nValue><L10nValue>{item.readyForExam ? <span><L10n>{"Sẵn sàng khám"}</L10n></span> : null}</L10nValue>
+            <L10nValue>{item.checkedInAt ? <span role="status"><L10n>{"Đã ghi nhận khách đến"}</L10n></span> : item.status === "CONFIRMED" ? <Button type="button" loading={arrivalBusyId === item.registrationId} disabled={Boolean(arrivalBusyId)} onClick={() => void recordArrival(item)}><L10nValue>{arrivalError?.registrationId === item.registrationId && arrivalError.uncertain ? "Gửi lại cùng lệnh đến" : "Ghi nhận đã đến"}</L10nValue></Button> : null}</L10nValue>
+            <L10nValue>{clinicIntakeEnabled && (item.status === "AWAITING_PAYMENT" || item.status === "CONFIRMED") ? <Button type="button" variant="secondary" disabled={needsRefresh || Boolean(arrivalBusyId) || Boolean(rescheduling)} onClick={() => { setRescheduleNotice(null); setRescheduling(item.registrationId); }}><L10n>{"Đổi lịch"}</L10n></Button> : null}</L10nValue>
           </div>
-          {rescheduling === item.registrationId ? <RescheduleDialog registrationId={item.registrationId} onClose={() => setRescheduling(null)} onRescheduled={afterReschedule} /> : null}
-          {arrivalError?.registrationId === item.registrationId ? <div role="alert" className="mt-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><p>{arrivalError.message}</p>{arrivalError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{arrivalError.correlationId}</span></p> : null}{arrivalError.uncertain ? <p className="mt-2">Chưa xác định trạng thái đã đến. Gửi lại cùng lệnh để tránh ghi nhận trùng.</p> : null}</div> : null}
-        </li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">Chưa có phiếu nào trong buổi này.</p>}
-        {registrationPages > 1 ? <nav aria-label="Trang phiếu trong buổi" className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}>Trang trước</Button><span>Trang {registrationPage + 1} / {registrationPages}</span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}
-      </section> : null}
-    </section> : null}
+          <L10nValue>{rescheduling === item.registrationId ? <RescheduleDialog registrationId={item.registrationId} onClose={() => setRescheduling(null)} onRescheduled={afterReschedule} /> : null}</L10nValue>
+          <L10nValue>{arrivalError?.registrationId === item.registrationId ? <div role="alert" className="mt-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><p><L10nValue>{arrivalError.message}</L10nValue></p><L10nValue>{arrivalError.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{arrivalError.correlationId}</span></p> : null}</L10nValue><L10nValue>{arrivalError.uncertain ? <p className="mt-2"><L10n>{"Chưa xác định trạng thái đã đến. Gửi lại cùng lệnh để tránh ghi nhận trùng."}</L10n></p> : null}</L10nValue></div> : null}</L10nValue>
+        </li>)}</L10nValue></ul> : <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Chưa có phiếu nào trong buổi này."}</L10n></p>}</L10nValue>
+        <L10nValue>{registrationPages > 1 ? <nav aria-label={localize("Trang phiếu trong buổi")} className="mt-3 flex items-center justify-between text-sm"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}><L10n>{"Trang trước"}</L10n></Button><span>Trang <L10nValue>{registrationPage + 1}</L10nValue> / <L10nValue>{registrationPages}</L10nValue></span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}</L10nValue>
+      </section> : null}</L10nValue>
+    </section> : null}</L10nValue>
   </div>;
 }

@@ -32,6 +32,7 @@ function fill() {
   fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "  Nguyen Van A  " } });
   fireEvent.change(screen.getByLabelText(/Ngày sinh/), { target: { value: "1990-01-15" } });
   fireEvent.change(screen.getByLabelText(/Số CMND\/CCCD/), { target: { value: " 001234567890 " } });
+  fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: " Patient@Example.com " } });
 }
 
 function submit() { fireEvent.submit(screen.getByLabelText(/Họ tên/).closest("form")!); }
@@ -71,8 +72,8 @@ describe("PatientForm", () => {
     mocks.update.mockResolvedValue({ ...patientContractFixture, email: "patient@example.com" });
     render(<PatientForm patientId={patientContractFixture.maBenhNhan} />);
     await screen.findByDisplayValue(patientContractFixture.hoTen);
-    expect(screen.getByLabelText("Email")).not.toHaveAttribute("readonly");
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "patient@example.com" } });
+    expect(screen.getByLabelText(/^Email/)).not.toHaveAttribute("readonly");
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: "patient@example.com" } });
     submit();
     await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(patientContractFixture.maBenhNhan, expect.objectContaining({ email: "patient@example.com" })));
   });
@@ -121,7 +122,7 @@ describe("PatientForm", () => {
     expect(mocks.create).toHaveBeenCalledTimes(1);
     expect(mocks.create).toHaveBeenCalledWith({
       hoTen: "Nguyen Van A", ngaySinh: "1990-01-15", gioiTinh: "M", soCmnd: "001234567890",
-      diaChi: null, soDienThoai: null, email: null, bhytSo: null,
+      diaChi: null, soDienThoai: null, email: "patient@example.com", bhytSo: null,
     });
     await act(async () => { response.resolve(patientContractFixture); });
     expect(mocks.router.push).toHaveBeenCalledWith(`/patients/${patientContractFixture.maBenhNhan}?notice=created`);
@@ -209,7 +210,7 @@ describe("PatientForm", () => {
 
   it("reconciles an uncertain create using exact identity without replaying and opens a matching profile", async () => {
     mocks.create.mockRejectedValue(new ApiRequestError("timeout", 408));
-    mocks.search.mockResolvedValue({ content: [{ ...patientContractFixture, hoTen: "Nguyen Van A", soCmnd: "001234567890", ngaySinh: "1990-01-15", gioiTinh: "M", diaChi: null, soDienThoai: null, email: null, bhytSo: null }], totalPages: 1 });
+    mocks.search.mockResolvedValue({ content: [{ ...patientContractFixture, hoTen: "Nguyen Van A", soCmnd: "001234567890", ngaySinh: "1990-01-15", gioiTinh: "M", diaChi: null, soDienThoai: null, email: "patient@example.com", bhytSo: null }], totalPages: 1 });
     render(<PatientForm />); fill(); submit();
     fireEvent.click(await screen.findByRole("button", { name: "Kiểm tra hồ sơ đã lưu" }));
     expect(await screen.findByText("Hồ sơ hiện tại khớp toàn bộ thông tin bạn gửi.")).toBeVisible();

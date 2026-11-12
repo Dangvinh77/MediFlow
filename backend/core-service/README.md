@@ -65,6 +65,17 @@ business rules, wire DTOs, migrations, and PostgreSQL stores live in this module
 their separate `com.mediflow.organization` and `com.mediflow.patient` packages. Existing API routes
 are served behind `core-service` service discovery.
 
+Staff and Patient profile creation and email changes require valid, normalized email addresses
+and enforce uniqueness inside their own bounded-context stores. Organization applies this with
+migration `V23`; Patient
+uses migration `V6`. Both migrations preserve legacy rows: null/blank emails remain null, and
+legacy duplicate groups are left unchanged. Application prechecks compare `lower(trim(email))`
+against every row, including archived Patient profiles; new and changed addresses receive a
+normalized unique key protected by a PostgreSQL partial unique index. The prechecks provide clear
+409 responses, while the indexes stop concurrent writes from claiming the same normalized address.
+The shared Core process does not compare Organization and Patient profile emails across their
+separate data authorities.
+
 Organization and Patient use separate datasource URLs, entity managers, transaction managers,
 and Flyway locations. Their schemas and data remain separate. Configure
 `MEDIFLOW_ORGANIZATION_DB_*`, `MEDIFLOW_PATIENT_DB_*`, and `MEDIFLOW_JWT_SECRET` for a local run.

@@ -13,6 +13,25 @@ const prescription: PrescriptionDTO = { prescriptionId: "00000000-0000-4000-8000
 
 describe("PrescriptionDetail status evidence", () => {
   beforeEach(() => { mocks.role = "PHARMACIST"; mocks.getPrescription.mockReset(); });
+  it("offers editing an unpaid versioned outpatient prescription to a doctor", async () => {
+    mocks.role = "DOCTOR";
+    mocks.getPrescription.mockResolvedValue({ ...prescription, paymentConfirmed: false, revision: 2 });
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="outpatient" />);
+    expect(await screen.findByRole("button", { name: "Sửa đơn thuốc" })).toBeEnabled();
+  });
+  it.each([
+    ["DOCTOR", "outpatient", true, 2, "ACTIVE"],
+    ["DOCTOR", "outpatient", false, undefined, "ACTIVE"],
+    ["DOCTOR", "legacy", false, 2, "ACTIVE"],
+    ["DOCTOR", "outpatient", false, 2, "FULFILLED"],
+    ["PHARMACIST", "outpatient", false, 2, "ACTIVE"],
+  ] as const)("hides edit for role %s mode %s paid %s revision %s status %s", async (role, mode, paymentConfirmed, revision, status) => {
+    mocks.role = role;
+    mocks.getPrescription.mockResolvedValue({ ...prescription, paymentConfirmed, revision, status });
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode={mode} />);
+    await screen.findByRole("heading", { name: "Chi tiết đơn thuốc" });
+    expect(screen.queryByRole("button", { name: "Sửa đơn thuốc" })).not.toBeInTheDocument();
+  });
   it("shows payment proof independently of pending dispense and supports absent medical record", async () => {
     mocks.getPrescription.mockResolvedValue(prescription); render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByText("Chờ xuất thuốc")).toBeVisible();

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -6,8 +8,9 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/medical_ui.dart';
 import '../domain/patient_timeline.dart';
 
-final patientTimelineRepositoryProvider =
-    Provider<PatientTimelineRepository?>((ref) => null);
+final patientTimelineRepositoryProvider = Provider<PatientTimelineRepository?>(
+  (ref) => null,
+);
 
 class PatientTimelineSection extends ConsumerStatefulWidget {
   const PatientTimelineSection({
@@ -25,7 +28,8 @@ class PatientTimelineSection extends ConsumerStatefulWidget {
       _PatientTimelineSectionState();
 }
 
-class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection> {
+class _PatientTimelineSectionState
+    extends ConsumerState<PatientTimelineSection> {
   TimelinePage? _result;
   Object? _error;
   bool _loading = true;
@@ -116,7 +120,7 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
     children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: Text(
+        child: LText(
           'Dòng thời gian lượt khám',
           style: Theme.of(context).textTheme.titleMedium,
         ),
@@ -135,7 +139,7 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20),
-          child: Text('Bạn không có quyền xem hồ sơ của bệnh nhân này.'),
+          child: LText('Bạn không có quyền xem hồ sơ của bệnh nhân này.'),
         ),
       );
     }
@@ -145,12 +149,12 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Chưa tải được dòng thời gian. Hãy thử lại.'),
+            const LText('Chưa tải được dòng thời gian. Hãy thử lại.'),
             TextButton.icon(
               key: const Key('timeline-retry'),
               onPressed: _load,
               icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              label: const LText('Thử lại'),
             ),
           ],
         ),
@@ -160,9 +164,11 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
 
   Widget _timeline(TimelinePage result) {
     if (result.entries.isEmpty) {
-      return const Center(child: Text('Chưa có lượt khám.'));
+      return const Center(child: LText('Chưa có lượt khám.'));
     }
-    final departments = result.entries.map((entry) => entry.departmentId).toSet();
+    final departments = result.entries
+        .map((entry) => entry.departmentId)
+        .toSet();
     return ListView(
       key: const Key('patient-timeline'),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -175,9 +181,12 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
               key: const Key('timeline-department-filter'),
               value: _departmentId ?? '',
               items: [
-                const DropdownMenuItem(value: '', child: Text('Tất cả khoa')),
+                const DropdownMenuItem(value: '', child: LText('Tất cả khoa')),
                 for (final departmentId in departments)
-                  DropdownMenuItem(value: departmentId, child: Text(departmentId)),
+                  DropdownMenuItem(
+                    value: departmentId,
+                    child: LText(departmentId),
+                  ),
               ],
               onChanged: (value) => _changeFilter(departmentId: value ?? ''),
             ),
@@ -185,12 +194,15 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
               key: const Key('timeline-status-filter'),
               value: _status ?? 'ALL',
               items: const [
-                DropdownMenuItem(value: 'ALL', child: Text('Mọi trạng thái')),
-                DropdownMenuItem(value: 'OPEN', child: Text('Đang khám')),
-                DropdownMenuItem(value: 'COMPLETED', child: Text('Đã hoàn tất khám')),
+                DropdownMenuItem(value: 'ALL', child: LText('Mọi trạng thái')),
+                DropdownMenuItem(value: 'OPEN', child: LText('Đang khám')),
+                DropdownMenuItem(
+                  value: 'COMPLETED',
+                  child: LText('Đã hoàn tất khám'),
+                ),
                 DropdownMenuItem(
                   value: 'CLOSED_WITHOUT_CONCLUSION',
-                  child: Text('Kết thúc không kết luận'),
+                  child: LText('Kết thúc không kết luận'),
                 ),
               ],
               onChanged: (value) => _changeFilter(status: value ?? 'ALL'),
@@ -201,18 +213,18 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
           Card(
             child: ListTile(
               key: ValueKey(entry.recordId),
-              title: Text('Ngày khám: ${entry.examinationDate}'),
+              title: LText('Ngày khám: ${entry.examinationDate}'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Khoa: ${entry.departmentId}'),
-                  Text('Bác sĩ mở hồ sơ: ${entry.doctorId}'),
+                  LText('Khoa: ${entry.departmentId}'),
+                  LText('Bác sĩ mở hồ sơ: ${entry.doctorId}'),
                   if (entry.responsibleDoctorId != null &&
                       entry.responsibleDoctorId != entry.doctorId)
-                    Text('Bác sĩ phụ trách: ${entry.responsibleDoctorId}'),
-                  Text(entry.visitKindLabel),
+                    LText('Bác sĩ phụ trách: ${entry.responsibleDoctorId}'),
+                  LText(entry.visitKindLabel),
                   if (entry.previousRecordId != null)
-                    const Text('Lượt trước — chỉ tham khảo'),
+                    const LText('Lượt trước — chỉ tham khảo'),
                 ],
               ),
               trailing: StatusPill(
@@ -228,13 +240,13 @@ class _PatientTimelineSectionState extends ConsumerState<PatientTimelineSection>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Trang ${result.page + 1} / ${result.totalPages}'),
+              LText('Trang ${result.page + 1} / ${result.totalPages}'),
               TextButton(
                 key: const Key('timeline-next-page'),
                 onPressed: _loading || !result.hasNext
                     ? null
                     : () => _load(page: _page + 1),
-                child: const Text('Trang tiếp'),
+                child: const LText('Trang tiếp'),
               ),
             ],
           ),

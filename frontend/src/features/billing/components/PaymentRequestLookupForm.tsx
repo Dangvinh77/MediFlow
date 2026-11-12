@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -66,6 +68,7 @@ function isZeroAmount(value: string): boolean {
 
 function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnabled = false, initialSelection,
   collapsedLookup = false, defaultPurpose = "EXAM", onLockChange, onCompleted, onNext }: PaymentRequestLookupFormProps) {
+  const { localize } = useLocale();
   const [lookupOpen, setLookupOpen] = useState(!collapsedLookup);
   const [purpose, setPurpose] = useState<PaymentRequestSourcePurpose>(initialSelection?.purpose ?? defaultPurpose);
   const [sourceId, setSourceId] = useState(initialSelection?.sourceId ?? "");
@@ -305,71 +308,69 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
 
   return (
     <div className="flex flex-col gap-5">
-      {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-        {error.message}{error.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span> : null}
-      </p> : null}
+      <L10nValue>{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+        <L10nValue>{error.message}</L10nValue><L10nValue>{error.correlationId ? <span className="mt-1 block text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{error.correlationId}</span></span> : null}</L10nValue>
+      </p> : null}</L10nValue>
       <details open={lookupOpen} onToggle={event => setLookupOpen(event.currentTarget.open)} className="order-last rounded-xl border border-border bg-surface p-4">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Tra cứu bằng mã được bàn giao (hỗ trợ)</summary>
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Tra cứu bằng mã được bàn giao (hỗ trợ)"}</L10n></summary>
       <form onSubmit={submit} noValidate className="space-y-4 pt-3">
-        <p className="text-sm text-muted-foreground">
-          Dùng thông tin được bàn giao khi không tìm thấy khoản trong hàng chờ.
-        </p>
-        <Field label="Loại khoản phí" htmlFor="payment-request-purpose" required>
+        <p className="text-sm text-muted-foreground"><L10n>{"Dùng thông tin được bàn giao khi không tìm thấy khoản trong hàng chờ."}</L10n></p>
+        <Field label={localize("Loại khoản phí")} htmlFor="payment-request-purpose" required>
           <select id="payment-request-purpose" value={purpose} disabled={loading || paymentLocked} onChange={(event) => changePurpose(event.target.value as PaymentRequestSourcePurpose)} className={controlClassName}>
-            {Object.entries(purposes).map(([value, option]) => <option key={value} value={value}>{option.label}</option>)}
+            <L10nValue>{Object.entries(purposes).map(([value, option]) => <option key={value} value={value}><L10nValue>{option.label}</L10nValue></option>)}</L10nValue>
           </select>
         </Field>
-        <Field label={purposes[purpose].sourceLabel} htmlFor="payment-request-source-id" required>
-          <input id="payment-request-source-id" required value={sourceId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setZeroReceipt(null); setSourceId(event.target.value); setDiscovery(null); }} placeholder="Mã do quầy phát sinh cung cấp" className={controlClassName} />
+        <Field label={localize(purposes[purpose].sourceLabel)} htmlFor="payment-request-source-id" required>
+          <input id="payment-request-source-id" required value={sourceId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setZeroReceipt(null); setSourceId(event.target.value); setDiscovery(null); }} placeholder={localize("Mã do quầy phát sinh cung cấp")} className={controlClassName} />
         </Field>
-        <Field label="Mã bệnh nhân" htmlFor="payment-request-patient-id" required hint="Nhập tên, CCCD hoặc mã được bàn giao, bấm Tìm rồi chọn kết quả có tên bệnh nhân.">
-          <ReferenceInput kind="patient" id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onValueChange={(selectedId) => { setCompletedPayment(null); setZeroReceipt(null); setPatientId(selectedId); setDiscovery(null); }} placeholder="Tìm theo tên hoặc CCCD" className={controlClassName} />
+        <Field label={localize("Mã bệnh nhân")} htmlFor="payment-request-patient-id" required hint="Nhập tên, CCCD hoặc mã được bàn giao, bấm Tìm rồi chọn kết quả có tên bệnh nhân.">
+          <ReferenceInput kind="patient" id="payment-request-patient-id" required value={patientId} disabled={loading || paymentLocked} onValueChange={(selectedId) => { setCompletedPayment(null); setZeroReceipt(null); setPatientId(selectedId); setDiscovery(null); }} placeholder={localize("Tìm theo tên hoặc CCCD")} className={controlClassName} />
         </Field>
-        {showCareEpisode ? (
-          <Field label="Mã đợt điều trị" htmlFor="payment-request-care-episode-id" required hint="Nhập mã do màn hình nguồn cung cấp; không suy ra từ mã xét nghiệm hoặc đơn thuốc.">
-            <input id="payment-request-care-episode-id" required value={careEpisodeId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setZeroReceipt(null); setCareEpisodeId(event.target.value); setDiscovery(null); }} placeholder="Mã đợt chăm sóc từ màn hình nguồn" className={controlClassName} />
+        <L10nValue>{showCareEpisode ? (
+          <Field label={localize("Mã đợt điều trị")} htmlFor="payment-request-care-episode-id" required hint="Nhập mã do màn hình nguồn cung cấp; không suy ra từ mã xét nghiệm hoặc đơn thuốc.">
+            <input id="payment-request-care-episode-id" required value={careEpisodeId} disabled={loading || paymentLocked} onChange={(event) => { setCompletedPayment(null); setZeroReceipt(null); setCareEpisodeId(event.target.value); setDiscovery(null); }} placeholder={localize("Mã đợt chăm sóc từ màn hình nguồn")} className={controlClassName} />
           </Field>
         ) : (
-          <p className="text-xs text-muted-foreground">Đối với khoản phí khám, Billing dùng mã lịch khám làm mã đợt điều trị.</p>
-        )}
+          <p className="text-xs text-muted-foreground"><L10n>{"Đối với khoản phí khám, Billing dùng mã lịch khám làm mã đợt điều trị."}</L10n></p>
+        )}</L10nValue>
         <div className="flex gap-2">
-          <Button type="submit" variant="primary" loading={loading} disabled={paymentLocked}>Tra cứu khoản phí</Button>
-          <Button type="button" disabled={paymentLocked} onClick={() => setLookupOpen(false)}>Đóng tra cứu</Button>
+          <Button type="submit" variant="primary" loading={loading} disabled={paymentLocked}><L10n>{"Tra cứu khoản phí"}</L10n></Button>
+          <Button type="button" disabled={paymentLocked} onClick={() => setLookupOpen(false)}><L10n>{"Đóng tra cứu"}</L10n></Button>
         </div>
       </form>
       </details>
 
-      {error && (initialSelection || completedPayment || zeroReceipt) ? <Button type="button" variant="secondary" disabled={loading || paymentLocked}
-        onClick={() => void lookup()}>Thử kiểm tra lại</Button> : null}
+      <L10nValue>{error && (initialSelection || completedPayment || zeroReceipt) ? <Button type="button" variant="secondary" disabled={loading || paymentLocked}
+        onClick={() => void lookup()}><L10n>{"Thử kiểm tra lại"}</L10n></Button> : null}</L10nValue>
 
-      {completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Thanh toán thành công. Đã ghi nhận {formatDecimal(completedPayment.amount)} {completedPayment.currency}.</p> : null}
-      {zeroReceipt ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xác nhận nghĩa vụ 0 đồng.</p> : null}
-      {(completedPayment || zeroReceipt) && onNext ? <Button type="button" variant="primary" disabled={loading || paymentLocked} onClick={onNext}>Thu khoản tiếp theo</Button> : null}
-      {loading ? <AsyncState kind="loading" message="Đang tra cứu khoản phí…" /> : null}
-      {discovery ? (
-        <section aria-label="Chi tiết khoản phí" className="space-y-5 rounded-xl border border-border bg-surface p-6">
+      <L10nValue>{completedPayment ? <p role="status" className="break-words rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10n>{"Thanh toán thành công. Đã ghi nhận "}</L10n><L10nValue>{formatDecimal(completedPayment.amount)}</L10nValue> {completedPayment.currency}.</p> : null}</L10nValue>
+      <L10nValue>{zeroReceipt ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10n>{"Đã xác nhận nghĩa vụ 0 đồng."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{(completedPayment || zeroReceipt) && onNext ? <Button type="button" variant="primary" disabled={loading || paymentLocked} onClick={onNext}><L10n>{"Thu khoản tiếp theo"}</L10n></Button> : null}</L10nValue>
+      <L10nValue>{loading ? <AsyncState kind="loading" message={localize("Đang tra cứu khoản phí…")} /> : null}</L10nValue>
+      <L10nValue>{discovery ? (
+        <section aria-label={localize("Chi tiết khoản phí")} className="space-y-5 rounded-xl border border-border bg-surface p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <h2 className="text-lg font-semibold">Khoản phí được xác nhận</h2>
-            <StatusBadge tone={canPay ? "warning" : discovery.status === "PAID" ? "success" : "neutral"}>{requestStatusLabels[discovery.status]}</StatusBadge>
+            <h2 className="text-lg font-semibold"><L10n>{"Khoản phí được xác nhận"}</L10n></h2>
+            <StatusBadge tone={canPay ? "warning" : discovery.status === "PAID" ? "success" : "neutral"}><L10nValue>{requestStatusLabels[discovery.status]}</L10nValue></StatusBadge>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">
-            <Amount label="Số tiền yêu cầu thu" amount={discovery.requestedAmount} currency={discovery.currency} />
-            <Amount label="Đã thanh toán" amount={discovery.paidAmount} currency={discovery.currency} />
-            <Amount label="Còn phải thu" amount={discovery.remainingAmount} currency={discovery.currency} />
-            <Info label="Nguồn phí" value={purposes[discovery.purpose].label} />
-            <Info label="Bệnh nhân" value={<ReferenceText kind="patient" value={discovery.patientId} fallback="Bệnh nhân" />} />
+            <Amount label={localize("Số tiền yêu cầu thu")} amount={discovery.requestedAmount} currency={discovery.currency} />
+            <Amount label={localize("Đã thanh toán")} amount={discovery.paidAmount} currency={discovery.currency} />
+            <Amount label={localize("Còn phải thu")} amount={discovery.remainingAmount} currency={discovery.currency} />
+            <Info label={localize("Nguồn phí")} value={purposes[discovery.purpose].label} />
+            <Info label={localize("Bệnh nhân")} value={<ReferenceText kind="patient" value={discovery.patientId} fallback="Bệnh nhân" />} />
             <Info label="Khoa" value={<ReferenceText kind="department" value={discovery.departmentId} fallback="Khoa" />} />
-            <Info label="Hạn thanh toán" value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
+            <Info label={localize("Hạn thanh toán")} value={discovery.expiresAt ? formatInstant(discovery.expiresAt) : "Không có hạn"} />
           </dl>
-          {quoteEnabled && requestIsOpen ? <div className="space-y-3 border-t border-border pt-4">
-            {quote ? collapsedLookup ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Chi tiết giá và hỗ trợ mô phỏng</summary><OutpatientQuoteBreakdown quote={quote} /></details> : <OutpatientQuoteBreakdown quote={quote} /> : null}
-            {quoteLoading ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo giá Billing…</p> : null}
-            {quoteUnavailable && discovery.purpose !== "PRESCRIPTION" ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; {labQuotePayment ? "luồng thanh toán LAB V2 cần báo giá trước khi thu." : "các thao tác hiện có vẫn dựa trên số dư Billing dương."}</p> : null}
-            {quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{quoteError.message}{quoteError.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{quoteError.correlationId}</span></span> : null}</p> : null}
-            {quoteExpired ? <p role="alert" className="text-sm text-danger">Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.</p> : null}
-            {quoteError ? <Button type="button" variant="secondary" loading={quoteLoading} disabled={quoteLoading || paymentLocked} onClick={() => void loadQuote(discovery.paymentRequestId)}>Thử tải lại báo giá</Button> : null}
-          </div> : null}
-          {purpose === "LAB_TEST" && quoteZero && requestIsOpen && accountAcceptsPayment && notExpired ? quoteEnabled && zeroLiabilityEnabled ? <LabZeroLiabilityAction
+          <L10nValue>{quoteEnabled && requestIsOpen ? <div className="space-y-3 border-t border-border pt-4">
+            <L10nValue>{quote ? collapsedLookup ? <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Chi tiết giá và hỗ trợ mô phỏng"}</L10n></summary><OutpatientQuoteBreakdown quote={quote} /></details> : <OutpatientQuoteBreakdown quote={quote} /> : null}</L10nValue>
+            <L10nValue>{quoteLoading ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang tải báo giá Billing…"}</L10n></p> : null}</L10nValue>
+            <L10nValue>{quoteUnavailable && discovery.purpose !== "PRESCRIPTION" ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm"><L10n>{"Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; "}</L10n><L10nValue>{labQuotePayment ? "luồng thanh toán LAB V2 cần báo giá trước khi thu." : "các thao tác hiện có vẫn dựa trên số dư Billing dương."}</L10nValue></p> : null}</L10nValue>
+            <L10nValue>{quoteError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><L10nValue>{quoteError.message}</L10nValue><L10nValue>{quoteError.correlationId ? <span className="mt-1 block text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{quoteError.correlationId}</span></span> : null}</L10nValue></p> : null}</L10nValue>
+            <L10nValue>{quoteExpired ? <p role="alert" className="text-sm text-danger"><L10n>{"Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục."}</L10n></p> : null}</L10nValue>
+            <L10nValue>{quoteError ? <Button type="button" variant="secondary" loading={quoteLoading} disabled={quoteLoading || paymentLocked} onClick={() => void loadQuote(discovery.paymentRequestId)}><L10n>{"Thử tải lại báo giá"}</L10n></Button> : null}</L10nValue>
+          </div> : null}</L10nValue>
+          <L10nValue>{purpose === "LAB_TEST" && quoteZero && requestIsOpen && accountAcceptsPayment && notExpired ? quoteEnabled && zeroLiabilityEnabled ? <LabZeroLiabilityAction
             paymentRequestId={discovery.paymentRequestId}
             quoteId={quote?.quoteId ?? ""}
             quoteExpiresAt={quote?.expiresAt ?? ""}
@@ -377,39 +378,39 @@ function PaymentRequestLookupSession({ quoteEnabled = false, zeroLiabilityEnable
             enabled={zeroLiabilityEnabled}
             onLockChange={reportLock}
             onCompleted={receipt => void refreshAfterZero(receipt)}
-          /> : <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">Báo giá mô phỏng là 0 đồng. Chức năng xác nhận nghĩa vụ 0 chưa được mở; không thu tiền mặt.</p> : null}
-          {canPay || (paymentLocked && labQuotePayment && quote && !quoteZero) ? (
+          /> : <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm"><L10n>{"Báo giá mô phỏng là 0 đồng. Chức năng xác nhận nghĩa vụ 0 chưa được mở; không thu tiền mặt."}</L10n></p> : null}</L10nValue>
+          <L10nValue>{canPay || (paymentLocked && labQuotePayment && quote && !quoteZero) ? (
             labQuotePayment && quote ? <LabQuotePaymentAction paymentRequestId={discovery.paymentRequestId} quote={quote} quoteCurrent={quoteIsCurrent(clientNow)} onLockChange={reportLock} onCompleted={payment => void refreshAfterPayment(payment)} />
               : <LedgerPaymentForm requestId={discovery.paymentRequestId} remainingAmount={discovery.remainingAmount} currency={discovery.currency} onLockChange={reportLock} onCompleted={payment => void refreshAfterPayment(payment)} />
           ) : (
             <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-              {discovery.status === "PAID" ? "Khoản phí đã thanh toán. Không thu thêm cho yêu cầu này." : quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}
+              <L10nValue>{discovery.status === "PAID" ? "Khoản phí đã thanh toán. Không thu thêm cho yêu cầu này." : quoteZero ? "Báo giá hiện hành xác nhận người bệnh không phải trả tiền; không ghi nhận khoản thu tiền mặt." : quoteBlocksPayment ? "Chưa thể tiếp tục khi báo giá hiện hành chưa được xác nhận." : labQuotePayment && quoteUnavailable ? "Không thể thu LAB V2 khi Billing chưa cấp báo giá cho yêu cầu này." : "Khoản phí này không còn ở trạng thái có thể thu. Tra cứu lại để lấy trạng thái hiện tại trước khi tiếp tục."}</L10nValue>
             </p>
-          )}
+          )}</L10nValue>
         </section>
-      ) : null}
-      {discovery || completedPayment || zeroReceipt ? <details className="rounded-lg border border-border p-4">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin đối soát khoản đã chọn</summary>
+      ) : null}</L10nValue>
+      <L10nValue>{discovery || completedPayment || zeroReceipt ? <details className="rounded-lg border border-border p-4">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Thông tin đối soát khoản đã chọn"}</L10n></summary>
         <dl className="mt-2 grid gap-3 text-sm">
-          <Info label="Mã yêu cầu" value={completedPayment?.paymentRequestId ?? zeroReceipt?.paymentRequestId ?? discovery?.paymentRequestId ?? ""} mono />
-          {discovery ? <>
-            <Info label="Trạng thái tài khoản viện phí" value={accountStatusLabels[discovery.accountStatus]} />
-            <Info label="Dữ liệu cập nhật lúc" value={formatInstant(discovery.observedAt)} />
-            <Info label="Mã nguồn" value={discovery.sourceId} mono />
-            <Info label="Mã đợt điều trị" value={discovery.careEpisodeId} mono />
-          </> : null}
-          {completedPayment ? <Info label="Mã giao dịch" value={completedPayment.transactionId} mono /> : null}
-          {zeroReceipt ? <Info label="Mã xác nhận 0 đồng" value={zeroReceipt.clearanceId} mono /> : null}
+          <Info label={localize("Mã yêu cầu")} value={completedPayment?.paymentRequestId ?? zeroReceipt?.paymentRequestId ?? discovery?.paymentRequestId ?? ""} mono />
+          <L10nValue>{discovery ? <>
+            <Info label={localize("Trạng thái tài khoản viện phí")} value={accountStatusLabels[discovery.accountStatus]} />
+            <Info label={localize("Dữ liệu cập nhật lúc")} value={formatInstant(discovery.observedAt)} />
+            <Info label={localize("Mã nguồn")} value={discovery.sourceId} mono />
+            <Info label={localize("Mã đợt điều trị")} value={discovery.careEpisodeId} mono />
+          </> : null}</L10nValue>
+          <L10nValue>{completedPayment ? <Info label={localize("Mã giao dịch")} value={completedPayment.transactionId} mono /> : null}</L10nValue>
+          <L10nValue>{zeroReceipt ? <Info label={localize("Mã xác nhận 0 đồng")} value={zeroReceipt.clearanceId} mono /> : null}</L10nValue>
         </dl>
-      </details> : null}
+      </details> : null}</L10nValue>
     </div>
   );
 }
 
 function Amount({ label, amount, currency }: { label: string; amount: number; currency: string }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-lg font-semibold">{formatDecimal(amount)} {currency}</dd></div>;
+  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className="mt-1 text-lg font-semibold"><L10nValue>{formatDecimal(amount)}</L10nValue> <L10nValue>{currency}</L10nValue></dd></div>;
 }
 
 function Info({ label, value, mono = false }: { label: string; value: import("react").ReactNode; mono?: boolean }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{value}</dd></div>;
+  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{value}</dd></div>;
 }

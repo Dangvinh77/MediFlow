@@ -35,7 +35,8 @@ public record MedicalRecordDTO(
         @JsonInclude(JsonInclude.Include.NON_NULL) String allergyNote,
         @JsonInclude(JsonInclude.Include.NON_NULL) String physicalExam,
         @JsonInclude(JsonInclude.Include.NON_NULL) String advice,
-        @JsonInclude(JsonInclude.Include.NON_NULL) UUID responsibleDoctorId
+        @JsonInclude(JsonInclude.Include.NON_NULL) UUID responsibleDoctorId,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<EffectiveRecordCorrectionDTO> effectiveCorrections
 ) {
     public MedicalRecordDTO(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId, LocalDate examinationDate,
             String symptoms, UUID appointmentId, List<DiagnosisDTO> diagnoses, Instant createdAt, Instant updatedAt,
@@ -45,7 +46,7 @@ public record MedicalRecordDTO(
             String advice) {
         this(recordId, patientId, doctorId, departmentId, examinationDate, symptoms, appointmentId, diagnoses, createdAt,
                 updatedAt, status, disposition, dispositionNote, completedAt, previousRecordId, closureReason, closureNote,
-                closedAt, chiefComplaint, presentIllness, pastHistory, allergyNote, physicalExam, advice, null);
+                closedAt, chiefComplaint, presentIllness, pastHistory, allergyNote, physicalExam, advice, null, List.of());
     }
 
     public MedicalRecordDTO(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId, LocalDate examinationDate,
@@ -54,17 +55,29 @@ public record MedicalRecordDTO(
             UUID previousRecordId, RecordClosureReason closureReason, String closureNote, Instant closedAt) {
         this(recordId, patientId, doctorId, departmentId, examinationDate, symptoms, appointmentId, diagnoses, createdAt,
                 updatedAt, status, disposition, dispositionNote, completedAt, previousRecordId, closureReason, closureNote,
-                closedAt, null, null, null, null, null, null);
+                closedAt, null, null, null, null, null, null, null, List.of());
     }
 
     public MedicalRecordDTO(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId, LocalDate examinationDate,
             String symptoms, UUID appointmentId, List<DiagnosisDTO> diagnoses, Instant createdAt, Instant updatedAt,
             MedicalRecordStatus status, RecordDisposition disposition, String dispositionNote, Instant completedAt) {
         this(recordId, patientId, doctorId, departmentId, examinationDate, symptoms, appointmentId, diagnoses, createdAt,
-                updatedAt, status, disposition, dispositionNote, completedAt, null, null, null, null);
+                updatedAt, status, disposition, dispositionNote, completedAt,
+                null, null, null, null, null, null, null, null, null, null, null, List.of());
     }
 
     public MedicalRecordDTO {
         diagnoses = List.copyOf(diagnoses);
+        effectiveCorrections = effectiveCorrections == null ? List.of() : List.copyOf(effectiveCorrections);
+    }
+
+    public static MedicalRecordDTO withEffectiveCorrections(MedicalRecordDTO record,
+            List<EffectiveRecordCorrectionDTO> corrections) {
+        return new MedicalRecordDTO(record.recordId, record.patientId, record.doctorId, record.departmentId,
+                record.examinationDate, record.symptoms, record.appointmentId, record.diagnoses, record.createdAt,
+                record.updatedAt, record.status, record.disposition, record.dispositionNote, record.completedAt,
+                record.previousRecordId, record.closureReason, record.closureNote, record.closedAt, record.chiefComplaint,
+                record.presentIllness, record.pastHistory, record.allergyNote, record.physicalExam, record.advice,
+                record.responsibleDoctorId, corrections);
     }
 }

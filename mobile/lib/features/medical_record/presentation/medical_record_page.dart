@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -12,6 +14,8 @@ import '../../../core/widgets/reference_widgets.dart';
 import '../domain/exam_lifecycle.dart';
 import '../domain/medical_record.dart';
 import '../domain/patient_timeline.dart';
+import '../domain/record_collaboration.dart' show amendmentSectionLabels;
+import 'medical_record_formatters.dart';
 import 'close_record_sheet.dart';
 import 'follow_up_recommendation_panel.dart';
 import 'patient_allergy_section.dart';
@@ -87,7 +91,7 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
     if (access == null ||
         !const ['ADMIN', 'DOCTOR', 'NURSE'].contains(access.role)) {
       return const Scaffold(
-        body: Center(child: Text('Bạn không có quyền xem hồ sơ khám.')),
+        body: Center(child: LText('Bạn không có quyền xem hồ sơ khám.')),
       );
     }
     return _VisitRecordResolver(
@@ -149,7 +153,7 @@ class _VisitRecordResolverState extends State<_VisitRecordResolver> {
         );
       }
       return Scaffold(
-        appBar: AppBar(title: const Text('Hồ sơ của lượt khám')),
+        appBar: AppBar(title: const LText('Hồ sơ của lượt khám')),
         body: snapshot.hasError
             ? _RetryMessage(
                 error: snapshot.error!,
@@ -176,11 +180,11 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
       medicalRecordOutpatientUiEnabledProvider,
     );
     if (access == null) {
-      return const Center(child: Text('Đăng nhập để tra cứu hồ sơ khám.'));
+      return const Center(child: LText('Đăng nhập để tra cứu hồ sơ khám.'));
     }
     if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
       return const Center(
-        child: Text('Bạn không có quyền tra cứu hồ sơ khám.'),
+        child: LText('Bạn không có quyền tra cứu hồ sơ khám.'),
       );
     }
     if (_identity != access.sessionIdentity) {
@@ -216,7 +220,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
                 OutlinedButton.icon(
                   onPressed: _loading ? null : () => _loadPatient(_patientId!),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Làm mới hồ sơ'),
+                  label: const LText('Làm mới hồ sơ'),
                 ),
               if (canCreate)
                 FilledButton.icon(
@@ -231,7 +235,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
                     }
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Tạo hồ sơ V0'),
+                  label: const LText('Tạo hồ sơ V0'),
                 ),
             ],
           ),
@@ -241,7 +245,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Hồ sơ được tạo khi bắt đầu khám từ lịch hẹn.'),
+              child: LText('Hồ sơ được tạo khi bắt đầu khám từ lịch hẹn.'),
             ),
           ),
         Expanded(child: _buildResults()),
@@ -312,7 +316,7 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
     }
     if (_patientId == null) {
       return const Center(
-        child: Text('Chọn bệnh nhân theo tên để xem hồ sơ khám.'),
+        child: LText('Chọn bệnh nhân theo tên để xem hồ sơ khám.'),
       );
     }
     if (_records == null) return const SizedBox.shrink();
@@ -440,20 +444,20 @@ class _MedicalRecordEditorPageState
         outpatientEnabled ||
         !const {'ADMIN', 'DOCTOR'}.contains(access?.role)) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Tạo hồ sơ')),
+        appBar: AppBar(title: const LText('Tạo hồ sơ')),
         body: const Center(
-          child: Text('Tạo hồ sơ thủ công hiện không khả dụng.'),
+          child: LText('Tạo hồ sơ thủ công hiện không khả dụng.'),
         ),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Tạo hồ sơ khám V0')),
+      appBar: AppBar(title: const LText('Tạo hồ sơ khám V0')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
+            const LText(
               'Chỉ tạo hồ sơ thủ công khi quy trình ngoại trú V1 chưa được bật.',
             ),
             ReferencePicker(
@@ -505,21 +509,23 @@ class _MedicalRecordEditorPageState
                       if (date != null && mounted) setState(() => _date = date);
                     },
               icon: const Icon(Icons.calendar_month),
-              label: Text('Ngày khám: ${_dateString(_date)}'),
+              label: LText('Ngày khám: ${_dateString(_date)}'),
             ),
             TextFormField(
               controller: _symptoms,
               maxLength: 4000,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Triệu chứng'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Triệu chứng'),
+              ),
               validator: (v) =>
                   (v?.length ?? 0) > 2000 ? 'Tối đa 2000 ký tự.' : null,
             ),
             TextFormField(
               controller: _diagnosisName,
               maxLength: 255,
-              decoration: const InputDecoration(
-                labelText: 'Chẩn đoán ban đầu *',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Chẩn đoán ban đầu *'),
               ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Nhập chẩn đoán.' : null,
@@ -527,8 +533,8 @@ class _MedicalRecordEditorPageState
             TextFormField(
               controller: _diagnosisCode,
               maxLength: 32,
-              decoration: const InputDecoration(
-                labelText: 'Mã ICD (không bắt buộc)',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Mã ICD (không bắt buộc)'),
               ),
             ),
             if (_error != null) _RetryMessage(error: _error!),
@@ -545,7 +551,7 @@ class _MedicalRecordEditorPageState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save),
-              label: const Text('Tạo hồ sơ'),
+              label: const LText('Tạo hồ sơ'),
             ),
           ],
         ),
@@ -712,13 +718,13 @@ class _MedicalRecordDetailPageState
         if (mounted) _load();
       });
       return const Scaffold(
-        body: Center(child: Text('Đang cập nhật phiên đăng nhập…')),
+        body: Center(child: LText('Đang cập nhật phiên đăng nhập…')),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ khám')),
+      appBar: AppBar(title: const LText('Hồ sơ khám')),
       body: !_canRead
-          ? const Center(child: Text('Bạn không có quyền xem hồ sơ khám.'))
+          ? const Center(child: LText('Bạn không có quyền xem hồ sơ khám.'))
           : _loading
           ? const Center(child: MediFlowLoader())
           : _error != null && _record == null
@@ -731,7 +737,7 @@ class _MedicalRecordDetailPageState
                 ) ??
                 _RetryMessage(error: _error!, onRetry: _load)
           : _record == null
-          ? const Center(child: Text('Không có dữ liệu hồ sơ.'))
+          ? const Center(child: LText('Không có dữ liệu hồ sơ.'))
           : _buildDetail(_record!, access?.role, outpatientEnabled),
     );
   }
@@ -806,7 +812,7 @@ class _MedicalRecordDetailPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LText(
                   'Ngày khám: ${record.examinationDate}',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
@@ -816,7 +822,7 @@ class _MedicalRecordDetailPageState
                   tone: statusToneOf(record.status),
                 ),
                 if (record.status == 'COMPLETED')
-                  const Text(
+                  const LText(
                     'Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.',
                   ),
                 ReferenceLabel(
@@ -845,19 +851,19 @@ class _MedicalRecordDetailPageState
                     id: record.appointmentId!,
                     label: 'Lịch hẹn',
                   ),
-                Text('Tạo lúc: ${record.createdAt}'),
+                LText('Tạo lúc: ${record.createdAt}'),
                 if (record.updatedAt != null)
-                  Text('Cập nhật: ${record.updatedAt}'),
+                  LText('Cập nhật: ${record.updatedAt}'),
                 if (record.completedAt != null)
-                  Text('Hoàn tất: ${record.completedAt}'),
+                  LText('Hoàn tất: ${record.completedAt}'),
                 if (record.closureReason != null)
-                  Text(
+                  LText(
                     'Lý do: ${recordClosureReasonLabels[record.closureReason] ?? record.closureReason}',
                   ),
                 if (record.closureNote?.trim().isNotEmpty == true)
-                  Text(record.closureNote!),
+                  LText(record.closureNote!),
                 if (record.closedAt != null)
-                  Text('Kết thúc lúc: ${record.closedAt}'),
+                  LText('Kết thúc lúc: ${record.closedAt}'),
                 if (record.previousRecordId case final previous?)
                   TextButton(
                     onPressed: () => Navigator.of(context).push<void>(
@@ -871,29 +877,55 @@ class _MedicalRecordDetailPageState
                         ),
                       ),
                     ),
-                    child: const Text('Lượt trước — chỉ tham khảo'),
+                    child: const LText('Lượt trước — chỉ tham khảo'),
                   ),
               ],
             ),
           ),
         ),
         ..._clinicalContentSections(record),
+        if (record.effectiveCorrections.isNotEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const LText('Chỉnh sửa có hiệu lực', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const LText('Bản gốc được giữ nguyên. Nội dung sửa bên dưới là giá trị đang có hiệu lực.'),
+                  for (final correction in record.effectiveCorrections) ...[
+                    const Divider(),
+                    LText(amendmentSectionLabels[correction.section] ?? correction.section,
+                        style: Theme.of(context).textTheme.titleSmall),
+                    const LText('Nội dung gốc'),
+                    LText(correction.originalText),
+                    const LText('Nội dung đang có hiệu lực', style: TextStyle(fontWeight: FontWeight.w600)),
+                    LText(correction.correctedText),
+                    LText('Lý do đính chính: ${correction.reason}'),
+                    LText('Thời điểm áp dụng: ${formatClinicalInstant(correction.appliedAt)}'),
+                  ],
+                ],
+              ),
+            ),
+          ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Chẩn đoán',
+                LText(
+                  record.effectiveCorrections.any((c) => c.section == 'DIAGNOSIS')
+                      ? 'Chẩn đoán ban đầu'
+                      : 'Chẩn đoán',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                if (record.diagnoses.isEmpty) const Text('Chưa có chẩn đoán.'),
+                if (record.diagnoses.isEmpty) const LText('Chưa có chẩn đoán.'),
                 for (final diagnosis in record.diagnoses)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(diagnosis.name),
-                    subtitle: Text(
+                    title: LText(diagnosis.name),
+                    subtitle: LText(
                       [
                         if (diagnosis.icdCode != null)
                           'ICD ${diagnosis.icdCode}',
@@ -944,7 +976,7 @@ class _MedicalRecordDetailPageState
             key: const Key('record-content-retry'),
             onPressed: _busy ? null : () => _sendContentUpdate(pending),
             icon: const Icon(Icons.refresh),
-            label: const Text('Gửi lại cùng yêu cầu'),
+            label: const LText('Gửi lại cùng yêu cầu'),
           ),
         if (_busy) const LinearProgressIndicator(),
         Wrap(
@@ -957,7 +989,7 @@ class _MedicalRecordDetailPageState
                     ? null
                     : () => _editContent(record),
                 icon: const Icon(Icons.edit_note),
-                label: const Text('Sửa nội dung khám'),
+                label: const LText('Sửa nội dung khám'),
               ),
             if (canEdit)
               OutlinedButton.icon(
@@ -965,12 +997,12 @@ class _MedicalRecordDetailPageState
                     ? null
                     : () => _addDiagnosis(record),
                 icon: const Icon(Icons.add),
-                label: const Text('Thêm chẩn đoán'),
+                label: const LText('Thêm chẩn đoán'),
               ),
             OutlinedButton.icon(
               onPressed: _busy ? null : _load,
               icon: const Icon(Icons.refresh),
-              label: const Text('Làm mới hồ sơ'),
+              label: const LText('Làm mới hồ sơ'),
             ),
           ],
         ),
@@ -998,7 +1030,7 @@ class _MedicalRecordDetailPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
+                  LText(
                     'Đơn thuốc',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
@@ -1029,31 +1061,33 @@ class _MedicalRecordDetailPageState
         if (canClose)
           OutlinedButton(
             onPressed: _busy || _uncertain ? null : () => _closeRecord(record),
-            child: const Text('Kết thúc không kết luận'),
+            child: const LText('Kết thúc không kết luận'),
           ),
       ],
     );
   }
 
-  List<Widget> _clinicalContentSections(MedicalRecord record) => [
+  List<Widget> _clinicalContentSections(MedicalRecord record) {
+    final amended = record.effectiveCorrections.map((value) => value.section).toSet();
+    return [
     if (record.symptoms?.trim().isNotEmpty == true)
-      _clinicalSection('Triệu chứng', record.symptoms!),
+      _clinicalSection(amended.contains('SYMPTOMS') ? 'Triệu chứng ban đầu' : 'Triệu chứng', record.symptoms!),
     if (record.chiefComplaint?.trim().isNotEmpty == true)
-      _clinicalSection('Lý do khám', record.chiefComplaint!),
+      _clinicalSection(amended.contains('CHIEF_COMPLAINT') ? 'Lý do khám ban đầu' : 'Lý do khám', record.chiefComplaint!),
     if (record.presentIllness?.trim().isNotEmpty == true)
-      _clinicalSection('Diễn biến bệnh', record.presentIllness!),
+      _clinicalSection(amended.contains('PRESENT_ILLNESS') ? 'Diễn biến bệnh ban đầu' : 'Diễn biến bệnh', record.presentIllness!),
     if (record.pastHistory?.trim().isNotEmpty == true)
-      _clinicalSection('Tiền sử', record.pastHistory!),
+      _clinicalSection(amended.contains('PAST_HISTORY') ? 'Tiền sử ban đầu' : 'Tiền sử', record.pastHistory!),
     if (record.allergyNote?.trim().isNotEmpty == true)
-      _clinicalSection('Ghi chú dị ứng của lượt', record.allergyNote!),
+      _clinicalSection(amended.contains('ALLERGY_NOTE') ? 'Ghi chú dị ứng ban đầu' : 'Ghi chú dị ứng của lượt', record.allergyNote!),
     if (record.physicalExam?.trim().isNotEmpty == true)
-      _clinicalSection('Khám thực thể', record.physicalExam!),
+      _clinicalSection(amended.contains('PHYSICAL_EXAM') ? 'Khám thực thể ban đầu' : 'Khám thực thể', record.physicalExam!),
     if (record.advice?.trim().isNotEmpty == true)
-      _clinicalSection('Dặn dò', record.advice!),
+      _clinicalSection(amended.contains('ADVICE') ? 'Dặn dò ban đầu' : 'Dặn dò', record.advice!),
     if (record.disposition != null ||
         record.dispositionNote?.trim().isNotEmpty == true)
       _clinicalSection(
-        'Hướng xử trí',
+        amended.contains('DISPOSITION_NOTE') ? 'Hướng xử trí ban đầu' : 'Hướng xử trí',
         [
           if (record.disposition != null)
             _dispositionLabel(record.disposition!),
@@ -1062,6 +1096,7 @@ class _MedicalRecordDetailPageState
         ].join('\n'),
       ),
   ];
+  }
 
   Widget _clinicalSection(String title, String content) => Card(
     child: Padding(
@@ -1069,9 +1104,9 @@ class _MedicalRecordDetailPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          LText(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(content),
+          LText(content),
         ],
       ),
     ),
@@ -1104,7 +1139,7 @@ class _MedicalRecordDetailPageState
     final route = DialogRoute<Map<String, String?>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sửa nội dung khám'),
+        title: const LText('Sửa nội dung khám'),
         content: SizedBox(
           width: 560,
           child: SingleChildScrollView(
@@ -1117,7 +1152,9 @@ class _MedicalRecordDetailPageState
                     controller: controllers[field],
                     maxLength: 4000,
                     maxLines: 3,
-                    decoration: InputDecoration(labelText: labels[field]),
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, labels[field]),
+                    ),
                   ),
               ],
             ),
@@ -1126,7 +1163,7 @@ class _MedicalRecordDetailPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: const LText('Hủy'),
           ),
           FilledButton(
             key: const Key('record-content-save'),
@@ -1137,7 +1174,7 @@ class _MedicalRecordDetailPageState
                     ? null
                     : controllers[field]!.text,
             }),
-            child: const Text('Lưu'),
+            child: const LText('Lưu'),
           ),
         ],
       ),
@@ -1223,7 +1260,7 @@ class _MedicalRecordDetailPageState
     final route = DialogRoute<DiagnosisDraft>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Thêm chẩn đoán'),
+        title: const LText('Thêm chẩn đoán'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1231,18 +1268,24 @@ class _MedicalRecordDetailPageState
               TextField(
                 controller: name,
                 maxLength: 255,
-                decoration: const InputDecoration(labelText: 'Tên chẩn đoán *'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Tên chẩn đoán *'),
+                ),
               ),
               TextField(
                 controller: icd,
                 maxLength: 32,
-                decoration: const InputDecoration(labelText: 'Mã ICD'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mã ICD'),
+                ),
               ),
               TextField(
                 controller: description,
                 maxLength: 2000,
                 maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Mô tả'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mô tả'),
+                ),
               ),
             ],
           ),
@@ -1250,7 +1293,7 @@ class _MedicalRecordDetailPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: const LText('Hủy'),
           ),
           FilledButton(
             onPressed: () {
@@ -1262,12 +1305,12 @@ class _MedicalRecordDetailPageState
               final issue = validateDiagnosis(value);
               if (issue != null) {
                 ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(issue)));
+                    .showSnackBar(SnackBar(content: LText(issue)));
                 return;
               }
               Navigator.pop(context, value);
             },
-            child: const Text('Thêm'),
+            child: const LText('Thêm'),
           ),
         ],
       ),
@@ -1341,23 +1384,25 @@ class _CompleteRecordCardState extends State<_CompleteRecordCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             'Hoàn tất hồ sơ khám',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           DropdownButtonFormField<String>(
             initialValue: _disposition,
-            decoration: const InputDecoration(labelText: 'Hướng xử trí'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Hướng xử trí'),
+            ),
             items: const [
               DropdownMenuItem(
                 value: 'OUTPATIENT_FOLLOW_UP',
-                child: Text('Theo dõi ngoại trú'),
+                child: LText('Theo dõi ngoại trú'),
               ),
               DropdownMenuItem(
                 value: 'PRESCRIPTION',
-                child: Text('Kê đơn thuốc'),
+                child: LText('Kê đơn thuốc'),
               ),
-              DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
+              DropdownMenuItem(value: 'OTHER', child: LText('Khác')),
             ],
             onChanged: widget.busy
                 ? null
@@ -1369,8 +1414,8 @@ class _CompleteRecordCardState extends State<_CompleteRecordCard> {
             controller: _note,
             maxLength: 2000,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Ghi chú (không bắt buộc)',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Ghi chú (không bắt buộc)'),
             ),
           ),
           CheckboxListTile(
@@ -1379,12 +1424,12 @@ class _CompleteRecordCardState extends State<_CompleteRecordCard> {
                 ? null
                 : (value) => setState(() => _confirmed = value == true),
             contentPadding: EdgeInsets.zero,
-            title: const Text(
+            title: const LText(
               'Tôi đã kiểm tra chẩn đoán và muốn hoàn tất hồ sơ.',
             ),
           ),
           if (_error != null)
-            Text(
+            LText(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
@@ -1404,10 +1449,10 @@ class _CompleteRecordCardState extends State<_CompleteRecordCard> {
                     );
                   },
             icon: const Icon(Icons.task_alt),
-            label: const Text('Hoàn tất hồ sơ'),
+            label: const LText('Hoàn tất hồ sơ'),
           ),
           if (widget.record.diagnoses.isEmpty)
-            const Text('Thêm ít nhất một chẩn đoán trước khi hoàn tất.'),
+            const LText('Thêm ít nhất một chẩn đoán trước khi hoàn tất.'),
         ],
       ),
     ),
@@ -1669,7 +1714,7 @@ class _ClinicalLabWorkflowPanelState
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: Text('Phiên đăng nhập đã thay đổi.'),
+          child: LText('Phiên đăng nhập đã thay đổi.'),
         ),
       );
     }
@@ -1681,11 +1726,11 @@ class _ClinicalLabWorkflowPanelState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LText(
                 'Chỉ định xét nghiệm',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              const Text(
+              const LText(
                 'Chỉ định được gắn với hồ sơ và lịch khám. Dùng mã giá do cơ sở phê duyệt.',
               ),
               if (_sourceOrder == null) ...[
@@ -1707,14 +1752,14 @@ class _ClinicalLabWorkflowPanelState
                   DropdownButtonFormField<String>(
                     key: const ValueKey('clinical-lab-catalog-group'),
                     initialValue: _selectedCatalogGroup,
-                    decoration: const InputDecoration(
-                      labelText: 'Nhóm xét nghiệm',
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, 'Nhóm xét nghiệm'),
                     ),
                     items: [
                       for (final group in _catalogGroups)
                         DropdownMenuItem(
                           value: group,
-                          child: Text(_groupLabel(group)),
+                          child: LText(_groupLabel(group)),
                         ),
                     ],
                     onChanged: _busy ? null : _selectCatalogGroup,
@@ -1724,26 +1769,26 @@ class _ClinicalLabWorkflowPanelState
                       'clinical-lab-catalog-service-$_selectedCatalogGroup',
                     ),
                     initialValue: _selectedCatalogItem,
-                    decoration: const InputDecoration(
-                      labelText: 'Dịch vụ xét nghiệm',
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, 'Dịch vụ xét nghiệm'),
                     ),
                     items: [
                       for (final item in _selectedGroupItems)
-                        DropdownMenuItem(value: item, child: Text(item.name)),
+                        DropdownMenuItem(value: item, child: LText(item.name)),
                     ],
                     onChanged: _busy ? null : _selectCatalogItem,
                   ),
                   if (_selectedCatalogItem != null) ...[
-                    Text('Bệnh phẩm: ${_selectedCatalogItem!.specimenType}'),
-                    Text(
+                    LText('Bệnh phẩm: ${_selectedCatalogItem!.specimenType}'),
+                    LText(
                       'Chuẩn bị: ${_metadata(_selectedCatalogItem!.preparation)}',
                     ),
-                    Text(
+                    LText(
                       'Thời gian trả kết quả: ${_selectedCatalogItem!.turnaroundHours == null ? 'Chưa có thông tin' : '${_selectedCatalogItem!.turnaroundHours} giờ'}',
                     ),
-                    Text('Mã giá: ${_selectedCatalogItem!.priceCode}'),
+                    LText('Mã giá: ${_selectedCatalogItem!.priceCode}'),
                     if (_selectedCatalogItem!.panel)
-                      const Text(
+                      const LText(
                         'Dịch vụ bảng được gửi trong một đơn xét nghiệm.',
                       ),
                   ],
@@ -1753,8 +1798,8 @@ class _ClinicalLabWorkflowPanelState
                     key: const ValueKey('clinical-lab-manual-type'),
                     controller: _labType,
                     maxLength: 50,
-                    decoration: const InputDecoration(
-                      labelText: 'Loại xét nghiệm *',
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, 'Loại xét nghiệm *'),
                     ),
                   ),
                 if (!_catalogLoading && _catalogDisabled)
@@ -1762,7 +1807,9 @@ class _ClinicalLabWorkflowPanelState
                     key: const ValueKey('clinical-lab-manual-price'),
                     controller: _priceCode,
                     maxLength: 64,
-                    decoration: const InputDecoration(labelText: 'Mã giá *'),
+                    decoration: InputDecoration(
+                      labelText: AppL10n.text(context, 'Mã giá *'),
+                    ),
                   ),
                 OutlinedButton.icon(
                   onPressed: _busy || _sourceUncertain || _catalogLoading
@@ -1779,7 +1826,7 @@ class _ClinicalLabWorkflowPanelState
                           }
                         },
                   icon: const Icon(Icons.calendar_month),
-                  label: Text('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
+                  label: LText('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
                 ),
                 FilledButton(
                   key: const ValueKey('clinical-lab-submit'),
@@ -1790,14 +1837,14 @@ class _ClinicalLabWorkflowPanelState
                           (!_catalogDisabled && _selectedCatalogItem == null)
                       ? null
                       : _createSourceOrder,
-                  child: const Text('Gửi chỉ định xét nghiệm'),
+                  child: const LText('Gửi chỉ định xét nghiệm'),
                 ),
                 if (_sourceUncertain)
                   const NoticeBox(
                     'Chưa rõ kết quả lập chỉ định trong hồ sơ. Không lập lại; cần bộ phận hỗ trợ đối soát hồ sơ. Lab có thể chưa nhận được yêu cầu.',
                   ),
               ] else ...[
-                Text(
+                LText(
                   'Đã nhận chỉ định ${_sourceOrder!.labType} · ${_sourceOrder!.requestedDate}. Thông tin nguồn được giữ nguyên cho bước tiếp theo.',
                 ),
                 if (_receipt == null) ...[
@@ -1805,7 +1852,7 @@ class _ClinicalLabWorkflowPanelState
                     onPressed: _busy || _labUncertain || _labConflict
                         ? null
                         : _submitLabRequest,
-                    child: Text(
+                    child: LText(
                       _busy ? 'Đang gửi…' : 'Tiếp tục chuyển sang Lab',
                     ),
                   ),
@@ -1816,8 +1863,8 @@ class _ClinicalLabWorkflowPanelState
                 ] else
                   const ListTile(
                     leading: Icon(Icons.check_circle_outline),
-                    title: Text('Đã gửi yêu cầu xét nghiệm'),
-                    subtitle: Text(
+                    title: LText('Đã gửi yêu cầu xét nghiệm'),
+                    subtitle: LText(
                       'Thanh toán và điều kiện thực hiện do hệ thống cập nhật riêng.',
                     ),
                   ),
@@ -1843,7 +1890,7 @@ Widget? _recordAccessRefusal({
   if (error.code == 'RECORD_ACCESS_DENIED') {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Align(alignment: Alignment.topCenter, child: Text(deniedText)),
+      child: Align(alignment: Alignment.topCenter, child: LText(deniedText)),
     );
   }
   if (error.code != 'RECORD_ACCESS_PURPOSE_REQUIRED') return null;
@@ -1944,14 +1991,14 @@ class _RecordAccessPurposeFormState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
-        const Text('Bạn cần khai báo mục đích trước khi xem hồ sơ này.'),
+        const LText('Bạn cần khai báo mục đích trước khi xem hồ sơ này.'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             for (final purpose in _byRole[widget.role] ?? const <String>[])
               ChoiceChip(
-                label: Text(_labels[purpose]!),
+                label: LText(_labels[purpose]!),
                 selected: _purpose == purpose,
                 onSelected: _saving
                     ? null
@@ -1968,14 +2015,17 @@ class _RecordAccessPurposeFormState
             maxLength: 500,
             maxLines: 3,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Lý do (ít nhất $_minReasonLength ký tự)',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(
+                context,
+                'Lý do (ít nhất $_minReasonLength ký tự)',
+              ),
             ),
           ),
         if (_error != null) _RetryMessage(error: _error!),
         FilledButton(
           onPressed: _ready ? _submit : null,
-          child: const Text('Xác nhận mục đích'),
+          child: const LText('Xác nhận mục đích'),
         ),
       ],
     ),
@@ -1994,7 +2044,7 @@ class _RetryMessage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             error is ApiFailure
                 ? (error as ApiFailure).message
                 : error is ArgumentError
@@ -2003,12 +2053,12 @@ class _RetryMessage extends StatelessWidget {
           ),
           if (error is ApiFailure &&
               (error as ApiFailure).correlationId != null)
-            Text('Mã hỗ trợ: ${(error as ApiFailure).correlationId}'),
+            LText('Mã hỗ trợ: ${(error as ApiFailure).correlationId}'),
           if (onRetry != null)
             TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại tải dữ liệu'),
+              label: const LText('Thử lại tải dữ liệu'),
             ),
         ],
       ),

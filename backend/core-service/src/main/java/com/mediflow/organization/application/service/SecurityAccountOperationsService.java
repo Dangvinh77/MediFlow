@@ -251,6 +251,14 @@ public class SecurityAccountOperationsService {
         String oldEmail = account.getUsername();
         if (newEmail.equalsIgnoreCase(oldEmail)) return account;
         if (accounts.existsByEmail(newEmail)) throw new InvalidAccountException("Email is already linked to another account");
+        if (account.getStaffId() != null && staff.existsByEmailAndStaffIdNot(newEmail, account.getStaffId())) {
+            throw new com.mediflow.common.exception.DuplicateResourceException(
+                    "STAFF_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ nhân viên khác");
+        }
+        if (account.getPatientId() != null && !patients.emailAvailable(account.getPatientId(), newEmail)) {
+            throw new com.mediflow.common.exception.DuplicateResourceException(
+                    "PATIENT_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ bệnh nhân khác");
+        }
 
         account.changeEmail(newEmail);
         Account saved = accounts.save(account);

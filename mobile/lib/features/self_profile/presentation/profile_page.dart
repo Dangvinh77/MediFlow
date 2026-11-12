@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
 
 import '../../../core/network/api_failure.dart';
+import '../../../core/l10n/appearance_settings.dart';
 import '../../auth/domain/session.dart';
 import '../../auth/presentation/session_controller.dart';
 import '../domain/self_profile.dart';
@@ -20,7 +23,7 @@ class SelfProfilePage extends ConsumerWidget {
     return auth.when(
       loading: () => const Center(child: MediFlowLoader()),
       error: (error, _) => Center(
-        child: Text('Không thể đọc phiên hiện tại. ${error.toString()}'),
+        child: LText('Không thể đọc phiên hiện tại. ${error.toString()}'),
       ),
       data: (session) => session == null
           ? const SizedBox.shrink()
@@ -115,20 +118,29 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: MediFlowLoader());
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          AppearanceSettings(),
+          SizedBox(height: 24),
+          Center(child: MediFlowLoader()),
+        ],
+      );
     }
     if (_error case final error?) {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(error, key: const ValueKey('self-profile-read-error')),
+          const AppearanceSettings(),
+          const SizedBox(height: 16),
+          LText(error, key: const ValueKey('self-profile-read-error')),
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh),
-              label: const Text('Tải lại hồ sơ'),
+              label: const LText('Tải lại hồ sơ'),
             ),
           ),
         ],
@@ -136,7 +148,13 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
     }
     final profile = _profile;
     if (profile == null) {
-      return const Center(child: Text('Không tìm thấy hồ sơ cá nhân.'));
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          AppearanceSettings(),
+          LText('Không tìm thấy hồ sơ cá nhân.'),
+        ],
+      );
     }
     return switch (profile) {
       StaffSelfProfile() => _buildStaff(profile),
@@ -145,18 +163,22 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
   }
 
   Widget _buildStaff(StaffSelfProfile staff) => ListView(
+    key: const ValueKey('self-profile-scroll'),
     padding: const EdgeInsets.all(16),
     children: [
       Text(staff.fullName, style: Theme.of(context).textTheme.headlineSmall),
       const SizedBox(height: 4),
-      Text(_jobTitle(staff.jobTitle)),
+      LText(_jobTitle(staff.jobTitle)),
       const SizedBox(height: 16),
       _ProfileCard(
         title: 'Thông tin cá nhân',
         entries: [
           _ProfileEntry('CCCD', staff.identityNumber),
           _ProfileEntry('Ngày sinh', _formatDate(staff.dateOfBirth)),
-          _ProfileEntry('Giới tính', _staffGender(staff.gender)),
+          _ProfileEntry(
+            'Giới tính',
+            AppL10n.text(context, _staffGender(staff.gender)),
+          ),
           _ProfileEntry('Địa chỉ', staff.address),
           _ProfileEntry('Điện thoại', staff.phoneNumber),
           _ProfileEntry('Email', staff.email),
@@ -175,17 +197,23 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
                 : TextButton.icon(
                     onPressed: _retryDepartment,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Tải lại'),
+                    label: const LText('Tải lại'),
                   ),
           ),
-          _ProfileEntry('Chức danh', _jobTitle(staff.jobTitle)),
+          _ProfileEntry(
+            'Chức danh',
+            AppL10n.text(context, _jobTitle(staff.jobTitle)),
+          ),
           _ProfileEntry('Chuyên môn', staff.specialization),
           _ProfileEntry('Trình độ chuyên môn', staff.qualification),
           _ProfileEntry('Giấy phép', staff.licenseNumber),
           _ProfileEntry('Ngày vào làm', _formatDate(staff.hireDate)),
           _ProfileEntry(
             'Trạng thái',
-            staff.active ? 'Đang làm việc' : 'Đã ngừng làm việc',
+            AppL10n.text(
+              context,
+              staff.active ? 'Đang làm việc' : 'Đã ngừng làm việc',
+            ),
           ),
         ],
       ),
@@ -200,21 +228,27 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
         },
         onReload: () => unawaited(_load()),
       ),
+      const SizedBox(height: 16),
+      const AppearanceSettings(),
     ],
   );
 
   Widget _buildPatient(PatientSelfProfile patient) => ListView(
+    key: const ValueKey('self-profile-scroll'),
     padding: const EdgeInsets.all(16),
     children: [
       Text(patient.fullName, style: Theme.of(context).textTheme.headlineSmall),
       const SizedBox(height: 4),
-      const Text('Hồ sơ bệnh nhân của bạn'),
+      const LText('Hồ sơ bệnh nhân của bạn'),
       const SizedBox(height: 16),
       _ProfileCard(
         title: 'Thông tin cá nhân',
         entries: [
           _ProfileEntry('Ngày sinh', _formatDate(patient.dateOfBirth)),
-          _ProfileEntry('Giới tính', _patientGender(patient.gender)),
+          _ProfileEntry(
+            'Giới tính',
+            AppL10n.text(context, _patientGender(patient.gender)),
+          ),
           _ProfileEntry('CCCD', patient.identityNumber),
           _ProfileEntry('BHYT', patient.insuranceNumber),
         ],
@@ -229,7 +263,11 @@ class _SelfProfileWorkspaceState extends ConsumerState<_SelfProfileWorkspace> {
         ],
       ),
       const SizedBox(height: 12),
-      const Text('Nếu cần cập nhật hồ sơ, vui lòng liên hệ bộ phận tiếp nhận.'),
+      const LText(
+        'Nếu cần cập nhật hồ sơ, vui lòng liên hệ bộ phận tiếp nhận.',
+      ),
+      const SizedBox(height: 16),
+      const AppearanceSettings(),
     ],
   );
 }
@@ -249,7 +287,7 @@ class _ProfileCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+            child: LText(title, style: Theme.of(context).textTheme.titleMedium),
           ),
           for (final entry in entries)
             Padding(
@@ -263,7 +301,7 @@ class _ProfileCard extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 132,
-                    child: Text(
+                    child: LText(
                       entry.label,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

@@ -85,6 +85,12 @@ public class PrescriptionJpaEntity {
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
+    @Column(name = "revision", nullable = false)
+    private int revision;
+
+    @Column(name = "revision_at_iso", length = 35)
+    private String revisionAtIso;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private PrescriptionStatus status;

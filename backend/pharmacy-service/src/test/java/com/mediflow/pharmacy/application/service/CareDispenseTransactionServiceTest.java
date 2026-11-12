@@ -166,7 +166,7 @@ class CareDispenseTransactionServiceTest {
 
     @Test
     void execute_incompleteReservationSet_rejectsBeforeAuthorization() {
-        when(reservations.findByPrescription(grant.prescriptionId())).thenReturn(List.of());
+        when(reservations.findReservedByPrescription(grant.prescriptionId())).thenReturn(List.of());
         assertThatThrownBy(() -> execute(DispenseActor.staff(UUID.randomUUID()))).hasMessageContaining("Exact complete");
         verify(clearances, never()).lockTarget(any());
         unchanged();
@@ -210,7 +210,7 @@ class CareDispenseTransactionServiceTest {
         var r2 = StockReservation.restore(UUID.randomUUID(), secondId, grant.prescriptionId(), 1, ReservationStatus.RESERVED,
                 now, now.plusSeconds(120), now, null, null, null);
         when(prescriptions.findByIdForUpdate(grant.prescriptionId())).thenReturn(Optional.of(prescription));
-        when(reservations.findByPrescription(grant.prescriptionId())).thenReturn(List.of(r2, r1));
+        when(reservations.findReservedByPrescription(grant.prescriptionId())).thenReturn(List.of(r2, r1));
         when(drugs.findByIdForUpdate(firstId)).thenReturn(Optional.of(first));
         when(drugs.findByIdForUpdate(secondId)).thenReturn(Optional.of(second));
         when(reservations.findReservedByPrescriptionForUpdate(grant.prescriptionId(), firstId)).thenReturn(Optional.of(r1));
@@ -284,7 +284,7 @@ class CareDispenseTransactionServiceTest {
     }
 
     @Test void failure_missingReservationEvidence_cannotBeMisclassifiedAsStockFailure() {
-        when(reservations.findByPrescription(grant.prescriptionId())).thenReturn(List.of());
+        when(reservations.findReservedByPrescription(grant.prescriptionId())).thenReturn(List.of());
         assertThatThrownBy(() -> service.recordStockFailure(grant.prescriptionId(), DispenseActor.staff(UUID.randomUUID()), "failure"));
         unchanged();
         verifyNoInteractions(clearances);
@@ -303,7 +303,7 @@ class CareDispenseTransactionServiceTest {
         when(slips.save(slip)).thenAnswer(call -> call.getArgument(0));
         when(prescriptions.save(prescription)).thenAnswer(call -> call.getArgument(0));
         when(drugs.findByIdForUpdate(drug.getDrugId())).thenReturn(Optional.of(drug));
-        when(reservations.findByPrescription(grant.prescriptionId())).thenReturn(List.of(reservation));
+        when(reservations.findReservedByPrescription(grant.prescriptionId())).thenReturn(List.of(reservation));
         when(reservations.findReservedByPrescriptionForUpdate(grant.prescriptionId(), drug.getDrugId())).thenReturn(Optional.of(reservation));
         when(clearances.findByTargetForUpdate(grant.prescriptionId())).thenReturn(List.of(grant));
     }

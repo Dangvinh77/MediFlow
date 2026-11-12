@@ -1,4 +1,6 @@
 "use client";
+import { L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,6 +18,7 @@ const jobs: Record<JobTitle, string> = { DOCTOR: "Bác sĩ", NURSE: "Điều dư
 
 /** Mounted by the profile route with the current session and signed staff claim as its key. */
 export function PersonalStaffProfile({ staffId }: { staffId: string }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [staff, setStaff] = useState<StaffDTO | null>(null);
   const [error, setError] = useState<{ message: string; correlationId: string | null } | null>(null);
@@ -33,17 +36,17 @@ export function PersonalStaffProfile({ staffId }: { staffId: string }) {
     return () => { active = false; };
   }, [staffId, attempt, router]);
   if (error) return <AsyncState kind="error" {...error} onRetry={() => { setError(null); setAttempt((value) => value + 1); }} />;
-  if (!staff) return <AsyncState kind="loading" message="Đang tải hồ sơ cá nhân…" />;
+  if (!staff) return <AsyncState kind="loading" message={localize("Đang tải hồ sơ cá nhân…")} />;
   return <div className="space-y-5">
     <RecordIdentity name={staff.fullName} subtitle={jobs[staff.jobTitle]} />
     <div className="grid items-start gap-5 xl:grid-cols-2">
-      <DetailSection title="Thông tin cá nhân"><Info label="Họ và tên" value={staff.fullName} /><Info label="CCCD" value={staff.identityNumber} /><Info label="Ngày sinh" value={staff.dateOfBirth?.split("-").reverse().join("/") ?? null} /><Info label="Giới tính" value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label="Địa chỉ" value={staff.address} /><Info label="Điện thoại" value={staff.phoneNumber} /><Info label="Email" value={staff.email} /></DetailSection>
-      <DetailSection title="Thông tin công tác"><OwnStaffDepartment staffId={staff.staffId} /><Info label="Chức danh" value={jobs[staff.jobTitle]} /><Info label="Chuyên môn" value={staff.specialization} /><Info label="Trình độ chuyên môn" value={staff.qualification} /><Info label="Giấy phép" value={staff.licenseNumber} /><Info label="Ngày vào làm" value={staff.hireDate?.split("-").reverse().join("/") ?? null} /><Info label="Trạng thái" value={staff.active ? "Đang làm việc" : "Đã ngừng làm việc"} /></DetailSection>
+      <DetailSection title={localize("Thông tin cá nhân")}><Info label={localize("Họ và tên")} value={staff.fullName} /><Info label={localize("CCCD")} value={staff.identityNumber} /><Info label={localize("Ngày sinh")} value={staff.dateOfBirth?.split("-").reverse().join("/") ?? null} /><Info label={localize("Giới tính")} value={staff.gender ? { MALE: "Nam", FEMALE: "Nữ", OTHER: "Khác" }[staff.gender] : null} /><Info label={localize("Địa chỉ")} value={staff.address} /><Info label={localize("Điện thoại")} value={staff.phoneNumber} /><Info label={localize("Email")} value={staff.email} /></DetailSection>
+      <DetailSection title={localize("Thông tin công tác")}><OwnStaffDepartment staffId={staff.staffId} /><Info label={localize("Chức danh")} value={jobs[staff.jobTitle]} /><Info label={localize("Chuyên môn")} value={staff.specialization} /><Info label={localize("Trình độ chuyên môn")} value={staff.qualification} /><Info label={localize("Giấy phép")} value={staff.licenseNumber} /><Info label={localize("Ngày vào làm")} value={staff.hireDate?.split("-").reverse().join("/") ?? null} /><Info label={localize("Trạng thái")} value={staff.active ? "Đang làm việc" : "Đã ngừng làm việc"} /></DetailSection>
     </div>
     <OwnStaffContactForm key={staff.staffId} staff={staff} onSaved={setStaff} />
   </div>;
 }
 
 function Info({ label, value }: { label: string; value: string | null }) {
-  return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value ?? "—"}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className="mt-1.5 break-words text-sm leading-6"><L10nValue>{value ?? "—"}</L10nValue></dd></div>;
 }

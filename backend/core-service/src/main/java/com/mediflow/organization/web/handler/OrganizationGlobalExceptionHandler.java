@@ -132,6 +132,10 @@ public class OrganizationGlobalExceptionHandler {
             return buildResponse(HttpStatus.CONFLICT,
                     "STAFF_IDENTITY_DUPLICATE", "A staff member with this identity number already exists");
         }
+        if ("ux_staff_email_key".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "STAFF_EMAIL_DUPLICATE", "Email này đã được sử dụng cho một hồ sơ nhân viên khác");
+        }
         if ("uk_account_username".equals(constraint)) {
             return buildResponse(HttpStatus.CONFLICT,
                     "ACCOUNT_USERNAME_DUPLICATE", "Account username already exists");

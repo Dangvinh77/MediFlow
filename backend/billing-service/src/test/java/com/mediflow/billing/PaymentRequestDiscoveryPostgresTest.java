@@ -118,9 +118,9 @@ class PaymentRequestDiscoveryPostgresTest {
                     request, charge, new BigDecimal("50000.00"));
         }
         jdbc.update("""
-                INSERT INTO prescription_charge_source(prescription_id,source_fingerprint,account_id,charge_id,payment_request_id,invoice_id,care_context,created_at_iso)
-                VALUES (?,?,?,?,?,?,?,?)
-                """, prescriptionId, "c".repeat(64), account, charge, request, invoice, careContext, "2026-10-16T08:00:00Z");
+                INSERT INTO prescription_charge_source(prescription_id,source_fingerprint,account_id,charge_id,payment_request_id,invoice_id,care_context,created_at_iso,price_code)
+                VALUES (?,?,?,?,?,?,?,?,(SELECT price_code FROM CHARGE WHERE charge_id=?))
+                """, prescriptionId, "c".repeat(64), account, charge, request, invoice, careContext, "2026-10-16T08:00:00Z", charge);
         return request;
     }
 

@@ -1,5 +1,17 @@
 # Frontend Service: Pharmacy
 
+## Sửa đơn chưa thanh toán — 12/11/2026
+
+Trong luồng ngoại trú V1, chi tiết đơn đang hoạt động/chưa xuất/chưa xác nhận thu và có
+revision từ máy chủ hiển thị **Sửa đơn thuốc** cho ADMIN/DOCTOR. Backend xác thực lại bác sĩ
+kê đơn và tình trạng thu tiền; trạng thái trên UI chỉ là gợi ý. Luồng legacy không mở sửa.
+
+Form dùng lại danh mục và trình chọn cách dùng. `PUT /api/v1/pharmacy/prescriptions/{id}`
+chỉ gửi `{expectedRevision, lines}` và `Idempotency-Key`; không gửi giá hoặc đổi hồ sơ,
+bệnh nhân, bác sĩ. Lỗi chưa rõ kết quả khóa bản nháp và chỉ cho thử lại đúng payload/key.
+Conflict trả về chi tiết mới để kiểm tra; lưu thành công hiển thị đơn theo response nguồn.
+Khoản phải thu được đồng bộ bởi Pharmacy/Billing, UI không tự tính lại số tiền thu.
+
 > **Nghiệp vụ đích 25/10/2026:** lịch khám theo ca, đăng ký tại quầy, tái khám và hỗ trợ BHYT
 > mô phỏng theo [02-business-flows](../../../docs/plans/02-business-flows.md).
 > Các trạng thái route, test và evidence bên dưới chỉ chứng minh baseline tương ứng;

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +35,7 @@ class PharmacyIdentityLabel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             '$label: ${value == null ? 'Không hiển thị với tài khoản này' : value.when(data: (name) => name, loading: () => 'Đang tải…', error: (error, _) => error is ApiFailure && error.status == 403
                       ? 'Không hiển thị với tài khoản này'
                       : error is ApiFailure && error.status == 404
@@ -52,7 +54,7 @@ class PharmacyIdentityLabel extends ConsumerWidget {
             TextButton(
               onPressed: () =>
                   ref.invalidate(pharmacyIdentityNameProvider((kind, id))),
-              child: Text('Tra cứu $label lại'),
+              child: LText('Tra cứu $label lại'),
             ),
         ],
       ),

@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +10,6 @@ import 'billing_reports_page.dart';
 import 'invoice_page.dart';
 import 'ledger_payment_page.dart';
 import 'providers.dart';
-import 'refund_due_page.dart';
 import 'payment_queue_page.dart';
 import 'scheduled_payment_page.dart';
 
@@ -20,10 +21,10 @@ class BillingPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     final repository = ref.watch(billingRepositoryProvider);
     if (access == null || repository == null) {
-      return const Center(child: Text('Chức năng Viện phí chưa sẵn sàng.'));
+      return const Center(child: LText('Chức năng Viện phí chưa sẵn sàng.'));
     }
     if (!const {'ADMIN', 'CASHIER'}.contains(access.role)) {
-      return const Center(child: Text('Bạn không có quyền xem Viện phí.'));
+      return const Center(child: LText('Bạn không có quyền xem Viện phí.'));
     }
     final config = ref.watch(appConfigProvider);
     final scheduled = ref.watch(scheduledPaymentRepositoryProvider);
@@ -69,7 +70,6 @@ class _BillingWorkspace extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final queue = ref.watch(paymentQueueRepositoryProvider);
-    final refunds = ref.watch(outpatientRefundRepositoryProvider);
     final canOperate = role == 'ADMIN' || role == 'CASHIER';
     final canReport = role == 'ADMIN';
     final labQuotes = quoteEnabled
@@ -112,8 +112,6 @@ class _BillingWorkspace extends ConsumerWidget {
       }
       tabs.add(const Tab(text: 'Lịch sử thu'));
       pages.add(InvoicePage(repository: repository));
-      tabs.add(const Tab(text: 'Hoàn tiền'));
-      pages.add(RefundDuePage(repository: repository, outpatient: refunds));
     }
     if (canReport) {
       tabs.add(const Tab(text: 'Báo cáo'));

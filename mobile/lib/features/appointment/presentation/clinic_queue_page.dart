@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -204,7 +206,7 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
     final hasTicket = entry.ticketId != null && entry.ticketRevision != null;
     Widget adjust(String type) => OutlinedButton(
       onPressed: _locked ? null : () => _adjust(entry, type),
-      child: Text(_adjustmentLabels[type]!),
+      child: LText(_adjustmentLabels[type]!),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -216,16 +218,16 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
             id: entry.patientId,
             label: 'Bệnh nhân',
           ),
-          if (numbers.isNotEmpty) Text(numbers),
-          if (entry.priority) const Text('Được ưu tiên'),
+          if (numbers.isNotEmpty) LText(numbers),
+          if (entry.priority) const LText('Được ưu tiên'),
           if (entry.checkedInAt != null)
-            Text(
+            LText(
               entry.vitalSignsRecorded
                   ? 'Đã có sinh hiệu'
                   : 'Chưa có sinh hiệu — vẫn có thể khám và đo sau',
             ),
           if (entry.continuationRequired)
-            const Text(
+            const LText(
               'Buổi khám đã hết giờ nhưng lượt khám còn mở, cần xử lý tiếp.',
             ),
           if (_errorRegistration == entry.registrationId && _error != null)
@@ -244,17 +246,17 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
                           _pending!,
                           (_) => 'Đã gửi lại yêu cầu thành công.',
                         ),
-                  child: const Text('Gửi lại cùng yêu cầu'),
+                  child: const LText('Gửi lại cùng yêu cầu'),
                 ),
               if (entry.stage == 'WAITING_ROOM_TICKET' && role == 'NURSE')
                 FilledButton(
                   onPressed: _locked ? null : () => _issue(entry),
-                  child: const Text('Cấp số phòng'),
+                  child: const LText('Cấp số phòng'),
                 ),
               if (inLine && hasTicket) ...[
                 FilledButton(
                   onPressed: _locked ? null : () => _call(entry),
-                  child: Text(
+                  child: LText(
                     entry.stage == 'CALLED' ? 'Gọi lại' : 'Gọi vào khám',
                   ),
                 ),
@@ -267,12 +269,12 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
               if (entry.checkedInAt != null && role == 'NURSE')
                 OutlinedButton(
                   onPressed: _locked ? null : () => _recordVitals(entry),
-                  child: const Text('Ghi sinh hiệu'),
+                  child: const LText('Ghi sinh hiệu'),
                 ),
               if (entry.checkedInAt != null)
                 OutlinedButton(
                   onPressed: () => _viewVitals(entry),
-                  child: const Text('Xem sinh hiệu'),
+                  child: const LText('Xem sinh hiệu'),
                 ),
             ],
           ),
@@ -296,7 +298,10 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
               for (final group in _groups)
                 if (entries.any((e) => group.$2.contains(e.stage))) ...[
                   const SizedBox(height: 8),
-                  Text(group.$1, style: Theme.of(context).textTheme.titleSmall),
+                  LText(
+                    group.$1,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   for (final entry in entries.where(
                     (e) => group.$2.contains(e.stage),
                   ))
@@ -310,12 +315,12 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
   @override
   Widget build(BuildContext context) {
     if (!ref.watch(clinicIntakeEnabledProvider)) {
-      return const Center(child: Text('Quầy điều dưỡng khoa chưa được mở.'));
+      return const Center(child: LText('Quầy điều dưỡng khoa chưa được mở.'));
     }
     final role = ref.watch(workspaceAccessProvider)?.role;
     if (!const ['NURSE', 'DOCTOR'].contains(role)) {
       return const Center(
-        child: Text('Chức năng dành cho điều dưỡng và bác sĩ.'),
+        child: LText('Chức năng dành cho điều dưỡng và bác sĩ.'),
       );
     }
     return FutureBuilder<List<ClinicQueueEntry>>(
@@ -337,9 +342,9 @@ class _ClinicQueuePageState extends ConsumerState<ClinicQueuePage> {
           child: ListView(
             padding: const EdgeInsets.all(12),
             children: [
-              if (_notice != null) Text(_notice!),
+              if (_notice != null) LText(_notice!),
               if (rooms.isEmpty)
-                const Text('Hôm nay chưa có bệnh nhân trong hàng đợi.'),
+                const LText('Hôm nay chưa có bệnh nhân trong hàng đợi.'),
               for (final roomId in rooms)
                 _room(
                   roomId,
@@ -373,24 +378,24 @@ class _ReasonDialogState extends State<_ReasonDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
+    title: LText(widget.title),
     content: TextField(
       controller: _reason,
       autofocus: true,
       maxLength: 500,
-      decoration: const InputDecoration(labelText: 'Lý do'),
+      decoration: InputDecoration(labelText: AppL10n.text(context, 'Lý do')),
       onChanged: (_) => setState(() {}),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Quay lại'),
+        child: const LText('Quay lại'),
       ),
       FilledButton(
         onPressed: _reason.text.trim().isEmpty
             ? null
             : () => Navigator.of(context).pop(_reason.text.trim()),
-        child: const Text('Xác nhận'),
+        child: const LText('Xác nhận'),
       ),
     ],
   );

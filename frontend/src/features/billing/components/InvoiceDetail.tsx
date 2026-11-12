@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import Link from "next/link";
@@ -25,6 +27,7 @@ export function InvoiceDetail({ invoiceId, notice }: { invoiceId: string; notice
 }
 
 function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice?: "created" }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [invoice, setInvoice] = useState<InvoiceDTO | null>(null);
   const [retryToken, setRetryToken] = useState(0);
@@ -123,62 +126,62 @@ function InvoiceDetailSession({ invoiceId, notice }: { invoiceId: string; notice
     }
   }
 
-  if (error && !invoice) return <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={retry} />;
-  if (!invoice) return <AsyncState kind="loading" message="Đang tải hóa đơn…" />;
+  if (error && !invoice) return <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={retry} />;
+  if (!invoice) return <AsyncState kind="loading" message={localize("Đang tải hóa đơn…")} />;
 
   return (
     <section className="mt-6 space-y-6">
-      {notice === "created" || paidNotice ? (
-        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">{paidNotice ? "Thanh toán thành công." : "Đã lập hóa đơn."}</p>
-      ) : null}
-      {error ? (
+      <L10nValue>{notice === "created" || paidNotice ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10nValue>{paidNotice ? "Thanh toán thành công." : "Đã lập hóa đơn."}</L10nValue></p>
+      ) : null}</L10nValue>
+      <L10nValue>{error ? (
         <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-          {error.message}{error.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span> : null}
+          <L10nValue>{error.message}</L10nValue><L10nValue>{error.correlationId ? <span className="mt-1 block text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{error.correlationId}</span></span> : null}</L10nValue>
         </p>
-      ) : null}
-      {paymentOutcomeUnknown ? (
+      ) : null}</L10nValue>
+      <L10nValue>{paymentOutcomeUnknown ? (
         <div className="space-y-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
-          {statusStillUnpaid ? <p role="status">Hóa đơn hiện vẫn chưa xác định được trạng thái thanh toán; không thể gửi lại giao dịch an toàn.</p> : null}
-          <Button type="button" loading={checkingStatus} onClick={() => void checkStatus()}>Kiểm tra trạng thái hóa đơn</Button>
+          <L10nValue>{statusStillUnpaid ? <p role="status"><L10n>{"Hóa đơn hiện vẫn chưa xác định được trạng thái thanh toán; không thể gửi lại giao dịch an toàn."}</L10n></p> : null}</L10nValue>
+          <Button type="button" loading={checkingStatus} onClick={() => void checkStatus()}><L10n>{"Kiểm tra trạng thái hóa đơn"}</L10n></Button>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
       <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-surface p-6">
-        <div><p className="break-all font-mono text-sm"><ReferenceText value={invoice.invoiceId} fallback="Hóa đơn" /></p><p className="mt-2 text-2xl font-semibold">{formatDecimal(invoice.totalAmount)}</p></div>
-        <StatusBadge tone={invoice.isPaid ? "success" : "warning"}>{invoice.isPaid ? "Đã thanh toán" : "Chưa thanh toán"}</StatusBadge>
+        <div><p className="break-all font-mono text-sm"><ReferenceText value={invoice.invoiceId} fallback="Hóa đơn" /></p><p className="mt-2 text-2xl font-semibold"><L10nValue>{formatDecimal(invoice.totalAmount)}</L10nValue></p></div>
+        <StatusBadge tone={invoice.isPaid ? "success" : "warning"}><L10nValue>{invoice.isPaid ? "Đã thanh toán" : "Chưa thanh toán"}</L10nValue></StatusBadge>
       </div>
       <dl className="grid gap-5 rounded-xl border border-border bg-surface p-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Info label="Bệnh nhân" value={invoice.patientId} mono />
-        <Info label="Ngày lập" value={formatLocalDate(invoice.createdDate)} />
-        <Info label="Hình thức" value={invoice.paymentMethod ? paymentLabels[invoice.paymentMethod] : null} />
-        <Info label="Thanh toán lúc" value={formatInstant(invoice.paidAt)} />
-        <Info label="Đơn thuốc" value={invoice.prescriptionId} mono />
+        <Info label={localize("Bệnh nhân")} value={invoice.patientId} mono />
+        <Info label={localize("Ngày lập")} value={formatLocalDate(invoice.createdDate)} />
+        <Info label={localize("Hình thức")} value={invoice.paymentMethod ? paymentLabels[invoice.paymentMethod] : null} />
+        <Info label={localize("Thanh toán lúc")} value={formatInstant(invoice.paidAt)} />
+        <Info label={localize("Đơn thuốc")} value={invoice.prescriptionId} mono />
       </dl>
       <details className="rounded-xl border border-border bg-surface p-4">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">Thông tin đối soát hóa đơn</summary>
-        <Info label="Trạng thái xử lý" value={{ NONE: "Không áp dụng", AWAITING_PAYMENT: "Chờ thanh toán", PAID: "Đã thanh toán", AWAITING_DISPENSE: "Chờ xuất thuốc", COMPLETED: "Hoàn tất", REFUNDED: "Đã hoàn tiền" }[invoice.sagaStatus] ?? "Cần kiểm tra"} />
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium"><L10n>{"Thông tin đối soát hóa đơn"}</L10n></summary>
+        <Info label={localize("Trạng thái xử lý")} value={{ NONE: "Không áp dụng", AWAITING_PAYMENT: "Chờ thanh toán", PAID: "Đã thanh toán", AWAITING_DISPENSE: "Chờ xuất thuốc", COMPLETED: "Hoàn tất", REFUNDED: "Đã hoàn tiền" }[invoice.sagaStatus] ?? "Cần kiểm tra"} />
       </details>
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full min-w-3xl text-left text-sm">
-          <thead className="bg-surface-muted"><tr><th className="px-4 py-3">Loại phí</th><th className="px-4 py-3">Khoa</th><th className="px-4 py-3">Ngày phát sinh</th><th className="px-4 py-3">Số tiền</th><th className="px-4 py-3">Trạng thái</th></tr></thead>
-          <tbody>{invoice.fees.map((fee) => (
+          <thead className="bg-surface-muted"><tr><th className="px-4 py-3"><L10n>{"Loại phí"}</L10n></th><th className="px-4 py-3">Khoa</th><th className="px-4 py-3"><L10n>{"Ngày phát sinh"}</L10n></th><th className="px-4 py-3"><L10n>{"Số tiền"}</L10n></th><th className="px-4 py-3"><L10n>{"Trạng thái"}</L10n></th></tr></thead>
+          <tbody><L10nValue>{invoice.fees.map((fee) => (
             <tr key={fee.feeId} className="border-t border-border">
-              <td className="px-4 py-3">{fee.feeType}</td><td className="break-all px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={fee.departmentId} fallback="Khoa" /></td><td className="px-4 py-3">{formatLocalDate(fee.incurredDate)}</td><td className="px-4 py-3">{formatDecimal(fee.amount)}</td><td className="px-4 py-3"><StatusBadge tone={fee.isPaid ? "success" : "warning"}>{fee.isPaid ? "Đã trả" : "Chưa trả"}</StatusBadge></td>
+              <td className="px-4 py-3">{fee.feeType}</td><td className="break-all px-4 py-3 font-mono text-xs"><ReferenceText kind="department" value={fee.departmentId} fallback="Khoa" /></td><td className="px-4 py-3"><L10nValue>{formatLocalDate(fee.incurredDate)}</L10nValue></td><td className="px-4 py-3"><L10nValue>{formatDecimal(fee.amount)}</L10nValue></td><td className="px-4 py-3"><StatusBadge tone={fee.isPaid ? "success" : "warning"}><L10nValue>{fee.isPaid ? "Đã trả" : "Chưa trả"}</L10nValue></StatusBadge></td>
             </tr>
-          ))}</tbody>
+          ))}</L10nValue></tbody>
         </table>
       </div>
-      {!invoice.isPaid && !paymentOutcomeUnknown ? (
+      <L10nValue>{!invoice.isPaid && !paymentOutcomeUnknown ? (
         <section className="max-w-xl rounded-xl border border-border bg-surface p-6">
-          <h2 className="text-lg font-semibold">Thanh toán hóa đơn</h2>
-          <div className="mt-4"><Field label="Hình thức" htmlFor="payment-method"><select id="payment-method" value={method} disabled={paying} onChange={(event) => setMethod(event.target.value as PaymentMethod)} className={controlClassName}>{Object.entries(paymentLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field></div>
-          <Button type="button" variant="primary" loading={paying} className="mt-4" onClick={() => void pay()}>Xác nhận thanh toán</Button>
+          <h2 className="text-lg font-semibold"><L10n>{"Thanh toán hóa đơn"}</L10n></h2>
+          <div className="mt-4"><Field label={localize("Hình thức")} htmlFor="payment-method"><select id="payment-method" value={method} disabled={paying} onChange={(event) => setMethod(event.target.value as PaymentMethod)} className={controlClassName}><L10nValue>{Object.entries(paymentLabels).map(([value, label]) => <option key={value} value={value}><L10nValue>{label}</L10nValue></option>)}</L10nValue></select></Field></div>
+          <Button type="button" variant="primary" loading={paying} className="mt-4" onClick={() => void pay()}><L10n>{"Xác nhận thanh toán"}</L10n></Button>
         </section>
-      ) : null}
-      <Link href="/billing" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Quay lại tra cứu</Link>
+      ) : null}</L10nValue>
+      <Link href="/billing" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold"><L10n>{"Quay lại tra cứu"}</L10n></Link>
     </section>
   );
 }
 
 function Info({ label, value, mono = false }: { label: string; value: string | null; mono?: boolean }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}>{mono ? <ReferenceText kind={label.includes("bệnh nhân") || label === "Bệnh nhân" ? "patient" : undefined} value={value} fallback={label} /> : value ?? "—"}</dd></div>;
+  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className={`mt-1 break-all text-sm ${mono ? "font-mono" : ""}`}><L10nValue>{mono ? <ReferenceText kind={label.includes("bệnh nhân") || label === "Bệnh nhân" ? "patient" : undefined} value={value} fallback={label} /> : value ?? "—"}</L10nValue></dd></div>;
 }

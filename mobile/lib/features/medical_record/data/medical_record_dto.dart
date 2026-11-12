@@ -7,6 +7,10 @@ abstract final class MedicalRecordDto {
     if (rawDiagnoses is! List) {
       throw const FormatException('Dữ liệu diagnoses không hợp lệ.');
     }
+    final rawCorrections = json['effectiveCorrections'];
+    if (rawCorrections != null && rawCorrections is! List) {
+      throw const FormatException('Dữ liệu effectiveCorrections không hợp lệ.');
+    }
     return MedicalRecord(
       id: JsonReader.string(json, 'recordId'),
       patientId: JsonReader.string(json, 'patientId'),
@@ -43,8 +47,27 @@ abstract final class MedicalRecordDto {
       closureNote: JsonReader.optionalString(json, 'closureNote'),
       closedAt: JsonReader.optionalString(json, 'closedAt'),
       previousRecordId: JsonReader.optionalString(json, 'previousRecordId'),
+      effectiveCorrections: (rawCorrections as List? ?? const [])
+          .map((value) {
+            if (value is! Map<String, dynamic>) {
+              throw const FormatException('Dữ liệu đính chính có hiệu lực không hợp lệ.');
+            }
+            return EffectiveRecordCorrectionDto.fromJson(value);
+          })
+          .toList(growable: false),
     );
   }
+}
+
+abstract final class EffectiveRecordCorrectionDto {
+  static EffectiveRecordCorrection fromJson(Map<String, dynamic> json) =>
+      EffectiveRecordCorrection(
+        section: JsonReader.string(json, 'section'),
+        originalText: JsonReader.string(json, 'originalText'),
+        correctedText: JsonReader.string(json, 'correctedText'),
+        reason: JsonReader.string(json, 'reason'),
+        appliedAt: JsonReader.string(json, 'appliedAt'),
+      );
 }
 
 abstract final class DiagnosisDto {

@@ -23,5 +23,9 @@ public interface PatientRepositoryPort {
 
     boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId);
 
+    boolean existsByEmail(String normalizedEmail);
+
+    boolean existsByEmailAndPatientIdNot(String normalizedEmail, UUID patientId);
+
     void deleteById(UUID patientId);
 }

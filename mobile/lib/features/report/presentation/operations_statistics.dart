@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -36,7 +38,7 @@ class OperationsStatisticsView extends StatelessWidget {
             color: context.medical.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
+          child: LText(
             'Số liệu tạm tính ${data.from} → ${data.to}, chưa đối soát. '
             'Doanh thu là tiền đã thu, chưa trừ hoàn tiền. '
             'Chỉ gồm dữ liệu đã đồng bộ về báo cáo, có thể còn thiếu sự kiện. '
@@ -85,13 +87,13 @@ class OperationsStatisticsView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LText(
                   'Theo khoa: lượt khám và doanh thu',
                   style: text.titleMedium,
                 ),
                 const SizedBox(height: 8),
                 if (data.departments.isEmpty)
-                  const Text(
+                  const LText(
                     'Chưa có lượt khám hoặc khoản thu nào trong phạm vi này.',
                   ),
                 for (final row in data.departments)
@@ -139,8 +141,8 @@ class _Total extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        Text(value, style: Theme.of(context).textTheme.titleMedium),
+        LText(label, style: Theme.of(context).textTheme.bodySmall),
+        LText(value, style: Theme.of(context).textTheme.titleMedium),
       ],
     ),
   );
@@ -162,7 +164,7 @@ class _ChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          LText(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 12,
@@ -173,7 +175,7 @@ class _ChartCard extends StatelessWidget {
                   children: [
                     Container(width: 10, height: 10, color: color),
                     const SizedBox(width: 4),
-                    Text(label),
+                    LText(label),
                   ],
                 ),
             ],
@@ -329,7 +331,9 @@ class _DepartmentRow extends StatelessWidget {
             id: row.label,
             label: 'Khoa',
           ),
-          Text('${row.completedVisits} lượt · ${money(row.revenue)} $currency'),
+          LText(
+            '${row.completedVisits} lượt · ${money(row.revenue)} $currency',
+          ),
           const SizedBox(height: 4),
           _bar([
             (scheme.onSurface, row.completedVisits.toDouble()),
@@ -342,7 +346,7 @@ class _DepartmentRow extends StatelessWidget {
             spacing: 12,
             children: [
               for (final (label, _, value) in lines)
-                Text('$label: ${money(value(row))}'),
+                LText('$label: ${money(value(row))}'),
             ],
           ),
         ],

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +33,7 @@ export function SpecimenPanel({ testId }: { testId: string }) {
 }
 
 function SpecimenPanelContent({ testId, onReconcile }: { testId: string; onReconcile: () => void }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [retryToken, setRetryToken] = useState(0);
@@ -113,28 +116,28 @@ function SpecimenPanelContent({ testId, onReconcile }: { testId: string; onRecon
   return (
     <section aria-labelledby="lab-specimens-heading" className="space-y-4 border-t border-border pt-5">
       <div>
-        <h2 id="lab-specimens-heading" className="text-lg font-semibold">Bệnh phẩm</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Theo dõi việc thu nhận, tiếp nhận và từ chối từng mẫu bệnh phẩm.</p>
+        <h2 id="lab-specimens-heading" className="text-lg font-semibold"><L10n>{"Bệnh phẩm"}</L10n></h2>
+        <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Theo dõi việc thu nhận, tiếp nhận và từ chối từng mẫu bệnh phẩm."}</L10n></p>
       </div>
-      {current.status === "loading" ? <AsyncState kind="loading" message="Đang tải bệnh phẩm…" /> : null}
-      {current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground">Bạn không có quyền xem bệnh phẩm của xét nghiệm này.</p> : null}
-      {current.status === "error" ? <AsyncState kind="error" message={current.message} correlationId={current.correlationId} onRetry={retry} /> : null}
-      {current.status === "success" && current.specimens.length === 0 ? <AsyncState kind="empty" message="Chưa có bệnh phẩm được thu nhận." /> : null}
-      {current.status === "success" && current.specimens.length > 0 ? (
+      <L10nValue>{current.status === "loading" ? <AsyncState kind="loading" message={localize("Đang tải bệnh phẩm…")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Bạn không có quyền xem bệnh phẩm của xét nghiệm này."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{current.status === "error" ? <AsyncState kind="error" message={localize(current.message)} correlationId={current.correlationId} onRetry={retry} /> : null}</L10nValue>
+      <L10nValue>{current.status === "success" && current.specimens.length === 0 ? <AsyncState kind="empty" message={localize("Chưa có bệnh phẩm được thu nhận.")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "success" && current.specimens.length > 0 ? (
         <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
-          {current.specimens.map((specimen) => (
+          <L10nValue>{current.specimens.map((specimen) => (
             <li key={specimen.specimenId} className="space-y-3 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="font-medium">{specimen.specimenType}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Mã tiếp nhận: <span className="font-mono">{specimen.accession}</span></p>
-                  <p className="text-sm text-muted-foreground">Bệnh phẩm: {decisionLabel(specimen.decision)}</p>
-                  {specimen.rejectionReason ? <p className="text-sm text-danger">Lý do từ chối: {specimen.rejectionReason}</p> : null}
-                  {specimen.replacesSpecimenId ? <p className="text-sm text-muted-foreground">Thay cho mẫu: <span className="font-mono">{specimen.replacesSpecimenId}</span></p> : null}
+                  <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Mã tiếp nhận: "}</L10n><span className="font-mono">{specimen.accession}</span></p>
+                  <p className="text-sm text-muted-foreground"><L10n>{"Bệnh phẩm: "}</L10n><L10nValue>{decisionLabel(specimen.decision)}</L10nValue></p>
+                  <L10nValue>{specimen.rejectionReason ? <p className="text-sm text-danger"><L10n>{"Lý do từ chối: "}</L10n>{specimen.rejectionReason}</p> : null}</L10nValue>
+                  <L10nValue>{specimen.replacesSpecimenId ? <p className="text-sm text-muted-foreground"><L10n>{"Thay cho mẫu: "}</L10n><span className="font-mono">{specimen.replacesSpecimenId}</span></p> : null}</L10nValue>
                 </div>
-                {role === "LAB_TECH" && specimen.decision === null ? (
+                <L10nValue>{role === "LAB_TECH" && specimen.decision === null ? (
                   <div className="flex flex-col gap-2 sm:min-w-64">
-                    <label htmlFor={`specimen-reason-${specimen.specimenId}`} className="text-sm font-medium">Lý do từ chối</label>
+                    <label htmlFor={`specimen-reason-${specimen.specimenId}`} className="text-sm font-medium"><L10n>{"Lý do từ chối"}</L10n></label>
                     <textarea
                       id={`specimen-reason-${specimen.specimenId}`}
                       value={reasons[specimen.specimenId] ?? ""}
@@ -144,42 +147,39 @@ function SpecimenPanelContent({ testId, onReconcile }: { testId: string; onRecon
                       className="w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm"
                     />
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="primary" disabled={command.busy || command.uncertain} onClick={() => decide(specimen, "ACCEPTED")}>Tiếp nhận</Button>
-                      <Button type="button" variant="danger" disabled={command.busy || command.uncertain} onClick={() => decide(specimen, "REJECTED")}>Từ chối</Button>
+                      <Button type="button" variant="primary" disabled={command.busy || command.uncertain} onClick={() => decide(specimen, "ACCEPTED")}><L10n>{"Tiếp nhận"}</L10n></Button>
+                      <Button type="button" variant="danger" disabled={command.busy || command.uncertain} onClick={() => decide(specimen, "REJECTED")}><L10n>{"Từ chối"}</L10n></Button>
                     </div>
                   </div>
-                ) : null}
+                ) : null}</L10nValue>
               </div>
             </li>
-          ))}
+          ))}</L10nValue>
         </ul>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {current.status === "success" && (role === "NURSE" || role === "LAB_TECH") ? (
+      <L10nValue>{current.status === "success" && (role === "NURSE" || role === "LAB_TECH") ? (
         <form onSubmit={collect} className="grid gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-2">
-          <h3 className="font-semibold md:col-span-2">Thu nhận bệnh phẩm</h3>
-          <label className="space-y-1 text-sm font-medium" htmlFor="lab-specimen-type">Loại bệnh phẩm
-            <input id="lab-specimen-type" required value={specimenType} onChange={(event) => setSpecimenType(event.target.value)} maxLength={40} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
+          <h3 className="font-semibold md:col-span-2"><L10n>{"Thu nhận bệnh phẩm"}</L10n></h3>
+          <label className="space-y-1 text-sm font-medium" htmlFor="lab-specimen-type"><L10n>{"Loại bệnh phẩm"}</L10n><input id="lab-specimen-type" required value={specimenType} onChange={(event) => setSpecimenType(event.target.value)} maxLength={40} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
           </label>
-          <label className="space-y-1 text-sm font-medium" htmlFor="lab-specimen-additional-tests">Mã xét nghiệm bổ sung
-            <textarea id="lab-specimen-additional-tests" value={additionalTestIds} onChange={(event) => setAdditionalTestIds(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" aria-describedby="lab-specimen-additional-help" />
-            <span id="lab-specimen-additional-help" className="block font-normal text-muted-foreground">Có thể nhập nhiều mã, ngăn cách bằng dấu phẩy hoặc xuống dòng.</span>
+          <label className="space-y-1 text-sm font-medium" htmlFor="lab-specimen-additional-tests"><L10n>{"Mã xét nghiệm bổ sung"}</L10n><textarea id="lab-specimen-additional-tests" value={additionalTestIds} onChange={(event) => setAdditionalTestIds(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" aria-describedby="lab-specimen-additional-help" />
+            <span id="lab-specimen-additional-help" className="block font-normal text-muted-foreground"><L10n>{"Có thể nhập nhiều mã, ngăn cách bằng dấu phẩy hoặc xuống dòng."}</L10n></span>
           </label>
-          <label className="space-y-1 text-sm font-medium md:col-span-2" htmlFor="lab-specimen-replacement">Thu mẫu lại
-            <select id="lab-specimen-replacement" value={replacement} onChange={(event) => setReplacement(event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal">
-              <option value="">Mẫu mới</option>
-              {current.specimens.filter((item) => item.decision === "REJECTED").map((item) => <option key={item.specimenId} value={item.specimenId}>{item.accession} · {item.specimenType}</option>)}
+          <label className="space-y-1 text-sm font-medium md:col-span-2" htmlFor="lab-specimen-replacement"><L10n>{"Thu mẫu lại"}</L10n><select id="lab-specimen-replacement" value={replacement} onChange={(event) => setReplacement(event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal">
+              <option value=""><L10n>{"Mẫu mới"}</L10n></option>
+              <L10nValue>{current.specimens.filter((item) => item.decision === "REJECTED").map((item) => <option key={item.specimenId} value={item.specimenId}>{item.accession} · {item.specimenType}</option>)}</L10nValue>
             </select>
           </label>
-          <div className="md:col-span-2"><Button type="submit" variant="primary" loading={command.busy} disabled={command.uncertain}>Thu nhận</Button></div>
+          <div className="md:col-span-2"><Button type="submit" variant="primary" loading={command.busy} disabled={command.uncertain}><L10n>{"Thu nhận"}</L10n></Button></div>
         </form>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {validationError ? <p role="alert" className="text-sm text-danger">{validationError}</p> : null}
-      {command.error ? <div role="alert" className="space-y-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
-        <p>{command.error.code === "LAB_SPECIMEN_DECIDED" ? "Bệnh phẩm đã được quyết định bởi người khác. Hãy tải lại danh sách." : command.error.message}</p>
-        {command.uncertain ? <Button type="button" onClick={onReconcile}>Đối soát và tải lại</Button> : command.error.code === "LAB_SPECIMEN_DECIDED" ? <Button type="button" onClick={retry}>Tải lại bệnh phẩm</Button> : null}
-      </div> : null}
+      <L10nValue>{validationError ? <p role="alert" className="text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{command.error ? <div role="alert" className="space-y-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+        <p><L10nValue>{command.error.code === "LAB_SPECIMEN_DECIDED" ? "Bệnh phẩm đã được quyết định bởi người khác. Hãy tải lại danh sách." : command.error.message}</L10nValue></p>
+        <L10nValue>{command.uncertain ? <Button type="button" onClick={onReconcile}><L10n>{"Đối soát và tải lại"}</L10n></Button> : command.error.code === "LAB_SPECIMEN_DECIDED" ? <Button type="button" onClick={retry}><L10n>{"Tải lại bệnh phẩm"}</L10n></Button> : null}</L10nValue>
+      </div> : null}</L10nValue>
     </section>
   );
 }

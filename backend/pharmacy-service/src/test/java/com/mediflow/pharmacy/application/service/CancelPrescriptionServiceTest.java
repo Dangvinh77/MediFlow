@@ -70,7 +70,7 @@ class CancelPrescriptionServiceTest {
                 .isInstanceOf(PrescriptionCancellationForbiddenException.class);
 
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
-        verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+        verify(reservationRepository, never()).findReservedByPrescriptionForUpdate(any());
         verify(eventPublisher, never()).publishPrescriptionCancelled(any());
     }
 
@@ -85,7 +85,7 @@ class CancelPrescriptionServiceTest {
                 prescriptionId, prescription.getLines().get(0).getDrugId());
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepository.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
-        when(reservationRepository.findByPrescriptionForUpdate(prescriptionId))
+        when(reservationRepository.findReservedByPrescriptionForUpdate(prescriptionId))
                 .thenReturn(List.of(reservation));
         when(prescriptionRepository.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(dispenseSlipRepository.save(any(DispenseSlip.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -121,7 +121,7 @@ class CancelPrescriptionServiceTest {
         assertThat(result.status()).isEqualTo(PrescriptionStatus.CANCELLED);
         assertThat(result.releasedReservations()).isZero();
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
-        verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+        verify(reservationRepository, never()).findReservedByPrescriptionForUpdate(any());
     }
 
     /** Đơn đã cấp thuốc không thể bị hủy ngược và không được chạm reservation. */
@@ -140,7 +140,7 @@ class CancelPrescriptionServiceTest {
                 .hasMessageContaining("ACTIVE");
 
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
-        verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+        verify(reservationRepository, never()).findReservedByPrescriptionForUpdate(any());
         verify(eventPublisher, never()).publishPrescriptionCancelled(any());
     }
 
@@ -156,7 +156,7 @@ class CancelPrescriptionServiceTest {
                 Instant.now(), null, null, null);
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepository.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
-        when(reservationRepository.findByPrescriptionForUpdate(prescriptionId))
+        when(reservationRepository.findReservedByPrescriptionForUpdate(prescriptionId))
                 .thenReturn(List.of(mismatched));
 
         assertThatThrownBy(() -> service.cancel(new CancelPrescriptionCommand(

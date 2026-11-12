@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../domain/dosage_schedule.dart';
@@ -70,7 +72,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
 
   Widget _header(String text, {int flex = 1}) => Expanded(
     flex: flex,
-    child: Text(text, style: Theme.of(context).textTheme.labelSmall),
+    child: LText(text, style: Theme.of(context).textTheme.labelSmall),
   );
 
   Widget _row(DoseRow row) => Row(
@@ -87,7 +89,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
                 onChanged: (value) =>
                     _updateRow(row, row.copyWith(selected: value == true)),
               ),
-              Flexible(child: Text(row.session)),
+              Flexible(child: LText(row.session)),
             ],
           ),
         ),
@@ -104,13 +106,13 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
                   for (final timing in doseTimings)
                     DropdownMenuItem(
                       value: timing,
-                      child: Text(timing, overflow: TextOverflow.ellipsis),
+                      child: LText(timing, overflow: TextOverflow.ellipsis),
                     ),
                 ],
                 onChanged: (value) =>
                     _updateRow(row, row.copyWith(timing: value)),
               )
-            : const Text('—'),
+            : const LText('—'),
       ),
       Expanded(
         flex: 4,
@@ -119,7 +121,10 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
-                    tooltip: 'Giảm liều buổi ${row.session}',
+                    tooltip: AppL10n.text(
+                      context,
+                      'Giảm liều buổi ${row.session}',
+                    ),
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.remove),
                     onPressed: row.dose <= doseStep
@@ -129,9 +134,12 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
                             row.copyWith(dose: row.dose - doseStep),
                           ),
                   ),
-                  Text(formatDose(row.dose)),
+                  LText(formatDose(row.dose)),
                   IconButton(
-                    tooltip: 'Tăng liều buổi ${row.session}',
+                    tooltip: AppL10n.text(
+                      context,
+                      'Tăng liều buổi ${row.session}',
+                    ),
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.add),
                     onPressed: row.dose >= maxDose
@@ -143,7 +151,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
                   ),
                 ],
               )
-            : const Align(alignment: Alignment.centerRight, child: Text('—')),
+            : const Align(alignment: Alignment.centerRight, child: LText('—')),
       ),
     ],
   );
@@ -162,7 +170,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            LText(
               'Cách dùng: ${widget.drugName}',
               style: theme.textTheme.titleMedium,
             ),
@@ -172,7 +180,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
               children: [
                 for (final preset in dosePresets.entries)
                   ActionChip(
-                    label: Text(preset.key),
+                    label: LText(preset.key),
                     onPressed: () => _update(schedule.withPreset(preset.value)),
                   ),
               ],
@@ -210,30 +218,36 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
               controller: days,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Số ngày dùng',
+                labelText: AppL10n.text(context, 'Số ngày dùng'),
                 isDense: true,
-                helperText: suggestion == null
-                    ? null
-                    : 'Gợi ý số lượng: $suggestion ${widget.unit}'
-                          '${overStock ? ' (vượt tồn ${widget.stock})' : ''}',
+                helperText: AppL10n.text(
+                  context,
+                  suggestion == null
+                      ? null
+                      : 'Gợi ý số lượng: $suggestion ${widget.unit}'
+                            '${overStock ? ' (vượt tồn ${widget.stock})' : ''}',
+                ),
               ),
               onChanged: (value) => _update(schedule.copyWith(days: value)),
             ),
             const SizedBox(height: 8),
-            Text('Cách dùng sẽ ghi vào toa', style: theme.textTheme.labelSmall),
-            Text(valid ? schedule.format(widget.unit) : '—'),
+            LText(
+              'Cách dùng sẽ ghi vào toa',
+              style: theme.textTheme.labelSmall,
+            ),
+            LText(valid ? schedule.format(widget.unit) : '—'),
             if (error != null)
-              Text(error!, style: TextStyle(color: theme.colorScheme.error)),
+              LText(error!, style: TextStyle(color: theme.colorScheme.error)),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Hủy'),
+                  child: const LText('Hủy'),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(onPressed: _apply, child: const Text('Áp dụng')),
+                FilledButton(onPressed: _apply, child: const LText('Áp dụng')),
               ],
             ),
           ],

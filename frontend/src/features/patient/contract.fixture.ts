@@ -9,7 +9,7 @@ export const patientContractFixture = {
   soCmnd: "001234567890",
   diaChi: null,
   soDienThoai: null,
-  email: null,
+  email: "patient@example.test",
   bhytSo: null,
   createdAt: "2026-08-13T10:00:00Z",
   updatedAt: "2026-08-13T10:00:00Z",
@@ -25,7 +25,7 @@ export const updatePatientContractFixture = {
   gioiTinh: "M",
   diaChi: null,
   soDienThoai: null,
-  email: null,
+  email: "patient@example.test",
   bhytSo: null,
 } satisfies UpdatePatientRequest;
 
@@ -36,6 +36,6 @@ export const createPatientContractFixture = {
   soCmnd: "001234567890",
   diaChi: null,
   soDienThoai: null,
-  email: null,
+  email: "patient@example.test",
   bhytSo: null,
 } satisfies CreatePatientRequest;

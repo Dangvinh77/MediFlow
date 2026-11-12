@@ -21,6 +21,10 @@ public interface StockReservationJpaRepository extends JpaRepository<StockReserv
     /** Giữ chỗ của một đơn — dispense cần biết đơn đã giữ những gì. */
     List<StockReservationJpaEntity> findByPrescriptionId(UUID prescriptionId);
 
+    /** Active holds backing the latest prescription revision. */
+    List<StockReservationJpaEntity> findByPrescriptionIdAndStatusOrderByDrugId(UUID prescriptionId,
+            ReservationStatus status);
+
     /** Các giữ chỗ đang RESERVED của một thuốc — tính tồn khả dụng khi kê đơn. */
     List<StockReservationJpaEntity> findByDrugIdAndStatus(UUID drugId, ReservationStatus status);
 
@@ -38,6 +42,16 @@ public interface StockReservationJpaRepository extends JpaRepository<StockReserv
             """)
     List<StockReservationJpaEntity> findByPrescriptionIdForUpdate(
             @Param("prescriptionId") UUID prescriptionId);
+
+    /** Locks the active holds backing the latest prescription revision. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT r FROM StockReservationJpaEntity r
+            WHERE r.prescriptionId = :prescriptionId AND r.status = :status
+            ORDER BY r.drugId
+            """)
+    List<StockReservationJpaEntity> findReservedByPrescriptionIdForUpdate(
+            @Param("prescriptionId") UUID prescriptionId, @Param("status") ReservationStatus status);
 
     /** Khóa ghi giữ chỗ của (đơn, thuốc) — dành riêng luồng dispense (chống tương tranh với job release, BR-D10). */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

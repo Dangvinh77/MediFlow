@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
@@ -19,7 +21,7 @@ export default async function CreatePrescriptionPage({ searchParams }: { searchP
       description="Tạo đơn thuốc và khai báo các dòng thuốc."
     >
       <RoleGate allowed={["ADMIN", "DOCTOR"]}>
-        {mode ? <CreatePrescriptionForm mode={mode} initialPatientId={typeof params.patientId === "string" ? params.patientId : undefined} initialRecordId={typeof params.recordId === "string" ? params.recordId : undefined} /> : <p role="alert" className="mt-6 text-sm text-danger">Chức năng kê đơn chưa sẵn sàng. Vui lòng liên hệ quản trị viên.</p>}
+        <L10nValue>{mode ? <CreatePrescriptionForm mode={mode} initialPatientId={typeof params.patientId === "string" ? params.patientId : undefined} initialRecordId={typeof params.recordId === "string" ? params.recordId : undefined} /> : <p role="alert" className="mt-6 text-sm text-danger"><L10n>{"Chức năng kê đơn chưa sẵn sàng. Vui lòng liên hệ quản trị viên."}</L10n></p>}</L10nValue>
       </RoleGate>
     </PharmacyPageShell>
   );

@@ -163,6 +163,7 @@ Future<void> enterValidPatientDraft(WidgetTester tester) async {
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
   await tester.enterText(find.byType(TextFormField).at(2), '012345678901');
+  await tester.enterText(find.byType(TextFormField).at(4), 'patient@example.test');
 }
 
 void main() {
@@ -226,6 +227,22 @@ void main() {
       throwsArgumentError,
     );
     expect(repository.creates, 1);
+  });
+
+  test('patient creation requires an email before repository call', () async {
+    final repository = PatientStub();
+    expect(
+      () => SavePatient(repository).create(
+        const PatientDraft(
+          name: 'An',
+          birthDate: '1988-02-03',
+          gender: 'M',
+          identityNumber: '012345678901',
+        ),
+      ),
+      throwsArgumentError,
+    );
+    expect(repository.creates, 0);
   });
 
   test('Patient wire model supports optional identity updates', () {

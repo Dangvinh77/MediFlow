@@ -1236,7 +1236,7 @@ nhất quyết định quyền đọc hồ sơ.
 | Method và path | Quyền | Ghi chú |
 |---|---|---|
 | `POST /api/v2/records/access-declarations` | ADMIN, DOCTOR, NURSE | Body `{patientId, purpose, reason}`, trả `{declarationId, patientId, purpose, expiresAt}` |
-| `GET /api/v2/records/{id}/capabilities` | ADMIN, DOCTOR, NURSE | Trả `{recordId, patientId, canRead, readBasis, canWriteContent, canComplete, canRequestAmendment, writeBlockedReason}`. `writeBlockedReason`: `RECORD_COMPLETED`, `NOT_ASSIGNED_DOCTOR`, `NOT_IN_EXAM` |
+| `GET /api/v2/records/{id}/capabilities` | ADMIN, DOCTOR, NURSE | Trả `{recordId, patientId, canRead, readBasis, canWriteContent, canComplete, canRequestAmendment, canApplyAmendment, writeBlockedReason}`. `writeBlockedReason`: `RECORD_COMPLETED`, `NOT_ASSIGNED_DOCTOR`, `NOT_IN_EXAM` |
 | `GET /api/v2/clinical/patients/{patientId}/read-decision?actorAccountId=&actorStaffId=&actorRole=` | Nội bộ, service token ≤ 60 giây của `lab-service` hoặc `pharmacy-service`; Gateway chặn | Trả `{patientId, allowed, basis, denialCode, observedAt, departmentScope}`, không có nội dung lâm sàng. `departmentScope` khác null khi người đọc chỉ được xem dữ liệu của khoa đó |
 | `GET /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Lịch sử quyền của một nhân sự, cả quyền đã thu hồi, mới nhất trước; `Cache-Control: no-store`. Web: mục "Quyền đặc biệt" ở chi tiết nhân sự |
 | `POST /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Body `{capability, reason}`, chỉ nhận `LAB_RESULT_RELEASE`, chỉ cấp cho LAB_TECH đang hoạt động. `CAPABILITY_GRANT_INELIGIBLE`, `CAPABILITY_GRANT_ACTIVE` |
@@ -1281,9 +1281,10 @@ Wire: `queueNumber` giữ tên, kiểu và ý nghĩa; sau flag được cấp th
 
 ## Cấu trúc hồ sơ, quá trình, bàn giao, hội chẩn, đính chính và dị ứng — Đợt 4 (11/11/2026)
 
-Flag: `mediflow.v2.treatment-course` (quá trình điều trị) và `mediflow.v2.record-amendment` (bàn giao, hội chẩn,
-đính chính), mặc định `false`; tắt thì endpoint trả 404. Nội dung khám có cấu trúc, dòng thời gian, tài liệu của lượt
-và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách endpoint và DTO đầy đủ ở kế hoạch
+Flag: `mediflow.v2.treatment-course` (quá trình điều trị), mặc định `false`; `mediflow.v2.record-amendment`
+(bàn giao, hội chẩn, đính chính) đang `true` trong cấu hình MVP. Tắt flag tương ứng thì endpoint trả 404. Nội dung
+khám có cấu trúc, dòng thời gian, tài liệu của lượt và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách
+endpoint và DTO đầy đủ ở kế hoạch
 [`2026-11-11-v2-wave-4-record-structure.md`](../superpowers/plans/2026-11-11-v2-wave-4-record-structure.md), mục
 "Hợp đồng API mới".
 
@@ -1295,15 +1296,20 @@ và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách en
   kê đơn. Đơn thuốc giữ `recordId` của lượt, không bao giờ là `courseId`.
 - Chỉ định Lab tạo sau bàn giao vẫn ghi bác sĩ mở lượt là người chỉ định vì kiểm tra hoàn tất Lab gắn với
   `record.doctorId`; người nhận bàn giao được quyền tạo chỉ định. `careEpisodeId` và khóa tính phí không đổi.
-- Đính chính được duyệt không sửa bản gốc, `doctorId`, `appointmentId`, `completedAt`, chẩn đoán hay kết quả đã gắn.
-  Khi đính chính ảnh hưởng điều trị, bác sĩ kê đơn thay thế theo quy trình Pharmacy; hệ thống không tự sửa đơn hay hoàn
-  kho. `contentHash` là SHA-256 hex của `section + "\n" + originalText + "\n" + amendedText + "\n" + reason`, chỉ có khi
-  `APPROVED`, là xác nhận nội bộ.
+- Đính chính không sửa bản gốc, `doctorId`, `appointmentId`, `completedAt`, chẩn đoán hay kết quả đã gắn. Bác sĩ phụ
+  trách có thể áp dụng trực tiếp sửa mục của chính mình nếu cung cấp lý do bắt buộc; trạng thái là `APPLIED` và dòng
+  đính chính ghi tác giả là người quyết định, thời điểm, ghi chú audit và mã băm. Nếu bác sĩ được trưởng khoa phân công
+  sửa hồ sơ của người khác, yêu cầu là `PENDING` và cần trưởng khoa hoặc người rà soát hồ sơ độc lập quyết định. Mọi
+  quyết định `APPROVED`/`APPLIED` có `contentHash` SHA-256 hex của
+  `section + "\n" + originalText + "\n" + amendedText + "\n" + reason`. Bản gốc bất biến; projection mới nhất mỗi mục
+  được trả ở `effectiveCorrections` trên hồ sơ nhân viên và kết quả bệnh nhân để thể hiện nội dung hiện có hiệu lực.
+  Khi đính chính ảnh hưởng điều trị, bác sĩ kê đơn thay thế theo quy trình Pharmacy; hệ thống không tự sửa đơn hay hoàn kho.
 - Người duyệt: trưởng khoa của khoa hồ sơ (`canManageSchedules`) hoặc bác sĩ có năng lực `MEDICAL_RECORD_REVIEW` do
   ADMIN cấp ở Core. Người gửi không tự duyệt (403 `AMENDMENT_SELF_DECISION`). Không xác minh được quyền thì từ chối,
   không coi là "không có quyền". Endpoint nội bộ `GET /api/v2/org/record-review-authority` chỉ cho `clinical-service`,
   Gateway chặn từ ngoài.
 - `RecordCapabilitiesDTO` thêm `canHandover`, `canAcceptHandover`, `canAddConsultationNote`, `canAmend`,
+  `canRequestAmendment`, `canApplyAmendment`,
   `canDecideAmendments`, vắng mặt khi `record-amendment` tắt; chỉ là gợi ý màn hình, lệnh vẫn kiểm lại.
 - Bàn giao: người nhận đã chấp nhận ghi, kê đơn, hoàn tất và đóng lượt; phiếu đăng ký kết thúc theo bác sĩ phụ trách,
   không theo bác sĩ của buổi khám. Bác sĩ phụ trách gửi yêu cầu mới thì yêu cầu đang chờ chuyển `SUPERSEDED`
@@ -1320,6 +1326,7 @@ và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách en
 
 Mã lỗi mới: `RECORD_CONTENT_INVALID`, `ALLERGY_INVALID`, `TREATMENT_COURSE_INVALID`, `HANDOVER_INVALID`,
 `HANDOVER_PENDING_EXISTS`, `CONSULTATION_NOTE_INVALID`, `AMENDMENT_INVALID`, `AMENDMENT_RECORD_OPEN`,
+`AMENDMENT_STALE_SOURCE`,
 `AMENDMENT_ALREADY_DECIDED` (422); `AMENDMENT_SELF_DECISION`, `AMENDMENT_AUTHOR_NOT_ELIGIBLE`,
 `AMENDMENT_DECISION_DENIED`, `AMENDMENT_ASSIGNMENT_DENIED` (403); `HANDOVER_NOT_FOUND`, `AMENDMENT_NOT_FOUND`,
 `ALLERGY_NOT_FOUND`, `TREATMENT_COURSE_NOT_FOUND` (404); `RECORD_REVIEW_AUTHORITY_UNAVAILABLE` (503).

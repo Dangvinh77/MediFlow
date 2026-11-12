@@ -1,4 +1,6 @@
 "use client";
+import { L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { createContext, useContext, type ReactNode } from "react";
 
@@ -18,5 +20,5 @@ let nextIdentity = 0;
 
 export function ReferenceProvider({ directory, children }: { directory: ReferenceDirectory; children: ReactNode }) {
   if (!identities.has(directory)) identities.set(directory, ++nextIdentity);
-  return <DirectoryContext.Provider key={identities.get(directory)} value={directory}>{children}</DirectoryContext.Provider>;
+  return <DirectoryContext.Provider key={identities.get(directory)} value={directory}><L10nValue>{children}</L10nValue></DirectoryContext.Provider>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import type { ClinicalContentDTO } from "../types";
 import { inputClass } from "./DiagnosisFormFields";
@@ -25,10 +27,10 @@ export function ClinicalContentFields({
 }) {
   return (
     <fieldset disabled={disabled} className="space-y-4 border-t border-border pt-5">
-      <legend className="text-lg font-semibold">Nội dung khám có cấu trúc</legend>
-      {clinicalContentSections.map(([field, label]) => (
+      <legend className="text-lg font-semibold"><L10n>{"Nội dung khám có cấu trúc"}</L10n></legend>
+      <L10nValue>{clinicalContentSections.map(([field, label]) => (
         <div key={field} className="flex flex-col gap-1">
-          <label htmlFor={`clinical-${field}`} className="text-sm font-medium">{label}</label>
+          <label htmlFor={`clinical-${field}`} className="text-sm font-medium"><L10nValue>{label}</L10nValue></label>
           <textarea
             id={`clinical-${field}`}
             value={value[field] ?? ""}
@@ -37,9 +39,9 @@ export function ClinicalContentFields({
             onChange={(event) => onChange(field, event.target.value)}
             className={`${inputClass(false)} resize-y`}
           />
-          <p className="text-xs text-muted-foreground">Tối đa 4.000 ký tự. Để trống và lưu sẽ xóa mục này.</p>
+          <p className="text-xs text-muted-foreground"><L10n>{"Tối đa 4.000 ký tự. Để trống và lưu sẽ xóa mục này."}</L10n></p>
         </div>
-      ))}
+      ))}</L10nValue>
     </fieldset>
   );
 }
@@ -54,14 +56,14 @@ export function ClinicalContentSummary({
 
   return (
     <section aria-labelledby="structured-clinical-content-heading" className="mt-5 border-t border-border pt-4">
-      <h3 id="structured-clinical-content-heading" className="text-sm font-semibold">Nội dung khám có cấu trúc</h3>
+      <h3 id="structured-clinical-content-heading" className="text-sm font-semibold"><L10n>{"Nội dung khám có cấu trúc"}</L10n></h3>
       <dl className="mt-3 grid gap-4 sm:grid-cols-2">
-        {populated.map(([field, label]) => (
+        <L10nValue>{populated.map(([field, label]) => (
           <div key={field}>
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+            <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
             <dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{sections[field]}</dd>
           </div>
-        ))}
+        ))}</L10nValue>
       </dl>
     </section>
   );

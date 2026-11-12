@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,7 +34,7 @@ class _LabPageState extends ConsumerState<LabPage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(title)),
+          appBar: AppBar(title: LText(title)),
           body: page,
         ),
       ),
@@ -67,7 +69,7 @@ class _LabPageState extends ConsumerState<LabPage> {
                       const LabWorklistPage(),
                     ),
                     icon: const Icon(Icons.checklist),
-                    label: const Text('Danh sách việc'),
+                    label: const LText('Danh sách việc'),
                   ),
                 if (canCritical)
                   OutlinedButton.icon(
@@ -77,7 +79,7 @@ class _LabPageState extends ConsumerState<LabPage> {
                       const CriticalNoticesPage(),
                     ),
                     icon: const Icon(Icons.warning_amber_rounded),
-                    label: const Text('Cảnh báo nguy cấp'),
+                    label: const LText('Cảnh báo nguy cấp'),
                   ),
               ],
             ),
@@ -86,13 +88,15 @@ class _LabPageState extends ConsumerState<LabPage> {
           padding: const EdgeInsets.all(16),
           child: DropdownButtonFormField<String>(
             initialValue: _status ?? '',
-            decoration: const InputDecoration(labelText: 'Trạng thái'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Trạng thái'),
+            ),
             items: [
-              const DropdownMenuItem(value: '', child: Text('Tất cả')),
+              const DropdownMenuItem(value: '', child: LText('Tất cả')),
               for (final status in FindLabTests.statuses)
                 DropdownMenuItem(
                   value: status,
-                  child: Text(labStatusLabel(status)),
+                  child: LText(labStatusLabel(status)),
                 ),
             ],
             onChanged: (status) =>
@@ -121,11 +125,11 @@ class _LabPageState extends ConsumerState<LabPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              LText(
                                 item.type,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
-                              Text(
+                              LText(
                                 'Ngày yêu cầu: ${labDateLabel(item.requestedDate)}',
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
@@ -143,7 +147,7 @@ class _LabPageState extends ConsumerState<LabPage> {
                       tone: statusToneOf(item.status),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LText(
                       'Xem chi tiết để kiểm tra đối soát viện phí',
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: context.medical.mutedText),
@@ -161,7 +165,7 @@ class _LabPageState extends ConsumerState<LabPage> {
                           ),
                         ),
                         icon: const Icon(Icons.chevron_right),
-                        label: const Text('Xem chi tiết'),
+                        label: const LText('Xem chi tiết'),
                       ),
                   ],
                 ),

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -63,6 +65,7 @@ function isCode(cause: unknown, code: string) {
 }
 
 export function LabReportWorkflowPanel({ test, initialReport, onChanged }: LabReportWorkflowPanelProps) {
+  const { localize } = useLocale();
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const staffId = useCapabilities().data?.staffId ?? null;
@@ -178,88 +181,88 @@ export function LabReportWorkflowPanel({ test, initialReport, onChanged }: LabRe
   return (
     <section className="space-y-4 border-b border-border py-5" aria-busy={busy}>
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold">Báo cáo xét nghiệm</h2>
-        {report ? <span className="text-sm text-muted-foreground">
-          {statusLabels[report.status]} · bản {report.resultVersion}
-        </span> : loaded ? <span className="text-sm text-muted-foreground">Chưa có bản nháp</span> : null}
+        <h2 className="text-lg font-semibold"><L10n>{"Báo cáo xét nghiệm"}</L10n></h2>
+        <L10nValue>{report ? <span className="text-sm text-muted-foreground">
+          <L10nValue>{statusLabels[report.status]}</L10nValue><L10n>{" · bản "}</L10n>{report.resultVersion}
+        </span> : loaded ? <span className="text-sm text-muted-foreground"><L10n>{"Chưa có bản nháp"}</L10n></span> : null}</L10nValue>
       </div>
 
-      {!loaded ? <p role="status" className="text-sm text-muted-foreground">Đang tải báo cáo…</p> : null}
+      <L10nValue>{!loaded ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang tải báo cáo…"}</L10n></p> : null}</L10nValue>
 
-      {report?.amendmentReason ? <p className="text-sm">Lý do đính chính: {report.amendmentReason}</p> : null}
-      {report?.returnReason && status === "DRAFT" ? <p className="text-sm text-warning">Bị trả lại: {report.returnReason}</p> : null}
+      <L10nValue>{report?.amendmentReason ? <p className="text-sm"><L10n>{"Lý do đính chính: "}</L10n>{report.amendmentReason}</p> : null}</L10nValue>
+      <L10nValue>{report?.returnReason && status === "DRAFT" ? <p className="text-sm text-warning"><L10n>{"Bị trả lại: "}</L10n>{report.returnReason}</p> : null}</L10nValue>
 
-      {report && report.values.length > 0 && !editable ? (
+      <L10nValue>{report && report.values.length > 0 && !editable ? (
         <ul className="divide-y divide-border rounded-lg border border-border text-sm">
-          {report.values.map((value) => (
+          <L10nValue>{report.values.map((value) => (
             <li key={value.fieldCode} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-              <span className="font-medium">{labelOf(value.fieldCode)}</span>
-              <span>{value.noResultReason ? `Không có kết quả: ${value.noResultReason}` : `${value.operator ?? ""}${value.value ?? ""}`}</span>
-              {value.flag ? <span className={value.flag.startsWith("CRITICAL") ? "font-semibold text-danger" : value.flag === "UNDETERMINED" ? "text-warning" : "text-muted-foreground"}>{flagLabels[value.flag]}</span> : null}
+              <span className="font-medium"><L10nValue>{labelOf(value.fieldCode)}</L10nValue></span>
+              <span><L10nValue>{value.noResultReason ? `Không có kết quả: ${value.noResultReason}` : `${value.operator ?? ""}${value.value ?? ""}`}</L10nValue></span>
+              <L10nValue>{value.flag ? <span className={value.flag.startsWith("CRITICAL") ? "font-semibold text-danger" : value.flag === "UNDETERMINED" ? "text-warning" : "text-muted-foreground"}><L10nValue>{flagLabels[value.flag]}</L10nValue></span> : null}</L10nValue>
             </li>
-          ))}
+          ))}</L10nValue>
         </ul>
-      ) : null}
-      {report && editable ? (
+      ) : null}</L10nValue>
+      <L10nValue>{report && editable ? (
         <ul className="flex flex-wrap gap-2 text-xs">
-          {report.values.filter((value) => value.flag).map((value) => (
-            <li key={value.fieldCode} className="rounded border border-border px-2 py-1">{labelOf(value.fieldCode)}: <span>{flagLabels[value.flag!]}</span></li>
-          ))}
+          <L10nValue>{report.values.filter((value) => value.flag).map((value) => (
+            <li key={value.fieldCode} className="rounded border border-border px-2 py-1"><L10nValue>{labelOf(value.fieldCode)}</L10nValue>: <span><L10nValue>{flagLabels[value.flag!]}</L10nValue></span></li>
+          ))}</L10nValue>
         </ul>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {editable && template ? (
+      <L10nValue>{editable && template ? (
         <div className="space-y-4">
           <LabTemplateResults fields={template.fields} drafts={drafts}
             onDraftChange={(fieldCode, change) => setDrafts((current) => ({
               ...current,
               [fieldCode]: { ...(current[fieldCode] ?? { value: "", reason: "", operator: "" }), ...change },
             }))} />
-          <Field label="Kết luận" htmlFor="lab-report-conclusion">
+          <Field label={localize("Kết luận")} htmlFor="lab-report-conclusion">
             <textarea id="lab-report-conclusion" rows={2} value={conclusion} onChange={(event) => setConclusion(event.target.value)} className={controlClassName} />
           </Field>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {error ? (
+      <L10nValue>{error ? (
         <div role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
-          <p>{error.message}</p>
-          {error.stale ? <Button type="button" variant="ghost" className="mt-2" onClick={() => void reload()}>Tải lại bản mới nhất</Button> : null}
+          <p><L10nValue>{error.message}</L10nValue></p>
+          <L10nValue>{error.stale ? <Button type="button" variant="ghost" className="mt-2" onClick={() => void reload()}><L10n>{"Tải lại bản mới nhất"}</L10n></Button> : null}</L10nValue>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {mode ? (
-        <Field label={mode === "return" ? "Lý do trả lại" : "Lý do đính chính"} htmlFor="lab-report-reason">
+      <L10nValue>{mode ? (
+        <Field label={localize(mode === "return" ? "Lý do trả lại" : "Lý do đính chính")} htmlFor="lab-report-reason">
           <textarea id="lab-report-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} className={controlClassName} />
         </Field>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {isLabTech ? (
+      <L10nValue>{isLabTech ? (
         <div className="flex flex-wrap gap-3">
-          {editable ? <>
-            <Button type="button" disabled={busy} onClick={saveDraft}>Lưu nháp</Button>
-            {report ? <Button type="button" variant="primary" disabled={busy}
-              onClick={() => void run(() => labApi.submitReport(test.testId, { draftRevision: report.draftRevision }))}>Gửi duyệt</Button> : null}
-          </> : null}
-          {status === "PENDING_REVIEW" && mode === null ? <>
-            <Button type="button" disabled={busy} onClick={() => { setError(null); setMode("return"); }}>Trả lại</Button>
-            {!ownWork ? <Button type="button" variant="primary" disabled={busy}
-              onClick={() => void run(() => labApi.releaseReport(test.testId))}>Phát hành</Button> : null}
-          </> : null}
-          {status === "RELEASED" && mode === null ? (
-            <Button type="button" disabled={busy} onClick={() => { setError(null); setMode("amend"); }}>Đính chính</Button>
-          ) : null}
-          {mode ? <>
+          <L10nValue>{editable ? <>
+            <Button type="button" disabled={busy} onClick={saveDraft}><L10n>{"Lưu nháp"}</L10n></Button>
+            <L10nValue>{report ? <Button type="button" variant="primary" disabled={busy}
+              onClick={() => void run(() => labApi.submitReport(test.testId, { draftRevision: report.draftRevision }))}><L10n>{"Gửi duyệt"}</L10n></Button> : null}</L10nValue>
+          </> : null}</L10nValue>
+          <L10nValue>{status === "PENDING_REVIEW" && mode === null ? <>
+            <Button type="button" disabled={busy} onClick={() => { setError(null); setMode("return"); }}><L10n>{"Trả lại"}</L10n></Button>
+            <L10nValue>{!ownWork ? <Button type="button" variant="primary" disabled={busy}
+              onClick={() => void run(() => labApi.releaseReport(test.testId))}><L10n>{"Phát hành"}</L10n></Button> : null}</L10nValue>
+          </> : null}</L10nValue>
+          <L10nValue>{status === "RELEASED" && mode === null ? (
+            <Button type="button" disabled={busy} onClick={() => { setError(null); setMode("amend"); }}><L10n>{"Đính chính"}</L10n></Button>
+          ) : null}</L10nValue>
+          <L10nValue>{mode ? <>
             <Button type="button" variant="primary" disabled={busy} onClick={confirmReason}>
-              {mode === "return" ? "Xác nhận trả lại" : "Tạo bản đính chính"}
+              <L10nValue>{mode === "return" ? "Xác nhận trả lại" : "Tạo bản đính chính"}</L10nValue>
             </Button>
-            <Button type="button" variant="ghost" disabled={busy} onClick={() => { setMode(null); setReason(""); setError(null); }}>Hủy</Button>
-          </> : null}
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => { setMode(null); setReason(""); setError(null); }}><L10n>{"Hủy"}</L10n></Button>
+          </> : null}</L10nValue>
         </div>
-      ) : null}
-      {isLabTech && status === "PENDING_REVIEW" && ownWork ? (
-        <p className="text-xs text-muted-foreground">Người nhập hoặc gửi duyệt không được tự phát hành; cần người thứ hai.</p>
-      ) : null}
+      ) : null}</L10nValue>
+      <L10nValue>{isLabTech && status === "PENDING_REVIEW" && ownWork ? (
+        <p className="text-xs text-muted-foreground"><L10n>{"Người nhập hoặc gửi duyệt không được tự phát hành; cần người thứ hai."}</L10n></p>
+      ) : null}</L10nValue>
     </section>
   );
 }

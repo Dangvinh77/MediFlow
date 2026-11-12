@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
@@ -254,10 +256,10 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_quoteLoading) const Text('Đang tải báo giá Billing…'),
+          if (_quoteLoading) const LText('Đang tải báo giá Billing…'),
           if (quote != null) _QuoteBreakdown(quote),
           if (_quoteUnavailable)
-            const Text(
+            const LText(
               'Billing chưa có báo giá cho yêu cầu này. Không xem đây là khoản miễn phí; cần có báo giá trước khi thu xét nghiệm.',
             ),
           if (_quoteError != null) ...[
@@ -266,23 +268,24 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: _quoteLoading || _busy ? null : _loadQuote,
-                child: const Text('Thử tải lại báo giá'),
+                child: const LText('Thử tải lại báo giá'),
               ),
             ),
           ],
-          if (_recoveryLoading) const Text('Đang kiểm tra yêu cầu thu đã lưu.'),
+          if (_recoveryLoading)
+            const LText('Đang kiểm tra yêu cầu thu đã lưu.'),
           if (_recoveryError != null) RequestError(_recoveryError!),
           if (_commandError != null) RequestError(_commandError!),
           if (quote != null && !_quoteCurrent && recovery == null)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text(
+              child: LText(
                 'Báo giá đã hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi tiếp tục.',
               ),
             ),
           if (recovery != null) ...[
             const SizedBox(height: 8),
-            Text(
+            LText(
               recovery.payment == null
                   ? 'Có yêu cầu xác nhận chưa rõ kết quả. Báo giá ban đầu được giữ nguyên; không tạo yêu cầu khác.'
                   : 'Có giao dịch ${recovery.payment!.amount} ${recovery.payment!.currency} chưa rõ kết quả. Gửi lại đúng lệnh này để kiểm tra; không tạo giao dịch mới.',
@@ -290,7 +293,7 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy ? null : () => _send(recovery),
-              child: Text(
+              child: LText(
                 recovery.payment == null
                     ? 'Gửi lại cùng yêu cầu xác nhận 0 đồng'
                     : 'Gửi lại cùng yêu cầu thu',
@@ -307,7 +310,7 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
   List<Widget> _zeroActions(OutpatientQuote quote) => [
     const SizedBox(height: 8),
     if (widget.zeroEnabled) ...[
-      const Text(
+      const LText(
         'Báo giá xác nhận người bệnh không phải trả tiền. Xác nhận này không ghi nhận tiền mặt.',
       ),
       const SizedBox(height: 8),
@@ -315,10 +318,10 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
         onPressed: _busy
             ? null
             : () => _send(_freshRecovery(quote, zero: true)),
-        child: const Text('Xác nhận nghĩa vụ 0 đồng'),
+        child: const LText('Xác nhận nghĩa vụ 0 đồng'),
       ),
     ] else
-      const Text(
+      const LText(
         'Báo giá là 0 đồng nhưng chức năng xác nhận nghĩa vụ 0 chưa được mở. Không thu tiền mặt.',
       ),
   ];
@@ -326,27 +329,29 @@ class _LabQuotePaymentPanelState extends State<LabQuotePaymentPanel> {
   List<Widget> _paymentActions(OutpatientQuote quote) => [
     const SizedBox(height: 12),
     InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Số tiền theo báo giá',
+      decoration: InputDecoration(
+        labelText: AppL10n.text(context, 'Số tiền theo báo giá'),
         border: OutlineInputBorder(),
       ),
-      child: Text('${quote.patientPayable.format()} ${quote.currency}'),
+      child: LText('${quote.patientPayable.format()} ${quote.currency}'),
     ),
     const SizedBox(height: 12),
     DropdownButtonFormField<String>(
       isExpanded: true,
       initialValue: _method,
-      decoration: const InputDecoration(labelText: 'Hình thức thanh toán'),
+      decoration: InputDecoration(
+        labelText: AppL10n.text(context, 'Hình thức thanh toán'),
+      ),
       items: const [
-        DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
-        DropdownMenuItem(value: 'BANK_TRANSFER', child: Text('Chuyển khoản')),
+        DropdownMenuItem(value: 'CASH', child: LText('Tiền mặt')),
+        DropdownMenuItem(value: 'BANK_TRANSFER', child: LText('Chuyển khoản')),
       ],
       onChanged: _busy ? null : (value) => setState(() => _method = value!),
     ),
     const SizedBox(height: 12),
     FilledButton(
       onPressed: _busy ? null : () => _send(_freshRecovery(quote, zero: false)),
-      child: Text(_busy ? 'Đang thu…' : 'Xác nhận thu theo báo giá'),
+      child: LText(_busy ? 'Đang thu…' : 'Xác nhận thu theo báo giá'),
     ),
   ];
 }
@@ -358,19 +363,19 @@ class _QuoteBreakdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ExpansionTile(
     tilePadding: EdgeInsets.zero,
-    title: const Text('Chi tiết giá và hỗ trợ mô phỏng'),
-    subtitle: Text(
+    title: const LText('Chi tiết giá và hỗ trợ mô phỏng'),
+    subtitle: LText(
       'Người bệnh phải trả: ${quote.patientPayable.format()} ${quote.currency}',
     ),
     children: [
       for (final line in quote.lines)
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(line.description),
-          subtitle: Text(
+          title: LText(line.description),
+          subtitle: LText(
             '${line.grossAmount.format()} − hỗ trợ ${line.supportAmount.format()}',
           ),
-          trailing: Text(line.patientPayable.format()),
+          trailing: LText(line.patientPayable.format()),
         ),
     ],
   );

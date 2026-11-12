@@ -1,3 +1,5 @@
+
+import { L10nValue } from "@/components/i18n/LocaleProvider";
 import type { ReactNode } from "react";
 
 interface PageShellProps {
@@ -12,12 +14,12 @@ export function PageShell({ title, description, actions, children }: PageShellPr
     <main className="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem] sm:leading-9">{title}</h1>
-          {description && <p className="mt-1 max-w-prose text-sm leading-6 text-muted-foreground">{description}</p>}
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem] sm:leading-9"><L10nValue>{title}</L10nValue></h1>
+          <L10nValue>{description && <p className="mt-1 max-w-prose text-sm leading-6 text-muted-foreground"><L10nValue>{description}</L10nValue></p>}</L10nValue>
         </div>
-        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        <L10nValue>{actions ? <div className="flex shrink-0 flex-wrap items-center gap-2"><L10nValue>{actions}</L10nValue></div> : null}</L10nValue>
       </div>
-      {children}
+      <L10nValue>{children}</L10nValue>
     </main>
   );
 }

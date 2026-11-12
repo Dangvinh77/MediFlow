@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { MediFlowMark } from "@mediflow/loader";
 import Link from "next/link";
@@ -30,7 +32,7 @@ const navigation: readonly NavigationItem[] = [
   { group: "Khám ngoại trú", href: "/records", label: "Hồ sơ khám", eyebrow: "Chẩn đoán & kết luận", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { group: "Xét nghiệm", href: "/lab", label: "Xét nghiệm", eyebrow: "Hàng đợi & kết quả", roles: ["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"] },
   { group: "Dược", href: "/pharmacy", label: "Dược", eyebrow: "Thuốc & đơn thuốc", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
-  { group: "Viện phí", href: "/billing/payment-requests", activePath: "/billing", label: "Thu ngân", eyebrow: "Khoản thu, hóa đơn & hoàn tiền", roles: ["ADMIN", "CASHIER"] },
+  { group: "Viện phí", href: "/billing/payment-requests", activePath: "/billing", label: "Thu ngân", eyebrow: "Khoản thu và hóa đơn", roles: ["ADMIN", "CASHIER"] },
   { group: "Báo cáo & thông báo", href: "/notifications", label: "Thông báo", eyebrow: "Lịch sử gửi", roles: ["ADMIN", "NURSE", "PATIENT"] },
   { group: "Báo cáo & thông báo", href: "/reports", label: "Báo cáo", eyebrow: "Doanh thu & chỉ số vận hành", roles: ["ADMIN"] },
 ];
@@ -45,6 +47,7 @@ interface DashboardSidebarProps {
 }
 
 export function DashboardSidebar({ role, open, onClose, schedulingEnabled = false, clinicIntakeEnabled = false, managementWorkspace = false }: DashboardSidebarProps) {
+  const { localize } = useLocale();
   const pathname = usePathname();
   const visibleNavigation: readonly NavigationItem[] = managementWorkspace && role === "DOCTOR" ? [
     { group: "Quản lý khoa", href: "/appointments/department", label: "Tổng quan khoa", eyebrow: "Chỉ số & lịch toàn khoa", roles: ["DOCTOR"] },
@@ -57,27 +60,27 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
 
   return (
     <>
-      {open ? (
+      <L10nValue>{open ? (
         <button
           type="button"
-          aria-label="Đóng điều hướng"
+          aria-label={localize("Đóng điều hướng")}
           onClick={onClose}
           className="fixed inset-0 z-40 bg-brand-deep/60 lg:hidden"
         />
-      ) : null}
+      ) : null}</L10nValue>
       <aside
-        aria-label="Điều hướng nghiệp vụ"
+        aria-label={localize("Điều hướng nghiệp vụ")}
         className={`${open ? "visible translate-x-0" : "invisible -translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 lg:visible lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:w-60 lg:translate-x-0`}
       >
         <div className="flex min-h-[4.5rem] items-center gap-3 bg-brand-deep px-5 text-white">
           <MediFlowMark size={36} />
           <div>
             <p className="font-semibold tracking-tight">MediFlow</p>
-            <p className="text-xs text-white/70">Chăm sóc ngoại trú</p>
+            <p className="text-xs text-white/70"><L10n>{"Chăm sóc ngoại trú"}</L10n></p>
           </div>
           <button
             type="button"
-            aria-label="Đóng điều hướng"
+            aria-label={localize("Đóng điều hướng")}
             onClick={onClose}
             className="ml-auto grid size-10 place-items-center rounded-lg text-xl text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:hidden"
           >
@@ -86,35 +89,33 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{role === "PATIENT" ? "Dành cho bạn" : "Nghiệp vụ"}</p>
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"><L10nValue>{role === "PATIENT" ? "Dành cho bạn" : "Nghiệp vụ"}</L10nValue></p>
           <ul className="space-y-1">
-            {visibleNavigation.map((item, index) => {
+            <L10nValue>{visibleNavigation.map((item, index) => {
               const active = item.href === activeHref;
               return (
                 <li key={item.href}>
-                  {index === 0 || visibleNavigation[index - 1].group !== item.group ? (
+                  <L10nValue>{index === 0 || visibleNavigation[index - 1].group !== item.group ? (
                     <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {item.group}
                     </p>
-                  ) : null}
+                  ) : null}</L10nValue>
                   <Link
                     href={item.href}
-                    aria-label={`${item.label} — ${role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}`}
+                    aria-label={localize(`${item.label} — ${role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}`)}
                     aria-current={active ? "page" : undefined}
                     onClick={onClose}
                     className={`block rounded-lg border-l-2 px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-surface-muted hover:text-foreground"}`}
                   >
-                    <span className="block text-sm font-semibold">{item.label}</span>
+                    <span className="block text-sm font-semibold"><L10nValue>{item.label}</L10nValue></span>
                   </Link>
                 </li>
               );
-            })}
+            })}</L10nValue>
           </ul>
         </nav>
 
-        <div className="border-t border-border px-5 py-4 text-xs leading-5 text-muted-foreground">
-          MediFlow · Quản lý ngoại trú
-        </div>
+        <div className="border-t border-border px-5 py-4 text-xs leading-5 text-muted-foreground"><L10n>{"MediFlow · Quản lý ngoại trú"}</L10n></div>
       </aside>
     </>
   );

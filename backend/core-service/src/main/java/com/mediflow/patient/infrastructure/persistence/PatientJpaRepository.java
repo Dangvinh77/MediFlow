@@ -18,6 +18,12 @@ public interface PatientJpaRepository extends JpaRepository<PatientJpaEntity, UU
 
     boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId);
 
+    @Query("select (count(p) > 0) from PatientJpaEntity p where lower(trim(p.email)) = :email")
+    boolean existsByNormalizedEmail(@Param("email") String email);
+
+    @Query("select (count(p) > 0) from PatientJpaEntity p where lower(trim(p.email)) = :email and p.patientId <> :patientId")
+    boolean existsByNormalizedEmailAndPatientIdNot(@Param("email") String email, @Param("patientId") UUID patientId);
+
     @Query("""
             select p from PatientJpaEntity p
             where p.archived = false and (:keyword = ''

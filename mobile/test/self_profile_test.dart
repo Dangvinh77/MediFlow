@@ -189,7 +189,12 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('self-profile-phone')),
         320,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('self-profile-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tester.enterText(
         find.byKey(const ValueKey('self-profile-phone')),
@@ -198,7 +203,12 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('self-profile-email')),
         240,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('self-profile-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       final email = tester.widget<EditableText>(
         find.descendant(
@@ -210,7 +220,12 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('self-profile-address')),
         240,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('self-profile-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tester.enterText(
         find.byKey(const ValueKey('self-profile-address')),
@@ -219,8 +234,14 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Lưu thông tin liên hệ'),
         320,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('self-profile-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Lưu thông tin liên hệ'));
       await tester.pumpAndSettle();
 
@@ -372,7 +393,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Lưu thông tin liên hệ'),
       320,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('self-profile-scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(tester.takeException(), isNull);
     expect(find.text('Lưu thông tin liên hệ'), findsOneWidget);

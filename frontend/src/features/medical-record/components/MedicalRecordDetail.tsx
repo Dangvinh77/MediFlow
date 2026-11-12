@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -74,7 +76,7 @@ function getRequestError(cause: unknown): RequestError {
 function Identifier({ label, kind, value }: { label: string; kind?: string; value: string | null }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground"><L10nValue>{label}</L10nValue></dt>
       <dd className="mt-1 break-all">
         <ReferenceText kind={kind} value={value} fallback={label} technical />
       </dd>
@@ -83,7 +85,8 @@ function Identifier({ label, kind, value }: { label: string; kind?: string; valu
 }
 
 function WriteArea({ show, children }: { show: boolean; children: ReactNode }) {
-  return show ? <section aria-label="Ghi nhận lượt đang mở" className="space-y-7">{children}</section> : <>{children}</>;
+  const { localize } = useLocale();
+  return show ? <section aria-label={localize("Ghi nhận lượt đang mở")} className="space-y-7"><L10nValue>{children}</L10nValue></section> : <><L10nValue>{children}</L10nValue></>;
 }
 
 const getServerRole = () => null;
@@ -96,6 +99,7 @@ export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
 }
 
 function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, schedulingV2Enabled = false, cancelLabOrder, prescriptionWorkspace, documentHref, role }: MedicalRecordDetailProps & { role: Role | null }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -246,11 +250,11 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
     if (state.status === "not-found") {
       return (
         <section role="status" className="mt-6 border-t border-border py-6">
-          <h2 className="text-lg font-semibold">Không tìm thấy hồ sơ khám</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Hồ sơ có thể đã bị xóa hoặc mã truy cập không còn hợp lệ.</p>
+          <h2 className="text-lg font-semibold"><L10n>{"Không tìm thấy hồ sơ khám"}</L10n></h2>
+          <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Hồ sơ có thể đã bị xóa hoặc mã truy cập không còn hợp lệ."}</L10n></p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Button type="button" variant="secondary" onClick={retry}>Thử tải lại</Button>
-            <Link href="/records" className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-primary underline underline-offset-4">Quay lại tra cứu</Link>
+            <Button type="button" variant="secondary" onClick={retry}><L10n>{"Thử tải lại"}</L10n></Button>
+            <Link href="/records" className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-primary underline underline-offset-4"><L10n>{"Quay lại tra cứu"}</L10n></Link>
           </div>
         </section>
       );
@@ -258,19 +262,19 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
     if (state.status === "denied") {
       return (
         <section role="status" className="mt-6 border-t border-border py-6">
-          <h2 className="text-lg font-semibold">Không có quyền xem hồ sơ</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Hồ sơ này nằm ngoài phạm vi chăm sóc của bạn.</p>
-          <Link href="/records" className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">Quay lại tra cứu</Link>
+          <h2 className="text-lg font-semibold"><L10n>{"Không có quyền xem hồ sơ"}</L10n></h2>
+          <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Hồ sơ này nằm ngoài phạm vi chăm sóc của bạn."}</L10n></p>
+          <Link href="/records" className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4"><L10n>{"Quay lại tra cứu"}</L10n></Link>
         </section>
       );
     }
     if (state.status === "purpose-required") {
       return (
-        <section aria-label="Khai báo mục đích xem hồ sơ" className="mt-6 border-t border-border py-6">
-          <h2 className="text-lg font-semibold">Cần khai báo mục đích xem hồ sơ</h2>
-          {state.patientId
+        <section aria-label={localize("Khai báo mục đích xem hồ sơ")} className="mt-6 border-t border-border py-6">
+          <h2 className="text-lg font-semibold"><L10n>{"Cần khai báo mục đích xem hồ sơ"}</L10n></h2>
+          <L10nValue>{state.patientId
             ? <RecordAccessPurposeForm patientId={state.patientId} role={role} onDeclared={retry} />
-            : <p className="mt-2 text-sm text-muted-foreground">Chưa xác định được bệnh nhân của hồ sơ. Hãy tra cứu lại từ danh sách hồ sơ.</p>}
+            : <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Chưa xác định được bệnh nhân của hồ sơ. Hãy tra cứu lại từ danh sách hồ sơ."}</L10n></p>}</L10nValue>
         </section>
       );
     }
@@ -278,18 +282,20 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       return (
         <section role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-l-2 border-danger px-4 py-3 text-sm text-danger">
           <div>
-            <p>{state.error.message}</p>
-            {state.error.correlationId ? <details className="mt-2 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {state.error.correlationId}</p></details> : null}
+            <p><L10nValue>{state.error.message}</L10nValue></p>
+            <L10nValue>{state.error.correlationId ? <details className="mt-2 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{state.error.correlationId}</p></details> : null}</L10nValue>
           </div>
-          <Button type="button" variant="secondary" onClick={retry}>Thử tải lại</Button>
+          <Button type="button" variant="secondary" onClick={retry}><L10n>{"Thử tải lại"}</L10n></Button>
         </section>
       );
     }
-    return <AsyncState kind="loading" message="Đang tải chi tiết hồ sơ khám…" />;
+    return <AsyncState kind="loading" message={localize("Đang tải chi tiết hồ sơ khám…")} />;
   }
 
   const isOpen = record.status === "OPEN";
   const isClosed = record.status === "CLOSED_WITHOUT_CONCLUSION";
+  const effectiveCorrections = record.effectiveCorrections ?? [];
+  const hasEffectiveCorrection = (section: string) => effectiveCorrections.some((correction) => correction.section === section);
   const canWrite = isOpen && capabilities?.canWriteContent === true;
   const canComplete = outpatientEnabled && isOpen && Boolean(record.appointmentId) && capabilities?.canComplete === true;
   const readOnlyNotice = !isOpen || refreshing ? null
@@ -302,84 +308,92 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
 
   return (
     <section className="mt-6 space-y-7">
-      {notice ? (
+      <L10nValue>{notice ? (
         <p role="status" className="border-l-2 border-success px-4 py-2 text-sm text-success">
-          {notice === "created" ? "Đã tạo hồ sơ khám thành công." : "Đã cập nhật hồ sơ khám thành công."}
+          <L10nValue>{notice === "created" ? "Đã tạo hồ sơ khám thành công." : "Đã cập nhật hồ sơ khám thành công."}</L10nValue>
         </p>
-      ) : null}
+      ) : null}</L10nValue>
 
       <PatientAllergyPanel patientId={record.patientId} role={role} sourceRecordId={record.recordId} />
 
       <header className="border-b border-border pb-5">
-        <PatientContextBanner label="Ngữ cảnh hồ sơ khám" patientId={record.patientId} departmentId={record.departmentId} doctorId={record.responsibleDoctorId ?? record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
-          <StatusBadge tone={isOpen ? "info" : isClosed ? "warning" : "success"}>{isOpen ? "Đang khám" : isClosed ? "Kết thúc không kết luận" : "Đã hoàn tất khám"}</StatusBadge>
+        <PatientContextBanner label={localize("Ngữ cảnh hồ sơ khám")} patientId={record.patientId} departmentId={record.departmentId} doctorId={record.responsibleDoctorId ?? record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
+          <StatusBadge tone={isOpen ? "info" : isClosed ? "warning" : "success"}><L10nValue>{isOpen ? "Đang khám" : isClosed ? "Kết thúc không kết luận" : "Đã hoàn tất khám"}</L10nValue></StatusBadge>
         </PatientContextBanner>
-        {record.status === "COMPLETED" ? <p className="mt-3 text-sm text-muted-foreground">Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.</p> : null}
-        {isClosed ? (
+        <L10nValue>{record.status === "COMPLETED" ? <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ."}</L10n></p> : null}</L10nValue>
+        <L10nValue>{isClosed ? (
           <dl className="mt-3 border-l-2 border-warning px-4 py-2 text-sm">
-            <dt className="text-xs font-medium text-muted-foreground">Lý do kết thúc</dt>
-            <dd>{record.closureReason ? closureReasonLabels[record.closureReason] : "Chưa ghi nhận"}</dd>
-            <dt className="mt-2 text-xs font-medium text-muted-foreground">Ghi chú và dặn dò</dt>
-            <dd>{record.closureNote ?? "Chưa ghi nhận"}</dd>
-            <dt className="mt-2 text-xs font-medium text-muted-foreground">Thời điểm</dt>
-            <dd>{formatInstant(record.closedAt ?? null)}</dd>
+            <dt className="text-xs font-medium text-muted-foreground"><L10n>{"Lý do kết thúc"}</L10n></dt>
+            <dd><L10nValue>{record.closureReason ? closureReasonLabels[record.closureReason] : "Chưa ghi nhận"}</L10nValue></dd>
+            <dt className="mt-2 text-xs font-medium text-muted-foreground"><L10n>{"Ghi chú và dặn dò"}</L10n></dt>
+            <dd><L10nValue>{record.closureNote ?? "Chưa ghi nhận"}</L10nValue></dd>
+            <dt className="mt-2 text-xs font-medium text-muted-foreground"><L10n>{"Thời điểm"}</L10n></dt>
+            <dd><L10nValue>{formatInstant(record.closedAt ?? null)}</L10nValue></dd>
           </dl>
-        ) : null}
-        {record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4">Lượt trước — chỉ tham khảo</Link></p> : null}
+        ) : null}</L10nValue>
+        <L10nValue>{record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4"><L10n>{"Lượt trước — chỉ tham khảo"}</L10n></Link></p> : null}</L10nValue>
 
-        {outpatientEnabled && record.appointmentId ? (
-          <section id="record-lab-orders" aria-label="Xét nghiệm của lượt khám" className="mt-5 border-t border-border pt-4">
-            <h3 className="text-sm font-semibold">Xét nghiệm của lượt khám</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Chỉ định và theo dõi xét nghiệm theo đúng lượt khám này.</p>
+        <L10nValue>{outpatientEnabled && record.appointmentId ? (
+          <section id="record-lab-orders" aria-label={localize("Xét nghiệm của lượt khám")} className="mt-5 border-t border-border pt-4">
+            <h3 className="text-sm font-semibold"><L10n>{"Xét nghiệm của lượt khám"}</L10n></h3>
+            <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ định và theo dõi xét nghiệm theo đúng lượt khám này."}</L10n></p>
             <div className="mt-2 flex flex-wrap items-center gap-1">
-              {canWrite ? (
-                <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${actionsBlocked ? "pointer-events-none opacity-55" : ""}`} href={`/records/${record.recordId}/lab-order`}>Lập chỉ định xét nghiệm</Link>
-              ) : null}
-              <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}>Xem phiếu xét nghiệm</Link>
+              <L10nValue>{canWrite ? (
+                <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${actionsBlocked ? "pointer-events-none opacity-55" : ""}`} href={`/records/${record.recordId}/lab-order`}><L10n>{"Lập chỉ định xét nghiệm"}</L10n></Link>
+              ) : null}</L10nValue>
+              <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}><L10n>{"Xem phiếu xét nghiệm"}</L10n></Link>
             </div>
-            {schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} canWithdraw={canWrite && !actionsBlocked} /> : null}
+            <L10nValue>{schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} canWithdraw={canWrite && !actionsBlocked} /> : null}</L10nValue>
           </section>
-        ) : null}
+        ) : null}</L10nValue>
       </header>
 
-      {refreshing ? <p role="status" className="text-sm text-muted-foreground">Đang cập nhật hồ sơ…</p> : null}
-      {refreshError ? <div role="alert" className="border-l-2 border-danger px-4 py-2 text-sm text-danger"><p>{refreshError.message}</p>{refreshError.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {refreshError.correlationId}</p></details> : null}</div> : null}
-      {pendingRecord ? (
+      <L10nValue>{refreshing ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang cập nhật hồ sơ…"}</L10n></p> : null}</L10nValue>
+      <L10nValue>{refreshError ? <div role="alert" className="border-l-2 border-danger px-4 py-2 text-sm text-danger"><p><L10nValue>{refreshError.message}</L10nValue></p><L10nValue>{refreshError.correlationId ? <details className="mt-1 text-xs"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{refreshError.correlationId}</p></details> : null}</L10nValue></div> : null}</L10nValue>
+      <L10nValue>{pendingRecord ? (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-warning px-4 py-3">
-          <p className="text-sm text-foreground">Hồ sơ đã thay đổi trạng thái khi bạn đang nhập. Bản nháp được giữ lại; hãy xem dữ liệu mới trước khi tiếp tục.</p>
-          <Button type="button" variant="secondary" onClick={acceptPendingRecord}>Xem dữ liệu mới</Button>
+          <p className="text-sm text-foreground"><L10n>{"Hồ sơ đã thay đổi trạng thái khi bạn đang nhập. Bản nháp được giữ lại; hãy xem dữ liệu mới trước khi tiếp tục."}</L10n></p>
+          <Button type="button" variant="secondary" onClick={acceptPendingRecord}><L10n>{"Xem dữ liệu mới"}</L10n></Button>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {readOnlyNotice ? <p role="status" className="border-l-2 border-warning px-4 py-2 text-sm text-foreground">{readOnlyNotice}</p> : null}
+      <L10nValue>{readOnlyNotice ? <p role="status" className="border-l-2 border-warning px-4 py-2 text-sm text-foreground"><L10nValue>{readOnlyNotice}</L10nValue></p> : null}</L10nValue>
 
-      <section aria-label="Nội dung đã ghi" className="space-y-4">
-      <p className="text-sm text-muted-foreground">Bác sĩ phụ trách: <ReferenceText kind="doctor" value={record.responsibleDoctorId ?? record.doctorId} fallback="Bác sĩ" /> <span aria-hidden="true">·</span> Cập nhật lần cuối: {formatInstant(record.updatedAt ?? record.createdAt)}</p>
+      <section aria-label={localize("Nội dung đã ghi")} className="space-y-4">
+      <p className="text-sm text-muted-foreground"><L10n>{"Bác sĩ phụ trách: "}</L10n><ReferenceText kind="doctor" value={record.responsibleDoctorId ?? record.doctorId} fallback="Bác sĩ" /> <span aria-hidden="true">·</span><L10n>{" Cập nhật lần cuối: "}</L10n><L10nValue>{formatInstant(record.updatedAt ?? record.createdAt)}</L10nValue></p>
+      <L10nValue>{effectiveCorrections.length ? <section aria-label={localize("Chỉnh sửa có hiệu lực")} className="space-y-3 rounded-xl border border-success bg-surface p-5">
+        <div><h2 className="text-lg font-semibold"><L10n>{"Chỉnh sửa có hiệu lực"}</L10n></h2><p className="mt-1 text-sm text-muted-foreground"><L10n>{"Bản ghi ban đầu vẫn được lưu; nội dung bên dưới là giá trị đang có hiệu lực."}</L10n></p></div>
+        {effectiveCorrections.map((correction) => <article key={correction.section} className="grid gap-3 border-t border-border pt-3 md:grid-cols-2">
+          <div><h3 className="text-xs font-medium text-muted-foreground"><L10n>{"Nội dung gốc"}</L10n></h3><p className="mt-1 whitespace-pre-wrap text-sm">{correction.originalText}</p></div>
+          <div><h3 className="text-xs font-medium text-success"><L10n>{"Nội dung đang có hiệu lực"}</L10n></h3><p className="mt-1 whitespace-pre-wrap text-sm font-medium">{correction.correctedText}</p></div>
+          <p className="text-sm md:col-span-2"><span className="font-medium"><L10n>{"Lý do đính chính:"}</L10n></span> {correction.reason} <span className="text-muted-foreground">· <L10n>{"Thời điểm áp dụng: "}</L10n><L10nValue>{formatInstant(correction.appliedAt)}</L10nValue></span></p>
+        </article>)}
+      </section> : null}</L10nValue>
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
         <section aria-labelledby="exam-content-heading">
-          <h2 id="exam-content-heading" className="text-lg font-semibold">Nội dung khám</h2>
+          <h2 id="exam-content-heading" className="text-lg font-semibold"><L10nValue>{effectiveCorrections.length ? "Nội dung khám ban đầu" : "Nội dung khám"}</L10nValue></h2>
           <dl className="mt-4 grid gap-5 sm:grid-cols-2">
-            <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Triệu chứng</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{record.symptoms ?? "—"}</dd></div>
-            <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hướng xử trí</dt><dd className="mt-1 text-sm leading-6">{record.disposition ? dispositionLabels[record.disposition] : "—"}</dd>{record.dispositionNote ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{record.dispositionNote}</p> : null}</div>
+            <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10nValue>{hasEffectiveCorrection("SYMPTOMS") ? "Triệu chứng ban đầu" : "Triệu chứng"}</L10nValue></dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6"><L10nValue>{record.symptoms ?? "—"}</L10nValue></dd></div>
+            <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground"><L10n>{"Hướng xử trí"}</L10n></dt><dd className="mt-1 text-sm leading-6"><L10nValue>{record.disposition ? dispositionLabels[record.disposition] : "—"}</L10nValue></dd><L10nValue>{record.dispositionNote ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground"><L10nValue>{hasEffectiveCorrection("DISPOSITION_NOTE") ? "Ghi chú ban đầu: " : ""}</L10nValue>{record.dispositionNote}</p> : null}</L10nValue></div>
           </dl>
           <ClinicalContentSummary sections={record} />
         </section>
 
         <section aria-labelledby="diagnoses-heading" className="border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="diagnoses-heading" className="text-lg font-semibold">Chẩn đoán</h2>
-            <span className="text-sm text-muted-foreground">{record.diagnoses.length} chẩn đoán</span>
+            <h2 id="diagnoses-heading" className="text-lg font-semibold"><L10nValue>{hasEffectiveCorrection("DIAGNOSIS") ? "Chẩn đoán ban đầu" : "Chẩn đoán"}</L10nValue></h2>
+            <span className="text-sm text-muted-foreground">{record.diagnoses.length}<L10n>{" chẩn đoán"}</L10n></span>
           </div>
-          {record.diagnoses.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có chẩn đoán.</p> : (
+          <L10nValue>{record.diagnoses.length === 0 ? <p className="mt-3 text-sm text-muted-foreground"><L10n>{"Chưa có chẩn đoán."}</L10n></p> : (
             <ul className="mt-3 divide-y divide-border">
-              {record.diagnoses.map((diagnosis) => (
+              <L10nValue>{record.diagnoses.map((diagnosis) => (
                 <li key={diagnosis.diagnosisId} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{diagnosis.diagnosisName}</p>{diagnosis.icdCode ? <StatusBadge tone="neutral">ICD {diagnosis.icdCode}</StatusBadge> : null}</div>
-                  {diagnosis.description ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{diagnosis.description}</p> : null}
+                  <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{diagnosis.diagnosisName}</p><L10nValue>{diagnosis.icdCode ? <StatusBadge tone="neutral">ICD {diagnosis.icdCode}</StatusBadge> : null}</L10nValue></div>
+                  <L10nValue>{diagnosis.description ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground"><L10nValue>{diagnosis.description}</L10nValue></p> : null}</L10nValue>
                 </li>
-              ))}
+              ))}</L10nValue>
             </ul>
-          )}
+          )}</L10nValue>
         </section>
       </div>
       </section>
@@ -389,73 +403,73 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       <RecordCollaborationSection record={record} capabilities={capabilities} onCommandSuccess={retry} />
 
       <WriteArea show={canWrite || canComplete}>
-      {canWrite ? (
+      <L10nValue>{canWrite ? (
         <details className="border-y border-border py-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-primary underline decoration-border underline-offset-4">Thêm chẩn đoán</summary>
+          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-primary underline decoration-border underline-offset-4"><L10n>{"Thêm chẩn đoán"}</L10n></summary>
           <AddDiagnosisForm recordId={record.recordId} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setDiagnosisActive} onBusyChange={setDiagnosisBusy} onCreated={addCreatedDiagnosis} />
         </details>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {(role === "ADMIN" || role === "DOCTOR") && prescriptionWorkspace ? (
+      <L10nValue>{(role === "ADMIN" || role === "DOCTOR") && prescriptionWorkspace ? (
         <section className="border-b border-border pb-5" aria-labelledby="record-prescription-heading">
-          <h2 id="record-prescription-heading" className="text-lg font-semibold">Đơn thuốc của hồ sơ khám</h2>
-          {typeof prescriptionWorkspace === "function"
+          <h2 id="record-prescription-heading" className="text-lg font-semibold"><L10n>{"Đơn thuốc của hồ sơ khám"}</L10n></h2>
+          <L10nValue>{typeof prescriptionWorkspace === "function"
             ? prescriptionWorkspace(record, outpatientEnabled && role === "DOCTOR" && canWrite && Boolean(record.appointmentId) && !actionsBlocked)
-            : prescriptionWorkspace}
+            : prescriptionWorkspace}</L10nValue>
         </section>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {canComplete ? (
+      <L10nValue>{canComplete ? (
         <details className="border-b border-border pb-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4">Hoàn tất lần khám</summary>
-          <p className="pb-2 text-sm text-muted-foreground">Mở khi đã hoàn tất chẩn đoán và hướng xử trí. Hồ sơ sẽ không thể chỉnh sửa sau khi kết thúc.</p>
+          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Hoàn tất lần khám"}</L10n></summary>
+          <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Mở khi đã hoàn tất chẩn đoán và hướng xử trí. Hồ sơ sẽ không thể chỉnh sửa sau khi kết thúc."}</L10n></p>
           <CompleteRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onCompleted={applyRecord} />
         </details>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {canComplete && schedulingV2Enabled && role === "DOCTOR" ? (
+      <L10nValue>{canComplete && schedulingV2Enabled && role === "DOCTOR" ? (
         <details className="border-b border-border pb-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4">Kết thúc lượt không kết luận</summary>
-          <p className="pb-2 text-sm text-muted-foreground">Dùng khi bệnh nhân tự ý về hoặc từ chối khám. Không cần chẩn đoán, nhưng mọi chỉ định xét nghiệm phải có kết quả hoặc đã hủy.</p>
+          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Kết thúc lượt không kết luận"}</L10n></summary>
+          <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Dùng khi bệnh nhân tự ý về hoặc từ chối khám. Không cần chẩn đoán, nhưng mọi chỉ định xét nghiệm phải có kết quả hoặc đã hủy."}</L10n></p>
           <CloseRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onClosed={applyRecord} />
         </details>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {canWrite ? (
+      <L10nValue>{canWrite ? (
         <details className="border-t border-border pt-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-medium text-muted-foreground">Tác vụ khác</summary>
+          <summary className="min-h-10 cursor-pointer py-2 text-sm font-medium text-muted-foreground"><L10n>{"Tác vụ khác"}</L10n></summary>
           <div className="flex flex-wrap gap-1 pt-1">
-            {canWrite ? <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={`/records/${record.recordId}/edit`}>Sửa triệu chứng</Link> : null}
+            <L10nValue>{canWrite ? <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={`/records/${record.recordId}/edit`}><L10n>{"Sửa triệu chứng"}</L10n></Link> : null}</L10nValue>
           </div>
         </details>
-      ) : null}
+      ) : null}</L10nValue>
 
       </WriteArea>
 
-      {record.status === "COMPLETED" ? <FollowUpRecommendationPanel
+      <L10nValue>{record.status === "COMPLETED" ? <FollowUpRecommendationPanel
         recordId={record.recordId}
         enabled={schedulingV2Enabled}
         canCreate={role === "DOCTOR"}
-      /> : null}
+      /> : null}</L10nValue>
 
       <details className="border-t border-border pt-4 text-sm">
-        <summary className="min-h-10 cursor-pointer py-2 font-medium text-muted-foreground">Thông tin đối chiếu và thời điểm</summary>
+        <summary className="min-h-10 cursor-pointer py-2 font-medium text-muted-foreground"><L10n>{"Thông tin đối chiếu và thời điểm"}</L10n></summary>
         <dl className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Identifier label="Mã hồ sơ" kind="record" value={record.recordId} />
-          <Identifier label="Bệnh nhân" kind="patient" value={record.patientId} />
-          <Identifier label="Bác sĩ mở hồ sơ" kind="doctor" value={record.doctorId} />
+          <Identifier label={localize("Mã hồ sơ")} kind="record" value={record.recordId} />
+          <Identifier label={localize("Bệnh nhân")} kind="patient" value={record.patientId} />
+          <Identifier label={localize("Bác sĩ mở hồ sơ")} kind="doctor" value={record.doctorId} />
           <Identifier label="Khoa" kind="department" value={record.departmentId} />
-          <Identifier label="Lịch hẹn" value={record.appointmentId} />
-          <div><dt className="text-xs font-medium text-muted-foreground">Ngày khám</dt><dd className="mt-1">{formatLocalDate(record.examinationDate)}</dd></div>
-          <div><dt className="text-xs font-medium text-muted-foreground">Ngày tạo</dt><dd className="mt-1">{formatInstant(record.createdAt)}</dd></div>
-          <div><dt className="text-xs font-medium text-muted-foreground">Cập nhật</dt><dd className="mt-1">{formatInstant(record.updatedAt)}</dd></div>
-          <div><dt className="text-xs font-medium text-muted-foreground">Hoàn tất</dt><dd className="mt-1">{formatInstant(record.completedAt)}</dd></div>
+          <Identifier label={localize("Lịch hẹn")} value={record.appointmentId} />
+          <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Ngày khám"}</L10n></dt><dd className="mt-1"><L10nValue>{formatLocalDate(record.examinationDate)}</L10nValue></dd></div>
+          <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Ngày tạo"}</L10n></dt><dd className="mt-1"><L10nValue>{formatInstant(record.createdAt)}</L10nValue></dd></div>
+          <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Cập nhật"}</L10n></dt><dd className="mt-1"><L10nValue>{formatInstant(record.updatedAt)}</L10nValue></dd></div>
+          <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Hoàn tất"}</L10n></dt><dd className="mt-1"><L10nValue>{formatInstant(record.completedAt)}</L10nValue></dd></div>
         </dl>
       </details>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-        <Link href="/records" className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">Quay lại tra cứu</Link>
-        <Button type="button" variant="secondary" onClick={retry} disabled={refreshing || pendingRecord !== null || writeInFlight}>Cập nhật hồ sơ</Button>
+        <Link href="/records" className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"><L10n>{"Quay lại tra cứu"}</L10n></Link>
+        <Button type="button" variant="secondary" onClick={retry} disabled={refreshing || pendingRecord !== null || writeInFlight}><L10n>{"Cập nhật hồ sơ"}</L10n></Button>
       </footer>
     </section>
   );

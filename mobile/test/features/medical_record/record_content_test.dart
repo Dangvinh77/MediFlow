@@ -209,6 +209,27 @@ void main() {
       expect(record.responsibleDoctorId, _allergy);
     });
 
+    test('record DTO reads the effective correction projection', () {
+      final record = MedicalRecordDto.fromJson({
+        ..._recordJson(symptoms: 'Đau đầu'),
+        'effectiveCorrections': [
+          {
+            'section': 'SYMPTOMS',
+            'originalText': 'Đau đầu',
+            'correctedText': 'Đau đầu từ sáng',
+            'reason': 'Bổ sung thời điểm khởi phát',
+            'appliedAt': '2026-11-10T11:00:00Z',
+          },
+        ],
+      });
+
+      expect(record.effectiveCorrections.single.section, 'SYMPTOMS');
+      expect(record.effectiveCorrections.single.originalText, 'Đau đầu');
+      expect(record.effectiveCorrections.single.correctedText, 'Đau đầu từ sáng');
+      expect(record.effectiveCorrections.single.reason, 'Bổ sung thời điểm khởi phát');
+      expect(record.effectiveCorrections.single.appliedAt, '2026-11-10T11:00:00Z');
+    });
+
     test('content patch contains only changed sections and preserves clears', () {
       final changes = changedRecordSections(
         original: const {

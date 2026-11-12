@@ -55,6 +55,7 @@ class CareRouteAuthorizationTest {
                 new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/drugs/" + ID + "/stock", Set.of("ADMIN", "PHARMACIST")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/prescriptions", Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/prescriptions/" + ID, Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID, Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/cancel", Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/dispense", Set.of("ADMIN", "PHARMACIST")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/admin/outbox/" + ID + "/replay", Set.of("ADMIN")),
@@ -149,7 +150,8 @@ class CareRouteAuthorizationTest {
         String base = "/api/v1/pharmacy/prescriptions/" + ID;
         return Stream.of(
                 Arguments.of(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions"),
-                Arguments.of(HttpMethod.PUT, base),
+                Arguments.of(HttpMethod.PATCH, base),
+                Arguments.of(HttpMethod.DELETE, base),
                 Arguments.of(HttpMethod.PUT, base + "/update"),
                 Arguments.of(HttpMethod.PUT, base + "/nested/cancel"),
                 Arguments.of(HttpMethod.PUT, base + "/cancel/extra"),

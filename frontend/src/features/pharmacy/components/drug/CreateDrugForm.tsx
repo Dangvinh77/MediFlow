@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -46,6 +48,7 @@ export function CreateDrugForm() {
 }
 
 function CreateDrugFormContent() {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canCreateDrug");
   const router = useRouter();
   const role = useSyncExternalStore(
@@ -137,14 +140,12 @@ function CreateDrugFormContent() {
   }
 
   if (role === null) {
-    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
+    return <AsyncState kind="loading" message={localize("Đang kiểm tra quyền…")} />;
   }
 
   if (!capabilities.canCreateDrug) {
     return (
-      <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-        Tài khoản của bạn không có quyền tạo thuốc.
-      </p>
+      <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10n>{"Tài khoản của bạn không có quyền tạo thuốc."}</L10n></p>
     );
   }
 
@@ -157,15 +158,15 @@ function CreateDrugFormContent() {
 
   return (
     <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {formError && (
+      <L10nValue>{formError && (
         <div ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
-          {formError}
+          <L10nValue>{formError}</L10nValue>
         </div>
-      )}
-      {uncertain && <Link href="/pharmacy/drugs" className="inline-flex min-h-11 items-center text-sm text-primary underline">Kiểm tra danh mục thuốc</Link>}
+      )}</L10nValue>
+      <L10nValue>{uncertain && <Link href="/pharmacy/drugs" className="inline-flex min-h-11 items-center text-sm text-primary underline"><L10n>{"Kiểm tra danh mục thuốc"}</L10n></Link>}</L10nValue>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Field label="Tên thuốc" htmlFor="drugName" error={fieldErrors.drugName} required>
+        <Field label={localize("Tên thuốc")} htmlFor="drugName" error={fieldErrors.drugName} required>
           <input
             {...field("drugName")}
             id="drugName"
@@ -175,7 +176,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.drugName))}
           />
         </Field>
-        <Field label="Đơn vị" htmlFor="unit" error={fieldErrors.unit} required hint="Tối đa 20 ký tự">
+        <Field label={localize("Đơn vị")} htmlFor="unit" error={fieldErrors.unit} required hint="Tối đa 20 ký tự">
           <input
             {...field("unit", true)}
             id="unit"
@@ -185,7 +186,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.unit))}
           />
         </Field>
-        <Field label="Hoạt chất" htmlFor="activeIngredient" error={fieldErrors.activeIngredient} hint="Không bắt buộc, tối đa 150 ký tự">
+        <Field label={localize("Hoạt chất")} htmlFor="activeIngredient" error={fieldErrors.activeIngredient} hint="Không bắt buộc, tối đa 150 ký tự">
           <input
             {...field("activeIngredient", true)}
             id="activeIngredient"
@@ -195,7 +196,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.activeIngredient))}
           />
         </Field>
-        <Field label="Nhà sản xuất" htmlFor="manufacturer" error={fieldErrors.manufacturer} hint="Không bắt buộc, tối đa 150 ký tự">
+        <Field label={localize("Nhà sản xuất")} htmlFor="manufacturer" error={fieldErrors.manufacturer} hint="Không bắt buộc, tối đa 150 ký tự">
           <input
             {...field("manufacturer", true)}
             id="manufacturer"
@@ -205,7 +206,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.manufacturer))}
           />
         </Field>
-        <Field label="Giá thuốc (VND)" htmlFor="price" error={fieldErrors.price} required hint="Không âm, tối đa 2 chữ số thập phân">
+        <Field label={localize("Giá thuốc (VND)")} htmlFor="price" error={fieldErrors.price} required hint="Không âm, tối đa 2 chữ số thập phân">
           <input
             {...field("price", true)}
             id="price"
@@ -218,7 +219,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.price))}
           />
         </Field>
-        <Field label="Tồn kho ban đầu" htmlFor="stockQuantity" error={fieldErrors.stockQuantity} required>
+        <Field label={localize("Tồn kho ban đầu")} htmlFor="stockQuantity" error={fieldErrors.stockQuantity} required>
           <input
             {...field("stockQuantity")}
             id="stockQuantity"
@@ -231,7 +232,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.stockQuantity))}
           />
         </Field>
-        <Field label="Hạn sử dụng" htmlFor="expiryDate" error={fieldErrors.expiryDate} required hint="Không được trước ngày hiện tại">
+        <Field label={localize("Hạn sử dụng")} htmlFor="expiryDate" error={fieldErrors.expiryDate} required hint="Không được trước ngày hiện tại">
           <input
             {...field("expiryDate", true)}
             id="expiryDate"
@@ -242,7 +243,7 @@ function CreateDrugFormContent() {
             className={inputClass(Boolean(fieldErrors.expiryDate))}
           />
         </Field>
-        <Field label="Ngưỡng tồn thấp" htmlFor="lowStockThreshold" error={fieldErrors.lowStockThreshold} hint="Không bắt buộc; bỏ trống để dùng mặc định 10">
+        <Field label={localize("Ngưỡng tồn thấp")} htmlFor="lowStockThreshold" error={fieldErrors.lowStockThreshold} hint="Không bắt buộc; bỏ trống để dùng mặc định 10">
           <input
             {...field("lowStockThreshold", true)}
             id="lowStockThreshold"
@@ -263,10 +264,8 @@ function CreateDrugFormContent() {
           loading={submitting}
           disabled={uncertain || forbidden}
           variant="primary"
-        >
-          Tạo thuốc
-        </Button>
-        <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
+        ><L10n>{"Tạo thuốc"}</L10n></Button>
+        <p className="text-sm text-muted-foreground"><L10n>{"Các trường có dấu * là bắt buộc."}</L10n></p>
       </div>
     </form>
   );

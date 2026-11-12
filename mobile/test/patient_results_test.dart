@@ -113,6 +113,22 @@ void main() {
   });
   tearDown(() => client.close());
 
+  Widget host(
+    Widget child, {
+    String role = 'PATIENT',
+    Object identity = 'a',
+    _Exams? exams,
+  }) => ProviderScope(
+    overrides: [
+      workspaceAccessProvider.overrideWithValue(
+        WorkspaceAccess(sessionIdentity: identity, role: role),
+      ),
+      patientExamResultsProvider.overrideWithValue(exams ?? _Exams()),
+      patientLabResultsProvider.overrideWithValue(_Labs()),
+    ],
+    child: MaterialApp(home: Scaffold(body: child)),
+  );
+
   test(
     'mine APIs send only paging and bearer; patient scope is server owned',
     () async {
@@ -179,6 +195,34 @@ void main() {
     },
   );
 
+  testWidgets('patient sees the effective correction alongside its original', (tester) async {
+    final exam = examJson()
+      ..['effectiveCorrections'] = [
+        {
+          'section': 'SYMPTOMS',
+          'originalText': 'Đau đầu',
+          'correctedText': 'Đau đầu từ sáng, mức độ nhẹ',
+          'reason': 'Bổ sung thời điểm khởi phát',
+          'appliedAt': '2026-11-03T03:00:00Z',
+        },
+      ];
+    final exams = _Exams()..read = (_) async => PageResult(
+      items: [PatientExamResultDto.fromJson(exam)],
+      number: 0,
+      totalPages: 1,
+      totalElements: 1,
+    );
+    await tester.pumpWidget(host(const MyExamResultsPage(), exams: exams));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Khám ngày 2026-11-03'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chỉnh sửa có hiệu lực'), findsOneWidget);
+    expect(find.text('Đau đầu từ sáng, mức độ nhẹ'), findsOneWidget);
+    expect(find.text('Lý do đính chính: Bổ sung thời điểm khởi phát'), findsOneWidget);
+    expect(find.text('Triệu chứng ban đầu: Đau đầu'), findsOneWidget);
+  });
+
   test(
     'denied and unavailable remain errors without automatic retries',
     () async {
@@ -199,22 +243,6 @@ void main() {
       }
       expect(adapter.requests, hasLength(4));
     },
-  );
-
-  Widget host(
-    Widget child, {
-    String role = 'PATIENT',
-    Object identity = 'a',
-    _Exams? exams,
-  }) => ProviderScope(
-    overrides: [
-      workspaceAccessProvider.overrideWithValue(
-        WorkspaceAccess(sessionIdentity: identity, role: role),
-      ),
-      patientExamResultsProvider.overrideWithValue(exams ?? _Exams()),
-      patientLabResultsProvider.overrideWithValue(_Labs()),
-    ],
-    child: MaterialApp(home: Scaffold(body: child)),
   );
 
   testWidgets('patient sees diagnosis details and server pagination', (

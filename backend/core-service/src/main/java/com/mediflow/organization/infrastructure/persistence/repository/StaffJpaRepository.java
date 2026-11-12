@@ -21,6 +21,12 @@ public interface StaffJpaRepository
     @Query("select s from StaffEntity s where s.staffId = :id")
     Optional<StaffEntity> findByIdForUpdate(@Param("id") UUID id);
 
+    @Query("select (count(s) > 0) from StaffEntity s where lower(trim(s.email)) = :email")
+    boolean existsByNormalizedEmail(@Param("email") String email);
+
+    @Query("select (count(s) > 0) from StaffEntity s where lower(trim(s.email)) = :email and s.staffId <> :staffId")
+    boolean existsByNormalizedEmailAndStaffIdNot(@Param("email") String email, @Param("staffId") UUID staffId);
+
 
         boolean existsByDepartmentIdAndStatus(
             UUID departmentId,

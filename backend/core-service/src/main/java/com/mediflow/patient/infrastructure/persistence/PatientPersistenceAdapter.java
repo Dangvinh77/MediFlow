@@ -29,7 +29,13 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
 
     @Override
     public Patient save(Patient patient) {
-        return mapper.toDomain(repository.save(mapper.toEntity(patient)));
+        PatientJpaEntity entity = mapper.toEntity(patient);
+        repository.findById(patient.patientId()).ifPresent(existing -> {
+            if (sameEmail(existing.getEmail(), patient.email())) {
+                entity.withEmailUniqueKey(existing.getEmailUniqueKey());
+            }
+        });
+        return mapper.toDomain(repository.save(entity));
     }
 
     @Override
@@ -59,6 +65,24 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     @Override
     public boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId) {
         return repository.existsByIdentityNumberAndPatientIdNot(identityNumber, patientId);
+    }
+
+    @Override
+    public boolean existsByEmail(String normalizedEmail) {
+        return repository.existsByNormalizedEmail(normalizeEmail(normalizedEmail));
+    }
+
+    @Override
+    public boolean existsByEmailAndPatientIdNot(String normalizedEmail, UUID patientId) {
+        return repository.existsByNormalizedEmailAndPatientIdNot(normalizeEmail(normalizedEmail), patientId);
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private static boolean sameEmail(String first, String second) {
+        return java.util.Objects.equals(normalizeEmail(first), normalizeEmail(second));
     }
 
     @Override

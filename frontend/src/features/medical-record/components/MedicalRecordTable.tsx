@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -30,6 +32,7 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEnabled?: boolean }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const requestSequence = useRef(0);
   const mounted = useRef(false);
@@ -92,46 +95,44 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
 
   return (
     <section className="mt-6">
-      {role === "ADMIN" || role === "DOCTOR" ? (
+      <L10nValue>{role === "ADMIN" || role === "DOCTOR" ? (
         <div className="mb-5 flex justify-end">
-          <Link href={outpatientEnabled ? "/appointments" : "/records/new"} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-            Tạo hồ sơ khám
-          </Link>
+          <Link href={outpatientEnabled ? "/appointments" : "/records/new"} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"><L10n>{"Tạo hồ sơ khám"}</L10n></Link>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
       <form onSubmit={onSearch} className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <label htmlFor="record-patient-id" className="mb-1 block text-sm font-medium">Bệnh nhân</label>
+          <label htmlFor="record-patient-id" className="mb-1 block text-sm font-medium"><L10n>{"Bệnh nhân"}</L10n></label>
           <ReferenceInput kind="patient"
             id="record-patient-id"
             value={patientId}
             onValueChange={(selectedId) => setPatientId(selectedId)}
-            placeholder="Nhập tên hoặc mã bệnh nhân"
+            placeholder={localize("Nhập tên hoặc mã bệnh nhân")}
             aria-describedby={validationError ? "record-patient-id-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
-        <button type="submit" disabled={loading || !patientId.trim()} className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">Tìm hồ sơ</button>
+        <button type="submit" disabled={loading || !patientId.trim()} className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><L10n>{"Tìm hồ sơ"}</L10n></button>
       </form>
 
-      {validationError ? <p id="record-patient-id-error" role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
-      {!searched && !validationError ? <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem hồ sơ." /> : null}
-      {loading ? <AsyncState kind="loading" message="Đang tải hồ sơ khám…" /> : null}
-      {!loading && error ? <div><AsyncState kind="error" message={error.message} onRetry={() => void loadRecords(activePatientId)} />{error.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {error.correlationId}</p></details> : null}</div> : null}
-      {!loading && access === "denied" ? <p role="status" className="mt-4 text-sm text-muted-foreground">Bạn không có quyền xem hồ sơ khám của bệnh nhân này.</p> : null}
-      {!loading && access === "purpose-required" ? <section aria-label="Khai báo mục đích xem hồ sơ" className="mt-4"><p className="text-sm text-muted-foreground">Bạn cần khai báo mục đích trước khi xem hồ sơ của bệnh nhân này.</p><RecordAccessPurposeForm patientId={activePatientId} role={role} onDeclared={() => void loadRecords(activePatientId)} /></section> : null}
-      {searched && !loading && !error && !access && records.length === 0 ? <AsyncState kind="empty" message="Bệnh nhân chưa có hồ sơ khám." /> : null}
+      <L10nValue>{validationError ? <p id="record-patient-id-error" role="alert" className="mt-2 text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{!searched && !validationError ? <AsyncState kind="idle" message={localize("Nhập mã bệnh nhân để xem hồ sơ.")} /> : null}</L10nValue>
+      <L10nValue>{loading ? <AsyncState kind="loading" message={localize("Đang tải hồ sơ khám…")} /> : null}</L10nValue>
+      <L10nValue>{!loading && error ? <div><AsyncState kind="error" message={localize(error.message)} onRetry={() => void loadRecords(activePatientId)} /><L10nValue>{error.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary><p className="mt-1 break-all font-mono"><L10n>{"Mã theo dõi: "}</L10n>{error.correlationId}</p></details> : null}</L10nValue></div> : null}</L10nValue>
+      <L10nValue>{!loading && access === "denied" ? <p role="status" className="mt-4 text-sm text-muted-foreground"><L10n>{"Bạn không có quyền xem hồ sơ khám của bệnh nhân này."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{!loading && access === "purpose-required" ? <section aria-label={localize("Khai báo mục đích xem hồ sơ")} className="mt-4"><p className="text-sm text-muted-foreground"><L10n>{"Bạn cần khai báo mục đích trước khi xem hồ sơ của bệnh nhân này."}</L10n></p><RecordAccessPurposeForm patientId={activePatientId} role={role} onDeclared={() => void loadRecords(activePatientId)} /></section> : null}</L10nValue>
+      <L10nValue>{searched && !loading && !error && !access && records.length === 0 ? <AsyncState kind="empty" message={localize("Bệnh nhân chưa có hồ sơ khám.")} /> : null}</L10nValue>
 
-      {!loading && !error && records.length > 0 ? (
+      <L10nValue>{!loading && !error && records.length > 0 ? (
         <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="w-full min-w-4xl text-left text-sm">
             <thead className="border-b border-border bg-surface-muted">
-              <tr><th scope="col" className="px-4 py-3">Ngày khám</th><th scope="col" className="px-4 py-3">Hồ sơ khám</th><th scope="col" className="px-4 py-3">Bác sĩ</th><th scope="col" className="px-4 py-3">Triệu chứng</th><th scope="col" className="px-4 py-3">Chẩn đoán</th></tr>
+              <tr><th scope="col" className="px-4 py-3"><L10n>{"Ngày khám"}</L10n></th><th scope="col" className="px-4 py-3"><L10n>{"Hồ sơ khám"}</L10n></th><th scope="col" className="px-4 py-3"><L10n>{"Bác sĩ"}</L10n></th><th scope="col" className="px-4 py-3"><L10n>{"Triệu chứng"}</L10n></th><th scope="col" className="px-4 py-3"><L10n>{"Chẩn đoán"}</L10n></th></tr>
             </thead>
             <tbody>
-              {records.map((record) => (
+              <L10nValue>{records.map((record) => (
                 <tr key={record.recordId} className="border-b border-border align-top last:border-0">
-                  <td className="px-4 py-3">{formatLocalDate(record.examinationDate)}</td>
+                  <td className="px-4 py-3"><L10nValue>{formatLocalDate(record.examinationDate)}</L10nValue></td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/records/${record.recordId}`}
@@ -143,22 +144,22 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
                   <td className="px-4 py-3"><ReferenceText kind="doctor" value={record.doctorId} fallback="Bác sĩ" /></td>
                   <td className="max-w-xs whitespace-normal px-4 py-3">{record.symptoms}</td>
                   <td className="max-w-md whitespace-normal px-4 py-3">
-                    {record.diagnoses.length > 0
+                    <L10nValue>{record.diagnoses.length > 0
                       ? record.diagnoses.map((diagnosis) => (
                         <div key={diagnosis.diagnosisId} className="mb-2 last:mb-0">
                           <p className="font-medium">{diagnosis.diagnosisName}</p>
-                          {diagnosis.icdCode ? <p className="text-xs text-muted-foreground">ICD: {diagnosis.icdCode}</p> : null}
-                          {diagnosis.description ? <p className="mt-1 text-muted-foreground">{diagnosis.description}</p> : null}
+                          <L10nValue>{diagnosis.icdCode ? <p className="text-xs text-muted-foreground">ICD: {diagnosis.icdCode}</p> : null}</L10nValue>
+                          <L10nValue>{diagnosis.description ? <p className="mt-1 text-muted-foreground"><L10nValue>{diagnosis.description}</L10nValue></p> : null}</L10nValue>
                         </div>
                       ))
-                      : "—"}
+                      : "—"}</L10nValue>
                   </td>
                 </tr>
-              ))}
+              ))}</L10nValue>
             </tbody>
           </table>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

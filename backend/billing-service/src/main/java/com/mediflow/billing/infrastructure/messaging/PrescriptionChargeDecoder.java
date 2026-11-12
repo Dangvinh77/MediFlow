@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mediflow.billing.application.dto.command.PrescriptionChargeCommand;
 import com.mediflow.billing.application.dto.command.PrescriptionTerminalCommand;
+import com.mediflow.billing.application.dto.command.PrescriptionRevisionCommand;
 import com.mediflow.billing.application.port.out.PrescriptionChargeWirePort;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -55,6 +56,48 @@ public class PrescriptionChargeDecoder implements PrescriptionChargeWirePort {
                     text(p, "priceCode"), lines, amount(p, "totalAmount"), created, snapshotHash(p));
         } catch (Exception invalid) {
             throw new IllegalArgumentException("Invalid Pharmacy V1 charge contract");
+        }
+    }
+    @Override public PrescriptionRevisionCommand decodeRevised(String key, byte[] body) {
+        try {
+            if (!"prescription.revised".equals(key) || body == null || body.length == 0 || body.length > 1_048_576)
+                throw new IllegalArgumentException();
+            var root = mapper.readTree(body); fields(root, ENVELOPE);
+            var p = root.path("payload");
+            var allowed = new java.util.HashSet<>(PAYLOAD);
+            allowed.remove("createdAt");
+            allowed.addAll(Set.of("revisionOperationId", "previousRevision", "revision", "revisedAt"));
+            fields(p, allowed);
+            if (!key.equals(text(root, "eventType")) || !"pharmacy-service".equals(text(root, "producer"))
+                    || integer(root, "version") != 1 || !"PRESCRIPTION".equals(text(p, "sourceType"))
+                    || !"OUTPATIENT".equals(text(p, "careContext"))
+                    || !"OUTPATIENT_VISIT".equals(text(p, "careEpisodeType"))) throw new IllegalArgumentException();
+            String correlation = text(root, "correlationId");
+            if (correlation.length() > 120 || correlation.chars().anyMatch(Character::isISOControl))
+                throw new IllegalArgumentException();
+            UUID prescription = uuid(p, "prescriptionId");
+            UUID eventId = uuid(root, "eventId");
+            UUID operationId = uuid(p, "revisionOperationId");
+            UUID admissionId = optionalUuid(p, "admissionId");
+            Instant revisedAt = Instant.parse(text(p, "revisedAt"));
+            long previousRevision = longInteger(p, "previousRevision");
+            long revision = longInteger(p, "revision");
+            if (admissionId != null || !prescription.equals(uuid(p, "sourceId"))
+                    || !revisedAt.equals(Instant.parse(text(root, "occurredAt")))) throw new IllegalArgumentException();
+            var items = p.get("items");
+            if (items == null || !items.isArray() || items.size() > 1000) throw new IllegalArgumentException();
+            var lines = new ArrayList<PrescriptionRevisionCommand.Item>();
+            for (var item : items) {
+                fields(item, Set.of("drugId", "drugName", "quantity", "unitPrice"));
+                lines.add(new PrescriptionRevisionCommand.Item(uuid(item, "drugId"), text(item, "drugName"),
+                        integer(item, "quantity"), amount(item, "unitPrice")));
+            }
+            return new PrescriptionRevisionCommand(prescription, operationId, eventId, previousRevision, revision,
+                    uuid(p, "patientId"), optionalUuid(p, "recordId"), uuid(p, "departmentId"),
+                    text(p, "careEpisodeType"), uuid(p, "careEpisodeId"), text(p, "priceCode"),
+                    amount(p, "totalAmount"), lines, revisedAt);
+        } catch (Exception invalid) {
+            throw new IllegalArgumentException("Invalid Pharmacy V1 revised prescription contract");
         }
     }
     public PrescriptionTerminalCommand decodeTerminal(String key, byte[] body) {
@@ -122,6 +165,11 @@ public class PrescriptionChargeDecoder implements PrescriptionChargeWirePort {
         var value = node.get(field);
         if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()) throw new IllegalArgumentException();
         return value.intValue();
+    }
+    private static long longInteger(JsonNode node, String field) {
+        var value = node.get(field);
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToLong()) throw new IllegalArgumentException();
+        return value.longValue();
     }
     private static java.math.BigDecimal amount(JsonNode node, String field) {
         var value = node.get(field);

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -12,6 +14,7 @@ import type { PatientDTO } from "../types";
 export function PatientSaveRecovery({ patientId, draft, onVerified }: {
   patientId?: string; draft: PatientDraft; onVerified: (patient: PatientDTO) => void;
 }) {
+  const { localize } = useLocale();
   const alive = useRef(true);
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -46,16 +49,16 @@ export function PatientSaveRecovery({ patientId, draft, onVerified }: {
     }
   }
 
-  return <section aria-label="Đối soát kết quả lưu" className="space-y-3 rounded-xl border border-warning/40 bg-surface p-5">
-    <h2 className="font-semibold">Kiểm tra hồ sơ sau khi mất phản hồi</h2>
-    <p className="text-sm text-muted-foreground">Bản nháp vẫn được giữ. Kiểm tra chỉ đọc dữ liệu hiện tại, không gửi lại yêu cầu lưu.</p>
-    <Button type="button" loading={busy} onClick={() => void check()}>Kiểm tra hồ sơ đã lưu</Button>
-    {message ? <p role="status" className="text-sm">{message}</p> : null}
-    {result ? <div className="space-y-3 text-sm">
-      <p role="status">{matches ? "Hồ sơ hiện tại khớp toàn bộ thông tin bạn gửi." : "Đã tìm thấy hồ sơ nhưng thông tin hiện tại khác bản nháp. Cần kiểm tra trước khi thực hiện yêu cầu mới."}</p>
-      <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(patientToDraft(result)).map(([field, value]) => <div key={field}><dt className="font-semibold">{({ hoTen: "Họ tên", ngaySinh: "Ngày sinh", gioiTinh: "Giới tính", soCmnd: "CMND/CCCD", diaChi: "Địa chỉ", soDienThoai: "Điện thoại", email: "Email", bhytSo: "BHYT" } as Record<string, string>)[field]}</dt><dd className="break-words">{field === "gioiTinh" ? value === "M" ? "Nam" : "Nữ" : value || "Chưa cập nhật"}</dd></div>)}</dl>
-      {matches ? <Button type="button" onClick={() => onVerified(result)}>Mở hồ sơ đã đối chiếu</Button>
-        : <Link href={`/patients/${encodeURIComponent(result.maBenhNhan)}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary underline">Mở hồ sơ để kiểm tra ở tab mới</Link>}
-    </div> : null}
+  return <section aria-label={localize("Đối soát kết quả lưu")} className="space-y-3 rounded-xl border border-warning/40 bg-surface p-5">
+    <h2 className="font-semibold"><L10n>{"Kiểm tra hồ sơ sau khi mất phản hồi"}</L10n></h2>
+    <p className="text-sm text-muted-foreground"><L10n>{"Bản nháp vẫn được giữ. Kiểm tra chỉ đọc dữ liệu hiện tại, không gửi lại yêu cầu lưu."}</L10n></p>
+    <Button type="button" loading={busy} onClick={() => void check()}><L10n>{"Kiểm tra hồ sơ đã lưu"}</L10n></Button>
+    <L10nValue>{message ? <p role="status" className="text-sm"><L10nValue>{message}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{result ? <div className="space-y-3 text-sm">
+      <p role="status"><L10nValue>{matches ? "Hồ sơ hiện tại khớp toàn bộ thông tin bạn gửi." : "Đã tìm thấy hồ sơ nhưng thông tin hiện tại khác bản nháp. Cần kiểm tra trước khi thực hiện yêu cầu mới."}</L10nValue></p>
+      <dl className="grid gap-2 sm:grid-cols-2"><L10nValue>{Object.entries(patientToDraft(result)).map(([field, value]) => <div key={field}><dt className="font-semibold">{({ hoTen: "Họ tên", ngaySinh: "Ngày sinh", gioiTinh: "Giới tính", soCmnd: "CMND/CCCD", diaChi: "Địa chỉ", soDienThoai: "Điện thoại", email: "Email", bhytSo: "BHYT" } as Record<string, string>)[field]}</dt><dd className="break-words"><L10nValue>{field === "gioiTinh" ? value === "M" ? "Nam" : "Nữ" : value || "Chưa cập nhật"}</L10nValue></dd></div>)}</L10nValue></dl>
+      <L10nValue>{matches ? <Button type="button" onClick={() => onVerified(result)}><L10n>{"Mở hồ sơ đã đối chiếu"}</L10n></Button>
+        : <Link href={`/patients/${encodeURIComponent(result.maBenhNhan)}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary underline"><L10n>{"Mở hồ sơ để kiểm tra ở tab mới"}</L10n></Link>}</L10nValue>
+    </div> : null}</L10nValue>
   </section>;
 }

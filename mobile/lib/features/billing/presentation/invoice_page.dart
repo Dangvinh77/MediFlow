@@ -1,3 +1,4 @@
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/widgets/reference_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -224,7 +225,7 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   void _showMessage(String value) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LText(value)));
   }
 
   void _patientChanged(String value) {
@@ -248,16 +249,16 @@ class _InvoicePageState extends State<InvoicePage>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Tra cứu hóa đơn', style: Theme.of(context).textTheme.titleLarge),
+        LText('Tra cứu hóa đơn', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         ExpansionTile(
-          title: const Text('Mã tham chiếu do tiếp nhận cung cấp'),
+          title: const LText('Mã tham chiếu do tiếp nhận cung cấp'),
           children: [
             TextField(
               controller: _patient,
               enabled: !_creating,
-              decoration: const InputDecoration(
-                labelText: 'Mã bệnh nhân (UUID)',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Mã bệnh nhân (UUID)'),
                 border: OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.search,
@@ -273,32 +274,32 @@ class _InvoicePageState extends State<InvoicePage>
             FilledButton.icon(
               onPressed: _loading || _creating ? null : () => _load(0),
               icon: const Icon(Icons.search),
-              label: const Text('Tải lịch sử'),
+              label: const LText('Tải lịch sử'),
             ),
             OutlinedButton.icon(
               onPressed: _loading || _creating || _page == null
                   ? null
                   : () => _load(_requestedPage),
               icon: const Icon(Icons.refresh),
-              label: const Text('Làm mới'),
+              label: const LText('Làm mới'),
             ),
           ],
         ),
         const SizedBox(height: 24),
-        Text('Lập hóa đơn', style: Theme.of(context).textTheme.titleMedium),
-        const Text('Billing tự tính tổng từ các khoản phí chưa thanh toán.'),
+        LText('Lập hóa đơn', style: Theme.of(context).textTheme.titleMedium),
+        const LText('Billing tự tính tổng từ các khoản phí chưa thanh toán.'),
         const SizedBox(height: 8),
         TextField(
           controller: _createdDate,
-          decoration: const InputDecoration(
-            labelText: 'Ngày lập (YYYY-MM-DD)',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Ngày lập (YYYY-MM-DD)'),
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
         FilledButton(
           onPressed: _creating || _createBlocked ? null : _create,
-          child: Text(_creating ? 'Đang xử lý…' : 'Lập hóa đơn'),
+          child: LText(_creating ? 'Đang xử lý…' : 'Lập hóa đơn'),
         ),
         if (_createBlocked)
           Padding(
@@ -306,7 +307,7 @@ class _InvoicePageState extends State<InvoicePage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                const LText(
                   'Kết quả lập hóa đơn chưa xác định. Đã khóa lệnh cho bệnh nhân này để tránh tạo trùng. Tải lịch sử và đối chiếu trước khi xử lý tiếp.',
                 ),
                 if (_loadedPatient == _patient.text.trim()) ...[
@@ -322,7 +323,7 @@ class _InvoicePageState extends State<InvoicePage>
                         _reviewedCreatePatients.remove(_patient.text.trim());
                       }
                     }),
-                    title: const Text(
+                    title: const LText(
                       'Tôi đã kiểm tra lịch sử và xác nhận có thể lập hóa đơn mới.',
                     ),
                   ),
@@ -331,7 +332,7 @@ class _InvoicePageState extends State<InvoicePage>
                         _reviewedCreatePatients.contains(_patient.text.trim())
                         ? _unlockCreateAfterReview
                         : null,
-                    child: const Text('Mở khóa sau đối soát'),
+                    child: const LText('Mở khóa sau đối soát'),
                   ),
                 ],
               ],
@@ -352,15 +353,15 @@ class _InvoicePageState extends State<InvoicePage>
                 : null,
           ),
         if (_page != null && !_loading) ...[
-          Text('Hóa đơn: ${_page!.totalElements}'),
+          LText('Hóa đơn: ${_page!.totalElements}'),
           if (_page!.items.isEmpty)
-            const Text('Chưa có hóa đơn cho mã bệnh nhân này.'),
+            const LText('Chưa có hóa đơn cho mã bệnh nhân này.'),
           for (final invoice in _page!.items) _invoiceCard(invoice),
           Wrap(
             alignment: WrapAlignment.center,
             children: [
               IconButton(
-                tooltip: 'Trang trước',
+                tooltip: AppL10n.text(context, 'Trang trước'),
                 onPressed: _page!.number > 0 && !_loading
                     ? () => _load(_page!.number - 1)
                     : null,
@@ -368,12 +369,12 @@ class _InvoicePageState extends State<InvoicePage>
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(
+                child: LText(
                   'Trang ${_page!.number + 1}/${_page!.totalPages == 0 ? 1 : _page!.totalPages}',
                 ),
               ),
               IconButton(
-                tooltip: 'Trang sau',
+                tooltip: AppL10n.text(context, 'Trang sau'),
                 onPressed: _page!.hasNext && !_loading
                     ? () => _load(_page!.number + 1)
                     : null,
@@ -389,17 +390,17 @@ class _InvoicePageState extends State<InvoicePage>
   Widget _invoiceCard(Invoice invoice) => Card(
     child: ExpansionTile(
       key: ValueKey('invoice-${invoice.id}'),
-      title: Text('Hóa đơn · ${invoice.createdDate}'),
-      subtitle: Text(
+      title: LText('Hóa đơn · ${invoice.createdDate}'),
+      subtitle: LText(
         '${invoice.totalAmount.format()} · ${invoice.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}',
       ),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
         ExpansionTile(
-          title: const Text('Thông tin đối soát hóa đơn'),
+          title: const LText('Thông tin đối soát hóa đơn'),
           children: [
             SelectableText('Mã hóa đơn: ${invoice.id}'),
-            Text(
+            LText(
               'Trạng thái xử lý: ${switch (invoice.sagaStatus) {
                 'NONE' => 'Không áp dụng',
                 'AWAITING_PAYMENT' => 'Chờ thanh toán',
@@ -416,7 +417,7 @@ class _InvoicePageState extends State<InvoicePage>
           ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            title: Text('${fee.type} · ${fee.incurredDate}'),
+            title: LText('${fee.type} · ${fee.incurredDate}'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -425,22 +426,22 @@ class _InvoicePageState extends State<InvoicePage>
                   id: fee.departmentId,
                   label: 'Khoa',
                 ),
-                Text(fee.isPaid ? 'Đã thu' : 'Chưa thu'),
+                LText(fee.isPaid ? 'Đã thu' : 'Chưa thu'),
               ],
             ),
-            trailing: Text(fee.amount.format()),
+            trailing: LText(fee.amount.format()),
           ),
         if (!invoice.isPaid) ...[
           DropdownButtonFormField<String>(
             key: ValueKey('payment-method-${invoice.id}'),
             initialValue: _paymentMethods[invoice.id] ?? 'CASH',
-            decoration: const InputDecoration(
-              labelText: 'Hình thức thanh toán',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Hình thức thanh toán'),
             ),
             items: const [
-              DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
-              DropdownMenuItem(value: 'TRANSFER', child: Text('Chuyển khoản')),
-              DropdownMenuItem(value: 'INSURANCE', child: Text('Bảo hiểm')),
+              DropdownMenuItem(value: 'CASH', child: LText('Tiền mặt')),
+              DropdownMenuItem(value: 'TRANSFER', child: LText('Chuyển khoản')),
+              DropdownMenuItem(value: 'INSURANCE', child: LText('Bảo hiểm')),
             ],
             onChanged: _creating
                 ? null
@@ -453,12 +454,14 @@ class _InvoicePageState extends State<InvoicePage>
             OutlinedButton.icon(
               onPressed: _creating ? null : () => _refreshInvoice(invoice.id),
               icon: const Icon(Icons.refresh),
-              label: const Text('Tra cứu lại hóa đơn trước khi thanh toán lại'),
+              label: const LText(
+                'Tra cứu lại hóa đơn trước khi thanh toán lại',
+              ),
             )
           else
             FilledButton(
               onPressed: _creating ? null : () => _pay(invoice),
-              child: const Text('Ghi nhận thanh toán'),
+              child: const LText('Ghi nhận thanh toán'),
             ),
         ],
       ],

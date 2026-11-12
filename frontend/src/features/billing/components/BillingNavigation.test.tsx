@@ -10,7 +10,7 @@ describe("BillingNavigation", () => {
 
     expect(screen.getByRole("link", { name: "Xét nghiệm và thuốc" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Lịch sử thu" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Hoàn tiền" })).toHaveAttribute("href", "/billing/refunds");
+    expect(screen.queryByRole("link", { name: "Hoàn tiền" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Phí khám" })).not.toBeInTheDocument();
   });
 

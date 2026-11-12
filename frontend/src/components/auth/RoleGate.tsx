@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
@@ -24,11 +26,9 @@ export function RoleGate({ allowed, children }: RoleGateProps) {
       <section
         role="alert"
         className="mt-6 rounded-xl border border-border bg-surface p-6 text-sm text-muted-foreground"
-      >
-        Tài khoản hiện tại không có quyền truy cập trang này.
-      </section>
+      ><L10n>{"Tài khoản hiện tại không có quyền truy cập trang này."}</L10n></section>
     );
   }
 
-  return <>{children}</>;
+  return <><L10nValue>{children}</L10nValue></>;
 }

@@ -46,6 +46,9 @@ public class PatientJpaEntity {
     @Column(name = "email", length = 254)
     private String email;
 
+    @Column(name = "email_unique_key", length = 254)
+    private String emailUniqueKey;
+
     @Column(name = "health_insurance_number", length = 20)
     private String healthInsuranceNumber;
 
@@ -76,6 +79,8 @@ public class PatientJpaEntity {
         this.address = address;
         this.phoneNumber = phoneNumber;
         this.email = email;
+        this.emailUniqueKey = email == null || email.isBlank()
+                ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
         this.healthInsuranceNumber = healthInsuranceNumber;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -89,6 +94,8 @@ public class PatientJpaEntity {
     public String getAddress() { return address; }
     public String getPhoneNumber() { return phoneNumber; }
     public String getEmail() { return email; }
+    public String getEmailUniqueKey() { return emailUniqueKey; }
+    public PatientJpaEntity withEmailUniqueKey(String value) { this.emailUniqueKey = value; return this; }
     public String getHealthInsuranceNumber() { return healthInsuranceNumber; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

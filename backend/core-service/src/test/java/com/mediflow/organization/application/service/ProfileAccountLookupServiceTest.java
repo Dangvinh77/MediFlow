@@ -39,7 +39,7 @@ class ProfileAccountLookupServiceTest {
         var result = service.staff(staffId);
 
         assertThat(result.account()).isSameAs(linked);
-        assertThat(result.profileEmail()).isEqualTo("Alex@example.test");
+        assertThat(result.profileEmail()).isEqualTo("alex@example.test");
         assertThat(result.emailSyncPending()).isFalse();
         verify(accounts).findByOwner(staffId, null);
         verify(accounts, never()).findByUsername(owner.getEmail());

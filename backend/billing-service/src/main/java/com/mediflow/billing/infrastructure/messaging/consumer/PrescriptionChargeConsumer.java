@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.billing.application.port.in.IssuePrescriptionChargeUseCase;
 import com.mediflow.billing.application.port.in.ConsumePrescriptionChargeFactUseCase;
+import com.mediflow.billing.application.port.in.RevisePrescriptionChargeUseCase;
 import com.mediflow.billing.application.port.out.PrescriptionChargeWirePort;
 import com.mediflow.common.exception.BusinessRuleException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -16,14 +17,20 @@ public final class PrescriptionChargeConsumer implements ConsumePrescriptionChar
     private final PrescriptionChargeWirePort wire;
     private final IssuePrescriptionChargeUseCase charges;
     private final com.mediflow.billing.application.port.in.ApplyPrescriptionTerminalUseCase terminal;
+    private final RevisePrescriptionChargeUseCase revisions;
     public PrescriptionChargeConsumer(ObjectMapper mapper, PrescriptionChargeWirePort wire, IssuePrescriptionChargeUseCase charges) {
-        this(mapper, wire, charges, null);
+        this(mapper, wire, charges, null, null);
     }
     public PrescriptionChargeConsumer(ObjectMapper mapper, PrescriptionChargeWirePort wire, IssuePrescriptionChargeUseCase charges,
             com.mediflow.billing.application.port.in.ApplyPrescriptionTerminalUseCase terminal) {
+        this(mapper, wire, charges, terminal, null);
+    }
+    public PrescriptionChargeConsumer(ObjectMapper mapper, PrescriptionChargeWirePort wire, IssuePrescriptionChargeUseCase charges,
+            com.mediflow.billing.application.port.in.ApplyPrescriptionTerminalUseCase terminal,
+            RevisePrescriptionChargeUseCase revisions) {
         this.mapper = mapper.copy().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                 .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
-        this.wire = wire; this.charges = charges; this.terminal = terminal;
+        this.wire = wire; this.charges = charges; this.terminal = terminal; this.revisions = revisions;
     }
     @Override public boolean receiveIfVersioned(String routingKey, byte[] body) {
         try {
@@ -32,12 +39,17 @@ public final class PrescriptionChargeConsumer implements ConsumePrescriptionChar
             if (root == null || !root.isObject()) throw new IllegalArgumentException();
             if (!root.has("payload") && !root.has("version") && !root.has("producer")) return false;
             if ("prescription.created".equals(routingKey)) charges.issue(wire.decode(routingKey, body));
+            else if ("prescription.revised".equals(routingKey)) {
+                if (revisions == null) throw new IllegalArgumentException();
+                revisions.applyRevisedEvent(wire.decodeRevised(routingKey, body));
+            }
             else {
                 if (terminal == null) throw new IllegalArgumentException();
                 terminal.apply(wire.decodeTerminal(routingKey, body));
             }
             return true;
-        } catch (java.io.IOException | IllegalArgumentException | BusinessRuleException | DuplicateKeyException invalid) {
+        } catch (java.io.IOException | IllegalArgumentException | BusinessRuleException | DuplicateKeyException
+                 | com.mediflow.common.exception.ResourceNotFoundException invalid) {
             throw new AmqpRejectAndDontRequeueException("Invalid, conflicting or unsupported Pharmacy V1 charge fact");
         }
     }

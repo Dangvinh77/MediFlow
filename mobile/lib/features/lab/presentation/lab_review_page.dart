@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -22,7 +24,7 @@ class CriticalNoticesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'DOCTOR') {
-      return const Center(child: Text('Chức năng dành cho bác sĩ.'));
+      return const Center(child: LText('Chức năng dành cho bác sĩ.'));
     }
     return _CriticalNoticesContent(key: ValueKey(access!.sessionIdentity));
   }
@@ -118,7 +120,7 @@ class _CriticalNoticesContentState
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: MediFlowLoader());
     if (_isReviewDisabled(_error)) {
-      return const Center(child: Text('Chức năng chưa được bật'));
+      return const Center(child: LText('Chức năng chưa được bật'));
     }
     if (_error != null) {
       return _retryableError('Không tải được cảnh báo xét nghiệm.');
@@ -126,7 +128,7 @@ class _CriticalNoticesContentState
     final notices = _notices ?? const <LabCriticalNotice>[];
     if (notices.isEmpty) {
       return const Center(
-        child: Text('Không có cảnh báo nghiêm trọng đang mở.'),
+        child: LText('Không có cảnh báo nghiêm trọng đang mở.'),
       );
     }
     return ListView(
@@ -139,12 +141,12 @@ class _CriticalNoticesContentState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LText(
                     notice.label,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  LText(
                     '${notice.value}${notice.unit == null ? '' : ' ${notice.unit}'}',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
@@ -159,7 +161,7 @@ class _CriticalNoticesContentState
                   ),
                   const SizedBox(height: 12),
                   if (notice.isAcknowledged)
-                    const Text('Đã xác nhận')
+                    const LText('Đã xác nhận')
                   else
                     FilledButton(
                       onPressed: _acknowledging.contains(notice.noticeId)
@@ -171,11 +173,11 @@ class _CriticalNoticesContentState
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Xác nhận đã nhận'),
+                          : const LText('Xác nhận đã nhận'),
                     ),
                   if (_rowErrors[notice.noticeId] case final message?) ...[
                     const SizedBox(height: 8),
-                    Text(
+                    LText(
                       message,
                       key: ValueKey('critical-notice-error-${notice.noticeId}'),
                       style: TextStyle(color: context.medical.danger),
@@ -193,11 +195,11 @@ class _CriticalNoticesContentState
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(message),
+        LText(message),
         TextButton.icon(
           onPressed: _load,
           icon: const Icon(Icons.refresh),
-          label: const Text('Thử lại'),
+          label: const LText('Thử lại'),
         ),
       ],
     ),
@@ -212,7 +214,7 @@ class LabWorklistPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.role != 'LAB_TECH') {
       return const Center(
-        child: Text('Chức năng dành cho kỹ thuật viên xét nghiệm.'),
+        child: LText('Chức năng dành cho kỹ thuật viên xét nghiệm.'),
       );
     }
     return _LabWorklistContent(key: ValueKey(access!.sessionIdentity));
@@ -268,7 +270,7 @@ class _LabWorklistContentState extends ConsumerState<_LabWorklistContent> {
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: MediFlowLoader());
     if (_isReviewDisabled(_error)) {
-      return const Center(child: Text('Chức năng chưa được bật'));
+      return const Center(child: LText('Chức năng chưa được bật'));
     }
     if (_error != null) return _retryableError();
     final items = _items ?? const <LabWorklistItem>[];
@@ -290,18 +292,22 @@ class _LabWorklistContentState extends ConsumerState<_LabWorklistContent> {
           child: DropdownButtonFormField<String>(
             key: const ValueKey('lab-worklist-group'),
             initialValue: _group,
-            decoration: const InputDecoration(labelText: 'Nhóm xét nghiệm'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Nhóm xét nghiệm'),
+            ),
             items: [
-              const DropdownMenuItem(value: '', child: Text('Tất cả nhóm')),
+              const DropdownMenuItem(value: '', child: LText('Tất cả nhóm')),
               for (final group in groups)
-                DropdownMenuItem(value: group, child: Text(group)),
+                DropdownMenuItem(value: group, child: LText(group)),
             ],
             onChanged: (group) => setState(() => _group = group ?? ''),
           ),
         ),
         Expanded(
           child: visible.isEmpty
-              ? const Center(child: Text('Không có xét nghiệm trong nhóm này.'))
+              ? const Center(
+                  child: LText('Không có xét nghiệm trong nhóm này.'),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: visible.length,
@@ -322,8 +328,8 @@ class _LabWorklistContentState extends ConsumerState<_LabWorklistContent> {
           item.overdue ? Icons.warning_amber_rounded : Icons.science_outlined,
           color: item.overdue ? medical.danger : null,
         ),
-        title: Text(item.serviceName ?? item.labType),
-        subtitle: Text(
+        title: LText(item.serviceName ?? item.labType),
+        subtitle: LText(
           [
             item.labType,
             if (item.displayGroup != null) item.displayGroup!,
@@ -343,11 +349,11 @@ class _LabWorklistContentState extends ConsumerState<_LabWorklistContent> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Không tải được danh sách xét nghiệm.'),
+        const LText('Không tải được danh sách xét nghiệm.'),
         TextButton.icon(
           onPressed: _load,
           icon: const Icon(Icons.refresh),
-          label: const Text('Thử lại'),
+          label: const LText('Thử lại'),
         ),
       ],
     ),

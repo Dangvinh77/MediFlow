@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -62,6 +64,7 @@ export function OutboxReplayForm() {
 }
 
 function OutboxReplayFormContent() {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canReplayOutbox");
   const router = useRouter();
   const role = useSyncExternalStore(
@@ -197,7 +200,7 @@ function OutboxReplayFormContent() {
   }
 
   if (role === null) {
-    return <AsyncState kind="loading" message="Đang kiểm tra quyền…" />;
+    return <AsyncState kind="loading" message={localize("Đang kiểm tra quyền…")} />;
   }
 
   if (!capabilities.canReplayOutbox) {
@@ -205,9 +208,7 @@ function OutboxReplayFormContent() {
       <p
         role="alert"
         className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"
-      >
-        Tài khoản của bạn không có quyền khôi phục đồng bộ dữ liệu.
-      </p>
+      ><L10n>{"Tài khoản của bạn không có quyền khôi phục đồng bộ dữ liệu."}</L10n></p>
     );
   }
 
@@ -219,29 +220,24 @@ function OutboxReplayFormContent() {
         aria-live="polite"
       >
         <h2 id="outbox-replay-success-title" className="font-semibold text-success">
-          {state.result.replayed ? "Đã gửi yêu cầu đồng bộ lại" : "Chưa gửi được yêu cầu đồng bộ lại"}
+          <L10nValue>{state.result.replayed ? "Đã gửi yêu cầu đồng bộ lại" : "Chưa gửi được yêu cầu đồng bộ lại"}</L10nValue>
         </h2>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Mã yêu cầu</dt>
+            <dt className="text-muted-foreground"><L10n>{"Mã yêu cầu"}</L10n></dt>
             <dd className="mt-1 break-all font-mono text-xs">{state.result.eventId}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Đã gửi lại</dt>
-            <dd className="mt-1 font-semibold">{state.result.replayed ? "Có" : "Không"}</dd>
+            <dt className="text-muted-foreground"><L10n>{"Đã gửi lại"}</L10n></dt>
+            <dd className="mt-1 font-semibold"><L10nValue>{state.result.replayed ? "Có" : "Không"}</L10nValue></dd>
           </div>
         </dl>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Yêu cầu đã được gửi lại để xử lý. Kết quả nghiệp vụ có thể chưa cập nhật ngay;
-          liên hệ bộ phận kỹ thuật để kiểm tra nếu dữ liệu vẫn chưa đồng bộ.
-        </p>
+        <p className="mt-4 text-sm text-muted-foreground"><L10n>{"Yêu cầu đã được gửi lại để xử lý. Kết quả nghiệp vụ có thể chưa cập nhật ngay; liên hệ bộ phận kỹ thuật để kiểm tra nếu dữ liệu vẫn chưa đồng bộ."}</L10n></p>
         <button
           type="button"
           onClick={startAnotherReplay}
           className="mt-5 min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted"
-        >
-          Khôi phục yêu cầu khác
-        </button>
+        ><L10n>{"Khôi phục yêu cầu khác"}</L10n></button>
       </section>
     );
   }
@@ -254,33 +250,27 @@ function OutboxReplayFormContent() {
 
   return (
     <section className="mt-6 max-w-2xl rounded-xl border border-border bg-surface p-6">
-      <h2 className="text-base font-semibold">Khôi phục một yêu cầu đồng bộ</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Chỉ dành cho quản trị viên khi xử lý sự cố đồng bộ. Nhập mã yêu cầu do bộ phận
-        kỹ thuật cung cấp; các thao tác kê đơn và xuất thuốc nằm trong mục Đơn thuốc.
-      </p>
+      <h2 className="text-base font-semibold"><L10n>{"Khôi phục một yêu cầu đồng bộ"}</L10n></h2>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ dành cho quản trị viên khi xử lý sự cố đồng bộ. Nhập mã yêu cầu do bộ phận kỹ thuật cung cấp; các thao tác kê đơn và xuất thuốc nằm trong mục Đơn thuốc."}</L10n></p>
 
-      {error && (
+      <L10nValue>{error && (
         <div
           ref={errorRef}
           role="alert"
           tabIndex={-1}
           className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
         >
-          <p>{error.message}</p>
-          {error.correlationId && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Mã theo dõi: <span className="font-mono">{error.correlationId}</span>
+          <p><L10nValue>{error.message}</L10nValue></p>
+          <L10nValue>{error.correlationId && (
+            <p className="mt-1 text-xs text-muted-foreground"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{error.correlationId}</span>
             </p>
-          )}
+          )}</L10nValue>
         </div>
-      )}
+      )}</L10nValue>
 
       <form onSubmit={prepareConfirmation} noValidate className="mt-5 space-y-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="outbox-event-id" className="text-sm font-medium">
-            Mã yêu cầu
-          </label>
+          <label htmlFor="outbox-event-id" className="text-sm font-medium"><L10n>{"Mã yêu cầu"}</L10n></label>
           <input
             ref={inputRef}
             id="outbox-event-id"
@@ -293,49 +283,40 @@ function OutboxReplayFormContent() {
             aria-invalid={fieldError ? true : undefined}
             aria-describedby={fieldError ? "outbox-event-id-error" : undefined}
             className={`${controlClassName} font-mono ${fieldError ? "border-danger" : ""}`}
-            placeholder="Dán mã yêu cầu cần khôi phục"
+            placeholder={localize("Dán mã yêu cầu cần khôi phục")}
           />
-          {fieldError && (
+          <L10nValue>{fieldError && (
             <p id="outbox-event-id-error" className="text-xs text-danger">
-              {fieldError}
+              <L10nValue>{fieldError}</L10nValue>
             </p>
-          )}
+          )}</L10nValue>
         </div>
 
-        {!showingConfirmation && (
+        <L10nValue>{!showingConfirmation && (
           <button
             ref={retryRef}
             type="submit"
             disabled={submitting || error?.retryable === false}
             className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Xem xác nhận
-          </button>
-        )}
+          ><L10n>{"Xem xác nhận"}</L10n></button>
+        )}</L10nValue>
       </form>
 
-      {showingConfirmation && (
+      <L10nValue>{showingConfirmation && (
         <section
           className="mt-5 rounded-lg border border-warning/40 bg-warning/10 p-4"
           aria-labelledby="outbox-replay-confirm-title"
           aria-describedby="outbox-replay-confirm-description"
         >
-          <h3 id="outbox-replay-confirm-title" className="font-semibold">
-            Xác nhận khôi phục đồng bộ
-          </h3>
-          <p id="outbox-replay-confirm-description" className="mt-2 text-sm">
-            Hệ thống sẽ gửi lại yêu cầu <code className="break-all">{currentEventId}</code> để đồng bộ.
-            Dữ liệu gốc được giữ nguyên. Việc gửi lại chưa đồng nghĩa nghiệp vụ đã hoàn tất.
-          </p>
+          <h3 id="outbox-replay-confirm-title" className="font-semibold"><L10n>{"Xác nhận khôi phục đồng bộ"}</L10n></h3>
+          <p id="outbox-replay-confirm-description" className="mt-2 text-sm"><L10n>{"Hệ thống sẽ gửi lại yêu cầu "}</L10n><code className="break-all"><L10nValue>{currentEventId}</L10nValue></code><L10n>{" để đồng bộ. Dữ liệu gốc được giữ nguyên. Việc gửi lại chưa đồng nghĩa nghiệp vụ đã hoàn tất."}</L10n></p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={cancelConfirmation}
               disabled={submitting}
               className="min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted disabled:opacity-50"
-            >
-              Quay lại
-            </button>
+            ><L10n>{"Quay lại"}</L10n></button>
             <button
               ref={confirmRef}
               type="button"
@@ -343,11 +324,11 @@ function OutboxReplayFormContent() {
               disabled={submitting}
               className="min-h-11 rounded-lg bg-warning px-4 py-2 font-medium text-warning-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Đang gửi yêu cầu…" : "Xác nhận khôi phục"}
+              <L10nValue>{submitting ? "Đang gửi yêu cầu…" : "Xác nhận khôi phục"}</L10nValue>
             </button>
           </div>
         </section>
-      )}
+      )}</L10nValue>
     </section>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -96,6 +98,7 @@ function getActiveHref(pathname: string): string | undefined {
  * vào route. Những kiểm tra đó không thể thay thế bằng việc ẩn menu.
  */
 export function PharmacyNav() {
+  const { localize } = useLocale();
   const pathname = usePathname();
 
   // getRole là snapshot phía trình duyệt;
@@ -126,18 +129,16 @@ export function PharmacyNav() {
 
   if (visibleItems.length === 0) {
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        Tài khoản của bạn không có quyền sử dụng phân hệ Dược.
-      </p>
+      <p role="status" className="text-sm text-muted-foreground"><L10n>{"Tài khoản của bạn không có quyền sử dụng phân hệ Dược."}</L10n></p>
     );
   }
 
   return (
     <nav
-      aria-label="Điều hướng phân hệ Dược"
+      aria-label={localize("Điều hướng phân hệ Dược")}
       className="mt-4 flex flex-wrap items-center gap-x-6 border-b border-border"
     >
-      {visibleItems.filter(item => item.capability !== "canReplayOutbox").map((item) => {
+      <L10nValue>{visibleItems.filter(item => item.capability !== "canReplayOutbox").map((item) => {
         const active = item.href === activeHref;
 
         return (
@@ -162,19 +163,19 @@ export function PharmacyNav() {
                 : "border-transparent text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
-            {item.label}
+            <L10nValue>{item.label}</L10nValue>
           </Link>
         );
-      })}
-      {capabilities.canReplayOutbox && (
+      })}</L10nValue>
+      <L10nValue>{capabilities.canReplayOutbox && (
         <details key={pathname} className="relative ml-auto text-sm">
-          <summary className="min-h-11 cursor-pointer py-3 text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary">Quản trị hệ thống</summary>
+          <summary className="min-h-11 cursor-pointer py-3 text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Quản trị hệ thống"}</L10n></summary>
           <div className="absolute right-0 z-10 w-64 rounded-xl border border-border bg-surface p-3 shadow-lg">
-            <p className="mb-2 text-xs text-muted-foreground">Dành cho người phụ trách kỹ thuật khi cần xử lý lỗi đồng bộ.</p>
-            <Link href="/pharmacy/admin/outbox" aria-current={activeHref === "/pharmacy/admin/outbox" ? "page" : undefined} className="inline-flex min-h-11 items-center text-primary hover:underline">Khôi phục đồng bộ dữ liệu</Link>
+            <p className="mb-2 text-xs text-muted-foreground"><L10n>{"Dành cho người phụ trách kỹ thuật khi cần xử lý lỗi đồng bộ."}</L10n></p>
+            <Link href="/pharmacy/admin/outbox" aria-current={activeHref === "/pharmacy/admin/outbox" ? "page" : undefined} className="inline-flex min-h-11 items-center text-primary hover:underline"><L10n>{"Khôi phục đồng bộ dữ liệu"}</L10n></Link>
           </div>
         </details>
-      )}
+      )}</L10nValue>
     </nav>
   );
 }

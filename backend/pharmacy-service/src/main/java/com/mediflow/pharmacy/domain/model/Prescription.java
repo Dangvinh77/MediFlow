@@ -30,9 +30,10 @@ public class Prescription {
     private final UUID doctorId;
     private final UUID departmentId;
     private final LocalDate prescribedDate;
-    private final BigDecimal totalAmount;
+    private BigDecimal totalAmount;
     private final PrescriptionCareContext careContext;
-    private final List<PrescriptionLine> lines;
+    private List<PrescriptionLine> lines;
+    private int revision;
     private PrescriptionStatus status;
     private Instant cancelledAt;
     private UUID cancelledBy;
@@ -40,6 +41,7 @@ public class Prescription {
     private final Instant createdAt;
     private Instant updatedAt;
     private Instant lifecycleAt;
+    private Instant revisionAt;
 
     private Prescription(
             UUID prescriptionId,
@@ -56,7 +58,8 @@ public class Prescription {
             UUID cancelledBy,
             String cancellationReason,
             Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt,
+            int revision) {
 
         this.prescriptionId = prescriptionId;
         this.recordId = recordId;
@@ -73,6 +76,7 @@ public class Prescription {
         this.cancellationReason = cancellationReason;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.revision = revision;
     }
 
     /**
@@ -121,7 +125,7 @@ public class Prescription {
         return new Prescription(
                 null, recordId, patientId, doctorId, departmentId, prescribedDate,
                 computeTotalFrom(lines), careContext, lines, PrescriptionStatus.ACTIVE,
-                null, null, null, null, null);
+                null, null, null, null, null, 0);
     }
 
     /**
@@ -182,12 +186,25 @@ public class Prescription {
             Instant updatedAt,
             PrescriptionCareContext careContext) {
 
-        validateCareContext(recordId, careContext);
+        return restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason,
+                createdAt, updatedAt, careContext, 0);
+    }
 
+    /** Restores an aggregate including its persisted monotonic edit revision. */
+    public static Prescription restore(
+            UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
+            LocalDate prescribedDate, BigDecimal totalAmount, List<PrescriptionLine> lines,
+            PrescriptionStatus status, Instant cancelledAt, UUID cancelledBy, String cancellationReason,
+            Instant createdAt, Instant updatedAt, PrescriptionCareContext careContext, int revision) {
+        validateCareContext(recordId, careContext);
+        if (revision < 0) {
+            throw new PrescriptionRuleException("PRESCRIPTION_REVISION_INVALID", "Prescription revision cannot be negative");
+        }
         return new Prescription(
                 prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
                 totalAmount, careContext, lines, status, cancelledAt, cancelledBy, cancellationReason,
-                createdAt, updatedAt);
+                createdAt, updatedAt, revision);
     }
 
     /** Restores an explicit terminal business time, never inferred from a JPA update timestamp. */
@@ -196,7 +213,36 @@ public class Prescription {
             PrescriptionStatus status, Instant cancelledAt, UUID cancelledBy, String cancellationReason,
             Instant createdAt, Instant updatedAt, PrescriptionCareContext careContext, Instant lifecycleAt) {
         var prescription = restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
-                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason, createdAt, updatedAt, careContext);
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason, createdAt, updatedAt, careContext, 0);
+        prescription.lifecycleAt = lifecycleAt;
+        return prescription;
+    }
+
+    /** Restores a V1 source with its exact committed medication-revision business time. */
+    public static Prescription restore(UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
+            UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount, List<PrescriptionLine> lines,
+            PrescriptionStatus status, Instant cancelledAt, UUID cancelledBy, String cancellationReason,
+            Instant createdAt, Instant updatedAt, PrescriptionCareContext careContext, Instant lifecycleAt,
+            int revision, Instant revisionAt) {
+        var prescription = restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason, createdAt, updatedAt,
+                careContext, lifecycleAt, revision);
+        if ((revision == 0) != (revisionAt == null)) {
+            throw new PrescriptionRuleException("PRESCRIPTION_REVISION_INVALID", "Revision timestamp must match revision state");
+        }
+        prescription.revisionAt = revisionAt;
+        return prescription;
+    }
+
+    /** Restores an aggregate including its terminal business time and revision. */
+    public static Prescription restore(UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
+            UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount, List<PrescriptionLine> lines,
+            PrescriptionStatus status, Instant cancelledAt, UUID cancelledBy, String cancellationReason,
+            Instant createdAt, Instant updatedAt, PrescriptionCareContext careContext, Instant lifecycleAt,
+            int revision) {
+        var prescription = restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason, createdAt, updatedAt,
+                careContext, revision);
         prescription.lifecycleAt = lifecycleAt;
         return prescription;
     }
@@ -281,6 +327,28 @@ public class Prescription {
         lifecycleAt = requireTimestamp(now);
         status = PrescriptionStatus.DISPENSE_FAILED;
         updatedAt = lifecycleAt;
+    }
+
+    /** Replaces the medication snapshot exactly once for the expected active revision. */
+    public int revise(int expectedRevision, List<PrescriptionLine> replacementLines, Instant now) {
+        requireActive();
+        if (expectedRevision != revision) {
+            throw new com.mediflow.common.exception.DuplicateResourceException(
+                    "PRESCRIPTION_REVISION_CONFLICT", "Prescription changed; reload before editing");
+        }
+        if (replacementLines == null || replacementLines.isEmpty()) {
+            throw new PrescriptionRuleException("PRESCRIPTION_EMPTY", "Prescription must contain at least one line");
+        }
+        if (now == null) {
+            throw new PrescriptionRuleException("PRESCRIPTION_REVISION_TIME_REQUIRED", "Revision time is required");
+        }
+        validateUniqueDrugs(replacementLines);
+        lines = List.copyOf(replacementLines);
+        totalAmount = computeTotalFrom(lines);
+        revision = Math.addExact(revision, 1);
+        updatedAt = now;
+        revisionAt = now;
+        return revision;
     }
 
     /** @return {@code true} khi đơn còn có thể hủy, hết hạn hoặc xuất thuốc */

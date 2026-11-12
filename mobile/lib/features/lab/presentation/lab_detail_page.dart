@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/medical_ui.dart';
@@ -201,7 +203,7 @@ class _LabDetailState extends State<_LabDetail> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
+        title: LText(title),
         scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -213,8 +215,8 @@ class _LabDetailState extends State<_LabDetail> {
                 id: value!.patientId,
                 label: 'Bệnh nhân',
               ),
-            if (value != null) Text(value!.type),
-            Text(
+            if (value != null) LText(value!.type),
+            LText(
               title == 'Hủy xét nghiệm'
                   ? 'Lý do: ${reason.text.trim()}'
                   : 'Kiểm tra đúng bệnh nhân và nội dung trước khi xác nhận.',
@@ -224,11 +226,11 @@ class _LabDetailState extends State<_LabDetail> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận'),
+            child: const LText('Xác nhận'),
           ),
         ],
       ),
@@ -272,16 +274,16 @@ class _LabDetailState extends State<_LabDetail> {
         final leave = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Kết quả chưa lưu'),
-            content: const Text('Rời màn hình sẽ bỏ các chỉ số đang nhập.'),
+            title: const LText('Kết quả chưa lưu'),
+            content: const LText('Rời màn hình sẽ bỏ các chỉ số đang nhập.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Tiếp tục nhập'),
+                child: const LText('Tiếp tục nhập'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Bỏ bản nháp'),
+                child: const LText('Bỏ bản nháp'),
               ),
             ],
           ),
@@ -294,7 +296,7 @@ class _LabDetailState extends State<_LabDetail> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Chi tiết xét nghiệm')),
+        appBar: AppBar(title: const LText('Chi tiết xét nghiệm')),
         body: v == null
             ? error != null
                   ? RequestError(error!, onRetry: load)
@@ -303,7 +305,7 @@ class _LabDetailState extends State<_LabDetail> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   if (error != null) RequestError(error!, onRetry: load),
-                  Text(
+                  LText(
                     v.type,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
@@ -329,10 +331,10 @@ class _LabDetailState extends State<_LabDetail> {
                     tone: statusToneOf(v.status),
                   ),
                   const SizedBox(height: 8),
-                  Text('Ngày yêu cầu: ${labDateLabel(v.requestedDate)}'),
+                  LText('Ngày yêu cầu: ${labDateLabel(v.requestedDate)}'),
                   if (v.performedDate != null)
-                    Text('Ngày thực hiện: ${labDateLabel(v.performedDate!)}'),
-                  Text(
+                    LText('Ngày thực hiện: ${labDateLabel(v.performedDate!)}'),
+                  LText(
                     v.version == 1
                         ? 'Đối soát viện phí: ${v.clearanceId != null ? 'Đã có xác nhận' : 'Chưa có xác nhận'}'
                         : 'Thanh toán: ${v.paid ? 'Đã thanh toán' : 'Chưa thanh toán'}',
@@ -340,18 +342,18 @@ class _LabDetailState extends State<_LabDetail> {
                   if (v.conclusion != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text('Kết luận: ${v.conclusion}'),
+                      child: LText('Kết luận: ${v.conclusion}'),
                     ),
                   if (_legacyResults && v.results.isNotEmpty)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8),
-                      child: Chip(label: Text('Chưa gắn template')),
+                      child: Chip(label: LText('Chưa gắn template')),
                     ),
                   for (final row in v.results)
                     Card(
                       child: ListTile(
-                        title: Text(row.indicator),
-                        subtitle: Text(
+                        title: LText(row.indicator),
+                        subtitle: LText(
                           'Kết quả: ${row.value} ${row.unit ?? ''}\n'
                           'Tham chiếu: ${row.referenceRange ?? 'Chưa cung cấp'}',
                         ),
@@ -359,20 +361,20 @@ class _LabDetailState extends State<_LabDetail> {
                     ),
                   if (commandError != null) RequestError(commandError!),
                   if (uncertain)
-                    const Text(
+                    const LText(
                       'Chưa xác định kết quả thao tác. Hãy tải lại trạng thái trước khi tiếp tục.',
                     ),
                   OutlinedButton.icon(
                     onPressed: busy ? null : load,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Tải lại trạng thái'),
+                    label: const LText('Tải lại trạng thái'),
                   ),
-                  if (uncertain) const Text('Các thao tác đã được tạm khóa.'),
+                  if (uncertain) const LText('Các thao tác đã được tạm khóa.'),
                   if (!uncertain &&
                       !busy &&
                       (v.status == 'READY' || v.status == 'PENDING') &&
                       !(v.version == 1 ? v.clearanceId != null : v.paid))
-                    const Text(
+                    const LText(
                       'Chờ xác nhận viện phí trước khi bắt đầu thực hiện.',
                     ),
                   if (const ['ADMIN', 'LAB_TECH'].contains(widget.role)) ...[
@@ -388,12 +390,12 @@ class _LabDetailState extends State<_LabDetail> {
                                   () => widget.workflow.start(v.id),
                                 ),
                           icon: const Icon(Icons.play_arrow),
-                          label: const Text('Bắt đầu thực hiện'),
+                          label: const LText('Bắt đầu thực hiện'),
                         ),
                       ),
                     if (v.status == 'IN_PROGRESS') ...[
                       const Divider(),
-                      Text(
+                      LText(
                         'Nhập kết quả',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
@@ -425,7 +427,7 @@ class _LabDetailState extends State<_LabDetail> {
                               padding: const EdgeInsets.all(12),
                               child: Column(
                                 children: [
-                                  Text('Chỉ số ${index + 1}'),
+                                  LText('Chỉ số ${index + 1}'),
                                   _field(rows[index].indicator, 'Tên chỉ số'),
                                   _field(rows[index].value, 'Giá trị'),
                                   _field(rows[index].unit, 'Đơn vị'),
@@ -443,7 +445,7 @@ class _LabDetailState extends State<_LabDetail> {
                                       icon: const Icon(
                                         Icons.remove_circle_outline,
                                       ),
-                                      label: const Text('Xóa chỉ số'),
+                                      label: const LText('Xóa chỉ số'),
                                     ),
                                 ],
                               ),
@@ -456,7 +458,7 @@ class _LabDetailState extends State<_LabDetail> {
                                   () => rows.add(_ResultControllers()),
                                 ),
                           icon: const Icon(Icons.add),
-                          label: const Text('Thêm chỉ số'),
+                          label: const LText('Thêm chỉ số'),
                         ),
                       ],
                       OutlinedButton.icon(
@@ -480,7 +482,7 @@ class _LabDetailState extends State<_LabDetail> {
                                 }
                               },
                         icon: const Icon(Icons.calendar_month),
-                        label: Text(
+                        label: LText(
                           'Ngày thực hiện: ${labDateLabel(date.text)}',
                         ),
                       ),
@@ -493,7 +495,7 @@ class _LabDetailState extends State<_LabDetail> {
                                 _templateError != null
                             ? null
                             : () => _submitResults(v),
-                        child: const Text('Lưu kết quả'),
+                        child: const LText('Lưu kết quả'),
                       ),
                     ],
                   ],
@@ -504,10 +506,10 @@ class _LabDetailState extends State<_LabDetail> {
                       ].contains(widget.role) &&
                       !const ['COMPLETED', 'CANCELLED'].contains(v.status)) ...[
                     ExpansionTile(
-                      title: const Text('Thao tác khác'),
+                      title: const LText('Thao tác khác'),
                       children: [
                         _field(reason, 'Lý do hủy'),
-                        const Text(
+                        const LText(
                           'Người thực hiện được lấy từ phiên đăng nhập.',
                         ),
                         OutlinedButton(
@@ -519,7 +521,7 @@ class _LabDetailState extends State<_LabDetail> {
                                   () =>
                                       widget.workflow.cancel(v.id, reason.text),
                                 ),
-                          child: const Text('Hủy xét nghiệm'),
+                          child: const LText('Hủy xét nghiệm'),
                         ),
                       ],
                     ),
@@ -554,7 +556,7 @@ class _LabDetailState extends State<_LabDetail> {
       onChanged: (_) => setState(() {}),
       enabled: !busy,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: AppL10n.text(context, label),
         border: const OutlineInputBorder(),
       ),
     ),

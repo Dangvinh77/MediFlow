@@ -1,4 +1,6 @@
 "use client";
+import { useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useState } from "react";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -11,6 +13,7 @@ import { usePharmacyRequestScope } from "../PharmacySessionBoundary";
 export function PrescriptionPatientPicker({ value, onChange, disabled }: {
   value: string; onChange: (id: string) => void; disabled?: boolean;
 }) {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canReadPrescription");
   const [directory] = useState<ReferenceDirectory>(() => ({
     canSearch: kind => kind === "patient",
@@ -29,6 +32,6 @@ export function PrescriptionPatientPicker({ value, onChange, disabled }: {
   }));
   return <ReferenceProvider directory={directory}>
     <ReferenceInput id="prescription-patient" kind="patient" className={controlClassName}
-      value={value} onValueChange={onChange} placeholder="Nhập tên bệnh nhân rồi chọn đúng người" disabled={disabled} />
+      value={value} onValueChange={onChange} placeholder={localize("Nhập tên bệnh nhân rồi chọn đúng người")} disabled={disabled} />
   </ReferenceProvider>;
 }

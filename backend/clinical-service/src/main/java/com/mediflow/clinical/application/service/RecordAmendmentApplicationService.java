@@ -1,7 +1,9 @@
 package com.mediflow.clinical.application.service;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +43,9 @@ import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
 
 /**
- * Finished visits are corrected only through an amendment decided by the department head or a hospital record
- * reviewer, never by its author. Nothing here writes the visit, publishes an event or touches attached results.
+ * The responsible doctor may directly apply an audited correction to a finished visit. A doctor assigned to correct
+ * another doctor's record still needs an independent head or hospital reviewer decision. Nothing here rewrites the
+ * visit, publishes an event or touches attached results.
  */
 @Service
 @ConditionalOnProperty(prefix = "mediflow.v2", name = "record-amendment", havingValue = "true")
@@ -188,15 +191,26 @@ public class RecordAmendmentApplicationService {
             }
         }
         AmendmentSection section = request == null ? null : request.section();
-        RecordAmendment amendment = RecordAmendment.request(recordId, section, section == null ? null : original(record, section),
+        List<RecordAmendment> history = amendments.findByRecord(recordId);
+        String currentText = section == null ? null : effectiveText(record, section, history);
+        if (request != null && request.originalText() != null
+                && !request.originalText().equals(currentText)) {
+            throw new InvalidClinicalDataException("AMENDMENT_STALE_SOURCE",
+                    "The section changed after it was opened; reload the record and submit against its current value");
+        }
+        Instant requestedAt = clock.instant();
+        RecordAmendment amendment = RecordAmendment.request(recordId, section, currentText,
                 request == null ? null : request.amendedText(), request == null ? null : request.reason(), actor.staffId(),
-                assignedBy, clock.instant());
+                assignedBy, requestedAt);
+        if (assignedBy == null && actor.staffId().equals(record.responsibleDoctorId())) {
+            amendment.applyByResponsibleDoctor(actor.staffId(), requestedAt);
+        }
         amendments.insert(amendment);
         return dto(amendment);
     }
 
     private RecordAmendmentDTO decideNow(ActorIdentity actor, UUID recordId, UUID amendmentId, AmendmentDecisionRequest request) {
-        MedicalRecord record = records.findById(recordId).orElseThrow(() -> notFound(recordId));
+        MedicalRecord record = records.findByIdForUpdate(recordId).orElseThrow(() -> notFound(recordId));
         RecordAmendment amendment = amendments.findByIdForUpdate(amendmentId)
                 .filter(found -> found.getRecordId().equals(recordId))
                 .orElseThrow(() -> new ResourceNotFoundException("AMENDMENT_NOT_FOUND", "Amendment not found: " + amendmentId));
@@ -210,6 +224,11 @@ public class RecordAmendmentApplicationService {
                     "Only the department head or a hospital record reviewer may decide amendments");
         }
         if ("APPROVED".equals(decision)) {
+            String currentText = effectiveText(record, amendment.getSection(), amendments.findByRecord(recordId));
+            if (!Objects.equals(amendment.getOriginalText(), currentText)) {
+                throw new InvalidClinicalDataException("AMENDMENT_STALE_SOURCE",
+                        "The section changed after this request; reject it and submit a new correction against the current value");
+            }
             amendment.approve(actor.staffId(), request.note(), clock.instant());
         } else {
             amendment.reject(actor.staffId(), request.note(), clock.instant());
@@ -281,6 +300,20 @@ public class RecordAmendmentApplicationService {
                     .collect(Collectors.joining("\n"));
         };
         return Objects.requireNonNullElse(text, "");
+    }
+
+    private static String effectiveText(MedicalRecord record, AmendmentSection section, List<RecordAmendment> history) {
+        RecordAmendment latest = history.stream()
+                .filter(amendment -> amendment.getSection() == section)
+                .filter(amendment -> amendment.getStatus() == com.mediflow.clinical.domain.model.RecordAmendmentStatus.APPROVED
+                        || amendment.getStatus() == com.mediflow.clinical.domain.model.RecordAmendmentStatus.APPLIED)
+                .max(Comparator.comparing(RecordAmendment::getEffectiveRevision,
+                                Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(RecordAmendment::getDecidedAt)
+                        .thenComparing(RecordAmendment::getRequestedAt)
+                        .thenComparing(amendment -> amendment.getAmendmentId().toString()))
+                .orElse(null);
+        return latest == null ? original(record, section) : latest.getAmendedText();
     }
 
     private ActorIdentity doctor() {

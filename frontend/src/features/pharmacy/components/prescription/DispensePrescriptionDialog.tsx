@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -105,16 +107,16 @@ export function DispensePrescriptionDialog({ prescriptionId, totalAmount, lineCo
       onKeyDown={event => {
         if (event.key === "Escape" && !submittingRef.current) { event.preventDefault(); onClose(); }
       }}>
-      <h4 id="dispense-prescription-title" className="font-semibold">Xác nhận xuất thuốc</h4>
-      <p className="mt-2 text-sm text-muted-foreground">Kiểm tra đơn trước khi xác nhận. Hệ thống sẽ kiểm tra lại thanh toán và tồn kho khi xử lý.</p>
-      {formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{formError}</p>}
+      <h4 id="dispense-prescription-title" className="font-semibold"><L10n>{"Xác nhận xuất thuốc"}</L10n></h4>
+      <p className="mt-2 text-sm text-muted-foreground"><L10n>{"Kiểm tra đơn trước khi xác nhận. Hệ thống sẽ kiểm tra lại thanh toán và tồn kho khi xử lý."}</L10n></p>
+      <L10nValue>{formError && <p role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><L10nValue>{formError}</L10nValue></p>}</L10nValue>
       <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-        <div><dt className="text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold tabular-nums">{formatVnd(totalAmount)}</dd></div>
-        <div><dt className="text-muted-foreground">Số dòng thuốc</dt><dd className="mt-1">{lineCount}</dd></div>
+        <div><dt className="text-muted-foreground"><L10n>{"Tổng tiền"}</L10n></dt><dd className="mt-1 font-semibold tabular-nums"><L10nValue>{formatVnd(totalAmount)}</L10nValue></dd></div>
+        <div><dt className="text-muted-foreground"><L10n>{"Số dòng thuốc"}</L10n></dt><dd className="mt-1"><L10nValue>{lineCount}</L10nValue></dd></div>
       </dl>
       <form onSubmit={submit} className="mt-5 flex flex-wrap gap-3">
-        <Button type="button" onClick={onClose} disabled={submitting}>Đóng</Button>
-        <Button type="submit" variant="primary" loading={submitting} disabled={forbidden}>Xác nhận xuất thuốc</Button>
+        <Button type="button" onClick={onClose} disabled={submitting}><L10n>{"Đóng"}</L10n></Button>
+        <Button type="submit" variant="primary" loading={submitting} disabled={forbidden}><L10n>{"Xác nhận xuất thuốc"}</L10n></Button>
       </form>
     </section>
   );

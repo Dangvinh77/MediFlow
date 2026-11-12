@@ -21,6 +21,7 @@ public record PrescriptionCareEvent(UUID eventId, EventType eventType, int versi
 
     public enum EventType {
         CREATED("prescription.created"), FILLED("prescription.filled"),
+        REVISED("prescription.revised"),
         DISPENSE_FAILED("prescription.dispense.failed"), CANCELLED("prescription.cancelled"),
         EXPIRED("prescription.expired");
 
@@ -43,16 +44,26 @@ public record PrescriptionCareEvent(UUID eventId, EventType eventType, int versi
         }
         Instant businessAt = switch (eventType) {
             case CREATED -> payload.createdAt();
+            case REVISED -> payload.revisedAt();
             case FILLED -> payload.filledAt();
             case DISPENSE_FAILED -> payload.failedAt();
             case CANCELLED -> payload.cancelledAt();
             case EXPIRED -> payload.expiredAt();
         };
         long timestamps = java.util.stream.Stream.of(payload.createdAt(), payload.filledAt(),
-                payload.failedAt(), payload.cancelledAt(), payload.expiredAt()).filter(java.util.Objects::nonNull).count();
+                payload.failedAt(), payload.cancelledAt(), payload.expiredAt(), payload.revisedAt())
+                .filter(java.util.Objects::nonNull).count();
         if (businessAt == null || timestamps != 1 || !businessAt.equals(occurredAt)
                 || (eventType == EventType.FILLED) != (payload.dispenseId() != null)) {
             throw new IllegalArgumentException("Event type requires its exact business timestamp and dispense identity");
+        }
+        boolean revised = eventType == EventType.REVISED;
+        if (revised != (payload.revisionOperationId() != null)
+                || revised != (payload.previousRevision() != null)
+                || revised != (payload.revision() != null)
+                || revised != (payload.revisedAt() != null)
+                || (revised && (payload.previousRevision() < 0 || payload.revision() != payload.previousRevision() + 1))) {
+            throw new IllegalArgumentException("Revision event requires a consecutive immutable revision identity");
         }
         boolean needsReason = eventType == EventType.DISPENSE_FAILED || eventType == EventType.CANCELLED
                 || eventType == EventType.EXPIRED;
@@ -66,7 +77,8 @@ public record PrescriptionCareEvent(UUID eventId, EventType eventType, int versi
             CareContext careContext, CareEpisodeType careEpisodeType, UUID careEpisodeId,
             String sourceType, UUID sourceId, String priceCode, List<Item> items, BigDecimal totalAmount,
             UUID dispenseId, Instant createdAt, Instant filledAt, Instant failedAt, Instant cancelledAt,
-            Instant expiredAt, String reason) {
+            Instant expiredAt, String reason, UUID revisionOperationId, Integer previousRevision,
+            Integer revision, Instant revisedAt) {
         public Payload {
             PrescriptionCareContext.v1(careContext, new CareEpisode(careEpisodeType, careEpisodeId), admissionId, priceCode);
             if (prescriptionId == null || patientId == null || departmentId == null
@@ -86,6 +98,17 @@ public record PrescriptionCareEvent(UUID eventId, EventType eventType, int versi
             if (sum.compareTo(totalAmount) != 0) {
                 throw new IllegalArgumentException("Prescription total must match its immutable priced item snapshot");
             }
+        }
+
+        /** Source-compatible constructor for creation and terminal lifecycle events. */
+        public Payload(UUID prescriptionId, UUID recordId, UUID admissionId, UUID patientId, UUID departmentId,
+                CareContext careContext, CareEpisodeType careEpisodeType, UUID careEpisodeId,
+                String sourceType, UUID sourceId, String priceCode, List<Item> items, BigDecimal totalAmount,
+                UUID dispenseId, Instant createdAt, Instant filledAt, Instant failedAt, Instant cancelledAt,
+                Instant expiredAt, String reason) {
+            this(prescriptionId, recordId, admissionId, patientId, departmentId, careContext, careEpisodeType,
+                    careEpisodeId, sourceType, sourceId, priceCode, items, totalAmount, dispenseId, createdAt,
+                    filledAt, failedAt, cancelledAt, expiredAt, reason, null, null, null, null);
         }
     }
 

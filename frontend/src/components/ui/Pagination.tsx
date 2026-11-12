@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 interface PaginationProps {
   page: number;
   totalPages: number;
@@ -29,14 +31,12 @@ export function Pagination({
         aria-disabled={previousDisabled}
         onClick={() => onPageChange(page - 1)}
         className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Trang trước
-      </button>
+      ><L10n>{"Trang trước"}</L10n></button>
       <span className="text-sm text-muted-foreground">
-        Trang {page + 1}/{Math.max(totalPages, 1)}
-        {totalElements !== undefined ? (
-          <> · {totalElements} kết quả</>
-        ) : null}
+        Trang <L10nValue>{page + 1}</L10nValue>/<L10nValue>{Math.max(totalPages, 1)}</L10nValue>
+        <L10nValue>{totalElements !== undefined ? (
+          <> · <L10nValue>{totalElements}</L10nValue><L10n>{" kết quả"}</L10n></>
+        ) : null}</L10nValue>
       </span>
       <button
         type="button"

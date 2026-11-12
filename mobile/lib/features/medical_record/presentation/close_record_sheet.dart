@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_failure.dart';
@@ -96,7 +98,7 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LText(
                 'Kết thúc lượt khám không kết luận',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
@@ -104,12 +106,14 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: _reason,
-                decoration: const InputDecoration(labelText: 'Lý do kết thúc'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do kết thúc'),
+                ),
                 items: [
                   for (final entry in recordClosureReasonLabels.entries)
                     DropdownMenuItem(
                       value: entry.key,
-                      child: Text(entry.value),
+                      child: LText(entry.value),
                     ),
                 ],
                 onChanged: locked
@@ -122,8 +126,8 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
                 enabled: !locked,
                 maxLength: recordClosureNoteMax,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Ghi chú và dặn dò đã đưa',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Ghi chú và dặn dò đã đưa'),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -131,7 +135,7 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
                 key: const Key('close-record-confirm'),
                 contentPadding: EdgeInsets.zero,
                 value: _confirmed,
-                title: const Text(
+                title: const LText(
                   'Tôi xác nhận kết thúc lượt khám này. Lượt đã kết thúc không thể mở lại.',
                 ),
                 onChanged: locked
@@ -143,7 +147,7 @@ class _CloseRecordSheetState extends State<CloseRecordSheet> {
               FilledButton(
                 key: const Key('close-record-submit'),
                 onPressed: _ready ? _submit : null,
-                child: Text(
+                child: LText(
                   _uncertain ? 'Gửi lại cùng yêu cầu' : 'Kết thúc lượt khám',
                 ),
               ),

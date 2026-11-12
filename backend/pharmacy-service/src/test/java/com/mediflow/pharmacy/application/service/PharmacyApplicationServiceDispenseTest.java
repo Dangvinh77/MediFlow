@@ -266,7 +266,7 @@ class DispenseApplicationServiceTest {
         Prescription prescription = prescription(prescriptionId, drugId);
         DispenseSlip slip = pendingSlip(prescriptionId);
         Drug expiredDrug = Drug.restore(drugId, "Paracetamol", "Paracetamol", "viên",
-                new BigDecimal("100.00"), 10, LocalDate.now().minusDays(1),
+                new BigDecimal("100.00"), 10, LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1),
                 "Dược phẩm VN", 2, Instant.now(), Instant.now());
         StockReservation reservation = reservation(prescriptionId, drugId, 2, Instant.now().plusSeconds(3600));
 

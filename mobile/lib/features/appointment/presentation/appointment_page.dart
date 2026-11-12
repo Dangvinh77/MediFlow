@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -46,7 +48,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
     final access = ref.watch(workspaceAccessProvider);
     if (access == null) return const _SignInRequired();
     if (!const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access.role)) {
-      return const Center(child: Text('Bạn không có quyền xem lịch hẹn.'));
+      return const Center(child: LText('Bạn không có quyền xem lịch hẹn.'));
     }
     final findAppointments = ref.watch(findAppointmentsProvider);
     final canCreate = const {'ADMIN', 'NURSE'}.contains(access.role);
@@ -88,7 +90,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                   }
                 },
                 icon: const Icon(Icons.calendar_month),
-                label: Text(_date ?? 'Chọn ngày hẹn'),
+                label: LText(_date ?? 'Chọn ngày hẹn'),
               ),
               SizedBox(
                 width: 250,
@@ -106,7 +108,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                         _date = null;
                         _departmentId = null;
                       }),
-                child: const Text('Bỏ lọc'),
+                child: const LText('Bỏ lọc'),
               ),
               if (canCreate &&
                   ref.watch(outpatientUiEnabledProvider) &&
@@ -114,7 +116,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                 FilledButton.icon(
                   onPressed: widget.onReception,
                   icon: const Icon(Icons.person_add),
-                  label: const Text('Đăng ký khám'),
+                  label: const LText('Đăng ký khám'),
                 ),
               if (canCreate && !ref.watch(outpatientUiEnabledProvider))
                 FilledButton.icon(
@@ -127,7 +129,7 @@ class _AppointmentPageState extends ConsumerState<AppointmentPage> {
                     if (saved == true && mounted) setState(() => _revision++);
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Tạo lịch hẹn'),
+                  label: const LText('Tạo lịch hẹn'),
                 ),
             ],
           ),
@@ -186,7 +188,7 @@ class _AppointmentCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
+                  child: LText(
                     '${appointment.date} · ${appointment.time}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
@@ -215,7 +217,7 @@ class _AppointmentCard extends StatelessWidget {
             if (appointment.reason?.trim().isNotEmpty == true)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('Lý do: ${appointment.reason}'),
+                child: LText('Lý do: ${appointment.reason}'),
               ),
             if (onOpen != null)
               Align(
@@ -223,7 +225,7 @@ class _AppointmentCard extends StatelessWidget {
                 child: TextButton.icon(
                   onPressed: onOpen,
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Mở lịch hẹn'),
+                  label: const LText('Mở lịch hẹn'),
                 ),
               ),
           ],
@@ -382,19 +384,19 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
         if (mounted) _load();
       });
       return const Scaffold(
-        body: Center(child: Text('Đang cập nhật phiên đăng nhập…')),
+        body: Center(child: LText('Đang cập nhật phiên đăng nhập…')),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết lịch hẹn')),
+      appBar: AppBar(title: const LText('Chi tiết lịch hẹn')),
       body: !_canRead
-          ? const Center(child: Text('Bạn không có quyền xem lịch hẹn.'))
+          ? const Center(child: LText('Bạn không có quyền xem lịch hẹn.'))
           : _loading
           ? const Center(child: MediFlowLoader())
           : _error != null && _appointment == null
           ? _ErrorPanel(error: _error!, onRetry: _load)
           : _appointment == null
-          ? const Center(child: Text('Không có dữ liệu lịch hẹn.'))
+          ? const Center(child: LText('Không có dữ liệu lịch hẹn.'))
           : _buildDetail(_appointment!, access?.role, outpatientEnabled),
     );
   }
@@ -430,7 +432,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LText(
                   '${appointment.date} · ${appointment.time}',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
@@ -457,7 +459,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                 if (appointment.reason?.trim().isNotEmpty == true)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text('Lý do: ${appointment.reason}'),
+                    child: LText('Lý do: ${appointment.reason}'),
                   ),
               ],
             ),
@@ -476,7 +478,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Đang khám. Hồ sơ khám được gắn với lịch hẹn này.'),
+              child: LText('Đang khám. Hồ sơ khám được gắn với lịch hẹn này.'),
             ),
           ),
         if (appointment.status == 'IN_EXAM' && widget.onOpenRecord != null)
@@ -488,7 +490,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                     appointment.id,
                   ),
             icon: const Icon(Icons.description),
-            label: const Text('Tiếp tục khám'),
+            label: const LText('Tiếp tục khám'),
           ),
         if (outpatientEnabled &&
             appointment.status == 'COMPLETED' &&
@@ -501,12 +503,12 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                     appointment.id,
                   ),
             icon: const Icon(Icons.description),
-            label: const Text('Mở hồ sơ khám'),
+            label: const LText('Mở hồ sơ khám'),
           ),
         if (waitingToStart)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
+            child: LText(
               _readinessError != null
                   ? 'Chưa kiểm tra được điều kiện khám. Chọn Làm mới để thử lại.'
                   : _readiness?.checkedInAt == null
@@ -532,7 +534,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                         if (saved == true) _load();
                       },
                 icon: const Icon(Icons.edit),
-                label: const Text('Sửa lịch hẹn'),
+                label: const LText('Sửa lịch hẹn'),
               ),
             if (canCheckIn)
               FilledButton.icon(
@@ -544,7 +546,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                             .checkIn(appointment.id),
                       ),
                 icon: const Icon(Icons.how_to_reg),
-                label: const Text('Tiếp nhận'),
+                label: const LText('Tiếp nhận'),
               ),
             if (canStart)
               FilledButton.icon(
@@ -556,7 +558,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                             .startExam(appointment.id),
                       ),
                 icon: const Icon(Icons.medical_services_outlined),
-                label: const Text('Bắt đầu khám'),
+                label: const LText('Bắt đầu khám'),
               ),
             if (canCancel)
               OutlinedButton.icon(
@@ -564,12 +566,12 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
                     ? null
                     : () => _confirmCancel(appointment),
                 icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Hủy lịch hẹn'),
+                label: const LText('Hủy lịch hẹn'),
               ),
             OutlinedButton.icon(
               onPressed: _busy ? null : _load,
               icon: const Icon(Icons.refresh),
-              label: const Text('Làm mới'),
+              label: const LText('Làm mới'),
             ),
           ],
         ),
@@ -581,7 +583,7 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
         if (!outpatientEnabled)
           const Padding(
             padding: EdgeInsets.only(top: 12),
-            child: Text(
+            child: LText(
               'Các thao tác tiếp nhận và bắt đầu khám chưa được bật cho ứng dụng này.',
             ),
           ),
@@ -594,16 +596,16 @@ class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hủy lịch hẹn?'),
-        content: const Text('Hành động này sẽ được xác nhận trên máy chủ.'),
+        title: const LText('Hủy lịch hẹn?'),
+        content: const LText('Hành động này sẽ được xác nhận trên máy chủ.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận hủy'),
+            child: const LText('Xác nhận hủy'),
           ),
         ],
       ),
@@ -733,8 +735,8 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
     final access = ref.watch(workspaceAccessProvider);
     if (access?.sessionIdentity != _identity) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Lịch hẹn')),
-        body: const Center(child: Text('Phiên đăng nhập đã thay đổi.')),
+        appBar: AppBar(title: const LText('Lịch hẹn')),
+        body: const Center(child: LText('Phiên đăng nhập đã thay đổi.')),
       );
     }
     final canWrite = widget.appointment == null
@@ -742,13 +744,13 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
         : const {'ADMIN', 'DOCTOR', 'NURSE'}.contains(access?.role);
     if (!canWrite) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Lịch hẹn')),
-        body: const Center(child: Text('Bạn không có quyền sửa lịch hẹn.')),
+        appBar: AppBar(title: const LText('Lịch hẹn')),
+        body: const Center(child: LText('Bạn không có quyền sửa lịch hẹn.')),
       );
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: LText(
           widget.appointment == null ? 'Tạo lịch hẹn' : 'Sửa lịch hẹn',
         ),
       ),
@@ -802,7 +804,7 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
                       }
                     },
               icon: const Icon(Icons.calendar_month),
-              label: Text(
+              label: LText(
                 _date == null ? 'Chọn ngày hẹn *' : 'Ngày hẹn: $_date',
               ),
             ),
@@ -825,14 +827,16 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
                       }
                     },
               icon: const Icon(Icons.schedule),
-              label: Text(_time == null ? 'Chọn giờ hẹn *' : 'Giờ hẹn: $_time'),
+              label: LText(
+                _time == null ? 'Chọn giờ hẹn *' : 'Giờ hẹn: $_time',
+              ),
             ),
             TextFormField(
               controller: _reason,
               maxLength: 1000,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Lý do',
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Lý do'),
                 alignLabelWithHint: true,
               ),
               validator: (value) => (value?.length ?? 0) > 1000
@@ -854,7 +858,7 @@ class _AppointmentEditorPageState extends ConsumerState<AppointmentEditorPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save),
-              label: Text(
+              label: LText(
                 widget.appointment == null ? 'Tạo lịch hẹn' : 'Lưu thay đổi',
               ),
             ),
@@ -869,7 +873,7 @@ class _SignInRequired extends StatelessWidget {
   const _SignInRequired();
   @override
   Widget build(BuildContext context) =>
-      const Center(child: Text('Đăng nhập để xem lịch hẹn.'));
+      const Center(child: LText('Đăng nhập để xem lịch hẹn.'));
 }
 
 class _ErrorPanel extends StatelessWidget {
@@ -883,15 +887,15 @@ class _ErrorPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_message(error)),
+          LText(_message(error)),
           if (error is ApiFailure &&
               (error as ApiFailure).correlationId != null)
-            Text('Mã hỗ trợ: ${(error as ApiFailure).correlationId}'),
+            LText('Mã hỗ trợ: ${(error as ApiFailure).correlationId}'),
           if (onRetry != null)
             TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Làm mới'),
+              label: const LText('Làm mới'),
             ),
         ],
       ),
@@ -905,7 +909,7 @@ class _InlineError extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(
+    child: LText(
       message,
       style: TextStyle(color: Theme.of(context).colorScheme.error),
     ),

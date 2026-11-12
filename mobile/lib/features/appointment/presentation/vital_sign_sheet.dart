@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -140,7 +142,10 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Ghi sinh hiệu', style: Theme.of(context).textTheme.titleMedium),
+          LText(
+            'Ghi sinh hiệu',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           for (final field in _fields) ...[
             const SizedBox(height: 8),
             TextField(
@@ -150,7 +155,7 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
                 decimal: field.decimal,
               ),
               decoration: InputDecoration(
-                labelText: field.label,
+                labelText: AppL10n.text(context, field.label),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -161,25 +166,25 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
             enabled: !locked,
             maxLength: 500,
             maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Lý do chưa đo đủ',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Lý do chưa đo đủ'),
               border: OutlineInputBorder(),
             ),
           ),
           if (_issue != null)
-            Text(
+            LText(
               _issue!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           if (_error != null) RequestError(_error!),
           if (_pending != null)
-            const Text(
+            const LText(
               'Chưa xác định sinh hiệu đã được lưu hay chưa. Gửi lại đúng yêu cầu để tránh ghi trùng.',
             ),
           const SizedBox(height: 8),
           FilledButton(
             onPressed: _busy ? null : _submit,
-            child: Text(
+            child: LText(
               _pending != null ? 'Gửi lại cùng yêu cầu' : 'Lưu sinh hiệu',
             ),
           ),
@@ -242,13 +247,13 @@ class _VitalSignHistorySheetState extends ConsumerState<VitalSignHistorySheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LText(
               'Sinh hiệu đã ghi',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             if (rows.isEmpty)
-              const Text(
+              const LText(
                 'Chưa có sinh hiệu cho lượt khám này. Vẫn có thể bắt đầu khám và đo sau.',
               ),
             for (final row in rows)
@@ -257,10 +262,10 @@ class _VitalSignHistorySheetState extends ConsumerState<VitalSignHistorySheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(row.observedAt),
-                    Text(_summary(row.input)),
+                    LText(row.observedAt),
+                    LText(_summary(row.input)),
                     if (row.input.notMeasuredReason != null)
-                      Text('Lý do chưa đo đủ: ${row.input.notMeasuredReason}'),
+                      LText('Lý do chưa đo đủ: ${row.input.notMeasuredReason}'),
                   ],
                 ),
               ),

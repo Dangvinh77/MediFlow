@@ -10,6 +10,10 @@ abstract final class PatientExamResultDto {
     if (diagnoses is! List) {
       throw const FormatException('Danh sách chẩn đoán không hợp lệ.');
     }
+    final corrections = json['effectiveCorrections'];
+    if (corrections != null && corrections is! List) {
+      throw const FormatException('Danh sách đính chính có hiệu lực không hợp lệ.');
+    }
     return PatientExamResult(
       id: JsonReader.string(json, 'recordId'),
       doctorId: JsonReader.string(json, 'doctorId'),
@@ -19,6 +23,20 @@ abstract final class PatientExamResultDto {
       symptoms: JsonReader.optionalString(json, 'symptoms'),
       disposition: JsonReader.optionalString(json, 'disposition'),
       dispositionNote: JsonReader.optionalString(json, 'dispositionNote'),
+      effectiveCorrections: (corrections as List? ?? const [])
+          .map((row) {
+            if (row is! Map<String, dynamic>) {
+              throw const FormatException('Đính chính có hiệu lực không hợp lệ.');
+            }
+            return PatientEffectiveCorrection(
+              section: JsonReader.string(row, 'section'),
+              originalText: JsonReader.string(row, 'originalText'),
+              correctedText: JsonReader.string(row, 'correctedText'),
+              reason: JsonReader.string(row, 'reason'),
+              appliedAt: JsonReader.string(row, 'appliedAt'),
+            );
+          })
+          .toList(growable: false),
       diagnoses: List.unmodifiable(
         diagnoses.map((row) {
           if (row is! Map<String, dynamic>) {

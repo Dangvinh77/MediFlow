@@ -122,8 +122,8 @@ public class RecordAccessApplicationService {
         }
         var flags = collaboration.resolve(actor, record, read.allowed());
         return new RecordCapabilitiesDTO(recordId, record.getPatientId(), read.allowed(), read.basis(), canWrite,
-                canWrite && inExam, flags.canAmend(), writeBlocked, flags.canHandover(), flags.canAcceptHandover(),
-                flags.canAddConsultationNote(), flags.canAmend(), flags.canDecideAmendments());
+                canWrite && inExam, flags.canRequestAmendment(), writeBlocked, flags.canHandover(), flags.canAcceptHandover(),
+                flags.canAddConsultationNote(), flags.canAmend(), flags.canApplyAmendment(), flags.canDecideAmendments());
     }
 
     private String writeBlockedReason(ActorIdentity actor, MedicalRecord record, boolean inExam) {

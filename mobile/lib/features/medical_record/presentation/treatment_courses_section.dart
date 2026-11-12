@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,7 +85,7 @@ class _TreatmentCoursesSectionState
               child: OutlinedButton(
                 key: const Key('toggle-course-open'),
                 onPressed: () => setState(() => _showOpenForm = true),
-                child: const Text('Mở đợt điều trị từ lượt khám này'),
+                child: const LText('Mở đợt điều trị từ lượt khám này'),
               ),
             ),
     );
@@ -99,27 +101,27 @@ class _TreatmentCoursesSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(course.problem, style: theme.textTheme.titleSmall),
-        Text(
+        LText(course.problem, style: theme.textTheme.titleSmall),
+        LText(
           '${course.isOpen ? 'Đang theo dõi' : 'Đã kết thúc'} · '
           '${course.recordIds.length} lượt khám · '
           'Lượt gần nhất ${course.lastVisitDate}',
           style: theme.textTheme.bodySmall,
         ),
         if (course.isOpen && course.reviewDue)
-          Text(
+          LText(
             'Cần rà soát',
             style: TextStyle(color: theme.colorScheme.error),
           ),
-        Text(course.openingReason),
+        LText(course.openingReason),
         if (!course.isOpen) ...[
-          Text(
+          LText(
             'Kết luận: ${treatmentCourseClosureLabels[course.closureDecision] ?? course.closureDecision ?? ''}',
           ),
           if (course.closureNote?.trim().isNotEmpty == true)
-            Text(course.closureNote!),
+            LText(course.closureNote!),
           if (course.closedAt != null)
-            Text(
+            LText(
               'Kết thúc lúc ${formatClinicalInstant(course.closedAt!)}',
               style: theme.textTheme.bodySmall,
             ),
@@ -184,7 +186,7 @@ class _TreatmentCoursesSectionState
                 key: Key('course-close-${course.courseId}'),
                 onPressed: () =>
                     setState(() => _closingCourseId = course.courseId),
-                child: const Text('Kết thúc đợt điều trị'),
+                child: const LText('Kết thúc đợt điều trị'),
               ),
             ),
         ],

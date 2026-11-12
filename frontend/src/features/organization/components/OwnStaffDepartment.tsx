@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useState } from "react";
 import { getSessionKey } from "@/lib/auth";
@@ -17,5 +19,5 @@ export function OwnStaffDepartment({ staffId }: { staffId: string }) {
     });
     return () => { active = false; };
   }, [staffId, attempt]);
-  return <div><dt className="text-sm text-muted-foreground">Khoa/phòng công tác</dt><dd className="mt-1 text-sm">{state.name ?? (state.error ? <><span>{state.error}</span> <button type="button" className="text-primary underline" onClick={() => { setState({}); setAttempt(value => value + 1); }}>Tải lại đơn vị</button></> : "Đang tải đơn vị…")}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground"><L10n>{"Khoa/phòng công tác"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{state.name ?? (state.error ? <><span><L10nValue>{state.error}</L10nValue></span> <button type="button" className="text-primary underline" onClick={() => { setState({}); setAttempt(value => value + 1); }}><L10n>{"Tải lại đơn vị"}</L10n></button></> : "Đang tải đơn vị…")}</L10nValue></dd></div>;
 }

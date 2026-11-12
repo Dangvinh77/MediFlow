@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import Link from "next/link";
 import { outpatientUiEnabled } from "@/lib/outpatient-ui";
 import type { Metadata } from "next";
@@ -13,7 +15,7 @@ export default function CreateLabRequestPage() {
   return (
     <PageShell title="Tạo yêu cầu xét nghiệm" description="Tạo chỉ định rõ ràng từ hồ sơ khám; không suy luận quyền tài chính.">
       <RoleGate allowed={["ADMIN", "DOCTOR"]}>
-        {outpatientUiEnabled() ? <section className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-6"><p role="status" className="text-sm">Lập chỉ định xét nghiệm từ hồ sơ đang khám trước khi gửi yêu cầu.</p><Link href="/records" className="inline-flex min-h-11 items-center text-sm text-primary underline">Mở hồ sơ khám</Link></section> : <CreateLabRequestForm />}
+        <L10nValue>{outpatientUiEnabled() ? <section className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-6"><p role="status" className="text-sm"><L10n>{"Lập chỉ định xét nghiệm từ hồ sơ đang khám trước khi gửi yêu cầu."}</L10n></p><Link href="/records" className="inline-flex min-h-11 items-center text-sm text-primary underline"><L10n>{"Mở hồ sơ khám"}</L10n></Link></section> : <CreateLabRequestForm />}</L10nValue>
       </RoleGate>
     </PageShell>
   );

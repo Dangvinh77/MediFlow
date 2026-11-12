@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -64,16 +66,16 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Khôi phục yêu cầu đồng bộ?'),
+        title: const LText('Khôi phục yêu cầu đồng bộ?'),
         content: SelectableText('Mã yêu cầu: $eventId'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: const LText('Hủy'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận khôi phục'),
+            child: const LText('Xác nhận khôi phục'),
           ),
         ],
       ),
@@ -111,7 +113,7 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
     if (ref.watch(pharmacyAccessProvider)?.role != 'ADMIN' ||
         ref.watch(pharmacyOutboxRepositoryProvider) == null) {
       return const Center(
-        child: Text(
+        child: LText(
           'Tài khoản của bạn không có quyền khôi phục đồng bộ dữ liệu.',
         ),
       );
@@ -121,7 +123,7 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
       padding: const EdgeInsets.all(16),
       children: [
         if (result != null) ...[
-          Text(
+          LText(
             result.replayed
                 ? 'Đã gửi yêu cầu đồng bộ lại'
                 : 'Chưa gửi được yêu cầu đồng bộ lại',
@@ -129,23 +131,23 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
           ),
           const SizedBox(height: 8),
           SelectableText('Mã yêu cầu: ${result.eventId}'),
-          Text('Đã gửi lại: ${result.replayed ? 'Có' : 'Không'}'),
+          LText('Đã gửi lại: ${result.replayed ? 'Có' : 'Không'}'),
           const SizedBox(height: 8),
-          const Text(
+          const LText(
             'Kết quả nghiệp vụ có thể chưa cập nhật ngay; liên hệ bộ phận kỹ thuật để kiểm tra nếu dữ liệu vẫn chưa đồng bộ.',
           ),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: _reset,
-            child: const Text('Khôi phục yêu cầu khác'),
+            child: const LText('Khôi phục yêu cầu khác'),
           ),
         ] else ...[
-          Text(
+          LText(
             'Khôi phục một yêu cầu đồng bộ',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
-          const Text(
+          const LText(
             'Chỉ dành cho quản trị viên khi xử lý sự cố đồng bộ. Nhập mã yêu cầu do bộ phận kỹ thuật cung cấp.',
           ),
           const SizedBox(height: 12),
@@ -157,9 +159,9 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
               _error = null;
             }),
             decoration: InputDecoration(
-              labelText: 'Mã yêu cầu',
-              hintText: 'Dán mã yêu cầu cần khôi phục',
-              errorText: _fieldError,
+              labelText: AppL10n.text(context, 'Mã yêu cầu'),
+              hintText: AppL10n.text(context, 'Dán mã yêu cầu cần khôi phục'),
+              errorText: AppL10n.text(context, _fieldError),
               errorMaxLines: 3,
               border: const OutlineInputBorder(),
             ),
@@ -167,7 +169,7 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(
+              child: LText(
                 _error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
@@ -175,7 +177,7 @@ class _PharmacyOutboxPageState extends ConsumerState<PharmacyOutboxPage> {
           const SizedBox(height: 12),
           FilledButton(
             onPressed: _busy || _forbidden ? null : _replay,
-            child: Text(_busy ? 'Đang gửi…' : 'Xem xác nhận'),
+            child: LText(_busy ? 'Đang gửi…' : 'Xem xác nhận'),
           ),
         ],
       ],

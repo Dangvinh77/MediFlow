@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { useRouter } from "next/navigation";
@@ -18,6 +20,7 @@ export function SendNotificationForm() {
 const emptyValues: SendNotificationValues = { patientId: "", title: "", content: "", channel: "IN_APP", recipientAddress: "" };
 
 function SendForm() {
+  const { localize } = useLocale();
   const router = useRouter();
   const isCurrent = useNotificationRequestScope("send");
   const [values, setValues] = useState<SendNotificationValues>(emptyValues);
@@ -93,19 +96,19 @@ function SendForm() {
   });
   return (
     <form onSubmit={submit} noValidate aria-busy={saving || undefined} className="mt-6 max-w-3xl space-y-5 rounded-xl border border-border bg-surface p-6">
-      {error && <p ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">{error}</p>}
-      <Field label="Bệnh nhân" htmlFor="notification-patientId" error={errors.patientId} required><ReferenceInput kind="patient" {...field("patientId")} value={values.patientId} onValueChange={(selectedId) => update("patientId", selectedId)} placeholder="Tìm bệnh nhân theo tên" /></Field>
-      <Field label="Tiêu đề" htmlFor="notification-title" error={errors.title} required><input {...field("title")} maxLength={255} value={values.title} onChange={event => update("title", event.target.value)} /></Field>
-      <Field label="Nội dung" htmlFor="notification-content" error={errors.content} required><textarea {...field("content")} rows={6} value={values.content} onChange={event => update("content", event.target.value)} /></Field>
+      <L10nValue>{error && <p ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"><L10nValue>{error}</L10nValue></p>}</L10nValue>
+      <Field label={localize("Bệnh nhân")} htmlFor="notification-patientId" error={errors.patientId} required><ReferenceInput kind="patient" {...field("patientId")} value={values.patientId} onValueChange={(selectedId) => update("patientId", selectedId)} placeholder={localize("Tìm bệnh nhân theo tên")} /></Field>
+      <Field label={localize("Tiêu đề")} htmlFor="notification-title" error={errors.title} required><input {...field("title")} maxLength={255} value={values.title} onChange={event => update("title", event.target.value)} /></Field>
+      <Field label={localize("Nội dung")} htmlFor="notification-content" error={errors.content} required><textarea {...field("content")} rows={6} value={values.content} onChange={event => update("content", event.target.value)} /></Field>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Kênh" htmlFor="notification-channel" error={errors.channel} required><select {...field("channel")} value={values.channel} onChange={event => update("channel", event.target.value as NotificationChannel)}><option value="IN_APP">Trong ứng dụng</option><option value="EMAIL">Email</option><option value="SMS">SMS</option></select></Field>
-        <Field label="Địa chỉ người nhận" htmlFor="notification-recipientAddress" error={errors.recipientAddress} required={values.channel !== "IN_APP"} hint={values.channel === "IN_APP" ? "Không cần cho thông báo trong ứng dụng." : values.channel === "SMS" ? "Số điện thoại bắt đầu bằng 0, gồm 10–11 chữ số." : "Email nhận thông báo."}>
+        <Field label={localize("Kênh")} htmlFor="notification-channel" error={errors.channel} required><select {...field("channel")} value={values.channel} onChange={event => update("channel", event.target.value as NotificationChannel)}><option value="IN_APP"><L10n>{"Trong ứng dụng"}</L10n></option><option value="EMAIL"><L10n>{"Email"}</L10n></option><option value="SMS">SMS</option></select></Field>
+        <Field label={localize("Địa chỉ người nhận")} htmlFor="notification-recipientAddress" error={errors.recipientAddress} required={values.channel !== "IN_APP"} hint={values.channel === "IN_APP" ? "Không cần cho thông báo trong ứng dụng." : values.channel === "SMS" ? "Số điện thoại bắt đầu bằng 0, gồm 10–11 chữ số." : "Email nhận thông báo."}>
           <input {...field("recipientAddress")} disabled={locked || values.channel === "IN_APP"} aria-required={values.channel !== "IN_APP"} maxLength={150} type={values.channel === "EMAIL" ? "email" : "text"} inputMode={values.channel === "SMS" ? "tel" : undefined} value={values.recipientAddress} onChange={event => update("recipientAddress", event.target.value)} autoComplete="off" />
         </Field>
       </div>
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" variant="primary" loading={saving} disabled={uncertain || sent || forbidden}>{sent ? "Đã tiếp nhận yêu cầu" : "Gửi thông báo"}</Button>
-        <Button type="button" disabled={saving} onClick={() => router.push("/notifications")}>{uncertain ? "Tra cứu lịch sử bệnh nhân" : "Quay lại tra cứu"}</Button>
+        <Button type="submit" variant="primary" loading={saving} disabled={uncertain || sent || forbidden}><L10nValue>{sent ? "Đã tiếp nhận yêu cầu" : "Gửi thông báo"}</L10nValue></Button>
+        <Button type="button" disabled={saving} onClick={() => router.push("/notifications")}><L10nValue>{uncertain ? "Tra cứu lịch sử bệnh nhân" : "Quay lại tra cứu"}</L10nValue></Button>
       </div>
     </form>
   );

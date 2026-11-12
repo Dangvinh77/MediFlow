@@ -46,7 +46,7 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("22");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("23");
         assertThat(columnExists("PRESCRIPTION_LINE", "NOTE")).isTrue();
         assertThat(tableExists("LOCAL_DEMO_DRUG_SEED_RECEIPT")).isTrue();
         assertThat(tableExists("PHARMACY_OUTPATIENT_DELIVERY_COHORT")).isTrue();

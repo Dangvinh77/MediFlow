@@ -7,12 +7,14 @@ import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.request.CancelPrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
+import com.mediflow.pharmacy.application.dto.request.UpdatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
 import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreateOutpatientPrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.UpdateOutpatientPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.OutpatientPrescriptionLifecycleUseCase;
 import com.mediflow.pharmacy.application.exception.OutpatientPrescriptionApiException;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
@@ -53,6 +55,7 @@ public class PrescriptionController {
     private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
     private final ObjectProvider<CreateOutpatientPrescriptionUseCase> outpatientCreators;
     private final ObjectProvider<OutpatientPrescriptionLifecycleUseCase> outpatientLifecycles;
+    private final ObjectProvider<UpdateOutpatientPrescriptionUseCase> outpatientPrescriptionEditors;
     private final Environment environment;
 
     /**
@@ -93,6 +96,26 @@ public class PrescriptionController {
                 "/api/v1/pharmacy/prescriptions/" + created.prescriptionId());
         return ResponseEntity.created(location)
                 .body(ApiResponse.ok(created, command.correlationId()));
+    }
+
+    /** Reprices and revises an unpaid outpatient V1 prescription using a stable operation key. */
+    @PutMapping("/{prescriptionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    public ResponseEntity<ApiResponse<PrescriptionDTO>> update(
+            @PathVariable UUID prescriptionId,
+            @Valid @RequestBody UpdatePrescriptionRequest request,
+            Authentication authentication,
+            @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        UpdateOutpatientPrescriptionUseCase editor = outpatientPrescriptionEditors.getIfAvailable();
+        if (editor == null) {
+            throw new OutpatientPrescriptionApiException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "Public outpatient V1 prescription editing is not enabled");
+        }
+        String traceId = normalizeCorrelationId(correlationId);
+        var result = editor.update(new com.mediflow.pharmacy.application.dto.command.UpdatePrescriptionCommand(
+                prescriptionId, parseCommandId(idempotencyKey), request, parseActor(authentication), traceId));
+        return ResponseEntity.ok(ApiResponse.ok(result, traceId));
     }
 
     /**
@@ -187,7 +210,7 @@ public class PrescriptionController {
             }
         }
         throw new OutpatientPrescriptionApiException("PHARMACY_IDEMPOTENCY_KEY_REQUIRED",
-                "V1 creation requires a canonical UUID Idempotency-Key");
+                "This V1 command requires a canonical UUID Idempotency-Key");
     }
 
     /** Resolves the verified principal without exposing malformed identities as HTTP 500. */

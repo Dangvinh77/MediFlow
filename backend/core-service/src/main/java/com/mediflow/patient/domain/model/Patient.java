@@ -111,7 +111,7 @@ public final class Patient {
         validateOptionalFields(phoneNumber, email, healthInsuranceNumber);
         Instant now = Instant.now();
         return new Patient(UUID.randomUUID(), fullName.trim(), dateOfBirth, gender, identityNumber.trim(),
-                address, normalize(phoneNumber), normalize(email), normalize(healthInsuranceNumber), now, now);
+                address, normalize(phoneNumber), normalizeEmail(email), normalize(healthInsuranceNumber), now, now);
     }
 
     /** Compatibility update retaining the existing identity number. */
@@ -135,14 +135,15 @@ public final class Patient {
         validateDateOfBirth(dateOfBirth);
         validateGender(gender);
         validateIdentityNumber(identityNumber);
-        validateOptionalFields(phoneNumber, email, healthInsuranceNumber);
+        boolean emailUnchanged = java.util.Objects.equals(normalizeEmail(this.email), normalizeEmail(email));
+        validateOptionalFields(phoneNumber, emailUnchanged ? null : email, healthInsuranceNumber);
         this.identityNumber = identityNumber.trim();
         this.fullName = fullName.trim();
         this.dateOfBirth = dateOfBirth;
         this.gender = gender;
         this.address = address;
         this.phoneNumber = normalize(phoneNumber);
-        this.email = normalize(email);
+        if (!emailUnchanged) this.email = normalizeEmail(email);
         this.healthInsuranceNumber = normalize(healthInsuranceNumber);
         this.updatedAt = Instant.now();
     }
@@ -190,6 +191,10 @@ public final class Patient {
 
     private static String normalize(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String normalizeEmail(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private static InvalidPatientDataException invalid(String code, String message) {

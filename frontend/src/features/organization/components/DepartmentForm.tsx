@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useUnsavedChanges } from "../use-unsaved-changes";
 import { useRouter } from "next/navigation";
@@ -24,6 +26,7 @@ export function DepartmentForm({ departmentId }: Props) {
 }
 
 function DepartmentFormWorkspace({ departmentId }: Props) {
+  const { localize } = useLocale();
   const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const router = useRouter(); const editing = Boolean(departmentId);
   const [name, setName] = useState(""); const [abbreviation, setAbbreviation] = useState(""); const [type, setType] = useState<DepartmentType>("CLINICAL"); const [location, setLocation] = useState(""); const [headId, setHeadId] = useState(""); const [active, setActive] = useState(true);
@@ -118,12 +121,12 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
   const currentLoadError = loadError;
   if (editing && currentLoadError && currentLoadError.key === departmentId) {
     const message = currentLoadError.message;
-    return <AsyncState kind="error" message={message} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
+    return <AsyncState kind="error" message={localize(message)} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
   }
-  if (loading || (editing && loadedDepartmentId !== departmentId)) return <AsyncState kind="loading" message="Đang tải thông tin khoa/phòng…" />;
+  if (loading || (editing && loadedDepartmentId !== departmentId)) return <AsyncState kind="loading" message={localize("Đang tải thông tin khoa/phòng…")} />;
   return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5 [&_input]:scroll-mb-32 [&_select]:scroll-mb-32 [&_textarea]:scroll-mb-32">
-    {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
-    {unknownSave ? <SaveOutcomeRecovery read={async () => {
+    <L10nValue>{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{unknownSave ? <SaveOutcomeRecovery read={async () => {
       if (departmentId) return organizationApi.department(departmentId);
       const session = getSessionKey();
       const all = await organizationApi.departments(false);
@@ -133,26 +136,26 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
     }} matches={department => departmentMatchesDraft(department, unknownSave)}
       onUnauthorized={() => router.replace("/login")} onVerified={department => {
         markSaved(); router.push(`/organization/departments/${department.departmentId}?notice=${editing ? "updated" : "created"}`);
-      }} /> : null}
-    <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
+      }} /> : null}</L10nValue>
+    <p className="text-sm text-muted-foreground"><L10n>{"Các trường có dấu * là bắt buộc."}</L10n></p>
     <fieldset disabled={saving || Boolean(unknownSave)} className="min-w-0 space-y-5">
-      <FormSection title={`Thông tin ${unit}`} description="Tên, mã viết tắt và phân loại đơn vị trong tổ chức.">
-        <Field label={`Tên ${unit}`} htmlFor="department-name" required><input id="department-name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Viết tắt" htmlFor="department-abbreviation" required hint={editing ? "Mã viết tắt không đổi sau khi tạo." : undefined}><input id="department-abbreviation" required={!editing} disabled={editing} maxLength={20} value={abbreviation} onChange={(event) => setAbbreviation(event.target.value)} className={controlClassName} /></Field>
-        <Field label={`Loại ${unit}`} htmlFor="department-type" required><select id="department-type" value={type} onChange={(event) => setType(event.target.value as DepartmentType)} className={controlClassName}>{departmentCategories.map((option) => <option key={option} value={option}>{departmentCategoryLabels[option]}</option>)}</select>
-          <span className="mt-1 block text-xs font-normal text-muted-foreground">{departmentCategoryHints[type]}{roomTypes ? ` Loại phòng của khối: ${roomTypesFor(roomTypes, type).map(row => row.name).join(", ") || "chưa có (thêm tại Danh mục khoa phòng)"}.` : ""}</span></Field>
-        <Field label="Địa điểm" htmlFor="department-location"><input id="department-location" maxLength={255} value={location} onChange={(event) => setLocation(event.target.value)} className={controlClassName} /></Field>
+      <FormSection title={localize(`Thông tin ${unit}`)} description={localize("Tên, mã viết tắt và phân loại đơn vị trong tổ chức.")}>
+        <Field label={localize(`Tên ${unit}`)} htmlFor="department-name" required><input id="department-name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Viết tắt")} htmlFor="department-abbreviation" required hint={editing ? "Mã viết tắt không đổi sau khi tạo." : undefined}><input id="department-abbreviation" required={!editing} disabled={editing} maxLength={20} value={abbreviation} onChange={(event) => setAbbreviation(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize(`Loại ${unit}`)} htmlFor="department-type" required><select id="department-type" value={type} onChange={(event) => setType(event.target.value as DepartmentType)} className={controlClassName}><L10nValue>{departmentCategories.map((option) => <option key={option} value={option}><L10nValue>{departmentCategoryLabels[option]}</L10nValue></option>)}</L10nValue></select>
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">{departmentCategoryHints[type]}<L10nValue>{roomTypes ? ` Loại phòng của khối: ${roomTypesFor(roomTypes, type).map(row => row.name).join(", ") || "chưa có (thêm tại Danh mục khoa phòng)"}.` : ""}</L10nValue></span></Field>
+        <Field label={localize("Địa điểm")} htmlFor="department-location"><input id="department-location" maxLength={255} value={location} onChange={(event) => setLocation(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
-      <FormSection title="Chức năng và liên hệ" description="Nhiệm vụ và đầu mối liên hệ của đơn vị.">
-        <Field label="Chức năng / nhiệm vụ" htmlFor="department-description"><textarea id="department-description" rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Điện thoại / máy lẻ" htmlFor="department-phone"><input id="department-phone" type="tel" maxLength={30} pattern={"[0-9+\\(\\) .\\-]{3,30}"} value={phone} onChange={event => setPhone(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Email đơn vị" htmlFor="department-email"><input id="department-email" type="email" maxLength={100} value={email} onChange={event => setEmail(event.target.value)} className={controlClassName} /></Field>
+      <FormSection title={localize("Chức năng và liên hệ")} description={localize("Nhiệm vụ và đầu mối liên hệ của đơn vị.")}>
+        <Field label={localize("Chức năng / nhiệm vụ")} htmlFor="department-description"><textarea id="department-description" rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Điện thoại / máy lẻ")} htmlFor="department-phone"><input id="department-phone" type="tel" maxLength={30} pattern={"[0-9+\\(\\) .\\-]{3,30}"} value={phone} onChange={event => setPhone(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Email đơn vị")} htmlFor="department-email"><input id="department-email" type="email" maxLength={100} value={email} onChange={event => setEmail(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
-      {editing ? <FormSection title={`Quản lý ${unit}`} description="Phân công người phụ trách và quản lý trạng thái hoạt động.">
-        <p className="text-sm text-muted-foreground">Bổ nhiệm hoặc miễn nhiệm trưởng khoa lâm sàng tại trang chi tiết khoa, kèm lý do và lịch sử. Biểu mẫu này giữ nguyên người phụ trách hiện tại.</p>
-        <Field label="Trạng thái" htmlFor="department-active"><select id="department-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select></Field>
-      </FormSection> : null}
+      <L10nValue>{editing ? <FormSection title={localize(`Quản lý ${unit}`)} description={localize("Phân công người phụ trách và quản lý trạng thái hoạt động.")}>
+        <p className="text-sm text-muted-foreground"><L10n>{"Bổ nhiệm hoặc miễn nhiệm trưởng khoa lâm sàng tại trang chi tiết khoa, kèm lý do và lịch sử. Biểu mẫu này giữ nguyên người phụ trách hiện tại."}</L10n></p>
+        <Field label={localize("Trạng thái")} htmlFor="department-active"><select id="department-active" value={String(active)} onChange={(event) => setActive(event.target.value === "true")} className={controlClassName}><option value="true"><L10n>{"Đang hoạt động"}</L10n></option><option value="false"><L10n>{"Ngừng hoạt động"}</L10n></option></select></Field>
+      </FormSection> : null}</L10nValue>
     </fieldset>
-    <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave) || saved}>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</Button></div>
+    <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-lg"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}><L10n>{"Quay lại"}</L10n></Button><Button type="submit" variant="primary" loading={saving} disabled={Boolean(unknownSave) || saved}><L10nValue>{editing ? "Lưu thay đổi" : `Tạo ${unit}`}</L10nValue></Button></div>
   </form>;
 }

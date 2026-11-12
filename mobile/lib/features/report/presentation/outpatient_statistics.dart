@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -20,7 +22,7 @@ class OutpatientStatistics extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Text('Tổng kỳ đã chọn', style: Theme.of(context).textTheme.titleLarge),
+      LText('Tổng kỳ đã chọn', style: Theme.of(context).textTheme.titleLarge),
       for (final entry in const {
         'Tổng lượt khám': 'Lượt khám hoàn tất',
         'Tổng xét nghiệm': 'Xét nghiệm',
@@ -34,9 +36,9 @@ class OutpatientStatistics extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
-              Expanded(child: Text(entry.key)),
+              Expanded(child: LText(entry.key)),
               Flexible(
-                child: Text(
+                child: LText(
                   '${total(entry.value)} ${const ['Tiền thu', 'Hoàn tiền', 'Thu ròng'].contains(entry.value) ? data.currency : ''}'
                       .trim(),
                   textAlign: TextAlign.end,
@@ -56,7 +58,7 @@ class OutpatientStatistics extends StatelessWidget {
         'Xét nghiệm',
         'Đơn đã cấp',
       ], 'Hoạt động ngoại trú (lượt / xét nghiệm / đơn)'),
-      const Text(
+      const LText(
         'Thu ròng là tiền thu trừ hoàn tiền. Số lượng thuốc đã cấp nằm trong chi tiết từng kỳ.',
       ),
     ],
@@ -79,13 +81,13 @@ class _Trend extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            LText(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
               children: [
                 for (var i = 0; i < keys.length; i++)
-                  Text(
+                  LText(
                     '${i + 1}. ${keys[i]}',
                     style: TextStyle(color: colors[i]),
                   ),
@@ -109,7 +111,7 @@ class _Trend extends StatelessWidget {
                 ),
               ),
             if (rows.isNotEmpty)
-              Text(
+              LText(
                 '${rows.first.title} → ${rows.last.title}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
@@ -240,14 +242,14 @@ class _AvailableReportPeriodsState extends State<AvailableReportPeriods> {
     children: [
       OutlinedButton(
         onPressed: loading ? null : load,
-        child: Text(loading ? 'Đang tìm kỳ báo cáo…' : 'Tìm kỳ có dữ liệu'),
+        child: LText(loading ? 'Đang tìm kỳ báo cáo…' : 'Tìm kỳ có dữ liệu'),
       ),
       if (failed)
-        const Text(
+        const LText(
           'Chưa tìm được kỳ báo cáo. Kiểm tra quyền truy cập và thử lại.',
         ),
       if (items != null && items!.isEmpty)
-        const Text(
+        const LText(
           'Chưa tìm thấy kỳ phù hợp trong các đối soát gần nhất. Điều này không có nghĩa hoạt động bằng 0.',
         ),
       for (final item in items ?? <AvailableReportPeriod>[])
@@ -257,20 +259,20 @@ class _AvailableReportPeriodsState extends State<AvailableReportPeriods> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${item.from} – ${item.to}'),
+                LText('${item.from} – ${item.to}'),
                 if (item.departmentId == null)
-                  const Text('Toàn viện')
+                  const LText('Toàn viện')
                 else
                   ReferenceLabel(
                     kind: ReferenceKind.department,
                     id: item.departmentId!,
                     label: 'Khoa',
                   ),
-                Text('${item.currency} · ${item.zoneId}'),
-                if (item.syntheticData) const Text('Dữ liệu mô phỏng'),
+                LText('${item.currency} · ${item.zoneId}'),
+                if (item.syntheticData) const LText('Dữ liệu mô phỏng'),
                 TextButton(
                   onPressed: () => widget.onSelect(item),
-                  child: const Text('Dùng kỳ này'),
+                  child: const LText('Dùng kỳ này'),
                 ),
               ],
             ),

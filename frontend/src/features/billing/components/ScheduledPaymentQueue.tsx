@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -10,6 +12,7 @@ import { billingApi } from "../api";
 import type { ScheduledPaymentQueueItem } from "../types";
 
 export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistrationIds = [] }: { disabled: boolean; onSelect: (registrationId: string) => void; completedRegistrationIds?: string[] }) {
+  const { localize } = useLocale();
   const [patientId, setPatientId] = useState("");
   const [items, setItems] = useState<ScheduledPaymentQueueItem[] | null>(null);
   const [page, setPage] = useState(0);
@@ -35,18 +38,18 @@ export function ScheduledPaymentQueue({ disabled, onSelect, completedRegistratio
   }, [disabled, load]);
   useEffect(() => () => { generation.current++; initiallyLoaded.current = false; }, []);
   const waitingItems = items?.filter(item => !completedRegistrationIds.includes(item.registrationId));
-  return <section aria-label="Danh sách chờ thu phí" className="space-y-4 rounded-xl border border-border bg-surface p-5">
-    <h2 className="text-lg font-semibold">Khoản khám đang chờ thu</h2>
+  return <section aria-label={localize("Danh sách chờ thu phí")} className="space-y-4 rounded-xl border border-border bg-surface p-5">
+    <h2 className="text-lg font-semibold"><L10n>{"Khoản khám đang chờ thu"}</L10n></h2>
     <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={event => { event.preventDefault(); void load(); }}>
-      <div className="min-w-0 flex-1"><label htmlFor="cashier-queue-patient" className="mb-1 block text-sm font-medium">Tìm bệnh nhân</label><ReferenceInput id="cashier-queue-patient" kind="patient" value={patientId} onValueChange={value => { generation.current++; setPatientId(value); setItems(null); setBusy(false); setError(null); }} disabled={disabled} /></div>
-      <Button type="submit" disabled={disabled} loading={busy}>Tải khoản chờ thu</Button>
+      <div className="min-w-0 flex-1"><label htmlFor="cashier-queue-patient" className="mb-1 block text-sm font-medium"><L10n>{"Tìm bệnh nhân"}</L10n></label><ReferenceInput id="cashier-queue-patient" kind="patient" value={patientId} onValueChange={value => { generation.current++; setPatientId(value); setItems(null); setBusy(false); setError(null); }} disabled={disabled} /></div>
+      <Button type="submit" disabled={disabled} loading={busy}><L10n>{"Tải khoản chờ thu"}</L10n></Button>
     </form>
-    {busy ? <AsyncState kind="loading" message="Đang tải khoản chờ thu…" /> : null}
-    {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void load(page)} /> : null}
-    {waitingItems ? waitingItems.length ? <ul className="divide-y divide-border">{waitingItems.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-      <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p><ReferenceText kind="department" value={item.departmentId} fallback="Khoa" /></p><p className="text-xs text-muted-foreground">Đăng ký {formatInstant(item.createdAt)} · Hạn thanh toán {formatInstant(item.expiresAt)}</p></div>
-      <Button type="button" disabled={disabled} onClick={() => onSelect(item.registrationId)}>Chọn khoản thu</Button>
-    </li>)}</ul> : <p role="status" className="text-sm text-muted-foreground">Không có khoản khám còn hạn đang chờ thu. Nếu vừa đăng ký, tải lại sau khi hệ thống ghi nhận phiếu.</p> : null}
-    {items && totalPages > 1 ? <nav aria-label="Trang khoản chờ thu" className="flex items-center justify-between gap-3"><Button type="button" disabled={disabled || busy || page === 0} onClick={() => void load(page - 1)}>Trang trước</Button><span className="text-sm">Trang {page + 1} / {totalPages}</span><Button type="button" disabled={disabled || busy || page + 1 >= totalPages} onClick={() => void load(page + 1)}>Trang sau</Button></nav> : null}
+    <L10nValue>{busy ? <AsyncState kind="loading" message={localize("Đang tải khoản chờ thu…")} /> : null}</L10nValue>
+    <L10nValue>{error ? <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={() => void load(page)} /> : null}</L10nValue>
+    <L10nValue>{waitingItems ? waitingItems.length ? <ul className="divide-y divide-border"><L10nValue>{waitingItems.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+      <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p><ReferenceText kind="department" value={item.departmentId} fallback="Khoa" /></p><p className="text-xs text-muted-foreground"><L10n>{"Đăng ký "}</L10n><L10nValue>{formatInstant(item.createdAt)}</L10nValue><L10n>{" · Hạn thanh toán "}</L10n><L10nValue>{formatInstant(item.expiresAt)}</L10nValue></p></div>
+      <Button type="button" disabled={disabled} onClick={() => onSelect(item.registrationId)}><L10n>{"Chọn khoản thu"}</L10n></Button>
+    </li>)}</L10nValue></ul> : <p role="status" className="text-sm text-muted-foreground"><L10n>{"Không có khoản khám còn hạn đang chờ thu. Nếu vừa đăng ký, tải lại sau khi hệ thống ghi nhận phiếu."}</L10n></p> : null}</L10nValue>
+    <L10nValue>{items && totalPages > 1 ? <nav aria-label={localize("Trang khoản chờ thu")} className="flex items-center justify-between gap-3"><Button type="button" disabled={disabled || busy || page === 0} onClick={() => void load(page - 1)}><L10n>{"Trang trước"}</L10n></Button><span className="text-sm">Trang <L10nValue>{page + 1}</L10nValue> / <L10nValue>{totalPages}</L10nValue></span><Button type="button" disabled={disabled || busy || page + 1 >= totalPages} onClick={() => void load(page + 1)}>Trang sau</Button></nav> : null}</L10nValue>
   </section>;
 }

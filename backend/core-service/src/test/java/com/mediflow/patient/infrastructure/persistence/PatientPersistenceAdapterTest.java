@@ -43,8 +43,27 @@ class PatientPersistenceAdapterTest {
         assertThat(adapter.existsById(id)).isTrue();
         assertThat(adapter.existsByIdentityNumberAndPatientIdNot("123", id)).isFalse();
         assertThat(adapter.existsByIdentityNumberAndPatientIdNot("123", UUID.randomUUID())).isTrue();
+        assertThat(adapter.existsByEmail(" B@EXAMPLE.COM ")).isTrue();
+        assertThat(adapter.existsByEmailAndPatientIdNot("b@example.com", id)).isFalse();
+        assertThat(adapter.existsByEmailAndPatientIdNot(" B@EXAMPLE.COM ", UUID.randomUUID())).isTrue();
         assertThat(adapter.search("nguyen", new PageQuery(0, 20)).content()).hasSize(1);
         assertThat(adapter.search("missing", new PageQuery(0, 20)).content()).isEmpty();
+    }
+
+    @Test
+    void savingAnUnchangedLegacyEmailPreservesItsNullReservationKey() {
+        UUID id = UUID.randomUUID();
+        repository.save(new PatientJpaEntity(id, "Legacy Patient", LocalDate.of(1988, 2, 2), Gender.M,
+                "012345678901", null, null, " Legacy@Example.com ", null,
+                Instant.parse("2026-01-01T00:00:00Z"), null).withEmailUniqueKey(null));
+
+        var restored = adapter.findById(id).orElseThrow();
+        restored.update(restored.fullName(), restored.dateOfBirth(), restored.gender(), null,
+                null, restored.email(), null);
+        adapter.save(restored);
+
+        assertThat(repository.findById(id).orElseThrow().getEmailUniqueKey()).isNull();
+        assertThat(adapter.existsByEmail("legacy@example.com")).isTrue();
     }
 
     @Test

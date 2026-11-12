@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +24,7 @@ export function StaffDepartment({ departmentId, canOpen = true }: { departmentId
     }).catch((cause: unknown) => { if (!active || !isRequestSessionCurrent(session, cause)) return; if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setFailed(true); });
     return () => { active = false; };
   }, [departmentId, attempt, router]);
-  return <div><dt className="text-sm text-muted-foreground">Đơn vị công tác</dt><dd className="mt-1 text-sm">{department ? <><span>{department.departmentName}</span>{canOpen ? <Link href={`/organization/departments/${departmentId}`} className="ml-2 font-semibold text-primary hover:underline">Detail</Link> : null}</>
-    : failed ? <span>Chưa tải được tên đơn vị. <button type="button" className="text-primary underline" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}>Thử lại</button></span>
-    : "Đang tải tên đơn vị…"}</dd></div>;
+  return <div><dt className="text-sm text-muted-foreground"><L10n>{"Đơn vị công tác"}</L10n></dt><dd className="mt-1 text-sm"><L10nValue>{department ? <><span>{department.departmentName}</span><L10nValue>{canOpen ? <Link href={`/organization/departments/${departmentId}`} className="ml-2 font-semibold text-primary hover:underline">Detail</Link> : null}</L10nValue></>
+    : failed ? <span><L10n>{"Chưa tải được tên đơn vị. "}</L10n><button type="button" className="text-primary underline" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}><L10n>{"Thử lại"}</L10n></button></span>
+    : "Đang tải tên đơn vị…"}</L10nValue></dd></div>;
 }

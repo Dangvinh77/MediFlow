@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +62,7 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: LText(
             'Đã đổi mật khẩu. Vui lòng đăng nhập lại bằng mật khẩu mới.',
           ),
         ),
@@ -100,12 +102,12 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LText(
                 'Đổi mật khẩu',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 12),
-              const Text(
+              const LText(
                 'Nếu đây là lần đăng nhập đầu tiên, bạn cần đổi mật khẩu ban đầu để sử dụng hệ thống. Sau khi đổi, hãy đăng nhập lại.',
               ),
               const SizedBox(height: 16),
@@ -115,8 +117,8 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
                 obscureText: true,
                 autocorrect: false,
                 enableSuggestions: false,
-                decoration: const InputDecoration(
-                  labelText: 'Mật khẩu hiện tại',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mật khẩu hiện tại'),
                 ),
                 validator: (value) =>
                     value == null || value.trim().isEmpty || value.length > 72
@@ -130,7 +132,9 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
                 obscureText: true,
                 autocorrect: false,
                 enableSuggestions: false,
-                decoration: const InputDecoration(labelText: 'Mật khẩu mới'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Mật khẩu mới'),
+                ),
                 validator: (value) =>
                     value == null ||
                         value.trim().isEmpty ||
@@ -146,8 +150,8 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
                 obscureText: true,
                 autocorrect: false,
                 enableSuggestions: false,
-                decoration: const InputDecoration(
-                  labelText: 'Nhập lại mật khẩu mới',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Nhập lại mật khẩu mới'),
                 ),
                 validator: (value) => value != _next.text
                     ? 'Mật khẩu xác nhận không khớp.'
@@ -156,18 +160,18 @@ class _PasswordFormState extends ConsumerState<_PasswordForm> {
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _busy || _uncertain ? null : _submit,
-                child: Text(_busy ? 'Đang đổi mật khẩu…' : 'Lưu mật khẩu mới'),
+                child: LText(_busy ? 'Đang đổi mật khẩu…' : 'Lưu mật khẩu mới'),
               ),
               if (_error != null) RequestError(_error!),
               if (_uncertain)
-                const Text(
+                const LText(
                   'Chưa xác định kết quả. Đăng nhập lại bằng mật khẩu mới để kiểm tra trước khi thử đổi tiếp.',
                 ),
               TextButton(
                 onPressed: _busy
                     ? null
                     : () => ref.read(sessionProvider.notifier).signOut(),
-                child: const Text('Đăng xuất và đăng nhập lại'),
+                child: const LText('Đăng xuất và đăng nhập lại'),
               ),
             ],
           ),

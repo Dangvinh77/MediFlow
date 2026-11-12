@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -148,7 +150,7 @@ class _RecordLabOrdersSectionState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            LText(
               'Chỉ định xét nghiệm',
               style: Theme.of(context).textTheme.titleMedium,
             ),
@@ -158,11 +160,11 @@ class _RecordLabOrdersSectionState
               const NoticeBox(
                 'Không kiểm tra được trạng thái xét nghiệm lúc này. Danh sách chỉ định có thể chưa đầy đủ.',
               ),
-              OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+              OutlinedButton(onPressed: _load, child: const LText('Thử lại')),
             ],
             if (_orders case final orders?)
               if (orders.isEmpty)
-                const Text('Chưa có chỉ định xét nghiệm.')
+                const LText('Chưa có chỉ định xét nghiệm.')
               else
                 for (final order in orders)
                   _row(order, cancel != null, widget.canChange),
@@ -183,7 +185,7 @@ class _RecordLabOrdersSectionState
             alignment: WrapAlignment.spaceBetween,
             spacing: 8,
             children: [
-              Text(order.labType),
+              LText(order.labType),
               StatusPill(
                 _statusLabels[order.status] ?? order.status,
                 tone: statusToneOf(order.status),
@@ -196,11 +198,11 @@ class _RecordLabOrdersSectionState
               children: [
                 TextButton(
                   onPressed: _busy ? null : () => _begin(order, 'cancel'),
-                  child: const Text('Hủy chỉ định'),
+                  child: const LText('Hủy chỉ định'),
                 ),
                 TextButton(
                   onPressed: _busy ? null : () => _begin(order, 'postpone'),
-                  child: const Text('Hoãn sang lần sau'),
+                  child: const LText('Hoãn sang lần sau'),
                 ),
               ],
             ),
@@ -211,9 +213,9 @@ class _RecordLabOrdersSectionState
               children: [
                 TextButton(
                   onPressed: _busy ? null : () => _begin(order, 'withdraw'),
-                  child: const Text('Rút chỉ định'),
+                  child: const LText('Rút chỉ định'),
                 ),
-                const Text('Lab chưa nhận chỉ định này nên có thể rút lại.'),
+                const LText('Lab chưa nhận chỉ định này nên có thể rút lại.'),
               ],
             ),
           if (editing) ...[
@@ -223,11 +225,11 @@ class _RecordLabOrdersSectionState
               enabled: !_busy,
               maxLength: 400,
               decoration: InputDecoration(
-                labelText: switch (_mode) {
+                labelText: AppL10n.text(context, switch (_mode) {
                   'postpone' => 'Lý do hoãn',
                   'withdraw' => 'Lý do rút chỉ định',
                   _ => 'Lý do hủy',
-                },
+                }),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -239,13 +241,13 @@ class _RecordLabOrdersSectionState
                   onPressed: _busy || _reason.text.trim().isEmpty
                       ? null
                       : () => _submit(order),
-                  child: const Text('Xác nhận'),
+                  child: const LText('Xác nhận'),
                 ),
                 TextButton(
                   onPressed: _busy
                       ? null
                       : () => setState(() => _activeOrderId = null),
-                  child: const Text('Bỏ qua'),
+                  child: const LText('Bỏ qua'),
                 ),
               ],
             ),

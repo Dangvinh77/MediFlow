@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
@@ -26,6 +28,7 @@ interface RequestError {
 }
 
 export function CreateMedicalRecordForm() {
+  const { localize } = useLocale();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const active = useRef(true);
@@ -109,43 +112,43 @@ export function CreateMedicalRecordForm() {
 
   return (
     <form ref={formRef} onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {requestError ? (
+      <L10nValue>{requestError ? (
         <MedicalRecordMutationError
           {...requestError}
           onRetry={requestError.status === null || requestError.status >= 500
             ? () => formRef.current?.requestSubmit()
             : undefined}
         />
-      ) : null}
+      ) : null}</L10nValue>
       <div className="grid gap-5 md:grid-cols-2">
-        <RecordInput label="Mã bệnh nhân" name="patientId" error={fieldErrors.patientId} required hint="Chọn bệnh nhân từ hồ sơ đã đăng ký.">
+        <RecordInput label={localize("Mã bệnh nhân")} name="patientId" error={fieldErrors.patientId} required hint="Chọn bệnh nhân từ hồ sơ đã đăng ký.">
           <ReferenceInput kind="patient" {...field("patientId")} id="patientId" value={values.patientId} disabled={submitting} onValueChange={(selectedId) => { updateField("patientId", selectedId); updateField("appointmentId", ""); }} className={inputClass(Boolean(fieldErrors.patientId))} />
         </RecordInput>
-        <RecordInput label="Mã khoa" name="departmentId" error={fieldErrors.departmentId} required>
+        <RecordInput label={localize("Mã khoa")} name="departmentId" error={fieldErrors.departmentId} required>
           <ReferenceInput kind="department" {...field("departmentId")} id="departmentId" value={values.departmentId} disabled={submitting} onValueChange={(selectedId) => { updateField("departmentId", selectedId); updateField("doctorId", ""); }} className={inputClass(Boolean(fieldErrors.departmentId))} />
         </RecordInput>
-        <RecordInput label="Mã bác sĩ" name="doctorId" error={fieldErrors.doctorId} required hint="Bác sĩ phải thuộc đúng khoa.">
+        <RecordInput label={localize("Mã bác sĩ")} name="doctorId" error={fieldErrors.doctorId} required hint="Bác sĩ phải thuộc đúng khoa.">
           <ReferenceInput kind="doctor" scope={values.departmentId} {...field("doctorId")} id="doctorId" value={values.doctorId} disabled={submitting} onValueChange={(selectedId) => updateField("doctorId", selectedId)} className={inputClass(Boolean(fieldErrors.doctorId))} />
         </RecordInput>
-        <RecordInput label="Mã lịch hẹn" name="appointmentId" error={fieldErrors.appointmentId} hint="Không bắt buộc. Nếu có, backend cập nhật lịch hẹn trong cùng giao dịch.">
+        <RecordInput label={localize("Mã lịch hẹn")} name="appointmentId" error={fieldErrors.appointmentId} hint="Không bắt buộc. Nếu có, backend cập nhật lịch hẹn trong cùng giao dịch.">
           <ReferenceInput kind="appointment" scope={values.patientId} {...field("appointmentId")} id="appointmentId" value={values.appointmentId} disabled={submitting} onValueChange={(selectedId) => updateField("appointmentId", selectedId)} className={inputClass(Boolean(fieldErrors.appointmentId))} />
         </RecordInput>
-        <RecordInput label="Ngày khám" name="examinationDate" error={fieldErrors.examinationDate} required>
+        <RecordInput label={localize("Ngày khám")} name="examinationDate" error={fieldErrors.examinationDate} required>
           <input {...field("examinationDate")} id="examinationDate" type="date" max={today} value={values.examinationDate} disabled={submitting} onChange={(event) => updateField("examinationDate", event.target.value)} className={inputClass(Boolean(fieldErrors.examinationDate))} />
         </RecordInput>
-        <RecordInput label="Triệu chứng" name="symptoms" error={fieldErrors.symptoms} hint={`${values.symptoms.length}/4000 ký tự`} wide>
+        <RecordInput label={localize("Triệu chứng")} name="symptoms" error={fieldErrors.symptoms} hint={`${values.symptoms.length}/4000 ký tự`} wide>
           <textarea {...field("symptoms")} id="symptoms" value={values.symptoms} maxLength={4000} rows={4} disabled={submitting} onChange={(event) => updateField("symptoms", event.target.value)} className={`${inputClass(Boolean(fieldErrors.symptoms))} resize-y`} />
         </RecordInput>
       </div>
       <fieldset className="space-y-4 rounded-lg border border-border p-4">
-        <legend className="px-2 text-sm font-semibold">Chẩn đoán ban đầu *</legend>
+        <legend className="px-2 text-sm font-semibold"><L10n>{"Chẩn đoán ban đầu *"}</L10n></legend>
         <DiagnosisFormFields values={values} errors={fieldErrors} disabled={submitting} onChange={updateField} />
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-          {submitting ? "Đang tạo…" : "Tạo hồ sơ khám"}
+          <L10nValue>{submitting ? "Đang tạo…" : "Tạo hồ sơ khám"}</L10nValue>
         </button>
-        <Link href="/records" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Hủy</Link>
+        <Link href="/records" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Hủy"}</L10n></Link>
       </div>
     </form>
   );
@@ -162,10 +165,10 @@ function RecordInput({ label, name, error, hint, required = false, wide = false,
 }) {
   return (
     <div className={`flex flex-col gap-1${wide ? " md:col-span-2" : ""}`}>
-      <label htmlFor={name} className="text-sm font-medium">{label}{required ? <span aria-hidden="true"> *</span> : null}</label>
-      {children}
-      {error ? <p id={`${name}-error`} className="text-xs text-danger">{error}</p> : null}
-      {!error && hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      <label htmlFor={name} className="text-sm font-medium"><L10nValue>{label}</L10nValue><L10nValue>{required ? <span aria-hidden="true"> *</span> : null}</L10nValue></label>
+      <L10nValue>{children}</L10nValue>
+      <L10nValue>{error ? <p id={`${name}-error`} className="text-xs text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{!error && hint ? <p className="text-xs text-muted-foreground"><L10nValue>{hint}</L10nValue></p> : null}</L10nValue>
     </div>
   );
 }

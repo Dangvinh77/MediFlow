@@ -36,6 +36,7 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 - Sau khi backend báo READY, nhấp đúp start-frontend.bat.
 - Chờ Next.js sẵn sàng, mở URL được in trong cửa sổ, thường là:
     http://<IP-máy>:3000
+	.\start-frontend.bat -GatewayUrl http://172.16.2.55:28080
 - Giữ cửa sổ frontend mở khi sử dụng.
 
 3b. HỘP THƯ DEMO (MỞ BẰNG ĐƯỜNG DẪN)

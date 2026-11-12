@@ -69,6 +69,7 @@ export interface MedicalRecordDTO {
   closureReason?: RecordClosureReason;
   closureNote?: string;
   closedAt?: string;
+  effectiveCorrections?: EffectiveRecordCorrectionDTO[];
 }
 
 export interface AddDiagnosisRequest {
@@ -154,6 +155,15 @@ export interface PatientExamResultDTO {
   disposition: RecordDisposition | null;
   dispositionNote: string | null;
   completedAt: string;
+  effectiveCorrections?: EffectiveRecordCorrectionDTO[];
+}
+
+export interface EffectiveRecordCorrectionDTO {
+  section: AmendmentSection;
+  originalText: string;
+  correctedText: string;
+  reason: string;
+  appliedAt: string;
 }
 
 export interface RecordCapabilitiesDTO {
@@ -168,6 +178,7 @@ export interface RecordCapabilitiesDTO {
   canAcceptHandover?: boolean;
   canAddConsultationNote?: boolean;
   canAmend?: boolean;
+  canApplyAmendment?: boolean;
   canDecideAmendments?: boolean;
   writeBlockedReason: string | null;
 }
@@ -307,7 +318,7 @@ export type AmendmentSection =
   | "DISPOSITION_NOTE"
   | "CLOSURE_NOTE"
   | "DIAGNOSIS";
-export type RecordAmendmentStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type RecordAmendmentStatus = "PENDING" | "APPROVED" | "REJECTED" | "APPLIED";
 export type RecordAmendmentDecision = "APPROVED" | "REJECTED";
 
 export interface RecordAmendmentDTO {
@@ -328,6 +339,7 @@ export interface RecordAmendmentDTO {
 
 export interface RequestAmendmentRequest {
   section: AmendmentSection;
+  originalText?: string;
   amendedText: string;
   reason: string;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +15,7 @@ export function SaveOutcomeRecovery<T>({ read, matches, onVerified, onUnauthoriz
   onVerified: (result: T) => void;
   onUnauthorized: () => void;
 }) {
+  const { localize } = useLocale();
   const alive = useRef(true);
   const checking = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -45,15 +48,15 @@ export function SaveOutcomeRecovery<T>({ read, matches, onVerified, onUnauthoriz
     }
   }
 
-  return <section aria-label="Đối soát kết quả lưu" className="space-y-3 rounded-xl border border-warning/40 bg-surface p-5">
-    <h2 className="font-semibold">Chưa xác định kết quả lưu</h2>
-    <p className="text-sm text-muted-foreground">Bản nháp đã gửi được giữ nguyên. Kiểm tra chỉ đọc dữ liệu hiện tại, không gửi lại yêu cầu lưu.</p>
+  return <section aria-label={localize("Đối soát kết quả lưu")} className="space-y-3 rounded-xl border border-warning/40 bg-surface p-5">
+    <h2 className="font-semibold"><L10n>{"Chưa xác định kết quả lưu"}</L10n></h2>
+    <p className="text-sm text-muted-foreground"><L10n>{"Bản nháp đã gửi được giữ nguyên. Kiểm tra chỉ đọc dữ liệu hiện tại, không gửi lại yêu cầu lưu."}</L10n></p>
     <div className="flex flex-wrap gap-3">
-      <Button type="button" loading={busy} onClick={() => void check()}>Kiểm tra dữ liệu đã lưu</Button>
-      {verified ? <Button type="button" onClick={() => {
+      <Button type="button" loading={busy} onClick={() => void check()}><L10n>{"Kiểm tra dữ liệu đã lưu"}</L10n></Button>
+      <L10nValue>{verified ? <Button type="button" onClick={() => {
         if (alive.current && getSessionKey() === verified.session) onVerified(verified.value);
-      }}>Xác nhận kết quả đã lưu</Button> : null}
+      }}><L10n>{"Xác nhận kết quả đã lưu"}</L10n></Button> : null}</L10nValue>
     </div>
-    {message ? <p role="status" className="text-sm break-words">{message}</p> : null}
+    <L10nValue>{message ? <p role="status" className="text-sm break-words"><L10nValue>{message}</L10nValue></p> : null}</L10nValue>
   </section>;
 }

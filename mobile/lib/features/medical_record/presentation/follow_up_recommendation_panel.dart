@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -151,14 +153,19 @@ class _FollowUpRecommendationPanelState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             'Đề xuất tái khám',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           if (_loading)
-            const Center(
-              child: MediFlowLoader(semanticLabel: 'Đang tải đề xuất tái khám'),
+            Center(
+              child: MediFlowLoader(
+                semanticLabel: AppL10n.text(
+                  context,
+                  'Đang tải đề xuất tái khám',
+                ),
+              ),
             )
           else if (_loadError != null)
             RequestError(_loadError!, onRetry: _load)
@@ -167,16 +174,16 @@ class _FollowUpRecommendationPanelState
           else if (widget.canCreate)
             ..._form()
           else
-            const Text('Chưa có đề xuất tái khám cho hồ sơ này.'),
+            const LText('Chưa có đề xuất tái khám cho hồ sơ này.'),
         ],
       ),
     ),
   );
 
   List<Widget> _saved(FollowUpRecommendation value) => [
-    const Text('Đề xuất đã lưu và không thể chỉnh sửa.'),
+    const LText('Đề xuất đã lưu và không thể chỉnh sửa.'),
     const SizedBox(height: 8),
-    Text(
+    LText(
       'Khoảng ngày đề xuất: ${_display(value.recommendedFrom)} – ${_display(value.recommendedThrough)}',
     ),
     ReferenceLabel(
@@ -184,19 +191,19 @@ class _FollowUpRecommendationPanelState
       id: value.preferredDoctorId,
       label: 'Bác sĩ ưu tiên',
     ),
-    Text('Lý do: ${value.reason}'),
+    LText('Lý do: ${value.reason}'),
     if (value.preparationInstructions case final instructions?)
-      Text('Hướng dẫn chuẩn bị: $instructions'),
+      LText('Hướng dẫn chuẩn bị: $instructions'),
     if (widget.patientView) ...[
       const SizedBox(height: 8),
-      const Text('Liên hệ điều dưỡng để chọn buổi khám phù hợp.'),
+      const LText('Liên hệ điều dưỡng để chọn buổi khám phù hợp.'),
     ],
   ];
 
   List<Widget> _form() {
     final locked = _saving || _frozen != null;
     return [
-      const Text('Chưa có đề xuất tái khám.'),
+      const LText('Chưa có đề xuất tái khám.'),
       const SizedBox(height: 8),
       Wrap(
         spacing: 8,
@@ -204,7 +211,7 @@ class _FollowUpRecommendationPanelState
         children: [
           OutlinedButton(
             onPressed: locked ? null : () => _pick(from: true),
-            child: Text(
+            child: LText(
               _from == null
                   ? 'Từ ngày khuyến nghị'
                   : 'Từ ${_display(_iso(_from!))}',
@@ -212,7 +219,7 @@ class _FollowUpRecommendationPanelState
           ),
           OutlinedButton(
             onPressed: locked ? null : () => _pick(from: false),
-            child: Text(
+            child: LText(
               _through == null
                   ? 'Đến ngày khuyến nghị'
                   : 'Đến ${_display(_iso(_through!))}',
@@ -227,8 +234,8 @@ class _FollowUpRecommendationPanelState
         maxLength: 1000,
         maxLines: 3,
         minLines: 1,
-        decoration: const InputDecoration(
-          labelText: 'Lý do tái khám',
+        decoration: InputDecoration(
+          labelText: AppL10n.text(context, 'Lý do tái khám'),
           border: OutlineInputBorder(),
         ),
       ),
@@ -239,8 +246,11 @@ class _FollowUpRecommendationPanelState
         maxLength: 2000,
         maxLines: 3,
         minLines: 1,
-        decoration: const InputDecoration(
-          labelText: 'Hướng dẫn chuẩn bị (không bắt buộc)',
+        decoration: InputDecoration(
+          labelText: AppL10n.text(
+            context,
+            'Hướng dẫn chuẩn bị (không bắt buộc)',
+          ),
           border: OutlineInputBorder(),
         ),
       ),
@@ -248,7 +258,7 @@ class _FollowUpRecommendationPanelState
       const SizedBox(height: 8),
       FilledButton(
         onPressed: _saving ? null : _submit,
-        child: Text(
+        child: LText(
           _frozen != null ? 'Gửi lại cùng đề xuất' : 'Tạo đề xuất tái khám',
         ),
       ),

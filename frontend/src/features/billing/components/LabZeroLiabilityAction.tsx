@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -122,24 +124,20 @@ export function LabZeroLiabilityAction({ paymentRequestId, quoteId, quoteExpires
     }
   }
 
-  if (result) return <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm">
-    Đã xác nhận nghĩa vụ 0 đồng.
-  </p>;
+  if (result) return <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm"><L10n>{"Đã xác nhận nghĩa vụ 0 đồng."}</L10n></p>;
 
   return <div className="space-y-3 rounded-lg border border-border p-4">
-    <p className="text-sm">Xác nhận nghĩa vụ 0 đồng là bước riêng, không ghi nhận thanh toán tiền mặt.</p>
-    {error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
-      <p>{error.message}</p>
-      {error.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></p> : null}
-      {error.uncertain ? <p className="mt-2">Giữ nguyên yêu cầu hiện tại. Gửi lại cùng yêu cầu để kiểm tra kết quả.</p> : null}
-    </div> : null}
-    {retryQuoteId ? <>
-      <p role="status" className="text-sm text-warning">Có yêu cầu xác nhận chưa rõ kết quả. Báo giá ban đầu được giữ nguyên; không tạo yêu cầu khác.</p>
-      <Button type="button" variant="primary" loading={busy} onClick={() => void confirm(retryQuoteId)}>Gửi lại cùng yêu cầu xác nhận 0 đồng</Button>
-    </> : <Button type="button" variant="primary" loading={busy} disabled={!enabled || !quoteCurrent || busy || recoveryLoading || error?.uncertain === true} onClick={() => void confirm(quoteId)}>
-      Xác nhận nghĩa vụ 0 đồng
-    </Button>}
-    {!enabled ? <p className="text-xs text-muted-foreground">Xác nhận nghĩa vụ 0 chưa được mở.</p> : null}
-    {enabled && !quoteCurrent && !retryQuoteId ? <p role="alert" className="text-xs text-danger">Báo giá hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi xác nhận.</p> : null}
+    <p className="text-sm"><L10n>{"Xác nhận nghĩa vụ 0 đồng là bước riêng, không ghi nhận thanh toán tiền mặt."}</L10n></p>
+    <L10nValue>{error ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+      <p><L10nValue>{error.message}</L10nValue></p>
+      <L10nValue>{error.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{error.correlationId}</span></p> : null}</L10nValue>
+      <L10nValue>{error.uncertain ? <p className="mt-2"><L10n>{"Giữ nguyên yêu cầu hiện tại. Gửi lại cùng yêu cầu để kiểm tra kết quả."}</L10n></p> : null}</L10nValue>
+    </div> : null}</L10nValue>
+    <L10nValue>{retryQuoteId ? <>
+      <p role="status" className="text-sm text-warning"><L10n>{"Có yêu cầu xác nhận chưa rõ kết quả. Báo giá ban đầu được giữ nguyên; không tạo yêu cầu khác."}</L10n></p>
+      <Button type="button" variant="primary" loading={busy} onClick={() => void confirm(retryQuoteId)}><L10n>{"Gửi lại cùng yêu cầu xác nhận 0 đồng"}</L10n></Button>
+    </> : <Button type="button" variant="primary" loading={busy} disabled={!enabled || !quoteCurrent || busy || recoveryLoading || error?.uncertain === true} onClick={() => void confirm(quoteId)}><L10n>{"Xác nhận nghĩa vụ 0 đồng"}</L10n></Button>}</L10nValue>
+    <L10nValue>{!enabled ? <p className="text-xs text-muted-foreground"><L10n>{"Xác nhận nghĩa vụ 0 chưa được mở."}</L10n></p> : null}</L10nValue>
+    <L10nValue>{enabled && !quoteCurrent && !retryQuoteId ? <p role="alert" className="text-xs text-danger"><L10n>{"Báo giá hết hạn. Yêu cầu thanh toán này cần được xử lý theo quy trình hết hạn trước khi xác nhận."}</L10n></p> : null}</L10nValue>
   </div>;
 }

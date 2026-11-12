@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -28,6 +30,7 @@ function messageFrom(cause: unknown, fallback: string) {
  * rename and delete types; the backend refuses to delete system or in-use types.
  */
 export function RoomTypeCatalog() {
+  const { localize } = useLocale();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const admin = role === "ADMIN";
   const [types, setTypes] = useState<RoomTypeDTO[] | null>(null);
@@ -96,46 +99,46 @@ export function RoomTypeCatalog() {
   }
 
   const form = (category: DepartmentType) => draft && draft.departmentType === category
-    ? <form aria-label={draft.code ? "Đổi tên loại phòng" : `Thêm loại phòng cho ${departmentCategoryLabels[category]}`} onSubmit={save} noValidate className="grid gap-4 border-t border-border p-4 md:grid-cols-2">
-      <Field label="Tên loại phòng" htmlFor={`room-type-name-${category}`} required><input id={`room-type-name-${category}`} maxLength={100} value={draft.name} disabled={saving} onChange={event => { const name = event.target.value; setDraft(current => current && ({ ...current, name })); }} placeholder={category === "CLINICAL" ? "Ví dụ: Phòng thủ thuật" : "Ví dụ: Phòng siêu âm"} className={controlClassName} /></Field>
-      <Field label="Mô tả" htmlFor={`room-type-description-${category}`}><input id={`room-type-description-${category}`} maxLength={255} value={draft.description} disabled={saving} onChange={event => { const description = event.target.value; setDraft(current => current && ({ ...current, description })); }} placeholder="Công dụng của phòng" className={controlClassName} /></Field>
-      {category === "CLINICAL" && !draft.code ? <label className="flex items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={!draft.singlePerDepartment} disabled={saving} onChange={event => { const many = event.target.checked; setDraft(current => current && ({ ...current, singlePerDepartment: !many })); }} className="size-5 accent-primary" />Cho phép một khoa có nhiều phòng loại này</label>
-        : !draft.code ? <p className="text-xs text-muted-foreground md:col-span-2">Khoa/bộ phận thuộc khối này làm việc tại đúng một phòng.</p> : null}
-      {!draft.code ? <p className="text-xs text-muted-foreground md:col-span-2">Chỉ loại “Phòng khám” được dùng để lập buổi khám. Khối và quy tắc số phòng không đổi được sau khi tạo.</p> : null}
-      {draftError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger md:col-span-2">{draftError}</p> : null}
-      <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="submit" variant="primary" loading={saving}>{draft.code ? "Lưu tên" : "Thêm loại phòng"}</Button><Button type="button" disabled={saving} onClick={() => { setDraft(null); setDraftError(null); }}>Hủy</Button></div>
+    ? <form aria-label={localize(draft.code ? "Đổi tên loại phòng" : `Thêm loại phòng cho ${departmentCategoryLabels[category]}`)} onSubmit={save} noValidate className="grid gap-4 border-t border-border p-4 md:grid-cols-2">
+      <Field label={localize("Tên loại phòng")} htmlFor={`room-type-name-${category}`} required><input id={`room-type-name-${category}`} maxLength={100} value={draft.name} disabled={saving} onChange={event => { const name = event.target.value; setDraft(current => current && ({ ...current, name })); }} placeholder={localize(category === "CLINICAL" ? "Ví dụ: Phòng thủ thuật" : "Ví dụ: Phòng siêu âm")} className={controlClassName} /></Field>
+      <Field label={localize("Mô tả")} htmlFor={`room-type-description-${category}`}><input id={`room-type-description-${category}`} maxLength={255} value={draft.description} disabled={saving} onChange={event => { const description = event.target.value; setDraft(current => current && ({ ...current, description })); }} placeholder={localize("Công dụng của phòng")} className={controlClassName} /></Field>
+      <L10nValue>{category === "CLINICAL" && !draft.code ? <label className="flex items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={!draft.singlePerDepartment} disabled={saving} onChange={event => { const many = event.target.checked; setDraft(current => current && ({ ...current, singlePerDepartment: !many })); }} className="size-5 accent-primary" /><L10n>{"Cho phép một khoa có nhiều phòng loại này"}</L10n></label>
+        : !draft.code ? <p className="text-xs text-muted-foreground md:col-span-2"><L10n>{"Khoa/bộ phận thuộc khối này làm việc tại đúng một phòng."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{!draft.code ? <p className="text-xs text-muted-foreground md:col-span-2"><L10n>{"Chỉ loại “Phòng khám” được dùng để lập buổi khám. Khối và quy tắc số phòng không đổi được sau khi tạo."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{draftError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger md:col-span-2"><L10nValue>{draftError}</L10nValue></p> : null}</L10nValue>
+      <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="submit" variant="primary" loading={saving}><L10nValue>{draft.code ? "Lưu tên" : "Thêm loại phòng"}</L10nValue></Button><Button type="button" disabled={saving} onClick={() => { setDraft(null); setDraftError(null); }}><L10n>{"Hủy"}</L10n></Button></div>
     </form>
     : null;
 
   return <div className="space-y-5">
-    {notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success">{notice}</p> : null}
-    {actionError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{actionError}</p> : null}
-    {error ? <AsyncState kind="error" message={error} onRetry={() => { setError(null); setTypes(null); setAttempt(value => value + 1); }} />
-      : !types ? <AsyncState kind="loading" message="Đang tải danh mục khoa phòng…" />
+    <L10nValue>{notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{actionError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger"><L10nValue>{actionError}</L10nValue></p> : null}</L10nValue>
+    <L10nValue>{error ? <AsyncState kind="error" message={localize(error)} onRetry={() => { setError(null); setTypes(null); setAttempt(value => value + 1); }} />
+      : !types ? <AsyncState kind="loading" message={localize("Đang tải danh mục khoa phòng…")} />
       : departmentCategories.map(category => {
         const rows = types.filter(type => type.departmentType === category);
-        return <DirectorySection key={category} title={departmentCategoryLabels[category]} description={departmentCategoryHints[category]}
-          actions={admin && !draft ? <Button variant="primary" onClick={() => startAdd(category)} aria-label={`Thêm loại phòng cho ${departmentCategoryLabels[category]}`}>Thêm loại phòng</Button> : undefined}>
-          {form(category)}
-          {rows.length === 0 ? <AsyncState kind="empty" message="Khối này chưa có loại phòng nào; khoa/bộ phận thuộc khối sẽ không tạo được phòng làm việc." />
+        return <DirectorySection key={category} title={localize(departmentCategoryLabels[category])} description={localize(departmentCategoryHints[category])}
+          actions={admin && !draft ? <Button variant="primary" onClick={() => startAdd(category)} aria-label={localize(`Thêm loại phòng cho ${departmentCategoryLabels[category]}`)}><L10n>{"Thêm loại phòng"}</L10n></Button> : undefined}>
+          <L10nValue>{form(category)}</L10nValue>
+          <L10nValue>{rows.length === 0 ? <AsyncState kind="empty" message={localize("Khối này chưa có loại phòng nào; khoa/bộ phận thuộc khối sẽ không tạo được phòng làm việc.")} />
             : <div className="overflow-x-auto border-t border-border"><table className="w-full min-w-2xl text-left text-sm">
-              <caption className="sr-only">Loại phòng của {departmentCategoryLabels[category]}</caption>
-              <thead className="border-b border-border text-muted-foreground"><tr>{["Loại phòng", "Quy tắc", "Số phòng đang dùng", ...(admin ? ["Thao tác"] : [])].map(label => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}</tr></thead>
-              <tbody>{rows.map(type => {
+              <caption className="sr-only"><L10n>{"Loại phòng của "}</L10n><L10nValue>{departmentCategoryLabels[category]}</L10nValue></caption>
+              <thead className="border-b border-border text-muted-foreground"><tr><L10nValue>{["Loại phòng", "Quy tắc", "Số phòng đang dùng", ...(admin ? ["Thao tác"] : [])].map(label => <th key={label} scope="col" className="px-4 py-3"><L10nValue>{label}</L10nValue></th>)}</L10nValue></tr></thead>
+              <tbody><L10nValue>{rows.map(type => {
                 const locked = type.systemDefined ? "Loại phòng hệ thống" : type.roomCount > 0 ? "Đang được sử dụng" : null;
                 return <tr key={type.code} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2"><span className="font-semibold">{type.name}</span>{type.schedulable ? <> <StatusBadge tone="info">Dùng lập buổi khám</StatusBadge></> : null}{type.description ? <span className="block text-xs text-muted-foreground">{type.description}</span> : null}</td>
-                  <td className="px-4 py-2">{roomTypeRule(type)}</td>
+                  <td className="px-4 py-2"><span className="font-semibold">{type.name}</span><L10nValue>{type.schedulable ? <> <StatusBadge tone="info"><L10n>{"Dùng lập buổi khám"}</L10n></StatusBadge></> : null}</L10nValue><L10nValue>{type.description ? <span className="block text-xs text-muted-foreground"><L10nValue>{type.description}</L10nValue></span> : null}</L10nValue></td>
+                  <td className="px-4 py-2"><L10nValue>{roomTypeRule(type)}</L10nValue></td>
                   <td className="px-4 py-2 tabular-nums">{type.roomCount}</td>
-                  {admin ? <td className="px-4 py-2"><div className="flex flex-nowrap items-center gap-2">
-                    <Button type="button" disabled={Boolean(draft)} onClick={() => startRename(type)} aria-label={`Đổi tên ${type.name}`}>Đổi tên</Button>
-                    <Button type="button" variant="danger" disabled={Boolean(locked) || Boolean(draft)} title={locked ?? undefined} onClick={() => void remove(type)} aria-label={`Xóa ${type.name}`}>Xóa</Button>
-                    {locked ? <span className="text-xs text-muted-foreground">{locked}</span> : null}
-                  </div></td> : null}
+                  <L10nValue>{admin ? <td className="px-4 py-2"><div className="flex flex-nowrap items-center gap-2">
+                    <Button type="button" disabled={Boolean(draft)} onClick={() => startRename(type)} aria-label={localize(`Đổi tên ${type.name}`)}><L10n>{"Đổi tên"}</L10n></Button>
+                    <Button type="button" variant="danger" disabled={Boolean(locked) || Boolean(draft)} title={localize(locked ?? undefined)} onClick={() => void remove(type)} aria-label={localize(`Xóa ${type.name}`)}><L10n>{"Xóa"}</L10n></Button>
+                    <L10nValue>{locked ? <span className="text-xs text-muted-foreground"><L10nValue>{locked}</L10nValue></span> : null}</L10nValue>
+                  </div></td> : null}</L10nValue>
                 </tr>;
-              })}</tbody>
-            </table></div>}
+              })}</L10nValue></tbody>
+            </table></div>}</L10nValue>
         </DirectorySection>;
-      })}
+      })}</L10nValue>
   </div>;
 }

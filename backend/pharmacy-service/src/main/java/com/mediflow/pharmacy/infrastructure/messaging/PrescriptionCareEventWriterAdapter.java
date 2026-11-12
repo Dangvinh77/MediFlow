@@ -47,12 +47,17 @@ public class PrescriptionCareEventWriterAdapter implements PrescriptionCareEvent
     @Override
     public void storeHeld(PrescriptionCareEvent event) {
         UUID prescriptionId = event.payload().prescriptionId();
-        int order = event.eventType() == EventType.CREATED ? 0 : 1;
-        if (order == 1 && !Boolean.TRUE.equals(jdbc.queryForObject("""
+        int order = eventOrder(event);
+        if (order > 0 && !Boolean.TRUE.equals(jdbc.queryForObject("""
                 SELECT EXISTS (SELECT 1 FROM PHARMACY_EVENT_OUTBOX WHERE aggregate_id = ?
-                    AND care_contract_version = 1 AND care_lifecycle_order = 0)
-                """, Boolean.class, prescriptionId))) {
-            throw new PrescriptionRuleException("PHARMACY_CARE_CREATED_EVENT_REQUIRED", "Persist the V1 creation before its terminal event");
+                    AND care_contract_version = 1 AND care_lifecycle_order = ?)
+                """, Boolean.class, prescriptionId, order - 1))) {
+            if (order == 1) {
+                throw new PrescriptionRuleException("PHARMACY_CARE_CREATED_EVENT_REQUIRED",
+                        "Persist the V1 creation before its revision or terminal event");
+            }
+            throw new PrescriptionRuleException("PHARMACY_CARE_PREDECESSOR_EVENT_REQUIRED",
+                    "Persist every earlier V1 prescription event before its next revision or terminal event");
         }
         String payload = new String(codec.encode(event), StandardCharsets.UTF_8);
         var existing=jdbc.query("SELECT event_id,payload,delivery_enabled,care_contract_version,care_delivery_cohort_id FROM pharmacy_event_outbox WHERE aggregate_id=? AND care_contract_version=1 AND care_lifecycle_order=?",
@@ -89,6 +94,25 @@ public class PrescriptionCareEventWriterAdapter implements PrescriptionCareEvent
                 || rows.get(0).enabled()!=(cohort!=null) || rows.get(0).version() != 1) {
             throw new PrescriptionRuleException("PHARMACY_CARE_EVENT_CONFLICT", "Immutable V1 lifecycle event conflict");
         }
+    }
+
+    private int eventOrder(PrescriptionCareEvent event) {
+        if (event.eventType() == EventType.CREATED) return 0;
+        if (event.eventType() == EventType.REVISED) {
+            if (event.payload().revision() == null || event.payload().revision() < 1) {
+                throw new PrescriptionRuleException("PHARMACY_CARE_REVISION_INVALID", "Revision event requires a positive revision");
+            }
+            return event.payload().revision();
+        }
+        // Terminal events follow the latest applied revision; an unrevised (or not yet persisted) aggregate is revision 0.
+        var revisions = jdbc.queryForList(
+                "SELECT revision FROM prescription WHERE prescription_id = ? AND care_contract_version = 1",
+                Integer.class, event.payload().prescriptionId());
+        Integer revision = revisions == null || revisions.isEmpty() ? Integer.valueOf(0) : revisions.getFirst();
+        if (revision == null || revision < 0) {
+            throw new PrescriptionRuleException("PHARMACY_CARE_REVISION_INVALID", "Persisted prescription revision is required");
+        }
+        return Math.addExact(revision, 1);
     }
 
     private record Stored(UUID eventId, String payload, boolean enabled, short version,UUID cohort) { }

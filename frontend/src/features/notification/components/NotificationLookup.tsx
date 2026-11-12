@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
@@ -55,6 +57,7 @@ export function NotificationLookup({ initialPatientId, initialPage }: LookupWork
 }
 
 function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps) {
+  const { localize } = useLocale();
   const router = useRouter();
   const isCurrent = useNotificationRequestScope("lookup");
   const sequence = useRef(0);
@@ -163,13 +166,13 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
   const showTable = !loading && !error && notifications.length > 0;
 
   if (role === "PATIENT" && !ownPatientId) {
-    return <NotificationDenied message="Tài khoản chưa có hồ sơ bệnh nhân hợp lệ. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên để kiểm tra hồ sơ liên kết." correlationId={null} />;
+    return <NotificationDenied message={localize("Tài khoản chưa có hồ sơ bệnh nhân hợp lệ. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên để kiểm tra hồ sơ liên kết.")} correlationId={null} />;
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-label="Lịch sử thông báo">
-      {role === "ADMIN" ? <div className="mb-4 flex justify-end"><Link href="/notifications/send" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Gửi thông báo</Link></div> : null}
-      {role !== "PATIENT" ? (
+    <section className="mt-6 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-label={localize("Lịch sử thông báo")}>
+      <L10nValue>{role === "ADMIN" ? <div className="mb-4 flex justify-end"><Link href="/notifications/send" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><L10n>{"Gửi thông báo"}</L10n></Link></div> : null}</L10nValue>
+      <L10nValue>{role !== "PATIENT" ? (
         <form
           onSubmit={onSearch}
           noValidate
@@ -179,9 +182,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
             <label
               htmlFor="notification-patient-id"
               className="mb-1 block text-sm font-medium"
-            >
-              Bệnh nhân
-            </label>
+            ><L10n>{"Bệnh nhân"}</L10n></label>
             <ReferenceInput kind="patient"
               ref={inputRef}
               id="notification-patient-id"
@@ -190,7 +191,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
                 setPatientId(selectedId);
                 setValidationError(null);
               }}
-              placeholder="Tìm bệnh nhân theo tên"
+              placeholder={localize("Tìm bệnh nhân theo tên")}
               aria-required="true"
               aria-invalid={validationError ? true : undefined}
               aria-describedby={
@@ -203,106 +204,86 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
             type="submit"
             disabled={!patientId.trim()}
             className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Tra cứu thông báo
-          </button>
+          ><L10n>{"Tra cứu thông báo"}</L10n></button>
         </form>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {validationError ? (
+      <L10nValue>{validationError ? (
         <p
           id="notification-patient-id-error"
           role="alert"
           className="mt-2 text-sm text-danger"
         >
-          {validationError}
+          <L10nValue>{validationError}</L10nValue>
         </p>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {!searched && !validationError ? (
-        <AsyncState kind="idle" message="Chọn bệnh nhân để xem lịch sử thông báo." />
-      ) : null}
+      <L10nValue>{!searched && !validationError ? (
+        <AsyncState kind="idle" message={localize("Chọn bệnh nhân để xem lịch sử thông báo.")} />
+      ) : null}</L10nValue>
 
-      {loading ? <AsyncState kind="loading" message="Đang tải thông báo…" /> : null}
+      <L10nValue>{loading ? <AsyncState kind="loading" message={localize("Đang tải thông báo…")} /> : null}</L10nValue>
 
-      {!loading && error ? (
-        <div ref={feedbackRef} role="group" aria-label="Lỗi tải lịch sử thông báo" aria-describedby={feedbackId} tabIndex={-1}
+      <L10nValue>{!loading && error ? (
+        <div ref={feedbackRef} role="group" aria-label={localize("Lỗi tải lịch sử thông báo")} aria-describedby={feedbackId} tabIndex={-1}
           className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
           <div id={feedbackId}>
-            {error.forbidden ? <NotificationDenied message={error.message} correlationId={error.correlationId} /> : <AsyncState
+            <L10nValue>{error.forbidden ? <NotificationDenied message={localize(error.message)} correlationId={error.correlationId} /> : <AsyncState
               kind="error"
-              message={error.message}
+              message={localize(error.message)}
               correlationId={error.correlationId}
               onRetry={() =>
                 void loadNotifications(lastRequest.patientId, lastRequest.page)
               }
-            />}
+            />}</L10nValue>
           </div>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {searched && !loading && !error ? (
+      <L10nValue>{searched && !loading && !error ? (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{role === "PATIENT" ? "Thông báo của tôi" : "Kết quả tra cứu thông báo"}</h2>
-            {role !== "PATIENT" ? <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: <ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p> : null}
+            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10nValue>{role === "PATIENT" ? "Thông báo của tôi" : "Kết quả tra cứu thông báo"}</L10nValue></h2>
+            <L10nValue>{role !== "PATIENT" ? <p className="mt-1 break-all text-sm text-muted-foreground"><L10n>{"Bệnh nhân: "}</L10n><ReferenceText kind="patient" value={activePatientId} fallback="Bệnh nhân đã chọn" /></p> : null}</L10nValue>
           </div>
           <button type="button" onClick={() => void loadNotifications(lastRequest.patientId, lastRequest.page)}
-            className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">
-            Tải lại lịch sử
-          </button>
+            className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Tải lại lịch sử"}</L10n></button>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
 
-      {searched && !loading && !error && notifications.length === 0 ? (
-        <AsyncState kind="empty" message={role === "PATIENT" ? "Bạn chưa có thông báo." : "Bệnh nhân chưa có thông báo."} />
-      ) : null}
+      <L10nValue>{searched && !loading && !error && notifications.length === 0 ? (
+        <AsyncState kind="empty" message={localize(role === "PATIENT" ? "Bạn chưa có thông báo." : "Bệnh nhân chưa có thông báo.")} />
+      ) : null}</L10nValue>
 
-      {role === "PATIENT" && searched && !loading && !error ? <div className="mt-5"><PatientNotificationActions /></div> : null}
-      {showTable && role === "PATIENT" ? <>
-        <ul aria-label="Thông báo của tôi" className="mt-5 divide-y divide-border rounded-xl border border-border">
-          {notifications.map(notification => <li key={notification.notificationId} className="space-y-2 p-4 sm:p-5">
-            <h3 className="break-words font-semibold"><Link className="text-primary underline focus-visible:outline-2 focus-visible:outline-primary" href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}>{notificationText(notification.title)}</Link></h3>
-            <p className="text-xs text-muted-foreground">{formatInstant(notification.createdAt)}</p>
-            <p className="whitespace-pre-wrap break-words text-sm">{notificationText(notification.content)}</p>
-          </li>)}
+      <L10nValue>{role === "PATIENT" && searched && !loading && !error ? <div className="mt-5"><PatientNotificationActions /></div> : null}</L10nValue>
+      <L10nValue>{showTable && role === "PATIENT" ? <>
+        <ul aria-label={localize("Thông báo của tôi")} className="mt-5 divide-y divide-border rounded-xl border border-border">
+          <L10nValue>{notifications.map(notification => <li key={notification.notificationId} className="space-y-2 p-4 sm:p-5">
+            <h3 className="break-words font-semibold"><Link className="text-primary underline focus-visible:outline-2 focus-visible:outline-primary" href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}><L10nValue>{notificationText(notification.title)}</L10nValue></Link></h3>
+            <p className="text-xs text-muted-foreground"><L10nValue>{formatInstant(notification.createdAt)}</L10nValue></p>
+            <p className="whitespace-pre-wrap break-words text-sm"><L10nValue>{notificationText(notification.content)}</L10nValue></p>
+          </li>)}</L10nValue>
         </ul>
         <Pagination page={pageNumber} totalPages={totalPages} totalElements={totalElements} loading={loading} onPageChange={page => void loadNotifications(activePatientId, page)} />
-      </> : null}
-      {showTable && role !== "PATIENT" ? (
+      </> : null}</L10nValue>
+      <L10nValue>{showTable && role !== "PATIENT" ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-[64rem] text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3">
-                    Tiêu đề
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Kênh
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Trạng thái
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Tạo lúc
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Gửi lúc
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Nội dung
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Lý do thất bại
-                  </th>
-                  <th scope="col" className="sticky right-0 border-l border-border bg-surface-muted px-4 py-3">
-                    Chi tiết
-                  </th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Tiêu đề"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Kênh"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Trạng thái"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Tạo lúc"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Gửi lúc"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Nội dung"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Lý do thất bại"}</L10n></th>
+                  <th scope="col" className="sticky right-0 border-l border-border bg-surface-muted px-4 py-3"><L10n>{"Chi tiết"}</L10n></th>
                 </tr>
               </thead>
               <tbody>
-                {notifications.map((notification) => {
+                <L10nValue>{notifications.map((notification) => {
                   const status = statusPresentation[notification.status] ?? {
                     label: "Không xác định",
                     tone: "neutral" as const,
@@ -314,39 +295,37 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
                       className="border-b border-border align-top last:border-0"
                     >
                       <td className="max-w-xs whitespace-normal break-words px-4 py-3 font-medium">
-                        {notificationText(notification.title)}
+                        <L10nValue>{notificationText(notification.title)}</L10nValue>
                       </td>
                       <td className="px-4 py-3">
-                        {channelLabels[notification.channel] ?? "Không xác định"}
+                        <L10nValue>{channelLabels[notification.channel] ?? "Không xác định"}</L10nValue>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                        <StatusBadge tone={status.tone}><L10nValue>{status.label}</L10nValue></StatusBadge>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
-                        {formatInstant(notification.createdAt)}
+                        <L10nValue>{formatInstant(notification.createdAt)}</L10nValue>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
-                        {formatInstant(notification.sentAt)}
+                        <L10nValue>{formatInstant(notification.sentAt)}</L10nValue>
                       </td>
                       <td className="max-w-md whitespace-pre-wrap break-words px-4 py-3">
-                        {notificationText(notification.content)}
+                        <L10nValue>{notificationText(notification.content)}</L10nValue>
                       </td>
                       <td className="max-w-sm whitespace-normal break-words px-4 py-3">
-                        {notification.failureReason ?? "—"}
+                        <L10nValue>{notification.failureReason ?? "—"}</L10nValue>
                       </td>
                       <td className="sticky right-0 border-l border-border bg-surface px-4 py-3">
-                        {role === "ADMIN" ? (
+                        <L10nValue>{role === "ADMIN" ? (
                           <Link
                             href={`/notifications/${notification.notificationId}?patientId=${activePatientId}&page=${pageNumber}`}
                             className="inline-flex min-h-9 items-center whitespace-nowrap rounded-lg border border-control-border px-3 py-1.5 text-xs font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                          >
-                            Chi tiết
-                          </Link>
-                        ) : "—"}
+                          ><L10n>{"Chi tiết"}</L10n></Link>
+                        ) : "—"}</L10nValue>
                       </td>
                     </tr>
                   );
-                })}
+                })}</L10nValue>
               </tbody>
             </table>
           </div>
@@ -360,7 +339,7 @@ function LookupWorkspace({ initialPatientId, initialPage }: LookupWorkspaceProps
             }
           />
         </>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

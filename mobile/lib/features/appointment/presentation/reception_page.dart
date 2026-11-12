@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,12 +46,12 @@ class ReceptionPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     if (access == null || !const ['ADMIN', 'NURSE'].contains(access.role)) {
       return const Center(
-        child: Text('Bạn không có quyền tiếp nhận bệnh nhân.'),
+        child: LText('Bạn không có quyền tiếp nhận bệnh nhân.'),
       );
     }
     if (!ref.watch(outpatientUiEnabledProvider)) {
       return const Center(
-        child: Text('Tiếp nhận theo buổi khám chưa được mở.'),
+        child: LText('Tiếp nhận theo buổi khám chưa được mở.'),
       );
     }
     return _ReceptionWorkspace(
@@ -355,12 +357,12 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
       controller: scroll,
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
+        LText(
           'Đăng ký khám tại quầy',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 12),
-        Text('1. Bệnh nhân', style: Theme.of(context).textTheme.titleMedium),
+        LText('1. Bệnh nhân', style: Theme.of(context).textTheme.titleMedium),
         ReferencePicker(
           kind: ReferenceKind.patient,
           label: 'Bệnh nhân',
@@ -388,17 +390,17 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                 onPressed: locked
                     ? null
                     : () => widget.onOpenPatient!(patient!),
-                child: const Text('Xem hồ sơ'),
+                child: const LText('Xem hồ sơ'),
               ),
             if (widget.onCreatePatient != null)
               TextButton(
                 onPressed: locked ? null : widget.onCreatePatient,
-                child: const Text('Tạo hồ sơ bệnh nhân'),
+                child: const LText('Tạo hồ sơ bệnh nhân'),
               ),
           ],
         ),
         const Divider(),
-        Text('2. Buổi khám', style: Theme.of(context).textTheme.titleMedium),
+        LText('2. Buổi khám', style: Theme.of(context).textTheme.titleMedium),
         ReferencePicker(
           kind: ReferenceKind.department,
           label: 'Khoa',
@@ -412,7 +414,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                 }),
         ),
         ExpansionTile(
-          title: Text(
+          title: LText(
             'Ngày khám: $fromDate${toDate == fromDate ? '' : ' – $toDate'}',
           ),
           children: [
@@ -437,7 +439,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                         });
                       }
                     },
-              child: const Text('Chọn ngày khác'),
+              child: const LText('Chọn ngày khác'),
             ),
             TextButton(
               onPressed: locked
@@ -449,7 +451,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                       toDate = fromDate;
                       clearSessions();
                     }),
-              child: const Text('Hôm nay'),
+              child: const LText('Hôm nay'),
             ),
           ],
         ),
@@ -457,11 +459,11 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
           onPressed: department == null || locked || loading
               ? null
               : () => loadSessions(),
-          child: const Text('Tải buổi khám'),
+          child: const LText('Tải buổi khám'),
         ),
         if (loading) const LinearProgressIndicator(),
         if (sessions != null && sessions!.items.isEmpty)
-          const Text('Không có buổi khám trong khoảng ngày đã chọn.'),
+          const LText('Không có buổi khám trong khoảng ngày đã chọn.'),
         if (sessions != null) ...[
           for (final item in sessions!.items)
             Card(
@@ -470,7 +472,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LText(
                       '${item.date} · ${item.startTime}–${item.endTime}',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
@@ -484,7 +486,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                       id: item.roomId,
                       label: 'Phòng khám',
                     ),
-                    Text(
+                    LText(
                       ref.read(clinicIntakeEnabledProvider) && !item.canRegister
                           ? sessionAvailabilityLabels[sessionAvailability(
                               item,
@@ -500,7 +502,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                               clearSource();
                               error = null;
                             }),
-                      child: Text(
+                      child: LText(
                         selected?.id == item.id ? 'Đã chọn buổi' : 'Chọn buổi',
                       ),
                     ),
@@ -515,7 +517,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                           ),
                         ),
                       ),
-                      child: const Text('Xem phiếu của buổi'),
+                      child: const LText('Xem phiếu của buổi'),
                     ),
                   ],
                 ),
@@ -529,33 +531,35 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                   onPressed: locked || loading || sessions!.number == 0
                       ? null
                       : () => loadSessions(page: sessions!.number - 1),
-                  child: const Text('Trang trước'),
+                  child: const LText('Trang trước'),
                 ),
-                Text('${sessions!.number + 1}/${sessions!.totalPages}'),
+                LText('${sessions!.number + 1}/${sessions!.totalPages}'),
                 TextButton(
                   onPressed: locked || loading || !sessions!.hasNext
                       ? null
                       : () => loadSessions(page: sessions!.number + 1),
-                  child: const Text('Trang sau'),
+                  child: const LText('Trang sau'),
                 ),
               ],
             ),
         ],
         if (session != null) ...[
           const Divider(),
-          Text(
+          LText(
             '3. Xác nhận đăng ký',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          Text('${session.date} · ${session.startTime}–${session.endTime}'),
+          LText('${session.date} · ${session.startTime}–${session.endTime}'),
           DropdownButtonFormField<bool>(
             isExpanded: true,
             itemHeight: null,
             initialValue: followUp,
-            decoration: const InputDecoration(labelText: 'Loại lượt khám'),
+            decoration: InputDecoration(
+              labelText: AppL10n.text(context, 'Loại lượt khám'),
+            ),
             items: const [
-              DropdownMenuItem(value: false, child: Text('Khám đợt mới')),
-              DropdownMenuItem(value: true, child: Text('Tái khám')),
+              DropdownMenuItem(value: false, child: LText('Khám đợt mới')),
+              DropdownMenuItem(value: true, child: LText('Tái khám')),
             ],
             onChanged: locked
                 ? null
@@ -565,10 +569,10 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                   }),
           ),
           ExpansionTile(
-            title: Text(prebooked ? 'Đăng ký trước' : 'Có mặt tại quầy'),
+            title: LText(prebooked ? 'Đăng ký trước' : 'Có mặt tại quầy'),
             children: [
               SwitchListTile(
-                title: const Text('Đăng ký trước, sẽ đến sau'),
+                title: const LText('Đăng ký trước, sẽ đến sau'),
                 value: prebooked,
                 onChanged: locked
                     ? null
@@ -581,11 +585,11 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
               onPressed: locked || sourceLoading || patient == null
                   ? null
                   : () => loadSources(),
-              child: const Text('Tìm lượt khám trước'),
+              child: const LText('Tìm lượt khám trước'),
             ),
             if (sourceLoading) const LinearProgressIndicator(),
             if (sources != null && sources!.items.isEmpty)
-              const Text('Chưa có lượt đã hoàn tất để tái khám.'),
+              const LText('Chưa có lượt đã hoàn tất để tái khám.'),
             if (sources != null)
               for (final item in sources!.items)
                 ListTile(
@@ -595,7 +599,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
                   ),
-                  title: Text('Hoàn tất ${_instant(item.completedAt)}'),
+                  title: LText('Hoàn tất ${_instant(item.completedAt)}'),
                   subtitle: ReferenceLabel(
                     kind: ReferenceKind.doctor,
                     id: item.doctorId,
@@ -618,32 +622,32 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                     onPressed: locked || sourceLoading || sources!.number == 0
                         ? null
                         : () => loadSources(page: sources!.number - 1),
-                    child: const Text('Lượt trước'),
+                    child: const LText('Lượt trước'),
                   ),
                   TextButton(
                     onPressed: locked || sourceLoading || !sources!.hasNext
                         ? null
                         : () => loadSources(page: sources!.number + 1),
-                    child: const Text('Lượt sau'),
+                    child: const LText('Lượt sau'),
                   ),
                 ],
               ),
             if (source?.recommendationId != null) ...[
               CheckboxListTile(
-                title: const Text('Dùng đề xuất của bác sĩ'),
+                title: const LText('Dùng đề xuất của bác sĩ'),
                 value: useRecommendation,
                 onChanged: locked
                     ? null
                     : (value) => setState(() => useRecommendation = value!),
               ),
               if (useRecommendation) ...[
-                Text(
+                LText(
                   'Khuyến nghị: ${source!.recommendedFrom} – ${source!.recommendedThrough}',
                 ),
-                if (source!.reason != null) Text(source!.reason!),
+                if (source!.reason != null) LText(source!.reason!),
                 if (session.date.compareTo(source!.recommendedFrom!) < 0 ||
                     session.date.compareTo(source!.recommendedThrough!) > 0)
-                  const Text(
+                  const LText(
                     'Ngày khám ngoài thời gian khuyến nghị. Có thể tiếp tục nếu bệnh nhân muốn đăng ký.',
                   ),
               ],
@@ -653,12 +657,12 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                 controller: replacement,
                 enabled: !locked,
                 maxLength: 1000,
-                decoration: const InputDecoration(
-                  labelText: 'Lý do đổi bác sĩ',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do đổi bác sĩ'),
                 ),
               ),
               CheckboxListTile(
-                title: const Text('Bệnh nhân đồng ý đổi bác sĩ'),
+                title: const LText('Bệnh nhân đồng ý đổi bác sĩ'),
                 value: agreed,
                 onChanged: locked
                     ? null
@@ -671,13 +675,16 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
             enabled: !locked,
             maxLength: 1000,
             decoration: InputDecoration(
-              labelText: followUp ? 'Lý do tái khám' : 'Ghi chú (nếu có)',
+              labelText: AppL10n.text(
+                context,
+                followUp ? 'Lý do tái khám' : 'Ghi chú (nếu có)',
+              ),
             ),
           ),
           if (!followUp && ref.watch(openVisitRepositoryProvider) != null) ...[
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Bệnh nhân quay lại sau lượt đã kết thúc'),
+              title: const LText('Bệnh nhân quay lại sau lượt đã kết thúc'),
               value: returnVisit,
               onChanged: locked || patient == null
                   ? null
@@ -697,28 +704,28 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
             if (returnVisit && returnSourceError != null)
               TextButton(
                 onPressed: locked ? null : loadReturnSources,
-                child: const Text('Không tải được lượt đã kết thúc. Thử lại'),
+                child: const LText('Không tải được lượt đã kết thúc. Thử lại'),
               ),
             if (returnVisit &&
                 returnSources == null &&
                 returnSourceError == null)
               const LinearProgressIndicator(),
             if (returnVisit && returnSources?.isEmpty == true)
-              const Text('Bệnh nhân chưa có lượt nào đã kết thúc.'),
+              const LText('Bệnh nhân chưa có lượt nào đã kết thúc.'),
             if (returnVisit && returnSources?.isNotEmpty == true) ...[
               DropdownButtonFormField<String>(
                 key: const Key('reception-return-source'),
                 isExpanded: true,
                 itemHeight: null,
                 initialValue: returnSourceId,
-                decoration: const InputDecoration(
-                  labelText: 'Lượt đã kết thúc',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lượt đã kết thúc'),
                 ),
                 items: [
                   for (final item in returnSources!)
                     DropdownMenuItem(
                       value: item.recordId,
-                      child: Text(
+                      child: LText(
                         '${item.examinationDate} · ${returnSourceLabels[item.status]}',
                       ),
                     ),
@@ -732,7 +739,9 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                 controller: returnReason,
                 enabled: !locked,
                 maxLength: 500,
-                decoration: const InputDecoration(labelText: 'Lý do quay lại'),
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Lý do quay lại'),
+                ),
               ),
             ],
           ],
@@ -752,14 +761,14 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
           if (receipt == null)
             FilledButton(
               onPressed: busy || patient == null ? null : register,
-              child: Text(
+              child: LText(
                 pending.intent != null
                     ? 'Đối soát cùng yêu cầu'
                     : 'Đăng ký và giữ chỗ',
               ),
             ),
           if (pending.intent != null && receipt == null)
-            const Text(
+            const LText(
               'Chưa xác định kết quả. Đối soát cùng yêu cầu; không đăng ký lại ở màn hình khác.',
             ),
         ],
@@ -770,24 +779,24 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LText(
                     receipt.status == 'AWAITING_PAYMENT'
                         ? 'Đã tạo phiếu · Chờ thu tiền'
                         : _receiptStatus(receipt.status),
                   ),
                   if (receipt.status == 'AWAITING_PAYMENT')
-                    const Text(
+                    const LText(
                       'Hướng dẫn bệnh nhân đến thu ngân trước hạn giữ chỗ.',
                     ),
-                  Text(
+                  LText(
                     'Hạn giữ chỗ: ${_instant(receipt.expiresAt)} (giờ Việt Nam)',
                   ),
                   if (receipt.queueNumber != null)
-                    Text(
+                    LText(
                       '${queueNumberLabel(ref.read(clinicIntakeEnabledProvider))}: ${receipt.queueNumber}',
                     ),
                   ExpansionTile(
-                    title: const Text('Thông tin bàn giao'),
+                    title: const LText('Thông tin bàn giao'),
                     children: [SelectableText('Mã phiếu: ${receipt.id}')],
                   ),
                   if (refreshNeeded)
@@ -798,11 +807,11 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
                               page: sessions?.number ?? 0,
                               afterReceipt: true,
                             ),
-                      child: const Text('Cập nhật số chỗ'),
+                      child: const LText('Cập nhật số chỗ'),
                     ),
                   FilledButton(
                     onPressed: refreshNeeded || loading ? null : nextPatient,
-                    child: const Text('Tiếp nhận bệnh nhân tiếp theo'),
+                    child: const LText('Tiếp nhận bệnh nhân tiếp theo'),
                   ),
                 ],
               ),
@@ -812,7 +821,7 @@ class _ReceptionWorkspaceState extends ConsumerState<_ReceptionWorkspace> {
         if (error != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
+            child: LText(
               _errorText(error!),
               semanticsLabel: 'Lỗi tiếp nhận: ${_errorText(error!)}',
               style: TextStyle(color: Theme.of(context).colorScheme.error),

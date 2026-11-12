@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -304,7 +306,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
   }
 
   void _showMessage(String value) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LText(value)));
   }
 
   void _nextCollection() {
@@ -363,7 +365,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
+          LText(
             widget.source == null ? 'Tra cứu khoản thu' : 'Khoản đang thu',
             style: Theme.of(context).textTheme.titleLarge,
           ),
@@ -372,13 +374,15 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
             DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue: _purpose,
-              decoration: const InputDecoration(labelText: 'Loại khoản thu'),
+              decoration: InputDecoration(
+                labelText: AppL10n.text(context, 'Loại khoản thu'),
+              ),
               items: const [
-                DropdownMenuItem(value: 'EXAM', child: Text('Khám')),
-                DropdownMenuItem(value: 'LAB_TEST', child: Text('Xét nghiệm')),
+                DropdownMenuItem(value: 'EXAM', child: LText('Khám')),
+                DropdownMenuItem(value: 'LAB_TEST', child: LText('Xét nghiệm')),
                 DropdownMenuItem(
                   value: 'PRESCRIPTION',
-                  child: Text('Đơn thuốc'),
+                  child: LText('Đơn thuốc'),
                 ),
               ],
               onChanged: _locked || _loading || _busy ? null : _changePurpose,
@@ -386,7 +390,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
           const SizedBox(height: 8),
           if (widget.source == null)
             ExpansionTile(
-              title: const Text('Tham chiếu khoản thu từ tiếp nhận'),
+              title: const LText('Tham chiếu khoản thu từ tiếp nhận'),
               children: [
                 _uuidField(_sourceId, 'Mã nguồn (sourceId)'),
                 _uuidField(_patientId, 'Mã bệnh nhân (patientId)'),
@@ -400,7 +404,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                   ? null
                   : _discover,
               icon: const Icon(Icons.search),
-              label: Text(_loading ? 'Đang tra cứu…' : 'Tra cứu từ Billing'),
+              label: LText(_loading ? 'Đang tra cứu…' : 'Tra cứu từ Billing'),
             ),
           if (_loading)
             const Padding(
@@ -431,14 +435,14 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
               label: 'Khoa',
             ),
             ExpansionTile(
-              title: const Text('Thông tin đối soát'),
+              title: const LText('Thông tin đối soát'),
               children: [
                 SelectableText('Mã yêu cầu: ${item.paymentRequestId}'),
-                Text('Trạng thái tài khoản viện phí: ${item.accountStatus}'),
-                Text('Dữ liệu cập nhật lúc: ${item.observedAt}'),
+                LText('Trạng thái tài khoản viện phí: ${item.accountStatus}'),
+                LText('Dữ liệu cập nhật lúc: ${item.observedAt}'),
               ],
             ),
-            Text(
+            LText(
               'Trạng thái: ${switch (item.status) {
                 'PENDING' => 'Chờ thanh toán',
                 'PARTIALLY_PAID' => 'Đã thanh toán một phần',
@@ -449,17 +453,18 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
               }}',
             ),
             if (!(_locked && _receipt?.status == 'COMPLETED')) ...[
-              Text(
+              LText(
                 'Đề nghị: ${item.requestedAmount.format()} ${item.currency}',
               ),
-              Text('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
-              Text(
+              LText('Đã thu: ${item.paidAmount.format()} ${item.currency}'),
+              LText(
                 'Còn lại: ${item.remainingAmount.format()} ${item.currency}',
               ),
             ],
             if (_receipt != null) _receiptCard(_receipt!),
             if (_commandError != null) RequestError(_commandError!),
-            if (_reconciling) const Text('Đang cập nhật trạng thái khoản thu…'),
+            if (_reconciling)
+              const LText('Đang cập nhật trạng thái khoản thu…'),
             if (_locked &&
                 _receipt?.status == 'COMPLETED' &&
                 !_reconciling &&
@@ -467,17 +472,17 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
               OutlinedButton.icon(
                 onPressed: _busy ? null : _refreshAfterPayment,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Thử kiểm tra lại'),
+                label: const LText('Thử kiểm tra lại'),
               ),
             if (_receipt?.status == 'COMPLETED')
               FilledButton(
                 onPressed: _busy || _reconciling ? null : _nextCollection,
-                child: const Text('Thu khoản tiếp theo'),
+                child: const LText('Thu khoản tiếp theo'),
               ),
             if (_labZeroConfirmed)
               const Padding(
                 padding: EdgeInsets.only(top: 12),
-                child: Text('Đã xác nhận nghĩa vụ 0 đồng.'),
+                child: LText('Đã xác nhận nghĩa vụ 0 đồng.'),
               ),
             if (_labQuoteFlow &&
                 !_labZeroConfirmed &&
@@ -504,21 +509,24 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                   decimal: true,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Số tiền thực nhận (${item.currency})',
+                  labelText: AppL10n.text(
+                    context,
+                    'Số tiền thực nhận (${item.currency})',
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: _method,
-                decoration: const InputDecoration(
-                  labelText: 'Hình thức nhận tiền',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(context, 'Hình thức nhận tiền'),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
+                  DropdownMenuItem(value: 'CASH', child: LText('Tiền mặt')),
                   DropdownMenuItem(
                     value: 'TRANSFER',
-                    child: Text('Chuyển khoản đã đối soát'),
+                    child: LText('Chuyển khoản đã đối soát'),
                   ),
                 ],
                 onChanged: _busy || _locked
@@ -530,8 +538,11 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                 controller: _reference,
                 enabled: !_busy && !_locked,
                 maxLength: 120,
-                decoration: const InputDecoration(
-                  labelText: 'Mã đối chiếu (không bắt buộc)',
+                decoration: InputDecoration(
+                  labelText: AppL10n.text(
+                    context,
+                    'Mã đối chiếu (không bắt buộc)',
+                  ),
                 ),
               ),
               CheckboxListTile(
@@ -540,10 +551,10 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                 onChanged: _busy || _locked
                     ? null
                     : (value) => setState(() => _confirmed = value ?? false),
-                title: const Text('Tôi đã thực nhận/đối soát khoản tiền này.'),
+                title: const LText('Tôi đã thực nhận/đối soát khoản tiền này.'),
               ),
               if (_locked)
-                const Text(
+                const LText(
                   'Thao tác đang chờ đối soát. Không gửi khoản thu khác cho đến khi kết quả được kiểm tra.',
                 ),
               if (_locked && _frozen != null && _receipt == null)
@@ -551,17 +562,17 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
                   onPressed: _busy || _reconciling
                       ? null
                       : () => _submit(retry: _frozen),
-                  child: const Text('Gửi lại đúng lệnh đã khóa'),
+                  child: const LText('Gửi lại đúng lệnh đã khóa'),
                 ),
               if (!_locked)
                 FilledButton(
                   onPressed: _busy || !_confirmed ? null : () => _submit(),
-                  child: Text(_busy ? 'Đang ghi nhận…' : 'Ghi nhận khoản thu'),
+                  child: LText(_busy ? 'Đang ghi nhận…' : 'Ghi nhận khoản thu'),
                 ),
             ],
-            if (item.status == 'PAID') const Text('Khoản thu đã thanh toán.'),
+            if (item.status == 'PAID') const LText('Khoản thu đã thanh toán.'),
             if (item.status == 'EXPIRED' || item.status == 'CANCELLED')
-              const Text('Khoản thu này không còn nhận thanh toán.'),
+              const LText('Khoản thu này không còn nhận thanh toán.'),
           ],
         ],
       ),
@@ -575,7 +586,7 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
       enabled: !_locked && !_loading && !_busy,
       onChanged: _invalidateDiscovery,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: AppL10n.text(context, label),
         border: const OutlineInputBorder(),
       ),
     ),
@@ -587,16 +598,16 @@ class _LedgerPaymentPageState extends State<LedgerPaymentPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LText(
             result.status == 'COMPLETED'
                 ? 'Đã thu thành công'
                 : 'Giao dịch đang chờ xác nhận',
           ),
-          Text(
+          LText(
             '${result.amount.format()} ${result.currency} · ${result.paymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}',
           ),
           ExpansionTile(
-            title: const Text('Thông tin biên nhận'),
+            title: const LText('Thông tin biên nhận'),
             children: [SelectableText('Mã giao dịch: ${result.transactionId}')],
           ),
         ],

@@ -1,5 +1,19 @@
 # Hoàn thiện toàn bộ mobile — 03/11/2026
 
+## Điều chỉnh hồ sơ, đơn thuốc và thanh toán — 12/11/2026
+
+Mobile gỡ giao diện tra cứu/thao tác hoàn tiền. Các trạng thái và số liệu lịch sử
+vẫn giữ đúng ý nghĩa tài chính. Đơn thuốc ngoại trú chưa thanh toán có màn sửa dòng
+thuốc, số lượng, cách dùng và ghi chú; giữ nguyên nguồn bệnh nhân/bác sĩ/hồ sơ.
+Lưu dùng phiên bản và cùng mã thao tác khi chưa rõ kết quả; máy chủ kiểm tra tiền
+đã thu hoặc đang thu. Hồ sơ completed có đính chính bắt buộc lý do, nội dung hiện
+hành và lịch sử. Tạo nhân sự/bệnh nhân yêu cầu email hợp lệ, duy nhất trong từng
+loại hồ sơ dù chưa cấp tài khoản. Việt/Anh dùng chung danh mục bản dịch với web,
+tiếng Việt mặc định; ngôn ngữ và theme nằm trong hồ sơ cá nhân.
+
+Đây là thay đổi source và kiểm tra local; không thay cho nghiệm thu trên bản cài
+native hoặc toàn bộ hệ thống triển khai.
+
 ## Chênh lệch web và mobile theo vai trò — 05/11/2026
 
 So từ endpoint web gọi với endpoint mobile gọi trên `master`, rồi đọc lại từng mục. Bảng này

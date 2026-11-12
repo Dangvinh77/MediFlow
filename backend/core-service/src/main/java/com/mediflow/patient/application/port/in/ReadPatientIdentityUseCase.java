@@ -10,6 +10,9 @@ public interface ReadPatientIdentityUseCase {
 
     PatientLookupDTO exists(UUID patientId);
 
+    /** Checks an email against other Patient records through the Patient authority. */
+    boolean emailAvailable(UUID patientId, String email);
+
     /** Sex and date of birth for Lab reference ranges; PatientNotFoundException when unknown. */
     PatientDemographicsDTO demographics(UUID patientId);
 }

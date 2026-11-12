@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +14,7 @@ import { useUnsavedChanges } from "../use-unsaved-changes";
 import { FormSection } from "./RecordLayout";
 
 export function OwnStaffContactForm({ staff, onSaved }: { staff: StaffDTO; onSaved: (staff: StaffDTO) => void }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const { markDirty, markSaved } = useUnsavedChanges();
   const [phone, setPhone] = useState(staff.phoneNumber ?? "");
@@ -51,15 +54,15 @@ export function OwnStaffContactForm({ staff, onSaved }: { staff: StaffDTO; onSav
 
   return <form onSubmit={submit} onChangeCapture={() => { markDirty(); setDone(false); }} className="space-y-4">
     <fieldset disabled={busy || !staff.active}>
-      <FormSection title="Cập nhật liên hệ của bạn" description="Bạn có thể sửa điện thoại và địa chỉ. Email đăng nhập chỉ do quản trị viên cập nhật.">
-        <Field label="Điện thoại" htmlFor="own-staff-phone" hint="10 đến 15 chữ số."><input id="own-staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" maxLength={15} value={phone} onChange={event => setPhone(event.target.value)} className={controlClassName} /></Field>
-        <Field label="Email" htmlFor="own-staff-email" hint="Liên hệ quản trị viên nếu cần đổi email đăng nhập."><input id="own-staff-email" type="email" autoComplete="email" readOnly value={staff.email ?? ""} className={controlClassName} /></Field>
-        <Field label="Địa chỉ" htmlFor="own-staff-address"><input id="own-staff-address" autoComplete="street-address" maxLength={255} value={address} onChange={event => setAddress(event.target.value)} className={controlClassName} /></Field>
+      <FormSection title={localize("Cập nhật liên hệ của bạn")} description={localize("Bạn có thể sửa điện thoại và địa chỉ. Email đăng nhập chỉ do quản trị viên cập nhật.")}>
+        <Field label={localize("Điện thoại")} htmlFor="own-staff-phone" hint="10 đến 15 chữ số."><input id="own-staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" maxLength={15} value={phone} onChange={event => setPhone(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Email")} htmlFor="own-staff-email" hint="Liên hệ quản trị viên nếu cần đổi email đăng nhập."><input id="own-staff-email" type="email" autoComplete="email" readOnly value={staff.email ?? ""} className={controlClassName} /></Field>
+        <Field label={localize("Địa chỉ")} htmlFor="own-staff-address"><input id="own-staff-address" autoComplete="street-address" maxLength={255} value={address} onChange={event => setAddress(event.target.value)} className={controlClassName} /></Field>
       </FormSection>
       <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
-        {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-        {done ? <p role="status" className="text-sm text-success">Đã cập nhật thông tin liên hệ.</p> : null}
-        <Button type="submit" variant="primary" loading={busy}>Lưu thông tin liên hệ</Button>
+        <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+        <L10nValue>{done ? <p role="status" className="text-sm text-success"><L10n>{"Đã cập nhật thông tin liên hệ."}</L10n></p> : null}</L10nValue>
+        <Button type="submit" variant="primary" loading={busy}><L10n>{"Lưu thông tin liên hệ"}</L10n></Button>
       </div>
     </fieldset>
   </form>;

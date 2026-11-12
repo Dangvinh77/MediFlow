@@ -78,6 +78,7 @@ class GatewayMedicalRecordRepository
       canAcceptHandover: _flag(value, 'canAcceptHandover'),
       canAddConsultationNote: _flag(value, 'canAddConsultationNote'),
       canAmend: _flag(value, 'canAmend'),
+      canApplyAmendment: _flag(value, 'canApplyAmendment'),
       canDecideAmendments: _flag(value, 'canDecideAmendments'),
     );
   }

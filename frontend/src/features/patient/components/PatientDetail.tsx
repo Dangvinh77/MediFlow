@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,6 +27,7 @@ export function PatientDetail(props: PatientDetailProps) {
 }
 
 function PatientDetailWorkspace({ patientId, notice, onboarding }: PatientDetailProps) {
+  const { localize } = useLocale();
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSession);
   const permissions = patientPermissions(role);
@@ -67,30 +70,30 @@ function PatientDetailWorkspace({ patientId, notice, onboarding }: PatientDetail
     if (mutation.error?.status === 401) router.replace("/login");
   }, [mutation.error, router]);
 
-  if (mutation.error) return <AsyncState kind="error" message={mutation.error.message} correlationId={mutation.error.correlationId} onRetry={() => { mutation.clearError(); setConfirmDelete(false); retry(); }} />;
-  if (state.key !== requestKey) return <AsyncState kind="loading" message="Đang tải bệnh nhân…" />;
-  if (state.status === "not-found") return <AsyncState kind="empty" message="Không tìm thấy bệnh nhân." />;
-  if (state.status === "error") return <AsyncState kind="error" message={state.message} correlationId={state.correlationId} onRetry={retry} />;
-  if (state.status !== "success") return <AsyncState kind="empty" message="Không có dữ liệu bệnh nhân." />;
+  if (mutation.error) return <AsyncState kind="error" message={localize(mutation.error.message)} correlationId={mutation.error.correlationId} onRetry={() => { mutation.clearError(); setConfirmDelete(false); retry(); }} />;
+  if (state.key !== requestKey) return <AsyncState kind="loading" message={localize("Đang tải bệnh nhân…")} />;
+  if (state.status === "not-found") return <AsyncState kind="empty" message={localize("Không tìm thấy bệnh nhân.")} />;
+  if (state.status === "error") return <AsyncState kind="error" message={localize(state.message)} correlationId={state.correlationId} onRetry={retry} />;
+  if (state.status !== "success") return <AsyncState kind="empty" message={localize("Không có dữ liệu bệnh nhân.")} />;
   const patient = state.patient;
 
   return (
     <section className="mt-6 space-y-6">
-      {patient.daLuuTru ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm">Hồ sơ đã lưu trữ. Bạn vẫn có thể xem thông tin để đối chiếu lịch sử.</p> : null}
-      {notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">{notice === "created" ? "Đã tạo bệnh nhân." : "Đã cập nhật bệnh nhân."}</p> : null}
-      <RecordIdentity name={patient.hoTen} subtitle={`${patient.gioiTinh === "M" ? "Nam" : "Nữ"} · ${formatLocalDate(patient.ngaySinh)}`}>{permissions.write && !patient.daLuuTru ? <Link href={`/patients/${patientId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">Chỉnh sửa</Link> : null}</RecordIdentity>
+      <L10nValue>{patient.daLuuTru ? <p role="status" className="rounded-lg border border-border bg-surface-muted p-4 text-sm"><L10n>{"Hồ sơ đã lưu trữ. Bạn vẫn có thể xem thông tin để đối chiếu lịch sử."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10nValue>{notice === "created" ? "Đã tạo bệnh nhân." : "Đã cập nhật bệnh nhân."}</L10nValue></p> : null}</L10nValue>
+      <RecordIdentity name={patient.hoTen} subtitle={`${patient.gioiTinh === "M" ? "Nam" : "Nữ"} · ${formatLocalDate(patient.ngaySinh)}`}><L10nValue>{permissions.write && !patient.daLuuTru ? <Link href={`/patients/${patientId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"><L10n>{"Chỉnh sửa"}</L10n></Link> : null}</L10nValue></RecordIdentity>
       <div className="grid items-start gap-5 xl:grid-cols-2">
-        <DetailSection title="Thông tin cá nhân"><Info label="Ngày sinh" value={formatLocalDate(patient.ngaySinh)} /><Info label="Giới tính" value={patient.gioiTinh === "M" ? "Nam" : "Nữ"} /><Info label="CMND/CCCD" value={patient.soCmnd} /><Info label="BHYT" value={patient.bhytSo} /></DetailSection>
-        <DetailSection title="Thông tin liên hệ"><Info label="Điện thoại" value={patient.soDienThoai} /><Info label="Email" value={patient.email} /><Info label="Địa chỉ" value={patient.diaChi} /></DetailSection>
+        <DetailSection title={localize("Thông tin cá nhân")}><Info label={localize("Ngày sinh")} value={formatLocalDate(patient.ngaySinh)} /><Info label={localize("Giới tính")} value={patient.gioiTinh === "M" ? "Nam" : "Nữ"} /><Info label="CMND/CCCD" value={patient.soCmnd} /><Info label={localize("BHYT")} value={patient.bhytSo} /></DetailSection>
+        <DetailSection title={localize("Thông tin liên hệ")}><Info label={localize("Điện thoại")} value={patient.soDienThoai} /><Info label={localize("Email")} value={patient.email} /><Info label={localize("Địa chỉ")} value={patient.diaChi} /></DetailSection>
       </div>
-      {permissions.write && !patient.daLuuTru ? onboarding : null}
+      <L10nValue>{permissions.write && !patient.daLuuTru ? onboarding : null}</L10nValue>
       <div className="flex flex-wrap gap-2">
-        {permissions.delete && !patient.daLuuTru ? <button type="button" ref={deleteTrigger} disabled={mutation.blocked} onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-danger/40 bg-surface px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-55">Lưu trữ bệnh nhân</button> : null}
-        <Link href="/patients" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold hover:bg-surface-muted">Quay lại danh sách</Link>
+        <L10nValue>{permissions.delete && !patient.daLuuTru ? <button type="button" ref={deleteTrigger} disabled={mutation.blocked} onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-danger/40 bg-surface px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-55"><L10n>{"Lưu trữ bệnh nhân"}</L10n></button> : null}</L10nValue>
+        <Link href="/patients" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold hover:bg-surface-muted"><L10n>{"Quay lại danh sách"}</L10n></Link>
       </div>
-      {confirmDelete ? <div role="alertdialog" ref={deletePanel} tabIndex={-1} aria-labelledby="delete-patient-title" aria-describedby="delete-patient-description" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancelDelete(); } }} className="rounded-xl border border-danger/40 bg-danger/10 p-5"><h2 id="delete-patient-title" className="font-semibold">Lưu trữ hồ sơ bệnh nhân?</h2><p id="delete-patient-description" className="mt-1 text-sm text-muted-foreground">Hồ sơ của {patient.hoTen} sẽ được ẩn khỏi danh sách tiếp nhận. Mã bệnh nhân và dữ liệu được giữ lại để tra cứu lịch sử; thao tác này không xóa hồ sơ khám hoặc giao dịch.</p><div className="mt-4 flex gap-2"><Button type="button" variant="danger" loading={mutation.pending} onClick={() => void remove()}>Xác nhận lưu trữ</Button><Button type="button" disabled={mutation.pending} onClick={cancelDelete}>Hủy</Button></div></div> : null}
+      <L10nValue>{confirmDelete ? <div role="alertdialog" ref={deletePanel} tabIndex={-1} aria-labelledby="delete-patient-title" aria-describedby="delete-patient-description" onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancelDelete(); } }} className="rounded-xl border border-danger/40 bg-danger/10 p-5"><h2 id="delete-patient-title" className="font-semibold"><L10n>{"Lưu trữ hồ sơ bệnh nhân?"}</L10n></h2><p id="delete-patient-description" className="mt-1 text-sm text-muted-foreground"><L10n>{"Hồ sơ của "}</L10n>{patient.hoTen}<L10n>{" sẽ được ẩn khỏi danh sách tiếp nhận. Mã bệnh nhân và dữ liệu được giữ lại để tra cứu lịch sử; thao tác này không xóa hồ sơ khám hoặc giao dịch."}</L10n></p><div className="mt-4 flex gap-2"><Button type="button" variant="danger" loading={mutation.pending} onClick={() => void remove()}><L10n>{"Xác nhận lưu trữ"}</L10n></Button><Button type="button" disabled={mutation.pending} onClick={cancelDelete}><L10n>{"Hủy"}</L10n></Button></div></div> : null}</L10nValue>
     </section>
   );
 }
 
-function Info({ label, value }: { label: string; value: string | null }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1.5 break-words text-sm leading-6">{value ?? "—"}</dd></div>; }
+function Info({ label, value }: { label: string; value: string | null }) { return <div><dt className="text-sm text-muted-foreground"><L10nValue>{label}</L10nValue></dt><dd className="mt-1.5 break-words text-sm leading-6"><L10nValue>{value ?? "—"}</L10nValue></dd></div>; }

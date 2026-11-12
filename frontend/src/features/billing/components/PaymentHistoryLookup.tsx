@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
@@ -31,6 +33,7 @@ function requestError(cause: unknown): RequestError {
 
 /** Money actually moved, newest first. Opens on every patient; choosing one narrows the list. */
 export function PaymentHistoryLookup() {
+  const { localize } = useLocale();
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [patientId, setPatientId] = useState("");
@@ -71,72 +74,70 @@ export function PaymentHistoryLookup() {
 
   return (
     <section className="mt-6">
-      {role === "ADMIN" ? (
+      <L10nValue>{role === "ADMIN" ? (
         <div className="mb-4 flex flex-wrap justify-end gap-2">
           <Link href="/billing/revenue" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Doanh thu theo khoa</Link>
-          <Link href="/billing/admin/outbox" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Phát lại outbox</Link>
+          <Link href="/billing/admin/outbox" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold"><L10n>{"Phát lại outbox"}</L10n></Link>
         </div>
-      ) : null}
+      ) : null}</L10nValue>
       <form onSubmit={onSearch} noValidate className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium">Bệnh nhân</label>
+          <label htmlFor="billing-patient-id" className="mb-1 block text-sm font-medium"><L10n>{"Bệnh nhân"}</L10n></label>
           <ReferenceInput
             kind="patient"
             id="billing-patient-id"
             value={patientId}
             onValueChange={(selectedId) => { setPatientId(selectedId); setValidationError(null); }}
-            placeholder="Để trống để xem tất cả bệnh nhân"
+            placeholder={localize("Để trống để xem tất cả bệnh nhân")}
             aria-invalid={validationError ? true : undefined}
             aria-describedby={validationError ? "billing-patient-id-error" : undefined}
             className="min-h-11 w-full rounded-lg border border-control-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>
-        <button type="submit" disabled={rows === null} className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50">
-          Xem lịch sử thu
-        </button>
+        <button type="submit" disabled={rows === null} className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"><L10n>{"Xem lịch sử thu"}</L10n></button>
       </form>
 
-      {validationError ? <p id="billing-patient-id-error" role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
-      {rows === null ? <AsyncState kind="loading" message="Đang tải lịch sử thu…" /> : null}
-      {error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => open(request)} /> : null}
-      {rows !== null && !error && rows.length === 0 ? (
-        <AsyncState kind="empty" message={request.patientId ? "Bệnh nhân này chưa có khoản thu nào." : "Chưa có khoản thu nào."} />
-      ) : null}
+      <L10nValue>{validationError ? <p id="billing-patient-id-error" role="alert" className="mt-2 text-sm text-danger"><L10nValue>{validationError}</L10nValue></p> : null}</L10nValue>
+      <L10nValue>{rows === null ? <AsyncState kind="loading" message={localize("Đang tải lịch sử thu…")} /> : null}</L10nValue>
+      <L10nValue>{error ? <AsyncState kind="error" message={localize(error.message)} correlationId={error.correlationId} onRetry={() => open(request)} /> : null}</L10nValue>
+      <L10nValue>{rows !== null && !error && rows.length === 0 ? (
+        <AsyncState kind="empty" message={localize(request.patientId ? "Bệnh nhân này chưa có khoản thu nào." : "Chưa có khoản thu nào.")} />
+      ) : null}</L10nValue>
 
-      {rows !== null && !error && rows.length > 0 ? (
+      <L10nValue>{rows !== null && !error && rows.length > 0 ? (
         <>
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-[44rem] text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Thời điểm</th>
-                  <th scope="col" className="px-4 py-3">Bệnh nhân</th>
-                  <th scope="col" className="px-4 py-3">Khoản</th>
-                  <th scope="col" className="px-4 py-3 text-right">Số tiền</th>
-                  <th scope="col" className="px-4 py-3">Hình thức</th>
-                  <th scope="col" className="px-4 py-3">Loại</th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Thời điểm"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Bệnh nhân"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Khoản"}</L10n></th>
+                  <th scope="col" className="px-4 py-3 text-right"><L10n>{"Số tiền"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Hình thức"}</L10n></th>
+                  <th scope="col" className="px-4 py-3"><L10n>{"Loại"}</L10n></th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
+                <L10nValue>{rows.map((row) => {
                   const refund = row.transactionType === "REFUND";
                   return (
                     <tr key={row.transactionId} className="border-b border-border align-top last:border-0">
-                      <td className="px-4 py-3">{formatInstant(row.completedAt)}</td>
+                      <td className="px-4 py-3"><L10nValue>{formatInstant(row.completedAt)}</L10nValue></td>
                       <td className="px-4 py-3"><ReferenceText kind="patient" value={row.patientId} fallback="Bệnh nhân" /></td>
-                      <td className="px-4 py-3">{row.purpose ? purposeLabels[row.purpose] ?? "Khoản khác" : "Khoản khác"}</td>
-                      <td className="px-4 py-3 text-right font-medium tabular-nums">{refund ? "−" : ""}{formatDecimal(row.amount)} {row.currency}</td>
-                      <td className="px-4 py-3">{methodLabels[row.paymentMethod as PaymentMethod] ?? "Khác"}</td>
-                      <td className="px-4 py-3"><StatusBadge tone={refund ? "warning" : "success"}>{refund ? "Hoàn tiền" : "Đã thu"}</StatusBadge></td>
+                      <td className="px-4 py-3"><L10nValue>{row.purpose ? purposeLabels[row.purpose] ?? "Khoản khác" : "Khoản khác"}</L10nValue></td>
+                      <td className="px-4 py-3 text-right font-medium tabular-nums"><L10nValue>{refund ? "−" : ""}</L10nValue><L10nValue>{formatDecimal(row.amount)}</L10nValue> {row.currency}</td>
+                      <td className="px-4 py-3"><L10nValue>{methodLabels[row.paymentMethod as PaymentMethod] ?? "Khác"}</L10nValue></td>
+                      <td className="px-4 py-3"><StatusBadge tone={refund ? "warning" : "success"}><L10nValue>{refund ? "Hoàn tiền" : "Đã thu"}</L10nValue></StatusBadge></td>
                     </tr>
                   );
-                })}
+                })}</L10nValue>
               </tbody>
             </table>
           </div>
           <Pagination page={request.page} totalPages={totalPages} totalElements={totalElements} loading={false} onPageChange={(page) => open({ ...request, page })} />
         </>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

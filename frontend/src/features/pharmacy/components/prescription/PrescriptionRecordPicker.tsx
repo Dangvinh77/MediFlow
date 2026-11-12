@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { ReferenceInput, type ReferenceInputProps } from "@/components/references/ReferenceInput";
@@ -18,6 +20,7 @@ export function PrescriptionRecordPicker({ patientId, ...props }: Props) {
 function PatientRecords({ patientId, directory, onValueChange, ...props }: Props & {
   directory: NonNullable<ReturnType<typeof useReferenceDirectory>>;
 }) {
+  const { localize } = useLocale();
   const [result, setResult] = useState<ReferencePage | null>(null);
   const [page, setPage] = useState(0);
   const [retry, setRetry] = useState(0);
@@ -51,22 +54,22 @@ function PatientRecords({ patientId, directory, onValueChange, ...props }: Props
     : "Chọn một hồ sơ khám của bệnh nhân này.";
 
   return <div className="space-y-2" aria-busy={busy || undefined}>
-    {single ? <input {...props} value={result.items[0].label} title={result.items[0].label} readOnly />
+    <L10nValue>{single ? <input {...props} value={result.items[0].label} title={localize(result.items[0].label)} readOnly />
       : <select id={props.id} className={props.className} value={props.value} onChange={event => onValueChange(event.target.value)}
         disabled={props.disabled || busy || !result?.items.length} aria-required={props["aria-required"]}
         aria-invalid={props["aria-invalid"]} aria-describedby={props["aria-describedby"]}>
-        <option value="">{error && !result ? "Chưa tải được hồ sơ khám" : !result?.items.length ? hint : "Chọn hồ sơ khám"}</option>
-        {result?.items.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-      </select>}
-    {selected && <p aria-label="Nội dung hồ sơ đã chọn" className="break-words text-sm text-foreground">{selected.label}</p>}
-    {error ? <div role="alert" className="space-y-2 text-sm text-danger">
-      <p>{error}</p>
+        <option value=""><L10nValue>{error && !result ? "Chưa tải được hồ sơ khám" : !result?.items.length ? hint : "Chọn hồ sơ khám"}</L10nValue></option>
+        <L10nValue>{result?.items.map(item => <option key={item.id} value={item.id}><L10nValue>{item.label}</L10nValue></option>)}</L10nValue>
+      </select>}</L10nValue>
+    <L10nValue>{selected && <p aria-label={localize("Nội dung hồ sơ đã chọn")} className="break-words text-sm text-foreground"><L10nValue>{selected.label}</L10nValue></p>}</L10nValue>
+    <L10nValue>{error ? <div role="alert" className="space-y-2 text-sm text-danger">
+      <p><L10nValue>{error}</L10nValue></p>
       <Button type="button" variant="secondary" disabled={props.disabled || busy} onClick={() => {
         setError(null); setBusy(true); setRetry(value => value + 1);
-      }}>Thử tải lại danh sách hồ sơ</Button>
-    </div> : <p role="status" className="text-sm text-muted-foreground">{hint}</p>}
-    {result?.hasMore && !error && <Button type="button" variant="secondary" disabled={props.disabled || busy} onClick={() => {
+      }}><L10n>{"Thử tải lại danh sách hồ sơ"}</L10n></Button>
+    </div> : <p role="status" className="text-sm text-muted-foreground"><L10nValue>{hint}</L10nValue></p>}</L10nValue>
+    <L10nValue>{result?.hasMore && !error && <Button type="button" variant="secondary" disabled={props.disabled || busy} onClick={() => {
       setBusy(true); setPage(value => value + 1);
-    }}>{busy ? "Đang tải thêm…" : "Xem thêm hồ sơ"}</Button>}
+    }}><L10nValue>{busy ? "Đang tải thêm…" : "Xem thêm hồ sơ"}</L10nValue></Button>}</L10nValue>
   </div>;
 }

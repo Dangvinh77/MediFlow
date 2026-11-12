@@ -28,6 +28,7 @@ import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
  * @param cancellationReason lý do hủy, nếu có
  * @param createdAt thời điểm tạo
  * @param updatedAt thời điểm cập nhật cuối
+ * @param revision số lần sửa thuốc đã commit; đơn mới bắt đầu tại 0
  */
 public record PrescriptionDTO(
         UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
@@ -35,5 +36,15 @@ public record PrescriptionDTO(
         List<PrescriptionLineDTO> lines,
         PrescriptionStatus status, DispenseStatus dispenseStatus, boolean paymentConfirmed,
         Instant cancelledAt, UUID cancelledBy, String cancellationReason,
-        Instant createdAt, Instant updatedAt
-) {}
+        Instant createdAt, Instant updatedAt, int revision
+) {
+    /** Source-compatible constructor for internal callers created before revision metadata. */
+    public PrescriptionDTO(UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
+            UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount, List<PrescriptionLineDTO> lines,
+            PrescriptionStatus status, DispenseStatus dispenseStatus, boolean paymentConfirmed,
+            Instant cancelledAt, UUID cancelledBy, String cancellationReason, Instant createdAt, Instant updatedAt) {
+        this(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate, totalAmount,
+                lines, status, dispenseStatus, paymentConfirmed, cancelledAt, cancelledBy,
+                cancellationReason, createdAt, updatedAt, 0);
+    }
+}

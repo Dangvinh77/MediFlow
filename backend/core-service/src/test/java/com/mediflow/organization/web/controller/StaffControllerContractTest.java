@@ -92,10 +92,27 @@ class StaffControllerContractTest {
         mockMvc.perform(post(BASE_PATH)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content("{\"fullName\":\"Staff\",\"departmentId\":\"" + DEPARTMENT_ID
-                                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":" + identityJson + "}"))
+                                + "\",\"jobTitle\":\"NURSE\",\"email\":\"staff@example.test\",\"identityNumber\":" + identityJson + "}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.details[0].field").value("identityNumber"));
+        org.mockito.Mockito.verifyNoInteractions(createStaffUseCase);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"missing", "null", "\"\""})
+    @WithMockUser(roles = "ADMIN")
+    void createStaff_requiresEmail(String email) throws Exception {
+        String emailField = "missing".equals(email) ? "" : ",\"email\":" + email;
+        String body = "{\"fullName\":\"Staff\",\"departmentId\":\"" + DEPARTMENT_ID
+                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\""
+                + emailField + "}";
+
+        mockMvc.perform(post(BASE_PATH).contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("email"));
         org.mockito.Mockito.verifyNoInteractions(createStaffUseCase);
     }
 
@@ -103,10 +120,10 @@ class StaffControllerContractTest {
     @WithMockUser(roles = "ADMIN")
     void createStaffAcceptsNestedProfileAndFlattensResponse() throws Exception {
         var profile = new com.mediflow.organization.domain.model.StaffProfile(java.time.LocalDate.of(1990, 1, 2), com.mediflow.organization.domain.model.StaffProfile.Gender.FEMALE, "Address", java.time.LocalDate.of(2020, 3, 1), "Degree");
-        var staff = com.mediflow.organization.domain.model.Staff.create("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901").withProfile(profile);
-        when(createStaffUseCase.execute("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901", profile)).thenReturn(staff);
+        var staff = com.mediflow.organization.domain.model.Staff.create("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, "member@example.test", "012345678901").withProfile(profile);
+        when(createStaffUseCase.execute("Member", DEPARTMENT_ID, com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, "member@example.test", "012345678901", profile)).thenReturn(staff);
         mockMvc.perform(post(BASE_PATH).contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("""
-                {"fullName":"Member","departmentId":"33333333-3333-3333-3333-333333333333","jobTitle":"NURSE","identityNumber":"012345678901",
+                {"fullName":"Member","departmentId":"33333333-3333-3333-3333-333333333333","jobTitle":"NURSE","email":"member@example.test","identityNumber":"012345678901",
                  "profile":{"dateOfBirth":"1990-01-02","gender":"FEMALE","address":"Address","hireDate":"2020-03-01","qualification":"Degree"}}
                 """))
                 .andExpect(status().isCreated())
@@ -132,14 +149,14 @@ class StaffControllerContractTest {
         var staff = com.mediflow.organization.domain.model.Staff.create(
                 "Alex Morgan", DEPARTMENT_ID,
                 com.mediflow.organization.domain.model.JobTitle.NURSE,
-                null, null, null, null, "012345678901");
+                null, null, null, "alex@example.test", "012345678901");
         when(createStaffUseCase.executeWithIdempotency(
                 UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
-                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901"))
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, "alex@example.test", "012345678901"))
                 .thenReturn(new CreateStaffUseCase.CreationResult(staff, false),
                         new CreateStaffUseCase.CreationResult(staff, true));
         String body = "{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
-                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}";
+                + "\",\"jobTitle\":\"NURSE\",\"email\":\"alex@example.test\",\"identityNumber\":\"012345678901\"}";
 
         mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
@@ -162,13 +179,13 @@ class StaffControllerContractTest {
     void createStaff_keyedDifferentPayloadReturnsStableConflict() throws Exception {
         when(createStaffUseCase.executeWithIdempotency(
                 UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
-                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null, "012345678901"))
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, "alex@example.test", "012345678901"))
                 .thenThrow(new com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException());
 
         mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content("{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
-                                + "\",\"jobTitle\":\"NURSE\",\"identityNumber\":\"012345678901\"}"))
+                                + "\",\"jobTitle\":\"NURSE\",\"email\":\"alex@example.test\",\"identityNumber\":\"012345678901\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("STAFF_IDEMPOTENCY_KEY_REUSED"));
     }

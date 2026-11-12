@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useReferenceDirectory } from "@/components/references/ReferenceProvider";
@@ -57,7 +59,7 @@ export function PharmacyIdentityProvider({ children }: { children: ReactNode }) 
       return request;
     };
   });
-  return <IdentityContext.Provider value={lookup}>{children}</IdentityContext.Provider>;
+  return <IdentityContext.Provider value={lookup}><L10nValue>{children}</L10nValue></IdentityContext.Provider>;
 }
 
 export function PharmacyIdentity({ kind, id, showId = false }: { kind: Kind; id: string | null; showId?: boolean }) {
@@ -75,8 +77,8 @@ export function PharmacyIdentity({ kind, id, showId = false }: { kind: Kind; id:
   if (!id || !isUuid(id)) return null;
   const result = resolved?.key === key ? resolved.result : null;
   return <span className="block min-w-0 text-sm" aria-live="polite">
-    <span className="block break-words">{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên…"}</span>
-    {showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Mã tham chiếu</summary><code className="block break-all">{id}</code></details>}
-    {result && "error" in result && result.error === "Chưa tải được tên" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu tên lại</button>}
+    <span className="block break-words"><L10nValue>{result && "name" in result ? result.name : result && "error" in result ? result.error : "Đang tra cứu tên…"}</L10nValue></span>
+    <L10nValue>{showId && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer"><L10n>{"Mã tham chiếu"}</L10n></summary><code className="block break-all">{id}</code></details>}</L10nValue>
+    <L10nValue>{result && "error" in result && result.error === "Chưa tải được tên" && <button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-primary underline focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Tra cứu tên lại"}</L10n></button>}</L10nValue>
   </span>;
 }

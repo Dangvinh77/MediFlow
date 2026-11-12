@@ -15,6 +15,8 @@ public enum ReservationReleaseReason {
     PAYMENT_FAILED,
     /** Xuất thuốc thất bại và hệ thống thực hiện bù trừ. */
     DISPENSE_FAILED,
+    /** Replaced by an authorized prescription revision before payment begins. */
+    PRESCRIPTION_EDITED,
     /** Quản trị viên giải phóng thủ công có lý do. */
     ADMIN_OVERRIDE,
     /** Hệ thống giải phóng vì thời gian giữ chỗ đã hết. */

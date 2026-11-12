@@ -58,6 +58,13 @@ public class PatientReadApplicationService implements GetPatientUseCase, ReadPat
     }
 
     @Override
+    public boolean emailAvailable(UUID patientId, String email) {
+        patients.findById(patientId).orElseThrow(() -> new PatientNotFoundException(patientId));
+        String normalized = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        return !normalized.isBlank() && !patients.existsByEmailAndPatientIdNot(normalized, patientId);
+    }
+
+    @Override
     public com.mediflow.patient.application.dto.response.PatientDemographicsDTO demographics(UUID patientId) {
         // Archived patients still own past results, so their demographics stay readable to Lab.
         Patient patient = patients.findById(patientId)

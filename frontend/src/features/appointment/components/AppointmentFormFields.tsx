@@ -1,3 +1,5 @@
+
+import { L10nValue } from "@/components/i18n/LocaleProvider";
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import type {
   AppointmentFieldErrors,
@@ -27,7 +29,7 @@ export function AppointmentFormFields({
 
   return (
     <div className="grid gap-5 md:grid-cols-2">
-      {includeReferences ? (
+      <L10nValue>{includeReferences ? (
         <>
           <FormField label="Mã bệnh nhân" name="patientId" error={errors.patientId} required hint="Tìm và chọn đúng bệnh nhân theo tên và ngày sinh.">
             <ReferenceInput kind="patient"
@@ -66,7 +68,7 @@ export function AppointmentFormFields({
             />
           </FormField>
         </>
-      ) : null}
+      ) : null}</L10nValue>
 
       <FormField label="Ngày hẹn" name="appointmentDate" error={errors.appointmentDate} required>
         <input
@@ -131,14 +133,14 @@ function FormField({
   return (
     <div className={name === "reason" ? "flex flex-col gap-1 md:col-span-2" : "flex flex-col gap-1"}>
       <label htmlFor={name} className="text-sm font-medium">
-        {label}{required ? <span aria-hidden="true"> *</span> : null}
+        <L10nValue>{label}</L10nValue><L10nValue>{required ? <span aria-hidden="true"> *</span> : null}</L10nValue>
       </label>
-      {children}
-      {error ? (
-        <p id={`${name}-error`} className="text-xs text-danger">{error}</p>
+      <L10nValue>{children}</L10nValue>
+      <L10nValue>{error ? (
+        <p id={`${name}-error`} className="text-xs text-danger"><L10nValue>{error}</L10nValue></p>
       ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
+        <p className="text-xs text-muted-foreground"><L10nValue>{hint}</L10nValue></p>
+      ) : null}</L10nValue>
     </div>
   );
 }

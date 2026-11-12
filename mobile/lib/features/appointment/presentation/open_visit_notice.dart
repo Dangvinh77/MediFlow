@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -85,8 +87,11 @@ class _OpenVisitNoticeState extends State<OpenVisitNotice> {
             controller: widget.controller,
             enabled: widget.enabled,
             maxLength: 500,
-            decoration: const InputDecoration(
-              labelText: 'Lý do đăng ký thêm lượt trong khoa này',
+            decoration: InputDecoration(
+              labelText: AppL10n.text(
+                context,
+                'Lý do đăng ký thêm lượt trong khoa này',
+              ),
             ),
           ),
       ],
@@ -135,9 +140,9 @@ class _DoctorOpenVisitsSectionState
         child: Row(
           children: [
             const Expanded(
-              child: Text('Không tải được lượt khám chưa kết thúc.'),
+              child: LText('Không tải được lượt khám chưa kết thúc.'),
             ),
-            TextButton(onPressed: _load, child: const Text('Thử lại')),
+            TextButton(onPressed: _load, child: const LText('Thử lại')),
           ],
         ),
       );
@@ -145,7 +150,7 @@ class _DoctorOpenVisitsSectionState
     if (visits == null || visits.isEmpty) return const SizedBox.shrink();
     return ExpansionTile(
       initiallyExpanded: true,
-      title: Text('Lượt khám chưa kết thúc (${visits.length})'),
+      title: LText('Lượt khám chưa kết thúc (${visits.length})'),
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 200),
@@ -154,7 +159,7 @@ class _DoctorOpenVisitsSectionState
             children: [
               for (final visit in visits)
                 ListTile(
-                  title: Text(visit.sessionDate),
+                  title: LText(visit.sessionDate),
                   subtitle: ReferenceLabel(
                     kind: ReferenceKind.department,
                     id: visit.departmentId,
@@ -162,7 +167,7 @@ class _DoctorOpenVisitsSectionState
                   ),
                   trailing: TextButton(
                     onPressed: () => widget.onOpen(visit),
-                    child: const Text('Tiếp tục khám'),
+                    child: const LText('Tiếp tục khám'),
                   ),
                 ),
             ],

@@ -70,6 +70,21 @@ class PatientControllerWebTest {
                 org.mockito.ArgumentMatchers.any(java.util.function.Supplier.class));
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"missing", "null", "\"\""})
+    void createRequiresAnEmailBeforeCallingTheUseCase(String email) throws Exception {
+        String emailField = "missing".equals(email) ? "" : ",\"email\":" + email;
+        String body = "{\"hoTen\":\"A\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"M\","
+                + "\"soCmnd\":\"0123456789\"" + emailField + "}";
+
+        mvc.perform(post("/api/v1/patients").contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("email"));
+        org.mockito.Mockito.verifyNoInteractions(createPatient);
+    }
+
     @Test
     void nurseMayCorrectAnUnlinkedProfileEmailButLinkedEmailUsesTheAuditedAccountRoute() throws Exception {
         UUID id = UUID.randomUUID();

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api";
@@ -36,6 +38,7 @@ function outcomeUnknown(cause: unknown) {
 const inputClass = "min-h-11 w-full rounded-lg border border-control-border bg-surface px-3";
 
 export function RescheduleDialog({ registrationId, onClose, onRescheduled }: { registrationId: string; onClose: () => void; onRescheduled: (result: RegistrationDTO) => void }) {
+  const { localize } = useLocale();
   const [attempt, setAttempt] = useState(0);
   const [registration, setRegistration] = useState<RegistrationDTO | null>(null);
   const [loadError, setLoadError] = useState<DialogError | null>(null);
@@ -98,30 +101,29 @@ export function RescheduleDialog({ registrationId, onClose, onRescheduled }: { r
   }
 
   const locked = busy || Boolean(pending);
-  return <section aria-label="Đổi lịch khám" className="mt-3 space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-    <h4 className="font-semibold">Đổi lịch khám</h4>
-    {loadError ? <AsyncState kind="error" message={loadError.message} correlationId={loadError.correlationId} onRetry={() => setAttempt(value => value + 1)} /> : null}
+  return <section aria-label={localize("Đổi lịch khám")} className="mt-3 space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+    <h4 className="font-semibold"><L10n>{"Đổi lịch khám"}</L10n></h4>
+    <L10nValue>{loadError ? <AsyncState kind="error" message={localize(loadError.message)} correlationId={loadError.correlationId} onRetry={() => setAttempt(value => value + 1)} /> : null}</L10nValue>
     <form noValidate className="flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); void search(); }}>
-      <ScheduleDateInput label="Ngày khám mới" required disabled={locked} value={date} onChange={event => setDate(event.target.value)} className={inputClass} />
-      <Button type="submit" loading={searching} disabled={locked || !registration || !date}>Tìm buổi khám</Button>
+      <ScheduleDateInput label={localize("Ngày khám mới")} required disabled={locked} value={date} onChange={event => setDate(event.target.value)} className={inputClass} />
+      <Button type="submit" loading={searching} disabled={locked || !registration || !date}><L10n>{"Tìm buổi khám"}</L10n></Button>
     </form>
-    {sessionError ? <AsyncState kind="error" message={sessionError.message} correlationId={sessionError.correlationId} onRetry={() => void search()} /> : null}
-    {sessions ? sessions.length ? <fieldset disabled={locked} className="space-y-2"><legend className="font-medium">Buổi khám mới</legend>{sessions.map(item => {
+    <L10nValue>{sessionError ? <AsyncState kind="error" message={localize(sessionError.message)} correlationId={sessionError.correlationId} onRetry={() => void search()} /> : null}</L10nValue>
+    <L10nValue>{sessions ? sessions.length ? <fieldset disabled={locked} className="space-y-2"><legend className="font-medium"><L10n>{"Buổi khám mới"}</L10n></legend><L10nValue>{sessions.map(item => {
       const availability = sessionAvailability(item, null);
       return <label key={item.sessionId} className="flex items-start gap-2 rounded-lg border border-border bg-surface p-3">
         <input type="radio" name="reschedule-target" value={item.sessionId} checked={targetSessionId === item.sessionId} disabled={availability !== "AVAILABLE"} onChange={() => setTargetSessionId(item.sessionId)} />
-        <span>{formatLocalDate(item.sessionDate)} · {item.startTime}–{item.endTime} · <ReferenceText kind="doctor" value={item.doctorId} fallback="Bác sĩ" /> · <ReferenceText kind="room" value={item.roomId} fallback="Phòng khám" /> · {availability === "AVAILABLE" ? `Còn ${item.availableCount} chỗ` : sessionAvailabilityLabels[availability]}</span>
+        <span><L10nValue>{formatLocalDate(item.sessionDate)}</L10nValue> · {item.startTime}–{item.endTime} · <ReferenceText kind="doctor" value={item.doctorId} fallback="Bác sĩ" /> · <ReferenceText kind="room" value={item.roomId} fallback="Phòng khám" /> · <L10nValue>{availability === "AVAILABLE" ? `Còn ${item.availableCount} chỗ` : sessionAvailabilityLabels[availability]}</L10nValue></span>
       </label>;
-    })}</fieldset> : <p role="status" className="text-muted-foreground">Không có buổi khám khác trong ngày đã chọn.</p> : null}
-    <label className="block space-y-1 font-medium" htmlFor={`reschedule-reason-${registrationId}`}>Lý do đổi lịch
-      <textarea id={`reschedule-reason-${registrationId}`} required maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
+    })}</L10nValue></fieldset> : <p role="status" className="text-muted-foreground"><L10n>{"Không có buổi khám khác trong ngày đã chọn."}</L10n></p> : null}</L10nValue>
+    <label className="block space-y-1 font-medium" htmlFor={`reschedule-reason-${registrationId}`}><L10n>{"Lý do đổi lịch"}</L10n><textarea id={`reschedule-reason-${registrationId}`} required maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-20 w-full rounded-lg border border-control-border bg-surface px-3 py-2 font-normal" />
     </label>
-    <label className="flex items-start gap-2"><input type="checkbox" checked={patientConfirmed} disabled={locked} onChange={event => setPatientConfirmed(event.target.checked)} /><span>Bệnh nhân đã đồng ý với lịch mới.</span></label>
-    <p className="text-muted-foreground">Đổi sang ngày khác sẽ cấp số quầy mới và bệnh nhân phải đến quầy tiếp nhận lại. Đổi trong cùng ngày giữ nguyên số quầy.</p>
-    {submitError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-danger"><p>{submitError.message}</p>{submitError.correlationId ? <p className="mt-1 text-xs">Mã theo dõi: <span className="font-mono">{submitError.correlationId}</span></p> : null}{pending ? <p className="mt-2">Chưa xác định lịch đã được đổi hay chưa. Hãy gửi lại đúng yêu cầu để tránh đổi trùng.</p> : null}</div> : null}
+    <label className="flex items-start gap-2"><input type="checkbox" checked={patientConfirmed} disabled={locked} onChange={event => setPatientConfirmed(event.target.checked)} /><span><L10n>{"Bệnh nhân đã đồng ý với lịch mới."}</L10n></span></label>
+    <p className="text-muted-foreground"><L10n>{"Đổi sang ngày khác sẽ cấp số quầy mới và bệnh nhân phải đến quầy tiếp nhận lại. Đổi trong cùng ngày giữ nguyên số quầy."}</L10n></p>
+    <L10nValue>{submitError ? <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-danger"><p><L10nValue>{submitError.message}</L10nValue></p><L10nValue>{submitError.correlationId ? <p className="mt-1 text-xs"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{submitError.correlationId}</span></p> : null}</L10nValue><L10nValue>{pending ? <p className="mt-2"><L10n>{"Chưa xác định lịch đã được đổi hay chưa. Hãy gửi lại đúng yêu cầu để tránh đổi trùng."}</L10n></p> : null}</L10nValue></div> : null}</L10nValue>
     <div className="flex flex-wrap gap-2">
-      <Button type="button" variant="primary" loading={busy} disabled={!registration || (!pending && (!targetSessionId || !reason.trim() || !patientConfirmed))} onClick={() => void submit()}>{pending ? "Gửi lại cùng yêu cầu" : "Xác nhận đổi lịch"}</Button>
-      <Button type="button" variant="secondary" disabled={locked} onClick={onClose}>Đóng</Button>
+      <Button type="button" variant="primary" loading={busy} disabled={!registration || (!pending && (!targetSessionId || !reason.trim() || !patientConfirmed))} onClick={() => void submit()}><L10nValue>{pending ? "Gửi lại cùng yêu cầu" : "Xác nhận đổi lịch"}</L10nValue></Button>
+      <Button type="button" variant="secondary" disabled={locked} onClick={onClose}><L10n>{"Đóng"}</L10n></Button>
     </div>
   </section>;
 }

@@ -32,6 +32,7 @@ public record CreatePatientRequest(
         @Pattern(regexp = "\\d{10,15}", message = "soDienThoai phải gồm 10 đến 15 chữ số")
         String soDienThoai,
 
+        @NotBlank(message = "email không được để trống")
         @Email(message = "email không đúng định dạng")
         @Size(max = 254, message = "email tối đa 254 ký tự")
         String email,

@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { Field, controlClassName } from "@/components/ui/Field";
 import type { LabTemplateFieldDTO } from "../types";
 
@@ -68,25 +70,25 @@ export function LabTemplateResults({
 }) {
   const orderedFields = [...fields].sort((left, right) => left.position - right.position);
   return <div className="space-y-4">
-    {templateDemoRangeIsShown(orderedFields) ? <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Khoảng tham chiếu demo, chưa được duyệt lâm sàng</p> : null}
-    {orderedFields.map((field) => {
+    <L10nValue>{templateDemoRangeIsShown(orderedFields) ? <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning"><L10n>{"Khoảng tham chiếu demo, chưa được duyệt lâm sàng"}</L10n></p> : null}</L10nValue>
+    <L10nValue>{orderedFields.map((field) => {
       const draft = drafts[field.fieldCode] ?? { value: "", reason: "", operator: "" };
       const inputId = `lab-template-value-${field.fieldCode}`;
       const options = field.allowedOptions ?? [];
       const isChoice = (field.valueType === "QUALITATIVE" || field.valueType === "SEMI_QUANTITATIVE") && options.length > 0;
       return <div key={field.fieldCode} className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-2">
         <Field label={`Giá trị ${field.label}`} htmlFor={inputId} required={field.required}>
-          {isChoice ? <select id={inputId} aria-label={`Giá trị ${field.label}`} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName}>
-            <option value="">Chọn kết quả</option>
-            {options.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select> : field.valueType === "TEXT" ? <textarea id={inputId} aria-label={`Giá trị ${field.label}`} rows={2} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} /> : <input id={inputId} aria-label={`Giá trị ${field.label}`} type={field.valueType === "QUANTITATIVE" ? "number" : "text"} step={field.valueType === "QUANTITATIVE" ? "any" : undefined} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} />}
+          <L10nValue>{isChoice ? <select id={inputId} aria-label={`Giá trị ${field.label}`} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName}>
+            <option value=""><L10n>{"Chọn kết quả"}</L10n></option>
+            <L10nValue>{options.map((option) => <option key={option} value={option}><L10nValue>{option}</L10nValue></option>)}</L10nValue>
+          </select> : field.valueType === "TEXT" ? <textarea id={inputId} aria-label={`Giá trị ${field.label}`} rows={2} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} /> : <input id={inputId} aria-label={`Giá trị ${field.label}`} type={field.valueType === "QUANTITATIVE" ? "number" : "text"} step={field.valueType === "QUANTITATIVE" ? "any" : undefined} maxLength={valueMaxLength} value={draft.value} onChange={(event) => onDraftChange(field.fieldCode, { value: event.target.value.slice(0, valueMaxLength) })} className={controlClassName} />}</L10nValue>
         </Field>
-        {field.allowsOperator ? <Field label={`Toán tử ${field.label}`} htmlFor={`lab-template-operator-${field.fieldCode}`}>
+        <L10nValue>{field.allowsOperator ? <Field label={`Toán tử ${field.label}`} htmlFor={`lab-template-operator-${field.fieldCode}`}>
           <select id={`lab-template-operator-${field.fieldCode}`} aria-label={`${field.label} toán tử`} value={draft.operator} onChange={(event) => onDraftChange(field.fieldCode, { operator: event.target.value })} className={controlClassName}>
-            <option value="">Không có</option>
-            {["<", "<=", ">", ">="].map((operator) => <option key={operator} value={operator}>{operator}</option>)}
+            <option value=""><L10n>{"Không có"}</L10n></option>
+            <L10nValue>{["<", "<=", ">", ">="].map((operator) => <option key={operator} value={operator}><L10nValue>{operator}</L10nValue></option>)}</L10nValue>
           </select>
-        </Field> : null}
+        </Field> : null}</L10nValue>
         <Field label={`Đơn vị ${field.label}`} htmlFor={`lab-template-unit-${field.fieldCode}`}>
           <input id={`lab-template-unit-${field.fieldCode}`} aria-label={`Đơn vị ${field.label}`} readOnly value={field.unit ?? ""} className={controlClassName} />
         </Field>
@@ -97,6 +99,6 @@ export function LabTemplateResults({
           <input id={`lab-template-reason-${field.fieldCode}`} maxLength={reasonMaxLength} value={draft.reason} onChange={(event) => onDraftChange(field.fieldCode, { reason: event.target.value.slice(0, reasonMaxLength) })} className={controlClassName} />
         </Field>
       </div>;
-    })}
+    })}</L10nValue>
   </div>;
 }

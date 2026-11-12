@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -15,6 +17,7 @@ import '../domain/prescription_commands.dart';
 import '../domain/drug_commands.dart';
 import 'pharmacy_boundary.dart';
 import 'providers.dart';
+import 'edit_prescription_page.dart';
 
 class PrescriptionLookupPage extends StatelessWidget {
   const PrescriptionLookupPage({super.key});
@@ -80,8 +83,8 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
           focusNode: focus,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            labelText: 'Mã đơn thuốc',
-            errorText: validation,
+            labelText: AppL10n.text(context, 'Mã đơn thuốc'),
+            errorText: AppL10n.text(context, validation),
             border: const OutlineInputBorder(),
           ),
           onSubmitted: (_) => _lookup(),
@@ -89,7 +92,7 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
         const SizedBox(height: 8),
         FilledButton(
           onPressed: _lookup,
-          child: const Text('Tra cứu đơn thuốc'),
+          child: const LText('Tra cứu đơn thuốc'),
         ),
       ],
     ),
@@ -101,14 +104,14 @@ class _PrescriptionLookupState extends State<_PrescriptionLookup> {
       if (hasLoaded)
         ExpansionTile(
           key: ValueKey(('prescription-lookup-loaded', submission)),
-          title: const Text('Tra cứu bằng mã'),
+          title: const LText('Tra cứu bằng mã'),
           children: [_lookupControls()],
         )
       else
         _lookupControls(),
       Expanded(
         child: submitted == null
-            ? const Center(child: Text('Nhập mã để mở đơn thuốc.'))
+            ? const Center(child: LText('Nhập mã để mở đơn thuốc.'))
             : _PrescriptionDetail(
                 key: ValueKey((submitted, submission)),
                 id: submitted!,
@@ -163,11 +166,53 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
   bool dispensing = false, dispenseLocked = false, dispenseRecheck = false;
   Object? dispenseError;
   DispenseResult? dispenseReceipt;
-  bool get commandBusy => cancelling || dispensing;
+  bool editing = false;
+  bool get commandBusy => cancelling || dispensing || editing;
   bool get otherCommandBlocked =>
       dispenseLocked || dispenseRecheck || dispenseReceipt != null;
   DialogRoute<bool>? confirmation;
   NavigatorState? dialogNavigator;
+
+  Future<void> _edit() async {
+    final access = ref.read(pharmacyAccessProvider);
+    final snapshot = rx;
+    if (commandBusy ||
+        otherCommandBlocked ||
+        cancelLocked ||
+        snapshot == null ||
+        access?.canPrescribe != true ||
+        widget.repository is! PrescriptionEditor ||
+        !canEditPrescription(snapshot, ref.read(pharmacyModeProvider))) {
+      return;
+    }
+    setState(() => editing = true);
+    final updated = await Navigator.of(context).push<Prescription>(
+      MaterialPageRoute(
+        builder: (_) => EditPrescriptionPage(
+          prescription: snapshot,
+          repository: widget.repository,
+          sessionIdentity: access!.sessionIdentity,
+        ),
+      ),
+    );
+    if (!mounted ||
+        ref.read(pharmacyAccessProvider)?.sessionIdentity !=
+            access!.sessionIdentity) {
+      return;
+    }
+    setState(() => editing = false);
+    await _load();
+    if (updated != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: LText(
+            'Đã cập nhật đơn thuốc. Khoản phải thu đang được đồng bộ.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -218,20 +263,20 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
     final route = DialogRoute<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận hủy đơn thuốc'),
+        title: const LText('Xác nhận hủy đơn thuốc'),
         content: SingleChildScrollView(
-          child: Text(
+          child: LText(
             'Bạn đang hủy đơn thuốc này.\nLý do: ${command.reason}\nThuốc đã giữ cho đơn sẽ được trả lại kho.',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận hủy'),
+            child: const LText('Xác nhận hủy'),
           ),
         ],
       ),
@@ -308,9 +353,9 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
     final route = DialogRoute<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xuất thuốc'),
+        title: const LText('Xác nhận xuất thuốc'),
         content: SingleChildScrollView(
-          child: Text(
+          child: LText(
             'Bạn đang xuất thuốc cho đơn này.\n'
             '${snapshot.lines.length} thuốc trong đơn. Hệ thống sẽ kiểm tra thanh toán và tồn kho trước khi xuất.',
           ),
@@ -318,11 +363,11 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
+            child: const LText('Quay lại'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận xuất'),
+            child: const LText('Xác nhận xuất'),
           ),
         ],
       ),
@@ -415,14 +460,14 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                         liveRegion: true,
                         child: Column(
                           children: [
-                            Text(
+                            LText(
                               dispenseReceipt!.status ==
                                       DispenseStatus.dispensed
                                   ? 'Đã xuất thuốc thành công.'
                                   : 'Chưa xuất được thuốc. Vui lòng kiểm tra đơn và tồn kho.',
                             ),
                             if (dispenseReceipt!.dispensedAt != null)
-                              Text(
+                              LText(
                                 'Xuất lúc: ${pharmacyDateTime(dispenseReceipt!.dispensedAt!)}',
                               ),
                             if (dispenseReceipt!.dispensedBy != null)
@@ -437,11 +482,11 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                                         id: dispenseReceipt!.dispensedBy!,
                                         label: 'Người xuất',
                                       )
-                                    : const Text(
+                                    : const LText(
                                         'Người xuất: Nhân viên phụ trách',
                                       )
                               else
-                                Text(
+                                LText(
                                   'Người xuất: ${switch (dispenseReceipt!.dispensedActorType) {
                                     DispenseActorType.account => 'Tài khoản',
                                     DispenseActorType.system => 'Hệ thống',
@@ -449,7 +494,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                                   }}',
                                 ),
                             if (dispenseReceipt!.dispensedActorType != null)
-                              Text(
+                              LText(
                                 'Loại người xuất: ${switch (dispenseReceipt!.dispensedActorType!) {
                                   DispenseActorType.staff => 'Nhân sự',
                                   DispenseActorType.account => 'Tài khoản',
@@ -469,11 +514,11 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                         child: Column(
                           children: [
                             PharmacyRequestError(dispenseError!),
-                            const Text(
+                            const LText(
                               'Chưa xác nhận đã xuất. Làm mới đơn để kiểm tra; không tự gửi lại hoặc đánh dấu đã thanh toán.',
                             ),
                             if (dispenseLocked)
-                              const Text(
+                              const LText(
                                 'Tạm dừng thao tác mới. Hãy kiểm tra lịch sử đơn hoặc liên hệ người phụ trách để xác nhận kết quả.',
                               ),
                           ],
@@ -485,7 +530,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                       padding: const EdgeInsets.all(16),
                       child: Semantics(
                         liveRegion: true,
-                        child: Text(
+                        child: LText(
                           'Đã hủy đơn thuốc. Thuốc đã giữ cho đơn được trả lại kho.',
                         ),
                       ),
@@ -498,10 +543,10 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                         child: Column(
                           children: [
                             cancelError is String
-                                ? Text(cancelError as String)
+                                ? LText(cancelError as String)
                                 : PharmacyRequestError(cancelError!),
                             if (cancelLocked)
-                              const Text(
+                              const LText(
                                 'Hãy làm mới đơn để kiểm tra kết quả. Nếu vẫn chưa rõ, vui lòng liên hệ người phụ trách.',
                               ),
                           ],
@@ -519,8 +564,10 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
 
   Widget _content(BuildContext context) {
     if (loading) {
-      return const Center(
-        child: MediFlowLoader(semanticLabel: 'Đang tải đơn thuốc'),
+      return Center(
+        child: MediFlowLoader(
+          semanticLabel: AppL10n.text(context, 'Đang tải đơn thuốc'),
+        ),
       );
     }
     if (error != null) {
@@ -551,7 +598,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
         padding: const EdgeInsets.all(16),
         children: [
           if (mode == PharmacyMode.unavailable)
-            const Text('Chức năng đơn thuốc hiện chưa sẵn sàng.'),
+            const LText('Chức năng đơn thuốc hiện chưa sẵn sàng.'),
           if (result.recordId != null &&
               ref.watch(pharmacyAccessProvider)?.canPrescribe == true)
             ReferenceLabel(
@@ -560,7 +607,7 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               label: 'Hồ sơ',
             )
           else if (result.recordId == null)
-            const Text('Hồ sơ: Chưa cung cấp'),
+            const LText('Hồ sơ: Chưa cung cấp'),
           if (ref.watch(pharmacyAccessProvider)?.canPrescribe == true) ...[
             PharmacyIdentityLabel(
               kind: PharmacyIdentityKind.patient,
@@ -578,12 +625,12 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               label: 'Khoa',
             ),
           ] else
-            const Text(
+            const LText(
               'Thông tin người bệnh và bác sĩ được giới hạn theo quyền truy cập.',
             ),
-          Text('Ngày kê đơn: ${pharmacyDate(result.prescribedDate)}'),
-          Text('Trạng thái đơn: ${prescriptionStatusText(result.status)}'),
-          Text(
+          LText('Ngày kê đơn: ${pharmacyDate(result.prescribedDate)}'),
+          LText('Trạng thái đơn: ${prescriptionStatusText(result.status)}'),
+          LText(
             'Trạng thái xuất: ${switch (result.dispenseStatus) {
               DispenseStatus.pending => 'Chờ xuất',
               DispenseStatus.dispensed => 'Đã xuất',
@@ -593,14 +640,24 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
             }}',
           ),
           if (mode == PharmacyMode.legacy)
-            Text(
+            LText(
               'Thanh toán đã ghi nhận: ${result.paymentConfirmed ? 'Có' : 'Chưa'}',
             ),
           if (mode == PharmacyMode.outpatient)
-            const Text(
+            const LText(
               'Việc xuất thuốc sẽ được kiểm tra theo thanh toán và tồn kho hiện tại.',
             ),
-          Text('Tổng tiền: ${result.totalAmount} đồng'),
+          LText('Tổng tiền: ${result.totalAmount} đồng'),
+          if (ref.watch(pharmacyAccessProvider)?.canPrescribe == true &&
+              widget.repository is PrescriptionEditor &&
+              canEditPrescription(result, mode))
+            OutlinedButton.icon(
+              onPressed: commandBusy || otherCommandBlocked || cancelLocked
+                  ? null
+                  : _edit,
+              icon: const Icon(Icons.edit_outlined),
+              label: const LText('Sửa đơn thuốc'),
+            ),
           for (final line in result.lines)
             Card(
               child: Padding(
@@ -608,19 +665,19 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(line.drugName ?? 'Thuốc chưa có tên hiển thị'),
-                    Text('Số lượng: ${line.quantity}'),
-                    Text('Đơn giá: ${line.unitPrice} đồng'),
-                    Text('Cách dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
+                    LText(line.drugName ?? 'Thuốc chưa có tên hiển thị'),
+                    LText('Số lượng: ${line.quantity}'),
+                    LText('Đơn giá: ${line.unitPrice} đồng'),
+                    LText('Cách dùng: ${line.dosage ?? 'Chưa cung cấp'}'),
                     if (line.note?.trim().isNotEmpty ?? false)
-                      Text('Ghi chú: ${line.note}'),
-                    Text('Thành tiền: ${line.lineTotal} đồng'),
+                      LText('Ghi chú: ${line.note}'),
+                    LText('Thành tiền: ${line.lineTotal} đồng'),
                   ],
                 ),
               ),
             ),
           if (result.cancelledAt != null)
-            Text('Hủy lúc: ${pharmacyDateTime(result.cancelledAt!)}'),
+            LText('Hủy lúc: ${pharmacyDateTime(result.cancelledAt!)}'),
           if (result.cancelledBy != null &&
               ref.watch(pharmacyAccessProvider)?.canPrescribe == true)
             ReferenceLabel(
@@ -629,10 +686,10 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               label: 'Người hủy',
             ),
           if (result.cancellationReason != null)
-            Text('Lý do hủy: ${result.cancellationReason}'),
-          Text('Cập nhật: ${pharmacyDateTime(result.updatedAt)}'),
+            LText('Lý do hủy: ${result.cancellationReason}'),
+          LText('Cập nhật: ${pharmacyDateTime(result.updatedAt)}'),
           ExpansionTile(
-            title: const Text('Thông tin tra cứu'),
+            title: const LText('Thông tin tra cứu'),
             children: [
               SelectableText('Đơn thuốc: ${result.id}'),
               if (result.recordId != null)
@@ -674,33 +731,36 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
               enabled: !commandBusy && !cancelLocked && !otherCommandBlocked,
               maxLength: 500,
               decoration: InputDecoration(
-                labelText: 'Lý do hủy đơn',
+                labelText: AppL10n.text(context, 'Lý do hủy đơn'),
                 border: const OutlineInputBorder(),
-                errorText: cancelError is ApiFailure
-                    ? (cancelError as ApiFailure).fields.containsKey('reason')
-                          ? 'Vui lòng nhập lý do hủy đơn, tối đa 500 ký tự.'
-                          : null
-                    : cancelError is String
-                    ? cancelError as String
-                    : null,
+                errorText: AppL10n.text(
+                  context,
+                  cancelError is ApiFailure
+                      ? (cancelError as ApiFailure).fields.containsKey('reason')
+                            ? 'Vui lòng nhập lý do hủy đơn, tối đa 500 ký tự.'
+                            : null
+                      : cancelError is String
+                      ? cancelError as String
+                      : null,
+                ),
               ),
             ),
             FilledButton(
               onPressed: commandBusy || cancelLocked || otherCommandBlocked
                   ? null
                   : _cancel,
-              child: Text(cancelling ? 'Đang xử lý hủy' : 'Hủy đơn thuốc'),
+              child: LText(cancelling ? 'Đang xử lý hủy' : 'Hủy đơn thuốc'),
             ),
           ],
           if (ref.watch(pharmacyAccessProvider)?.canManageDrugs == true &&
               mode != PharmacyMode.unavailable) ...[
             if (mode == PharmacyMode.legacy && !result.paymentConfirmed)
-              const Text('Cần xác nhận thanh toán trước khi xuất thuốc.'),
+              const LText('Cần xác nhận thanh toán trước khi xuất thuốc.'),
             if (canDispensePrescription(result, mode) &&
                 dispenseReceipt == null &&
                 receipt == null) ...[
               if (ref.watch(prescriptionDispenserProvider) == null)
-                const Text(
+                const LText(
                   'Chức năng xuất thuốc hiện chưa sẵn sàng. Vui lòng thử lại sau.',
                 ),
               FilledButton(
@@ -711,14 +771,14 @@ class _PrescriptionDetailState extends ConsumerState<_PrescriptionDetail> {
                         ref.watch(prescriptionDispenserProvider) == null
                     ? null
                     : _dispense,
-                child: Text(dispensing ? 'Đang xử lý xuất' : 'Xuất thuốc'),
+                child: LText(dispensing ? 'Đang xử lý xuất' : 'Xuất thuốc'),
               ),
             ],
           ],
           OutlinedButton.icon(
             onPressed: commandBusy ? null : _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Làm mới đơn thuốc'),
+            label: const LText('Làm mới đơn thuốc'),
           ),
         ],
       ),

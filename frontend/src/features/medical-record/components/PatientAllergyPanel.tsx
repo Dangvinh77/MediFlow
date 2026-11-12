@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -61,11 +63,11 @@ function AllergyEntry({ allergy }: { allergy: PatientAllergyDTO }) {
     <article className="rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h3 className="font-semibold">{allergy.substance}</h3>
-        <span className="text-xs text-muted-foreground">Mức độ: {severityLabels[allergy.severity]}</span>
+        <span className="text-xs text-muted-foreground"><L10n>{"Mức độ: "}</L10n><L10nValue>{severityLabels[allergy.severity]}</L10nValue></span>
       </div>
-      {allergy.reaction ? <p className="mt-1 text-sm">Phản ứng: {allergy.reaction}</p> : null}
-      <p className="mt-1 text-xs text-muted-foreground">Ghi nhận lúc {formatClinicalInstant(allergy.recordedAt)}</p>
-      {allergy.statusReason ? <p className="mt-1 text-xs text-muted-foreground">Lý do cập nhật: {allergy.statusReason}</p> : null}
+      <L10nValue>{allergy.reaction ? <p className="mt-1 text-sm"><L10n>{"Phản ứng: "}</L10n>{allergy.reaction}</p> : null}</L10nValue>
+      <p className="mt-1 text-xs text-muted-foreground"><L10n>{"Ghi nhận lúc "}</L10n><L10nValue>{formatClinicalInstant(allergy.recordedAt)}</L10nValue></p>
+      <L10nValue>{allergy.statusReason ? <p className="mt-1 text-xs text-muted-foreground"><L10n>{"Lý do cập nhật: "}</L10n>{allergy.statusReason}</p> : null}</L10nValue>
     </article>
   );
 }
@@ -100,6 +102,7 @@ function PatientAllergyPanelContent({
   sourceRecordId?: string | null;
   session: string | null;
 }) {
+  const { localize } = useLocale();
   const router = useRouter();
   const commandLock = useRef(false);
   const inFlight = useRef(false);
@@ -231,65 +234,64 @@ function PatientAllergyPanelContent({
   return (
     <section aria-labelledby="patient-allergies-heading" className="space-y-4 rounded-xl border border-warning/40 bg-surface p-4">
       <div>
-        <h2 id="patient-allergies-heading" className="text-lg font-semibold">Sổ dị ứng</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Thông tin cấp bệnh nhân để tham khảo ở mọi lượt khám.</p>
+        <h2 id="patient-allergies-heading" className="text-lg font-semibold"><L10n>{"Sổ dị ứng"}</L10n></h2>
+        <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Thông tin cấp bệnh nhân để tham khảo ở mọi lượt khám."}</L10n></p>
       </div>
-      {current.status === "loading" ? <AsyncState kind="loading" message="Đang tải sổ dị ứng…" /> : null}
-      {current.status === "error" ? <AsyncState kind="error" message={current.message} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}
-      {current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground">Bạn không có quyền xem sổ dị ứng của bệnh nhân này.</p> : null}
-      {current.status === "success" ? (
+      <L10nValue>{current.status === "loading" ? <AsyncState kind="loading" message={localize("Đang tải sổ dị ứng…")} /> : null}</L10nValue>
+      <L10nValue>{current.status === "error" ? <AsyncState kind="error" message={localize(current.message)} correlationId={current.correlationId} onRetry={() => setRetryToken((value) => value + 1)} /> : null}</L10nValue>
+      <L10nValue>{current.status === "forbidden" ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Bạn không có quyền xem sổ dị ứng của bệnh nhân này."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{current.status === "success" ? (
         <>
-          {current.allergies.active.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Chưa ghi nhận dị ứng</p> : (
-            <ul className="space-y-2">{current.allergies.active.map((allergy) => (
+          <L10nValue>{current.allergies.active.length === 0 ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Chưa ghi nhận dị ứng"}</L10n></p> : (
+            <ul className="space-y-2"><L10nValue>{current.allergies.active.map((allergy) => (
               <li key={allergy.allergyId} className="space-y-2">
                 <AllergyEntry allergy={allergy} />
-                {role === "DOCTOR" ? <Button type="button" variant="ghost" disabled={command.busy || command.uncertain} onClick={() => { setStatusTarget(allergy); setStatusReason(""); }}>Đánh dấu nhập nhầm</Button> : null}
+                <L10nValue>{role === "DOCTOR" ? <Button type="button" variant="ghost" disabled={command.busy || command.uncertain} onClick={() => { setStatusTarget(allergy); setStatusReason(""); }}><L10n>{"Đánh dấu nhập nhầm"}</L10n></Button> : null}</L10nValue>
               </li>
-            ))}</ul>
-          )}
-        {current.allergies.inactive.length > 0 ? (
+            ))}</L10nValue></ul>
+          )}</L10nValue>
+        <L10nValue>{current.allergies.inactive.length > 0 ? (
             <div className="border-t border-border pt-3">
-              <Button type="button" variant="ghost" aria-expanded={expandedInactive} onClick={() => setExpandedInactive((value) => !value)}>
-                Dị ứng đã ngừng hoặc ghi nhầm ({current.allergies.inactive.length})
+              <Button type="button" variant="ghost" aria-expanded={expandedInactive} onClick={() => setExpandedInactive((value) => !value)}><L10n>{"Dị ứng đã ngừng hoặc ghi nhầm ("}</L10n>{current.allergies.inactive.length})
               </Button>
-              {expandedInactive ? <ul className="mt-2 space-y-2">{current.allergies.inactive.map((allergy) => <li key={allergy.allergyId}><AllergyEntry allergy={allergy} /></li>)}</ul> : null}
+              <L10nValue>{expandedInactive ? <ul className="mt-2 space-y-2"><L10nValue>{current.allergies.inactive.map((allergy) => <li key={allergy.allergyId}><AllergyEntry allergy={allergy} /></li>)}</L10nValue></ul> : null}</L10nValue>
             </div>
-          ) : null}
-          {canAdd ? (
+          ) : null}</L10nValue>
+          <L10nValue>{canAdd ? (
             <form onSubmit={submitAllergy} className="space-y-3 border-t border-border pt-4">
-              <h3 className="font-semibold">Ghi nhận dị ứng</h3>
+              <h3 className="font-semibold"><L10n>{"Ghi nhận dị ứng"}</L10n></h3>
               <fieldset disabled={command.busy || command.uncertain} className="space-y-3">
-                <Field label="Dị nguyên" htmlFor="allergy-substance" required hint="Tối đa 200 ký tự.">
+                <Field label={localize("Dị nguyên")} htmlFor="allergy-substance" required hint="Tối đa 200 ký tự.">
                   <input id="allergy-substance" value={substance} maxLength={200} required className={controlClassName} onChange={(event) => setSubstance(event.target.value)} />
                 </Field>
-                <Field label="Phản ứng" htmlFor="allergy-reaction" hint="Tối đa 500 ký tự.">
+                <Field label={localize("Phản ứng")} htmlFor="allergy-reaction" hint="Tối đa 500 ký tự.">
                   <textarea id="allergy-reaction" rows={2} value={reaction} maxLength={500} className={controlClassName} onChange={(event) => setReaction(event.target.value)} />
                 </Field>
-                <Field label="Mức độ" htmlFor="allergy-severity">
+                <Field label={localize("Mức độ")} htmlFor="allergy-severity">
                   <select id="allergy-severity" className={controlClassName} value={severity} onChange={(event) => setSeverity(event.target.value as AllergySeverity)}>
-                    {Object.entries(severityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    <L10nValue>{Object.entries(severityLabels).map(([value, label]) => <option key={value} value={value}><L10nValue>{label}</L10nValue></option>)}</L10nValue>
                   </select>
                 </Field>
-                <Button type="submit" variant="primary" loading={command.busy} disabled={!substance.trim() || substance.trim().length > 200}>Ghi nhận dị ứng</Button>
+                <Button type="submit" variant="primary" loading={command.busy} disabled={!substance.trim() || substance.trim().length > 200}><L10n>{"Ghi nhận dị ứng"}</L10n></Button>
               </fieldset>
             </form>
-          ) : null}
-          {command.error ? <CommandFeedback error={command.error} uncertain={command.uncertain} /> : null}
-          {command.uncertain ? <Button type="button" variant="secondary" onClick={retryUncertainCommand} data-testid="allergy-command-retry" disabled={command.busy}>Gửi lại cùng yêu cầu</Button> : null}
-          {statusTarget ? (
-            <div role="group" aria-label={`Cập nhật dị ứng ${statusTarget.substance}`} className="space-y-3 rounded-lg border border-border p-3">
-              <p className="text-sm">Đánh dấu “{statusTarget.substance}” là đã nhập nhầm?</p>
-              <Field label="Lý do cập nhật tình trạng" htmlFor="allergy-status-reason" required>
+          ) : null}</L10nValue>
+          <L10nValue>{command.error ? <CommandFeedback error={command.error} uncertain={command.uncertain} /> : null}</L10nValue>
+          <L10nValue>{command.uncertain ? <Button type="button" variant="secondary" onClick={retryUncertainCommand} data-testid="allergy-command-retry" disabled={command.busy}><L10n>{"Gửi lại cùng yêu cầu"}</L10n></Button> : null}</L10nValue>
+          <L10nValue>{statusTarget ? (
+            <div role="group" aria-label={localize(`Cập nhật dị ứng ${statusTarget.substance}`)} className="space-y-3 rounded-lg border border-border p-3">
+              <p className="text-sm"><L10n>{"Đánh dấu “"}</L10n><L10nValue>{statusTarget.substance}</L10nValue><L10n>{"” là đã nhập nhầm?"}</L10n></p>
+              <Field label={localize("Lý do cập nhật tình trạng")} htmlFor="allergy-status-reason" required>
                 <textarea id="allergy-status-reason" rows={2} maxLength={500} value={statusReason} disabled={command.busy || command.uncertain} className={controlClassName} onChange={(event) => setStatusReason(event.target.value)} />
               </Field>
               <div className="flex gap-2">
-                <Button type="button" variant="primary" loading={command.busy} disabled={!statusReason.trim() || command.uncertain} onClick={confirmStatusChange}>Xác nhận</Button>
-                <Button type="button" onClick={() => setStatusTarget(null)} disabled={command.busy || command.uncertain}>Hủy</Button>
+                <Button type="button" variant="primary" loading={command.busy} disabled={!statusReason.trim() || command.uncertain} onClick={confirmStatusChange}><L10n>{"Xác nhận"}</L10n></Button>
+                <Button type="button" onClick={() => setStatusTarget(null)} disabled={command.busy || command.uncertain}><L10n>{"Hủy"}</L10n></Button>
               </div>
             </div>
-          ) : null}
+          ) : null}</L10nValue>
         </>
-      ) : null}
+      ) : null}</L10nValue>
     </section>
   );
 }

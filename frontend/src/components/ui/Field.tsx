@@ -1,3 +1,5 @@
+
+import { L10nValue } from "@/components/i18n/LocaleProvider";
 import type { ReactNode } from "react";
 
 interface FieldProps {
@@ -14,15 +16,15 @@ export function Field({ label, htmlFor, hint, error, required = false, children 
   return (
     <div className="space-y-1.5">
       <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground">
-        {label}
-        {required ? <span className="ml-1 text-danger" aria-label="bắt buộc">*</span> : null}
+        <L10nValue>{label}</L10nValue>
+        <L10nValue>{required ? <span className="ml-1 text-danger" aria-label="bắt buộc">*</span> : null}</L10nValue>
       </label>
-      {children}
-      {error ? (
-        <p id={messageId} role="alert" className="text-sm text-danger">{error}</p>
+      <L10nValue>{children}</L10nValue>
+      <L10nValue>{error ? (
+        <p id={messageId} role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p>
       ) : hint ? (
-        <p id={messageId} className="text-sm text-muted-foreground">{hint}</p>
-      ) : null}
+        <p id={messageId} className="text-sm text-muted-foreground"><L10nValue>{hint}</L10nValue></p>
+      ) : null}</L10nValue>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useSyncExternalStore } from "react";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
@@ -9,9 +11,10 @@ import { OrganizationAdminActions } from "@/features/organization/components/Org
 import { ProfileWorkspace } from "./profile/ProfileWorkspace";
 
 export function OrganizationWorkspace() {
+  const { localize } = useLocale();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
-  if (role !== "ADMIN") return <PageShell title="Hồ sơ cá nhân" description="Thông tin của bạn và bảo mật tài khoản."><ProfileWorkspace /></PageShell>;
-  return <PageShell title="Quản trị tổ chức" description="Quản lý khoa phòng, nhân sự và tài khoản trong bệnh viện." actions={<OrganizationAdminActions />}>
+  if (role !== "ADMIN") return <PageShell title={localize("Hồ sơ cá nhân")} description={localize("Thông tin của bạn và bảo mật tài khoản.")}><ProfileWorkspace /></PageShell>;
+  return <PageShell title={localize("Quản trị tổ chức")} description={localize("Quản lý khoa phòng, nhân sự và tài khoản trong bệnh viện.")} actions={<OrganizationAdminActions />}>
     <RoleGate allowed={["ADMIN"]}>
       <OrganizationDirectory />
     </RoleGate>

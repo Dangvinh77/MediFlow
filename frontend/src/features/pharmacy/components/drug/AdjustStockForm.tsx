@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -72,6 +74,7 @@ function AdjustStockFormContent({
   onUncertain,
   disabled = false,
 }: AdjustStockFormProps) {
+  const { localize } = useLocale();
   const isCurrent = usePharmacyRequestScope("canAdjustStock");
   const router = useRouter();
   const [quantity, setQuantity] = useState("");
@@ -226,25 +229,23 @@ function AdjustStockFormContent({
         setConfirming(false);
       }
     }}>
-      <h3 id="adjust-stock-heading" className="text-base font-semibold">Điều chỉnh tồn kho</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Nhập số dương để thêm hàng hoặc số âm để giảm tồn. Cần ghi lý do khi giảm tồn kho.
-      </p>
+      <h3 id="adjust-stock-heading" className="text-base font-semibold"><L10n>{"Điều chỉnh tồn kho"}</L10n></h3>
+      <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Nhập số dương để thêm hàng hoặc số âm để giảm tồn. Cần ghi lý do khi giảm tồn kho."}</L10n></p>
 
-      {formError && (
+      <L10nValue>{formError && (
         <div role="alert" className="mt-4 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-          {formError}
+          <L10nValue>{formError}</L10nValue>
         </div>
-      )}
-      {successMessage && (
+      )}</L10nValue>
+      <L10nValue>{successMessage && (
         <p role="status" className="mt-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          {successMessage}
+          <L10nValue>{successMessage}</L10nValue>
         </p>
-      )}
+      )}</L10nValue>
 
       <form onSubmit={prepareConfirmation} noValidate aria-busy={submitting || undefined} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Số lượng điều chỉnh" htmlFor="stock-quantity" error={fieldErrors.quantity} required>
+          <Field label={localize("Số lượng điều chỉnh")} htmlFor="stock-quantity" error={fieldErrors.quantity} required>
             <input
               id="stock-quantity"
               ref={quantityRef}
@@ -258,10 +259,10 @@ function AdjustStockFormContent({
               aria-invalid={fieldErrors.quantity ? true : undefined}
               aria-describedby={fieldErrors.quantity ? "stock-quantity-error" : undefined}
               className={`${controlClassName}${fieldErrors.quantity ? " border-danger" : ""}`}
-              placeholder="Ví dụ: 20 hoặc -5"
+              placeholder={localize("Ví dụ: 20 hoặc -5")}
             />
           </Field>
-          <Field label="Lý do" htmlFor="stock-reason" error={fieldErrors.reason}>
+          <Field label={localize("Lý do")} htmlFor="stock-reason" error={fieldErrors.reason}>
             <textarea
               id="stock-reason"
               ref={reasonRef}
@@ -272,43 +273,36 @@ function AdjustStockFormContent({
               aria-invalid={fieldErrors.reason ? true : undefined}
               aria-describedby={fieldErrors.reason ? "stock-reason-error" : undefined}
               className={`${controlClassName} min-h-24 resize-y${fieldErrors.reason ? " border-danger" : ""}`}
-              placeholder="Bắt buộc khi giảm tồn"
+              placeholder={localize("Bắt buộc khi giảm tồn")}
             />
           </Field>
         </div>
 
-        {!confirming && (
+        <L10nValue>{!confirming && (
           <Button
             type="submit"
             disabled={submitting || disabled || forbidden}
-          >
-            Xem xác nhận
-          </Button>
-        )}
+          ><L10n>{"Xem xác nhận"}</L10n></Button>
+        )}</L10nValue>
       </form>
 
-      {confirming && parsedQuantity !== null && (
+      <L10nValue>{confirming && parsedQuantity !== null && (
         <section aria-labelledby="stock-confirm-heading" aria-describedby="stock-confirm-description" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
-          <h4 id="stock-confirm-heading" className="font-semibold">Xác nhận điều chỉnh</h4>
+          <h4 id="stock-confirm-heading" className="font-semibold"><L10n>{"Xác nhận điều chỉnh"}</L10n></h4>
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-            <div className="sm:col-span-2"><dt className="text-muted-foreground">Thuốc</dt><dd className="mt-1 break-words font-medium">{drug.drugName}</dd></div>
-            <div><dt className="text-muted-foreground">Tồn hiện tại</dt><dd className="mt-1">{drug.stockQuantity}</dd></div>
-            <div><dt className="text-muted-foreground">Thay đổi</dt><dd className="mt-1">{parsedQuantity > 0 ? `+${parsedQuantity}` : parsedQuantity}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-muted-foreground"><L10n>{"Thuốc"}</L10n></dt><dd className="mt-1 break-words font-medium">{drug.drugName}</dd></div>
+            <div><dt className="text-muted-foreground"><L10n>{"Tồn hiện tại"}</L10n></dt><dd className="mt-1">{drug.stockQuantity}</dd></div>
+            <div><dt className="text-muted-foreground"><L10n>{"Thay đổi"}</L10n></dt><dd className="mt-1"><L10nValue>{parsedQuantity > 0 ? `+${parsedQuantity}` : parsedQuantity}</L10nValue></dd></div>
           </dl>
-          <p className="mt-3 text-sm">
-            Tồn dự kiến: <strong>{drug.stockQuantity + parsedQuantity}</strong>
+          <p className="mt-3 text-sm"><L10n>{"Tồn dự kiến: "}</L10n><strong><L10nValue>{drug.stockQuantity + parsedQuantity}</L10nValue></strong>
           </p>
-          <p id="stock-confirm-description" className="mt-2 text-xs text-muted-foreground">
-            Tồn thực tế có thể thay đổi khi có giao dịch khác. Hệ thống sẽ kiểm tra lượng hàng đang được giữ trước khi cập nhật.
-          </p>
+          <p id="stock-confirm-description" className="mt-2 text-xs text-muted-foreground"><L10n>{"Tồn thực tế có thể thay đổi khi có giao dịch khác. Hệ thống sẽ kiểm tra lượng hàng đang được giữ trước khi cập nhật."}</L10n></p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Button
               type="button"
               onClick={() => setConfirming(false)}
               disabled={submitting}
-            >
-              Hủy
-            </Button>
+            ><L10n>{"Hủy"}</L10n></Button>
             <button
               ref={confirmRef}
               type="button"
@@ -316,11 +310,11 @@ function AdjustStockFormContent({
               disabled={submitting || disabled || forbidden}
               className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Đang cập nhật…" : "Xác nhận điều chỉnh"}
+              <L10nValue>{submitting ? "Đang cập nhật…" : "Xác nhận điều chỉnh"}</L10nValue>
             </button>
           </div>
         </section>
-      )}
+      )}</L10nValue>
     </section>
   );
 }

@@ -78,7 +78,7 @@ export const createStaffRequestFixture = {
   specialization: null,
   licenseNumber: null,
   phoneNumber: null,
-  email: null,
+  email: "staff@example.test",
 } satisfies CreateStaffRequest;
 
 export const updateStaffRequestFixture = {

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
+
 
 import { ReferenceInput } from "@/components/references/ReferenceInput";
 import Link from "next/link";
@@ -25,6 +27,7 @@ interface RequestError {
 }
 
 export function CreateLabRequestForm() {
+  const { localize } = useLocale();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const active = useRef(true);
@@ -97,30 +100,28 @@ export function CreateLabRequestForm() {
 
   return (
     <form ref={formRef} onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
-      {requestError ? <LabMutationError {...requestError} onRetry={requestError.status === null || requestError.status >= 500 ? () => formRef.current?.requestSubmit() : undefined} /> : null}
-      <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-        Yêu cầu này dùng hợp đồng tương thích hiện hành. Trình duyệt không suy luận trạng thái thanh toán hoặc tự tạo quyền tài chính.
-      </div>
+      <L10nValue>{requestError ? <LabMutationError {...requestError} onRetry={requestError.status === null || requestError.status >= 500 ? () => formRef.current?.requestSubmit() : undefined} /> : null}</L10nValue>
+      <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm"><L10n>{"Yêu cầu này dùng hợp đồng tương thích hiện hành. Trình duyệt không suy luận trạng thái thanh toán hoặc tự tạo quyền tài chính."}</L10n></div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Field label="Mã bệnh nhân" name="patientId" error={fieldErrors.patientId} required>
+        <Field label={localize("Mã bệnh nhân")} name="patientId" error={fieldErrors.patientId} required>
           <ReferenceInput kind="patient" id="patientId" value={values.patientId} disabled={submitting} onValueChange={(selectedId) => { updateField("patientId", selectedId); updateField("recordId", ""); }} className={inputClass(Boolean(fieldErrors.patientId))} aria-invalid={fieldErrors.patientId ? true : undefined} aria-describedby={fieldErrors.patientId ? "patientId-error" : undefined} />
         </Field>
-        <Field label="Mã hồ sơ khám" name="recordId" error={fieldErrors.recordId} required hint="Chọn bệnh nhân trước, sau đó chọn hồ sơ khám.">
+        <Field label={localize("Mã hồ sơ khám")} name="recordId" error={fieldErrors.recordId} required hint="Chọn bệnh nhân trước, sau đó chọn hồ sơ khám.">
           <ReferenceInput kind="record" scope={values.patientId} id="recordId" value={values.recordId} disabled={submitting} onValueChange={(selectedId) => updateField("recordId", selectedId)} className={inputClass(Boolean(fieldErrors.recordId))} aria-invalid={fieldErrors.recordId ? true : undefined} aria-describedby={fieldErrors.recordId ? "recordId-error" : undefined} />
         </Field>
-        <Field label="Mã khoa yêu cầu" name="requestingDepartmentId" error={fieldErrors.requestingDepartmentId} required>
+        <Field label={localize("Mã khoa yêu cầu")} name="requestingDepartmentId" error={fieldErrors.requestingDepartmentId} required>
           <ReferenceInput kind="department" id="requestingDepartmentId" value={values.requestingDepartmentId} disabled={submitting} onValueChange={(selectedId) => updateField("requestingDepartmentId", selectedId)} className={inputClass(Boolean(fieldErrors.requestingDepartmentId))} aria-invalid={fieldErrors.requestingDepartmentId ? true : undefined} aria-describedby={fieldErrors.requestingDepartmentId ? "requestingDepartmentId-error" : undefined} />
         </Field>
-        <Field label="Loại xét nghiệm" name="labType" error={fieldErrors.labType} required hint={`${values.labType.length}/50 ký tự`}>
+        <Field label={localize("Loại xét nghiệm")} name="labType" error={fieldErrors.labType} required hint={`${values.labType.length}/50 ký tự`}>
           <input id="labType" value={values.labType} maxLength={50} disabled={submitting} onChange={(event) => updateField("labType", event.target.value)} className={inputClass(Boolean(fieldErrors.labType))} aria-invalid={fieldErrors.labType ? true : undefined} aria-describedby={fieldErrors.labType ? "labType-error" : undefined} />
         </Field>
-        <Field label="Ngày yêu cầu" name="requestedDate" error={fieldErrors.requestedDate} required>
+        <Field label={localize("Ngày yêu cầu")} name="requestedDate" error={fieldErrors.requestedDate} required>
           <input id="requestedDate" type="date" max={today} value={values.requestedDate} disabled={submitting} onChange={(event) => updateField("requestedDate", event.target.value)} className={inputClass(Boolean(fieldErrors.requestedDate))} aria-invalid={fieldErrors.requestedDate ? true : undefined} aria-describedby={fieldErrors.requestedDate ? "requestedDate-error" : undefined} />
         </Field>
       </div>
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Đang tạo…" : "Tạo yêu cầu xét nghiệm"}</button>
-        <Link href="/lab" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Hủy</Link>
+        <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><L10nValue>{submitting ? "Đang tạo…" : "Tạo yêu cầu xét nghiệm"}</L10nValue></button>
+        <Link href="/lab" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted"><L10n>{"Hủy"}</L10n></Link>
       </div>
     </form>
   );
@@ -138,5 +139,5 @@ function Field({ label, name, error, hint, required = false, children }: {
   required?: boolean;
   children: React.ReactNode;
 }) {
-  return <div className="flex flex-col gap-1"><label htmlFor={name} className="text-sm font-medium">{label}{required ? <span aria-hidden="true"> *</span> : null}</label>{children}{error ? <p id={`${name}-error`} className="text-xs text-danger">{error}</p> : null}{!error && hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}</div>;
+  return <div className="flex flex-col gap-1"><label htmlFor={name} className="text-sm font-medium"><L10nValue>{label}</L10nValue><L10nValue>{required ? <span aria-hidden="true"> *</span> : null}</L10nValue></label><L10nValue>{children}</L10nValue><L10nValue>{error ? <p id={`${name}-error`} className="text-xs text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue><L10nValue>{!error && hint ? <p className="text-xs text-muted-foreground"><L10nValue>{hint}</L10nValue></p> : null}</L10nValue></div>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -50,16 +52,15 @@ export function RecordAccessPurposeForm({ patientId, role, onDeclared }: { patie
 
   return <form className="mt-4 max-w-xl space-y-4" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
     <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">Mục đích xem hồ sơ</legend>
-      {purposes.map((option) => <label key={option} className="flex min-h-11 items-center gap-2 text-sm">
+      <legend className="text-sm font-medium"><L10n>{"Mục đích xem hồ sơ"}</L10n></legend>
+      <L10nValue>{purposes.map((option) => <label key={option} className="flex min-h-11 items-center gap-2 text-sm">
         <input type="radio" name="record-access-purpose" value={option} checked={purpose === option} onChange={() => { setPurpose(option); setError(null); }} />
-        {purposeLabels[option]}
-      </label>)}
+        <L10nValue>{purposeLabels[option]}</L10nValue>
+      </label>)}</L10nValue>
     </fieldset>
-    {reasonRequired ? <label className="block space-y-1 text-sm font-medium" htmlFor="record-access-reason">Lý do (ít nhất {MIN_REASON_LENGTH} ký tự)
-      <textarea id="record-access-reason" value={reason} maxLength={500} onChange={(event) => { setReason(event.target.value); setError(null); }} className="min-h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 font-normal text-foreground" />
-    </label> : null}
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    <Button type="submit" loading={saving} disabled={!purpose || !reasonReady}>Xác nhận mục đích</Button>
+    <L10nValue>{reasonRequired ? <label className="block space-y-1 text-sm font-medium" htmlFor="record-access-reason"><L10n>{"Lý do (ít nhất "}</L10n><L10nValue>{MIN_REASON_LENGTH}</L10nValue><L10n>{" ký tự)"}</L10n><textarea id="record-access-reason" value={reason} maxLength={500} onChange={(event) => { setReason(event.target.value); setError(null); }} className="min-h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 font-normal text-foreground" />
+    </label> : null}</L10nValue>
+    <L10nValue>{error ? <p role="alert" className="text-sm text-danger"><L10nValue>{error}</L10nValue></p> : null}</L10nValue>
+    <Button type="submit" loading={saving} disabled={!purpose || !reasonReady}><L10n>{"Xác nhận mục đích"}</L10n></Button>
   </form>;
 }

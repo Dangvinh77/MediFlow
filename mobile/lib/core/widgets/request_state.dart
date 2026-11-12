@@ -1,3 +1,5 @@
+import '../l10n/app_l10n.dart';
+
 import 'package:flutter/material.dart';
 
 import '../network/api_failure.dart';
@@ -25,7 +27,7 @@ class RequestError extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(message, textAlign: TextAlign.center),
+              LText(message, textAlign: TextAlign.center),
               if (failure?.correlationId != null) ...[
                 const SizedBox(height: 8),
                 SelectableText(
@@ -38,7 +40,7 @@ class RequestError extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Thử lại'),
+                  label: const LText('Thử lại'),
                 ),
               ],
             ],

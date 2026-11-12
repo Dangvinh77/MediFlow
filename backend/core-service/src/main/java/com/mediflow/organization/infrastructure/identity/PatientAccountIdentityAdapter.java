@@ -3,6 +3,7 @@ package com.mediflow.organization.infrastructure.identity;
 import com.mediflow.organization.application.port.out.PatientAccountIdentityPort;
 import com.mediflow.organization.domain.exception.InvalidAccountException;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
+import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
 import org.springframework.stereotype.Component;
 import java.util.UUID;
@@ -12,9 +13,12 @@ import java.util.UUID;
 public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort {
     private final GetPatientUseCase patients;
     private final UpdatePatientUseCase patientUpdates;
-    public PatientAccountIdentityAdapter(GetPatientUseCase patients, UpdatePatientUseCase patientUpdates) {
+    private final ReadPatientIdentityUseCase patientIdentity;
+    public PatientAccountIdentityAdapter(GetPatientUseCase patients, UpdatePatientUseCase patientUpdates,
+            ReadPatientIdentityUseCase patientIdentity) {
         this.patients = patients;
         this.patientUpdates = patientUpdates;
+        this.patientIdentity = patientIdentity;
     }
 
     @Override public String identityNumber(UUID patientId) {
@@ -38,6 +42,10 @@ public class PatientAccountIdentityAdapter implements PatientAccountIdentityPort
 
     @Override public String profileEmail(UUID patientId) {
         return patients.getById(patientId).email();
+    }
+
+    @Override public boolean emailAvailable(UUID patientId, String email) {
+        return patientIdentity.emailAvailable(patientId, email);
     }
 
     @Override public String displayName(UUID patientId) {

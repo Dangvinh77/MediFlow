@@ -1,3 +1,5 @@
+import '../../../core/l10n/app_l10n.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -280,7 +282,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         currentAccess.sessionIdentity != widget.access.sessionIdentity ||
         currentAccess.role != widget.access.role) {
       return const _AccountPanelCard(
-        child: Text('Phiên đăng nhập đã thay đổi. Tải lại hồ sơ để tiếp tục.'),
+        child: LText('Phiên đăng nhập đã thay đổi. Tải lại hồ sơ để tiếp tục.'),
       );
     }
     if (_loading && _profile == null) {
@@ -291,7 +293,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            const LText(
               'Không tải được thông tin tài khoản.',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -314,13 +316,13 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LText(
                   'Tài khoản đăng nhập',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               IconButton(
-                tooltip: 'Tải lại thông tin tài khoản',
+                tooltip: AppL10n.text(context, 'Tải lại thông tin tài khoản'),
                 onPressed: _busy ? null : _load,
                 icon: const Icon(Icons.refresh),
               ),
@@ -370,12 +372,12 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        const LText(
           'Chưa có tài khoản đăng nhập',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
-        Text(
+        LText(
           'Email hồ sơ: ${email?.isNotEmpty == true ? email : 'Chưa có email'}',
         ),
         if (!widget.owner.active) ...[
@@ -388,7 +390,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           ),
         ] else if (!hasEmail) ...[
           const SizedBox(height: 8),
-          const Text(
+          const LText(
             'Cập nhật email hợp lệ trong hồ sơ trước khi cấp tài khoản.',
           ),
         ],
@@ -403,7 +405,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         FilledButton.icon(
           onPressed: _busy || !canIssue ? null : _issueAccount,
           icon: const Icon(Icons.mark_email_unread_outlined),
-          label: Text(
+          label: LText(
             _intents.issueOutcomeUnknown
                 ? 'Thử lại cùng yêu cầu cấp tài khoản'
                 : 'Cấp tài khoản và gửi mật khẩu tạm',
@@ -445,7 +447,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           TextButton.icon(
             onPressed: _busy ? null : _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Kiểm tra trạng thái email'),
+            label: const LText('Kiểm tra trạng thái email'),
           ),
         ],
         const SizedBox(height: 8),
@@ -458,7 +460,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
                   ? null
                   : _startPasswordReset,
               icon: const Icon(Icons.lock_reset),
-              label: Text(
+              label: LText(
                 _intents.resetOutcomeUnknown
                     ? 'Đối soát lần cấp lại mật khẩu vừa rồi'
                     : 'Cấp lại mật khẩu tạm qua email',
@@ -468,7 +470,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
               OutlinedButton.icon(
                 onPressed: _busy || !canManageCredentials ? null : _retryMail,
                 icon: const Icon(Icons.mark_email_read_outlined),
-                label: const Text('Gửi lại thư, không đặt lại mật khẩu'),
+                label: const LText('Gửi lại thư, không đặt lại mật khẩu'),
               ),
           ],
         ),
@@ -494,12 +496,12 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Divider(),
-        Text(
+        LText(
           'Đổi email đăng nhập',
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 4),
-        Text(
+        LText(
           widget.owner.isPatient
               ? 'Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ.'
               : 'Chỉ quản trị viên được đổi email nhân viên. Email hồ sơ và tên đăng nhập sẽ được cập nhật cùng thao tác.',
@@ -513,8 +515,8 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
               !_intents.resetOutcomeUnknown,
           keyboardType: TextInputType.emailAddress,
           maxLength: 254,
-          decoration: const InputDecoration(
-            labelText: 'Email đăng nhập mới',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Email đăng nhập mới'),
             border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() => _emailEdited = true),
@@ -527,8 +529,8 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
               !_intents.emailOutcomeUnknown &&
               !_intents.resetOutcomeUnknown,
           maxLength: 500,
-          decoration: const InputDecoration(
-            labelText: 'Lý do thay đổi email',
+          decoration: InputDecoration(
+            labelText: AppL10n.text(context, 'Lý do thay đổi email'),
             border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() {}),
@@ -540,7 +542,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           ),
           TextButton(
             onPressed: _busy ? null : () => _checkEmailChange(account),
-            child: const Text('Kiểm tra kết quả đổi email'),
+            child: const LText('Kiểm tra kết quả đổi email'),
           ),
         ],
         Align(
@@ -558,7 +560,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
                     _emailReason.text.trim().isEmpty
                 ? null
                 : () => _updateEmail(account),
-            child: const Text('Lưu email mới'),
+            child: const LText('Lưu email mới'),
           ),
         ),
       ],
@@ -647,29 +649,29 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
               current?.role != widget.access.role ||
               !_canManage(widget.owner, current?.role)) {
             return AlertDialog(
-              title: const Text('Phiên đăng nhập đã thay đổi'),
-              content: const Text('Đóng hộp thoại này trước khi tiếp tục.'),
+              title: const LText('Phiên đăng nhập đã thay đổi'),
+              content: const LText('Đóng hộp thoại này trước khi tiếp tục.'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Đóng'),
+                  child: const LText('Đóng'),
                 ),
               ],
             );
           }
           return AlertDialog(
-            title: const Text('Cấp lại mật khẩu tạm?'),
-            content: Text(
+            title: const LText('Cấp lại mật khẩu tạm?'),
+            content: LText(
               'Mật khẩu hiện tại của ${account.username} sẽ hết hiệu lực. Hướng dẫn đăng nhập sẽ được gửi đến email tài khoản.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Hủy'),
+                child: const LText('Hủy'),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Xác nhận đặt lại'),
+                child: const LText('Xác nhận đặt lại'),
               ),
             ],
           );
@@ -944,7 +946,7 @@ class _AccountValue extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 132, child: Text(label)),
+        SizedBox(width: 132, child: LText(label)),
         Expanded(child: SelectableText(value)),
       ],
     ),
@@ -965,7 +967,7 @@ class _StatusMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
-    child: Text(
+    child: LText(
       message,
       style: TextStyle(
         color: color,

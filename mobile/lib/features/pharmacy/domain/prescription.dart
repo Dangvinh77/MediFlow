@@ -43,6 +43,7 @@ class Prescription {
     required this.cancellationReason,
     required this.createdAt,
     required this.updatedAt,
+    this.revision,
   }) : lines = List.unmodifiable(lines);
   final String id, patientId, doctorId, departmentId, prescribedDate;
   final String? recordId, cancelledBy, cancellationReason;
@@ -53,7 +54,7 @@ class Prescription {
   final PrescriptionStatus status;
   final DispenseStatus dispenseStatus;
   final bool paymentConfirmed;
-  // The read contract contains no version metadata. Do not infer a care mode.
+  final int? revision;
 }
 
 enum DispenseActorType { staff, account, system, legacyUnknown }

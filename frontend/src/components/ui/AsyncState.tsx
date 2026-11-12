@@ -1,3 +1,5 @@
+
+import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
 import { MediFlowLoader } from "@mediflow/loader";
 
 export type AsyncStateProps =
@@ -28,28 +30,26 @@ export function AsyncState(props: AsyncStateProps) {
         className="mt-4 space-y-3 rounded-xl border border-danger/40 bg-surface p-4 text-sm text-danger"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p>{props.message}</p>
+          <p><L10nValue>{props.message}</L10nValue></p>
           <button
             type="button"
             onClick={props.onRetry}
             className="min-h-12 rounded-lg border border-danger/40 px-4 py-2 font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
-          >
-            Thử lại
-          </button>
+          ><L10n>{"Thử lại"}</L10n></button>
         </div>
-        {props.correlationId ? (
+        <L10nValue>{props.correlationId ? (
           <details className="text-xs text-muted-foreground">
-            <summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary>
-            <p className="mt-1 break-all">Mã theo dõi: <span className="font-mono">{props.correlationId}</span></p>
+            <summary className="min-h-8 cursor-pointer underline underline-offset-4"><L10n>{"Thông tin hỗ trợ"}</L10n></summary>
+            <p className="mt-1 break-all"><L10n>{"Mã theo dõi: "}</L10n><span className="font-mono">{props.correlationId}</span></p>
           </details>
-        ) : null}
+        ) : null}</L10nValue>
       </div>
     );
   }
 
   return (
     <p role="status" className="mt-4 py-4 text-sm text-muted-foreground">
-      {props.message}
+      <L10nValue>{props.message}</L10nValue>
     </p>
   );
 }

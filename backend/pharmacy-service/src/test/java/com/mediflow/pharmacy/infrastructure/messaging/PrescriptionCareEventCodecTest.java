@@ -124,7 +124,10 @@ class PrescriptionCareEventCodecTest {
                 type == EventType.FILLED ? UUID.randomUUID() : null, type == EventType.CREATED ? now : null,
                 type == EventType.FILLED ? now : null, type == EventType.DISPENSE_FAILED ? now : null,
                 type == EventType.CANCELLED ? now : null, type == EventType.EXPIRED ? now : null,
-                type == EventType.CREATED || type == EventType.FILLED ? null : "RESERVATION_RELEASED");
+                type == EventType.CREATED || type == EventType.FILLED || type == EventType.REVISED
+                        ? null : "RESERVATION_RELEASED",
+                type == EventType.REVISED ? UUID.randomUUID() : null, type == EventType.REVISED ? 0 : null,
+                type == EventType.REVISED ? 1 : null, type == EventType.REVISED ? now : null);
         return new PrescriptionCareEvent(UUID.randomUUID(), type, 1, now, "trace", "pharmacy-service", payload);
     }
 }

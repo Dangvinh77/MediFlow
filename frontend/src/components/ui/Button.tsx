@@ -1,3 +1,5 @@
+
+import { L10nValue } from "@/components/i18n/LocaleProvider";
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
@@ -23,7 +25,7 @@ export function Button({ variant = "secondary", loading = false, disabled, class
       aria-busy={loading || undefined}
       className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-55 ${variantClasses[variant]} ${className}`}
     >
-      {loading ? "Đang xử lý…" : children}
+      <L10nValue>{loading ? "Đang xử lý…" : children}</L10nValue>
     </button>
   );
 }
