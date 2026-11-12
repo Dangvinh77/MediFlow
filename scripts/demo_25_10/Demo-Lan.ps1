@@ -28,6 +28,21 @@ function Resolve-DemoNetwork([object[]]$Configurations, [string]$LanAddress, [sw
     return $candidates[0]
 }
 
+# Frontend only: the Gateway may run on another PC. Returns scheme://host:port; a trailing /api is
+# dropped because next.config.ts appends /api/:path* itself.
+function Resolve-DemoGatewayUrl([string]$GatewayUrl) {
+    if (-not $GatewayUrl) { return 'http://127.0.0.1:28080' }
+    $candidate = $GatewayUrl.Trim()
+    if ($candidate -notmatch '^[a-zA-Z][a-zA-Z0-9+.-]*://') { $candidate = "http://$candidate" }
+    $uri = $null
+    if (-not [Uri]::TryCreate($candidate, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -notin @('http', 'https') -or
+        -not $uri.Host -or $uri.UserInfo -or $uri.Query -or $uri.Fragment -or
+        $uri.AbsolutePath.TrimEnd('/') -notin @('', '/api')) {
+        throw "Invalid -GatewayUrl '$GatewayUrl'. Use the backend PC Gateway, for example http://172.16.2.55:28080."
+    }
+    return $uri.GetLeftPart([UriPartial]::Authority)
+}
+
 function Test-DemoAdministrator {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)

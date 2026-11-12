@@ -5,6 +5,8 @@ param(
     [switch]$Preview,
     [switch]$LocalOnly,
     [string]$LanAddress,
+    # Frontend only: Gateway on another PC, e.g. http://172.16.2.55:28080 (default: this PC).
+    [string]$GatewayUrl,
     [switch]$Fast,
     [switch]$Rebuild,
     [switch]$ResetData,
@@ -337,7 +339,8 @@ try {
             if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
             Require-Command 'node'
             Require-Command 'pnpm'
-            $env:GATEWAY_URL = 'http://127.0.0.1:28080'
+            $env:GATEWAY_URL = Resolve-DemoGatewayUrl $GatewayUrl
+            Write-Host "Gateway: $env:GATEWAY_URL"
             $env:MEDIFLOW_DEV_ALLOWED_ORIGINS = $network.Address
             $env:MEDIFLOW_SCHEDULING_UI_ENABLED = 'true'
             $env:MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED = 'true'
