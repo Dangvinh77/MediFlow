@@ -84,7 +84,7 @@ class UpdateDepartmentServiceTest {
         assertEquals("New Name", result.getDepartmentName());
         assertEquals("OLD", result.getAbbreviation());
         assertEquals(DepartmentType.ADMINISTRATIVE, result.getDepartmentType());
-        assertEquals("Building B", result.getLocation());
+        assertEquals("Building A", result.getLocation(), "the location follows the office room, never the request");
         verify(staffRepository, never()).findById(any());
     }
 

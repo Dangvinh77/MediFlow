@@ -93,12 +93,12 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
     setSaving(true); setError(null);
     const profile = { description: description.trim() || null, phoneNumber: phone.trim() || null, email: email.trim() || null };
     const draft: DepartmentSaveDraft = { departmentName: name.trim(), abbreviation: abbreviation.trim(),
-      departmentType: type, location: location.trim() || null, departmentHeadId: normalizedHead || null, active, profile };
+      departmentType: type, departmentHeadId: normalizedHead || null, active, profile };
     let completed = false;
     try {
       const department = departmentId
-        ? await organizationApi.updateDepartment(departmentId, { departmentName: name.trim(), departmentType: type, location: location.trim() || null, departmentHeadId: normalizedHead || null, active, profile })
-        : await organizationApi.createDepartment({ departmentName: name.trim(), abbreviation: abbreviation.trim(), departmentType: type, location: location.trim() || null, profile });
+        ? await organizationApi.updateDepartment(departmentId, { departmentName: name.trim(), departmentType: type, departmentHeadId: normalizedHead || null, active, profile })
+        : await organizationApi.createDepartment({ departmentName: name.trim(), abbreviation: abbreviation.trim(), departmentType: type, profile });
       if (!mounted.current || getSessionKey() !== sessionToken) return;
       completed = true;
       setSaved(true);
@@ -144,7 +144,7 @@ function DepartmentFormWorkspace({ departmentId }: Props) {
         <Field label={localize("Viết tắt")} htmlFor="department-abbreviation" required hint={editing ? "Mã viết tắt không đổi sau khi tạo." : undefined}><input id="department-abbreviation" required={!editing} disabled={editing} maxLength={20} value={abbreviation} onChange={(event) => setAbbreviation(event.target.value)} className={controlClassName} /></Field>
         <Field label={localize(`Loại ${unit}`)} htmlFor="department-type" required><select id="department-type" value={type} onChange={(event) => setType(event.target.value as DepartmentType)} className={controlClassName}><L10nValue>{departmentCategories.map((option) => <option key={option} value={option}><L10nValue>{departmentCategoryLabels[option]}</L10nValue></option>)}</L10nValue></select>
           <span className="mt-1 block text-xs font-normal text-muted-foreground">{departmentCategoryHints[type]}<L10nValue>{roomTypes ? ` Loại phòng của khối: ${roomTypesFor(roomTypes, type).map(row => row.name).join(", ") || "chưa có (thêm tại Danh mục khoa phòng)"}.` : ""}</L10nValue></span></Field>
-        <Field label={localize("Địa điểm")} htmlFor="department-location"><input id="department-location" maxLength={255} value={location} onChange={(event) => setLocation(event.target.value)} className={controlClassName} /></Field>
+        <Field label={localize("Địa điểm")} htmlFor="department-location" hint={type === "CLINICAL" ? "Địa điểm lấy theo văn phòng khoa; đổi bằng cách sửa vị trí văn phòng khoa ở trang chi tiết." : "Địa điểm lấy theo phòng làm việc chung của bộ phận ở trang chi tiết."}><input id="department-location" readOnly value={location || localize("Chưa có – chưa chỉ định văn phòng")} className={`${controlClassName} bg-surface-muted text-muted-foreground`} /></Field>
       </FormSection>
       <FormSection title={localize("Chức năng và liên hệ")} description={localize("Nhiệm vụ và đầu mối liên hệ của đơn vị.")}>
         <Field label={localize("Chức năng / nhiệm vụ")} htmlFor="department-description"><textarea id="department-description" rows={4} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} className={controlClassName} /></Field>

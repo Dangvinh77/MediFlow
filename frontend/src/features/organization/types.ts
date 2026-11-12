@@ -43,14 +43,12 @@ export interface CreateDepartmentRequest {
   departmentName: string;
   abbreviation: string;
   departmentType: DepartmentType;
-  location: string | null;
 }
 
 export interface UpdateDepartmentRequest {
   profile?: DepartmentProfile;
   departmentName: string;
   departmentType: DepartmentType;
-  location: string | null;
   departmentHeadId: string | null;
   active: boolean | null;
 }

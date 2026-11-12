@@ -7,14 +7,13 @@ export function isSaveOutcomeUnknown(cause: unknown) {
 }
 
 export type DepartmentSaveDraft = Pick<DepartmentDTO,
-  "departmentName" | "abbreviation" | "departmentType" | "location" | "departmentHeadId" | "active"
+  "departmentName" | "abbreviation" | "departmentType" | "departmentHeadId" | "active"
 > & { profile: DepartmentProfile };
 
 export function departmentMatchesDraft(current: DepartmentDTO, draft: DepartmentSaveDraft) {
   return current.departmentName === draft.departmentName
     && current.abbreviation === draft.abbreviation
     && current.departmentType === draft.departmentType
-    && current.location === draft.location
     && current.departmentHeadId === draft.departmentHeadId
     && current.active === draft.active
     && current.description === draft.profile.description

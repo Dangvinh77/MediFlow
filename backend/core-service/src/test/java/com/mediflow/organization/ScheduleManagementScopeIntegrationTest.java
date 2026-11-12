@@ -272,7 +272,11 @@ class ScheduleManagementScopeIntegrationTest {
         assertThat(first.getStatusCode().value()).isEqualTo(201);
         String firstId = mapper.readTree(first.getBody()).at("/data/roomId").asText();
         assertThat(create.apply("CONSULTATION", "102").getStatusCode().value()).isEqualTo(201);
-        assertThat(create.apply("DEPARTMENT_OFFICE", "110").getStatusCode().value()).isEqualTo(201);
+        var office = create.apply("DEPARTMENT_OFFICE", "110");
+        assertThat(office.getStatusCode().value()).isEqualTo(201);
+        String officeId = mapper.readTree(office.getBody()).at("/data/roomId").asText();
+        assertThat(jdbc.queryForObject("SELECT location FROM department WHERE department_id=?",
+                String.class, d.getDepartmentId())).as("location follows the office").isEqualTo("Tầng 1");
 
         var secondOffice = create.apply("DEPARTMENT_OFFICE", "111");
         assertThat(secondOffice.getStatusCode().value()).isEqualTo(422);
@@ -291,6 +295,21 @@ class ScheduleManagementScopeIntegrationTest {
                 entity(null, f.admin(), Role.ADMIN, null, "rooms-typed"), String.class);
         assertThat(mapper.readTree(typed.getBody()).at("/data").size()).isEqualTo(1);
 
+        // An active clinical department keeps its office and at least two consultation rooms.
+        var officeOff = http.exchange("/api/v1/org/rooms/" + officeId + "/status", HttpMethod.PUT,
+                entity("{\"active\":false}", f.admin(), Role.ADMIN, null, "office-off"), String.class);
+        assertThat(mapper.readTree(officeOff.getBody()).at("/error/code").asText()).isEqualTo("DEPARTMENT_OFFICE_REQUIRED");
+        var belowMinimum = http.exchange("/api/v1/org/rooms/" + firstId + "/status", HttpMethod.PUT,
+                entity("{\"active\":false}", f.admin(), Role.ADMIN, null, "room-off-min"), String.class);
+        assertThat(mapper.readTree(belowMinimum.getBody()).at("/error/code").asText()).isEqualTo("DEPARTMENT_CONSULTATION_MINIMUM");
+        assertThat(create.apply("CONSULTATION", "103").getStatusCode().value()).isEqualTo(201);
+        var movedOffice = http.exchange("/api/v1/org/rooms/" + officeId, HttpMethod.PUT,
+                entity("{\"roomNumber\":\"110\",\"roomName\":\"Office\",\"zone\":\"" + zone
+                        + "\",\"location\":\"Tầng 3\"}", f.admin(), Role.ADMIN, null, "office-move"), String.class);
+        assertThat(movedOffice.getStatusCode().value()).isEqualTo(200);
+        assertThat(jdbc.queryForObject("SELECT location FROM department WHERE department_id=?",
+                String.class, d.getDepartmentId())).isEqualTo("Tầng 3");
+
         var deactivated = http.exchange("/api/v1/org/rooms/" + firstId + "/status", HttpMethod.PUT,
                 entity("{\"active\":false}", f.admin(), Role.ADMIN, null, "room-off"), String.class);
         assertThat(mapper.readTree(deactivated.getBody()).at("/data/active").asBoolean()).isFalse();
@@ -304,7 +323,7 @@ class ScheduleManagementScopeIntegrationTest {
         var consultation = http.exchange("/api/v2/org/consultation-rooms?departmentId=" + d.getDepartmentId(),
                 HttpMethod.GET, entity(null, f.admin(), Role.ADMIN, null, "consult-rooms"), String.class);
         JsonNode content = mapper.readTree(consultation.getBody()).at("/data/content");
-        assertThat(content.size()).isEqualTo(1);
+        assertThat(content.size()).isEqualTo(2);
         assertThat(content.get(0).get("roomNumber").asText()).isEqualTo("102");
         assertThat(content.get(0).get("zone").asText()).isEqualTo(zone);
     }

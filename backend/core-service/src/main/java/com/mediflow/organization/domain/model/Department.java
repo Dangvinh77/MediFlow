@@ -132,6 +132,21 @@ public class Department {
         touch();
     }
 
+    /**
+     * The department's location is not typed by hand: it follows the location of its office room
+     * (the department office of a clinical department, the single workplace of any other unit).
+     * {@code null} means the office has not been chosen yet.
+     */
+    public void relocate(String officeLocation) {
+        String next = officeLocation == null || officeLocation.isBlank() ? null : officeLocation.trim();
+        if (next != null && next.length() > 255) {
+            throw new InvalidDepartmentException("Department location must not exceed 255 characters");
+        }
+        if (java.util.Objects.equals(next, location)) return;
+        this.location = next;
+        touch();
+    }
+
         public void changeHead(Staff staff) {
 
         if (staff == null) {

@@ -44,6 +44,8 @@ export const roomErrorMessages: Record<string, string> = {
   ROOM_NUMBER_DUPLICATE: "Số phòng đã tồn tại trong khu này.",
   ROOM_DEPARTMENT_INACTIVE: "Khoa/bộ phận đã ngừng hoạt động nên không thể gán phòng.",
   ROOM_NOT_FOUND: "Không tìm thấy phòng làm việc.",
+  DEPARTMENT_OFFICE_REQUIRED: "Khoa đang hoạt động phải luôn có văn phòng khoa. Muốn chuyển văn phòng, hãy sửa số phòng, khu và vị trí của văn phòng này.",
+  DEPARTMENT_CONSULTATION_MINIMUM: "Khoa đang hoạt động phải có ít nhất 2 phòng khám đang sử dụng. Hãy thêm phòng khám khác trước khi ngừng phòng này.",
   ROOM_TYPE_DUPLICATE: "Tên loại phòng đã tồn tại trong danh mục.",
   ROOM_TYPE_IN_USE: "Loại phòng đang được phòng làm việc sử dụng (kể cả phòng đã ngừng) nên không thể xóa.",
   ROOM_TYPE_SYSTEM: "Phòng khám là loại phòng hệ thống dùng để lập buổi khám nên không thể xóa.",

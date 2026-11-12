@@ -58,14 +58,12 @@ export const createDepartmentRequestFixture = {
   departmentName: "Clinical",
   abbreviation: "CLN",
   departmentType: "CLINICAL",
-  location: null,
 } satisfies CreateDepartmentRequest;
 
 /** Explicit null clears the department head on PUT /departments/{id}. */
 export const updateDepartmentRequestFixture = {
   departmentName: "Clinical",
   departmentType: "CLINICAL",
-  location: null,
   departmentHeadId: null,
   active: null,
 } satisfies UpdateDepartmentRequest;

@@ -61,8 +61,8 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
   }, [departmentId, doctorAttempt]);
   function toggleDoctor(id: string) {
     markDirty(); setRevoke(false); setPreview(false);
-    // One department has one head: checking a doctor clears any other choice.
-    setStaffId(current => current === id ? "" : id);
+    // One department has one head: a single radio choice.
+    setStaffId(id);
   }
   useEffect(() => {
     let alive = true;
@@ -112,11 +112,10 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
     <L10nValue>{!snapshot ? <><AsyncState kind="loading" message={localize("Đang tải bổ nhiệm…")} /><L10nValue>{error ? <Button onClick={() => { setError(""); setAttempt(value => value + 1); }}><L10n>{"Tải lại bổ nhiệm"}</L10n></Button> : null}</L10nValue></> : <>
       <p className="text-sm"><L10n>{"Trưởng khoa đương nhiệm"}</L10n></p>
       <L10nValue>{snapshot.staffId ? <ReferenceText kind="doctor" value={snapshot.staffId} /> : <p className="text-sm text-muted-foreground"><L10n>{"Chưa có trưởng khoa đương nhiệm."}</L10n></p>}</L10nValue>
-      <p className="text-xs text-muted-foreground"><L10n>{"Phiên bản "}</L10n>{snapshot.revision}</p>
       <form onSubmit={event => { event.preventDefault(); void save(); }} onChangeCapture={markDirty} className="space-y-4">
         <fieldset disabled={busy || Boolean(pending)} className="space-y-3">
           <legend className="text-sm font-medium"><L10n>{"Bác sĩ của khoa"}</L10n></legend>
-          <p className="text-xs text-muted-foreground"><L10n>{"Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa."}</L10n></p>
+          <p className="text-xs text-muted-foreground"><L10n>{"Chọn một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa."}</L10n></p>
           <L10nValue>{doctorError ? <AsyncState kind="error" message={localize(doctorError)} onRetry={() => { setDoctorError(""); setDoctors(null); setDoctorAttempt(value => value + 1); }} />
             : !doctors ? <AsyncState kind="loading" message={localize("Đang tải bác sĩ của khoa…")} />
             : doctors.length === 0 ? <AsyncState kind="empty" message={localize("Khoa chưa có bác sĩ đang làm việc.")} />
@@ -124,7 +123,7 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
               <caption className="sr-only"><L10n>{"Chọn bác sĩ để bổ nhiệm hoặc miễn nhiệm"}</L10n></caption>
               <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only"><L10n>{"Chọn"}</L10n></span></th><th scope="col" className="px-3 py-2"><L10n>{"Họ tên"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chuyên môn"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chức vụ"}</L10n></th></tr></thead>
               <tbody><L10nValue>{doctors.map(doctor => <tr key={doctor.staffId} className={`border-t border-border ${staffId === doctor.staffId ? "bg-primary/5" : ""}`}>
-                <td className="px-3 py-2"><input type="checkbox" aria-label={localize(`Chọn ${doctor.fullName}`)} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
+                <td className="px-3 py-2"><input type="radio" name={`head-candidate-${departmentId}`} aria-label={localize(`Chọn ${doctor.fullName}`)} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
                 <td className="px-3 py-2 font-medium">{doctor.fullName}</td>
                 <td className="px-3 py-2"><L10nValue>{doctor.specialization || "Chưa cập nhật"}</L10nValue></td>
                 <td className="px-3 py-2"><L10nValue>{snapshot.staffId === doctor.staffId ? <StatusBadge tone="success"><L10n>{"Trưởng khoa đương nhiệm"}</L10n></StatusBadge> : <span className="text-muted-foreground"><L10n>{"Bác sĩ"}</L10n></span>}</L10nValue></td>

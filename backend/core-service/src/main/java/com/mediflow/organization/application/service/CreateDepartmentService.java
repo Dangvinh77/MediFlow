@@ -68,7 +68,8 @@ public class CreateDepartmentService
                                 departmentName,
                                 abbreviation,
                                 departmentType,
-                                location);
+                                // The location follows the office room chosen later.
+                                null);
 
                 /*
                  */

@@ -539,6 +539,8 @@ const messagesEn = <String, String>{
       "There are no documents for this examination.",
   "Chưa có tài liệu của lượt khám.":
       "There are no documents of the examination.",
+  "Chưa có văn phòng khoa – địa điểm khoa đang để trống.":
+      "No department office yet – the department location is empty.",
   "Chưa có xác nhận": "No confirmation yet",
   "Chưa có xác nhận thanh toán hợp lệ để xuất thuốc.{0}":
       "There is no valid payment confirmation to release the medicine.{0}",
@@ -555,6 +557,7 @@ const messagesEn = <String, String>{
       "There is no recommendation for re-examination for this file.",
   "Chưa có đề xuất tái khám.": "There is no recommendation for re-examination.",
   "Chưa có đợt điều trị.": "No treatment yet.",
+  "Chưa có – chưa chỉ định văn phòng": "None yet – no office assigned",
   "Chưa cấp số trước khi xác nhận": "No number issued before confirmation",
   "Chưa cấp trước khi xác nhận": "Not issued before confirmation",
   "Chưa cập nhật": "Not updated yet",
@@ -907,6 +910,7 @@ const messagesEn = <String, String>{
   "Chọn lượt đã kết thúc và ghi lý do quay lại.":
       "Select the finished turn and write down the reason for returning.",
   "Chọn lịch hẹn từ danh sách.": "Select an appointment from the list.",
+  "Chọn một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.": "Select a doctor, then click Appoint. Only physicians with active accounts are eligible; Each department has only one dean.",
   "Chọn một bệnh nhân hợp lệ.": "Select a valid patient.",
   "Chọn một dịch vụ trong danh mục để lập chỉ định gắn với hồ sơ đang khám.": "Select a service in the list to create an order associated with the record being examined.",
   "Chọn một dịch vụ xét nghiệm trong danh mục.":
@@ -1728,6 +1732,8 @@ const messagesEn = <String, String>{
   "Khoa chưa có bác sĩ đang làm việc.":
       "The department does not have a working doctor yet.",
   "Khoa chưa có phòng khám được hoạch định. Quản trị viên thêm phòng tại Tổ chức → Phòng làm việc.": "The department does not have a planned clinic yet. Administrators add rooms at Organization → Workrooms.",
+  "Khoa chưa đủ điều kiện hoạt động":
+      "The department does not yet meet its operating requirements",
   "Khoa chỉ định": "Designated faculty",
   "Khoa công tác": "Faculty of work",
   "Khoa công tác, chức danh và thông tin hành nghề.":
@@ -1747,10 +1753,14 @@ const messagesEn = <String, String>{
   "Khoa phòng không hợp lệ.": "Invalid room department.",
   "Khoa phụ trách": "Faculty in charge",
   "Khoa yêu cầu": "Faculty requested",
+  "Khoa đang hoạt động phải có ít nhất 2 phòng khám đang sử dụng. Hãy thêm phòng khám khác trước khi ngừng phòng này.": "An active department must keep at least 2 consultation rooms in use. Add another consultation room before stopping this one.",
+  "Khoa đang hoạt động phải luôn có văn phòng khoa. Muốn chuyển văn phòng, hãy sửa số phòng, khu và vị trí của văn phòng này.": "An active department must always have its department office. To move the office, edit its room number, zone and location.",
   "Khoa đã có một phòng đang hoạt động thuộc loại này; loại phòng này chỉ cho phép một phòng mỗi khoa.": "The department already has an active department of this type; This room type only allows one room per department.",
   "Khoa được bổ nhiệm": "Faculty are appointed",
   "Khoa được lấy theo bác sĩ, không chọn riêng.":
       "Departments are chosen according to the doctor, not individually.",
+  "Khoa đủ điều kiện hoạt động":
+      "The department meets its operating requirements",
   "Khoa, nhân sự và hồ sơ định danh":
       "Faculty, personnel and identification records",
   "Khoa/bộ phận thuộc khối này làm việc tại đúng một phòng.":
@@ -2938,6 +2948,7 @@ const messagesEn = <String, String>{
   "Ngừng hoạt động": "Stop working",
   "Ngừng nhận": "Stop receiving",
   "Ngừng sử dụng": "Stop using",
+  "Ngừng sử dụng phòng {0} – {1}? Phòng sẽ không nhận đăng ký khám mới; bệnh nhân đã đặt lịch tại phòng này cần được dời lịch.": "Stop using room {0} – {1}? The room will not accept new consultation registrations; patients already booked in this room need to be rescheduled.",
   "Ngữ cảnh chỉ định xét nghiệm": "Context of test indication",
   "Ngữ cảnh hồ sơ khám": "Context of examination records",
   "Ngữ cảnh lượt khám": "Context of visit",
@@ -3209,6 +3220,8 @@ const messagesEn = <String, String>{
   "Phòng khám": "Clinic",
   "Phòng khám là loại phòng hệ thống dùng để lập buổi khám nên không thể xóa.": "The examination room is the type of room the system uses to set up examination sessions, so it cannot be deleted.",
   "Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.": "The clinic is allocated to departments, department offices and workplaces of paraclinical departments and functional rooms. Room types are managed in the Room Category.",
+  "Phòng khám đang sử dụng: {0}/2 tối thiểu":
+      "Consultation rooms in use: {0}/2 minimum",
   "Phòng khám, văn phòng khoa và nơi làm việc của bộ phận":
       "Clinic, department office and department workplace",
   "Phòng làm việc": "Working room",
@@ -4778,10 +4791,10 @@ const messagesEn = <String, String>{
   "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ.": "The nurse or administrator can edit the patient email after verification. Email records will be synchronized.",
   "Điều hướng nghiệp vụ": "Professional navigation",
   "Điều hướng phân hệ Dược": "Navigate the Pharmacy module",
+  "Điều kiện hoạt động của khoa": "Department operating requirements",
   "Điện thoại": "Phone",
   "Điện thoại / máy lẻ": "Telephone/ext",
   "Điện thoại:": "Phone:",
-  "Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.": "Highlight a doctor and then click Appoint. Only physicians with active accounts are eligible; Each department has only one dean.",
   "Đánh dấu nhập nhầm": "Mark the wrong entry",
   "Đánh dấu đã hết dị ứng": "Marked allergy gone",
   "Đánh dấu “": "Mark “",
@@ -4801,6 +4814,7 @@ const messagesEn = <String, String>{
   "Đã chốt phí": "Fees have been fixed",
   "Đã có kết quả": "The results are out",
   "Đã có sinh hiệu": "There is a vital sign",
+  "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.": "Department office assigned – the department location follows this office.",
   "Đã có xác nhận": "Confirmed",
   "Đã cấp lại mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập.": "Temporary password has been reissued. Users will receive instructions via email and must change their password when logging in.",
   "Đã cấp phát": "Allocated",
@@ -5082,6 +5096,8 @@ const messagesEn = <String, String>{
   "Địa điểm": "Location",
   "Địa điểm (phòng làm việc chung)": "Location (shared office)",
   "Địa điểm (văn phòng chung của khoa)": "Location (faculty general office)",
+  "Địa điểm lấy theo phòng làm việc chung của bộ phận ở trang chi tiết.": "The location follows the unit's shared workplace room on the detail page.",
+  "Địa điểm lấy theo văn phòng khoa; đổi bằng cách sửa vị trí văn phòng khoa ở trang chi tiết.": "The location follows the department office; change it by editing the office location on the detail page.",
   "Địa điểm tối đa 255 ký tự.": "Location maximum 255 characters.",
   "Định danh không hợp lệ.": "Invalid identifier.",
   "Định danh xét nghiệm không hợp lệ.": "Invalid test identifier.",

@@ -23,6 +23,10 @@ import java.util.UUID;
  * department's category, a paraclinical or administrative unit works in exactly one active room,
  * a clinical department keeps at most one active room of each single-room type (its office),
  * and a room number is unique within its zone. Department and type never change after creation.
+ * The department's location follows its office room (the department office of a clinical
+ * department, the single workplace of any other unit). An active clinical department cannot stop
+ * its office, nor stop a consultation room once that would leave it with fewer than
+ * {@link RoomTypeDefinition#MIN_CONSULTATION_ROOMS}.
  */
 @Transactional("organizationTransactionManager")
 public class ManageRoomsService implements ManageRoomsUseCase {
@@ -74,17 +78,24 @@ public class ManageRoomsService implements ManageRoomsUseCase {
                 details.placement().zone(), details.placement().location());
         requireWorkplaceSlot(room, department, type);
         requireUniqueNumber(room);
-        return rooms.save(room);
+        Room saved = rooms.save(room);
+        followOffice(department, saved);
+        return saved;
     }
 
     @Override
     public Room update(UUID roomId, RoomPlacement placement) {
         if (placement == null) throw new InvalidRoomException("Room placement is required");
+        Room current = rooms.findById(roomId).orElseThrow(ManageRoomsService::roomNotFound);
+        Department department = departments.findByIdForUpdate(current.getDepartmentId())
+                .orElseThrow(() -> new DepartmentNotFoundException(current.getDepartmentId()));
         Room room = rooms.lockById(roomId).orElseThrow(ManageRoomsService::roomNotFound);
         room.update(placement.roomNumber(), placement.roomName(), placement.zone(),
                 placement.location());
         requireUniqueNumber(room);
-        return rooms.save(room);
+        Room saved = rooms.save(room);
+        if (saved.isActive()) followOffice(department, saved);
+        return saved;
     }
 
     @Override
@@ -102,9 +113,45 @@ public class ManageRoomsService implements ManageRoomsUseCase {
             requireWorkplaceSlot(room, department, type);
             room.activate();
         } else {
+            requireMinimumKept(room, department);
             room.deactivate();
         }
-        return rooms.save(room);
+        Room saved = rooms.save(room);
+        followOffice(department, saved);
+        return saved;
+    }
+
+    private static boolean isOffice(Room room, Department department) {
+        return department.getDepartmentType() != DepartmentType.CLINICAL
+                || RoomTypeDefinition.DEPARTMENT_OFFICE.equals(room.getRoomType());
+    }
+
+    /** Keeps the department's location equal to its active office room's location. */
+    private void followOffice(Department department, Room room) {
+        if (!isOffice(room, department)) return;
+        String before = department.getLocation();
+        department.relocate(room.isActive() ? room.getLocation() : null);
+        if (!java.util.Objects.equals(before, department.getLocation())) departments.save(department);
+    }
+
+    private void requireMinimumKept(Room room, Department department) {
+        if (!department.isActive() || department.getDepartmentType() != DepartmentType.CLINICAL) return;
+        if (RoomTypeDefinition.DEPARTMENT_OFFICE.equals(room.getRoomType())) {
+            throw new BusinessRuleException("DEPARTMENT_OFFICE_REQUIRED",
+                    "An active clinical department keeps its office; edit the office placement to move it");
+        }
+        if (RoomTypeDefinition.CONSULTATION.equals(room.getRoomType())) {
+            long remaining = rooms.findActiveByDepartment(room.getDepartmentId(), room.getRoomId())
+                    .stream().filter(other -> RoomTypeDefinition.CONSULTATION.equals(other.getRoomType()))
+                    .count();
+            if (remaining + 1 >= RoomTypeDefinition.MIN_CONSULTATION_ROOMS
+                    && remaining < RoomTypeDefinition.MIN_CONSULTATION_ROOMS) {
+                throw new BusinessRuleException("DEPARTMENT_CONSULTATION_MINIMUM",
+                        "An active clinical department keeps at least "
+                                + RoomTypeDefinition.MIN_CONSULTATION_ROOMS
+                                + " consultation rooms; add another room before stopping this one");
+            }
+        }
     }
 
     private void requireWorkplaceSlot(Room room, Department department, RoomTypeDefinition type) {

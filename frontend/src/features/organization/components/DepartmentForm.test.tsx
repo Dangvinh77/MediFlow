@@ -168,7 +168,7 @@ describe("DepartmentForm", () => {
       departmentName: "Clinical",
       abbreviation: "CLN",
       departmentType: "CLINICAL",
-      location: null, profile: { description: null, phoneNumber: null, email: null },
+      profile: { description: null, phoneNumber: null, email: null },
     }));
     expect(mocks.router.push).toHaveBeenCalledWith(
       `/organization/departments/${departmentContractFixture.departmentId}?notice=created`,
@@ -184,14 +184,14 @@ describe("DepartmentForm", () => {
     render(<DepartmentForm departmentId={departmentContractFixture.departmentId} />);
     await screen.findByDisplayValue("Clinical");
     expect(screen.queryByLabelText(/Mã trưởng khoa/)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Địa điểm/), { target: { value: "  West Wing  " } });
+    expect(screen.getByLabelText(/Địa điểm/)).toHaveAttribute("readonly");
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.updateDepartment).toHaveBeenCalledWith(
       departmentContractFixture.departmentId,
       {
         departmentName: "Clinical",
         departmentType: "CLINICAL",
-        location: "West Wing", profile: { description: null, phoneNumber: null, email: null },
+        profile: { description: null, phoneNumber: null, email: null },
         departmentHeadId: "00000000-0000-4000-8000-000000000009",
         active: true,
       },

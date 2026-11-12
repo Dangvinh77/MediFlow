@@ -76,7 +76,8 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
                     "A department with workplace rooms cannot change its category");
         }
 
-        department.update(departmentName, department.getAbbreviation(), departmentType, location);
+        // The location follows the office room; it is never typed here.
+        department.update(departmentName, department.getAbbreviation(), departmentType, department.getLocation());
 
         if (active != null && active != department.isActive()) {
             if (active) {

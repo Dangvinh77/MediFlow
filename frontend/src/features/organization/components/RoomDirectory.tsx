@@ -44,7 +44,7 @@ const normalize = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, ""
  * each department, and the single workplace of each paraclinical or administrative unit. Room
  * types come from the administrator-managed catalogue. Admins create and edit.
  */
-export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: DepartmentDTO }) {
+export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepartment?: DepartmentDTO; onRoomsChanged?: () => void }) {
   const { localize } = useLocale();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const admin = role === "ADMIN";
@@ -126,6 +126,7 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
       setRooms(current => current ? [saved, ...current.filter(room => room.roomId !== saved.roomId)] : [saved]);
       setNotice(form.roomId ? "Đã cập nhật phòng làm việc." : "Đã thêm phòng làm việc.");
       setForm(null);
+      onRoomsChanged?.();
     } catch (cause) {
       setFormError(messageFrom(cause, "Không thể lưu phòng làm việc."));
     } finally { setSaving(false); }
@@ -133,16 +134,23 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
 
   async function toggle(room: RoomDTO) {
     setNotice(null); setError(null);
+    if (room.active && !window.confirm(localize(`Ngừng sử dụng phòng ${room.roomNumber} – ${room.roomName}? Phòng sẽ không nhận đăng ký khám mới; bệnh nhân đã đặt lịch tại phòng này cần được dời lịch.`))) return;
     try {
       const saved = await organizationApi.changeRoomStatus(room.roomId, !room.active);
       setRooms(current => current?.map(item => item.roomId === saved.roomId ? saved : item) ?? null);
       setNotice(saved.active ? "Đã mở lại phòng." : "Đã ngừng sử dụng phòng.");
+      onRoomsChanged?.();
     } catch (cause) {
       setNotice(null); setFormError(messageFrom(cause, "Không thể đổi trạng thái phòng."));
     }
   }
 
   const title = fixedDepartment ? "Phòng làm việc của đơn vị" : "Phòng làm việc";
+  // An operating clinical department needs its office and at least two consultation rooms.
+  const readiness = fixedDepartment?.departmentType === "CLINICAL" && rooms ? {
+    office: rooms.some(room => room.active && room.roomType === "DEPARTMENT_OFFICE"),
+    consultations: rooms.filter(room => room.active && room.roomType === "CONSULTATION").length,
+  } : null;
   const description = fixedDepartment
     ? fixedDepartment.departmentType === "CLINICAL"
       ? "Các phòng khám được hoạch định cho khoa và văn phòng chung của khoa."
@@ -150,6 +158,13 @@ export function RoomDirectory({ fixedDepartment }: { fixedDepartment?: Departmen
     : "Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.";
 
   return <DirectorySection title={localize(title)} description={localize(description)} actions={admin && !form ? <Button variant="primary" onClick={startCreate}><L10n>{"Thêm phòng làm việc"}</L10n></Button> : undefined}>
+    <L10nValue>{readiness ? <div aria-label={localize("Điều kiện hoạt động của khoa")} className={`mx-5 mb-4 rounded-lg border p-3 text-sm ${readiness.office && readiness.consultations >= 2 ? "border-success/40 bg-success/10" : "border-warning/40 bg-warning/10"}`}>
+      <p className="font-semibold"><L10nValue>{readiness.office && readiness.consultations >= 2 ? "Khoa đủ điều kiện hoạt động" : "Khoa chưa đủ điều kiện hoạt động"}</L10nValue></p>
+      <ul className="mt-1 list-disc pl-5">
+        <li><L10nValue>{readiness.office ? "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này." : "Chưa có văn phòng khoa – địa điểm khoa đang để trống."}</L10nValue></li>
+        <li><L10n>{`Phòng khám đang sử dụng: ${readiness.consultations}/2 tối thiểu`}</L10n></li>
+      </ul>
+    </div> : null}</L10nValue>
     <L10nValue>{notice ? <p role="status" className="mx-5 mb-4 rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
     <L10nValue>{form ? <form aria-label={localize(form.roomId ? "Sửa phòng làm việc" : "Thêm phòng làm việc")} onSubmit={save} noValidate className="grid gap-4 border-t border-border p-5 md:grid-cols-2 xl:grid-cols-3">
       <Field label={localize("Khoa / bộ phận")} htmlFor="room-department" required>

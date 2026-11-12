@@ -535,6 +535,8 @@ const messagesVi = <String, String>{
   "Chưa có tài khoản đăng nhập": "Chưa có tài khoản đăng nhập",
   "Chưa có tài liệu cho lượt khám này.": "Chưa có tài liệu cho lượt khám này.",
   "Chưa có tài liệu của lượt khám.": "Chưa có tài liệu của lượt khám.",
+  "Chưa có văn phòng khoa – địa điểm khoa đang để trống.":
+      "Chưa có văn phòng khoa – địa điểm khoa đang để trống.",
   "Chưa có xác nhận": "Chưa có xác nhận",
   "Chưa có xác nhận thanh toán hợp lệ để xuất thuốc.{0}":
       "Chưa có xác nhận thanh toán hợp lệ để xuất thuốc.{0}",
@@ -551,6 +553,7 @@ const messagesVi = <String, String>{
       "Chưa có đề xuất tái khám cho hồ sơ này.",
   "Chưa có đề xuất tái khám.": "Chưa có đề xuất tái khám.",
   "Chưa có đợt điều trị.": "Chưa có đợt điều trị.",
+  "Chưa có – chưa chỉ định văn phòng": "Chưa có – chưa chỉ định văn phòng",
   "Chưa cấp số trước khi xác nhận": "Chưa cấp số trước khi xác nhận",
   "Chưa cấp trước khi xác nhận": "Chưa cấp trước khi xác nhận",
   "Chưa cập nhật": "Chưa cập nhật",
@@ -920,6 +923,7 @@ const messagesVi = <String, String>{
   "Chọn lượt đã kết thúc và ghi lý do quay lại.":
       "Chọn lượt đã kết thúc và ghi lý do quay lại.",
   "Chọn lịch hẹn từ danh sách.": "Chọn lịch hẹn từ danh sách.",
+  "Chọn một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.": "Chọn một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.",
   "Chọn một bệnh nhân hợp lệ.": "Chọn một bệnh nhân hợp lệ.",
   "Chọn một dịch vụ trong danh mục để lập chỉ định gắn với hồ sơ đang khám.": "Chọn một dịch vụ trong danh mục để lập chỉ định gắn với hồ sơ đang khám.",
   "Chọn một dịch vụ xét nghiệm trong danh mục.":
@@ -1758,6 +1762,7 @@ const messagesVi = <String, String>{
   "Khoa buổi khám": "Khoa buổi khám",
   "Khoa chưa có bác sĩ đang làm việc.": "Khoa chưa có bác sĩ đang làm việc.",
   "Khoa chưa có phòng khám được hoạch định. Quản trị viên thêm phòng tại Tổ chức → Phòng làm việc.": "Khoa chưa có phòng khám được hoạch định. Quản trị viên thêm phòng tại Tổ chức → Phòng làm việc.",
+  "Khoa chưa đủ điều kiện hoạt động": "Khoa chưa đủ điều kiện hoạt động",
   "Khoa chỉ định": "Khoa chỉ định",
   "Khoa công tác": "Khoa công tác",
   "Khoa công tác, chức danh và thông tin hành nghề.":
@@ -1777,10 +1782,13 @@ const messagesVi = <String, String>{
   "Khoa phòng không hợp lệ.": "Khoa phòng không hợp lệ.",
   "Khoa phụ trách": "Khoa phụ trách",
   "Khoa yêu cầu": "Khoa yêu cầu",
+  "Khoa đang hoạt động phải có ít nhất 2 phòng khám đang sử dụng. Hãy thêm phòng khám khác trước khi ngừng phòng này.": "Khoa đang hoạt động phải có ít nhất 2 phòng khám đang sử dụng. Hãy thêm phòng khám khác trước khi ngừng phòng này.",
+  "Khoa đang hoạt động phải luôn có văn phòng khoa. Muốn chuyển văn phòng, hãy sửa số phòng, khu và vị trí của văn phòng này.": "Khoa đang hoạt động phải luôn có văn phòng khoa. Muốn chuyển văn phòng, hãy sửa số phòng, khu và vị trí của văn phòng này.",
   "Khoa đã có một phòng đang hoạt động thuộc loại này; loại phòng này chỉ cho phép một phòng mỗi khoa.": "Khoa đã có một phòng đang hoạt động thuộc loại này; loại phòng này chỉ cho phép một phòng mỗi khoa.",
   "Khoa được bổ nhiệm": "Khoa được bổ nhiệm",
   "Khoa được lấy theo bác sĩ, không chọn riêng.":
       "Khoa được lấy theo bác sĩ, không chọn riêng.",
+  "Khoa đủ điều kiện hoạt động": "Khoa đủ điều kiện hoạt động",
   "Khoa, nhân sự và hồ sơ định danh": "Khoa, nhân sự và hồ sơ định danh",
   "Khoa/bộ phận thuộc khối này làm việc tại đúng một phòng.":
       "Khoa/bộ phận thuộc khối này làm việc tại đúng một phòng.",
@@ -2969,6 +2977,7 @@ const messagesVi = <String, String>{
   "Ngừng hoạt động": "Ngừng hoạt động",
   "Ngừng nhận": "Ngừng nhận",
   "Ngừng sử dụng": "Ngừng sử dụng",
+  "Ngừng sử dụng phòng {0} – {1}? Phòng sẽ không nhận đăng ký khám mới; bệnh nhân đã đặt lịch tại phòng này cần được dời lịch.": "Ngừng sử dụng phòng {0} – {1}? Phòng sẽ không nhận đăng ký khám mới; bệnh nhân đã đặt lịch tại phòng này cần được dời lịch.",
   "Ngữ cảnh chỉ định xét nghiệm": "Ngữ cảnh chỉ định xét nghiệm",
   "Ngữ cảnh hồ sơ khám": "Ngữ cảnh hồ sơ khám",
   "Ngữ cảnh lượt khám": "Ngữ cảnh lượt khám",
@@ -3238,6 +3247,8 @@ const messagesVi = <String, String>{
   "Phòng khám": "Phòng khám",
   "Phòng khám là loại phòng hệ thống dùng để lập buổi khám nên không thể xóa.": "Phòng khám là loại phòng hệ thống dùng để lập buổi khám nên không thể xóa.",
   "Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.": "Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.",
+  "Phòng khám đang sử dụng: {0}/2 tối thiểu":
+      "Phòng khám đang sử dụng: {0}/2 tối thiểu",
   "Phòng khám, văn phòng khoa và nơi làm việc của bộ phận":
       "Phòng khám, văn phòng khoa và nơi làm việc của bộ phận",
   "Phòng làm việc": "Phòng làm việc",
@@ -4819,10 +4830,10 @@ const messagesVi = <String, String>{
   "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ.": "Điều dưỡng hoặc quản trị viên có thể sửa email bệnh nhân sau khi xác minh. Email hồ sơ sẽ được đồng bộ.",
   "Điều hướng nghiệp vụ": "Điều hướng nghiệp vụ",
   "Điều hướng phân hệ Dược": "Điều hướng phân hệ Dược",
+  "Điều kiện hoạt động của khoa": "Điều kiện hoạt động của khoa",
   "Điện thoại": "Điện thoại",
   "Điện thoại / máy lẻ": "Điện thoại / máy lẻ",
   "Điện thoại:": "Điện thoại:",
-  "Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.": "Đánh dấu một bác sĩ rồi bấm Bổ nhiệm. Chỉ bác sĩ có tài khoản đang hoạt động mới đủ điều kiện; mỗi khoa chỉ có một trưởng khoa.",
   "Đánh dấu nhập nhầm": "Đánh dấu nhập nhầm",
   "Đánh dấu đã hết dị ứng": "Đánh dấu đã hết dị ứng",
   "Đánh dấu “": "Đánh dấu “",
@@ -4842,6 +4853,8 @@ const messagesVi = <String, String>{
   "Đã chốt phí": "Đã chốt phí",
   "Đã có kết quả": "Đã có kết quả",
   "Đã có sinh hiệu": "Đã có sinh hiệu",
+  "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.":
+      "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.",
   "Đã có xác nhận": "Đã có xác nhận",
   "Đã cấp lại mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập.": "Đã cấp lại mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập.",
   "Đã cấp phát": "Đã cấp phát",
@@ -5123,6 +5136,9 @@ const messagesVi = <String, String>{
   "Địa điểm": "Địa điểm",
   "Địa điểm (phòng làm việc chung)": "Địa điểm (phòng làm việc chung)",
   "Địa điểm (văn phòng chung của khoa)": "Địa điểm (văn phòng chung của khoa)",
+  "Địa điểm lấy theo phòng làm việc chung của bộ phận ở trang chi tiết.":
+      "Địa điểm lấy theo phòng làm việc chung của bộ phận ở trang chi tiết.",
+  "Địa điểm lấy theo văn phòng khoa; đổi bằng cách sửa vị trí văn phòng khoa ở trang chi tiết.": "Địa điểm lấy theo văn phòng khoa; đổi bằng cách sửa vị trí văn phòng khoa ở trang chi tiết.",
   "Địa điểm tối đa 255 ký tự.": "Địa điểm tối đa 255 ký tự.",
   "Định danh không hợp lệ.": "Định danh không hợp lệ.",
   "Định danh xét nghiệm không hợp lệ.": "Định danh xét nghiệm không hợp lệ.",

@@ -189,6 +189,7 @@ class ManageRoomsServiceTest {
     void updateChangesPlacementButKeepsDepartmentAndType() {
         Department clinical = department(DepartmentType.CLINICAL);
         Room room = room(clinical, "CONSULTATION");
+        when(rooms.findById(room.getRoomId())).thenReturn(Optional.of(room));
         when(rooms.lockById(room.getRoomId())).thenReturn(Optional.of(room));
         when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
 
@@ -236,6 +237,66 @@ class ManageRoomsServiceTest {
     private static RoomTypeDefinition type(String code, String name, DepartmentType category,
                                            boolean single, boolean system) {
         return RoomTypeDefinition.reconstitute(code, name, null, category, single, system, 10, null, null);
+    }
+
+    @Test
+    void departmentLocationFollowsItsOfficeRoom() {
+        Department clinical = department(DepartmentType.CLINICAL);
+        clinical.relocate(null);
+        when(rooms.findActiveByDepartment(eq(clinical.getDepartmentId()), any())).thenReturn(List.of());
+        when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        service.create(new RoomDetails(clinical.getDepartmentId(), "CONSULTATION", PLACEMENT));
+        assertThat(clinical.getLocation()).as("a consultation room is not the office").isNull();
+
+        Room office = service.create(new RoomDetails(clinical.getDepartmentId(), "DEPARTMENT_OFFICE",
+                new RoomPlacement("110", "Văn phòng khoa", "Khu A", "Tầng 1, Khu A")));
+        assertThat(clinical.getLocation()).isEqualTo("Tầng 1, Khu A");
+
+        when(rooms.findById(office.getRoomId())).thenReturn(Optional.of(office));
+        when(rooms.lockById(office.getRoomId())).thenReturn(Optional.of(office));
+        service.update(office.getRoomId(), new RoomPlacement("310", "Văn phòng khoa", "Khu A", "Tầng 3, Khu A"));
+        assertThat(clinical.getLocation()).isEqualTo("Tầng 3, Khu A");
+        verify(departments, org.mockito.Mockito.atLeastOnce()).save(clinical);
+    }
+
+    @Test
+    void activeClinicalDepartmentKeepsItsOfficeAndTwoConsultationRooms() {
+        Department clinical = department(DepartmentType.CLINICAL);
+        Room office = room(clinical, "DEPARTMENT_OFFICE");
+        Room first = room(clinical, "CONSULTATION");
+        Room second = room(clinical, "CONSULTATION");
+        for (Room each : List.of(office, first, second)) {
+            when(rooms.findById(each.getRoomId())).thenReturn(Optional.of(each));
+            when(rooms.lockById(each.getRoomId())).thenReturn(Optional.of(each));
+        }
+        when(rooms.findActiveByDepartment(clinical.getDepartmentId(), office.getRoomId())).thenReturn(List.of(first, second));
+        when(rooms.findActiveByDepartment(clinical.getDepartmentId(), first.getRoomId())).thenReturn(List.of(office, second));
+
+        assertThatThrownBy(() -> service.changeStatus(office.getRoomId(), false))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("DEPARTMENT_OFFICE_REQUIRED");
+        assertThatThrownBy(() -> service.changeStatus(first.getRoomId(), false))
+                .isInstanceOf(BusinessRuleException.class).extracting("code").isEqualTo("DEPARTMENT_CONSULTATION_MINIMUM");
+        verify(rooms, never()).save(any());
+
+        Room third = room(clinical, "CONSULTATION");
+        when(rooms.findActiveByDepartment(clinical.getDepartmentId(), first.getRoomId())).thenReturn(List.of(office, second, third));
+        when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
+        assertThat(service.changeStatus(first.getRoomId(), false).isActive()).isFalse();
+    }
+
+    @Test
+    void stoppingTheOnlyWorkplaceOfAUnitClearsItsLocation() {
+        Department lab = department(DepartmentType.PARACLINICAL);
+        Room workplace = room(lab, "LABORATORY");
+        lab.relocate(workplace.getLocation());
+        when(rooms.findById(workplace.getRoomId())).thenReturn(Optional.of(workplace));
+        when(rooms.lockById(workplace.getRoomId())).thenReturn(Optional.of(workplace));
+        when(rooms.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        service.changeStatus(workplace.getRoomId(), false);
+
+        assertThat(lab.getLocation()).isNull();
     }
 
     private static Room room(Department department, String type) {

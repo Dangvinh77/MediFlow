@@ -39,6 +39,12 @@ function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = f
     setDepartment(current => current?.departmentId === snapshot.departmentId ? { ...current, departmentHeadId: snapshot.staffId } : current);
   }
   useEffect(() => { let mounted = true; const sessionToken = getSessionKey(); organizationApi.department(departmentId).then((value) => { if (mounted && isRequestSessionCurrent(sessionToken)) setDepartment(value); }).catch((cause: unknown) => { if (!mounted || !isRequestSessionCurrent(sessionToken, cause)) return; if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setError(cause instanceof Error ? cause.message : "Không thể tải thông tin khoa/bộ phận."); }); return () => { mounted = false; }; }, [departmentId, router, attempt]);
+  function refreshLocation() {
+    const sessionToken = getSessionKey();
+    organizationApi.department(departmentId).then(value => {
+      if (active.current.mounted && isRequestSessionCurrent(sessionToken)) setDepartment(current => current ? { ...current, location: value.location } : value);
+    }).catch(() => undefined);
+  }
   const unit = department ? department.departmentType === "CLINICAL" ? "khoa" : "bộ phận" : "khoa/bộ phận";
   const title = `Chi tiết ${unit}`;
   function layout(content: ReactNode) {
@@ -50,9 +56,9 @@ function DepartmentDetailWorkspace({ departmentId, notice, schedulingEnabled = f
     <L10nValue>{notice ? <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success"><L10nValue>{notice === "created" ? `Đã tạo ${unit}.` : `Đã cập nhật ${unit}.`}</L10nValue></p> : null}</L10nValue>
     <RecordIdentity name={department.departmentName} subtitle={department.abbreviation}><StatusBadge tone={department.active ? "success" : "neutral"}><L10nValue>{department.active ? "Đang hoạt động" : "Ngừng hoạt động"}</L10nValue></StatusBadge><L10nValue>{role === "ADMIN" ? <Link href={`/organization/departments/${departmentId}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Chỉnh sửa"}</L10n></Link> : null}</L10nValue></RecordIdentity>
     <div className="flex flex-wrap gap-3"><Link href="/organization" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-primary"><L10n>{"Quay lại"}</L10n></Link></div>
-    <DetailSection title={localize(`Thông tin ${unit}`)}><Info label={localize(`Loại ${unit}`)} value={labels[department.departmentType]} /><Info label={localize(department.departmentType === "CLINICAL" ? "Địa điểm (văn phòng chung của khoa)" : "Địa điểm (phòng làm việc chung)")} value={department.location} /><Info label={localize("Chức năng, nhiệm vụ")} value={department.description} /><Info label={localize("Điện thoại / máy lẻ")} value={department.phoneNumber} /><Info label={localize("Email liên hệ")} value={department.email} /></DetailSection>
+    <DetailSection title={localize(`Thông tin ${unit}`)}><Info label={localize(`Loại ${unit}`)} value={labels[department.departmentType]} /><Info label={localize(department.departmentType === "CLINICAL" ? "Địa điểm (văn phòng chung của khoa)" : "Địa điểm (phòng làm việc chung)")} value={department.location ?? localize("Chưa có – chưa chỉ định văn phòng")} /><Info label={localize("Chức năng, nhiệm vụ")} value={department.description} /><Info label={localize("Điện thoại / máy lẻ")} value={department.phoneNumber} /><Info label={localize("Email liên hệ")} value={department.email} /></DetailSection>
     <DepartmentPeople key={departmentId} department={department} />
-    <RoomDirectory key={`rooms:${departmentId}`} fixedDepartment={department} />
+    <RoomDirectory key={`rooms:${departmentId}`} fixedDepartment={department} onRoomsChanged={refreshLocation} />
     <L10nValue>{schedulingEnabled && role === "ADMIN" && department.departmentType === "CLINICAL" ? <HeadAppointments key={`head:${departmentId}`} departmentId={departmentId} onSnapshot={synchronizeHead} /> : null}</L10nValue>
   </section>);
 }

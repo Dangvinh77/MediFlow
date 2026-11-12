@@ -347,12 +347,24 @@ class _DepartmentFormState extends State<_DepartmentForm> {
                   setState(() => _type = value ?? departmentTypes.first),
             ),
             const SizedBox(height: 12),
+            // The location follows the department office room; it is never typed here.
             TextFormField(
               controller: _location,
+              readOnly: true,
               decoration: InputDecoration(
                 labelText: AppL10n.text(context, 'Địa điểm'),
+                hintText: AppL10n.text(
+                  context,
+                  'Chưa có – chưa chỉ định văn phòng',
+                ),
+                helperText: AppL10n.text(
+                  context,
+                  _type == 'CLINICAL'
+                      ? 'Địa điểm lấy theo văn phòng khoa; đổi bằng cách sửa vị trí văn phòng khoa ở trang chi tiết.'
+                      : 'Địa điểm lấy theo phòng làm việc chung của bộ phận ở trang chi tiết.',
+                ),
+                helperMaxLines: 3,
               ),
-              maxLength: 255,
             ),
             const SizedBox(height: 12),
             if (_editing) ...[
@@ -878,12 +890,11 @@ class _StaffFormState extends State<_StaffForm> {
                   (!_editing || (_loaded?.email?.trim().isNotEmpty ?? false)) &&
                       (value == null || value.trim().isEmpty)
                   ? 'Email là bắt buộc.'
-                  :
-                  value != null &&
-                      value.trim().isNotEmpty &&
-                      (value.trim().length > 254 ||
-                          !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                              .hasMatch(value.trim()))
+                  : value != null &&
+                        value.trim().isNotEmpty &&
+                        (value.trim().length > 254 ||
+                            !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                .hasMatch(value.trim()))
                   ? 'Email không hợp lệ.'
                   : null,
             ),

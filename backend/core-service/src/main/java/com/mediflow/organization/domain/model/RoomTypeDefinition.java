@@ -15,6 +15,10 @@ import java.util.Locale;
 public final class RoomTypeDefinition {
 
     public static final String CONSULTATION = "CONSULTATION";
+    /** A clinical department's office: its location is the department's location. */
+    public static final String DEPARTMENT_OFFICE = "DEPARTMENT_OFFICE";
+    /** An operating clinical department keeps at least this many active consultation rooms. */
+    public static final int MIN_CONSULTATION_ROOMS = 2;
 
     private final String code;
     private String name;

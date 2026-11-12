@@ -12,7 +12,7 @@ it("previews who will be revoked and requires an audited reason", async () => {
     { ...staffContractFixture, staffId: "t", fullName: "Bác sĩ Mới" },
   ], totalPages: 1, totalElements: 2, number: 0, size: 100 });
   render(<HeadAppointments departmentId="d" />);
-  await screen.findByRole("checkbox", { name: "Chọn Bác sĩ Mới" });
+  await screen.findByRole("radio", { name: "Chọn Bác sĩ Mới" });
   expect(screen.getByText("Trưởng khoa đương nhiệm", { selector: "span" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Miễn nhiệm" }));
   expect(screen.getByText(/Nhiệm kỳ hiện tại sẽ kết thúc/)).toBeInTheDocument();
@@ -23,15 +23,15 @@ it("previews who will be revoked and requires an audited reason", async () => {
   await waitFor(() => expect(screen.getByRole("button", { name: "Xác nhận miễn nhiệm" })).toBeEnabled());
 });
 
-it("selects one doctor at a time from the checkbox table before appointing", async () => {
+it("selects one doctor at a time from the radio table before appointing", async () => {
   vi.mocked(organizationApi.headAppointments).mockResolvedValue({ departmentId: "d", revision: 0, staffId: null, accountId: null, appointmentId: null, updatedAt: null, updatedByAccountId: null, history: [] });
   vi.mocked(organizationApi.staff).mockResolvedValue({ content: [
     { ...staffContractFixture, staffId: "a", fullName: "Bác sĩ A" },
     { ...staffContractFixture, staffId: "b", fullName: "Bác sĩ B" },
   ], totalPages: 1, totalElements: 2, number: 0, size: 100 });
   render(<HeadAppointments departmentId="d" />);
-  const first = await screen.findByRole("checkbox", { name: "Chọn Bác sĩ A" });
-  const second = screen.getByRole("checkbox", { name: "Chọn Bác sĩ B" });
+  const first = await screen.findByRole("radio", { name: "Chọn Bác sĩ A" });
+  const second = screen.getByRole("radio", { name: "Chọn Bác sĩ B" });
   expect(screen.getByRole("button", { name: "Bổ nhiệm" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: "Miễn nhiệm" })).not.toBeInTheDocument();
   fireEvent.click(first);
