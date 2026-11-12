@@ -59,11 +59,28 @@ class FakeApi:
             return {'testId': 'test-' + body['patientId']}
         if path.endswith('/quote'):
             return {'quoteId': 'quote', 'patientPayable': 36000}
-        if path.endswith('/start') or path.endswith('/results'):
-            self.lab_status = 'COMPLETED'
+        if path.endswith('/results'):
+            raise AssertionError('catalogue CBC must go through second-person review, not v1 results')
+        if path.endswith('/start'):
+            self.lab_status = 'IN_PROGRESS'
             return {}
+        if path.endswith('/specimens') and method == 'GET':
+            return []
+        if path.endswith('/specimens'):
+            return {'specimenId': 'specimen'}
+        if path.endswith('/decision'):
+            return {'decision': 'ACCEPTED'}
+        if path.endswith('/report') and method == 'GET':
+            return None  # 404 before the first draft
+        if path.endswith('/report/draft'):
+            return {'status': 'DRAFT', 'draftRevision': 1}
+        if path.endswith('/report/submission'):
+            return {'status': 'PENDING_REVIEW', 'draftRevision': 1}
+        if path.endswith('/report/release'):
+            self.lab_status = 'COMPLETED'
+            return {'status': 'RELEASED'}
         if path.startswith('/api/v1/lab/'):
-            return {'clearanceId': 'clearance', 'status': 'READY'}
+            return {'clearanceId': 'clearance', 'status': 'READY' if self.lab_status == 'AWAITING_PAYMENT' else self.lab_status}
         if path == '/api/v1/pharmacy/prescriptions':
             return {'prescriptionId': 'rx-' + body['patientId']}
         if path.endswith('/dispense'):
@@ -94,6 +111,18 @@ class CashierDemoTest(unittest.TestCase):
                          ['/api/v1/pharmacy/prescriptions/rx-paid-patient/dispense'])
         self.assertEqual(result['open']['prescriptionId'], 'rx-open-patient')
         self.assertEqual(result['open']['prescriptionPayable'], 20000)
+
+    def test_cbc_is_ordered_from_the_catalogue_and_released_by_the_second_lab_tech(self):
+        api = FakeApi()
+        cashier.prepare(api, FIXTURES, NOW)
+        for _, _, _, body in api.posts('/lab-orders') + api.posts('/api/v1/lab'):
+            self.assertEqual((body['serviceCode'], body['priceCode'], body['labType']), ('CBC', 'LAB-CBC', 'Công thức máu'))
+        self.assertIn('demo.staff16@example.test', api.logins)
+        draft = next(row for row in api.calls if row[2].endswith('/report/draft'))
+        self.assertEqual(draft[0], 'lab')
+        self.assertEqual({v['fieldCode'] for v in draft[3]['values']}, {'WBC', 'RBC', 'HGB', 'HCT', 'PLT'})
+        releases = [row for row in api.calls if row[2].endswith('/report/release')]
+        self.assertEqual([(row[0], row[2]) for row in releases], [('lab2', '/api/v2/lab/test-paid-patient/report/release')])
 
     def test_each_registration_uses_the_current_session_revision(self):
         api = FakeApi()

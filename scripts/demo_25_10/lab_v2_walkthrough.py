@@ -1,7 +1,7 @@
 """Walk one Lab v2 result through the public Gateway of the active disposable rehearsal.
 
 order (catalogue GLU or CBC: `python lab_v2_walkthrough.py CBC`) -> pay -> specimen collected/accepted -> draft -> submit -> self-release refused
--> second tech releases -> doctor sees the critical notice -> amendment with a reason -> re-release.
+-> second tech releases -> flag from Patient's sex/age -> doctor acknowledges a critical notice (GLU 27.5) -> amendment with a reason -> re-release.
 Needs clinic hours and a prepared UI demo (prepare_ui_demo). Never writes business SQL.
 """
 import datetime as dt
@@ -9,25 +9,12 @@ import json
 import sys
 import time
 
+from lab_v2 import SERVICES, values
 from prepare_cashier_demo import charge, current_session, examine, pay_lab, until
 from prepare_ui_demo import HERE, SEED_LOGIN_EMAILS, ZONE, ApiError, DemoApi, validate_manifest
 
 # Never the UI demo patients (patient/patient2) nor the cashier demo visits.
 RESERVED_LOGINS = ('patient', 'patient2')
-# Lab requires the catalogue name, as the web order form sends it. Values: first release, then amendment.
-SERVICES = {
-    'GLU': {'name': 'Glucose máu', 'price': 'LAB-GLU', 'specimen': 'SERUM',
-            'values': {'GLU': '27.5'}, 'amended': {'GLU': '7.1'}},
-    'CBC': {'name': 'Công thức máu', 'price': 'LAB-CBC', 'specimen': 'WHOLE_BLOOD_EDTA',
-            'values': {'WBC': '7.0', 'RBC': '4.8', 'HGB': '140', 'HCT': '0.42', 'PLT': '250'},
-            'amended': {'WBC': '6.5', 'RBC': '4.8', 'HGB': '140', 'HCT': '0.42', 'PLT': '250'}},
-}
-
-
-def values(mapping):
-    return [{'fieldCode': code, 'value': value} for code, value in mapping.items()]
-
-
 def expect_error(api, role, method, path, body, status, code):
     try:
         api.call(role, method, path, body)
@@ -104,6 +91,9 @@ def walk(api, fixtures, now, code='GLU'):
             api, 'lab', 'POST', '/api/v2/lab/' + test_id + '/report/release', None, 403, 'LAB_SELF_RELEASE')))
         report = api.call('lab2', 'POST', '/api/v2/lab/' + test_id + '/report/release', expected=(200, 201))
     steps.append(('released', report['status'], report['values'][0]['flag']))
+    if report['values'][0]['flag'] == 'UNDETERMINED':
+        # Patient gives Lab sex and date of birth at release; every demo patient is an adult.
+        raise AssertionError('Reference range not applied: is Core reachable from Lab as patient-service?')
 
     if report['values'][0]['flag'] in ('CRITICAL_LOW', 'CRITICAL_HIGH'):
         notices = until(lambda: [row for row in api.call('doctor', 'GET', '/api/v2/lab/critical-notices?status=OPEN')
@@ -112,8 +102,7 @@ def walk(api, fixtures, now, code='GLU'):
                        + '/acknowledgement', expected=(200, 201))
         steps.append(('critical-acknowledged', ack['status']))
     else:
-        # Lab holds no patient age/sex, so age-bounded ranges never apply and no notice is raised.
-        steps.append(('critical-skipped', 'flag ' + str(report['values'][0]['flag'])))
+        steps.append(('not-critical', report['values'][0]['flag']))
 
     amended = api.call('lab', 'POST', '/api/v2/lab/' + test_id + '/report/amendments',
                        {'reason': 'Nhap nham don vi, do lai mau'}, expected=(200, 201), stage=stage + '-amendment')

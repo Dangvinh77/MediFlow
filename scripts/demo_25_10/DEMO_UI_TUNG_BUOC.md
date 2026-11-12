@@ -434,9 +434,13 @@ Cả hai KTV đã được cấp quyền **Phát hành kết quả xét nghiệm
 8. **Đăng xuất → demo.staff16@example.test** → mở cùng URL → **Phát hành**.
    Trạng thái **Đã phát hành**. Giữ URL Lab, chuyển lại bác sĩ.
 
-Cờ chỉ số hiện **Chưa xác định**: Lab không giữ giới tính/tuổi bệnh nhân nên khoảng
-tham chiếu theo tuổi/giới không áp dụng và không phát cảnh báo nguy cấp. Không hứa
-trình bày cảnh báo nguy cấp trong buổi demo.
+Lúc phát hành, Lab hỏi Patient giới tính và ngày sinh để chọn khoảng tham chiếu
+(khoảng mẫu chỉ dành cho người lớn, tách theo giới). Với số liệu trên, cờ là **Bình thường**.
+Nếu Core không trả lời kịp, kết quả vẫn phát hành, cờ hiện **Chưa xác định**.
+
+**Tùy chọn — cảnh báo nguy cấp:** nhập `HGB = 60` thay cho `140`. Sau khi KTV thứ hai
+phát hành, cờ là **Thấp nguy cấp**; bác sĩ mở **http://127.0.0.1:3000/lab/critical**,
+thấy cảnh báo của đúng bệnh nhân và bấm xác nhận đã nhận.
 
 ## 8b. Tùy chọn — đính chính kết quả đã phát hành
 

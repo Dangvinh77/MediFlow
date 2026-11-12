@@ -17,11 +17,22 @@ import urllib.request
 import uuid
 from onboarding_acceptance import OnboardingAcceptance
 from issuance_acceptance import verify_issuance
+import lab_v2
 from prepare_ui_demo import SEED_LOGIN_EMAILS
 
 ACCEPTANCE_LOGINS = [(role, SEED_LOGIN_EMAILS[seed_role]) for role, seed_role in [
     ('admin', 'admin'), ('nurse', 'nurse'), ('doctor', 'doctor'), ('cashier', 'cashier'),
-    ('patient', 'patient'), ('other', 'patient2'), ('lab', 'lab')]]
+    ('patient', 'patient'), ('other', 'patient2'), ('lab', 'lab'), ('lab2', 'lab2')]]
+
+
+
+class LabCalls:
+    """Adapts this script's call() to the DemoApi.call() shape that lab_v2 uses."""
+    def __init__(self, call):
+        self._call = call
+
+    def call(self, role, method, path, body=None, expected=(200,), stage=None):
+        return self._call(role, method, path, body, expected)
 
 
 def main():
@@ -211,13 +222,8 @@ def main():
         record_id = record['recordId']
         call('doctor', 'POST', '/api/v1/records/' + record_id + '/diagnoses',
              {'diagnosisName': 'Chan doan demo tong duyet', 'icdCode': 'Z00'}, (201,))
-        order = call('doctor', 'POST', '/api/v1/records/' + record_id + '/lab-orders',
-                     {'labType': 'CBC', 'requestedDate': str(today), 'priceCode': 'LAB_CBC'}, (201,))
-        test = call('doctor', 'POST', '/api/v1/lab', {
-            'recordId': record_id, 'patientId': patient_id, 'requestingDepartmentId': department_id,
-            'labType': 'CBC', 'requestedDate': str(today), 'priceCode': 'LAB_CBC',
-            'sourceOrderId': order['sourceOrderId'], 'careEpisodeType': 'OUTPATIENT_VISIT',
-            'careEpisodeId': registration_id}, (201,))
+        lab_api = LabCalls(call)
+        test = lab_v2.order(lab_api, record_id, patient_id, department_id, registration_id, str(today), 'accept')
         test_id = test['testId']
         result['testId'] = test_id
         if args.login_before_lab:
@@ -254,9 +260,7 @@ def main():
                 break
             time.sleep(2)
         call('lab', 'PUT', '/api/v1/lab/' + test_id + '/start', {})
-        call('lab', 'PUT', '/api/v1/lab/' + test_id + '/results', {
-            'results': [{'indicator': 'WBC', 'value': '7.0', 'unit': 'G/L', 'referenceRange': '4-10'}],
-            'conclusion': 'Ket qua tong duyet binh thuong', 'performedDate': str(today)})
+        lab_v2.release(lab_api, test_id, str(today), conclusion='Ket qua tong duyet binh thuong')
         if args.login_before_lab:
             onboarding.read_lab_during_exam(record_id, test_id, registration_id, request_id, quote, receipt)
         call('doctor', 'PUT', '/api/v1/records/' + record_id + '/complete',

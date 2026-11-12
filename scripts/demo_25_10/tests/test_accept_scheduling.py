@@ -12,7 +12,7 @@ class AcceptanceLoginTest(unittest.TestCase):
             'admin': 'demo.staff01@example.test', 'nurse': 'demo.staff04@example.test',
             'doctor': 'demo.staff03@example.test', 'cashier': 'demo.staff19@example.test',
             'patient': 'demo.patient01@example.test', 'other': 'demo.patient02@example.test',
-            'lab': 'demo.staff15@example.test'})
+            'lab': 'demo.staff15@example.test', 'lab2': 'demo.staff16@example.test'})
 
 
 if __name__ == '__main__':
