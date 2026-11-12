@@ -114,7 +114,8 @@ export function CartesianChart({ kind, labels, series, format, description, nega
   const low = ticks[0], high = ticks[ticks.length - 1];
   const y = (value: number) => bottom - ((value - low) / (high - low || 1)) * (bottom - top);
   const center = (index: number) => left + band * (index + .5);
-  const stride = band < 26 ? 2 : 1;
+  // Thin bands (a month or more of days) label every n-th band so axis text never overlaps.
+  const stride = Math.max(1, Math.ceil(26 / band));
 
   function onPointer(event: PointerEvent<SVGSVGElement>) {
     const box = event.currentTarget.getBoundingClientRect();
@@ -233,9 +234,9 @@ export function SegmentedBar({ parts, format, description }: { parts: { label: s
 }
 
 /** Ranked horizontal bars, one hue: a shared baseline compares parts more exactly than slices. */
-export function RankedBars({ rows, format }: { rows: { id: string; label: ReactNode; value: number; note?: string }[]; format: (value: number) => string }) {
+export function RankedBars({ rows, format, label = "Xếp hạng theo khoa" }: { rows: { id: string; label: ReactNode; value: number; note?: string }[]; format: (value: number) => string; label?: string }) {
   const max = Math.max(1, ...rows.map(row => row.value));
-  return <ul className="mt-4 space-y-3" aria-label="Xếp hạng theo khoa">
+  return <ul className="mt-4 space-y-3" aria-label={label}>
     {rows.map(row => <li key={row.id} className="min-w-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
         <span className="min-w-0 font-medium">{row.label}</span>

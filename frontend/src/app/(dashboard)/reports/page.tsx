@@ -1,26 +1,12 @@
-import { AsyncState } from "@/components/ui/AsyncState";
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { RoleGate } from "@/components/auth/RoleGate";
-import { PageShell } from "@/components/layout/PageShell";
-import { ReportWorkspace } from "@/features/report/components/ReportWorkspace";
-
-export const metadata: Metadata = {
-  title: "Báo cáo | MediFlow",
-};
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const outpatientEnabled = process.env.MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED === "true";
-  // In outpatient MVP the legacy aggregates stay empty; land on the reconciled outpatient report.
-  if (outpatientEnabled && !(await searchParams).view) redirect("/reports/outpatient");
-  return (
-    <RoleGate allowed={["ADMIN", "DOCTOR"]}>
-      <Suspense fallback={<PageShell title="Báo cáo"><AsyncState kind="loading" message="Đang tải báo cáo…" /></PageShell>}>
-        <ReportWorkspace outpatientEnabled={outpatientEnabled} />
-      </Suspense>
-    </RoleGate>
-  );
+/** Legacy daily/monthly/medicine views were merged into the reconciled report; old links keep their query. */
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = new URLSearchParams();
+  Object.entries(await searchParams).forEach(([name, value]) => {
+    (Array.isArray(value) ? value : value === undefined ? [] : [value]).forEach(item => query.append(name, item));
+  });
+  redirect(`/reports/outpatient${query.size ? `?${query}` : ""}`);
 }

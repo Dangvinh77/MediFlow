@@ -101,10 +101,10 @@ describe("Outpatient report workspace", () => {
     expect(within(result).getByText("Đã đối soát")).toBeVisible();
     fireEvent.click(within(result).getByText("Nguồn và đối soát"));
     expect(within(result).getByText("Dữ liệu nguồn cập nhật").nextElementSibling).toHaveTextContent("07:00");
-    const periods = within(result).getByRole("list", { name: "Các kỳ báo cáo" });
-    fireEvent.click(within(periods).getByText(/0 lượt · 0 xét nghiệm · 0 đơn/));
-    expect(within(periods).getAllByRole("definition")).toHaveLength(7);
-    for (const value of within(periods).getAllByRole("definition")) expect(value).toHaveTextContent(/^0$/);
+    const periods = within(result).getByRole("table", { name: "Các kỳ báo cáo" });
+    const row = within(periods).getByRole("rowheader", { name: "29/02/2024" }).closest("tr")!;
+    expect(within(row).getAllByRole("cell")).toHaveLength(7);
+    for (const value of within(row).getAllByRole("cell")) expect(value).toHaveTextContent(/^0$/);
     fireEvent.change(screen.getByLabelText("Đến ngày"), { target: { value: "2024-03-01" } });
     expect(screen.getByText(/Bạn đã đổi bộ lọc/)).toBeVisible();
     expect(within(result).getByRole("heading", { level: 2 })).toHaveTextContent("29/02/2024 đến 29/02/2024");
@@ -138,8 +138,9 @@ describe("Outpatient report workspace", () => {
     mocks.daily.mockResolvedValue({ ...zero, periods: [{ ...zero.periods[0], cashReceived: 100, refunds: 200, netCash: -125.5 }] });
     render(<OutpatientReportWorkspace enabled />);
     await screen.findByRole("region", { name: "Kết quả báo cáo ngoại trú" });
-    fireEvent.click(screen.getByText(/Thu ròng: -125,5 VND/));
-    expect(screen.getByText("Tiền thu ròng").nextElementSibling).toHaveTextContent("-125,5");
+    expect(screen.getByText("Thu ròng cả kỳ").nextElementSibling).toHaveTextContent("-125,5 VND");
+    const row = within(screen.getByRole("table", { name: "Các kỳ báo cáo" })).getByRole("rowheader", { name: "29/02/2024" }).closest("tr")!;
+    expect(within(row).getAllByRole("cell").at(-1)).toHaveTextContent("-125,5");
   });
   it("uses the monthly year contract and preserves all response periods", async () => {
     mocks.query = `view=monthly&year=2024&departmentId=${department}`;
@@ -148,8 +149,8 @@ describe("Outpatient report workspace", () => {
       { ...zero.periods[0], fromDate: "2024-02-01", toDate: "2024-02-29" },
     ] });
     render(<OutpatientReportWorkspace enabled />);
-    const periods = await screen.findByRole("list", { name: "Các kỳ báo cáo" });
-    expect(within(periods).getAllByRole("listitem")).toHaveLength(2);
+    const periods = await screen.findByRole("table", { name: "Các kỳ báo cáo" });
+    expect(within(periods).getAllByRole("rowheader").map(cell => cell.textContent)).toEqual(["Tháng 1/2024", "Tháng 2/2024", "Cả kỳ"]);
     expect(mocks.monthly).toHaveBeenCalledWith(2024, department); expect(mocks.daily).not.toHaveBeenCalled();
     expect(screen.queryByLabelText("Từ ngày")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Theo tháng" })).toHaveAttribute("aria-current", "page");
