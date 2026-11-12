@@ -5,6 +5,7 @@ mediflow:
   clients:
     # Organization runs inside core-service; Lab asks it who may release results.
     organization-service: core-service
+    patient-service: core-service
   features:
     outpatient-mvp:
       enabled: true

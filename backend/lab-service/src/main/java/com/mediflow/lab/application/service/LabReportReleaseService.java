@@ -3,6 +3,9 @@ package com.mediflow.lab.application.service;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +26,8 @@ import com.mediflow.lab.application.port.out.CurrentReaderPort;
 import com.mediflow.lab.application.port.out.LabCatalogPort;
 import com.mediflow.lab.application.port.out.LabReleaseAuthorityPort;
 import com.mediflow.lab.application.port.out.LabReportRepositoryPort;
+import com.mediflow.lab.application.port.out.PatientDemographicsPort;
+import com.mediflow.lab.application.port.out.PatientDemographicsPort.PatientDemographics;
 import com.mediflow.lab.application.port.out.ReaderIdentity;
 import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.model.LabFlag;
@@ -52,6 +57,7 @@ public class LabReportReleaseService {
     private final com.mediflow.lab.application.port.out.LabTestRepositoryPort tests;
     private final com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices;
     private final com.mediflow.lab.application.port.out.LabOutboxPort outbox;
+    private final PatientDemographicsPort demographics;
 
     public LabReportReleaseService(LabReportRepositoryPort reports, LabCatalogPort catalog,
             AuthenticatedStaffContextPort staff, CurrentReaderPort readers, LabReleaseAuthorityPort authority,
@@ -59,6 +65,17 @@ public class LabReportReleaseService {
             Clock clock, boolean enabled, com.mediflow.lab.application.port.out.LabTestRepositoryPort tests,
             com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices,
             com.mediflow.lab.application.port.out.LabOutboxPort outbox) {
+        this(reports, catalog, staff, readers, authority, labs, correlationIds, transactions, clock, enabled, tests,
+                notices, outbox, PatientDemographicsPort.unavailable());
+    }
+
+    public LabReportReleaseService(LabReportRepositoryPort reports, LabCatalogPort catalog,
+            AuthenticatedStaffContextPort staff, CurrentReaderPort readers, LabReleaseAuthorityPort authority,
+            LabResultReleasePort labs, CorrelationIdProvider correlationIds, TransactionOperations transactions,
+            Clock clock, boolean enabled, com.mediflow.lab.application.port.out.LabTestRepositoryPort tests,
+            com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices,
+            com.mediflow.lab.application.port.out.LabOutboxPort outbox, PatientDemographicsPort demographics) {
+        this.demographics = demographics;
         this.tests = tests;
         this.notices = notices;
         this.outbox = outbox;
@@ -83,13 +100,41 @@ public class LabReportReleaseService {
                         "Người phát hành kết quả phải là nhân viên đã xác thực"));
         UUID account = readers.current().map(ReaderIdentity::accountId)
                 .orElseThrow(() -> denied());
-        if (!authority.canRelease(account, actor, correlationIds.currentOrCreate().toString())) {
+        String correlationId = correlationIds.currentOrCreate().toString();
+        if (!authority.canRelease(account, actor, correlationId)) {
             throw denied();
         }
-        return transactions.execute(status -> releaseLocked(testId, actor));
+        // Like the authority check, Patient is asked before any Lab row is locked.
+        PatientDemographics patient = demographicsOf(testId, correlationId);
+        return transactions.execute(status -> releaseLocked(testId, actor, patient));
     }
 
-    private LabReportDTO releaseLocked(UUID testId, UUID actor) {
+    /** Never blocks a release: an unknown patient only leaves sex- or age-bounded flags UNDETERMINED. */
+    private PatientDemographics demographicsOf(UUID testId, String correlationId) {
+        if (tests == null) {
+            return null;
+        }
+        try {
+            return tests.findById(testId)
+                    .flatMap(test -> demographics.find(test.getPatientId(), correlationId))
+                    .orElse(null);
+        } catch (RuntimeException unavailable) {
+            return null;
+        }
+    }
+
+    /** Age in whole days on the day the test was performed (release day when no date was entered). */
+    private static Integer ageDays(PatientDemographics patient, LabReport report, Instant at) {
+        if (patient == null || patient.dateOfBirth() == null) {
+            return null;
+        }
+        LocalDate on = report.getPerformedDate() != null ? report.getPerformedDate()
+                : LocalDate.ofInstant(at, ZoneOffset.UTC);
+        long days = ChronoUnit.DAYS.between(patient.dateOfBirth(), on);
+        return days < 0 || days > Integer.MAX_VALUE ? null : (int) days;
+    }
+
+    private LabReportDTO releaseLocked(UUID testId, UUID actor, PatientDemographics patient) {
         // Same lock order as draft, submit and return: lab_test row first, then lab_report.
         if (tests != null) {
             tests.findByIdForUpdate(testId);
@@ -101,6 +146,8 @@ public class LabReportReleaseService {
                 .orElseThrow(() -> new IllegalStateException("Pinned template disappeared: "
                         + report.getTemplateCode() + " v" + report.getTemplateVersion()));
         Instant at = clock.instant();
+        String sex = patient == null ? null : patient.sex();
+        Integer ageDays = ageDays(patient, report, at);
         int expected = report.getDraftRevision();
         Map<String, LabFlag> flags = new LinkedHashMap<>();
         List<ReleasedValue> values = new ArrayList<>();
@@ -108,12 +155,11 @@ public class LabReportReleaseService {
         for (LabValueInput input : report.getValues()) {
             LabTemplateField field = template.field(input.fieldCode()).orElseThrow(() -> new LabRuleException(
                     "LAB_REPORT_INVALID", "Trường không thuộc mẫu: " + input.fieldCode()));
-            // Lab holds no patient sex or age: only ranges without those bounds apply here.
-            LabFlag flag = field.flag(input, null, null);
+            LabFlag flag = field.flag(input, sex, ageDays);
             if (flag != null) {
                 flags.put(field.fieldCode(), flag);
             }
-            String range = rangeText(field.rangeFor(null, null));
+            String range = rangeText(field.rangeFor(sex, ageDays));
             values.add(new ReleasedValue(field.fieldCode(), field.label(), input.operator(), input.value(),
                     field.unit(), input.noResultReason(), flag == null ? null : flag.name(), range));
             results.add(LabResult.create(field.label(), displayValue(input), field.unit(), range));

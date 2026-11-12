@@ -1242,11 +1242,12 @@ nhất quyết định quyền đọc hồ sơ.
 | `POST /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Body `{capability, reason}`, chỉ nhận `LAB_RESULT_RELEASE`, chỉ cấp cho LAB_TECH đang hoạt động. `CAPABILITY_GRANT_INELIGIBLE`, `CAPABILITY_GRANT_ACTIVE` |
 | `PUT /api/v2/org/capability-grants/{grantId}/revocation` | ADMIN | Body `{reason}`. `CAPABILITY_GRANT_ALREADY_REVOKED` |
 | `GET /api/v2/org/lab-release-authority?actorAccountId=` | Nội bộ, service token ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{actorAccountId, accountActive, staffId, staffActive, canReleaseLabResults, observedAt}` |
+| `GET /api/v1/patients/{id}/demographics` | Nội bộ, service token (`ROLE_SYSTEM`) ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{maBenhNhan, gioiTinh, ngaySinh}` (`gioiTinh` là `M`/`F`), không có họ tên hay giấy tờ. `404 PATIENT_NOT_FOUND`. Lab gọi ngoài transaction lúc phát hành để chọn khoảng tham chiếu theo giới tính và tuổi tại ngày thực hiện; Lab không lưu hai trường này. Lỗi, timeout hay trả lời về người khác chỉ làm cờ có giới hạn tuổi/giới thành `UNDETERMINED`, không chặn phát hành |
 
-Gateway luôn mở `access-declarations`, `capabilities`, `capability-grants` và `revocation`, không phụ thuộc cờ lịch khám V2. Hai API nội bộ không có route công khai.
+Gateway luôn mở `access-declarations`, `capabilities`, `capability-grants` và `revocation`, không phụ thuộc cờ lịch khám V2. Ba API nội bộ không có route công khai.
 
-`GET /api/v1/org/me/capabilities` thêm `canReleaseLabResults` ở cuối. Chưa có màn hình cấp quyền hay luồng
-duyệt nào dùng quyền này; hai phần đó thuộc Đợt 6.
+`GET /api/v1/org/me/capabilities` thêm `canReleaseLabResults` ở cuối. ADMIN cấp và thu hồi quyền ở mục
+"Quyền đặc biệt" của chi tiết nhân sự; luồng duyệt Lab hai người dùng quyền này khi phát hành.
 
 ### Lab và Pharmacy khi flag bật
 

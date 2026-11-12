@@ -56,4 +56,13 @@ public class PatientReadApplicationService implements GetPatientUseCase, ReadPat
     public PatientLookupDTO exists(UUID patientId) {
         return new PatientLookupDTO(patients.existsById(patientId), patientId);
     }
+
+    @Override
+    public com.mediflow.patient.application.dto.response.PatientDemographicsDTO demographics(UUID patientId) {
+        // Archived patients still own past results, so their demographics stay readable to Lab.
+        Patient patient = patients.findById(patientId)
+                .orElseThrow(() -> new PatientNotFoundException(patientId));
+        return new com.mediflow.patient.application.dto.response.PatientDemographicsDTO(
+                patient.patientId(), patient.gender(), patient.dateOfBirth());
+    }
 }

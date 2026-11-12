@@ -40,6 +40,24 @@ class PatientReadApplicationServiceTest {
     }
 
     @Test
+    void demographicsExposeOnlySexAndDateOfBirthForReferenceRanges() {
+        when(repository.findById(id)).thenReturn(Optional.of(patient()));
+        var dto = service.demographics(id);
+        assertThat(dto.maBenhNhan()).isEqualTo(id);
+        assertThat(dto.gioiTinh()).isEqualTo(Gender.M);
+        assertThat(dto.ngaySinh()).isEqualTo(patient().dateOfBirth());
+        assertThat(com.mediflow.patient.application.dto.response.PatientDemographicsDTO.class.getRecordComponents())
+                .extracting(java.lang.reflect.RecordComponent::getName)
+                .containsExactly("maBenhNhan", "gioiTinh", "ngaySinh");
+    }
+
+    @Test
+    void demographicsOfMissingPatientIsNotFound() {
+        when(repository.findById(id)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.demographics(id)).isInstanceOf(PatientNotFoundException.class);
+    }
+
+    @Test
     void searchTrimsKeywordAndMapsPage() {
         when(repository.search("nguyen", new PageQuery(0, 20)))
                 .thenReturn(PageResult.of(List.of(patient()), 1, 0, 20));

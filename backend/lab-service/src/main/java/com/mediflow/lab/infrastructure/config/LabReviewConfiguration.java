@@ -19,8 +19,11 @@ import com.mediflow.lab.application.port.out.CurrentReaderPort;
 import com.mediflow.lab.application.port.out.LabCatalogPort;
 import com.mediflow.lab.application.port.out.LabReleaseAuthorityPort;
 import com.mediflow.lab.application.port.out.LabReportRepositoryPort;
+import com.mediflow.lab.application.port.out.PatientDemographicsPort;
 import com.mediflow.lab.application.service.LabApplicationService;
 import com.mediflow.lab.application.service.LabReportReleaseService;
+import com.mediflow.lab.infrastructure.client.LabPatientDemographicsAdapter;
+import com.mediflow.lab.infrastructure.client.LabPatientDemographicsFeignClient;
 import com.mediflow.lab.infrastructure.client.LabReleaseAuthorityAdapter;
 import com.mediflow.lab.infrastructure.client.LabReleaseAuthorityFeignClient;
 import com.mediflow.lab.infrastructure.security.JwtProperties;
@@ -39,15 +42,17 @@ public class LabReviewConfiguration {
             @Value("${mediflow.v2.lab-review:false}") boolean enabled,
             com.mediflow.lab.application.port.out.LabTestRepositoryPort tests,
             com.mediflow.lab.application.port.out.LabCriticalNoticeRepositoryPort notices,
-            com.mediflow.lab.application.port.out.LabOutboxPort outbox) {
+            com.mediflow.lab.application.port.out.LabOutboxPort outbox,
+            ObjectProvider<PatientDemographicsPort> demographics) {
         return new LabReportReleaseService(reports, catalog, staff, readers,
                 authority.getIfAvailable(LabReleaseAuthorityPort::denyAll), labs, correlationIds,
-                new TransactionTemplate(transactions), labClock, enabled, tests, notices, outbox);
+                new TransactionTemplate(transactions), labClock, enabled, tests, notices, outbox,
+                demographics.getIfAvailable(PatientDemographicsPort::unavailable));
     }
 
-    /** The Organization client exists only while the review workflow is on. */
+    /** The Organization and Patient clients exist only while the review workflow is on. */
     @Configuration(proxyBeanMethods = false)
-    @EnableFeignClients(clients = LabReleaseAuthorityFeignClient.class)
+    @EnableFeignClients(clients = {LabReleaseAuthorityFeignClient.class, LabPatientDemographicsFeignClient.class})
     @ConditionalOnProperty(name = "mediflow.v2.lab-review", havingValue = "true")
     static class ReleaseAuthorityConfiguration {
         @Bean
@@ -65,6 +70,23 @@ public class LabReviewConfiguration {
                 JwtProperties jwt,
                 @Qualifier("labReleaseAuthorityCircuitBreaker") CircuitBreaker circuitBreaker) {
             return new LabReleaseAuthorityAdapter(client, labClock, jwt.secret(), circuitBreaker);
+        }
+
+        @Bean
+        CircuitBreaker labPatientDemographicsCircuitBreaker() {
+            return CircuitBreaker.of("patient-lab-demographics", CircuitBreakerConfig.custom()
+                    .slidingWindowSize(10)
+                    .minimumNumberOfCalls(5)
+                    .failureRateThreshold(50)
+                    .waitDurationInOpenState(Duration.ofSeconds(10))
+                    .build());
+        }
+
+        @Bean
+        PatientDemographicsPort labPatientDemographicsPort(LabPatientDemographicsFeignClient client, Clock labClock,
+                JwtProperties jwt,
+                @Qualifier("labPatientDemographicsCircuitBreaker") CircuitBreaker circuitBreaker) {
+            return new LabPatientDemographicsAdapter(client, labClock, jwt.secret(), circuitBreaker);
         }
     }
 }

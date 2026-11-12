@@ -100,6 +100,14 @@ public class PatientController {
         return ResponseEntity.ok(ApiResponse.ok(lookup.exists(id), correlationId()));
     }
 
+    /** Service-only: Lab picks sex- and age-bounded reference ranges at release time. */
+    @GetMapping("/{id}/demographics")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM')")
+    public ResponseEntity<ApiResponse<com.mediflow.patient.application.dto.response.PatientDemographicsDTO>>
+            demographics(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(lookup.demographics(id), correlationId()));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     public ResponseEntity<ApiResponse<PatientDTO>> update(

@@ -66,6 +66,7 @@ mediflow:
   clients:
     # Organization is hosted by core-service in the six-deployment topology (outpatient-mvp profile).
     organization-service: ${MEDIFLOW_ORGANIZATION_SERVICE:organization-service}
+    patient-service: ${MEDIFLOW_PATIENT_SERVICE:patient-service}
   lab:
     clinical-context:
       enabled: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:false}
