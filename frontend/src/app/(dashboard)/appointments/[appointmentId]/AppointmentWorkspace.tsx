@@ -3,7 +3,7 @@
 import { AppointmentDetail } from "@/features/appointment/components/AppointmentDetail";
 import { ExaminationRecordLink } from "@/features/medical-record/components/ExaminationRecordLink";
 
-export function AppointmentWorkspace({ appointmentId, outpatientEnabled }: { appointmentId: string; outpatientEnabled: boolean }) {
-  return <AppointmentDetail appointmentId={appointmentId} outpatientEnabled={outpatientEnabled}
-    renderRecordLink={(appointment) => <ExaminationRecordLink key={appointment.appointmentId} patientId={appointment.patientId} appointmentId={appointment.appointmentId} />} />;
+export function AppointmentWorkspace({ appointmentId, outpatientEnabled, clinicIntakeEnabled }: { appointmentId: string; outpatientEnabled: boolean; clinicIntakeEnabled: boolean }) {
+  return <AppointmentDetail appointmentId={appointmentId} outpatientEnabled={outpatientEnabled} clinicIntakeEnabled={clinicIntakeEnabled}
+    renderRecordLink={(appointment) => <ExaminationRecordLink key={appointment.appointmentId} patientId={appointment.patientId} appointmentId={appointment.appointmentId} label={appointment.status === "IN_EXAM" ? "Tiếp tục khám" : undefined} />} />;
 }

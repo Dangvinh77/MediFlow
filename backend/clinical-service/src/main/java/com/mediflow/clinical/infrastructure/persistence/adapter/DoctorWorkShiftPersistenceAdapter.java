@@ -79,6 +79,31 @@ public class DoctorWorkShiftPersistenceAdapter implements DoctorWorkShiftReposit
     public void linkSession(UUID shiftId,UUID sessionId) {
         jdbc.update("INSERT INTO consultation_session_work_shift(session_id,shift_id) VALUES (?,?)",sessionId,shiftId);
     }
+    @Override @Transactional(readOnly=true)
+    public List<UUID> linkedSessionIds(UUID shiftId) {
+        return jdbc.queryForList("SELECT session_id FROM consultation_session_work_shift WHERE shift_id=? ORDER BY session_id",UUID.class,shiftId);
+    }
+    @Override @Transactional(readOnly=true)
+    public Optional<DoctorWorkShift> findBySession(UUID sessionId) {
+        return jdbc.query("""
+                SELECT w.* FROM doctor_work_shift w JOIN consultation_session_work_shift l ON l.shift_id=w.shift_id
+                WHERE l.session_id=?
+                """,this::map,sessionId).stream().findFirst();
+    }
+    @Override @Transactional
+    public void cancelKeepingStoppedSessions(DoctorWorkShift before,DoctorWorkShift after,UUID actor,String reason,Instant at) {
+        var current=findByIdForUpdate(before.shiftId()).orElseThrow();
+        if(current.revision()!=before.revision()) throw new DuplicateResourceException("REVISION_CONFLICT","Shift revision changed");
+        if(Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM consultation_session_work_shift l
+                JOIN consultation_session s USING(session_id) WHERE l.shift_id=? AND s.status='OPEN')
+                """,Boolean.class,before.shiftId())))
+            throw new DuplicateResourceException("SHIFT_HAS_SESSIONS","Cancel linked consultation sessions before changing the shift");
+        int changed=jdbc.update("UPDATE doctor_work_shift SET revision=?,status=?,updated_at=? WHERE shift_id=? AND revision=?",
+                after.revision(),after.status().name(),Timestamp.from(at),after.shiftId(),before.revision());
+        if(changed!=1) throw new DuplicateResourceException("REVISION_CONFLICT","Shift revision changed");
+        audit(before,after,actor,reason,at);
+    }
     private void resources(UUID... ids) {
         Stream.of(ids).distinct().sorted().forEach(id->jdbc.query("SELECT pg_advisory_xact_lock(hashtextextended(?,0))",
                 rs->{rs.next();return null;},"work-shift:"+id));

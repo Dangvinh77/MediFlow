@@ -4,21 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { clearSession, storeSession } from "@/lib/session";
 import type { Role } from "@/lib/roles";
-const mocks = vi.hoisted(() => ({ daily: vi.fn(), monthly: vi.fn(), topMedicines: vi.fn(), outpatientDaily: vi.fn(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ outpatientDaily: vi.fn(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("../api", () => ({ reportApi: { daily: mocks.daily, monthly: mocks.monthly, topMedicines: mocks.topMedicines, outpatientDaily: mocks.outpatientDaily } }));
-import { DailyReportView } from "./DailyReportView";
-import { MonthlyReportView } from "./MonthlyReportView";
-import { TopMedicinesView } from "./TopMedicinesView";
+vi.mock("../api", () => ({ reportApi: { outpatientDaily: mocks.outpatientDaily } }));
 import { OutpatientReportView } from "./OutpatientReportView";
 
 const date = "2026-10-18";
-const daily = { reportDate: date, departmentId: null, visitCount: 1, labCount: 2, prescriptionCount: 3, revenue: 12345 };
 const outpatientQuery = { mode: "daily" as const, fromDate: date, toDate: date, year: 2026 };
 const cases = [
-  { name: "daily", api: mocks.daily, element: <DailyReportView initialQuery={{ date }} autoLoad />, response: daily, marker: "Báo cáo ngày 18/10/2026", draft: "Khoa (tùy chọn)" },
-  { name: "monthly", api: mocks.monthly, element: <MonthlyReportView initialQuery={{ month: 10, year: 2026 }} autoLoad />, response: { month: 10, year: 2026, departmentId: null, totalRevenue: 12345, invoiceCount: 1, dailyDetails: [] }, marker: "Tháng 10/2026", draft: "Khoa (tùy chọn)" },
-  { name: "medicines", api: mocks.topMedicines, element: <TopMedicinesView initialQuery={{ fromDate: date, toDate: date, limit: 10 }} autoLoad />, response: [{ drugId: "00000000-0000-4000-8000-000000000001", drugName: "Private medicine result", totalQuantity: 12 }], marker: "Private medicine result", draft: "Khoa (tùy chọn)" },
   { name: "outpatient", api: mocks.outpatientDaily, element: <OutpatientReportView initialQuery={outpatientQuery} autoLoad onQuerySubmit={() => false} />, response: { ...outpatientQuery, departmentId: null, currency: "VND", zoneId: "Asia/Bangkok", coverageId: "00000000-0000-4000-8000-000000000001", sourceObservedAt: "2026-10-18T00:00:00Z", reconciledAt: "2026-10-18T00:05:00Z", covered: true, periods: [] }, marker: "Đã đối soát", draft: "Khoa (tùy chọn)" },
 ];
 function session(token = "session-a", role: Role = "ADMIN") { storeSession({ accessToken: token, refreshToken: "test", role }); }
@@ -53,8 +46,8 @@ describe("Report private session lifecycle", () => {
   it("allows keyboard retry of an outpatient read without starting a second read automatically", async () => {
     const user = userEvent.setup();
     mocks.outpatientDaily.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, "UNAVAILABLE", [], "retry-focus"))
-      .mockResolvedValueOnce(cases[3].response);
-    render(cases[3].element);
+      .mockResolvedValueOnce(cases[0].response);
+    render(cases[0].element);
     const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
     await waitFor(() => expect(feedback).toHaveFocus());
     expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
@@ -66,10 +59,10 @@ describe("Report private session lifecycle", () => {
 
   it("does not steal focus while editing filters after unavailable coverage", async () => {
     mocks.outpatientDaily.mockRejectedValue(new ApiRequestError("Missing coverage", 404, "REPORT_NOT_FOUND"));
-    render(cases[3].element);
+    render(cases[0].element);
     const feedback = await screen.findByRole("group", { name: "Báo cáo chưa sẵn sàng" });
     await waitFor(() => expect(feedback).toHaveFocus());
-    const input = screen.getByLabelText(cases[3].draft);
+    const input = screen.getByLabelText(cases[0].draft);
     input.focus(); fireEvent.change(input, { target: { value: "another-scope" } });
     expect(input).toHaveFocus(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
   });
@@ -90,8 +83,8 @@ describe("Report private session lifecycle", () => {
   });
 
   it("ignores an obsolete request's 401 after a new account starts its own read", async () => {
-    const old = deferred<unknown>(); mocks.daily.mockReturnValueOnce(old.promise).mockResolvedValueOnce(daily);
-    render(cases[0].element); await waitFor(() => expect(mocks.daily).toHaveBeenCalledTimes(1));
+    const old = deferred<unknown>(); mocks.outpatientDaily.mockReturnValueOnce(old.promise).mockResolvedValueOnce(cases[0].response);
+    render(cases[0].element); await waitFor(() => expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1));
     act(() => session("session-b")); await screen.findByText(cases[0].marker);
     await act(async () => old.reject(new ApiRequestError("old session", 401)));
     expect(mocks.router.replace).not.toHaveBeenCalled(); expect(screen.getByText(cases[0].marker)).toBeVisible();
@@ -99,25 +92,17 @@ describe("Report private session lifecycle", () => {
 
   it("clears an outdated outpatient request on invalid submission and focuses the invalid field", async () => {
     const pending = deferred<unknown>(); mocks.outpatientDaily.mockReturnValue(pending.promise);
-    render(cases[3].element); await waitFor(() => expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1));
+    render(cases[0].element); await waitFor(() => expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1));
     fireEvent.change(screen.getByLabelText("Khoa (tùy chọn)"), { target: { value: "invalid" } });
     fireEvent.submit(screen.getByLabelText("Khoa (tùy chọn)").closest("form")!);
     expect(screen.getByLabelText("Khoa (tùy chọn)")).toHaveFocus();
-    await act(async () => pending.resolve(cases[3].response));
+    await act(async () => pending.resolve(cases[0].response));
     expect(screen.queryByText("Đã đối soát")).not.toBeInTheDocument(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
   });
 
-  it.each(cases.slice(0, 3))("clears a pending $name request after invalid resubmission and focuses the department", async item => {
-    const pending = deferred<unknown>(); item.api.mockReturnValue(pending.promise);
-    render(item.element); await waitFor(() => expect(item.api).toHaveBeenCalledTimes(1));
-    const input = screen.getByLabelText("Khoa (tùy chọn)");
-    fireEvent.change(input, { target: { value: "invalid" } }); fireEvent.submit(input.closest("form")!);
-    expect(input).toHaveFocus(); await act(async () => pending.resolve(item.response));
-    expect(screen.queryByText(item.marker)).not.toBeInTheDocument(); expect(item.api).toHaveBeenCalledTimes(1);
-  });
 
   it("never dispatches an auto-load queued in a microtask after unmount", async () => {
     const view = render(cases[0].element); view.unmount(); await act(async () => {});
-    expect(mocks.daily).not.toHaveBeenCalled();
+    expect(mocks.outpatientDaily).not.toHaveBeenCalled();
   });
 });

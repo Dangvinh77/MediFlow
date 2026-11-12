@@ -54,7 +54,7 @@ it("keeps an uncertain patient email command blocked when lookup returns another
   fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết quả đổi email" }));
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Chưa xác minh"));
   expect(saved).not.toHaveBeenCalled();
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
 });
 
 it("does not treat an unchanged username as proof that an uncertain sync repair was queued", async () => {
@@ -73,7 +73,7 @@ it("does not treat an unchanged username as proof that an uncertain sync repair 
   expect(await screen.findByText(/hồ sơ vẫn chờ đồng bộ/i)).toBeVisible();
   expect(screen.queryByText("Đã xác nhận email đăng nhập mới.")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Lưu email mới" })).toBeEnabled();
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
   expect(saved).toHaveBeenCalledOnce();
 
   fireEvent.click(screen.getByRole("button", { name: "Lưu email mới" }));
@@ -91,10 +91,26 @@ it.each([new Error("Lost response"), new ApiRequestError("Malformed response", 2
   fireEvent.change(screen.getByLabelText("Lý do thay đổi email"), { target: { value: "Đã xác minh" } });
   fireEvent.submit(screen.getByRole("button", { name: "Lưu email mới" }).closest("form")!);
   await screen.findByRole("alert");
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết quả đổi email" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(mocks.updateAccountEmail).toHaveBeenCalledTimes(1);
+});
+it("refreshes a pending mail on its own until it is sent, with no manual check button", async () => {
+  mocks.mailDelivery.mockReset()
+    .mockResolvedValueOnce({ messageId: "mail-1", status: "PENDING" })
+    .mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
+  expect(await screen.findByText("Đang gửi…")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Gửi lại thư" })).not.toBeInTheDocument();
+  expect(await screen.findByText("Gửi thành công", undefined, { timeout: 4000 })).toBeVisible();
+  expect(screen.queryByRole("button", { name: /Kiểm tra trạng thái thư/ })).not.toBeInTheDocument();
+  expect(mocks.mailDelivery).toHaveBeenCalledTimes(2);
+});
+it("shows a failed mail as failed and offers retry", async () => {
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
+  expect(await screen.findByText("Gửi thất bại")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Gửi lại thư" })).toBeVisible();
 });
 it("retries the same mail without issuing another password", async () => {
   mocks.retryMail.mockResolvedValue({ messageId: "mail-1", status: "PENDING" });
@@ -112,7 +128,7 @@ it("uses patient-scoped reset and retry endpoints and can hide email changes fro
   expect(screen.queryByLabelText("Email đăng nhập mới")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Gửi lại thư" }));
   await waitFor(() => expect(mocks.retryPatientMail).toHaveBeenCalledExactlyOnceWith("patient-a", "patient-mail"));
-  fireEvent.click(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" }));
   await waitFor(() => expect(mocks.resetPatientPassword).toHaveBeenCalledExactlyOnceWith("patient-a", expect.any(String)));
   expect(mocks.resetPassword).not.toHaveBeenCalled();
 });
@@ -120,10 +136,10 @@ it("keeps the same reset intent across timeout and remount and never asks for pl
   mocks.resetPassword.mockRejectedValueOnce(new Error("Lost response")).mockResolvedValueOnce({ messageId: "mail-2", status: "PENDING" });
   const view = render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
   expect(screen.queryByLabelText(/Mật khẩu mới/)).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" }));
   await screen.findByRole("alert"); const key = mocks.resetPassword.mock.calls[0][1];
   view.unmount(); render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
-  fireEvent.click(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" }));
   await waitFor(() => expect(mocks.resetPassword).toHaveBeenCalledTimes(2));
   expect(mocks.resetPassword.mock.calls[1][1]).toBe(key);
 });

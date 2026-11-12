@@ -14,6 +14,16 @@ abstract final class MedicalRecordDto {
       departmentId: JsonReader.string(json, 'departmentId'),
       examinationDate: JsonReader.string(json, 'examinationDate'),
       symptoms: JsonReader.optionalString(json, 'symptoms'),
+      chiefComplaint: JsonReader.optionalString(json, 'chiefComplaint'),
+      presentIllness: JsonReader.optionalString(json, 'presentIllness'),
+      pastHistory: JsonReader.optionalString(json, 'pastHistory'),
+      allergyNote: JsonReader.optionalString(json, 'allergyNote'),
+      physicalExam: JsonReader.optionalString(json, 'physicalExam'),
+      advice: JsonReader.optionalString(json, 'advice'),
+      responsibleDoctorId: JsonReader.optionalString(
+        json,
+        'responsibleDoctorId',
+      ),
       appointmentId: JsonReader.optionalString(json, 'appointmentId'),
       diagnoses: rawDiagnoses
           .map((value) {
@@ -29,6 +39,10 @@ abstract final class MedicalRecordDto {
       disposition: JsonReader.optionalString(json, 'disposition'),
       dispositionNote: JsonReader.optionalString(json, 'dispositionNote'),
       completedAt: JsonReader.optionalString(json, 'completedAt'),
+      closureReason: JsonReader.optionalString(json, 'closureReason'),
+      closureNote: JsonReader.optionalString(json, 'closureNote'),
+      closedAt: JsonReader.optionalString(json, 'closedAt'),
+      previousRecordId: JsonReader.optionalString(json, 'previousRecordId'),
     );
   }
 }
@@ -45,8 +59,13 @@ abstract final class DiagnosisDto {
 abstract final class ClinicalLabOrderDto {
   static ClinicalLabOrder fromJson(Map<String, dynamic> json) {
     final episodeType = JsonReader.string(json, 'careEpisodeType');
+    final serviceCode = JsonReader.optionalString(json, 'serviceCode');
     if (episodeType != 'OUTPATIENT_VISIT' && episodeType != 'ADMISSION') {
       throw const FormatException('Dữ liệu careEpisodeType không hợp lệ.');
+    }
+    if (serviceCode != null &&
+        (serviceCode.trim().isEmpty || serviceCode.length > 32)) {
+      throw const FormatException('Dữ liệu serviceCode không hợp lệ.');
     }
     return ClinicalLabOrder(
       sourceOrderId: JsonReader.string(json, 'sourceOrderId'),
@@ -60,6 +79,35 @@ abstract final class ClinicalLabOrderDto {
       requestedDate: JsonReader.string(json, 'requestedDate'),
       priceCode: JsonReader.string(json, 'priceCode'),
       orderedAt: JsonReader.string(json, 'orderedAt'),
+      serviceCode: serviceCode,
+    );
+  }
+}
+
+abstract final class ClinicalLabCatalogDto {
+  static ClinicalLabCatalogItem fromJson(Map<String, dynamic> json) {
+    final turnaroundHours = json['turnaroundHours'];
+    final serviceCode = JsonReader.string(json, 'serviceCode');
+    if (turnaroundHours != null && turnaroundHours is! int) {
+      throw const FormatException('Dữ liệu turnaroundHours không hợp lệ.');
+    }
+    final panel = json['panel'];
+    if (panel is! bool) {
+      throw const FormatException('Dữ liệu panel không hợp lệ.');
+    }
+    if (serviceCode.length > 32) {
+      throw const FormatException('Dữ liệu serviceCode không hợp lệ.');
+    }
+    return ClinicalLabCatalogItem(
+      serviceCode: serviceCode,
+      name: JsonReader.string(json, 'name'),
+      displayGroup: JsonReader.string(json, 'displayGroup'),
+      specimenType: JsonReader.string(json, 'specimenType'),
+      preparation: JsonReader.optionalString(json, 'preparation'),
+      turnaroundHours: turnaroundHours as int?,
+      priceCode: JsonReader.string(json, 'priceCode'),
+      templateCode: JsonReader.string(json, 'templateCode'),
+      panel: panel,
     );
   }
 }

@@ -13,6 +13,12 @@ Phân công trực tiếp ngày 27/10/2026: Vinh phụ trách toàn bộ backend
 Billing/Notification trước đây của Lộc. Huy và Hoàng Anh tiếp tục frontend theo service trong
 bảng; việc backend đổi owner không chuyển các feature frontend của hai người cho Vinh.
 
+**Cập nhật 12/11/2026 (theo phân công trực tiếp của người dùng):** Vinh (`Dangvinh77` / `Harori`)
+nhận toàn bộ dự án để hoàn thiện buổi trình bày, gồm cả frontend Organization/Patient/Pharmacy/Report.
+Bảng trên giữ làm lịch sử phân công; Vinh sửa trực tiếp mọi feature và không cần HANDOFF cho
+Huy/Hoàng Anh. Ranh giới kỹ thuật (Gateway only, `lib/api.ts`, DTO đúng wire, không import chéo
+feature) vẫn áp dụng.
+
 Matching paths: frontend/src/features/<feature> và frontend/src/app/(dashboard)/<route>.
 Source-local rules có thể thu hẹp, không mở rộng canonical scope. Core/Support co-host không
 gộp FE feature folder hoặc cho phép import chéo feature.

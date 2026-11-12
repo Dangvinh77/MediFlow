@@ -66,9 +66,10 @@ class ReceptionReceipt {
     required this.status,
     required this.expiresAt,
     this.queueNumber,
+    this.roomQueueNumber,
   });
   final String id, patientId, sessionId, doctorId, status, expiresAt;
-  final int? queueNumber;
+  final int? queueNumber, roomQueueNumber;
 }
 
 class ReceptionCommand {
@@ -82,8 +83,16 @@ class ReceptionCommand {
     this.reason = '',
     this.replacementReason = '',
     this.agreedToReplacement = false,
+    this.requireIndependentReason = false,
+    this.independentReason = '',
+    this.returnVisit = false,
+    this.returnSourceRecordId,
+    this.returnReason = '',
   });
   final String patientId, reason, replacementReason;
+  final String independentReason, returnReason;
+  final String? returnSourceRecordId;
+  final bool requireIndependentReason, returnVisit;
   final ReceptionSession session;
   final bool prebooked, followUp, useRecommendation, agreedToReplacement;
   final ReceptionFollowUp? source;
@@ -96,6 +105,17 @@ class ReceptionCommand {
     }
     if (reason.length > 1000 || replacementReason.length > 1000) {
       return 'Lý do tối đa 1000 ký tự.';
+    }
+    if (independentReason.trim().length > 500 ||
+        returnReason.trim().length > 500) {
+      return 'Lý do tối đa 500 ký tự.';
+    }
+    if (requireIndependentReason && independentReason.trim().isEmpty) {
+      return 'Bệnh nhân còn lượt khám chưa kết thúc trong khoa này. Cần ghi lý do đăng ký thêm lượt.';
+    }
+    if (_linksReturn &&
+        (returnSourceRecordId == null || returnReason.trim().isEmpty)) {
+      return 'Chọn lượt đã kết thúc và ghi lý do quay lại.';
     }
     if (!followUp) return null;
     final prior = source;
@@ -116,6 +136,8 @@ class ReceptionCommand {
     return null;
   }
 
+  bool get _linksReturn => returnVisit && !followUp;
+
   Map<String, Object?> toJson() => {
     'patientId': patientId,
     'sessionId': session.id,
@@ -134,6 +156,12 @@ class ReceptionCommand {
         ? agreedToReplacement
         : null,
     'reason': reason.trim().isEmpty ? null : reason.trim(),
+    if (requireIndependentReason)
+      'independentVisitReason': independentReason.trim(),
+    if (_linksReturn) ...{
+      'returnSourceRecordId': returnSourceRecordId,
+      'returnReason': returnReason.trim(),
+    },
   };
 }
 

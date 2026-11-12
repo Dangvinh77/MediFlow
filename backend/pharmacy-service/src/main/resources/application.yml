@@ -44,6 +44,9 @@ spring:
         enabled: true
       client:
         config:
+          pharmacyClinicalReadDecisionClient:
+            connectTimeout: 1000
+            readTimeout: 4000
           pharmacyInpatientClient:
             connectTimeout: 2000
             readTimeout: 3000
@@ -69,6 +72,8 @@ eureka:
 mediflow:
   features:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  v2:
+    record-access-policy: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:

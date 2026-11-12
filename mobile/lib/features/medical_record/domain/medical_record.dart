@@ -20,18 +20,32 @@ class MedicalRecord {
     required this.createdAt,
     required this.status,
     this.symptoms,
+    this.chiefComplaint,
+    this.presentIllness,
+    this.pastHistory,
+    this.allergyNote,
+    this.physicalExam,
+    this.advice,
+    this.responsibleDoctorId,
     this.appointmentId,
     this.updatedAt,
     this.disposition,
     this.dispositionNote,
     this.completedAt,
+    this.closureReason,
+    this.closureNote,
+    this.closedAt,
+    this.previousRecordId,
   });
 
   final String id, patientId, doctorId, departmentId, examinationDate;
   final List<Diagnosis> diagnoses;
   final String createdAt, status;
   final String? symptoms, appointmentId, updatedAt;
+  final String? chiefComplaint, presentIllness, pastHistory, allergyNote;
+  final String? physicalExam, advice, responsibleDoctorId;
   final String? disposition, dispositionNote, completedAt;
+  final String? closureReason, closureNote, closedAt, previousRecordId;
 }
 
 class DiagnosisDraft {
@@ -64,8 +78,10 @@ class ClinicalLabOrderDraft {
     required this.labType,
     required this.requestedDate,
     required this.priceCode,
+    this.serviceCode,
   });
   final String labType, requestedDate, priceCode;
+  final String? serviceCode;
 }
 
 class ClinicalLabOrder {
@@ -81,10 +97,38 @@ class ClinicalLabOrder {
     required this.requestedDate,
     required this.priceCode,
     required this.orderedAt,
+    this.serviceCode,
   });
   final String sourceOrderId, recordId, patientId, requestingDoctorId;
   final String requestingDepartmentId, careEpisodeType, careEpisodeId;
   final String labType, requestedDate, priceCode, orderedAt;
+  final String? serviceCode;
+}
+
+class ClinicalLabCatalogItem {
+  const ClinicalLabCatalogItem({
+    required this.serviceCode,
+    required this.name,
+    required this.displayGroup,
+    required this.specimenType,
+    required this.priceCode,
+    required this.templateCode,
+    required this.panel,
+    this.preparation,
+    this.turnaroundHours,
+  });
+
+  final String serviceCode, name, displayGroup, specimenType;
+  final String priceCode, templateCode;
+  final String? preparation;
+  final int? turnaroundHours;
+  final bool panel;
+}
+
+/// Optional catalogue capability. A null response means the server explicitly
+/// disabled the catalogue; all other request failures remain visible to callers.
+abstract interface class ClinicalLabCatalogRepository {
+  Future<List<ClinicalLabCatalogItem>?> labCatalog({String? group});
 }
 
 class LabTestReceipt {
@@ -92,8 +136,58 @@ class LabTestReceipt {
   final String testId, status;
 }
 
+class RecordCapabilities {
+  const RecordCapabilities({
+    required this.recordId,
+    required this.canRead,
+    required this.canWriteContent,
+    required this.canComplete,
+    this.patientId,
+    this.writeBlockedReason,
+    this.canHandover,
+    this.canAcceptHandover,
+    this.canAddConsultationNote,
+    this.canAmend,
+    this.canDecideAmendments,
+  });
+
+  /// Anything the client cannot interpret grants nothing.
+  const RecordCapabilities.readOnly(this.recordId)
+    : canRead = false,
+      canWriteContent = false,
+      canComplete = false,
+      patientId = null,
+      writeBlockedReason = null,
+      canHandover = null,
+      canAcceptHandover = null,
+      canAddConsultationNote = null,
+      canAmend = null,
+      canDecideAmendments = null;
+
+  final String recordId;
+  final String? patientId, writeBlockedReason;
+  final bool canRead, canWriteContent, canComplete;
+
+  /// Collaboration flags are null (absent) while the server feature is off.
+  final bool? canHandover, canAcceptHandover, canAddConsultationNote;
+  final bool? canAmend, canDecideAmendments;
+
+  bool get collaborationAvailable =>
+      canHandover != null ||
+      canAcceptHandover != null ||
+      canAddConsultationNote != null ||
+      canAmend != null ||
+      canDecideAmendments != null;
+}
+
 abstract interface class MedicalRecordRepository {
   Future<MedicalRecord> getById(String recordId);
+  Future<RecordCapabilities> capabilities(String recordId);
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  });
   Future<List<MedicalRecord>> byPatient(String patientId);
   Future<MedicalRecord> create(CreateMedicalRecord draft);
   Future<MedicalRecord> update(String recordId, {required String? symptoms});
@@ -175,6 +269,10 @@ String? validateRecordDraft(CreateMedicalRecord draft) {
 }
 
 String? validateClinicalLabOrder(ClinicalLabOrderDraft draft) {
+  final serviceCode = draft.serviceCode?.trim();
+  if (serviceCode != null && (serviceCode.isEmpty || serviceCode.length > 32)) {
+    return 'Mã dịch vụ không được dài quá 32 ký tự.';
+  }
   if (draft.labType.trim().isEmpty || draft.labType.trim().length > 50) {
     return 'Nhập loại xét nghiệm (tối đa 50 ký tự).';
   }

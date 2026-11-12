@@ -23,4 +23,6 @@ public interface ConsultationSessionRepositoryPort {
     void updateCounts(ConsultationSession before, ConsultationSession after, Instant at);
     PageResult<ConsultationSession> search(UUID departmentId, LocalDate fromDate, LocalDate toDate, PageQuery page);
     List<ConsultationSession> findByDoctor(UUID doctorId, LocalDate fromDate, LocalDate toDate);
+    /** Non-cancelled sessions of one day; a null filter means any. */
+    List<ConsultationSession> findOnDate(LocalDate date, UUID departmentId, UUID doctorId, UUID roomId);
 }

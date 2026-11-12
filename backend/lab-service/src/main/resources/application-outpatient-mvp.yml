@@ -2,6 +2,10 @@
 # events remain durable in lab.dlq instead of applying V0 effects in this mode.
 mediflow:
   profile: outpatient-mvp
+  clients:
+    # Organization runs inside core-service; Lab asks it who may release results.
+    organization-service: core-service
+    patient-service: core-service
   features:
     outpatient-mvp:
       enabled: true

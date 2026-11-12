@@ -5,7 +5,27 @@ export interface DiagnosisDTO {
   icdCode: string | null;
 }
 
-export type MedicalRecordStatus = "OPEN" | "COMPLETED";
+export type MedicalRecordStatus = "OPEN" | "COMPLETED" | "CLOSED_WITHOUT_CONCLUSION";
+
+export type RecordClosureReason = "PATIENT_LEFT" | "PATIENT_REFUSED_EXAM" | "PATIENT_REFUSED_ORDER" | "OTHER";
+
+export interface CloseRecordRequest {
+  reason: RecordClosureReason;
+  note: string;
+}
+
+/** Body for taking back an order Lab never received. */
+export interface WithdrawLabOrderRequest {
+  reason: string;
+}
+
+export interface RecordLabOrderDTO {
+  sourceOrderId: string;
+  testId: string | null;
+  labType: string;
+  status: string;
+  orderedAt: string;
+}
 
 export type RecordDisposition =
   | "OUTPATIENT_FOLLOW_UP"
@@ -13,6 +33,15 @@ export type RecordDisposition =
   | "ADMISSION"
   | "TRANSFER"
   | "OTHER";
+
+export interface ClinicalContentDTO {
+  chiefComplaint?: string | null;
+  presentIllness?: string | null;
+  pastHistory?: string | null;
+  allergyNote?: string | null;
+  physicalExam?: string | null;
+  advice?: string | null;
+}
 
 export interface MedicalRecordDTO {
   recordId: string;
@@ -29,6 +58,17 @@ export interface MedicalRecordDTO {
   disposition: RecordDisposition | null;
   dispositionNote: string | null;
   completedAt: string | null;
+  previousRecordId?: string;
+  responsibleDoctorId?: string;
+  chiefComplaint?: string;
+  presentIllness?: string;
+  pastHistory?: string;
+  allergyNote?: string;
+  physicalExam?: string;
+  advice?: string;
+  closureReason?: RecordClosureReason;
+  closureNote?: string;
+  closedAt?: string;
 }
 
 export interface AddDiagnosisRequest {
@@ -48,7 +88,13 @@ export interface CreateMedicalRecordRequest {
 }
 
 export interface UpdateMedicalRecordRequest {
-  symptoms: string | null;
+  symptoms?: string | null;
+  chiefComplaint?: string | null;
+  presentIllness?: string | null;
+  pastHistory?: string | null;
+  allergyNote?: string | null;
+  physicalExam?: string | null;
+  advice?: string | null;
 }
 
 export interface CompleteRecordRequest {
@@ -60,6 +106,7 @@ export interface CreateClinicalLabOrderRequest {
   labType: string;
   requestedDate: string;
   priceCode: string;
+  serviceCode?: string;
 }
 
 export interface ClinicalLabOrderDTO {
@@ -74,6 +121,7 @@ export interface ClinicalLabOrderDTO {
   requestedDate: string;
   priceCode: string;
   orderedAt: string;
+  serviceCode?: string | null;
 }
 
 export interface FollowUpRecommendationDTO {
@@ -106,4 +154,233 @@ export interface PatientExamResultDTO {
   disposition: RecordDisposition | null;
   dispositionNote: string | null;
   completedAt: string;
+}
+
+export interface RecordCapabilitiesDTO {
+  recordId: string;
+  patientId: string;
+  canRead: boolean;
+  readBasis: string | null;
+  canWriteContent: boolean;
+  canComplete: boolean;
+  canRequestAmendment: boolean;
+  canHandover?: boolean;
+  canAcceptHandover?: boolean;
+  canAddConsultationNote?: boolean;
+  canAmend?: boolean;
+  canDecideAmendments?: boolean;
+  writeBlockedReason: string | null;
+}
+
+export type RecordAccessPurpose = "CONSULTATION" | "CARE_CONTINUITY" | "QUALITY_REVIEW" | "EMERGENCY" | "RECORD_MANAGEMENT";
+
+export interface RecordAccessDeclarationRequest {
+  patientId: string;
+  purpose: RecordAccessPurpose;
+  reason: string | null;
+}
+
+export interface RecordAccessDeclarationDTO {
+  declarationId: string;
+  patientId: string;
+  purpose: RecordAccessPurpose;
+  expiresAt: string;
+}
+
+export type TimelineVisitKind = "FOLLOW_UP" | "RETURN" | "NEW";
+
+export interface TimelineEntryDTO {
+  recordId: string;
+  examinationDate: string;
+  departmentId: string;
+  doctorId: string;
+  responsibleDoctorId?: string | null;
+  visitKind?: TimelineVisitKind | null;
+  status: MedicalRecordStatus;
+  disposition: RecordDisposition | null;
+  previousRecordId?: string | null;
+  treatmentCourseIds?: string[] | null;
+}
+
+export interface TimelineQuery {
+  page?: number;
+  size?: number;
+  departmentId?: string | null;
+  status?: MedicalRecordStatus | null;
+}
+
+export type RecordDocumentType = "LAB" | "PRESCRIPTION";
+
+export interface RecordDocumentPreviousRevisionDTO {
+  resultVersion: number;
+  summary: string;
+  amendmentReason: string | null;
+  sourceAt: string;
+  label: string;
+}
+
+export interface RecordDocumentDTO {
+  type: RecordDocumentType;
+  referenceId: string;
+  summary: string;
+  attachedAt: string;
+  afterConclusion: boolean;
+  resultVersion?: number | null;
+  amendmentReason?: string | null;
+  previousRevisions?: RecordDocumentPreviousRevisionDTO[] | null;
+}
+
+export type TreatmentCourseStatus = "OPEN" | "CLOSED";
+export type TreatmentCourseDecision = "RESOLVED" | "TRANSFERRED" | "PATIENT_STOPPED" | "OTHER";
+
+export interface TreatmentCourseDTO {
+  courseId: string;
+  patientId: string;
+  departmentId: string;
+  problem: string;
+  openingReason: string;
+  responsibleDoctorId: string;
+  status: TreatmentCourseStatus;
+  recordIds: string[];
+  openedAt: string;
+  lastVisitDate: string;
+  reviewDue: boolean;
+  closureDecision?: TreatmentCourseDecision | null;
+  closureNote?: string | null;
+  closedAt?: string | null;
+}
+
+export interface OpenTreatmentCourseRequest {
+  patientId: string;
+  problem: string;
+  openingReason: string;
+  recordId: string;
+}
+
+export interface AddCourseVisitRequest {
+  recordId: string;
+}
+
+export interface CloseTreatmentCourseRequest {
+  decision: TreatmentCourseDecision;
+  note: string;
+}
+
+export type RecordHandoverStatus = "PENDING" | "ACCEPTED" | "SUPERSEDED";
+
+export interface RecordHandoverDTO {
+  handoverId: string;
+  fromDoctorId: string;
+  toDoctorId: string;
+  reason: string;
+  pendingItems: string;
+  status: RecordHandoverStatus;
+  requestedAt: string;
+  acceptedAt?: string;
+}
+
+export interface RequestHandoverRequest {
+  toDoctorId: string;
+  reason: string;
+  pendingItems: string;
+}
+
+export interface ConsultationNoteDTO {
+  noteId: string;
+  authorStaffId: string;
+  opinion: string;
+  createdAt: string;
+}
+
+export interface AddConsultationNoteRequest {
+  opinion: string;
+}
+
+export type AmendmentSection =
+  | "SYMPTOMS"
+  | "CHIEF_COMPLAINT"
+  | "PRESENT_ILLNESS"
+  | "PAST_HISTORY"
+  | "ALLERGY_NOTE"
+  | "PHYSICAL_EXAM"
+  | "ADVICE"
+  | "DISPOSITION_NOTE"
+  | "CLOSURE_NOTE"
+  | "DIAGNOSIS";
+export type RecordAmendmentStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type RecordAmendmentDecision = "APPROVED" | "REJECTED";
+
+export interface RecordAmendmentDTO {
+  amendmentId: string;
+  section: AmendmentSection;
+  originalText: string;
+  amendedText: string;
+  reason: string;
+  authorStaffId: string;
+  assignedByStaffId?: string;
+  status: RecordAmendmentStatus;
+  requestedAt: string;
+  decidedByStaffId?: string;
+  decisionNote?: string;
+  decidedAt?: string;
+  contentHash?: string;
+}
+
+export interface RequestAmendmentRequest {
+  section: AmendmentSection;
+  amendedText: string;
+  reason: string;
+}
+
+export interface DecideAmendmentRequest {
+  decision: RecordAmendmentDecision;
+  note: string;
+}
+
+export interface AssignAmendmentRequest {
+  assigneeStaffId: string;
+  reason: string;
+}
+
+export interface AmendmentAssignmentDTO {
+  assignmentId: string;
+  recordId: string;
+  assigneeStaffId: string;
+  assignedByStaffId: string;
+  reason: string;
+  createdAt: string;
+}
+
+export type AllergySeverity = "MILD" | "MODERATE" | "SEVERE" | "UNKNOWN";
+export type AllergyStatus = "ACTIVE" | "RESOLVED" | "ENTERED_IN_ERROR";
+
+export interface PatientAllergyDTO {
+  allergyId: string;
+  substance: string;
+  reaction?: string | null;
+  severity: AllergySeverity;
+  status: AllergyStatus;
+  recordedByStaffId: string;
+  recordedAt: string;
+  sourceRecordId?: string | null;
+  statusReason?: string | null;
+  statusChangedByStaffId?: string | null;
+  statusChangedAt?: string | null;
+}
+
+export interface PatientAllergiesDTO {
+  active: PatientAllergyDTO[];
+  inactive: PatientAllergyDTO[];
+}
+
+export interface AddPatientAllergyRequest {
+  substance: string;
+  reaction: string | null;
+  severity: AllergySeverity;
+  sourceRecordId: string | null;
+}
+
+export interface ChangeAllergyStatusRequest {
+  status: AllergyStatus;
+  reason: string;
 }

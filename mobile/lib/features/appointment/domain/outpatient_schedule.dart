@@ -86,12 +86,13 @@ class RegistrationRow {
     required this.readyForExam,
     this.checkedInAt,
     this.queueNumber,
+    this.roomQueueNumber,
   });
 
   final String id, patientId, visitType, status;
   final bool readyForExam;
   final String? checkedInAt;
-  final int? queueNumber;
+  final int? queueNumber, roomQueueNumber;
 }
 
 class OutpatientRegistration {
@@ -110,6 +111,7 @@ class OutpatientRegistration {
     required this.reservationExpiresAt,
     this.checkedInAt,
     this.queueNumber,
+    this.roomQueueNumber,
     this.followUp,
   });
 
@@ -126,7 +128,7 @@ class OutpatientRegistration {
       reservationExpiresAt;
   final int revision;
   final String? checkedInAt;
-  final int? queueNumber;
+  final int? queueNumber, roomQueueNumber;
   final FollowUpRecommendation? followUp;
 }
 

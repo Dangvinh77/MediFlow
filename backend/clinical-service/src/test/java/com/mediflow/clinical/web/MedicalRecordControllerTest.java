@@ -119,6 +119,53 @@ class MedicalRecordControllerTest {
 
     @Test
     @WithMockUser(roles = "DOCTOR")
+    void updateAcceptsContentSections() throws Exception {
+        UUID recordId = UUID.randomUUID();
+        UpdateRecordRequest request = new UpdateRecordRequest("Sốt", "Ho", "Ho ba ngày", null, "Penicillin", null, "");
+        when(manageRecordUseCase.update(recordId, request)).thenReturn(record(recordId));
+
+        mockMvc.perform(put(BASE_PATH + "/{id}", recordId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"symptoms":"Sốt","chiefComplaint":"Ho","presentIllness":"Ho ba ngày",
+                                 "allergyNote":"Penicillin","advice":""}
+                                """))
+                .andExpect(status().isOk());
+        verify(manageRecordUseCase).update(recordId, request);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void updateRefusesSectionOver4000() throws Exception {
+        mockMvc.perform(put(BASE_PATH + "/{id}", UUID.randomUUID())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"advice\":\"" + "x".repeat(4001) + "\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(manageRecordUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void dtoOmitsEmptySections() throws Exception {
+        UUID recordId = UUID.randomUUID();
+        MedicalRecordDTO base = record(recordId);
+        MedicalRecordDTO withContent = new MedicalRecordDTO(base.recordId(), base.patientId(), base.doctorId(),
+                base.departmentId(), base.examinationDate(), base.symptoms(), base.appointmentId(), base.diagnoses(),
+                base.createdAt(), base.updatedAt(), base.status(), base.disposition(), base.dispositionNote(),
+                base.completedAt(), null, null, null, null, "Ho", null, null, null, null, null);
+        when(manageRecordUseCase.getById(recordId)).thenReturn(withContent);
+
+        mockMvc.perform(get(BASE_PATH + "/{id}", recordId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.chiefComplaint").value("Ho"))
+                .andExpect(jsonPath("$.data.presentIllness").doesNotExist())
+                .andExpect(jsonPath("$.data.advice").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
     void addDiagnosis_returns201AndLocation() throws Exception {
         UUID recordId = UUID.randomUUID();
         UUID diagnosisId = UUID.randomUUID();
@@ -138,6 +185,15 @@ class MedicalRecordControllerTest {
                 .andExpect(jsonPath("$.data.diagnosisId").value(diagnosisId.toString()));
 
         verify(manageRecordUseCase).addDiagnosis(recordId, request);
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void patientRoleCannotUseStaffRecordEndpoints() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/{id}", UUID.randomUUID())).andExpect(status().isForbidden());
+        mockMvc.perform(get(BASE_PATH + "/patient/{patientId}", UUID.randomUUID())).andExpect(status().isForbidden());
+
+        verifyNoInteractions(manageRecordUseCase);
     }
 
     @Test

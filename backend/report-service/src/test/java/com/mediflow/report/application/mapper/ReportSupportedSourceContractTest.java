@@ -32,6 +32,7 @@ class ReportSupportedSourceContractTest {
     private static final Map<String, String> FIXTURES = Map.ofEntries(
             Map.entry("medicalrecord.completed", "../clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json"),
             Map.entry("lab.result.created", "../lab-service/src/test/resources/contracts/lab.result.created.v1.json"),
+            Map.entry("lab.result.amended", "../lab-service/src/test/resources/contracts/lab.result.amended.v1.json"),
             Map.entry("prescription.filled", "../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.v1.json"),
             Map.entry("surgery.completed", "../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.outpatient.v1.json"),
             Map.entry("surgery.cancelled", "../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.cancelled.outpatient.v1.json"),

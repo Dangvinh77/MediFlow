@@ -121,6 +121,21 @@ class MedicalRecordFake implements MedicalRecordRepository {
   Future<MedicalRecord> getById(String id) =>
       onGet?.call(id) ?? Future.value(record());
   @override
+  Future<RecordCapabilities> capabilities(String recordId) async =>
+      RecordCapabilities(
+        recordId: recordId,
+        patientId: patientId,
+        canRead: true,
+        canWriteContent: true,
+        canComplete: true,
+      );
+  @override
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  }) async {}
+  @override
   Future<List<MedicalRecord>> byPatient(String id) async => [record()];
   @override
   Future<MedicalRecord> create(CreateMedicalRecord draft) async => record();
@@ -360,6 +375,8 @@ void main() {
   });
 
   testWidgets('symptom draft cannot cross a session change', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final records = MedicalRecordFake();
     await tester.pumpWidget(
       host(
@@ -368,9 +385,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sửa triệu chứng'));
+    await tester.tap(find.text('Sửa nội dung khám'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Old session draft');
+    await tester.enterText(
+      find.byKey(const Key('record-content-symptoms')),
+      'Old session draft',
+    );
     await tester.pumpWidget(
       host(
         child: const MedicalRecordDetailPage(recordId: recordId),

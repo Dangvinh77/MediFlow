@@ -51,6 +51,14 @@ class GlobalExceptionHandlerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Test
+    @WithMockUser(roles = "NURSE")
+    void routeThatIsSwitchedOff_isNotFoundInsteadOfServerError() throws Exception {
+        mockMvc.perform(get("/api/v2/clinic-queue").param("date", "2026-11-10"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("RESOURCE_NOT_FOUND"));
+    }
+
     @Autowired
     private ObjectMapper objectMapper;
 

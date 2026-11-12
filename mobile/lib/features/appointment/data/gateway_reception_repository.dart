@@ -134,6 +134,9 @@ class GatewayReceptionRepository implements ReceptionRepository {
       queueNumber: json['queueNumber'] == null
           ? null
           : _number(json, 'queueNumber', 1),
+      roomQueueNumber: json['roomQueueNumber'] == null
+          ? null
+          : _number(json, 'roomQueueNumber', 1),
     );
     if (result.patientId != intent.command.patientId ||
         result.sessionId != intent.command.session.id ||

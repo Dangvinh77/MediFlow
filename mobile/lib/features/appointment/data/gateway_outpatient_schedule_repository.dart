@@ -82,6 +82,7 @@ class GatewayOutpatientScheduleRepository
         readyForExam: json['readyForExam'] == true,
         checkedInAt: JsonReader.optionalString(json, 'checkedInAt'),
         queueNumber: _optionalInt(json, 'queueNumber'),
+        roomQueueNumber: _optionalInt(json, 'roomQueueNumber'),
       ),
     );
   }
@@ -177,6 +178,7 @@ class GatewayOutpatientScheduleRepository
       reservationExpiresAt: JsonReader.string(json, 'reservationExpiresAt'),
       checkedInAt: JsonReader.optionalString(json, 'checkedInAt'),
       queueNumber: _optionalInt(json, 'queueNumber'),
+      roomQueueNumber: _optionalInt(json, 'roomQueueNumber'),
       followUp: followUp is Map<String, dynamic>
           ? FollowUpRecommendation.fromJson(followUp)
           : null,

@@ -3,27 +3,38 @@
 > Trạng thái: **đề xuất, chưa triển khai** · Context: Clinical (chủ dữ liệu), ảnh hưởng Lab,
 > Pharmacy, Billing, Frontend, Mobile · Ngày lập: 2026-11-08
 
+> Hiệu chỉnh hiện trạng 2026-11-09: bác sĩ **đã đọc được** hồ sơ của bác sĩ khác qua API
+> danh sách/chi tiết, hiện còn đọc xuyên khoa vì chưa lọc khoa; admin cũng đọc xuyên khoa.
+> Đăng ký tái khám **đã có liên kết lần trước và cho phép đổi bác sĩ**. Giới hạn chính ở đây là
+> thiếu cấp nhóm quá trình điều trị, không phải không thể xem lịch sử của bác sĩ khác.
+> Phân tích quyền đọc và yêu cầu người dùng mới nằm tại [giới hạn 02](02-medical-record-read-access.md).
+
 ## 1. Hiện trạng
 
 Trong `clinical-service`, `MedicalRecord` (`domain/model/MedicalRecord.java`) là **một lượt
 khám** và mang **đúng một** `doctorId` cùng `departmentId`, `appointmentId`, `examinationDate`,
 `diagnoses`, `status` (`OPEN` / `COMPLETED`) và `disposition`.
 
-Quyền thao tác dựa trên phép so sánh bằng `record.doctorId == appointment.doctorId` (hoặc
-`== actor.staffId`). Phép so sánh này xuất hiện ở nhiều nơi:
+Quyền ghi và tính nhất quán lượt khám dùng phép so sánh `record.doctorId == appointment.doctorId`
+(hoặc `== actor.staffId`). Không suy diễn các kiểm tra này thành quyền đọc của mọi API.
+Các kiểm tra xuất hiện ở nhiều nơi:
 
 - `MedicalRecordApplicationService` (≈ dòng 190) và `requireDoctorDepartment(...)` khi tạo/cập nhật
 - `ClinicalLabOrderApplicationService` (≈ 100), `ClinicalLabCompletionGuard` (≈ 32, 45)
 - `ClinicalCareFinanceApplicationService` (≈ 204, 249)
 - `FollowUpRecommendationApplicationService` (≈ 121, 133, 147, 187)
 
-Liên kết giữa các lần khám hiện chỉ có:
+Liên kết và góc nhìn lịch sử hiện có:
 
-- `OutpatientRegistration.visitType` = `NEW_VISIT` / `FOLLOW_UP` — chỉ là nhãn, không trỏ về lần
-  khám trước;
+- `OutpatientRegistration.visitType` = `NEW_VISIT` / `FOLLOW_UP`; `FollowUpLink` giữ
+  `previousRegistrationId`, `recommendationId`, lý do đổi bác sĩ và xác nhận của bệnh nhân.
+  `OutpatientRegistrationApplicationService.validateFollowUp(...)` cho bác sĩ khác tiếp nhận
+  cùng khoa khi đủ điều kiện; có test `requiresPatientConsentAndReasonForSubstituteDoctorAndPersistsBoth`;
 - `FollowUpRecommendation(sourceRecordId, sourceRegistrationId, patientId, departmentId,
   preferredDoctorId, recommendedFrom…)` — chỉ nối **một** lần khám nguồn với **một** lần hẹn sau;
-- `GET /api/v1/records/patient/{patientId}` trả về danh sách phẳng mọi record của bệnh nhân.
+- `GET /api/v1/records/patient/{patientId}` trả về danh sách phẳng mọi record của bệnh nhân,
+  không lọc bác sĩ/khoa/trạng thái; `GET /api/v1/records/{id}` chưa kiểm tra khoa ở use case.
+  Cả hai cho `ADMIN`, `DOCTOR`, `NURSE`. Riêng đọc giấy hẹn tái khám vẫn kiểm tra bác sĩ nguồn.
 
 ## 2. Vấn đề
 
@@ -36,13 +47,14 @@ Ví dụ bệnh nhân A:
 
 Với mô hình hiện tại:
 
-1. **Phân mảnh theo bác sĩ.** Sáu lần khám là sáu record rời, mỗi record "thuộc về" một bác sĩ.
-   BS C tái khám nhưng hệ thống không biết record của BS B là bệnh sử của chính đợt bệnh này.
+1. **Thiếu nhóm lịch sử theo quá trình điều trị.** Sáu lần khám có sáu record với bác sĩ chịu
+   trách nhiệm riêng; C có thể xem record của B. Liên kết tái khám đã có nhưng chưa có aggregate
+   quá trình điều trị để nhóm và quản lý vòng đời chung.
 2. **Không có khái niệm "đợt điều trị" theo chuyên khoa.** Không phân biệt được "tái khám tim
-   mạch (cùng đợt)" với "khám mới tim mạch (đợt mới)" ngoài nhãn `visitType`.
-3. **Quyền gắn với cá nhân.** Các guard `record.doctorId == …` ngầm giả định bác sĩ khám sau phải
-   là bác sĩ cũ. Điều này trái thực tế bệnh viện Việt Nam: lịch trực, lịch phòng khám xoay vòng,
-   bệnh nhân bốc số và được khám bởi bác sĩ đang ngồi phòng.
+   mạch (cùng đợt)" với "khám mới tim mạch (đợt mới)" bằng vòng đời episode, dù đã có nhãn và
+   liên kết tái khám.
+3. **Quyền đọc chưa đồng nhất.** Hồ sơ khám đọc rộng theo role, chưa giới hạn khoa; giấy hẹn
+   giới hạn bác sĩ nguồn. Các guard ghi đúng bác sĩ/lượt vẫn cần giữ, không bỏ để mở quyền đọc.
 4. **Không có góc nhìn tổng.** Bác sĩ gan (E/F/T) cần biết bệnh nhân đang dùng thuốc tim mạch do
    B/C/G kê (tương tác thuốc, chống chỉ định) nhưng chỉ có danh sách phẳng, không theo chuyên khoa.
 
@@ -51,7 +63,11 @@ Với mô hình hiện tại:
 Cần đối chiếu với văn bản gốc trước khi chốt:
 
 - Luật Khám bệnh, chữa bệnh 15/2023/QH15 và Thông tư 32/2023/TT-BYT về hồ sơ bệnh án.
-- Thông tư 46/2018/TT-BYT về hồ sơ bệnh án điện tử.
+- Thông tư 13/2025/TT-BYT về triển khai hồ sơ bệnh án điện tử; Thông tư 46/2018/TT-BYT đã
+  được quy định hết hiệu lực, không dùng làm căn cứ hiện hành chính. Nguồn tại giới hạn 02.
+
+Các lựa chọn aggregate, giới hạn theo khoa và số bác sĩ phụ trách là thiết kế của dự án;
+không khẳng định pháp luật bắt buộc chính xác cấu trúc ba tầng hoặc một người ghi mỗi lượt.
 
 | Thực tế | Ý nghĩa cho thiết kế |
 |---|---|
@@ -117,7 +133,10 @@ Bất biến:
 
 ### 4.4 Phân quyền mới — theo khoa và mối quan hệ điều trị
 
-Thay các guard `record.doctorId == actor`:
+Tách chính sách đọc khỏi kiểm tra ghi `record.doctorId == actor`; giữ ràng buộc đúng bác sĩ/lượt
+cho thao tác ghi. Bảng dưới là đề xuất ban đầu, **chưa triển khai**. Yêu cầu mới ngày 2026-11-09
+về bác sĩ đọc cùng khoa và admin đọc xuyên khoa được ghi tại giới hạn 02; khi duyệt thiết kế
+phải hợp nhất hai bảng, không lấy bảng này làm mô tả quyền đang chạy.
 
 | Hành động | Ai được phép |
 |---|---|
@@ -125,7 +144,7 @@ Thay các guard `record.doctorId == actor`:
 | Chỉ định xét nghiệm, kê đơn, hẹn tái khám | Bác sĩ khám của encounter đang mở; điều kiện phiên khám/lịch giữ nguyên. |
 | Đọc toàn bộ episode (mọi encounter, mọi bác sĩ) | Mọi bác sĩ/điều dưỡng **thuộc khoa** của episode. Trưởng khoa luôn được đọc. |
 | Đọc tóm tắt chéo chuyên khoa (chẩn đoán, đơn thuốc đang dùng, dị ứng, kết quả XN) | Bác sĩ đang có encounter `OPEN` với bệnh nhân (đang điều trị), mọi khoa. |
-| Đọc chi tiết episode khoa khác | "Truy cập khẩn" có lý do bắt buộc và ghi audit (break-the-glass); ADMIN không xem nội dung lâm sàng mặc định. |
+| Đọc chi tiết episode khoa khác | Bác sĩ: cần quyết định cho khám phối hợp/hội chẩn thông thường và truy cập khẩn riêng; không coi mọi truy cập liên khoa là khẩn. ADMIN: yêu cầu mới cho xem xuyên khoa, cần xác định nhiệm vụ quản lý và lưu vết theo giới hạn 02. |
 | Đóng / mở lại episode | Bác sĩ thuộc khoa; mở lại cần trưởng khoa (tùy chọn chốt ở mục 7). |
 
 Ghi chú bắt buộc theo `docs/ai/07`: `@PreAuthorize` chỉ chặn vai trò. Điều kiện khoa/mối quan hệ
@@ -165,7 +184,7 @@ Theo AGENTS.md, phải khóa fixture DTO/serializer/migration hiện có (M6-02)
    - Cập nhật script seed demo cho schema-aware như bài học V19 của Organization.
 3. **Pha 2 — Domain & quyền.**
    - Thêm `CareEpisode` aggregate, port, adapter.
-   - Thay các guard `doctorId ==` ở mục 1 bằng chính sách mới (một `ClinicalAccessPolicy` dùng chung).
+   - Thêm chính sách đọc dùng chung; giữ các guard ghi đúng bác sĩ/lượt ở mục 1.
    - Viết test cho từng quy tắc ở 4.1–4.4 theo `docs/ai/09`, gồm kịch bản 6 bác sĩ của mục 2.
 4. **Pha 3 — API & gateway.** Endpoint mục 5, security test cho từng route, cập nhật contract CSV.
 5. **Pha 4 — Frontend** (Vinh: Clinical).
@@ -191,5 +210,6 @@ Theo AGENTS.md, phải khóa fixture DTO/serializer/migration hiện có (M6-02)
 ## 8. Ngoài phạm vi
 
 - Nội trú / phẫu thuật (vẫn hoãn trong MVP) — mô hình episode được thiết kế để mở rộng sau.
-- Chữ ký số / ký điện tử bệnh án theo TT 46/2018 — chỉ lưu người ký và thời điểm ở MVP.
+- Ký/xác nhận điện tử đáp ứng TT 13/2025 — MVP chỉ ghi nhận người thao tác và thời điểm,
+  không tự coi đây là bằng chứng đã đáp ứng giá trị pháp lý thay hồ sơ giấy.
 - Liên thông hồ sơ sức khỏe điện tử quốc gia.

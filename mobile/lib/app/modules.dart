@@ -13,6 +13,7 @@ class AppModule {
     this.roles, {
     this.implemented = false,
     this.scheduling = false,
+    this.clinicIntake = false,
     this.headOnly = false,
     this.accent = Wayfinding.home,
     this.navLabel,
@@ -24,6 +25,9 @@ class AppModule {
 
   /// Hidden unless the build enables the V2 scheduling workspaces.
   final bool scheduling;
+
+  /// Hidden unless the build enables the V2 department nurse desk.
+  final bool clinicIntake;
 
   /// Shown to a doctor only while appointed head of a department.
   final bool headOnly;
@@ -144,6 +148,18 @@ const modules = [
     navLabel: 'Phiếu khám',
   ),
   AppModule(
+    '/appointments/clinic-queue',
+    'Quầy điều dưỡng khoa',
+    'Số phòng và sinh hiệu',
+    'Vinh',
+    Icons.meeting_room_outlined,
+    [UserRole.nurse, UserRole.doctor],
+    implemented: true,
+    clinicIntake: true,
+    accent: Wayfinding.appointment,
+    navLabel: 'Quầy khoa',
+  ),
+  AppModule(
     '/appointments',
     'Lịch hẹn',
     'Tiếp nhận ngoại trú',
@@ -232,6 +248,7 @@ bool isSupportChild(AppModule module) =>
 List<AppModule> visibleMainModules(
   UserRole role, {
   bool schedulingEnabled = false,
+  bool clinicIntakeEnabled = false,
   bool headsDepartment = false,
 }) => modules
     .where(
@@ -239,6 +256,7 @@ List<AppModule> visibleMainModules(
           !isSupportChild(module) &&
           module.allows(role) &&
           (!module.scheduling || schedulingEnabled) &&
+          (!module.clinicIntake || clinicIntakeEnabled) &&
           (!module.headOnly || headsDepartment),
     )
     .toList();

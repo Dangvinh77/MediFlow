@@ -83,7 +83,7 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
             if (!payloadFingerprint.equals(current.payloadFingerprint())) conflict("BILLING_REGISTRATION_REVISION_CONFLICT");
         } else {
             if (fact.registrationRevision() != current.revision() + 1) conflict("BILLING_REGISTRATION_REVISION_GAP");
-            if (!sameImmutableBinding(fact, current)) conflict("BILLING_REGISTRATION_SOURCE_CONFLICT");
+            if (!sameImmutableBinding(fact, current) || !sameSchedule(fact, current)) conflict("BILLING_REGISTRATION_SOURCE_CONFLICT");
             if (terminal(current.registrationStatus()) && !terminal(fact.status())) {
                 conflict("BILLING_REGISTRATION_TERMINAL_CONFLICT");
             }
@@ -100,6 +100,107 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
             }
         }
         closeRequestIfSourceTerminal(fact.registrationId(), fact.status(), fact.changedAt());
+        recordSettlement(event, payloadFingerprint);
+    }
+
+    private void recordSettlement(OutpatientRegistrationChangedEvent event, String fingerprint) {
+        var fact = event.payload();
+        boolean cancelled = "CANCELLED".equals(fact.status());
+        if (!cancelled && fact.reschedule() == null) return;
+        UUID requestId = findSource(fact.registrationId(), false).orElseThrow().paymentRequestId();
+        var allocations = requestId == null ? List.<java.util.Map<String, Object>>of() : jdbc.queryForList("""
+                SELECT p.transaction_id,a.charge_id,p.account_id,p.currency,
+                  a.amount-COALESCE((SELECT SUM(r.amount) FROM PAYMENT_ALLOCATION r JOIN PAYMENT_TRANSACTION t ON t.transaction_id=r.transaction_id
+                    WHERE r.charge_id=a.charge_id AND t.original_transaction_id=p.transaction_id
+                    AND t.transaction_type IN ('REFUND','REVERSAL') AND t.status='COMPLETED'),0) AS due
+                FROM PAYMENT_ALLOCATION a JOIN PAYMENT_TRANSACTION p ON p.transaction_id=a.transaction_id
+                WHERE p.payment_request_id=? AND p.transaction_type='PAYMENT' AND p.status='COMPLETED'
+                ORDER BY p.transaction_id,a.charge_id
+                """, requestId);
+        BigDecimal collected = allocations.stream().map(row -> (BigDecimal) row.get("due")).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (fact.reschedule() != null) {
+            var move = fact.reschedule();
+            insertSettlement(fact, "RESCHEDULED", requestId, collected, move.actorAccountId(), move.actorStaffId(), move.reason(),
+                    move.previousSessionId(), fact.sessionId(), move.rescheduledAt());
+            return;
+        }
+        var cancellation = fact.cancellation();
+        boolean refundDue = collected.signum() > 0;
+        insertSettlement(fact, refundDue ? "REFUND_DUE" : "VOID_UNPAID", requestId, refundDue ? collected : BigDecimal.ZERO,
+                cancellation.actorAccountId(), cancellation.actorStaffId(), cancellation.reason(), null, null, cancellation.cancelledAt());
+        if (refundDue) recordRefundEvidence(event, fingerprint, requestId, allocations);
+    }
+
+    private void insertSettlement(OutpatientRegistrationChangedEvent.RegistrationFact fact, String kind, UUID requestId, BigDecimal amount,
+            UUID actor, UUID staff, String reason, UUID previousSession, UUID newSession, java.time.Instant at) {
+        jdbc.update("""
+                INSERT INTO outpatient_registration_settlement(registration_id,registration_revision,kind,payment_request_id,amount,currency,
+                    source_type,source_id,actor_account_id,actor_staff_id,reason,previous_session_id,new_session_id,occurred_at)
+                VALUES (?,?,?,?,?,'VND',?,?,?,?,?,?,?,?) ON CONFLICT(registration_id,registration_revision) DO NOTHING
+                """, fact.registrationId(), fact.registrationRevision(), kind, requestId, amount, fact.sourceType(), fact.sourceId(),
+                actor, staff, reason, previousSession, newSession, Timestamp.from(at));
+    }
+
+    /** Same durable evidence an exam cancellation leaves, so the existing refund path applies unchanged. */
+    private void recordRefundEvidence(OutpatientRegistrationChangedEvent event, String fingerprint, UUID requestId,
+            List<java.util.Map<String, Object>> allocations) {
+        var fact = event.payload();
+        var cancellation = fact.cancellation();
+        jdbc.query("SELECT account_id FROM BILLING_ACCOUNT WHERE account_id=? FOR UPDATE", (rs, row) -> uuid(rs, "account_id"),
+                allocations.getFirst().get("account_id"));
+        jdbc.update("""
+                INSERT INTO outpatient_cancellation_source(source_type,source_id,event_type,source_fingerprint,first_event_id,correlation_id,
+                    patient_id,department_id,care_episode_type,care_episode_id,cancelled_by,reason,cancelled_at_iso,status,applied_at)
+                VALUES ('EXAM',?,'appointment.exam.cancelled',?,?,?,?,?,?,?,?,?,?,'APPLIED',?) ON CONFLICT(source_type,source_id) DO NOTHING
+                """, fact.registrationId(), fingerprint, event.eventId(), event.correlationId(), fact.patientId(), fact.departmentId(),
+                fact.careEpisodeType(), fact.careEpisodeId(), cancellation.actorAccountId(), cancellation.reason(),
+                cancellation.cancelledAt().toString(), Timestamp.from(fact.changedAt()));
+        for (var allocation : allocations) {
+            if (((BigDecimal) allocation.get("due")).signum() <= 0) continue;
+            jdbc.update("""
+                    INSERT INTO outpatient_cancellation_refund_due(source_type,source_id,original_transaction_id,charge_id,account_id,amount,currency)
+                    VALUES ('EXAM',?,?,?,?,?,?) ON CONFLICT DO NOTHING
+                    """, fact.registrationId(), allocation.get("transaction_id"), allocation.get("charge_id"), allocation.get("account_id"),
+                    allocation.get("due"), allocation.get("currency"));
+            jdbc.update("UPDATE CHARGE SET status='VOIDED',void_reason='OUTPATIENT_CANCELLATION' WHERE charge_id=? AND status='POSTED'",
+                    allocation.get("charge_id"));
+        }
+        jdbc.update("UPDATE FINANCIAL_CLEARANCE SET revoked_at=? WHERE payment_request_id=? AND revoked_at IS NULL",
+                Timestamp.from(fact.changedAt()), requestId);
+    }
+
+    @Override
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ, timeout = 3)
+    public com.mediflow.common.api.PageResult<com.mediflow.billing.application.dto.response.RegistrationSettlementDTO> findSettlements(
+            String kind, com.mediflow.common.api.PageQuery page) {
+        String where = kind == null ? "" : " WHERE z.kind=?";
+        var args = new java.util.ArrayList<Object>();
+        if (kind != null) args.add(kind);
+        Long count = jdbc.queryForObject("SELECT COUNT(*) FROM outpatient_registration_settlement z" + where, Long.class, args.toArray());
+        args.add(page.size());
+        args.add((long) page.page() * page.size());
+        var rows = jdbc.query("""
+                SELECT z.*,CASE WHEN z.kind='REFUND_DUE' THEN COALESCE(x.outstanding,0) ELSE 0 END AS outstanding
+                  FROM outpatient_registration_settlement z LEFT JOIN LATERAL (
+                    SELECT SUM(GREATEST(0,LEAST(d.amount,a.amount-COALESCE((SELECT SUM(r.amount) FROM PAYMENT_ALLOCATION r
+                        JOIN PAYMENT_TRANSACTION t ON t.transaction_id=r.transaction_id
+                        WHERE t.original_transaction_id=d.original_transaction_id AND r.charge_id=d.charge_id
+                          AND t.transaction_type IN ('REFUND','REVERSAL') AND t.status='COMPLETED'),0)))) AS outstanding
+                      FROM outpatient_cancellation_refund_due d JOIN PAYMENT_ALLOCATION a
+                        ON a.transaction_id=d.original_transaction_id AND a.charge_id=d.charge_id
+                     WHERE d.source_type=z.source_type AND d.source_id=z.source_id
+                  ) x ON TRUE
+                """ + where + " ORDER BY z.occurred_at DESC,z.registration_id,z.registration_revision LIMIT ? OFFSET ?", (rs, row) -> {
+                    BigDecimal amount = rs.getBigDecimal("amount");
+                    BigDecimal outstanding = rs.getBigDecimal("outstanding");
+                    boolean refundDue = "REFUND_DUE".equals(rs.getString("kind"));
+                    return new com.mediflow.billing.application.dto.response.RegistrationSettlementDTO(uuid(rs, "registration_id"),
+                            rs.getLong("registration_revision"), rs.getString("kind"), uuid(rs, "payment_request_id"), amount,
+                            refundDue ? amount.subtract(outstanding) : BigDecimal.ZERO, outstanding, rs.getString("currency").trim(),
+                            rs.getString("source_type"), uuid(rs, "source_id"), uuid(rs, "actor_account_id"), rs.getString("reason"),
+                            rs.getTimestamp("occurred_at").toInstant());
+                }, args.toArray());
+        return com.mediflow.common.api.PageResult.of(rows, count == null ? 0 : count, page.page(), page.size());
     }
 
     @Override
@@ -279,13 +380,7 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
     private static boolean sameImmutableBinding(OutpatientRegistrationChangedEvent.RegistrationFact fact, Source current) {
         return fact.registrationId().equals(current.registrationId())
                 && fact.patientId().equals(current.patientId())
-                && fact.doctorId().equals(current.doctorId())
                 && fact.departmentId().equals(current.departmentId())
-                && fact.sessionId().equals(current.sessionId())
-                && fact.roomId().equals(current.roomId())
-                && fact.sessionDate().equals(current.sessionDate())
-                && fact.startTime().equals(current.startTime())
-                && fact.endTime().equals(current.endTime())
                 && fact.visitType().equals(current.visitType())
                 && fact.reservationId().equals(current.reservationId())
                 && fact.priceCode().equals(current.priceCode())
@@ -293,6 +388,20 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
                 && fact.sourceId().equals(current.sourceId())
                 && fact.careEpisodeType().equals(current.careEpisodeType())
                 && fact.careEpisodeId().equals(current.careEpisodeId());
+    }
+
+    /** The place in the schedule stays fixed unless this revision carries a move away from the session Billing holds. */
+    private static boolean sameSchedule(OutpatientRegistrationChangedEvent.RegistrationFact fact, Source current) {
+        if (fact.reschedule() != null) {
+            return fact.reschedule().previousSessionId().equals(current.sessionId())
+                    && ("AWAITING_PAYMENT".equals(current.registrationStatus()) || "CONFIRMED".equals(current.registrationStatus()));
+        }
+        return fact.doctorId().equals(current.doctorId())
+                && fact.sessionId().equals(current.sessionId())
+                && fact.roomId().equals(current.roomId())
+                && fact.sessionDate().equals(current.sessionDate())
+                && fact.startTime().equals(current.startTime())
+                && fact.endTime().equals(current.endTime());
     }
 
     private static void conflict(String code) { throw new BillingRuleException(code, code); }

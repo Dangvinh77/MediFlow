@@ -132,6 +132,19 @@ billing:
       LAB-CBC:
         description: "Xet nghiem cong thuc mau"
         unit-amount: 80000
+      # v2.0 demo Lab catalogue (lab V7); demo amounts, not a reviewed tariff.
+      LAB-GLU:
+        description: "Xet nghiem glucose mau"
+        unit-amount: 40000
+      LAB-HBSAG:
+        description: "Xet nghiem HBsAg"
+        unit-amount: 90000
+      LAB-UA:
+        description: "Tong phan tich nuoc tieu"
+        unit-amount: 60000
+      LAB-MICRO:
+        description: "Soi nhuom vi sinh"
+        unit-amount: 70000
 
 management:
   endpoints:

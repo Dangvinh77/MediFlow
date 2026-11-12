@@ -1,6 +1,6 @@
 import { api, type MutationOptions } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
-import type { DepartmentSessionSummary, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate } from "./types";
+import type { DepartmentSessionSummary, DoctorWorkShiftCreate, DoctorWorkShiftDTO, DoctorWorkShiftUpdate, OpenVisitDTO, ReturnSourceRecord } from "./types";
 import type {
   AppointmentDTO,
   ChangeAppointmentStatusRequest,
@@ -17,7 +17,15 @@ import type {
   RegistrationCreate,
   RegistrationDTO,
   RegistrationSummary,
+  ClinicQueueEntryDTO,
+  ClinicQueueTicketDTO,
+  ClinicTicketAdjustmentCommand,
+  ClinicTicketCallCommand,
+  VitalSignCreateRequest,
+  VitalSignObservationDTO,
+  RescheduleCommand,
   RevisionCommand,
+  ScheduleImpactDTO,
   UpdateAppointmentRequest,
 } from "./types";
 
@@ -131,6 +139,11 @@ export const appointmentApi = {
     api.put<ConsultationSessionDTO>(`/v2/consultation-sessions/${encodeURIComponent(sessionId)}/status`, body, options),
   createRegistration: (body: RegistrationCreate, options: SchedulingCommandOptions) =>
     api.post<RegistrationDTO>("/v2/outpatient-registrations", body, options),
+  openVisits: (patientId: string) =>
+    api.get<OpenVisitDTO[]>(`/v2/patients/${encodeURIComponent(patientId)}/open-visits`),
+  myOpenVisits: () => api.get<OpenVisitDTO[]>("/v2/doctors/me/open-visits"),
+  returnSources: (patientId: string) =>
+    api.get<ReturnSourceRecord[]>(`/v2/patients/${encodeURIComponent(patientId)}/return-sources`),
   myRegistrations: (params: OwnRegistrationSearchParams = {}) => {
     const page = Number.isInteger(params.page) && (params.page ?? -1) >= 0 ? params.page! : 0;
     const size = Number.isInteger(params.size) && (params.size ?? 0) > 0 ? Math.min(params.size!, 100) : 20;
@@ -149,4 +162,25 @@ export const appointmentApi = {
     api.put<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/arrival`, body, options),
   cancelRegistration: (registrationId: string, body: RegistrationCancellationCommand, options: SchedulingCommandOptions) =>
     api.put<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/cancellation`, body, options),
+  reschedule: (registrationId: string, body: RescheduleCommand, options: SchedulingCommandOptions) =>
+    api.post<RegistrationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/reschedule`, body, options),
+  clinicQueue: (date: string, roomId?: string) => {
+    const query = new URLSearchParams({ date });
+    if (roomId) query.set("roomId", roomId);
+    return api.get<ClinicQueueEntryDTO[]>(`/v2/clinic-queue?${query}`);
+  },
+  issueRoomTicket: (registrationId: string, options: SchedulingCommandOptions) =>
+    api.post<ClinicQueueTicketDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/room-queue-ticket`, undefined, options),
+  callTicket: (ticketId: string, body: ClinicTicketCallCommand, options: SchedulingCommandOptions) =>
+    api.put<ClinicQueueTicketDTO>(`/v2/clinic-queue-tickets/${encodeURIComponent(ticketId)}/call`, body, options),
+  adjustTicket: (ticketId: string, body: ClinicTicketAdjustmentCommand, options: SchedulingCommandOptions) =>
+    api.post<ClinicQueueTicketDTO>(`/v2/clinic-queue-tickets/${encodeURIComponent(ticketId)}/adjustments`, body, options),
+  createVitalSigns: (registrationId: string, body: VitalSignCreateRequest, options: SchedulingCommandOptions) =>
+    api.post<VitalSignObservationDTO>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/vital-signs`, body, options),
+  listVitalSigns: (registrationId: string) =>
+    api.get<VitalSignObservationDTO[]>(`/v2/outpatient-registrations/${encodeURIComponent(registrationId)}/vital-signs`),
+  sessionImpact: (sessionId: string) =>
+    api.get<ScheduleImpactDTO>(`/v2/consultation-sessions/${encodeURIComponent(sessionId)}/impact`),
+  shiftImpact: (shiftId: string) =>
+    api.get<ScheduleImpactDTO>(`/v2/doctor-work-shifts/${encodeURIComponent(shiftId)}/impact`),
 };

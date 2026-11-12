@@ -4,7 +4,7 @@ import { getSessionKey } from "@/lib/session";
 import { prepareCommandIntent } from "@/lib/command-intent";
 import { appointmentApi } from "../api";
 import { DoctorWorkShiftsWorkspace } from "./DoctorWorkShiftsWorkspace";
-vi.mock("../api", () => ({ appointmentApi: { workShifts: vi.fn(), consultationRooms: vi.fn(), createSessionFromShift: vi.fn(), cancelWorkShift: vi.fn() } }));
+vi.mock("../api", () => ({ appointmentApi: { workShifts: vi.fn(), consultationRooms: vi.fn(), createSessionFromShift: vi.fn(), cancelWorkShift: vi.fn(), shiftImpact: vi.fn() } }));
 vi.mock("@/lib/session", () => ({ getSessionKey: vi.fn(() => "session") }));
 vi.mock("@/lib/command-intent", () => ({ CommandIntentError: class extends Error {}, prepareCommandIntent: vi.fn() }));
 vi.mock("@/components/references/ReferenceInput", () => ({ ReferenceInput: () => null }));
@@ -116,4 +116,30 @@ it("normalizes Sunday date selection and previous/next week controls to full wee
   fireEvent.click(screen.getByRole("button", { name: "Tuần sau" }));
   expect(screen.getByLabelText("Từ ngày")).toHaveValue("2026-11-09");
   expect(screen.getByLabelText("Đến ngày")).toHaveValue("2026-11-15");
+});
+it("shift cancel shows affected registrations before confirming", async () => {
+  vi.mocked(appointmentApi.cancelWorkShift).mockClear();
+  vi.mocked(appointmentApi.workShifts).mockResolvedValue(result([shift]));
+  vi.mocked(appointmentApi.shiftImpact).mockResolvedValue({ sessionIds: ["x"], heldCount: 0, paymentLockedCount: 0, confirmedCount: 1, consumedCount: 0, registrations: [
+    { registrationId: "r1", patientId: "p1", sessionId: "x", status: "CONFIRMED", reservationStatus: "CONFIRMED", checkedInAt: null, queueNumber: 4, roomQueueNumber: null },
+  ] });
+  render(<DoctorWorkShiftsWorkspace departmentId="k" checking={false} clinicIntakeEnabled />);
+  const cancel = await screen.findByRole("button", { name: "Hủy giờ làm việc" });
+  await waitFor(() => expect(cancel).toBeEnabled());
+  fireEvent.click(cancel);
+  expect(await screen.findByRole("heading", { name: "Bệnh nhân bị ảnh hưởng" })).toBeInTheDocument();
+  expect(appointmentApi.shiftImpact).toHaveBeenCalledWith("s1");
+  expect(await screen.findByText(/Số quầy 4/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Xác nhận hủy giờ làm việc" })).toBeInTheDocument();
+  expect(screen.getByText(/buổi khám còn mở của ca sẽ bị dừng/i)).toBeInTheDocument();
+  expect(screen.queryByText(/sẽ chặn hủy/i)).not.toBeInTheDocument();
+  expect(appointmentApi.cancelWorkShift).not.toHaveBeenCalled();
+});
+it("shift cancel still warns that linked sessions block it while clinic intake is off", async () => {
+  vi.mocked(appointmentApi.workShifts).mockResolvedValue(result([shift]));
+  render(<DoctorWorkShiftsWorkspace departmentId="k" checking={false} />);
+  const cancel = await screen.findByRole("button", { name: "Hủy giờ làm việc" });
+  await waitFor(() => expect(cancel).toBeEnabled());
+  fireEvent.click(cancel);
+  expect(await screen.findByText(/sẽ chặn hủy/i)).toBeInTheDocument();
 });

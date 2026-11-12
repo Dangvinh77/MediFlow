@@ -91,3 +91,48 @@ describe("appointment care commands through Gateway", () => {
     expect(new Headers(fetchMock.mock.calls[0][1].headers).get("X-Correlation-Id")).toBe(options.correlationId);
   });
 });
+
+describe("clinic desk commands through Gateway", () => {
+  const fetchMock = vi.fn();
+  const options = { idempotencyKey: "key-1", correlationId: "trace-1" };
+  beforeEach(() => { vi.stubGlobal("fetch", fetchMock); fetchMock.mockReset(); fetchMock.mockImplementation(async () => Response.json({ success: true, data: {} })); });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reads return sources from the registration route, not the record-read route", async () => {
+    const sources = [{ recordId: "record-1", status: "COMPLETED", examinationDate: "2026-11-01", departmentId: "department-1" }];
+    fetchMock.mockResolvedValue(Response.json({ success: true, data: sources }));
+    expect(await appointmentApi.returnSources("patient/1")).toEqual(sources);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/patients/patient%2F1/return-sources");
+  });
+
+  it("reads the board for one date and optionally one room", async () => {
+    await appointmentApi.clinicQueue("2026-11-10");
+    await appointmentApi.clinicQueue("2026-11-10", "room/1");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/clinic-queue?date=2026-11-10");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v2/clinic-queue?date=2026-11-10&roomId=room%2F1");
+  });
+  it("issues a room number with an empty body and an idempotency key", async () => {
+    await appointmentApi.issueRoomTicket("r/1", options);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/v2/outpatient-registrations/r%2F1/room-queue-ticket");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeUndefined();
+    expect(init.headers.get("Idempotency-Key")).toBe("key-1");
+  });
+  it("calls and adjusts tickets on their own paths", async () => {
+    await appointmentApi.callTicket("t1", { expectedRevision: 2 }, options);
+    await appointmentApi.adjustTicket("t1", { expectedRevision: 3, type: "LATE", reason: "Đến muộn" }, options);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/clinic-queue-tickets/t1/call");
+    expect(fetchMock.mock.calls[0][1].method).toBe("PUT");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v2/clinic-queue-tickets/t1/adjustments");
+    expect(fetchMock.mock.calls[1][1].method).toBe("POST");
+  });
+  it("writes and reads vital signs of a registration", async () => {
+    fetchMock.mockImplementationOnce(async () => Response.json({ success: true, data: {} })).mockImplementationOnce(async () => Response.json({ success: true, data: [] }));
+    await appointmentApi.createVitalSigns("r1", { pulseBpm: 80, systolicMmhg: null, diastolicMmhg: null, temperatureC: null, respiratoryRate: null, spo2Percent: null, weightKg: null, notMeasuredReason: "x" }, options);
+    await appointmentApi.listVitalSigns("r1");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/outpatient-registrations/r1/vital-signs");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v2/outpatient-registrations/r1/vital-signs");
+  });
+});

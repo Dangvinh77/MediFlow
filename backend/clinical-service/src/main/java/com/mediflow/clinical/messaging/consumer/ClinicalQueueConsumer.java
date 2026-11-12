@@ -50,6 +50,7 @@ public class ClinicalQueueConsumer {
         try {
             switch (routingKey) {
                 case RabbitConfig.LAB_RESULT_CREATED -> consumeLabResult(message);
+                case RabbitConfig.LAB_RESULT_AMENDED -> consumeLabAmendment(message);
                 case RabbitConfig.PRESCRIPTION_FILLED -> consumePrescription(message);
                 default -> throw new MessageConversionException(
                         "Unsupported clinical routing key: " + routingKey);
@@ -76,6 +77,28 @@ public class ClinicalQueueConsumer {
         ConsumerInboxClaim claim = evidenceFactory.create(LAB_RESULT_CONSUMER,
                 RabbitConfig.LAB_RESULT_CREATED, payload.eventId(), operationKey, message.getBody());
         inbox.execute(claim, () -> labResults.consume(payload));
+    }
+
+    private void consumeLabAmendment(Message message) throws IOException {
+        if (!outpatientMvpEnabled) {
+            throw new MessageConversionException("lab.result.amended requires outpatient MVP mode");
+        }
+        var root = objectMapper.readTree(message.getBody());
+        if (root == null || !root.has("payload")) {
+            throw new MessageConversionException("Invalid lab.result.amended envelope: payload is required");
+        }
+        var envelope = objectMapper.treeToValue(root,
+                com.mediflow.clinical.messaging.consumer.payload.LabResultAmendedEnvelope.class);
+        String problem = envelope == null ? "envelope is required" : envelope.problem();
+        if (problem != null) {
+            throw new MessageConversionException("Invalid lab.result.amended envelope: " + problem);
+        }
+        var command = envelope.toCommand();
+        // Same namespace as lab.result.created so one (labId, resultVersion) is applied once whatever its key.
+        ConsumerInboxClaim claim = evidenceFactory.create(LAB_RESULT_CONSUMER, RabbitConfig.LAB_RESULT_AMENDED,
+                command.eventId(), "clinical:lab-result:v1:" + command.labId() + ":" + command.resultVersion(),
+                message.getBody());
+        inbox.execute(claim, () -> labResults.consumeAmendment(command));
     }
 
     private void consumePrescription(Message message) throws IOException {

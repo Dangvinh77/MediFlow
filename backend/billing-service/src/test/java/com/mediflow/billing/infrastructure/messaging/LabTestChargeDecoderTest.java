@@ -33,6 +33,20 @@ class LabTestChargeDecoderTest {
     }
 
     @Test
+    void panelWithManyAnalytesIsOneCharge() throws Exception {
+        var mapper = new ObjectMapper();
+        var tree = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(bytes("lab.request.created.v1.json"));
+        var payload = tree.has("payload") ? (com.fasterxml.jackson.databind.node.ObjectNode) tree.get("payload") : tree;
+        payload.put("serviceCode", "CBC");
+
+        LabTestChargeCommand command = decoder.decode("lab.request.created", mapper.writeValueAsBytes(tree));
+
+        // One Lab request is one charge whatever its template holds; the catalogue code is not a price.
+        assertThat(command.labId()).isEqualTo(UUID.fromString("00000000-0000-4000-8000-000000000002"));
+        assertThat(command.priceCode()).isEqualTo("LAB-CBC");
+    }
+
+    @Test
     void wrongRoutingKey_rejected() throws Exception {
         byte[] body = bytes("lab.request.created.v1.json");
         assertThatThrownBy(() -> decoder.decode("lab.result.created", body)).isInstanceOf(IllegalArgumentException.class);

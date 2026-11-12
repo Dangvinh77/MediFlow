@@ -36,5 +36,6 @@ class ClinicalLabOrderContextContractFixtureTest {
         assertThat(response.data().careEpisodeType().name()).isEqualTo("OUTPATIENT_VISIT");
         assertThat(response.data().labType()).isEqualTo("CBC");
         assertThat(response.data().priceCode()).isEqualTo("LAB-CBC");
+        assertThat(response.data().serviceCode()).isEqualTo("CBC");
     }
 }

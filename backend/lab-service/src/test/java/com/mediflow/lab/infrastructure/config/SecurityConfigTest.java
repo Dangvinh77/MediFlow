@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class,
+@Import({com.mediflow.lab.web.LabReadAccessTestConfig.class, SecurityConfig.class, ThreadLocalCorrelationIdProvider.class,
         CorrelationIdFilter.class,
         SecurityConfigTest.ActuatorEndpointProbe.class})
 @TestPropertySource(properties =

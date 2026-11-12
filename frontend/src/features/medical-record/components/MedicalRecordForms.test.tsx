@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { webcrypto } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { MedicalRecordDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn(), session: "doctor-session", sessionListeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
+vi.mock("@/lib/session", () => ({ getSessionKey: () => mocks.session, subscribeToAuthChanges: (listener: () => void) => { mocks.sessionListeners.add(listener); return () => { mocks.sessionListeners.delete(listener); }; } }));
 vi.mock("../api", () => ({ medicalRecordApi: { create: mocks.create, getById: mocks.getById, update: mocks.update } }));
 import { CreateMedicalRecordForm } from "./CreateMedicalRecordForm";
 import { EditMedicalRecordForm } from "./EditMedicalRecordForm";
@@ -33,7 +35,7 @@ function fillCreateRecord() {
 }
 
 describe("Medical record forms", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.create.mockReset(); mocks.getById.mockReset(); mocks.update.mockReset(); });
+  beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear(); mocks.create.mockReset(); mocks.getById.mockReset(); mocks.update.mockReset(); mocks.session = "doctor-session"; mocks.sessionListeners.clear(); });
 
   it("sends only one record creation when submit fires twice before the response", async () => {
     const pending = deferred<MedicalRecordDTO>();
@@ -65,6 +67,7 @@ describe("Medical record forms", () => {
     mocks.update.mockReturnValue(pending.promise);
     const view = render(<EditMedicalRecordForm recordId="record-a" />);
     expect(await screen.findByText("First record")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Triệu chứng"), { target: { value: "Second symptoms" } });
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(1));
     view.rerender(<EditMedicalRecordForm recordId="record-b" />);
@@ -72,6 +75,45 @@ describe("Medical record forms", () => {
     await act(async () => pending.resolve(record));
     expect(mocks.router.replace).not.toHaveBeenCalled();
     expect(screen.getByText("Second record")).toBeVisible();
+  });
+
+  it("drops loaded data when the signed-in session changes", async () => {
+    const pending = deferred<MedicalRecordDTO>();
+    mocks.getById.mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ ...record, symptoms: "Second session record" });
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    act(() => {
+      mocks.session = "another-session";
+      for (const listener of mocks.sessionListeners) listener();
+    });
+    expect(await screen.findByText("Second session record")).toBeVisible();
+    await act(async () => pending.resolve(record));
+    expect(screen.queryByText("First record")).not.toBeInTheDocument();
+  });
+
+  it("does not send an old edit under a replacement login session", async () => {
+    mocks.getById.mockResolvedValue(record);
+    const gate = deferred<void>();
+    const originalDigest = crypto.subtle.digest.bind(crypto.subtle);
+    const digest = vi.spyOn(crypto.subtle, "digest").mockImplementation(async (algorithm, data) => {
+      await gate.promise;
+      return originalDigest(algorithm, data);
+    });
+    render(<EditMedicalRecordForm recordId="record-a" />);
+    expect(await screen.findByText("First record")).toBeVisible();
+    fireEvent.change(document.getElementById("symptoms")!, { target: { value: "Old session symptoms" } });
+    fireEvent.submit(document.getElementById("symptoms")!.closest("form")!);
+    await waitFor(() => expect(digest).toHaveBeenCalledTimes(3));
+
+    act(() => {
+      mocks.session = "replacement-session";
+      for (const listener of mocks.sessionListeners) listener();
+    });
+    gate.resolve();
+    await waitFor(() => expect(mocks.getById).toHaveBeenCalledTimes(2));
+    await screen.findByText("First record");
+    expect(mocks.update).not.toHaveBeenCalled();
+    digest.mockRestore();
   });
 
   it("preserves a backend field error and correlation ID", async () => {
@@ -101,8 +143,66 @@ describe("Medical record forms", () => {
     mocks.update.mockReturnValue(pending.promise);
     render(<EditMedicalRecordForm recordId="record-a" />);
     expect(await screen.findByText("First record")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Triệu chứng"), { target: { value: "Updated symptoms" } });
     const form = screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!;
     await act(async () => { fireEvent.submit(form); fireEvent.submit(form); });
     expect(mocks.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends an empty string to clear symptoms", async () => {
+    mocks.getById.mockResolvedValue(record);
+    mocks.update.mockResolvedValue(record);
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    await screen.findByText("First record");
+    fireEvent.change(screen.getByLabelText("Triệu chứng"), { target: { value: "  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("record-a", { symptoms: "" }, {
+      idempotencyKey: expect.any(String), correlationId: expect.any(String),
+    }));
+  });
+
+  it("sends only changed structured sections when editing a record", async () => {
+    mocks.getById.mockResolvedValue({ ...record, chiefComplaint: "Đau đầu", presentIllness: "Khởi phát sáng nay", pastHistory: null, allergyNote: null, physicalExam: null, advice: null });
+    mocks.update.mockResolvedValue(record);
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    await screen.findByText("First record");
+    fireEvent.change(screen.getByLabelText("Lý do khám chính"), { target: { value: "Đau ngực" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("record-a", { chiefComplaint: "Đau ngực" }, {
+      idempotencyKey: expect.any(String), correlationId: expect.any(String),
+    }));
+  });
+
+  it("sends an empty value to clear a structured section", async () => {
+    mocks.getById.mockResolvedValue({ ...record, pastHistory: "Hen phế quản" });
+    mocks.update.mockResolvedValue(record);
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    await screen.findByText("First record");
+    fireEvent.change(screen.getByLabelText("Tiền sử"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("record-a", { pastHistory: "" }, {
+      idempotencyKey: expect.any(String), correlationId: expect.any(String),
+    }));
+  });
+
+  it("retries an uncertain update with the same idempotency key and payload", async () => {
+    mocks.getById.mockResolvedValue({ ...record, chiefComplaint: "Đau đầu" });
+    mocks.update.mockRejectedValueOnce(new ApiRequestError("Chưa nhận được kết quả", 503, "UNAVAILABLE"))
+      .mockResolvedValueOnce(record);
+    render(<EditMedicalRecordForm recordId="record-a" />);
+
+    await screen.findByText("First record");
+    fireEvent.change(screen.getByLabelText("Lý do khám chính"), { target: { value: "Đau ngực" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Gửi lại cùng nội dung" }));
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(2));
+    expect(mocks.update.mock.calls[0]).toEqual(mocks.update.mock.calls[1]);
   });
 });

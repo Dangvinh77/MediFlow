@@ -20,7 +20,7 @@ import type { ReactNode } from "react";
 const getServerSnapshot = () => null;
 const getServerTokenSnapshot = () => undefined;
 
-export default function DashboardShell({ children, schedulingEnabled }: { children: ReactNode; schedulingEnabled: boolean }) {
+export default function DashboardShell({ children, schedulingEnabled, clinicIntakeEnabled = false }: { children: ReactNode; schedulingEnabled: boolean; clinicIntakeEnabled?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const passwordChangeRequired = useSyncExternalStore(subscribeToAuthChanges, mustChangePassword, () => false);
@@ -84,6 +84,7 @@ export default function DashboardShell({ children, schedulingEnabled }: { childr
         open={navigationOpen}
         onClose={() => setNavigationOpen(false)}
         schedulingEnabled={schedulingEnabled}
+        clinicIntakeEnabled={clinicIntakeEnabled}
         managementWorkspace={management && canManage}
       />
       <div className="min-w-0">

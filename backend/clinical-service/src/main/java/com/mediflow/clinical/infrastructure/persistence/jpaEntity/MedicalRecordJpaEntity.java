@@ -43,9 +43,22 @@ public class MedicalRecordJpaEntity {
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at") private Instant updatedAt;
     @Enumerated(jakarta.persistence.EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20) private MedicalRecordStatus status;
+    @Column(name = "status", nullable = false, length = 32) private MedicalRecordStatus status;
     @Enumerated(jakarta.persistence.EnumType.STRING)
     @Column(name = "disposition", length = 32) private RecordDisposition disposition;
     @Column(name = "disposition_note", columnDefinition = "text") private String dispositionNote;
     @Column(name = "completed_at") private Instant completedAt;
+    @Column(name = "previous_record_id") private UUID previousRecordId;
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "closure_reason", length = 32) private com.mediflow.clinical.domain.model.RecordClosureReason closureReason;
+    @Column(name = "closure_note", columnDefinition = "text") private String closureNote;
+    @Column(name = "closed_by_staff_id") private UUID closedByStaffId;
+    @Column(name = "closed_at") private Instant closedAt;
+    @Column(name = "chief_complaint", columnDefinition = "text") private String chiefComplaint;
+    @Column(name = "present_illness", columnDefinition = "text") private String presentIllness;
+    @Column(name = "past_history", columnDefinition = "text") private String pastHistory;
+    @Column(name = "allergy_note", columnDefinition = "text") private String allergyNote;
+    @Column(name = "physical_exam", columnDefinition = "text") private String physicalExam;
+    @Column(name = "advice", columnDefinition = "text") private String advice;
+    @Column(name = "responsible_doctor_id") private UUID responsibleDoctorId;
 }

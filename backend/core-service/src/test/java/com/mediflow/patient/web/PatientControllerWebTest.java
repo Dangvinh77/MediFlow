@@ -166,6 +166,36 @@ class PatientControllerWebTest {
     }
 
     @Test
+    void demographicsAreServiceOnlyAndCarryJustSexAndDateOfBirth() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(lookup.demographics(id)).thenReturn(new com.mediflow.patient.application.dto.response.PatientDemographicsDTO(
+                id, com.mediflow.patient.domain.model.Gender.F, java.time.LocalDate.of(1990, 1, 2)));
+        mvc.perform(get("/api/v1/patients/{id}/demographics", id)
+                        .header("Authorization", bearer("service", "SYSTEM", "lab-service")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.maBenhNhan", is(id.toString())))
+                .andExpect(jsonPath("$.data.gioiTinh", is("F")))
+                .andExpect(jsonPath("$.data.ngaySinh", is("1990-01-02")))
+                .andExpect(jsonPath("$.data.hoTen").doesNotExist());
+        for (String role : new String[]{"DOCTOR", "LAB_TECH", "ADMIN", "NURSE"}) {
+            mvc.perform(get("/api/v1/patients/{id}/demographics", id)
+                            .header("Authorization", bearer("access", role, UUID.randomUUID().toString())))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/api/v1/patients/{id}/demographics", id)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void demographicsOfMissingPatientIs404() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(lookup.demographics(id)).thenThrow(new com.mediflow.patient.domain.exception.PatientNotFoundException(id));
+        mvc.perform(get("/api/v1/patients/{id}/demographics", id)
+                        .header("Authorization", bearer("service", "SYSTEM", "lab-service")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code", is("PATIENT_NOT_FOUND")));
+    }
+
+    @Test
     void humanTokenCannotUseServiceOnlyExistsAndTamperedTokenIsUnauthorized() throws Exception {
         UUID id = UUID.randomUUID();
         mvc.perform(get("/api/v1/patients/{id}/exists", id)

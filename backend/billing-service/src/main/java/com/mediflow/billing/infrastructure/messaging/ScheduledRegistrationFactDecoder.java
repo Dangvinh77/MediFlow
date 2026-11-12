@@ -19,6 +19,9 @@ public final class ScheduledRegistrationFactDecoder implements com.mediflow.bill
             "reservationExpiresAt", "priceCode", "sourceType", "sourceId", "careEpisodeType", "careEpisodeId",
             "cancellation", "changedAt");
     private static final Set<String> CANCELLATION_FIELDS = Set.of("actorAccountId", "actorStaffId", "reason", "cancelledAt");
+    private static final String OPTIONAL_RESCHEDULE = "reschedule";
+    private static final Set<String> RESCHEDULE_FIELDS = Set.of("actorAccountId", "actorStaffId", "reason", "previousSessionId",
+            "previousDoctorId", "previousRoomId", "previousSessionDate", "previousStartTime", "rescheduledAt");
     private final ObjectMapper mapper;
 
     public ScheduledRegistrationFactDecoder(ObjectMapper mapper) { this.mapper = mapper; }
@@ -29,7 +32,15 @@ public final class ScheduledRegistrationFactDecoder implements com.mediflow.bill
             JsonNode root = mapper.readTree(raw);
             exactFields(root, ENVELOPE_FIELDS);
             JsonNode payload = root.get("payload");
-            exactFields(payload, FACT_FIELDS);
+            JsonNode reschedule = payload == null ? null : payload.get(OPTIONAL_RESCHEDULE);
+            if (reschedule != null) {
+                exactFields(reschedule, RESCHEDULE_FIELDS);
+                java.util.Set<String> withReschedule = new java.util.HashSet<>(FACT_FIELDS);
+                withReschedule.add(OPTIONAL_RESCHEDULE);
+                exactFields(payload, withReschedule);
+            } else {
+                exactFields(payload, FACT_FIELDS);
+            }
             JsonNode cancellation = payload.get("cancellation");
             if (cancellation != null && !cancellation.isNull()) exactFields(cancellation, CANCELLATION_FIELDS);
             return mapper.treeToValue(root, OutpatientRegistrationChangedEvent.class);

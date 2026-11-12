@@ -22,6 +22,7 @@ vi.mock("@/lib/auth", () => ({
   subscribeToAuthChanges: () => () => {},
 }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
+vi.mock("./StaffCapabilityGrants", () => ({ StaffCapabilityGrants: () => <div data-testid="capability-grants" /> }));
 
 import { StaffDetail } from "./StaffDetail";
 

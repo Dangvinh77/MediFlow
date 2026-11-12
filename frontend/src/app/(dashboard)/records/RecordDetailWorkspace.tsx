@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
+import { labApi } from "@/features/lab/api";
 import { MedicalRecordDetail } from "@/features/medical-record/components/MedicalRecordDetail";
 import { RecordPrescriptionWorkspace } from "@/features/pharmacy/components/prescription/RecordPrescriptionWorkspace";
 import type { MedicalRecordDTO } from "@/features/medical-record/types";
+import type { RecordDocumentDTO } from "@/features/medical-record/types";
 import type { PrescriptionMode } from "@/features/pharmacy/prescriptionMode";
 
 interface RecordDetailWorkspaceProps {
@@ -24,11 +26,19 @@ export function RecordDetailWorkspace({ recordId, notice, outpatientEnabled, sch
     />
   ), [prescriptionMode]);
 
+  // The route composes the two contexts; neither feature imports the other.
+  const cancelLabOrder = useCallback((testId: string, reason: string) => labApi.cancel(testId, { reason }), []);
+  const documentHref = useCallback((document: RecordDocumentDTO) => document.type === "LAB"
+    ? `/lab/${encodeURIComponent(document.referenceId)}`
+    : `/pharmacy/prescriptions/${encodeURIComponent(document.referenceId)}`, []);
+
   return <MedicalRecordDetail
     recordId={recordId}
     notice={notice}
     outpatientEnabled={outpatientEnabled}
     schedulingV2Enabled={schedulingV2Enabled}
     prescriptionWorkspace={renderPrescriptions}
+    cancelLabOrder={cancelLabOrder}
+    documentHref={documentHref}
   />;
 }

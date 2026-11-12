@@ -38,6 +38,9 @@ class _AppShellState extends ConsumerState<AppShell> {
             schedulingEnabled: ref
                 .watch(appConfigProvider)
                 .scheduledPaymentsEnabled,
+            clinicIntakeEnabled: ref
+                .watch(appConfigProvider)
+                .clinicIntakeEnabled,
             headsDepartment:
                 ref.watch(headsDepartmentProvider).asData?.value ?? false,
           );
@@ -304,6 +307,9 @@ class HomePage extends ConsumerWidget {
             schedulingEnabled: ref
                 .watch(appConfigProvider)
                 .scheduledPaymentsEnabled,
+            clinicIntakeEnabled: ref
+                .watch(appConfigProvider)
+                .clinicIntakeEnabled,
             headsDepartment:
                 ref.watch(headsDepartmentProvider).asData?.value ?? false,
           );

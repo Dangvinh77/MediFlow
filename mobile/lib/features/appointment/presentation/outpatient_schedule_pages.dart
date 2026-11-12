@@ -8,7 +8,10 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
+import '../domain/clinic_queue.dart';
 import '../domain/outpatient_schedule.dart';
+import 'clinic_queue_page.dart';
+import 'reschedule_sheet.dart';
 import '../domain/reception.dart';
 
 final outpatientScheduleRepositoryProvider =
@@ -409,9 +412,28 @@ class _SessionRegistrationsPageState
     }
   }
 
+  Future<void> _reschedule(RegistrationRow row) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheet) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheet).bottom),
+      child: SafeArea(
+        child: RescheduleSheet(
+          registrationId: row.id,
+          currentSessionId: widget.sessionId,
+          onDone: () {
+            Navigator.of(sheet).pop();
+            setState(() => _revision++);
+          },
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(outpatientScheduleRepositoryProvider);
+    final clinicIntake = ref.watch(clinicIntakeEnabledProvider);
     return Scaffold(
       appBar: AppBar(title: Text('Phiếu buổi ${widget.title}')),
       body: PagedList<RegistrationRow>(
@@ -433,7 +455,7 @@ class _SessionRegistrationsPageState
                   '${row.visitType == 'FOLLOW_UP' ? 'Tái khám' : 'Khám mới'} · ${registrationStatusLabels[row.status] ?? row.status}',
                 ),
                 Text(
-                  '${row.checkedInAt != null ? 'Đã đến' : 'Chưa đến'} · ${row.queueNumber == null ? 'Chưa có số' : 'Số ${row.queueNumber}'}',
+                  '${row.checkedInAt != null ? 'Đã đến' : 'Chưa đến'} · ${_rowNumbers(row, clinicIntake)}',
                 ),
                 if (_errorId == row.id && _error != null) RequestError(_error!),
                 if (widget.canMarkArrival &&
@@ -447,6 +469,18 @@ class _SessionRegistrationsPageState
                           ? 'Gửi lại ghi nhận đã đến'
                           : 'Ghi nhận đã đến',
                     ),
+                  ),
+                ],
+                if (clinicIntake &&
+                    widget.canMarkArrival &&
+                    const [
+                      'AWAITING_PAYMENT',
+                      'CONFIRMED',
+                    ].contains(row.status)) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _busyId == null ? () => _reschedule(row) : null,
+                    child: const Text('Đổi lịch'),
                   ),
                 ],
                 if (widget.onOpenRegistration != null) ...[
@@ -464,6 +498,14 @@ class _SessionRegistrationsPageState
       ),
     );
   }
+}
+
+String _rowNumbers(RegistrationRow row, bool clinicIntake) {
+  if (clinicIntake) {
+    final numbers = clinicNumbersText(row.queueNumber, row.roomQueueNumber);
+    return numbers.isEmpty ? 'Chưa có số' : numbers;
+  }
+  return row.queueNumber == null ? 'Chưa có số' : 'Số ${row.queueNumber}';
 }
 
 class PatientRegistrationsPage extends ConsumerWidget {
@@ -486,14 +528,18 @@ class PatientRegistrationsPage extends ConsumerWidget {
       load: (page) => repository.myRegistrations(page: page),
       canRetry: (error) =>
           error is! ApiFailure || !const [401, 403].contains(error.status),
-      itemBuilder: (context, item) => _RegistrationCard(item),
+      itemBuilder: (context, item) => _RegistrationCard(
+        item,
+        clinicIntake: ref.watch(clinicIntakeEnabledProvider),
+      ),
     );
   }
 }
 
 class _RegistrationCard extends StatelessWidget {
-  const _RegistrationCard(this.item);
+  const _RegistrationCard(this.item, {required this.clinicIntake});
   final OutpatientRegistration item;
+  final bool clinicIntake;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -527,8 +573,10 @@ class _RegistrationCard extends StatelessWidget {
             'Hình thức: ${item.receptionMode == 'AT_COUNTER' ? 'Tiếp nhận tại quầy' : 'Đăng ký trước'}',
           ),
           Text(
-            'Số thứ tự: ${item.queueNumber ?? 'Chưa cấp số trước khi xác nhận'}',
+            '${queueNumberLabel(clinicIntake)}: ${item.queueNumber ?? 'Chưa cấp số trước khi xác nhận'}',
           ),
+          if (clinicIntake && item.roomQueueNumber != null)
+            Text('$roomQueueNumberLabel: ${item.roomQueueNumber}'),
           if (item.status == 'AWAITING_PAYMENT') ...[
             Text(
               'Hạn thanh toán giữ chỗ: ${_localTime(item.reservationExpiresAt)}',

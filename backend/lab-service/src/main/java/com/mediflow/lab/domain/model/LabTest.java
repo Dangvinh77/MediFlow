@@ -284,6 +284,22 @@ public final class LabTest {
         recordValidatedResults(results, conclusion, performedDate, at);
     }
 
+    /**
+     * Replaces the released result with revision {@code nextVersion}, which must directly follow the current
+     * one. Only a completed v1 test can be amended; the previous revision is kept by the report history.
+     */
+    public void amendResults(List<LabResult> results, String conclusion, LocalDate performedDate, int nextVersion,
+                             Instant at) {
+        if (careContractVersion != 1 || status != LabTestStatus.COMPLETED) {
+            throw new LabRuleException("LAB_AMENDMENT_NOT_RELEASED", "Chỉ đính chính kết quả đã phát hành");
+        }
+        if (nextVersion != resultVersion + 1) {
+            throw new com.mediflow.common.exception.DuplicateResourceException("LAB_AMENDMENT_STALE",
+                    "Bản đính chính không nối tiếp bản kết quả hiện hành");
+        }
+        recordValidatedResults(results, conclusion, performedDate, at);
+    }
+
     private void rejectResultsIfFinal() {
         if (isFinal()) {
             if (careContractVersion == 1) {

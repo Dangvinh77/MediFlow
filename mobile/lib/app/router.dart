@@ -9,9 +9,11 @@ import '../features/auth/presentation/change_password_page.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/appointment/presentation/outpatient_schedule_pages.dart';
+import '../features/appointment/presentation/clinic_queue_page.dart';
 import '../features/appointment/presentation/reception_page.dart';
 import '../features/appointment/presentation/schedule_management_pages.dart';
 import '../features/lab/presentation/lab_page.dart';
+import '../features/lab/presentation/lab_detail_page.dart';
 import '../features/lab/presentation/my_lab_results_page.dart';
 import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/organization/presentation/organization_page.dart';
@@ -19,6 +21,7 @@ import '../features/organization/domain/profile_account.dart';
 import '../features/organization/presentation/profile_account_panel.dart';
 import '../features/patient/presentation/patient_page.dart';
 import '../features/medical_record/presentation/medical_record_page.dart';
+import '../features/medical_record/domain/patient_timeline.dart';
 import '../features/pharmacy/presentation/pharmacy_page.dart';
 import '../features/pharmacy/presentation/drug_forms.dart';
 import '../features/pharmacy/presentation/create_prescription_page.dart';
@@ -36,12 +39,32 @@ class _RouterRefresh extends ChangeNotifier {
   void refresh() => notifyListeners();
 }
 
+void _openRecordDocument(BuildContext context, RecordDocument document) {
+  switch (document.type) {
+    case 'LAB':
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => LabDetailPage(id: document.referenceId),
+        ),
+      );
+      break;
+    case 'PRESCRIPTION':
+      context.go(
+        '/pharmacy/prescriptions/${Uri.encodeComponent(document.referenceId)}',
+      );
+      break;
+    default:
+      break;
+  }
+}
+
 void _openVisitRecord(BuildContext context, String patientId, String visitId) {
   Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => MedicalRecordForVisitPage(
         patientId: patientId,
         visitId: visitId,
+        onOpenDocument: _openRecordDocument,
         prescriptionWorkspaceBuilder: (context, record, {required canCreate}) =>
             RecordPrescriptionPanel(
               recordId: record.id,
@@ -184,6 +207,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const PatientRegistrationsPage(),
           ),
           GoRoute(
+            path: '/appointments/clinic-queue',
+            builder: (_, _) => const ClinicQueuePage(),
+          ),
+          GoRoute(
             path: '/appointments/reception',
             builder: (context, state) => ReceptionPage(
               initialPatientId: state.uri.queryParameters['patientId'],
@@ -221,7 +248,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/records',
-            builder: (_, _) => MedicalRecordPage(
+            builder: (context, _) => MedicalRecordPage(
+              onOpenDocument: _openRecordDocument,
               prescriptionWorkspaceBuilder:
                   (context, record, {required canCreate}) =>
                       RecordPrescriptionPanel(

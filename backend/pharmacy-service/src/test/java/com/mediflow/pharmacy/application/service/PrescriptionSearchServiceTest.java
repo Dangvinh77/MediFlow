@@ -26,12 +26,12 @@ class PrescriptionSearchServiceTest {
     @Test void mapsTheRequestedPageThroughTheExistingPrescriptionReader() {
         UUID patient = UUID.randomUUID();
         var page = PageQuery.of(1, 20);
-        when(search.search("drug", patient, PrescriptionStatus.ACTIVE, page))
+        when(search.search("drug", patient, null, PrescriptionStatus.ACTIVE, page))
                 .thenReturn(PageResult.of(List.of(), 21, 1, 20));
         var result = service.search("drug", patient, "ACTIVE", page);
         assertThat(result.totalElements()).isEqualTo(21);
         assertThat(result.number()).isEqualTo(1);
-        verify(search).search("drug", patient, PrescriptionStatus.ACTIVE, page);
+        verify(search).search("drug", patient, null, PrescriptionStatus.ACTIVE, page);
         verifyNoInteractions(reader);
     }
 }

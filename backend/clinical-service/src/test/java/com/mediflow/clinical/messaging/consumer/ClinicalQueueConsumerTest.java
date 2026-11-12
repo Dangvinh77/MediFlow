@@ -115,6 +115,48 @@ class ClinicalQueueConsumerTest {
     }
 
     @Test
+    void amendedLabResultIsClaimedPerRevisionAndDispatched() throws IOException {
+        String raw = amendedFixture();
+        consumer(true).consume(message(RabbitConfig.LAB_RESULT_AMENDED, raw));
+
+        verify(labResults).consumeAmendment(argThat(command ->
+                UUID.fromString("00000000-0000-4000-8000-000000000004").equals(command.recordId())
+                        && command.resultVersion() == 2 && command.previousResultVersion() == 1
+                        && "Nhập nhầm giá trị HGB".equals(command.amendmentReason())
+                        && "Thiếu máu nhẹ".equals(command.conclusion())
+                        && java.time.Instant.parse("2026-09-29T06:00:00Z").equals(command.releasedAt())));
+        ArgumentCaptor<ConsumerInboxClaim> claim = ArgumentCaptor.forClass(ConsumerInboxClaim.class);
+        verify(inbox).execute(claim.capture(), any(Runnable.class));
+        assertThat(claim.getValue().operationKey())
+                .isEqualTo("clinical:lab-result:v1:00000000-0000-4000-8000-000000000002:2");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"eventType", "producer", "resultVersion", "previousResultVersion", "amendmentReason",
+            "careEpisodeType", "recordId"})
+    void malformedAmendmentIsRejectedBeforeTheInbox(String field) throws IOException {
+        var root = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(amendedFixture());
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) root.path("payload");
+        switch (field) {
+            case "eventType" -> root.put("eventType", "lab.result.created");
+            case "producer" -> root.put("producer", "clinical-service");
+            case "resultVersion" -> payload.put("resultVersion", 1);
+            case "previousResultVersion" -> payload.put("previousResultVersion", 2);
+            case "amendmentReason" -> payload.put("amendmentReason", " ");
+            case "careEpisodeType" -> payload.put("careEpisodeType", "ADMISSION");
+            default -> payload.putNull(field);
+        }
+        assertThatThrownBy(() -> consumer(true).consume(message(RabbitConfig.LAB_RESULT_AMENDED,
+                objectMapper.writeValueAsString(root)))).isInstanceOf(MessageConversionException.class);
+        verifyNoInteractions(inbox, labResults);
+    }
+
+    private static String amendedFixture() throws IOException {
+        return java.nio.file.Files.readString(java.nio.file.Path.of(
+                "../lab-service/src/test/resources/contracts/lab.result.amended.v1.json"), StandardCharsets.UTF_8);
+    }
+
+    @Test
     void consume_v1LabEnvelope_unknownVersion_rejects() throws IOException {
         String fixture = readFixture("lab.result.created.v1.json")
                 .replace("\"version\": 1", "\"version\": 2");

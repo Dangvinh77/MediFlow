@@ -14,6 +14,8 @@ import '../features/medical_record/presentation/medical_record_page.dart';
 import '../features/appointment/data/gateway_appointment_repository.dart';
 import '../features/appointment/presentation/appointment_page.dart';
 import '../features/appointment/data/gateway_reception_repository.dart';
+import '../features/appointment/data/gateway_clinic_queue_repository.dart';
+import '../features/appointment/presentation/clinic_queue_page.dart';
 import '../features/appointment/presentation/reception_page.dart';
 import '../features/lab/data/gateway_lab_repository.dart';
 import '../features/lab/data/gateway_patient_lab_results.dart';
@@ -23,6 +25,16 @@ import '../features/medical_record/presentation/my_exam_results_page.dart';
 import '../features/lab/presentation/lab_page.dart';
 import '../features/lab/presentation/lab_detail_page.dart';
 import '../features/lab/data/gateway_lab_workflow.dart';
+import '../features/appointment/data/gateway_open_visit_repository.dart';
+import '../features/appointment/presentation/open_visit_notice.dart';
+import '../features/medical_record/data/gateway_exam_lifecycle_repository.dart';
+import '../features/medical_record/data/gateway_patient_allergy_repository.dart';
+import '../features/medical_record/data/gateway_patient_timeline_repository.dart';
+import '../features/medical_record/data/gateway_record_collaboration_repository.dart';
+import '../features/medical_record/presentation/record_collaboration_section.dart';
+import '../features/medical_record/presentation/record_lab_orders_section.dart';
+import '../features/medical_record/presentation/patient_allergy_section.dart';
+import '../features/medical_record/presentation/patient_timeline_section.dart';
 import '../features/report/data/gateway_report_repository.dart';
 import '../features/report/presentation/report_page.dart';
 import '../features/patient/data/gateway_patient_repository.dart';
@@ -56,6 +68,26 @@ final _pharmacyAdapterProvider = Provider(
 
 // Composition root is the only place that binds data adapters to domain ports.
 final appOverrides = [
+  examLifecycleRepositoryProvider.overrideWith(
+    (ref) => GatewayExamLifecycleRepository(ref.watch(apiClientProvider)),
+  ),
+  patientTimelineRepositoryProvider.overrideWith(
+    (ref) => GatewayPatientTimelineRepository(ref.watch(apiClientProvider)),
+  ),
+  recordCollaborationRepositoryProvider.overrideWith(
+    (ref) => GatewayRecordCollaborationRepository(ref.watch(apiClientProvider)),
+  ),
+  patientAllergyRepositoryProvider.overrideWith(
+    (ref) => GatewayPatientAllergyRepository(ref.watch(apiClientProvider)),
+  ),
+  recordLabCancelProvider.overrideWith(
+    (ref) => (testId, reason) async {
+      await ref.read(labWorkflowProvider).cancel(testId, reason);
+    },
+  ),
+  openVisitRepositoryProvider.overrideWith(
+    (ref) => GatewayOpenVisitRepository(ref.watch(apiClientProvider)),
+  ),
   profileAccountRepositoryProvider.overrideWith(
     (ref) => GatewayProfileAccountRepository(ref.watch(apiClientProvider)),
   ),
@@ -68,6 +100,9 @@ final appOverrides = [
   ),
   scheduleManagementRepositoryProvider.overrideWith(
     (ref) => GatewayScheduleManagementRepository(ref.watch(apiClientProvider)),
+  ),
+  clinicQueueRepositoryProvider.overrideWith(
+    (ref) => GatewayClinicQueueRepository(ref.watch(apiClientProvider)),
   ),
   receptionRepositoryProvider.overrideWith(
     (ref) => GatewayReceptionRepository(ref.watch(apiClientProvider)),

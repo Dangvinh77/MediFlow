@@ -1,5 +1,12 @@
 # Frontend Service: Report
 
+2026-11-12 legacy merge: the legacy `/reports?view=daily|monthly|medicines` views (fed by
+`/v1/reports/daily|monthly|top-medicines`, which stay all-zero in the outpatient MVP) are removed.
+`/reports` now always redirects to `/reports/outpatient`, forwarding its query. The reconciled
+report shows KPI tiles, cash and activity charts (bars up to 31 periods, lines beyond), a visit
+calendar for daily ranges of 14+ days, top net-cash periods, and an exact period table with totals.
+There is no reconciled drug ranking; the legacy backend endpoints remain but have no web client.
+
 2026-11-07 role change: MANAGER is gone. An appointed department head (role `DOCTOR`) reads this
 report from the department-management workspace, fixed to their department; the backend guard
 requires an active appointment, so other doctors get 403. Older dated notes below keep the old name.

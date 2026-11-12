@@ -28,12 +28,27 @@ class ClinicalIntegrationServiceTest {
     void onLabResultCreated_legacyV0AttachesOnce() {
         LabResultCreatedCommand command = new LabResultCreatedCommand(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
-        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), null))
                 .thenReturn(true);
 
         service.onLabResultCreated(command);
 
-        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion());
+        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion(), null);
+    }
+
+    @Test
+    void onLabResultCreated_keepsTheTimeLabReportedTheResult() {
+        java.time.Instant reported = java.time.Instant.parse("2026-11-10T03:00:00Z");
+        LabResultCreatedCommand legacy = new LabResultCreatedCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
+        LabResultCreatedCommand command = new LabResultCreatedCommand(legacy.eventId(), legacy.recordId(), legacy.labId(),
+                legacy.conclusion(), 0, null, null, null, null, null, reported);
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), reported))
+                .thenReturn(true);
+
+        service.onLabResultCreated(command);
+
+        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion(), reported);
     }
 
     @Test
@@ -51,12 +66,12 @@ class ClinicalIntegrationServiceTest {
         LabResultCreatedCommand command = new LabResultCreatedCommand(UUID.randomUUID(), recordId,
                 UUID.randomUUID(), "Normal", 1, patientId, departmentId,
                 CareEpisodeType.OUTPATIENT_VISIT, appointmentId, 1);
-        when(attachments.attachLabResult(recordId, command.labId(), "Normal")).thenReturn(true);
+        when(attachments.attachLabResult(recordId, command.labId(), "Normal", null)).thenReturn(true);
 
         service.onLabResultCreated(command);
 
         verify(records).findByIdForUpdate(recordId);
-        verify(attachments).attachLabResult(recordId, command.labId(), "Normal");
+        verify(attachments).attachLabResult(recordId, command.labId(), "Normal", null);
     }
 
     @Test
@@ -77,11 +92,67 @@ class ClinicalIntegrationServiceTest {
                 .isInstanceOf(ConsumerInboxConflictException.class);
     }
 
+    private com.mediflow.clinical.application.dto.command.LabResultAmendedCommand amendment(UUID recordId,
+            UUID patientId, UUID departmentId, UUID episodeId) {
+        return new com.mediflow.clinical.application.dto.command.LabResultAmendedCommand(UUID.randomUUID(), recordId,
+                UUID.randomUUID(), patientId, departmentId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, 2, 1,
+                "Nhập nhầm", "Thiếu máu nhẹ", java.time.Instant.parse("2026-09-29T06:00:00Z"));
+    }
+
+    private MedicalRecord recordFor(UUID recordId, UUID patientId, UUID departmentId, UUID appointmentId) {
+        MedicalRecord record = mock(MedicalRecord.class);
+        when(record.getPatientId()).thenReturn(patientId);
+        when(record.getDepartmentId()).thenReturn(departmentId);
+        when(record.getAppointmentId()).thenReturn(appointmentId);
+        when(record.getRecordId()).thenReturn(recordId);
+        when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
+        return record;
+    }
+
+    @Test
+    void onLabResultAmended_recordsTheRevisionForTheMatchingVisit() {
+        UUID recordId = UUID.randomUUID(), patientId = UUID.randomUUID(), departmentId = UUID.randomUUID(),
+                appointmentId = UUID.randomUUID();
+        recordFor(recordId, patientId, departmentId, appointmentId);
+        var command = amendment(recordId, patientId, departmentId, appointmentId);
+        when(attachments.attachLabRevision(recordId, command.labId(), 2, "Thiếu máu nhẹ", "Nhập nhầm",
+                command.releasedAt())).thenReturn(true);
+
+        service.onLabResultAmended(command);
+
+        verify(attachments).attachLabRevision(recordId, command.labId(), 2, "Thiếu máu nhẹ", "Nhập nhầm",
+                command.releasedAt());
+    }
+
+    @Test
+    void onLabResultAmended_staleOrRepeatedRevisionIsANoOpNotAConflict() {
+        UUID recordId = UUID.randomUUID(), patientId = UUID.randomUUID(), departmentId = UUID.randomUUID(),
+                appointmentId = UUID.randomUUID();
+        recordFor(recordId, patientId, departmentId, appointmentId);
+        var command = amendment(recordId, patientId, departmentId, appointmentId);
+        when(attachments.attachLabRevision(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(false);
+
+        service.onLabResultAmended(command);
+    }
+
+    @Test
+    void onLabResultAmended_otherPatientsRecordIsAConflict() {
+        UUID recordId = UUID.randomUUID(), departmentId = UUID.randomUUID(), appointmentId = UUID.randomUUID();
+        recordFor(recordId, UUID.randomUUID(), departmentId, appointmentId);
+        var command = amendment(recordId, UUID.randomUUID(), departmentId, appointmentId);
+
+        assertThatThrownBy(() -> service.onLabResultAmended(command))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        org.mockito.Mockito.verifyNoInteractions(attachments);
+    }
+
     @Test
     void onLabResultCreated_missingMaterialEffectIsAConflict() {
         LabResultCreatedCommand command = new LabResultCreatedCommand(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
-        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion(), null))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> service.onLabResultCreated(command))

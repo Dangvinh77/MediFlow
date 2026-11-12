@@ -28,6 +28,7 @@ import com.mediflow.clinical.application.port.out.FollowUpRecommendationReposito
 import com.mediflow.clinical.application.port.out.IdempotentCommandPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.OutpatientRegistrationRepositoryPort;
+import com.mediflow.clinical.application.port.out.RecordAccessPolicyMode;
 import com.mediflow.clinical.application.port.out.SchedulingAuthorityPort;
 import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
@@ -59,6 +60,27 @@ public class FollowUpRecommendationApplicationService {
     private final IdempotentCommandPort idempotency;
     private final CorrelationIdProvider correlationIds;
     private final Clock clock;
+    private final RecordReadGuard readGuard;
+    private final boolean recordAccessPolicyEnabled;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public FollowUpRecommendationApplicationService(
+            MedicalRecordRepositoryPort records,
+            AppointmentRepositoryPort appointments,
+            OutpatientRegistrationRepositoryPort registrations,
+            ConsultationSessionRepositoryPort sessions,
+            FollowUpRecommendationRepositoryPort recommendations,
+            FollowUpRecommendationOutboxPort outbox,
+            CurrentClinicalActorPort actors,
+            SchedulingAuthorityPort authority,
+            IdempotentCommandPort idempotency,
+            CorrelationIdProvider correlationIds,
+            @org.springframework.beans.factory.annotation.Qualifier("clinicalSchedulingClock") Clock clock,
+            RecordReadGuard readGuard,
+            RecordAccessPolicyMode recordAccessPolicyMode) {
+        this(records, appointments, registrations, sessions, recommendations, outbox, actors, authority, idempotency,
+                correlationIds, clock, readGuard, recordAccessPolicyMode.enabled());
+    }
 
     public FollowUpRecommendationApplicationService(
             MedicalRecordRepositoryPort records,
@@ -71,7 +93,27 @@ public class FollowUpRecommendationApplicationService {
             SchedulingAuthorityPort authority,
             IdempotentCommandPort idempotency,
             CorrelationIdProvider correlationIds,
-            @org.springframework.beans.factory.annotation.Qualifier("clinicalSchedulingClock") Clock clock) {
+            Clock clock) {
+        this(records, appointments, registrations, sessions, recommendations, outbox, actors, authority, idempotency,
+                correlationIds, clock, null, false);
+    }
+
+    public FollowUpRecommendationApplicationService(
+            MedicalRecordRepositoryPort records,
+            AppointmentRepositoryPort appointments,
+            OutpatientRegistrationRepositoryPort registrations,
+            ConsultationSessionRepositoryPort sessions,
+            FollowUpRecommendationRepositoryPort recommendations,
+            FollowUpRecommendationOutboxPort outbox,
+            CurrentClinicalActorPort actors,
+            SchedulingAuthorityPort authority,
+            IdempotentCommandPort idempotency,
+            CorrelationIdProvider correlationIds,
+            Clock clock,
+            RecordReadGuard readGuard,
+            boolean recordAccessPolicyEnabled) {
+        this.readGuard = readGuard;
+        this.recordAccessPolicyEnabled = recordAccessPolicyEnabled;
         this.records = records;
         this.appointments = appointments;
         this.registrations = registrations;
@@ -107,7 +149,11 @@ public class FollowUpRecommendationApplicationService {
         if (sourceRecordId == null) throw notFound();
         ActorIdentity actor = requireActor("ADMIN", "NURSE", "DOCTOR", "PATIENT");
         MedicalRecord record = records.findById(sourceRecordId).orElseThrow(FollowUpRecommendationApplicationService::notFound);
-        authorizeRead(actor, record);
+        if (recordAccessPolicyEnabled && !"PATIENT".equals(actor.role())) {
+            readGuard.requireRecord(record);
+        } else {
+            authorizeRead(actor, record);
+        }
         FollowUpRecommendation recommendation = recommendations.findBySourceRecordId(sourceRecordId)
                 .orElseThrow(FollowUpRecommendationApplicationService::notFound);
         return toDto(recommendation);
@@ -118,7 +164,7 @@ public class FollowUpRecommendationApplicationService {
         MedicalRecord record = records.findByIdForUpdate(sourceRecordId)
                 .orElseThrow(FollowUpRecommendationApplicationService::notFound);
         if (record.getStatus() != MedicalRecordStatus.COMPLETED || record.getAppointmentId() == null
-                || !actor.staffId().equals(record.getDoctorId())
+                || !actor.staffId().equals(record.responsibleDoctorId())
                 || request.recommendedFrom().isBefore(record.getExaminationDate())) {
             throw notFound();
         }
@@ -157,7 +203,7 @@ public class FollowUpRecommendationApplicationService {
         FollowUpRecommendation recommendation;
         try {
             recommendation = new FollowUpRecommendation(UUID.randomUUID(), record.getRecordId(),
-                    sourceRegistrationId, record.getPatientId(), record.getDepartmentId(), record.getDoctorId(),
+                    sourceRegistrationId, record.getPatientId(), record.getDepartmentId(), record.responsibleDoctorId(),
                     request.recommendedFrom(), request.recommendedThrough(), request.reason(),
                     request.preparationInstructions(), createdAt, actor.accountId(), actor.staffId());
         } catch (IllegalArgumentException invalid) {
@@ -184,7 +230,7 @@ public class FollowUpRecommendationApplicationService {
                 if (actor.patientId() == null || !actor.patientId().equals(record.getPatientId())) throw notFound();
             }
             case "DOCTOR" -> {
-                if (actor.staffId() == null || !actor.staffId().equals(record.getDoctorId())) throw notFound();
+                if (actor.staffId() == null || (!actor.staffId().equals(record.getDoctorId()) && !actor.staffId().equals(record.responsibleDoctorId()))) throw notFound();
                 requireCurrentDoctor(actor, correlationIds.currentOrCreate().toString());
             }
             case "ADMIN", "NURSE" -> requireCurrentClinicalReadAuthority(actor, record.getDepartmentId());

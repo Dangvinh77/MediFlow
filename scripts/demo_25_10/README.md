@@ -87,6 +87,12 @@ Lịch đã qua giờ vẫn có để tra cứu, không đăng ký hoặc bắt 
 lượt nguồn tái khám cần chạy trong 07:00–16:45 giờ Việt Nam. Chạy demo trọn luồng
 trong 07:00–17:00, nên bắt đầu trước 16:00.
 
+**Demo theo thứ tự người trình bày, mỗi người có bệnh nhân seed sẵn đúng trạng thái:**
+[DEMO_THEO_THU_TU.md](DEMO_THEO_THU_TU.md). `start-backend.bat` tự seed, in `STAGED DEMO READY` và ghi
+`DEMO-STAGED.local.md`. Bật backend ngoài giờ khám thì chạy `scripts/run/seed-demo.bat` khi phòng khám mở
+(không cần khởi động lại); khoản phí khám chờ thu cho Lộc tạo bằng
+`scripts/run/seed-demo.bat -ExamChargeNow` ngay trước lúc trình bày.
+
 **Hướng dẫn click từng bước, đủ ba trường hợp và đến nhận thuốc:**
 [DEMO_UI_TUNG_BUOC.md](DEMO_UI_TUNG_BUOC.md). Đọc `DEMO-DATA.local.md` tại đường dẫn
 `UI DATA` của lần chạy để biết đúng tên khoa, CCCD bệnh nhân và ngày có lịch.

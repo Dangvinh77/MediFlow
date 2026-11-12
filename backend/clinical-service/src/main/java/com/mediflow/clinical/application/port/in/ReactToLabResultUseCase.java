@@ -5,4 +5,6 @@ import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
 public interface ReactToLabResultUseCase {
 
     void onLabResultCreated(LabResultCreatedCommand command);
+
+    void onLabResultAmended(com.mediflow.clinical.application.dto.command.LabResultAmendedCommand command);
 }

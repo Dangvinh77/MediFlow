@@ -1,10 +1,45 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_failure.dart';
 import '../domain/medical_record.dart';
 import 'medical_record_dto.dart';
 
-class GatewayMedicalRecordRepository implements MedicalRecordRepository {
+class GatewayMedicalRecordRepository
+    implements MedicalRecordRepository, ClinicalLabCatalogRepository {
   const GatewayMedicalRecordRepository(this.client);
   final ApiClient client;
+
+  @override
+  Future<List<ClinicalLabCatalogItem>?> labCatalog({String? group}) async {
+    final selectedGroup = group?.trim();
+    try {
+      final value = await client.get(
+        '/v2/lab/catalog',
+        query: selectedGroup == null || selectedGroup.isEmpty
+            ? null
+            : {'group': selectedGroup},
+      );
+      if (value is! List) {
+        throw const FormatException(
+          'Phản hồi danh mục xét nghiệm không hợp lệ.',
+        );
+      }
+      return value
+          .map((item) {
+            if (item is! Map<String, dynamic>) {
+              throw const FormatException(
+                'Dữ liệu dịch vụ xét nghiệm không hợp lệ.',
+              );
+            }
+            return ClinicalLabCatalogDto.fromJson(item);
+          })
+          .toList(growable: false);
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_CATALOG_DISABLED') {
+        return null;
+      }
+      rethrow;
+    }
+  }
 
   @override
   Future<MedicalRecord> getById(String recordId) async {
@@ -13,6 +48,52 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
       await client.get('/v1/records/${Uri.encodeComponent(recordId)}'),
       recordId,
     );
+  }
+
+  @override
+  Future<RecordCapabilities> capabilities(String recordId) async {
+    _requireId(recordId, 'recordId');
+    final value = await client.get(
+      '/v2/records/${Uri.encodeComponent(recordId)}/capabilities',
+    );
+    if (value is! Map ||
+        value['recordId'] != recordId ||
+        value['canRead'] is! bool ||
+        value['canWriteContent'] is! bool ||
+        value['canComplete'] is! bool) {
+      return RecordCapabilities.readOnly(recordId);
+    }
+    return RecordCapabilities(
+      recordId: recordId,
+      patientId: value['patientId'] is String
+          ? value['patientId'] as String
+          : null,
+      canRead: value['canRead'] as bool,
+      canWriteContent: value['canWriteContent'] as bool,
+      canComplete: value['canComplete'] as bool,
+      writeBlockedReason: value['writeBlockedReason'] is String
+          ? value['writeBlockedReason'] as String
+          : null,
+      canHandover: _flag(value, 'canHandover'),
+      canAcceptHandover: _flag(value, 'canAcceptHandover'),
+      canAddConsultationNote: _flag(value, 'canAddConsultationNote'),
+      canAmend: _flag(value, 'canAmend'),
+      canDecideAmendments: _flag(value, 'canDecideAmendments'),
+    );
+  }
+
+  @override
+  Future<void> declareAccess({
+    required String patientId,
+    required String purpose,
+    String? reason,
+  }) async {
+    _requireId(patientId, 'patientId');
+    await client.post('/v2/records/access-declarations', {
+      'patientId': patientId,
+      'purpose': purpose,
+      'reason': reason,
+    });
   }
 
   @override
@@ -71,7 +152,8 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
     }
     return _readRecord(
       await client.put('/v1/records/${Uri.encodeComponent(recordId)}', {
-        'symptoms': _clean(symptoms),
+        // An empty string clears; null would keep the stored symptoms.
+        'symptoms': symptoms?.trim() ?? '',
       }),
       recordId,
     );
@@ -136,6 +218,7 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
         'labType': draft.labType.trim(),
         'requestedDate': draft.requestedDate,
         'priceCode': draft.priceCode.trim(),
+        if (draft.serviceCode != null) 'serviceCode': draft.serviceCode!.trim(),
       },
     );
     if (value is! Map<String, dynamic>) {
@@ -175,6 +258,8 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
       'careEpisodeType': sourceOrder.careEpisodeType,
       'careEpisodeId': sourceOrder.careEpisodeId,
       'priceCode': sourceOrder.priceCode,
+      if (sourceOrder.serviceCode != null)
+        'serviceCode': sourceOrder.serviceCode,
     });
     if (value is! Map<String, dynamic>) {
       throw const FormatException('Phản hồi tạo xét nghiệm không hợp lệ.');
@@ -204,6 +289,9 @@ class GatewayMedicalRecordRepository implements MedicalRecordRepository {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+
+  static bool? _flag(Map<dynamic, dynamic> json, String key) =>
+      json[key] is bool ? json[key] as bool : null;
 
   static void _requireId(String id, String field) {
     if (!isMedicalRecordUuid(id)) throw ArgumentError.value(id, field);

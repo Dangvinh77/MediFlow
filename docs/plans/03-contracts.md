@@ -436,6 +436,10 @@ Patient/staff/account/department IDs có authoritative origin. Episode identity 
 outpatient account, không thay khi record xuất hiện. Không lookup “latest record” hoặc dùng
 patientId để chọn mọi khoản tiền/đơn thuốc.
 
+`careEpisodeId` luôn là mã lượt khám. Quá trình điều trị dài hạn của v2.0 dùng `treatmentCourseId`
+riêng, không gửi vào field `careEpisodeId` và không dùng làm khóa thanh toán (IMP-ID-01,
+[bản đồ hợp đồng v2.0](22-v2-contract-map.md)).
+
 V1 envelope: eventId, eventType, integer version, occurredAt, correlationId, producer, payload.
 Routing key không tự thêm .v1; schema version không là result/operation revision.
 Logical producer vẫn patient-service/clinical-service/pharmacy-service/... dù app co-host.
@@ -1188,3 +1192,143 @@ recorded earlier without a line are `unclassifiedRevenue`.
 Scheduled (V2 registration) EXAM requests are now enrolled in the Billing outpatient publication
 cohort with `record_id=registrationId` as source (Billing V33 widens the payload fence). Their
 `payment.completed` is published like V1 EXAM/LAB_TEST/PRESCRIPTION instead of being held.
+
+## Quyền đọc hồ sơ và quyền duyệt Lab — v2.0 Đợt 1 (10/11/2026)
+
+Áp dụng khi `mediflow.v2.record-access-policy=true` (env `MEDIFLOW_V2_RECORD_ACCESS_POLICY`) ở Clinical,
+Lab và Pharmacy. Flag tắt thì hành vi và wire cũ không đổi. `RecordReadPolicy` ở Clinical là nơi duy
+nhất quyết định quyền đọc hồ sơ.
+
+### Quy tắc đọc
+
+| Vai trò | Được đọc khi | `basis` |
+|---|---|---|
+| DOCTOR, hoặc ADMIN có `staffId` là bác sĩ trên lượt | Là tác giả của record đang mở (chỉ `GET /{id}`) | `AUTHOR` |
+| DOCTOR, hoặc ADMIN có `staffId` là bác sĩ trên lượt | Có appointment của bệnh nhân với `doctorId` là mình, còn hiệu lực | `CARE_ASSIGNMENT` |
+| DOCTOR | Khoa hiện hành của mình có appointment của bệnh nhân còn hiệu lực | `DEPARTMENT_ENCOUNTER` |
+| NURSE | Khoa hiện hành của mình có appointment của bệnh nhân còn hiệu lực; chỉ thấy record của khoa đó | `DEPARTMENT_ENCOUNTER` |
+| DOCTOR, ADMIN | Có khai báo còn hạn cho bệnh nhân | `DECLARED_PURPOSE` |
+| NURSE | Có khai báo `EMERGENCY` còn hạn; thấy mọi khoa | `DECLARED_PURPOSE` |
+
+- Appointment còn hiệu lực: `PENDING`, `ARRIVED`, `AWAITING_PAYMENT`, `READY_FOR_EXAM`, `IN_EXAM` với ngày hẹn không cũ quá 30 ngày, hoặc
+  `COMPLETED` với `completedAt` không quá 30 ngày. `CANCELLED` không phải căn cứ.
+- Quyền đọc không tạo quyền ghi. Quyền ghi vẫn theo bác sĩ được phân công và lượt đang khám.
+- Khai báo là câu hỏi lý do, không phải chờ duyệt. Hiệu lực: DOCTOR 96 giờ, ADMIN và NURSE 60 phút.
+- Mục đích: DOCTOR `CONSULTATION`, `CARE_CONTINUITY`, `QUALITY_REVIEW`, `EMERGENCY`; ADMIN
+  `RECORD_MANAGEMENT`, `QUALITY_REVIEW`; NURSE `EMERGENCY`. `reason` bắt buộc 10 đến 500 ký tự với
+  `QUALITY_REVIEW` và `RECORD_MANAGEMENT`.
+- Mọi lần đọc, từ chối và khai báo ghi vào `record_access_log` của Clinical, không chứa token hay nội
+  dung lâm sàng. `COMPLETED` chỉ là hoàn tất khám, không có nghĩa đã ký hay đã chuyển lưu trữ.
+
+### Mã lỗi
+
+| Tình huống | HTTP | `error.code` |
+|---|---|---|
+| Chưa có căn cứ đọc, có thể khai báo | 403 | `RECORD_ACCESS_PURPOSE_REQUIRED` |
+| Tài khoản, nhân viên hoặc khoa không còn hoạt động, vai trò khác Core, hoặc không xác định được người đọc | 403 | `RECORD_ACCESS_DENIED` |
+| Khai báo sai mục đích hoặc thiếu lý do | 400 | `INVALID_REQUEST` |
+| Core không trả lời khi Clinical quyết định | 503 | `SCHEDULING_AUTHORITY_UNAVAILABLE` |
+| Clinical không trả lời khi Lab hỏi | 503 | `LAB_SOURCE_ORDER_UNVERIFIED` |
+| Clinical không trả lời khi Pharmacy hỏi | 503 | `PHARMACY_UPSTREAM_UNAVAILABLE` |
+
+### Endpoint
+
+| Method và path | Quyền | Ghi chú |
+|---|---|---|
+| `POST /api/v2/records/access-declarations` | ADMIN, DOCTOR, NURSE | Body `{patientId, purpose, reason}`, trả `{declarationId, patientId, purpose, expiresAt}` |
+| `GET /api/v2/records/{id}/capabilities` | ADMIN, DOCTOR, NURSE | Trả `{recordId, patientId, canRead, readBasis, canWriteContent, canComplete, canRequestAmendment, writeBlockedReason}`. `writeBlockedReason`: `RECORD_COMPLETED`, `NOT_ASSIGNED_DOCTOR`, `NOT_IN_EXAM` |
+| `GET /api/v2/clinical/patients/{patientId}/read-decision?actorAccountId=&actorStaffId=&actorRole=` | Nội bộ, service token ≤ 60 giây của `lab-service` hoặc `pharmacy-service`; Gateway chặn | Trả `{patientId, allowed, basis, denialCode, observedAt, departmentScope}`, không có nội dung lâm sàng. `departmentScope` khác null khi người đọc chỉ được xem dữ liệu của khoa đó |
+| `GET /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Lịch sử quyền của một nhân sự, cả quyền đã thu hồi, mới nhất trước; `Cache-Control: no-store`. Web: mục "Quyền đặc biệt" ở chi tiết nhân sự |
+| `POST /api/v2/org/staff/{staffId}/capability-grants` | ADMIN | Body `{capability, reason}`, chỉ nhận `LAB_RESULT_RELEASE`, chỉ cấp cho LAB_TECH đang hoạt động. `CAPABILITY_GRANT_INELIGIBLE`, `CAPABILITY_GRANT_ACTIVE` |
+| `PUT /api/v2/org/capability-grants/{grantId}/revocation` | ADMIN | Body `{reason}`. `CAPABILITY_GRANT_ALREADY_REVOKED` |
+| `GET /api/v2/org/lab-release-authority?actorAccountId=` | Nội bộ, service token ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{actorAccountId, accountActive, staffId, staffActive, canReleaseLabResults, observedAt}` |
+| `GET /api/v1/patients/{id}/demographics` | Nội bộ, service token (`ROLE_SYSTEM`) ≤ 60 giây của `lab-service`; Gateway chặn | Trả `{maBenhNhan, gioiTinh, ngaySinh}` (`gioiTinh` là `M`/`F`), không có họ tên hay giấy tờ. `404 PATIENT_NOT_FOUND`. Lab gọi ngoài transaction lúc phát hành để chọn khoảng tham chiếu theo giới tính và tuổi tại ngày thực hiện; Lab không lưu hai trường này. Lỗi, timeout hay trả lời về người khác chỉ làm cờ có giới hạn tuổi/giới thành `UNDETERMINED`, không chặn phát hành |
+
+Gateway luôn mở `access-declarations`, `capabilities`, `capability-grants` và `revocation`, không phụ thuộc cờ lịch khám V2. Ba API nội bộ không có route công khai.
+
+`GET /api/v1/org/me/capabilities` thêm `canReleaseLabResults` ở cuối. ADMIN cấp và thu hồi quyền ở mục
+"Quyền đặc biệt" của chi tiết nhân sự; luồng duyệt Lab hai người dùng quyền này khi phát hành.
+
+### Lab và Pharmacy khi flag bật
+
+- `LAB_TECH` và `PHARMACIST` giữ quyền làm việc, không hỏi Clinical.
+- Đọc một phiếu, đơn hoặc theo bệnh nhân: hỏi Clinical theo `patientId`.
+- Tìm phiếu Lab theo `episodeId`: hỏi Clinical cho từng bệnh nhân trong kết quả.
+- Đọc kết quả Lab của khoa khác `departmentScope`: 403 `RECORD_ACCESS_DENIED`; khi tìm theo `episodeId` thì bỏ các dòng đó.
+- Tìm Lab không có `episodeId`: DOCTOR và NURSE bị ép về khoa hiện hành trong JWT. ADMIN chỉ nhận trường hàng đợi, `conclusion` rỗng và `results` trống.
+- Tìm đơn thuốc không có `patientId`: DOCTOR chỉ thấy đơn của mình. ADMIN nhận đơn với `lines` trống.
+
+## Tiếp nhận tại phòng khám — Đợt 2 (flag `mediflow.v2.clinic-intake`, mặc định tắt)
+
+API dưới đây chỉ tồn tại khi cả `mediflow.clinical.scheduling.enabled` và `mediflow.v2.clinic-intake` bật. Mọi lệnh ghi cần `Idempotency-Key`.
+
+| Phương thức, đường dẫn | Vai trò | Thân yêu cầu | Trả về |
+|---|---|---|---|
+| `POST /api/v2/outpatient-registrations/{id}/room-queue-ticket` | NURSE của khoa có buổi khám | trống | 201 `ClinicQueueTicketDTO` |
+| `GET /api/v2/clinic-queue?date=&roomId=` | NURSE, DOCTOR | | 200 `List<ClinicQueueEntryDTO>` |
+| `PUT /api/v2/clinic-queue-tickets/{id}/call` | NURSE, DOCTOR | `{expectedRevision}` | 200 `ClinicQueueTicketDTO` |
+| `POST /api/v2/clinic-queue-tickets/{id}/adjustments` | NURSE, DOCTOR | `{expectedRevision,type,reason}` | 201 `ClinicQueueTicketDTO` |
+| `POST /api/v2/outpatient-registrations/{id}/vital-signs` | NURSE của khoa | `VitalSignCreateRequest` | 201 `VitalSignObservationDTO` |
+| `GET /api/v2/outpatient-registrations/{id}/vital-signs` | NURSE, DOCTOR | | 200 `List<VitalSignObservationDTO>` |
+| `POST /api/v2/outpatient-registrations/{id}/reschedule` | ADMIN, NURSE | `{expectedRevision,targetSessionId,reason,patientConfirmed}` | 200 `OutpatientRegistrationDTO` |
+| `GET /api/v2/consultation-sessions/{id}/impact` | ADMIN, DOCTOR quản lý khoa | | 200 `ScheduleImpactDTO` |
+| `GET /api/v2/doctor-work-shifts/{id}/impact` | ADMIN, DOCTOR quản lý khoa | | 200 `ScheduleImpactDTO` |
+| `GET /api/v2/billing/registration-settlements?kind=&page=&size=` | ADMIN, CASHIER | | 200 phân trang `RegistrationSettlementDTO` |
+
+Mã lỗi: `CLINIC_DESK_SCOPE_DENIED` (403); `ROOM_TICKET_EXISTS`, `TICKET_STATE_CONFLICT`, `SHIFT_CANCELLED`, `REGISTRATION_PAYMENT_IN_PROGRESS` (409); `ROOM_TICKET_NOT_ELIGIBLE`, `ROOM_TICKET_WRONG_DATE`, `CLINICAL_ROOM_TICKET_REQUIRED`, `SESSION_DATE_PAST`, `SESSION_SHIFT_CONFLICT`, `VITAL_SIGNS_INVALID`, `VITAL_SIGNS_REASON_REQUIRED`, `RESCHEDULE_CONFIRMATION_REQUIRED`, `RESCHEDULE_TARGET_INVALID` (422).
+
+Wire: `queueNumber` giữ tên, kiểu và ý nghĩa; sau flag được cấp theo khoa và ngày khám. `roomQueueNumber` trên `OutpatientRegistrationDTO` và `RegistrationSummary` chỉ có khi đã cấp số phòng. Sự kiện `outpatient.registration.changed` có trường tùy chọn `reschedule` chỉ ở revision đổi lịch, gồm `actorAccountId`, `actorStaffId`, `reason`, `previousSessionId`, `previousDoctorId`, `previousRoomId`, `previousSessionDate`, `previousStartTime`, `rescheduledAt`. Billing và Notification phải được triển khai trước khi bật flag ở Clinical.
+
+## Cấu trúc hồ sơ, quá trình, bàn giao, hội chẩn, đính chính và dị ứng — Đợt 4 (11/11/2026)
+
+Flag: `mediflow.v2.treatment-course` (quá trình điều trị) và `mediflow.v2.record-amendment` (bàn giao, hội chẩn,
+đính chính), mặc định `false`; tắt thì endpoint trả 404. Nội dung khám có cấu trúc, dòng thời gian, tài liệu của lượt
+và sổ dị ứng là thay đổi cộng thêm, không có flag. Danh sách endpoint và DTO đầy đủ ở kế hoạch
+[`2026-11-11-v2-wave-4-record-structure.md`](../superpowers/plans/2026-11-11-v2-wave-4-record-structure.md), mục
+"Hợp đồng API mới".
+
+- Quá trình điều trị, bàn giao, hội chẩn, đính chính và sổ dị ứng **không phát sự kiện**. Report vẫn đếm lượt hoàn tất
+  theo `recordId` từ `medicalrecord.completed`; giao lại cùng sự kiện mang cùng `eventId` và `sourceId`.
+- `MedicalRecordDTO.doctorId` luôn là bác sĩ mở lượt; `responsibleDoctorId` chỉ có khi đã bàn giao và khác `doctorId`.
+  Sự kiện hoàn tất giữ bác sĩ mở lượt. Quyền ghi lượt đang mở theo bác sĩ phụ trách hiện tại.
+- Ngữ cảnh kê đơn (`PrescriptionContextDTO.doctorId`) trả bác sĩ phụ trách hiện tại; Pharmacy chỉ cho đúng người đó
+  kê đơn. Đơn thuốc giữ `recordId` của lượt, không bao giờ là `courseId`.
+- Chỉ định Lab tạo sau bàn giao vẫn ghi bác sĩ mở lượt là người chỉ định vì kiểm tra hoàn tất Lab gắn với
+  `record.doctorId`; người nhận bàn giao được quyền tạo chỉ định. `careEpisodeId` và khóa tính phí không đổi.
+- Đính chính được duyệt không sửa bản gốc, `doctorId`, `appointmentId`, `completedAt`, chẩn đoán hay kết quả đã gắn.
+  Khi đính chính ảnh hưởng điều trị, bác sĩ kê đơn thay thế theo quy trình Pharmacy; hệ thống không tự sửa đơn hay hoàn
+  kho. `contentHash` là SHA-256 hex của `section + "\n" + originalText + "\n" + amendedText + "\n" + reason`, chỉ có khi
+  `APPROVED`, là xác nhận nội bộ.
+- Người duyệt: trưởng khoa của khoa hồ sơ (`canManageSchedules`) hoặc bác sĩ có năng lực `MEDICAL_RECORD_REVIEW` do
+  ADMIN cấp ở Core. Người gửi không tự duyệt (403 `AMENDMENT_SELF_DECISION`). Không xác minh được quyền thì từ chối,
+  không coi là "không có quyền". Endpoint nội bộ `GET /api/v2/org/record-review-authority` chỉ cho `clinical-service`,
+  Gateway chặn từ ngoài.
+- `RecordCapabilitiesDTO` thêm `canHandover`, `canAcceptHandover`, `canAddConsultationNote`, `canAmend`,
+  `canDecideAmendments`, vắng mặt khi `record-amendment` tắt; chỉ là gợi ý màn hình, lệnh vẫn kiểm lại.
+- Bàn giao: người nhận đã chấp nhận ghi, kê đơn, hoàn tất và đóng lượt; phiếu đăng ký kết thúc theo bác sĩ phụ trách,
+  không theo bác sĩ của buổi khám. Bác sĩ phụ trách gửi yêu cầu mới thì yêu cầu đang chờ chuyển `SUPERSEDED`
+  (`RecordHandoverDTO.status`: `PENDING|ACCEPTED|SUPERSEDED`); `HANDOVER_PENDING_EXISTS` chỉ còn khi hai yêu cầu
+  ghi cùng lúc.
+- `PUT /api/v1/records/{id}`: `symptoms` và sáu mục nội dung cùng quy tắc, `null`/vắng là giữ, chuỗi rỗng là xóa.
+- Danh sách tài liệu dùng thời điểm nguồn tạo ra kết quả (`occurredAt` của `lab.result.created`, cột `source_at`),
+  không dùng lúc Clinical nhận sự kiện; `afterConclusion` so thời điểm đó với lúc kết thúc lượt.
+- Điều dưỡng xem quá trình điều trị chỉ thấy `recordIds` và `lastVisitDate` của các lượt thuộc khoa mình.
+- Hàng chờ đính chính (`GET /api/v2/amendments/pending`) có nội dung lâm sàng, nên mỗi hồ sơ được trả về ghi một dòng
+  `READ` với cơ sở `AMENDMENT_REVIEW` vào nhật ký đọc hồ sơ.
+- In và xuất hồ sơ (VIEW-03) để lần sau: tách bản một lượt với lịch sử, giữ tác giả, thời điểm, đính chính và kiểm quyền
+  xuất riêng.
+
+Mã lỗi mới: `RECORD_CONTENT_INVALID`, `ALLERGY_INVALID`, `TREATMENT_COURSE_INVALID`, `HANDOVER_INVALID`,
+`HANDOVER_PENDING_EXISTS`, `CONSULTATION_NOTE_INVALID`, `AMENDMENT_INVALID`, `AMENDMENT_RECORD_OPEN`,
+`AMENDMENT_ALREADY_DECIDED` (422); `AMENDMENT_SELF_DECISION`, `AMENDMENT_AUTHOR_NOT_ELIGIBLE`,
+`AMENDMENT_DECISION_DENIED`, `AMENDMENT_ASSIGNMENT_DENIED` (403); `HANDOVER_NOT_FOUND`, `AMENDMENT_NOT_FOUND`,
+`ALLERGY_NOT_FOUND`, `TREATMENT_COURSE_NOT_FOUND` (404); `RECORD_REVIEW_AUTHORITY_UNAVAILABLE` (503).
+
+## Lab Đợt 5–7 — 11/11/2026
+
+- Sự kiện: `lab.result.created` v1 (thêm `values`, `releasedBy` khi trả qua duyệt), `lab.result.amended` v1,
+  `lab.critical.raised` v1. Fixture: `backend/lab-service/src/test/resources/contracts/`.
+- Endpoint mới: `/api/v2/lab/{testId}/report`, `/api/v2/lab/{testId}/specimens`,
+  `PUT /api/v2/lab/specimens/{specimenId}/decision`, `GET /api/v2/lab/worklist`, `GET /api/v2/lab/critical-notices`,
+  `POST /api/v2/lab/{testId}/critical-notices/{noticeId}/acknowledgement`.
+- Cờ, thứ tự bật, rollback và mã lỗi (`LAB_REVIEW_REQUIRED`, `LAB_REVIEW_DISABLED`): [`27-v2-cutover-runbook.md`](27-v2-cutover-runbook.md).

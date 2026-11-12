@@ -17,6 +17,15 @@ foreach ($invalid in @('8.8.8.8','192.168.1.99','127.0.0.1','host;echo bad')) {
 $rejected = $false
 try { Resolve-DemoNetwork -Configurations @() | Out-Null } catch { $rejected = $true }
 Assert-True $rejected 'Missing physical LAN must produce guidance.'
+Assert-True ((Resolve-DemoGatewayUrl '') -eq 'http://127.0.0.1:28080') 'Default Gateway must stay on this PC.'
+foreach ($valid in @('http://172.16.2.55:28080', '172.16.2.55:28080', 'http://172.16.2.55:28080/', 'http://172.16.2.55:28080/api/')) {
+    Assert-True ((Resolve-DemoGatewayUrl $valid) -eq 'http://172.16.2.55:28080') "Gateway URL not normalized: $valid"
+}
+foreach ($invalid in @('ftp://172.16.2.55:28080', 'http://172.16.2.55:28080/other', 'http://u:p@172.16.2.55:28080', 'http://172.16.2.55:28080?x=1')) {
+    $rejected = $false
+    try { Resolve-DemoGatewayUrl $invalid | Out-Null } catch { $rejected = $true }
+    Assert-True $rejected "Invalid Gateway URL accepted: $invalid"
+}
 $global:rules = @()
 function global:Get-NetFirewallRule { param($Name,$ErrorAction) return $null }
 function global:New-NetFirewallRule {
@@ -30,4 +39,4 @@ Assert-True (@($global:rules | Where-Object { $_.LocalPort -notin @(28080,3000) 
 function global:Test-DemoAdministrator { return $false }
 Enable-DemoLanFirewall -InterfaceAlias 'Wi-Fi'
 Assert-True ($global:rules.Count -eq 2) 'Non-admin path attempted a firewall mutation.'
-Write-Host 'PASS: LAN selection, address rejection, loopback and scoped firewall rules.'
+Write-Host 'PASS: LAN selection, address rejection, loopback, Gateway URL and scoped firewall rules.'

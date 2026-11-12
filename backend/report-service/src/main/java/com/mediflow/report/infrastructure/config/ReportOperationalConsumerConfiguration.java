@@ -40,6 +40,7 @@ public class ReportOperationalConsumerConfiguration {
         return new Declarables(events, dead, queue, dlq,
                 BindingBuilder.bind(queue).to(events).with("medicalrecord.completed"),
                 BindingBuilder.bind(queue).to(events).with("lab.result.created"),
+                BindingBuilder.bind(queue).to(events).with("lab.result.amended"),
                 BindingBuilder.bind(queue).to(events).with("prescription.filled"),
                 BindingBuilder.bind(queue).to(events).with("surgery.completed"),
                 BindingBuilder.bind(queue).to(events).with("surgery.cancelled"),

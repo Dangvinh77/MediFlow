@@ -93,6 +93,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                 && !hasShortServiceLifetime(claims)
                         || isClinicalAuthorityRequest(request.getRequestURI())
                                 && (!"clinical-service".equals(subject)
+                                        || !hasShortServiceLifetime(claims))
+                        || "/api/v2/org/lab-release-authority".equals(request.getRequestURI())
+                                && (!"lab-service".equals(subject)
                                         || !hasShortServiceLifetime(claims))) {
                     SecurityContextHolder.clearContext();
                     return;
@@ -167,7 +170,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static boolean isClinicalAuthorityRequest(String path) {
         return "/api/v2/org/scheduling-authority".equals(path)
                 || "/api/v2/org/consultation-eligibility".equals(path)
-                || "/api/v2/org/current-doctor-authority".equals(path);
+                || "/api/v2/org/current-doctor-authority".equals(path)
+                || "/api/v2/org/record-review-authority".equals(path);
     }
 
     private static boolean hasShortServiceLifetime(Claims claims) {

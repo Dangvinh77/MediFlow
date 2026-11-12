@@ -48,6 +48,7 @@ import com.mediflow.clinical.domain.exception.ClinicalRecordNotFoundException;
 import com.mediflow.clinical.domain.model.AdmissionPriority;
 import com.mediflow.clinical.domain.model.AdmissionReferral;
 import com.mediflow.clinical.domain.model.Appointment;
+import com.mediflow.clinical.domain.model.ClinicalLabOrder;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.CareEpisodeType;
 import com.mediflow.clinical.domain.model.EmergencyOverride;
@@ -243,7 +244,8 @@ public class ClinicalCareFinanceApplicationService
         MedicalRecord record = records.findByAppointmentId(appointmentId).orElse(null);
         if (record == null) {
             record = MedicalRecord.openForAppointment(appointment.getPatientId(), appointment.getDoctorId(),
-                    appointment.getDepartmentId(), LocalDate.now(clock), null, appointmentId, now);
+                    appointment.getDepartmentId(), LocalDate.ofInstant(now, java.time.ZoneId.of("Asia/Ho_Chi_Minh")), null, appointmentId, now,
+                    scheduled ? scheduledRegistrations.previousRecordIdFor(appointmentId) : null);
         } else if (record.getStatus() != MedicalRecordStatus.OPEN
                 || !record.getPatientId().equals(appointment.getPatientId())
                 || !record.getDoctorId().equals(appointment.getDoctorId())
@@ -303,6 +305,65 @@ public class ClinicalCareFinanceApplicationService
         }
     }
 
+    /** Takes back an order Lab never received, so it no longer blocks the end of the visit. */
+    @Transactional
+    public com.mediflow.clinical.application.dto.response.RecordLabOrderDTO withdrawLabOrder(UUID recordId, UUID sourceOrderId,
+            com.mediflow.clinical.application.dto.request.WithdrawLabOrderRequest request) {
+        String reason = request == null || request.reason() == null ? "" : request.reason().trim();
+        if (reason.isEmpty() || reason.length() > 500 || sourceOrderId == null) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_WITHDRAWAL_INVALID",
+                    "A withdrawal reason of 1-500 characters is required");
+        }
+        MedicalRecord record = lockedRecord(recordId);
+        if (record.getAppointmentId() == null) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination can withdraw a Lab order");
+        }
+        Appointment appointment = lockedAppointment(record.getAppointmentId());
+        if (appointment.getCareContractVersion() != 2 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Lab orders can only be withdrawn while the examination is in progress");
+        }
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
+        requireScheduledLifecycle();
+        ClinicalLabOrder withdrawn = labCompletionGuard.withdrawUnreceived(record, appointment, sourceOrderId,
+                actors.current().staffId(), reason, clock.instant(), correlationIds.currentOrCreate().toString());
+        return new com.mediflow.clinical.application.dto.response.RecordLabOrderDTO(withdrawn.sourceOrderId(), null,
+                withdrawn.labType(), "WITHDRAWN", withdrawn.orderedAt());
+    }
+
+    /** Ends a visit the patient abandoned: no diagnosis or disposition, so no record-completed fact and no charge. */
+    @Transactional
+    public MedicalRecordDTO closeWithoutConclusion(UUID recordId, com.mediflow.clinical.application.dto.request.CloseRecordRequest request) {
+        if (request == null) {
+            throw new InvalidClinicalDataException("RECORD_CLOSURE_INVALID", "A closure reason and note are required");
+        }
+        MedicalRecord record = lockedRecord(recordId);
+        if (record.getAppointmentId() == null) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination can end without a conclusion");
+        }
+        Appointment appointment = lockedAppointment(record.getAppointmentId());
+        if (appointment.getCareContractVersion() != 2 || appointment.getStatus() != AppointmentStatus.IN_EXAM) {
+            throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
+                    "Only a scheduled examination in progress can end without a conclusion");
+        }
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
+        requireScheduledLifecycle();
+        String correlationId = correlationIds.currentOrCreate().toString();
+        labCompletionGuard.requireAllClosed(record, appointment, correlationId);
+        Instant now = clock.instant();
+        AppointmentStatus oldStatus = appointment.getStatus();
+        record.closeWithoutConclusion(request.reason(), request.note(), actors.current().staffId(), now);
+        scheduledRegistrations.completeExamination(appointment, now, record.responsibleDoctorId());
+        appointment.completeScheduled(now);
+        MedicalRecord savedRecord = records.save(record);
+        Appointment savedAppointment = appointments.save(appointment);
+        appendStatusChanged(savedAppointment, savedRecord.getRecordId(), oldStatus,
+                savedAppointment.getStatus(), now, savedAppointment.getEmergencyOverrideId());
+        return mapper.toDto(savedRecord);
+    }
+
     @Override
     @Transactional
     public MedicalRecordDTO complete(UUID recordId, CompleteRecordRequest request) {
@@ -320,7 +381,7 @@ public class ClinicalCareFinanceApplicationService
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Appointment must be in examination before record completion");
         }
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         if (!admissionReferralsEnabled && (request.disposition() == RecordDisposition.ADMISSION
                 || request.disposition() == RecordDisposition.TRANSFER)) {
             throw deferredAdmission();
@@ -334,7 +395,7 @@ public class ClinicalCareFinanceApplicationService
         record.complete(request.disposition(), request.dispositionNote(), now);
         if (appointment.getCareContractVersion() == 2) {
             requireScheduledLifecycle();
-            scheduledRegistrations.completeExamination(appointment, now);
+            scheduledRegistrations.completeExamination(appointment, now, record.responsibleDoctorId());
             appointment.completeScheduled(now);
         }
         else appointment.complete(now);

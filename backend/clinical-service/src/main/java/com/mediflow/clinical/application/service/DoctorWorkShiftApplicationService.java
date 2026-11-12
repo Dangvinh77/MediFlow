@@ -24,9 +24,20 @@ public class DoctorWorkShiftApplicationService {
     private final ConsultationSessionApplicationService schedules;
     private final IdempotentCommandPort commands;
     private final Clock clock;
+    private final ConsultationSessionPolicy policy;
+    private final ClinicIntakeSettings clinicIntake;
     public DoctorWorkShiftApplicationService(DoctorWorkShiftRepositoryPort shifts,
             ConsultationSessionRepositoryPort sessions, ConsultationSessionApplicationService schedules,
-            IdempotentCommandPort commands, @Qualifier("clinicalSchedulingClock") Clock clock) {
+            IdempotentCommandPort commands, Clock clock) {
+        this(shifts,sessions,schedules,commands,clock,new ConsultationSessionPolicy(shifts,new ClinicIntakeSettings(false),clock),
+                new ClinicIntakeSettings(false));
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public DoctorWorkShiftApplicationService(DoctorWorkShiftRepositoryPort shifts,
+            ConsultationSessionRepositoryPort sessions, ConsultationSessionApplicationService schedules,
+            IdempotentCommandPort commands, @Qualifier("clinicalSchedulingClock") Clock clock,
+            ConsultationSessionPolicy policy, ClinicIntakeSettings clinicIntake) {
+        this.policy=policy; this.clinicIntake=clinicIntake;
         this.shifts=shifts; this.sessions=sessions; this.schedules=schedules; this.commands=commands; this.clock=clock;
     }
     public PageResult<DoctorWorkShiftDTO> search(UUID departmentId, LocalDate fromDate, LocalDate toDate, PageQuery page) {
@@ -77,7 +88,10 @@ public class DoctorWorkShiftApplicationService {
                 200,value->null,()->{
                     var before=lock(id);
                     var after=domain(()->before.cancel(request.expectedRevision(),request.reason()));
-                    shifts.update(before,after,actor.accountId(),request.reason(),clock.instant());
+                    if(clinicIntake.enabled()) {
+                        stopLinkedSessions(id,actor.accountId(),request.reason());
+                        shifts.cancelKeepingStoppedSessions(before,after,actor.accountId(),request.reason(),clock.instant());
+                    } else shifts.update(before,after,actor.accountId(),request.reason(),clock.instant());
                     return dto(after);
                 });
     }
@@ -90,14 +104,21 @@ public class DoctorWorkShiftApplicationService {
         return commands.execute(actor.accountId().toString(),"POST",PATH+"/"+id+"/consultation-sessions",key,hash(request),
                 ConsultationSessionDTO.class,201,value->"/api/v2/consultation-sessions/"+value.sessionId(),()->{
                     var shift=lock(id);
-                    var session=domain(()->ConsultationSession.open(UUID.randomUUID(),request.doctorId(),request.departmentId(),
-                            request.roomId(),request.sessionDate(),request.startTime(),request.endTime(),
-                            request.breaks().stream().map(b->new ConsultationBreak(b.startTime(),b.endTime())).toList(),request.capacity()));
-                    domain(()->{shift.requireContains(session.configuration());return shift;});
+                    var session=domain(()->policy.prepareNew(request,Optional.of(shift)));
                     var saved=sessions.insert(session,actor.accountId(),null,clock.instant());
                     shifts.linkSession(id,saved.sessionId());
                     return schedules.toDto(saved);
                 });
+    }
+    /** Caller holds the shift lock; sessions are locked in id order. Existing registrations stay untouched. */
+    private void stopLinkedSessions(UUID shiftId,UUID actor,String reason) {
+        for(UUID sessionId:shifts.linkedSessionIds(shiftId).stream().sorted().toList()) {
+            var before=sessions.findByIdForUpdate(sessionId)
+                    .orElseThrow(()->new ResourceNotFoundException("RESOURCE_NOT_FOUND","Session was not found"));
+            if(before.status()!=ConsultationSessionStatus.OPEN) continue;
+            var after=domain(()->before.changeStatus(before.revision(),ConsultationSessionStatus.STOPPED,reason));
+            sessions.update(before,after,actor,"STATUS_CHANGED",reason,clock.instant());
+        }
     }
     private DoctorWorkShift read(UUID id) {
         return shifts.findById(id).orElseThrow(()->new ResourceNotFoundException("RESOURCE_NOT_FOUND","Shift was not found"));

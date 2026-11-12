@@ -1,0 +1,5 @@
+flowchart TB
+U["Bác sĩ · Hoàn tất hồ sơ khám"] --> C["Clinical · COMPLETED"]
+C -->|"medicalrecord.completed"| R["RabbitMQ · mediflow.events"]
+R --> N["Notification · kết quả khám đã có"]
+R --> T["Report · lượt khám hoàn tất"]

@@ -10,6 +10,15 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 
 2. KHỞI ĐỘNG BACKEND
 - Nhấp đúp start-backend.bat, chờ thông báo READY rồi giữ cửa sổ mở.
+- Launcher tự build, khôi phục dữ liệu, tạo lịch một tháng, tài khoản, quyền
+  phát hành kết quả xét nghiệm cho hai KTV, kỳ báo cáo và các lượt mẫu cho thu
+  ngân. Không cần chạy thêm file Python hay SQL nào.
+- Nên khởi động trong 07:00-16:45 giờ Việt Nam ngày demo: ngoài giờ khám, lượt
+  tái khám, lượt mẫu cho thu ngân và bệnh nhân seed theo người demo chưa tạo được
+  (cửa sổ báo PARTIAL hoặc không có STAGED DEMO READY). Khi đó KHÔNG cần khởi động
+  lại: trong giờ khám, nhấp đúp seed-demo.bat (backend vẫn chạy) để seed bổ sung.
+- Ngay trước phần thu phí khám của Lộc: .\seed-demo.bat -ExamChargeNow
+  (phiếu chưa thu chỉ giữ suất 15 phút).
 - Lần đầu dùng qua Wi-Fi: chuột phải -> Run as administrator để tạo firewall
   cho Gateway 28080 và frontend 3000 trên mạng nội bộ.
 - Không truyền tham số: chạy phiên demo tạm; ứng dụng dừng sau hai giờ.
@@ -29,6 +38,23 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
     http://<IP-máy>:3000
 - Giữ cửa sổ frontend mở khi sử dụng.
 
+3b. HỘP THƯ DEMO (MỞ BẰNG ĐƯỜNG DẪN)
+- Hộp thư demo không nằm trong menu của ứng dụng. Gõ thẳng đường dẫn vào
+  trình duyệt, không cần đăng nhập:
+    http://<IP-máy>:3000/demo-mailbox     (qua Wi-Fi, dùng cho cả điện thoại)
+    http://127.0.0.1:3000/demo-mailbox    (chạy -LocalOnly)
+- Dùng cùng origin với URL frontend in trong cửa sổ start-frontend.bat, để các
+  nút trong thư (đặt lại mật khẩu, kích hoạt tài khoản) mở đúng trang.
+- Cách dùng: lọc theo vai trò hoặc gõ email/họ tên -> chọn tài khoản seed ->
+  bấm vào thư để xem nội dung. Chỉ có thư của tài khoản seed; thư gửi tới
+  email thật thì xem trong hộp thư thật đó.
+- Điều kiện bật: smtp.local.env ở thư mục gốc có dòng
+    MEDIFLOW_DEMO_MAILBOX_ENABLED=true
+  rồi khởi động lại start-backend.bat. Nếu trang báo "Hộp thư demo chưa được
+  bật trong môi trường này" thì kiểm tra dòng này. Kiểm tra nhanh qua Gateway:
+    http://<IP-máy>:28080/api/v1/demo/mailbox/config   -> "enabled":true
+- Chỉ bật trong môi trường demo/local; không bật trên hệ thống thật.
+
 4. ĐIỆN THOẠI CÙNG WI-FI / CHẠY RIÊNG TRÊN MÁY
 - Mặc định launcher chọn IP LAN và cho phép truy cập qua Wi-Fi.
 - Chọn IP cụ thể (thay bằng IP thật của máy Windows), dùng cho cả hai lệnh:
@@ -41,8 +67,28 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
     .\start-backend.bat -Fast -LocalOnly
     .\start-frontend.bat -LocalOnly
 - Với -LocalOnly, dùng http://127.0.0.1:3000; điện thoại không truy cập được.
+- Backend chạy trên MÁY KHÁC: trên máy backend chạy start-backend.bat (quyền admin
+  lần đầu để mở firewall). Trên máy frontend, kiểm tra
+  http://<IP-máy-backend>:28080/actuator/health rồi chạy:
+    .\start-frontend.bat -GatewayUrl http://<IP-máy-backend>:28080
+  -LanAddress luôn là IP của CHÍNH máy đang chạy lệnh, không phải máy backend.
+  Nếu máy frontend không có IP LAN, thêm -LocalOnly và mở http://127.0.0.1:3000.
 - iOS HTTP LAN cần bản Debug được cấu hình đúng Gateway và quyền Local Network.
   Xem thêm mobile\README.md tính từ thư mục gốc dự án.
+
+4b. APP MOBILE
+- Sau khi backend báo READY, nhấp đúp start-mobile.bat. Mặc định mở app trên
+  Chrome (nhanh nhất, có hot reload). Launcher tự bật đúng cờ UI demo.
+- Android emulator (tự bật emulator nếu chưa chạy):
+    .\start-mobile.bat -Target android
+- Điện thoại thật cùng Wi-Fi (cắm cáp USB hoặc ghép nối không dây; backend
+  phải chạy không có -LocalOnly):
+    .\start-mobile.bat -Target device
+    .\start-mobile.bat -Target device -Device <id>   (xem id: flutter devices)
+  Launcher tự dùng Gateway http://<IP-máy>:28080/api cho điện thoại.
+- Cần Flutter 3.47 trong PATH; Android cần Android SDK. Chi tiết:
+  mobile\tool\HUONG_DAN.txt.
+- Dừng app: nhấn q trong cửa sổ mobile.
 
 5. DỪNG VÀ GIỮ DỮ LIỆU DEMO
 - Dừng frontend: tại cửa sổ frontend nhấn Ctrl+C (xác nhận Y nếu được hỏi).
@@ -68,6 +114,7 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 7. NẾU CHẠY TỪ THƯ MỤC GỐC DỰ ÁN
     .\scripts\run\start-backend.bat -Fast
     .\scripts\run\start-frontend.bat
+    .\scripts\run\start-mobile.bat
     .\scripts\run\stop-backend.bat
     .\scripts\run\clean-docker.bat -Preview
 

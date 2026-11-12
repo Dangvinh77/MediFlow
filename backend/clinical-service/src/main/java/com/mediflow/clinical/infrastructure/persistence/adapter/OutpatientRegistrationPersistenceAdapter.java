@@ -54,8 +54,9 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                         locked_at, reconcile_after, transaction_id, clearance_id, payment_completed_at,
                         cancellation_actor_account_id, cancellation_actor_staff_id, cancellation_reason, cancelled_at,
                         created_at, updated_at, previous_registration_id, follow_up_recommendation_id,
-                        doctor_replacement_reason, patient_agreed_to_doctor_replacement, follow_up_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        doctor_replacement_reason, patient_agreed_to_doctor_replacement, follow_up_reason,
+                        return_source_record_id, return_reason, independent_visit_reason)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, registration.registrationId(), registration.sessionId(), registration.patientId(),
                     registration.revision(), registration.receptionMode().name(), registration.visitType().name(),
                     registration.status().name(), reservation.reservationId(), reservation.revision(),
@@ -70,7 +71,10 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                     registration.followUp() == null ? null : registration.followUp().recommendationId(),
                     registration.followUp() == null ? null : registration.followUp().replacementReason(),
                     registration.followUp() == null ? null : registration.followUp().patientAgreedToDoctorReplacement(),
-                    registration.followUp() == null ? null : registration.followUp().reason());
+                    registration.followUp() == null ? null : registration.followUp().reason(),
+                    registration.returnLink() == null ? null : registration.returnLink().sourceRecordId(),
+                    registration.returnLink() == null ? null : registration.returnLink().returnReason(),
+                    registration.returnLink() == null ? null : registration.returnLink().independentVisitReason());
         } catch (DuplicateKeyException collision) {
             throw new DuplicateResourceException("ACTIVE_REGISTRATION_EXISTS", "Patient already has an active registration for this session");
         }
@@ -106,14 +110,14 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
         Reservation reservation = after.reservation();
         Cancellation cancellation = after.cancellation();
         int changed = jdbc.update("""
-                UPDATE outpatient_registration SET revision = ?, status = ?, reservation_revision = ?,
+                UPDATE outpatient_registration SET session_id = ?, revision = ?, status = ?, reservation_revision = ?,
                     reservation_status = ?, reservation_expires_at = ?, checked_in_at = ?, queue_number = ?,
                     active_payment_operation_id = ?, active_fence_token = ?, locked_at = ?, reconcile_after = ?,
                     transaction_id = ?, clearance_id = ?, payment_completed_at = ?,
                     cancellation_actor_account_id = ?, cancellation_actor_staff_id = ?, cancellation_reason = ?,
                     cancelled_at = ?, updated_at = ?
                 WHERE registration_id = ? AND revision = ? AND reservation_revision = ?
-                """, after.revision(), after.status().name(), reservation.revision(), reservation.status().name(),
+                """, after.sessionId(), after.revision(), after.status().name(), reservation.revision(), reservation.status().name(),
                 timestamp(reservation.expiresAt()), timestamp(after.checkedInAt()), after.queueNumber(), reservation.paymentOperationId(),
                 reservation.fenceToken(), timestamp(reservation.lockedAt()), timestamp(reservation.reconcileAfter()), reservation.transactionId(),
                 reservation.clearanceId(), timestamp(reservation.completedAt()), cancellation == null ? null : cancellation.actorAccountId(),
@@ -126,6 +130,28 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
 
     @Override
     @Transactional(readOnly = true)
+    public void appendRescheduleLog(RescheduleLog l) {
+        jdbc.update("""
+                INSERT INTO appointment_reschedule_log(log_id, registration_id, old_session_id, new_session_id, old_doctor_id, new_doctor_id,
+                    old_room_id, new_room_id, old_session_date, new_session_date, old_start_time, new_start_time, actor_account_id,
+                    actor_staff_id, authority_scope_revision, reason, patient_confirmed, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)
+                """, UUID.randomUUID(), l.registrationId(), l.oldSessionId(), l.newSessionId(), l.oldDoctorId(), l.newDoctorId(), l.oldRoomId(),
+                l.newRoomId(), java.sql.Date.valueOf(l.oldSessionDate()), java.sql.Date.valueOf(l.newSessionDate()),
+                java.sql.Time.valueOf(l.oldStartTime()), java.sql.Time.valueOf(l.newStartTime()), l.actorAccountId(), l.actorStaffId(),
+                l.authorityScopeRevision(), l.reason(), timestamp(l.createdAt()));
+    }
+
+    @Override
+    public java.util.List<UUID> findExpiredHeld(java.time.Instant now, int limit) {
+        return jdbc.queryForList("""
+                SELECT registration_id FROM outpatient_registration
+                WHERE reservation_status = 'HELD' AND reservation_expires_at <= ?
+                ORDER BY reservation_expires_at, registration_id LIMIT ?
+                """, UUID.class, java.sql.Timestamp.from(now), limit);
+    }
+
+    @Override
     public boolean existsActivePatientSession(UUID patientId, UUID sessionId) {
         Boolean exists = jdbc.queryForObject("""
                 SELECT EXISTS(SELECT 1 FROM outpatient_registration WHERE patient_id = ? AND session_id = ?
@@ -194,10 +220,34 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
     @Transactional
     public int allocateQueueNumber(UUID sessionId) {
         Integer number = jdbc.queryForObject("""
-                UPDATE consultation_session SET next_queue_number = next_queue_number + 1
-                WHERE session_id = ? RETURNING next_queue_number - 1
+                UPDATE consultation_session s
+                   SET next_queue_number = GREATEST(s.next_queue_number,
+                           COALESCE((SELECT MAX(r.queue_number) FROM outpatient_registration r WHERE r.session_id = s.session_id), 0) + 1) + 1
+                 WHERE s.session_id = ? RETURNING s.next_queue_number - 1
                 """, Integer.class, sessionId);
         if (number == null || number < 1) throw new IllegalStateException("queue number could not be allocated");
+        return number;
+    }
+
+    /** A new day's sequence continues above numbers issued before the department sequence was switched on. */
+    @Override
+    public int allocateDepartmentQueueNumber(UUID departmentId, java.time.LocalDate queueDate) {
+        Integer number = jdbc.queryForObject("""
+                INSERT INTO department_queue_counter(department_id, queue_date, next_number)
+                VALUES (?, ?, COALESCE((SELECT MAX(r.queue_number)
+                                          FROM outpatient_registration r
+                                          JOIN consultation_session s ON s.session_id = r.session_id
+                                         WHERE s.department_id = ? AND s.session_date = ?), 0) + 2)
+                ON CONFLICT (department_id, queue_date)
+                DO UPDATE SET next_number = GREATEST(department_queue_counter.next_number,
+                        COALESCE((SELECT MAX(r.queue_number)
+                                    FROM outpatient_registration r
+                                    JOIN consultation_session s ON s.session_id = r.session_id
+                                   WHERE s.department_id = ? AND s.session_date = ?), 0) + 1) + 1
+                RETURNING next_number - 1
+                """, Integer.class, departmentId, java.sql.Date.valueOf(queueDate), departmentId, java.sql.Date.valueOf(queueDate),
+                departmentId, java.sql.Date.valueOf(queueDate));
+        if (number == null || number < 1) throw new IllegalStateException("department queue number could not be allocated");
         return number;
     }
 
@@ -276,6 +326,35 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
         return PageResult.of(rows, total, page.page(), page.size());
     }
 
+    private static final String OPEN_VISITS = """
+            SELECT r.registration_id, m.record_id, m.doctor_id, m.department_id, s.session_date, a.examination_started_at
+            FROM outpatient_registration r
+            JOIN appointment a ON a.appointment_id = r.registration_id
+            JOIN consultation_session s ON s.session_id = r.session_id
+            JOIN medical_record m ON m.appointment_id = a.appointment_id
+            WHERE r.status = 'IN_EXAM' AND a.status = 'IN_EXAM' AND m.status = 'OPEN'
+            """;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByPatient(UUID patientId) {
+        return jdbc.query(OPEN_VISITS + " AND r.patient_id = ? ORDER BY a.examination_started_at, r.registration_id",
+                this::mapOpenVisit, patientId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.mediflow.clinical.application.dto.response.OpenVisitDTO> findOpenVisitsByDoctor(UUID doctorId, int limit) {
+        return jdbc.query(OPEN_VISITS + " AND COALESCE(m.responsible_doctor_id, m.doctor_id) = ? ORDER BY a.examination_started_at, r.registration_id LIMIT ?",
+                this::mapOpenVisit, doctorId, limit);
+    }
+
+    private com.mediflow.clinical.application.dto.response.OpenVisitDTO mapOpenVisit(ResultSet row, int index) throws SQLException {
+        return new com.mediflow.clinical.application.dto.response.OpenVisitDTO(row.getObject("registration_id", UUID.class),
+                row.getObject("record_id", UUID.class), row.getObject("doctor_id", UUID.class), row.getObject("department_id", UUID.class),
+                row.getObject("session_date", java.time.LocalDate.class), instant(row, "examination_started_at"));
+    }
+
     private Optional<OutpatientRegistration> query(String sql, UUID id) {
         return jdbc.query(sql, this::mapOne, id).stream().findFirst();
     }
@@ -317,7 +396,10 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
                 reservation, cancellation, row.getObject("previous_registration_id") == null ? null :
                     new OutpatientRegistration.FollowUpLink(row.getObject("previous_registration_id", UUID.class),
                         row.getObject("follow_up_recommendation_id", UUID.class), row.getString("doctor_replacement_reason"),
-                        (Boolean) row.getObject("patient_agreed_to_doctor_replacement"), row.getString("follow_up_reason")));
+                        (Boolean) row.getObject("patient_agreed_to_doctor_replacement"), row.getString("follow_up_reason")),
+                row.getObject("return_source_record_id") == null && row.getString("independent_visit_reason") == null ? null :
+                    new OutpatientRegistration.ReturnLink(row.getObject("return_source_record_id", UUID.class),
+                        row.getString("return_reason"), row.getString("independent_visit_reason")));
     }
 
     private void appendAudit(OutpatientRegistration after, OutpatientRegistration before,

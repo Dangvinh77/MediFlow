@@ -40,6 +40,9 @@ spring:
     openfeign:
       client:
         config:
+          labClinicalReadDecisionClient:
+            connectTimeout: 1000
+            readTimeout: 4000
           labClinicalOrderContextClient:
             connectTimeout: 1000
             readTimeout: 2000
@@ -55,6 +58,15 @@ mediflow:
     outpatient-mvp:
       enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  v2:
+    record-access-policy: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:false}
+    lab-catalog: ${MEDIFLOW_V2_LABCATALOG:false}
+    lab-review: ${MEDIFLOW_V2_LAB_REVIEW:false}
+    lab-amendment: ${MEDIFLOW_V2_LAB_AMENDMENT:false}
+  clients:
+    # Organization is hosted by core-service in the six-deployment topology (outpatient-mvp profile).
+    organization-service: ${MEDIFLOW_ORGANIZATION_SERVICE:organization-service}
+    patient-service: ${MEDIFLOW_PATIENT_SERVICE:patient-service}
   lab:
     clinical-context:
       enabled: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:false}

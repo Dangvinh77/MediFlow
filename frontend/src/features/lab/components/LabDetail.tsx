@@ -12,8 +12,10 @@ import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { labApi } from "../api";
-import type { LabTestDTO, LabTestStatus } from "../types";
+import type { LabReportDTO, LabTestDTO, LabTestStatus } from "../types";
 import { LabActions } from "./LabActions";
+import { LabReportWorkflowPanel } from "./LabReportWorkflowPanel";
+import { SpecimenPanel } from "./SpecimenPanel";
 import { safeLabReturn } from "../navigation";
 import { getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 
@@ -27,6 +29,13 @@ interface RequestError {
   message: string;
   correlationId: string | null;
 }
+
+/** disabled: review flag off (v1 entry only); none: flag on, no report yet; report: the test is in the workflow. */
+type ReviewState =
+  | { status: "loading" }
+  | { status: "disabled" }
+  | { status: "none" }
+  | { status: "report"; report: LabReportDTO };
 
 type DetailState =
   | { key: string; status: "idle" }
@@ -78,6 +87,30 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
   const requestKey = `${testId}\u0000${retryToken}`;
   const loading = state.key !== requestKey;
   const retry = useCallback(() => setRetryToken((value) => value + 1), []);
+  const [review, setReview] = useState<ReviewState>({ status: "loading" });
+  const [reviewToken, setReviewToken] = useState(0);
+  const [legacyTemplate, setLegacyTemplate] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    // Only an enabled catalogue can say "this test has no template"; a disabled one says nothing.
+    labApi.getTemplate(testId)
+      .then((result) => { if (active) setLegacyTemplate(result.template === null); })
+      .catch(() => { if (active) setLegacyTemplate(false); });
+    return () => { active = false; };
+  }, [testId]);
+
+  useEffect(() => {
+    let active = true;
+    labApi.getReport(testId)
+      .then((report) => { if (active) setReview({ status: "report", report }); })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        if (cause instanceof ApiRequestError && cause.code === "LAB_REPORT_NOT_FOUND") setReview({ status: "none" });
+        else setReview({ status: "disabled" });
+      });
+    return () => { active = false; };
+  }, [testId, reviewToken]);
 
   useEffect(() => {
     let active = true;
@@ -154,7 +187,15 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
         refreshing={loading || Boolean(refreshError)}
         onRefreshBlockedChange={setRefreshBlocked}
         onUpdated={(updated) => setState({ key: requestKey, status: "success", test: updated })}
+        reviewWorkflow={review.status === "report"}
+        onReviewRequired={() => setReviewToken((value) => value + 1)}
       />
+
+      {review.status === "report" || review.status === "none" ? (
+        <LabReportWorkflowPanel key={reviewToken} test={test}
+          initialReport={review.status === "report" ? review.report : null} onChanged={retry} />
+      ) : null}
+      {review.status === "report" || review.status === "none" ? <SpecimenPanel testId={test.testId} /> : null}
 
       <dl className="grid gap-5 border-b border-border py-4 sm:grid-cols-2 lg:grid-cols-3">
         <div><dt className="text-sm text-muted-foreground">Hình thức khám</dt><dd className="mt-1 text-sm">{test.careEpisodeType === "OUTPATIENT_VISIT" ? "Ngoại trú" : test.careEpisodeType === "ADMISSION" ? "Nội trú" : "Chưa có thông tin"}</dd></div>
@@ -163,7 +204,10 @@ function LabDetailContent({ testId, notice, returnTo }: LabDetailProps) {
       </dl>
 
       <section className="border-b border-border py-5">
-        <h2 className="text-lg font-semibold">Kết quả xét nghiệm</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-semibold">Kết quả xét nghiệm</h2>
+          {legacyTemplate && results.length > 0 ? <StatusBadge tone="neutral">Chưa gắn template</StatusBadge> : null}
+        </div>
         {results.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Chưa có chỉ số kết quả.</p> : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">

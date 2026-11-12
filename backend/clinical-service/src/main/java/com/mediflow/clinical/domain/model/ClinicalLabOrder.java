@@ -18,18 +18,34 @@ public record ClinicalLabOrder(
         String labType,
         LocalDate requestedDate,
         String priceCode,
-        Instant orderedAt) {
+        Instant orderedAt,
+        String serviceCode) {
+
+    public ClinicalLabOrder(UUID sourceOrderId, UUID recordId, UUID patientId, UUID requestingDoctorId,
+                            UUID requestingDepartmentId, CareEpisodeType careEpisodeType, UUID careEpisodeId,
+                            String labType, LocalDate requestedDate, String priceCode, Instant orderedAt) {
+        this(sourceOrderId, recordId, patientId, requestingDoctorId, requestingDepartmentId, careEpisodeType,
+                careEpisodeId, labType, requestedDate, priceCode, orderedAt, null);
+    }
 
     public static ClinicalLabOrder create(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
                                           UUID episodeId, String labType, LocalDate requestedDate,
                                           String priceCode, Instant orderedAt) {
+        return create(recordId, patientId, doctorId, departmentId, episodeId, labType, requestedDate, priceCode,
+                orderedAt, null);
+    }
+
+    public static ClinicalLabOrder create(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
+                                          UUID episodeId, String labType, LocalDate requestedDate,
+                                          String priceCode, Instant orderedAt, String serviceCode) {
         if (recordId == null || patientId == null || doctorId == null || departmentId == null || episodeId == null
                 || labType == null || labType.isBlank() || labType.length() > 50 || requestedDate == null
                 || orderedAt == null || priceCode == null || priceCode.isBlank() || priceCode.length() > 64) {
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_INVALID", "Lab order fields are invalid");
         }
         return new ClinicalLabOrder(UUID.randomUUID(), recordId, patientId, doctorId, departmentId,
-                CareEpisodeType.OUTPATIENT_VISIT, episodeId, labType, requestedDate, priceCode, orderedAt);
+                CareEpisodeType.OUTPATIENT_VISIT, episodeId, labType, requestedDate, priceCode, orderedAt,
+                serviceCode);
     }
 
     public ClinicalLabOrder {
@@ -50,5 +66,8 @@ public record ClinicalLabOrder(
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_INVALID", "A valid Lab price code is required");
         }
         Objects.requireNonNull(orderedAt);
+        if (serviceCode != null && (serviceCode.isBlank() || serviceCode.length() > 32)) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_INVALID", "A Lab service code is malformed");
+        }
     }
 }

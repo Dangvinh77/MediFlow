@@ -153,6 +153,27 @@ class FollowUpRecommendationApplicationServiceTest {
     }
 
     @Test
+    void preferredDoctorIsTheResponsibleDoctorAfterHandover() {
+        UUID receiver = UUID.randomUUID();
+        UUID receiverAccount = UUID.randomUUID();
+        MedicalRecord handedOver = records.findByIdForUpdate(RECORD_ID).orElseThrow().withResponsibleDoctor(receiver);
+        when(records.findByIdForUpdate(RECORD_ID)).thenReturn(Optional.of(handedOver));
+        when(actors.current()).thenReturn(new ActorIdentity(receiverAccount, receiver, null, "DOCTOR"));
+        when(authority.currentDoctorAuthority(eq(receiverAccount), anyString())).thenReturn(
+                new CurrentDoctorAuthoritySnapshot(receiverAccount, true, true, "DOCTOR", receiver,
+                        true, DEPARTMENT_ID, true, NOW));
+        when(idempotency.execute(eq(receiverAccount.toString()), eq("POST"), anyString(), eq("advice-1"),
+                anyString(), eq(FollowUpRecommendationDTO.class), eq(201), any(), any()))
+                .thenAnswer(call -> new IdempotentCommandPort.Result<>(
+                        ((Supplier<FollowUpRecommendationDTO>) call.getArgument(8)).get(), 201, null, false));
+
+        var result = service.create(RECORD_ID, new FollowUpRecommendationRequest(LocalDate.parse("2026-10-25"),
+                LocalDate.parse("2026-10-27"), "Review", null), "advice-1");
+
+        assertThat(result.data().preferredDoctorId()).isEqualTo(receiver);
+    }
+
+    @Test
     void createRejectsSourceRecordOwnedByAnotherDoctorBeforeWriting() {
         var record = MedicalRecord.openForAppointment(PATIENT_ID, UUID.randomUUID(), DEPARTMENT_ID,
                 LocalDate.parse("2026-10-25"), null, REGISTRATION_ID, SOURCE_AT);

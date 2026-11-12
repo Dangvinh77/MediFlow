@@ -9,7 +9,7 @@ import { formatLocalDate } from "@/lib/format";
 import Link from "next/link";
 import { ScheduleDateInput } from "./ScheduleDateInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
-import { registrationStatusLabels, sessionStatusLabels } from "../presentation";
+import { queueNumberText, roomNumberText, registrationStatusLabels, sessionStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
 import type { DoctorCalendarDTO, DoctorWorkShiftDTO, RegistrationSummary } from "../types";
 
@@ -34,12 +34,12 @@ export function mondayOfWeek(dateValue: string): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function DoctorCalendarWorkspace({ enabled }: { enabled: boolean }) {
+export function DoctorCalendarWorkspace({ enabled, clinicIntakeEnabled = false }: { enabled: boolean; clinicIntakeEnabled?: boolean }) {
   const session = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
-  return <DoctorCalendarWorkspaceContent key={session ?? "anonymous"} enabled={enabled} />;
+  return <DoctorCalendarWorkspaceContent key={session ?? "anonymous"} enabled={enabled} clinicIntakeEnabled={clinicIntakeEnabled} />;
 }
 
-function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
+function DoctorCalendarWorkspaceContent({ enabled, clinicIntakeEnabled }: { enabled: boolean; clinicIntakeEnabled: boolean }) {
   const [view, setView] = useState<"day" | "week">("day");
   const [date, setDate] = useState(todayInVietnam);
   const [calendar, setCalendar] = useState<DoctorCalendarDTO | null>(null);
@@ -148,7 +148,7 @@ function DoctorCalendarWorkspaceContent({ enabled }: { enabled: boolean }) {
       {registrationLoading ? <AsyncState kind="loading" message="Đang tải phiếu khám…" /> : null}
       {registrations ? registrations.length ? <ul className="mt-3 divide-y divide-border">{registrations.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
         <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p className="text-muted-foreground">{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"} · {registrationStatusLabels[item.status]}</p></div>
-        <div className="space-y-1"><p>{item.checkedInAt ? "Đã đến" : "Chưa đến"} · {item.queueNumber === null ? "Chưa có số" : `Số ${item.queueNumber}`}</p><p className="text-muted-foreground">{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</p></div>
+        <div className="space-y-1"><p>{item.checkedInAt ? "Đã đến" : "Chưa đến"} · {queueNumberText(item.queueNumber, clinicIntakeEnabled)}{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? ` · ${roomNumberText(item.roomQueueNumber)}` : ""}</p><p className="text-muted-foreground">{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</p></div>
         <Link href={`/appointments/${encodeURIComponent(item.registrationId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted">Xem phiếu khám</Link>
       </li>)}</ul> : <p role="status" className="mt-3 text-sm text-muted-foreground">Buổi này chưa có phiếu.</p> : null}
       {registrations && registrationPages > 1 ? <nav aria-label="Trang phiếu buổi khám" className="mt-4 flex items-center justify-between gap-3"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}>Trang trước</Button><span className="text-sm">Trang {registrationPage + 1} / {registrationPages}</span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}>Trang sau</Button></nav> : null}

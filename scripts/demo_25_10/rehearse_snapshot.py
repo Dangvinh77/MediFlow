@@ -363,12 +363,10 @@ def main():
             print("Report acceptance gate disabled after demo fixture preparation.", flush=True)
             (evidence / "health.json").write_text(json.dumps(health, indent=2), encoding="utf-8")
         if options.prepare_ui_demo:
-            from prepare_ui_demo import DemoApi, prepare, write_fixtures, ZONE
-            fixtures = prepare(DemoApi(manifest['gateway'], evidence / 'ui-demo-journal.local.json', evidence / 'stop'), dt.datetime.now(ZONE))
-            write_fixtures(fixtures, evidence)
-            from prepare_cashier_demo import prepare as prepare_cashier, write_fixtures as write_cashier
-            cashier_api = DemoApi(manifest['gateway'], evidence / 'cashier-journal.local.json', evidence / 'stop')
-            write_cashier(prepare_cashier(cashier_api, fixtures, dt.datetime.now(ZONE)), evidence)
+            # UI schedules, cashier charges and per-presenter staged patients; seed-demo.bat reruns the same.
+            from prepare_ui_demo import DemoApi
+            from seed_demo import prepare_seeds
+            prepare_seeds(manifest['gateway'], evidence, evidence / 'stop')
             from prepare_demo_calendar import prepare as prepare_calendar, write_fixtures as write_calendar
             calendar_api = DemoApi(manifest['gateway'], evidence / 'calendar-journal.local.json', evidence / 'stop')
             cached_calendar = evidence / 'calendar-fixtures.local.json'

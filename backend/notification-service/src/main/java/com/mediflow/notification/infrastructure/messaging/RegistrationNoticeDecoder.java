@@ -27,10 +27,12 @@ public class RegistrationNoticeDecoder {
                     || root.path("version").intValue() != 1) throw new IllegalArgumentException();
             Instant.parse(text(root, "occurredAt"));
             var p = root.path("payload");
-            exactFields(p, Set.of("registrationId", "registrationRevision", "patientId", "doctorId", "departmentId", "sessionId",
+            boolean rescheduled = p.has("reschedule");
+            exactFields(p, factFields(rescheduled, "registrationId", "registrationRevision", "patientId", "doctorId", "departmentId", "sessionId",
                     "roomId", "sessionDate", "startTime", "endTime", "visitType", "reservationId", "reservationStatus", "status",
                     "checkedInAt", "queueNumber", "reservationExpiresAt", "priceCode", "sourceType", "sourceId", "careEpisodeType",
                     "careEpisodeId", "cancellation", "changedAt"));
+            if (rescheduled) validateReschedule(p.path("reschedule"), p);
             UUID registration = uuid(p, "registrationId");
             if (!registration.equals(uuid(p, "sourceId")) || !registration.equals(uuid(p, "careEpisodeId"))
                     || !"EXAM".equals(text(p, "sourceType")) || !"OUTPATIENT_VISIT".equals(text(p, "careEpisodeType"))
@@ -60,8 +62,24 @@ public class RegistrationNoticeDecoder {
                 text(c, "reason"); Instant.parse(text(c, "cancelledAt"));
             } else if (!p.path("cancellation").isNull()) throw new IllegalArgumentException();
             return new RegistrationNoticeCommand(uuid(root, "eventId"), hash(raw), hash(mapper.writeValueAsBytes(canonical(p))),
-                    text(root, "correlationId"), registration, revision.longValue(), uuid(p, "patientId"), status);
+                    text(root, "correlationId"), registration, revision.longValue(), uuid(p, "patientId"), status, rescheduled);
         } catch (Exception invalid) { throw new IllegalArgumentException("Invalid outpatient registration fact", invalid); }
+    }
+
+    private static Set<String> factFields(boolean rescheduled, String... fields) {
+        var all = new java.util.HashSet<>(java.util.List.of(fields));
+        if (rescheduled) all.add("reschedule");
+        return all;
+    }
+
+    private static void validateReschedule(JsonNode move, JsonNode payload) {
+        exactFields(move, Set.of("actorAccountId", "actorStaffId", "reason", "previousSessionId", "previousDoctorId", "previousRoomId",
+                "previousSessionDate", "previousStartTime", "rescheduledAt"));
+        uuid(move, "actorAccountId"); if (!move.path("actorStaffId").isNull()) uuid(move, "actorStaffId");
+        text(move, "reason"); uuid(move, "previousSessionId"); uuid(move, "previousDoctorId"); uuid(move, "previousRoomId");
+        LocalDate.parse(text(move, "previousSessionDate")); LocalTime.parse(text(move, "previousStartTime"));
+        Instant.parse(text(move, "rescheduledAt"));
+        if (!Set.of("AWAITING_PAYMENT", "CONFIRMED").contains(text(payload, "status"))) throw new IllegalArgumentException();
     }
 
     private static Object canonical(JsonNode node) {

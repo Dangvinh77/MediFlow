@@ -11,6 +11,7 @@ import com.mediflow.lab.application.dto.request.StartLabTestRequest;
 import com.mediflow.lab.application.dto.response.LabTestDTO;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
+import com.mediflow.lab.application.service.LabReadAccessService;
 import com.mediflow.lab.domain.model.LabTestStatus;
 import com.mediflow.lab.domain.model.CareEpisodeType;
 import jakarta.validation.Valid;
@@ -39,6 +40,7 @@ public class LabController {
     private static final String BASE_PATH = "/api/v1/lab";
 
     private final ManageLabTestUseCase manageLabTestUseCase;
+    private final LabReadAccessService readAccess;
     private final CorrelationIdProvider correlationIds;
 
     @GetMapping
@@ -51,7 +53,7 @@ public class LabController {
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
 
-        PageResult<LabTestDTO> result = manageLabTestUseCase.search(
+        PageResult<LabTestDTO> result = readAccess.search(
                 departmentId,
                 status,
                 episodeType,
@@ -65,7 +67,7 @@ public class LabController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH')")
     public ResponseEntity<ApiResponse<LabTestDTO>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(
-                manageLabTestUseCase.getById(id), correlationIds.currentOrCreate().toString()));
+                readAccess.getById(id), correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/patient/{patientId}")
@@ -74,7 +76,7 @@ public class LabController {
             @PathVariable UUID patientId) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageLabTestUseCase.byPatient(patientId), correlationIds.currentOrCreate().toString()));
+                readAccess.byPatient(patientId), correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping

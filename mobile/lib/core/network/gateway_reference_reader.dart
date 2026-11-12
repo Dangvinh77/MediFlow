@@ -59,6 +59,10 @@ class GatewayReferenceReader implements ReferenceReader {
   @override
   Future<ReferenceOption> read(ReferenceKind kind, String id) async {
     if (!isReferenceId(id)) throw ArgumentError('Định danh không hợp lệ.');
+    // Reading the record here would write an access-log entry just to show a label.
+    if (kind == ReferenceKind.record) {
+      return ReferenceOption(id: id, name: 'Hồ sơ khám');
+    }
     final (path, _, _) = _fields(kind);
     if (kind == ReferenceKind.department ||
         kind == ReferenceKind.doctor ||

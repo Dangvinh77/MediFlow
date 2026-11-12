@@ -20,7 +20,7 @@ public final class Appointment {
 
     private final UUID appointmentId;
     private final UUID patientId;
-    private final UUID doctorId;
+    private UUID doctorId;
     private final UUID departmentId;
     private LocalDate appointmentDate;
     private LocalTime appointmentTime;
@@ -302,6 +302,19 @@ public final class Appointment {
         }
         checkedInAt = arrivedAt;
         updatedAt = arrivedAt;
+    }
+
+    /** Follows a registration moved to another session before its exam starts. */
+    public void rescheduleScheduled(UUID newDoctorId, LocalDate date, LocalTime time, boolean clearArrival, Instant at) {
+        if (careContractVersion != 2 || (status != AppointmentStatus.AWAITING_PAYMENT && status != AppointmentStatus.READY_FOR_EXAM)
+                || newDoctorId == null || date == null || time == null || at == null) {
+            throw registrationFlowRequired();
+        }
+        doctorId = newDoctorId;
+        appointmentDate = date;
+        appointmentTime = time;
+        if (clearArrival) checkedInAt = null;
+        updatedAt = at;
     }
 
     /** Scheduled registrations enter examination only through the checked-in, assigned V2 guard. */

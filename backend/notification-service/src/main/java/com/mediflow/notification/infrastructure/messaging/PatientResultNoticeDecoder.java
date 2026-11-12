@@ -16,7 +16,8 @@ import java.util.UUID;
 /** Exact released producer envelopes; no contact lookup or patient login dependency. */
 @Component
 public class PatientResultNoticeDecoder {
-    public static final Set<String> TYPES = Set.of("medicalrecord.completed", "lab.result.created", "followup.recommendation.created");
+    public static final Set<String> TYPES = Set.of("medicalrecord.completed", "lab.result.created", "lab.result.amended",
+            "followup.recommendation.created");
     private final ObjectMapper mapper;
     private final PatientResultNoticeService service;
     public PatientResultNoticeDecoder(ObjectMapper mapper, PatientResultNoticeService service) {
@@ -32,12 +33,31 @@ public class PatientResultNoticeDecoder {
             if (!TYPES.contains(type) || !type.equals(text(root, "eventType"))
                     || !root.path("version").isIntegralNumber() || !root.path("version").canConvertToInt()
                     || root.path("version").intValue() != 1
-                    || !(type.equals("lab.result.created") ? "lab-service" : "clinical-service").equals(text(root, "producer")))
+                    || !(type.startsWith("lab.result.") ? "lab-service" : "clinical-service").equals(text(root, "producer")))
                 throw new IllegalArgumentException("Unsupported result notice envelope");
             Instant.parse(text(root, "occurredAt"));
             var payload = root.path("payload");
             UUID source; String title; String content;
+            UUID claimId = uuid(root, "eventId");
+            String fingerprint = null;
             switch (type) {
+                case "lab.result.amended" -> {
+                    if (!"OUTPATIENT_VISIT".equals(text(payload, "careEpisodeType"))) throw new IllegalArgumentException("Deferred episode");
+                    source = uuid(payload, "labId");
+                    var version = payload.path("resultVersion");
+                    var previous = payload.path("previousResultVersion");
+                    if (!version.isIntegralNumber() || !version.canConvertToInt() || version.intValue() < 2
+                            || !previous.isIntegralNumber() || previous.intValue() < 1 || previous.intValue() >= version.intValue())
+                        throw new IllegalArgumentException("Invalid result revision");
+                    text(payload, "amendmentReason"); Instant.parse(text(payload, "releasedAt"));
+                    // One notice per (labId, resultVersion) whatever eventId carries it.
+                    String key = "lab.result.amended:" + source + ":" + version.intValue();
+                    claimId = UUID.nameUUIDFromBytes(key.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    fingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                            (key + ":" + uuid(payload, "patientId")).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                    title = "Kết quả xét nghiệm đã được đính chính";
+                    content = "Kết quả xét nghiệm của bạn đã được đính chính. Hãy xem bản mới nhất trong mục Kết quả xét nghiệm.";
+                }
                 case "lab.result.created" -> {
                     if (!"OUTPATIENT_VISIT".equals(text(payload, "careEpisodeType"))) throw new IllegalArgumentException("Deferred episode");
                     source = uuid(payload, "labId");
@@ -59,9 +79,10 @@ public class PatientResultNoticeDecoder {
                     content = "Bác sĩ đã có đề xuất tái khám. Xem hướng dẫn trong mục Kết quả khám của tôi và liên hệ điều dưỡng để đăng ký.";
                 }
             }
-            command = new PatientResultNoticeCommand(uuid(root, "eventId"), type, source,
+            command = new PatientResultNoticeCommand(claimId, type, source,
                     uuid(payload, "patientId"), text(root, "correlationId"),
-                    HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body)), title, content);
+                    fingerprint != null ? fingerprint
+                            : HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body)), title, content);
         } catch (Exception malformed) {
             throw new AmqpRejectAndDontRequeueException("Invalid patient result notice", malformed);
         }

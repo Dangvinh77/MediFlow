@@ -1,6 +1,6 @@
 flowchart TB
-P["Patient / Lab / Clinical"] -->|"event nghiệp vụ"| R["RabbitMQ · mediflow.events"]
-R --> Q["notification.q"]
-Q --> N["Notification · lưu IN_APP + outbox"]
-N -->|"notification.sent"| R
-U["PATIENT · xem thông báo"] -->|"HTTP qua Gateway"| N
+U["Lab UI · Lưu kết quả"] --> L["Lab · COMPLETED"]
+L -->|"lab.result.created"| R["RabbitMQ · mediflow.events"]
+R --> N["notification.q · báo có kết quả"]
+R --> T["report.outpatient-v1.q · thống kê"]
+C["Bác sĩ · đọc kết quả"] -->|"HTTP qua Gateway"| L

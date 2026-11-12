@@ -1,4 +1,9 @@
-flowchart TB
-U["UI · Đăng ký tại quầy"] --> C["Clinical · registration + reservation"]
-C -->|"outpatient.registration.changed"| R["RabbitMQ · mediflow.events"]
-R --> B["Billing · chuẩn bị khoản thu EXAM"]
+flowchart LR
+C["Web / Mobile<br/>same-origin /api/*"] --> G["Gateway :8080"]
+E["Eureka :8761"] -.->|"tên → host:port"| G
+G -->|"/api/v1/org · /api/v1/patients"| CO["lb://core-service"]
+G -->|"/appointments · /records<br/>/api/v2/outpatient-registrations"| CI["lb://clinical-service"]
+G -->|"/api/v1/lab · /api/v2/lab"| LA["lb://lab-service"]
+G -->|"/api/v1/pharmacy"| PC["lb://pharmacy-service"]
+G -->|"/api/v1/billing · /api/v2/billing"| BI["lb://billing-service"]
+G -->|"/reports · /notifications"| SU["lb://support-service"]

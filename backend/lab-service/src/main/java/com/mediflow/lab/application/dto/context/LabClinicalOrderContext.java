@@ -18,4 +18,14 @@ public record LabClinicalOrderContext(
         LocalDate requestedDate,
         String priceCode,
         Instant orderedAt,
-        Instant observedAt) {}
+        Instant observedAt,
+        String serviceCode) {
+
+    /** Context of an order placed before the v2.0 catalogue. */
+    public LabClinicalOrderContext(UUID sourceOrderId, UUID recordId, UUID patientId, UUID requestingDoctorId,
+            UUID requestingDepartmentId, CareEpisodeType careEpisodeType, UUID careEpisodeId, String labType,
+            LocalDate requestedDate, String priceCode, Instant orderedAt, Instant observedAt) {
+        this(sourceOrderId, recordId, patientId, requestingDoctorId, requestingDepartmentId, careEpisodeType,
+                careEpisodeId, labType, requestedDate, priceCode, orderedAt, observedAt, null);
+    }
+}

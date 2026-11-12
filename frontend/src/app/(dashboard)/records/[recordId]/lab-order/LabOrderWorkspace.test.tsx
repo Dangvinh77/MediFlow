@@ -1,15 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSession, storeSession } from "@/lib/session";
+import { ApiRequestError } from "@/lib/api";
 import type { ClinicalLabOrderDTO } from "@/features/medical-record/types";
 
-const mocks = vi.hoisted(() => ({ getRecord: vi.fn(), createLabOrder: vi.fn(), createLabRequest: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getRecord: vi.fn(), createLabOrder: vi.fn(), createLabRequest: vi.fn(), catalog: vi.fn() }));
 
 vi.mock("@/features/medical-record/api", () => ({
   medicalRecordApi: { getById: mocks.getRecord, createLabOrder: mocks.createLabOrder },
 }));
 vi.mock("@/features/lab/api", () => ({
-  labApi: { create: mocks.createLabRequest },
+  labApi: { create: mocks.createLabRequest, catalog: mocks.catalog },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 
@@ -27,6 +28,7 @@ const sourceOrder: ClinicalLabOrderDTO = {
   requestedDate: "2026-10-20",
   priceCode: "CBC-APPROVED",
   orderedAt: "2026-10-20T02:00:00Z",
+  serviceCode: "CBC",
 };
 
 function deferred<T>() {
@@ -52,6 +54,8 @@ describe("Clinical and Lab order workspace composition", () => {
     vi.clearAllMocks();
     mocks.createLabOrder.mockReset();
     mocks.createLabRequest.mockReset();
+    mocks.catalog.mockReset();
+    mocks.catalog.mockRejectedValue(new ApiRequestError("Danh mục tắt", 404, "LAB_CATALOG_DISABLED"));
     mocks.getRecord.mockReset();
     mocks.getRecord.mockImplementation(async (recordId: string) => ({
       recordId, patientId: sourceOrder.patientId, doctorId: sourceOrder.requestingDoctorId,
@@ -91,7 +95,40 @@ describe("Clinical and Lab order workspace composition", () => {
       careEpisodeType: sourceOrder.careEpisodeType,
       careEpisodeId: sourceOrder.careEpisodeId,
       priceCode: sourceOrder.priceCode,
+      serviceCode: sourceOrder.serviceCode,
     }));
+  });
+
+  it("creates a catalogue order with its name, price code and service code in Clinical and Lab", async () => {
+    mocks.catalog.mockResolvedValue([{
+      serviceCode: "CBC", name: "Công thức máu", displayGroup: "HEMATOLOGY", specimenType: "Máu",
+      preparation: "Nhịn ăn 8 giờ", turnaroundHours: 4, priceCode: "LAB-CBC", templateCode: "CBC-V1", panel: true,
+    }]);
+    mocks.createLabOrder.mockResolvedValue({ ...sourceOrder, labType: "Công thức máu", priceCode: "LAB-CBC", serviceCode: "CBC" });
+    mocks.createLabRequest.mockResolvedValue({ testId: "lab-test-a" });
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+
+    const service = await screen.findByLabelText(/Dịch vụ xét nghiệm/);
+    fireEvent.change(service, { target: { value: "CBC" } });
+    expect(screen.getByText("Máu")).toBeVisible();
+    expect(screen.getByText("Nhịn ăn 8 giờ")).toBeVisible();
+    expect(screen.getByText("4 giờ")).toBeVisible();
+    await act(async () => {
+      fireEvent.submit(screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" }).closest("form")!);
+    });
+    await waitFor(() => expect(mocks.createLabOrder).toHaveBeenCalledWith(sourceOrder.recordId, {
+      labType: "Công thức máu", requestedDate: new Date().toISOString().slice(0, 10), priceCode: "LAB-CBC", serviceCode: "CBC",
+    }));
+    await waitFor(() => expect(mocks.createLabRequest).toHaveBeenCalledWith(expect.objectContaining({
+      labType: "Công thức máu", priceCode: "LAB-CBC", serviceCode: "CBC",
+    })));
+  });
+
+  it("keeps the current free-text order form when the catalogue is disabled", async () => {
+    render(<LabOrderWorkspace recordId={sourceOrder.recordId} />);
+    expect(await screen.findByLabelText("Loại xét nghiệm", { exact: false })).toBeVisible();
+    expect(screen.getByLabelText("Mã giá", { exact: false })).toBeVisible();
+    expect(screen.queryByLabelText("Dịch vụ xét nghiệm")).not.toBeInTheDocument();
   });
 
   it("does not transmit a source order for a different patient", async () => {

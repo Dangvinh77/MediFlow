@@ -1,11 +1,125 @@
 import '../../../core/domain/reference.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/network/json_reader.dart';
+import '../domain/lab_catalog.dart';
+import '../domain/lab_review.dart';
 import '../domain/lab_workflow.dart';
+import 'lab_catalog_dto.dart';
+import 'lab_review_dto.dart';
 
-class GatewayLabWorkflow implements LabWorkflow {
+class GatewayLabWorkflow
+    implements LabWorkflow, LabCatalogReader, LabReviewRepository {
   const GatewayLabWorkflow(this.client);
   final ApiClient client;
+
+  @override
+  Future<LabCatalog> catalog({String? group}) async {
+    try {
+      return LabCatalogDto.catalog(
+        await client.get('/v2/lab/catalog', query: {'group': ?group}),
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_CATALOG_DISABLED') {
+        return const LabCatalog(enabled: false);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LabTestTemplate> template(String testId) async {
+    _id(testId);
+    try {
+      return LabCatalogDto.testTemplate(
+        await client.get('/v2/lab/$testId/template'),
+        testId,
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_REVIEW_DISABLED') {
+        throw const LabReviewUnavailable();
+      }
+      if (error.status == 404) {
+        return LabTestTemplate(
+          testId: testId,
+          serviceCode: null,
+          template: null,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<LabCriticalNotice>> criticalNotices({
+    String status = 'OPEN',
+  }) async {
+    if (status != 'OPEN') {
+      throw ArgumentError.value(status, 'status');
+    }
+    try {
+      return _decodeList(
+        await client.get('/v2/lab/critical-notices', query: {'status': status}),
+        LabCriticalNoticeDto.fromJson,
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_REVIEW_DISABLED') {
+        throw const LabReviewUnavailable();
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LabCriticalNotice> acknowledge(String testId, String noticeId) async {
+    _id(testId);
+    _id(noticeId);
+    try {
+      final raw = await client.post(
+        '/v2/lab/$testId/critical-notices/$noticeId/acknowledgement',
+        const <String, Object?>{},
+      );
+      if (raw is! Map<String, dynamic>) {
+        throw const FormatException('Phản hồi xác nhận cảnh báo không hợp lệ.');
+      }
+      return LabCriticalNoticeDto.fromJson(raw);
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_REVIEW_DISABLED') {
+        throw const LabReviewUnavailable();
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<LabWorklistItem>> worklistItems() async {
+    try {
+      return _decodeList(
+        await client.get('/v2/lab/worklist'),
+        LabWorklistItemDto.fromJson,
+      );
+    } on ApiFailure catch (error) {
+      if (error.status == 404 && error.code == 'LAB_REVIEW_DISABLED') {
+        throw const LabReviewUnavailable();
+      }
+      rethrow;
+    }
+  }
+
+  List<T> _decodeList<T>(Object? raw, T Function(Map<String, dynamic>) decode) {
+    if (raw is! List) {
+      throw const FormatException('Danh sách xét nghiệm không hợp lệ.');
+    }
+    return List.unmodifiable(
+      raw.map((item) {
+        if (item is! Map<String, dynamic>) {
+          throw const FormatException('Dữ liệu xét nghiệm không hợp lệ.');
+        }
+        return decode(item);
+      }),
+    );
+  }
+
   LabDetail _decode(Object? raw, String id) {
     if (raw is! Map<String, dynamic> ||
         raw['testId'] != id ||

@@ -131,6 +131,16 @@
       "description": "Tiếp nhận, thăm khám, tư vấn và phối hợp điều trị ngoại trú theo chuyên khoa.",
       "phoneNumber": "02838220023",
       "email": "demo-san@demo.mediflow.local"
+    },
+    {
+      "key": "department-15",
+      "departmentName": "Bộ phận Tiếp nhận Demo",
+      "abbreviation": "DEMO-TN",
+      "departmentType": "ADMINISTRATIVE",
+      "location": "Tầng 1, Khu A",
+      "description": "Tiếp nhận người bệnh, bốc số và điều phối vào các khoa khám.",
+      "phoneNumber": "02838220024",
+      "email": "demo-tn@demo.mediflow.local"
     }
   ],
   "staff": [
@@ -549,6 +559,22 @@
       "address": "13 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
       "hireDate": "2018-03-01",
       "qualification": "Cử nhân điều dưỡng"
+    },
+    {
+      "key": "staff-27",
+      "fullName": "Lê Thu Hà Demo",
+      "identityNumber": "999880000027",
+      "departmentKey": "department-15",
+      "jobTitle": "NURSE",
+      "specialization": null,
+      "licenseNumber": null,
+      "phoneNumber": "0908800027",
+      "email": "demo.staff27@example.test",
+      "dateOfBirth": "1990-02-14",
+      "gender": "FEMALE",
+      "address": "14 Nguyễn Văn Cừ, TP. Hồ Chí Minh",
+      "hireDate": "2019-05-01",
+      "qualification": "Cử nhân điều dưỡng"
     }
   ],
   "rooms": [
@@ -830,6 +856,15 @@
       "roomName": "Phòng khám Phụ sản 2",
       "zone": "Khu A",
       "location": "Tầng 5, Khu A"
+    },
+    {
+      "key": "room-15-reception",
+      "departmentKey": "department-15",
+      "roomType": "ADMINISTRATION",
+      "roomNumber": "100",
+      "roomName": "Quầy Tiếp nhận",
+      "zone": "Khu A",
+      "location": "Tầng 1, Khu A"
     }
   ],
   "patients": [
@@ -1168,6 +1203,14 @@
       "role": "PATIENT",
       "staffKey": null,
       "patientKey": "patient-02"
+    },
+    {
+      "key": "account-demo.reception",
+      "username": "demo.reception",
+      "password": "MediFlowDemo@2026",
+      "role": "NURSE",
+      "staffKey": "staff-27",
+      "patientKey": null
     }
   ]
 }

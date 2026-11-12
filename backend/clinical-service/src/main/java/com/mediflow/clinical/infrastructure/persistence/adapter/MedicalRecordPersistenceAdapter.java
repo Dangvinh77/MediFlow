@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Component;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.domain.model.ClinicalContent;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
@@ -46,9 +48,9 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
             throw ex;
         }
     }
-    @Override public Optional<MedicalRecord> findById(UUID id) { return repository.findAggregateById(id).map(this::toDomain); }
+    @Override @Transactional(readOnly = true) public Optional<MedicalRecord> findById(UUID id) { return repository.findAggregateById(id).map(this::toDomain); }
     @Override public Optional<MedicalRecord> findByIdForUpdate(UUID id) { return repository.findByIdForUpdate(id).map(this::toDomain); }
-    @Override public List<MedicalRecord> findByPatient(UUID patientId) {
+    @Override @Transactional(readOnly = true) public List<MedicalRecord> findByPatient(UUID patientId) {
         return repository.findByPatientIdOrderByExaminationDateDesc(patientId).stream().map(this::toDomain).toList();
     }
     @Override public Optional<MedicalRecord> findByAppointmentId(UUID appointmentId) {
@@ -62,7 +64,12 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
         UUID appointmentId = e.getAppointment() == null ? null : e.getAppointment().getAppointmentId();
         return MedicalRecord.restore(e.getRecordId(), e.getPatientId(), e.getDoctorId(), e.getDepartmentId(),
                 e.getExaminationDate(), e.getSymptoms(), appointmentId, diagnoses, e.getCreatedAt(), e.getUpdatedAt(),
-                e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt());
+                e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt(),
+                e.getClosureReason() == null ? null : new MedicalRecord.Closure(e.getClosureReason(), e.getClosureNote(),
+                        e.getClosedByStaffId(), e.getClosedAt()), e.getPreviousRecordId())
+                .withStoredContent(new ClinicalContent(e.getChiefComplaint(), e.getPresentIllness(), e.getPastHistory(),
+                        e.getAllergyNote(), e.getPhysicalExam(), e.getAdvice()))
+                .withResponsibleDoctor(e.getResponsibleDoctorId());
     }
     private MedicalRecordJpaEntity toEntity(MedicalRecord r) {
         MedicalRecordJpaEntity entity = MedicalRecordJpaEntity.builder().recordId(r.getRecordId())
@@ -71,7 +78,14 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 .appointment(r.getAppointmentId() == null ? null : appointments.getReferenceById(r.getAppointmentId()))
                 .createdAt(r.getCreatedAt()).updatedAt(r.getUpdatedAt()).status(r.getStatus())
                 .disposition(r.getDisposition()).dispositionNote(r.getDispositionNote())
-                .completedAt(r.getCompletedAt()).build();
+                .completedAt(r.getCompletedAt()).previousRecordId(r.getPreviousRecordId())
+                .closureReason(r.getClosureReason()).closureNote(r.getClosureNote())
+                .closedByStaffId(r.getClosedByStaffId()).closedAt(r.getClosedAt())
+                .chiefComplaint(r.getChiefComplaint()).presentIllness(r.getPresentIllness())
+                .pastHistory(r.getPastHistory()).allergyNote(r.getAllergyNote())
+                .physicalExam(r.getPhysicalExam()).advice(r.getAdvice())
+                .responsibleDoctorId(r.responsibleDoctorId().equals(r.getDoctorId()) ? null : r.responsibleDoctorId())
+                .build();
         entity.setDiagnoses(new ArrayList<>(r.getDiagnoses().stream().map(d -> DiagnosisJpaEntity.builder()
                 .diagnosisId(d.getDiagnosisId()).record(entity).diagnosisName(d.getDiagnosisName())
                 .description(d.getDescription()).icdCode(d.getIcdCode()).build()).toList()));

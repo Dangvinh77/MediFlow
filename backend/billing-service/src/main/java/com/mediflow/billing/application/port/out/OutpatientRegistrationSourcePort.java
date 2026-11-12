@@ -12,4 +12,6 @@ public interface OutpatientRegistrationSourcePort {
     void apply(OutpatientRegistrationChangedEvent event, byte[] rawEnvelope,
                String payloadFingerprint, PriceSnapshot price, OutpatientQuoteLine quoteLine);
     Optional<RegistrationPaymentSourceSnapshot> findPaymentRequestByRegistration(UUID registrationId);
+    com.mediflow.common.api.PageResult<com.mediflow.billing.application.dto.response.RegistrationSettlementDTO> findSettlements(
+            String kind, com.mediflow.common.api.PageQuery page);
 }

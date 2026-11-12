@@ -51,12 +51,22 @@ public class ConsultationSessionApplicationService {
     private final CurrentClinicalActorPort actors;
     private final CorrelationIdProvider correlationIds;
     private final IdempotentCommandPort idempotency;
+    private final ConsultationSessionPolicy policy;
     private final Clock clock;
 
     public ConsultationSessionApplicationService(ConsultationSessionRepositoryPort sessions,
             SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
+            CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency, Clock clinicalSchedulingClock) {
+        this(sessions, authority, actors, correlationIds, idempotency, clinicalSchedulingClock,
+                new ConsultationSessionPolicy(null, new ClinicIntakeSettings(false), clinicalSchedulingClock));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ConsultationSessionApplicationService(ConsultationSessionRepositoryPort sessions,
+            SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
             CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
-            @Qualifier("clinicalSchedulingClock") Clock clinicalSchedulingClock) {
+            @Qualifier("clinicalSchedulingClock") Clock clinicalSchedulingClock, ConsultationSessionPolicy policy) {
+        this.policy = policy;
         this.sessions = sessions;
         this.authority = authority;
         this.actors = actors;
@@ -74,11 +84,7 @@ public class ConsultationSessionApplicationService {
         return idempotency.execute(actor.accountId().toString(), "POST", COLLECTION_PATH, idempotencyKey,
                 fingerprint(request), ConsultationSessionDTO.class, 201,
                 data -> COLLECTION_PATH + "/" + data.sessionId(), () -> {
-                    ConsultationSession session = ConsultationSession.open(UUID.randomUUID(), request.doctorId(),
-                            request.departmentId(), request.roomId(), request.sessionDate(), request.startTime(),
-                            request.endTime(), request.breaks().stream()
-                                    .map(value -> new ConsultationBreak(value.startTime(), value.endTime())).toList(),
-                            request.capacity());
+                    ConsultationSession session = policy.prepareNew(request, java.util.Optional.empty());
                     return toDto(sessions.insert(session, actor.accountId(), null, clock.instant()));
                 });
     }
@@ -107,6 +113,7 @@ public class ConsultationSessionApplicationService {
                     if (!before.configuration().departmentId().equals(request.departmentId())) {
                         throw new BusinessRuleException("SCHEDULE_INELIGIBLE", "A session cannot move to another department");
                     }
+                    policy.requireUpdateAllowed(sessionId, configuration);
                     ConsultationSession after = domain(() -> before.updateConfiguration(
                             request.expectedRevision(), configuration, request.reason()));
                     sessions.update(before, after, actor.accountId(), "UPDATED", request.reason(), clock.instant());
@@ -128,6 +135,7 @@ public class ConsultationSessionApplicationService {
         return idempotency.execute(actor.accountId().toString(), "PUT", path, idempotencyKey,
                 fingerprint(request), ConsultationSessionDTO.class, 200, ignored -> null, () -> {
                     ConsultationSession before = lock(sessionId);
+                    if (request.status() == ConsultationSessionStatus.OPEN) policy.requireReopenAllowed(sessionId);
                     ConsultationSession after = domain(() -> before.changeStatus(
                             request.expectedRevision(), request.status(), request.reason()));
                     sessions.update(before, after, actor.accountId(), "STATUS_CHANGED", request.reason(), clock.instant());

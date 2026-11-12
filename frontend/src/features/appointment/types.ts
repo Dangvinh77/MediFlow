@@ -136,6 +136,26 @@ export interface RegistrationCreate {
   replacementReason: string | null;
   patientAgreedToDoctorReplacement: boolean | null;
   reason: string | null;
+  returnSourceRecordId?: string;
+  returnReason?: string;
+  independentVisitReason?: string;
+}
+
+export interface OpenVisitDTO {
+  registrationId: string;
+  recordId: string;
+  doctorId: string;
+  departmentId: string;
+  sessionDate: string;
+  startedAt: string | null;
+}
+
+/** The part of a patient's record reception needs to link a return visit; no clinical content is shown. */
+export interface ReturnSourceRecord {
+  recordId: string;
+  status: string;
+  examinationDate: string;
+  departmentId: string;
 }
 
 export interface FollowUpRecommendationDTO {
@@ -166,6 +186,33 @@ export interface RevisionCommand {
   expectedRevision: number;
 }
 
+export interface RescheduleCommand {
+  expectedRevision: number;
+  targetSessionId: string;
+  reason: string;
+  patientConfirmed: boolean;
+}
+
+export interface AffectedRegistration {
+  registrationId: string;
+  patientId: string;
+  sessionId: string;
+  status: RegistrationStatus;
+  reservationStatus: ReservationStatus | null;
+  checkedInAt: string | null;
+  queueNumber: number | null;
+  roomQueueNumber: number | null;
+}
+
+export interface ScheduleImpactDTO {
+  sessionIds: string[];
+  heldCount: number;
+  paymentLockedCount: number;
+  confirmedCount: number;
+  consumedCount: number;
+  registrations: AffectedRegistration[];
+}
+
 export interface RegistrationCancellationCommand {
   expectedRevision: number;
   reason: string;
@@ -194,6 +241,7 @@ export interface RegistrationDTO {
   reservationExpiresAt: string;
   checkedInAt: string | null;
   queueNumber: number | null;
+  roomQueueNumber?: number | null;
   readyForExam: boolean;
   createdAt: string;
   updatedAt: string;
@@ -206,6 +254,7 @@ export interface RegistrationSummary {
   status: RegistrationStatus;
   checkedInAt: string | null;
   queueNumber: number | null;
+  roomQueueNumber?: number | null;
   readyForExam: boolean;
 }
 export interface DoctorWorkShiftCreate { doctorId: string; departmentId: string; roomId: string; shiftDate: string; startTime: string; endTime: string }
@@ -213,3 +262,63 @@ export interface DoctorWorkShiftDTO extends DoctorWorkShiftCreate { shiftId: str
 export interface DoctorWorkShiftUpdate extends DoctorWorkShiftCreate { expectedRevision: number; reason: string }
 
 export interface DepartmentSessionSummary { departmentId: string; fromDate: string; toDate: string; openSessionCount: number; stoppedSessionCount: number; cancelledSessionCount: number; capacity: number; heldCount: number; paymentLockedCount: number; confirmedCount: number; consumedCount: number; availableCount: number; observedAt: string }
+
+export type ClinicQueueStage = "AWAITING_PAYMENT" | "NOT_ARRIVED" | "WAITING_ROOM_TICKET" | "WAITING_CALL" | "CALLED" | "IN_EXAM" | "ABSENT";
+export type ClinicTicketStatus = "WAITING" | "CALLED" | "IN_EXAM" | "COMPLETED" | "ABSENT" | "CANCELLED";
+export type ClinicTicketAdjustmentType = "LATE" | "NO_SHOW" | "RETURNED" | "PRIORITY";
+
+export interface ClinicQueueEntryDTO {
+  registrationId: string;
+  patientId: string;
+  sessionId: string;
+  doctorId: string;
+  departmentId: string;
+  roomId: string;
+  queueDate: string;
+  queueNumber: number | null;
+  ticketId: string | null;
+  ticketRevision: number | null;
+  roomQueueNumber?: number | null;
+  stage: ClinicQueueStage;
+  priority: boolean;
+  checkedInAt: string | null;
+  calledAt: string | null;
+  vitalSignsRecorded: boolean;
+  readyForExam: boolean;
+  continuationRequired: boolean;
+}
+
+export interface ClinicQueueTicketDTO {
+  ticketId: string;
+  revision: number;
+  registrationId: string;
+  roomId: string;
+  queueDate: string;
+  roomQueueNumber: number;
+  status: ClinicTicketStatus;
+  priority: boolean;
+  issuedAt: string;
+  calledAt: string | null;
+}
+
+export interface ClinicTicketCallCommand { expectedRevision: number }
+export interface ClinicTicketAdjustmentCommand { expectedRevision: number; type: ClinicTicketAdjustmentType; reason: string }
+
+export interface VitalSignCreateRequest {
+  pulseBpm: number | null;
+  systolicMmhg: number | null;
+  diastolicMmhg: number | null;
+  temperatureC: number | null;
+  respiratoryRate: number | null;
+  spo2Percent: number | null;
+  weightKg: number | null;
+  notMeasuredReason: string | null;
+}
+
+export interface VitalSignObservationDTO extends VitalSignCreateRequest {
+  observationId: string;
+  registrationId: string;
+  observedAt: string;
+  recordedByAccountId: string;
+  recordedByStaffId: string | null;
+}

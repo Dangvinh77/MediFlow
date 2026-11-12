@@ -22,7 +22,11 @@ public class LabResultCreatedConsumer {
                 payload.sourceVersion(), payload.patientId(), payload.departmentId(),
                 payload.careEpisodeType() == null ? null
                         : com.mediflow.clinical.domain.model.CareEpisodeType.valueOf(payload.careEpisodeType()),
-                payload.careEpisodeId(), payload.resultVersion()));
+                payload.careEpisodeId(), payload.resultVersion(), payload.occurredAt()));
+    }
+
+    public void consumeAmendment(com.mediflow.clinical.application.dto.command.LabResultAmendedCommand command) {
+        useCase.onLabResultAmended(command);
     }
 
     static void validate(LabResultCreatedPayload payload) {

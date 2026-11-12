@@ -43,7 +43,23 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
     /** Billing's LAB_TEST catalogue codes; empty keeps the historical accept-any behaviour. */
     private final List<String> labPriceCodes;
     private final Clock clock;
+    /** {@code mediflow.v2.lab-catalog}: new orders must name the Lab catalogue service. */
+    private final boolean labCatalogEnabled;
 
+    public ClinicalLabOrderApplicationService(AppointmentRepositoryPort appointments,
+                                              MedicalRecordRepositoryPort records,
+                                              ClinicalLabOrderRepositoryPort orders,
+                                              CurrentClinicalActorPort actors,
+                                              StaffLookupPort staff,
+                                              OutpatientMvpMode outpatientMvpMode,
+                                              boolean careFinanceV2Enabled,
+                                              List<String> labPriceCodes,
+                                              Clock clock) {
+        this(appointments, records, orders, actors, staff, outpatientMvpMode, careFinanceV2Enabled, labPriceCodes,
+                clock, false);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
     public ClinicalLabOrderApplicationService(AppointmentRepositoryPort appointments,
                                               MedicalRecordRepositoryPort records,
                                               ClinicalLabOrderRepositoryPort orders,
@@ -54,7 +70,8 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
                                               boolean careFinanceV2Enabled,
                                               @Value("${mediflow.clinical.lab-orders.price-codes:}")
                                               List<String> labPriceCodes,
-                                              @Qualifier("clinicalLabOrderClock") Clock clock) {
+                                              @Qualifier("clinicalLabOrderClock") Clock clock,
+                                              @Value("${mediflow.v2.lab-catalog:false}") boolean labCatalogEnabled) {
         this.appointments = appointments;
         this.records = records;
         this.orders = orders;
@@ -64,6 +81,7 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         this.labPriceCodes = labPriceCodes == null ? List.of()
                 : labPriceCodes.stream().map(String::trim).filter(code -> !code.isEmpty()).toList();
         this.clock = clock;
+        this.labCatalogEnabled = labCatalogEnabled;
     }
 
     @Override
@@ -76,6 +94,12 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         if (request.requestedDate() == null) {
             throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_INVALID",
                     "A Lab order date is required");
+        }
+        String serviceCode = request.serviceCode() == null || request.serviceCode().isBlank() ? null
+                : request.serviceCode().trim();
+        if (labCatalogEnabled && serviceCode == null) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_SERVICE_REQUIRED",
+                    "Hãy chọn dịch vụ xét nghiệm trong danh mục");
         }
         // Billing only learns the code asynchronously and dead-letters unknown ones, leaving a Lab
         // test with no payment request. Reject here while the doctor can still correct it.
@@ -106,10 +130,10 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
                     "Lab orders require the matching active outpatient examination");
         }
 
-        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
         ClinicalLabOrder order = ClinicalLabOrder.create(record.getRecordId(), record.getPatientId(),
                 appointment.getDoctorId(), appointment.getDepartmentId(), appointment.getAppointmentId(),
-                request.labType(), request.requestedDate(), request.priceCode(), clock.instant());
+                request.labType(), request.requestedDate(), request.priceCode(), clock.instant(), serviceCode);
         return toDto(orders.save(order));
     }
 
@@ -135,13 +159,14 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
     private static ClinicalLabOrderDTO toDto(ClinicalLabOrder order) {
         return new ClinicalLabOrderDTO(order.sourceOrderId(), order.recordId(), order.patientId(),
                 order.requestingDoctorId(), order.requestingDepartmentId(), order.careEpisodeType(),
-                order.careEpisodeId(), order.labType(), order.requestedDate(), order.priceCode(), order.orderedAt());
+                order.careEpisodeId(), order.labType(), order.requestedDate(), order.priceCode(), order.orderedAt(),
+                order.serviceCode());
     }
 
     private static ClinicalLabOrderContextDTO toContext(ClinicalLabOrder order, Instant observedAt) {
         return new ClinicalLabOrderContextDTO(true, order.sourceOrderId(), order.recordId(), order.patientId(),
                 order.requestingDoctorId(), order.requestingDepartmentId(), order.careEpisodeType(),
                 order.careEpisodeId(), order.labType(), order.requestedDate(), order.priceCode(),
-                order.orderedAt(), observedAt);
+                order.orderedAt(), observedAt, order.serviceCode());
     }
 }

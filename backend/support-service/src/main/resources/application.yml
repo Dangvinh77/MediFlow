@@ -47,6 +47,8 @@ mediflow:
       enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED:false}
     refund-consumer:
       enabled: ${MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED:false}
+    lab-critical:
+      enabled: ${MEDIFLOW_NOTIFICATION_LAB_CRITICAL_ENABLED:false}
     surgery-consumer:
       enabled: false
     surgery-payment-request-consumer:

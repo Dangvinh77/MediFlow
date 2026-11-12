@@ -1,0 +1,47 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000021",
+  "eventType": "lab.result.amended",
+  "version": 1,
+  "occurredAt": "2026-09-29T06:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000027",
+  "producer": "lab-service",
+  "payload": {
+    "labId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "recordId": "00000000-0000-4000-8000-000000000004",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+    "labType": "CBC",
+    "resultVersion": 2,
+    "previousResultVersion": 1,
+    "amendmentReason": "Nhập nhầm giá trị HGB",
+    "results": [
+      {
+        "resultId": "00000000-0000-4000-8000-000000000022",
+        "indicator": "Hemoglobin",
+        "value": "11.5",
+        "unit": "g/dL",
+        "referenceRange": "12-16"
+      }
+    ],
+    "values": [
+      {
+        "fieldCode": "HGB",
+        "label": "Hemoglobin",
+        "operator": null,
+        "value": "115",
+        "noResultReason": null,
+        "unit": "g/L",
+        "flag": "LOW",
+        "referenceRange": "120 - 160"
+      }
+    ],
+    "conclusion": "Thiếu máu nhẹ",
+    "releasedBy": "00000000-0000-4000-8000-000000000009",
+    "releasedAt": "2026-09-29T06:00:00Z",
+    "templateCode": "CBC",
+    "templateVersion": 1,
+    "performedDate": "2026-09-28"
+  }
+}

@@ -88,6 +88,21 @@ class LabClinicalOrderContextAdapterTest {
     }
 
     @Test
+    void lookup_readsTheOptionalServiceCodeAndRejectsAMalformedOne() throws Exception {
+        String withCode = fixture().replace("\"priceCode\":\"LAB-CBC\"", "\"priceCode\":\"LAB-CBC\",\"serviceCode\":\"CBC\"");
+        when(client.lookup(eq(ORDER), anyString(), eq(CORRELATION))).thenReturn(response(withCode));
+        assertThat(adapter.findById(ORDER, CORRELATION, actor).orElseThrow().serviceCode()).isEqualTo("CBC");
+
+        when(client.lookup(eq(ORDER), anyString(), eq(CORRELATION))).thenReturn(response(fixture()));
+        assertThat(adapter.findById(ORDER, CORRELATION, actor).orElseThrow().serviceCode()).isNull();
+
+        String blank = fixture().replace("\"priceCode\":\"LAB-CBC\"", "\"priceCode\":\"LAB-CBC\",\"serviceCode\":\" \"");
+        when(client.lookup(eq(ORDER), anyString(), eq(CORRELATION))).thenReturn(response(blank));
+        assertThatThrownBy(() -> adapter.findById(ORDER, CORRELATION, actor))
+                .isInstanceOf(LabUpstreamUnavailableException.class);
+    }
+
+    @Test
     void lookup_distinguishesConfirmedAbsenceFromUnavailableAuthority() throws Exception {
         when(client.lookup(eq(ORDER), anyString(), eq(CORRELATION))).thenReturn(response(absentFixture()));
         assertThat(adapter.findById(ORDER, CORRELATION, actor)).isEmpty();

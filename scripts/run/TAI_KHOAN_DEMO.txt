@@ -25,6 +25,7 @@ Nếu đã đổi mật khẩu trong phiên, chạy lại backend không đặt 
   DOCTOR       demo.staff03@example.test   Lê Bác Sĩ Demo          Khoa Nội tổng quát Demo
   DOCTOR       demo.staff05@example.test   Nguyễn Minh Phúc Demo   Khoa Nhi Demo
   LAB_TECH     demo.staff15@example.test   Dương Thanh Tâm Demo    Khoa Xét nghiệm Demo
+  LAB_TECH     demo.staff16@example.test   KTV thứ hai             Khoa Xét nghiệm Demo
   PHARMACIST   demo.staff17@example.test   Mai Thảo Vy Demo        Khoa Dược Demo
   CASHIER      demo.staff19@example.test   Phan Khánh Linh Demo    Phòng Tài chính Kế toán Demo
 
@@ -33,7 +34,10 @@ Nếu đã đổi mật khẩu trong phiên, chạy lại backend không đặt 
   - NURSE       Tạo hồ sơ bệnh nhân, cấp tài khoản, đăng ký khám.
   - DOCTOR      staff03: khám, chỉ định, đọc kết quả, kê đơn. Đây là bác sĩ của luồng chính.
                 staff05: bác sĩ thứ hai, khác khoa.
-  - LAB_TECH    Thực hiện xét nghiệm, nhập kết quả.
+  - LAB_TECH    staff15: thu nhận bệnh phẩm, nhập kết quả, gửi duyệt.
+                staff16: duyệt và phát hành kết quả. Người nhập không tự phát hành
+                được; cả hai đã được cấp quyền "Phát hành kết quả xét nghiệm"
+                (ADMIN xem ở hồ sơ nhân sự -> Quyền đặc biệt).
   - PHARMACIST  Xuất thuốc.
   - CASHIER     Thu phí khám, xét nghiệm và thuốc.
 

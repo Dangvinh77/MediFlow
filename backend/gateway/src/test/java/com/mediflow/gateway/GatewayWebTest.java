@@ -190,7 +190,8 @@ class GatewayWebTest {
         String access=jwt.issueAccessToken(UUID.randomUUID(),Roles.ADMIN);
         for(String path:new String[]{"/api/v1/org/operating-rooms/"+UUID.randomUUID()+"/lookup",
                 "/api/v1/org/staff/"+UUID.randomUUID()+"/surgery-eligibility",
-                "/api/v1/inpatient/admissions/"+UUID.randomUUID()+"/lookup"}) {
+                "/api/v1/inpatient/admissions/"+UUID.randomUUID()+"/lookup",
+                "/api/v1/patients/"+UUID.randomUUID()+"/demographics"}) {
             webTestClient.get().uri(path).header(HttpHeaders.AUTHORIZATION,"Bearer "+access)
                     .exchange().expectStatus().isForbidden();
             webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();

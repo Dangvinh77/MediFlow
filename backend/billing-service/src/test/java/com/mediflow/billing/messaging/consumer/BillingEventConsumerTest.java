@@ -61,6 +61,23 @@ class BillingEventConsumerTest {
     }
 
     @Test
+    void resultWithManyRowsAddsNoExtraCharge() throws Exception {
+        var original = fixture("lab.result.created");
+        var tree = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(original.getBody());
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) tree.get("payload");
+        var values = payload.putArray("values");
+        for (String field : java.util.List.of("WBC", "RBC", "HGB", "HCT", "PLT")) {
+            values.addObject().put("fieldCode", field).put("value", "1").put("flag", "NORMAL");
+        }
+        payload.put("templateCode", "CBC").put("templateVersion", 1);
+        var panelResult = new Message(objectMapper.writeValueAsBytes(tree), propertiesFor("lab.result.created"));
+
+        outpatientConsumer().onMessage(panelResult);
+
+        verifyNoInteractions(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase);
+    }
+
+    @Test
     void versionedFactsCannotFallBackToLegacyWhenIssuerIsDisabled() throws Exception {
         for (var key : java.util.List.of("medicalrecord.created", "lab.result.created")) {
             var message = fixture(key);

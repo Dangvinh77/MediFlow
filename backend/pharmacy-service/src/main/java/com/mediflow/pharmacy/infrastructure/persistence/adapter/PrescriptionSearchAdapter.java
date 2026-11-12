@@ -18,10 +18,11 @@ public class PrescriptionSearchAdapter implements PrescriptionSearchPort {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<UUID> search(String keyword, UUID patientId, PrescriptionStatus status, PageQuery page) {
+    public PageResult<UUID> search(String keyword, UUID patientId, UUID doctorId, PrescriptionStatus status, PageQuery page) {
         var args = new HashMap<String, Object>();
         var where = new StringBuilder(" WHERE 1=1");
         if (patientId != null) { where.append(" AND p.patient_id=:patient"); args.put("patient", patientId); }
+        if (doctorId != null) { where.append(" AND p.doctor_id=:doctor"); args.put("doctor", doctorId); }
         if (status != null) { where.append(" AND p.status=:status"); args.put("status", status.name()); }
         if (keyword != null && !keyword.isBlank()) {
             // Treat user wildcard characters literally; match persisted medication snapshots.

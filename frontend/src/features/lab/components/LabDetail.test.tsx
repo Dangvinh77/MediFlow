@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
   start: vi.fn(),
   addResults: vi.fn(),
+  getTemplate: vi.fn(),
+  getReport: vi.fn(),
   cancel: vi.fn(),
   getRole: vi.fn<() => Role | null>(() => "LAB_TECH"),
   router: { replace: vi.fn() },
@@ -19,7 +21,9 @@ vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ labApi: { getById: mocks.getById, start: mocks.start, cancel: mocks.cancel, addResults: mocks.addResults } }));
+vi.mock("../api", () => ({ labApi: { getById: mocks.getById, getTemplate: mocks.getTemplate, getReport: mocks.getReport, start: mocks.start, cancel: mocks.cancel, addResults: mocks.addResults } }));
+
+vi.mock("./SpecimenPanel", () => ({ SpecimenPanel: () => null }));
 
 import { LabDetail } from "./LabDetail";
 
@@ -60,9 +64,75 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockResolvedValue({ ...test, status: "IN_PROGRESS", clearanceId: "clearance" });
     render(<LabDetail testId={test.testId} />);
     fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
-    fireEvent.change(screen.getByLabelText(/Chỉ số/), { target: { value: "Hb" } });
+    fireEvent.change(await screen.findByLabelText(/Chỉ số/), { target: { value: "Hb" } });
     expect(screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" })).toBeDisabled();
     expect(screen.getByLabelText(/Chỉ số/)).toHaveValue("Hb");
+  });
+
+  it("labels legacy results without a template and shows their raw values", async () => {
+    mocks.getTemplate.mockResolvedValue({ testId: test.testId, serviceCode: null, template: null });
+    mocks.getById.mockResolvedValue({
+      ...test,
+      status: "COMPLETED",
+      results: [{ resultId: "result-1", indicator: "Hb", value: "Không có kết quả: mẫu vỡ", unit: null, referenceRange: null }],
+    });
+    render(<LabDetail testId={test.testId} />);
+
+    expect(await screen.findByText("Chưa gắn template")).toBeVisible();
+    expect(screen.getByRole("cell", { name: "Không có kết quả: mẫu vỡ" })).toBeVisible();
+  });
+
+  it("preserves v1 results and result entry when review is disabled", async () => {
+    mocks.getById.mockResolvedValue({
+      ...test,
+      status: "IN_PROGRESS",
+      results: [{ resultId: "result-1", indicator: "Hb", value: "12", unit: "g/dL", referenceRange: "12-16" }],
+    });
+    render(<LabDetail testId={test.testId} />);
+
+    expect(await screen.findByRole("cell", { name: "12" })).toBeVisible();
+    fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
+    expect(await screen.findByRole("button", { name: "Lưu kết quả" })).toBeVisible();
+    expect(mocks.getReport).toHaveBeenCalledTimes(1);
+    expect(mocks.addResults).not.toHaveBeenCalled();
+  });
+
+  it("switches to the report workflow after LAB_REVIEW_REQUIRED without retrying v1", async () => {
+    mocks.getById.mockResolvedValue({ ...test, status: "IN_PROGRESS" });
+    mocks.getReport
+      .mockRejectedValueOnce(new ApiRequestError("Quy trình duyệt chưa được bật", 404, "LAB_REVIEW_DISABLED"))
+      .mockResolvedValueOnce({
+        reportId: "report-1",
+        testId: test.testId,
+        resultVersion: 1,
+        status: "DRAFT",
+        draftRevision: 0,
+        templateCode: "CBC",
+        templateVersion: 1,
+        values: [],
+        conclusion: null,
+        performedDate: null,
+        amendmentReason: null,
+        enteredBy: "staff-1",
+        submittedBy: null,
+        submittedAt: null,
+        returnedBy: null,
+        returnReason: null,
+        releasedBy: null,
+        releasedAt: null,
+      });
+    mocks.addResults.mockRejectedValue(new ApiRequestError("Cần dùng quy trình báo cáo", 409, "LAB_REVIEW_REQUIRED"));
+    render(<LabDetail testId={test.testId} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
+    fireEvent.change(await screen.findByLabelText(/Chỉ số/), { target: { value: "Hb" } });
+    fireEvent.change(screen.getByLabelText(/Giá trị/), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu kết quả" }));
+
+    await waitFor(() => expect(mocks.getReport).toHaveBeenCalledTimes(2));
+    expect(mocks.addResults).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Lưu kết quả" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Nhập kết quả" })).not.toBeInTheDocument();
   });
 
   it("keeps actions mounted when a background refresh fails", async () => {
@@ -80,6 +150,10 @@ describe("Lab detail read and permission states", () => {
     mocks.getById.mockReset();
     mocks.start.mockReset();
     mocks.addResults.mockReset();
+    mocks.getTemplate.mockReset();
+    mocks.getTemplate.mockRejectedValue(new ApiRequestError("Mẫu chưa được lập danh mục", 404, "LAB_TEMPLATE_NOT_FOUND"));
+    mocks.getReport.mockReset();
+    mocks.getReport.mockRejectedValue(new ApiRequestError("Quy trình duyệt chưa được bật", 404, "LAB_REVIEW_DISABLED"));
     mocks.cancel.mockReset();
     mocks.getRole.mockReturnValue("LAB_TECH");
   });
@@ -89,11 +163,13 @@ describe("Lab detail read and permission states", () => {
     mocks.addResults.mockRejectedValue(new ApiRequestError("Chưa rõ kết quả lưu", 503, "UNAVAILABLE"));
     render(<LabDetail testId={test.testId} />);
     fireEvent.click(await screen.findByRole("button", { name: "Nhập kết quả" }));
-    fireEvent.change(screen.getByLabelText(/Chỉ số/), { target: { value: "Hb" } });
+    fireEvent.change(await screen.findByLabelText(/Chỉ số/), { target: { value: "Hb" } });
     fireEvent.change(screen.getByLabelText(/Giá trị/), { target: { value: "12" } });
     fireEvent.click(screen.getByRole("button", { name: "Lưu kết quả" }));
     await screen.findByText("Chưa rõ kết quả lưu");
-    fireEvent.click(screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" }));
+    const refreshButton = screen.getByRole("button", { name: "Cập nhật trạng thái xét nghiệm" });
+    await waitFor(() => expect(refreshButton).toBeEnabled());
+    fireEvent.click(refreshButton);
     await waitFor(() => expect(mocks.getById).toHaveBeenCalledTimes(2));
     expect(screen.getByRole("button", { name: "Lưu kết quả" })).toBeDisabled();
     expect(screen.getByLabelText(/Chỉ số/)).toHaveValue("Hb");
@@ -109,7 +185,7 @@ describe("Lab detail read and permission states", () => {
     expect(await within(context).findByText("Nguyễn An · 12/04/1986")).toBeVisible();
     expect(within(context).getByText(test.labType)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Nhập kết quả" }));
-    const identityCheck = screen.getByRole("region", { name: "Đối chiếu bệnh nhân trước khi nhập kết quả" });
+    const identityCheck = await screen.findByRole("region", { name: "Đối chiếu bệnh nhân trước khi nhập kết quả" });
     expect(await within(identityCheck).findByText("Nguyễn An · 12/04/1986")).toBeVisible();
     expect(screen.getByText("Phiên bản dữ liệu")).not.toBeVisible();
     expect(screen.queryByText("OUTPATIENT_VISIT")).not.toBeInTheDocument();

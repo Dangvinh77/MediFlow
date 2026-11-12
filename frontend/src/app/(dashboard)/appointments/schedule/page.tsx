@@ -9,6 +9,6 @@ export const metadata: Metadata = { title: "Quản lý buổi khám | MediFlow" 
 export default function ScheduleManagementPage() {
   const enabled = process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true";
   return <PageShell title="Quản lý buổi khám" description="Lập và theo dõi buổi khám ngoại trú của các khoa.">
-    <RoleGate allowed={["ADMIN"]}><ScheduleManagementWorkspace enabled={enabled} /></RoleGate>
+    <RoleGate allowed={["ADMIN"]}><ScheduleManagementWorkspace enabled={enabled} clinicIntakeEnabled={process.env.MEDIFLOW_CLINIC_INTAKE_UI_ENABLED === "true"} /></RoleGate>
   </PageShell>;
 }

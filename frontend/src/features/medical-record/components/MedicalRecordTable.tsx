@@ -12,6 +12,7 @@ import { formatLocalDate } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { medicalRecordApi } from "../api";
 import type { MedicalRecordDTO } from "../types";
+import { RecordAccessPurposeForm } from "./RecordAccessPurposeForm";
 
 interface RequestError {
   message: string;
@@ -39,12 +40,14 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<RequestError | null>(null);
+  const [access, setAccess] = useState<"purpose-required" | "denied" | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const loadRecords = useCallback(async (id: string) => {
     const requestId = ++requestSequence.current;
     setLoading(true);
     setError(null);
+    setAccess(null);
     try {
       const result = await medicalRecordApi.byPatient(id);
       if (!mounted.current || requestId !== requestSequence.current) return;
@@ -53,6 +56,11 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
       if (!mounted.current || requestId !== requestSequence.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
+        return;
+      }
+      if (cause instanceof ApiRequestError && cause.status === 403) {
+        setRecords([]);
+        setAccess(cause.code === "RECORD_ACCESS_PURPOSE_REQUIRED" ? "purpose-required" : "denied");
         return;
       }
       setError(getRequestError(cause));
@@ -110,7 +118,9 @@ export function MedicalRecordTable({ outpatientEnabled = false }: { outpatientEn
       {!searched && !validationError ? <AsyncState kind="idle" message="Nhập mã bệnh nhân để xem hồ sơ." /> : null}
       {loading ? <AsyncState kind="loading" message="Đang tải hồ sơ khám…" /> : null}
       {!loading && error ? <div><AsyncState kind="error" message={error.message} onRetry={() => void loadRecords(activePatientId)} />{error.correlationId ? <details className="mt-2 text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer underline underline-offset-4">Thông tin hỗ trợ</summary><p className="mt-1 break-all font-mono">Mã theo dõi: {error.correlationId}</p></details> : null}</div> : null}
-      {searched && !loading && !error && records.length === 0 ? <AsyncState kind="empty" message="Bệnh nhân chưa có hồ sơ khám." /> : null}
+      {!loading && access === "denied" ? <p role="status" className="mt-4 text-sm text-muted-foreground">Bạn không có quyền xem hồ sơ khám của bệnh nhân này.</p> : null}
+      {!loading && access === "purpose-required" ? <section aria-label="Khai báo mục đích xem hồ sơ" className="mt-4"><p className="text-sm text-muted-foreground">Bạn cần khai báo mục đích trước khi xem hồ sơ của bệnh nhân này.</p><RecordAccessPurposeForm patientId={activePatientId} role={role} onDeclared={() => void loadRecords(activePatientId)} /></section> : null}
+      {searched && !loading && !error && !access && records.length === 0 ? <AsyncState kind="empty" message="Bệnh nhân chưa có hồ sơ khám." /> : null}
 
       {!loading && !error && records.length > 0 ? (
         <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">

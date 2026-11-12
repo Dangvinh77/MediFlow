@@ -2,10 +2,11 @@ import { webcrypto } from "node:crypto";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "@/lib/api";
 import { appointmentApi } from "../api";
 import { ReceptionWorkspace } from "./ReceptionWorkspace";
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), create: vi.fn(), registrations: vi.fn(), registration: vi.fn(), arrival: vi.fn(), followUpSources: vi.fn() }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), create: vi.fn(), registrations: vi.fn(), registration: vi.fn(), arrival: vi.fn(), followUpSources: vi.fn(), cancel: vi.fn(), openVisits: vi.fn(), returnSources: vi.fn() }));
 vi.mock("../api", () => ({ appointmentApi: {
   listConsultationSessions: mocks.list,
   createRegistration: mocks.create,
@@ -13,6 +14,9 @@ vi.mock("../api", () => ({ appointmentApi: {
   registration: mocks.registration,
   markRegistrationArrival: mocks.arrival,
   followUpSources: mocks.followUpSources,
+  cancelRegistration: mocks.cancel,
+  openVisits: mocks.openVisits,
+  returnSources: mocks.returnSources,
 } }));
 vi.mock("@/lib/session", () => ({ getSessionKey: () => "nurse-session" }));
 vi.mock("@/components/references/ReferenceInput", () => ({
@@ -62,6 +66,82 @@ describe("reception session registration", () => {
     await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
     return user;
   }
+
+  describe("open visits and return links", () => {
+    const patient = "11111111-1111-4111-8111-111111111111";
+    const openVisit = { registrationId: "open-registration", recordId: "open-record", doctorId: "doctor-id", departmentId: "department-id", sessionDate: "2026-10-26", startedAt: "2026-10-26T02:00:00Z" };
+
+    async function selectPatientAndSession() {
+      const user = userEvent.setup();
+      await user.type(screen.getByLabelText("Khoa"), "department-id");
+      await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+      await user.click(await screen.findByRole("button", { name: /Chọn buổi/ }));
+      fireEvent.change(screen.getByLabelText("Bệnh nhân"), { target: { value: patient } });
+      return user;
+    }
+
+    it("sends independentVisitReason", async () => {
+      mocks.openVisits.mockResolvedValue([openVisit]);
+      mocks.create.mockResolvedValue(registration);
+      render(<ReceptionWorkspace enabled />);
+      const user = await selectPatientAndSession();
+      const field = await screen.findByLabelText(/Lý do đăng ký thêm lượt/);
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent("còn lượt khám chưa kết thúc");
+      expect(mocks.create).not.toHaveBeenCalled();
+      fireEvent.change(field, { target: { value: "  Khám vấn đề khác  " } });
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(1));
+      expect(mocks.create.mock.calls[0][0]).toMatchObject({ patientId: patient, independentVisitReason: "Khám vấn đề khác" });
+    });
+
+    it("return visit needs source and reason", async () => {
+      mocks.openVisits.mockResolvedValue([]);
+      mocks.returnSources.mockResolvedValue([
+        { recordId: "closed-record", status: "CLOSED_WITHOUT_CONCLUSION", examinationDate: "2026-10-20", departmentId: "department-id" },
+        { recordId: "open-record", status: "OPEN", examinationDate: "2026-10-26", departmentId: "department-id" },
+      ]);
+      mocks.create.mockResolvedValue(registration);
+      render(<ReceptionWorkspace enabled />);
+      const user = await selectPatientAndSession();
+      await user.click(screen.getByRole("checkbox", { name: /quay lại sau lượt đã kết thúc/ }));
+      const source = await screen.findByLabelText("Lượt đã kết thúc") as HTMLSelectElement;
+      expect(Array.from(source.options).map(option => option.value)).toEqual(["", "closed-record"]);
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent("Chọn lượt đã kết thúc và ghi lý do quay lại");
+      expect(mocks.create).not.toHaveBeenCalled();
+      await user.selectOptions(source, "closed-record");
+      fireEvent.change(screen.getByLabelText(/Lý do quay lại/), { target: { value: "Đau tăng sau khi về" } });
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(1));
+      expect(mocks.create.mock.calls[0][0]).toMatchObject({ visitType: "NEW_VISIT", returnSourceRecordId: "closed-record", returnReason: "Đau tăng sau khi về" });
+    });
+
+    it("open visit outage does not block registration", async () => {
+      mocks.openVisits.mockRejectedValue(new ApiRequestError("Lỗi", 503));
+      mocks.create.mockResolvedValue(registration);
+      render(<ReceptionWorkspace enabled />);
+      const user = await selectPatientAndSession();
+      await screen.findByText(/Không kiểm tra được lượt khám đang mở/);
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(1));
+      expect(mocks.create.mock.calls[0][0]).not.toHaveProperty("independentVisitReason");
+      expect(mocks.create.mock.calls[0][0]).not.toHaveProperty("returnSourceRecordId");
+    });
+
+    it("server conflict reveals the reason field", async () => {
+      mocks.openVisits.mockRejectedValue(new ApiRequestError("Lỗi", 503));
+      mocks.create.mockRejectedValueOnce(new ApiRequestError("Còn lượt mở", 409, "OPEN_VISIT_EXISTS")).mockResolvedValueOnce(registration);
+      render(<ReceptionWorkspace enabled />);
+      const user = await selectPatientAndSession();
+      await screen.findByText(/Không kiểm tra được lượt khám đang mở/);
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      fireEvent.change(await screen.findByLabelText(/Lý do đăng ký thêm lượt/), { target: { value: "Khám vấn đề khác" } });
+      await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+      await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+      expect(mocks.create.mock.calls[1][0]).toMatchObject({ independentVisitReason: "Khám vấn đề khác" });
+    });
+  });
 
   it("lets the nurse identify the patient before choosing a session", () => {
     render(<ReceptionWorkspace enabled initialPatientId="patient-from-profile" />);
@@ -368,5 +448,125 @@ describe("reception session registration", () => {
       reason: "Follow-up after treatment", replacementReason: "Patient requested the available doctor",
       patientAgreedToDoctorReplacement: true,
     });
+  });
+});
+
+describe("reception clinic intake", () => {
+  const row = { registrationId: "row-id", patientId: "patient-id", visitType: "NEW_VISIT" as const, status: "CONFIRMED" as const, checkedInAt: "2026-10-26T04:00:00Z", queueNumber: 3, roomQueueNumber: 5, readyForExam: true };
+  const page = (content: unknown[]) => ({ content, totalElements: content.length, totalPages: 1, number: 0, size: 20 });
+
+  beforeEach(() => {
+    Object.values(mocks).forEach(mock => mock.mockReset()); vi.stubGlobal("crypto", webcrypto); sessionStorage.clear();
+    mocks.list.mockResolvedValue(page([session]));
+    mocks.registrations.mockResolvedValue(page([]));
+  });
+
+  async function openSession() {
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    await user.click(await screen.findByRole("button", { name: /Chọn buổi/ }));
+    return user;
+  }
+  async function register() {
+    const user = await openSession();
+    await user.type(screen.getByLabelText("Bệnh nhân"), "patient-id");
+    await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+    return user;
+  }
+
+  it("keeps the same idempotency key when retrying a failed registration", async () => {
+    mocks.create.mockRejectedValueOnce(new ApiRequestError("Lỗi máy chủ", 500)).mockResolvedValueOnce(registration);
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    const user = await register();
+    await user.click(await screen.findByRole("button", { name: "Gửi lại cùng yêu cầu" }));
+    await screen.findByLabelText("Mã phiếu bàn giao thu ngân");
+    expect(mocks.create.mock.calls[1][1].idempotencyKey).toBe(mocks.create.mock.calls[0][1].idempotencyKey);
+  });
+
+  it("creates a new key after the patient changes", async () => {
+    mocks.create.mockRejectedValueOnce(new ApiRequestError("Bệnh nhân không đủ điều kiện", 422, "INVALID_REQUEST")).mockResolvedValueOnce(registration);
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    const user = await register();
+    await screen.findByText("Bệnh nhân không đủ điều kiện");
+    await user.clear(screen.getByLabelText("Bệnh nhân"));
+    await user.type(screen.getByLabelText("Bệnh nhân"), "other-patient");
+    await user.click(screen.getByRole("button", { name: "Đăng ký và giữ chỗ" }));
+    await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+    expect(mocks.create.mock.calls[1][0].patientId).toBe("other-patient");
+    expect(mocks.create.mock.calls[1][1].idempotencyKey).not.toBe(mocks.create.mock.calls[0][1].idempotencyKey);
+  });
+
+  it("shows hold expiry and does not offer release while payment is locked", async () => {
+    mocks.create.mockResolvedValue({ ...registration, reservationStatus: "PAYMENT_LOCKED" });
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    await register();
+    expect(await screen.findByText("Hạn giữ chỗ")).toBeVisible();
+    expect(screen.getByText(/đang được thanh toán/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Trả chỗ đã giữ" })).not.toBeInTheDocument();
+  });
+
+  it("releases an unpaid hold with a reason", async () => {
+    mocks.create.mockResolvedValue(registration);
+    mocks.cancel.mockResolvedValue({ ...registration, revision: 2, status: "CANCELLED", reservationStatus: "CANCELLED" });
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    const user = await register();
+    const release = await screen.findByRole("button", { name: "Trả chỗ đã giữ" });
+    expect(release).toBeDisabled();
+    await user.type(screen.getByLabelText("Lý do trả chỗ"), "Bệnh nhân đổi ý");
+    await user.click(release);
+    await waitFor(() => expect(mocks.cancel).toHaveBeenCalledTimes(1));
+    expect(mocks.cancel.mock.calls[0][0]).toBe("registration-id");
+    expect(mocks.cancel.mock.calls[0][1]).toEqual({ expectedRevision: 1, reason: "Bệnh nhân đổi ý" });
+    expect(await screen.findByText("Đã hủy")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Trả chỗ đã giữ" })).not.toBeInTheDocument();
+  });
+
+  it("shows counter and room numbers with explicit labels", async () => {
+    mocks.registrations.mockResolvedValue(page([row]));
+    mocks.create.mockResolvedValue({ ...confirmedPrebooked, roomQueueNumber: 5 });
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    await openSession();
+    expect(await screen.findByText("Số quầy 3")).toBeVisible();
+    expect(screen.getByText("Số phòng 5")).toBeVisible();
+    expect(screen.getByText("Đã đến · Chờ khám")).toBeVisible();
+  });
+
+  it("keeps old label when flag is off", async () => {
+    mocks.registrations.mockResolvedValue(page([row]));
+    mocks.create.mockResolvedValue(confirmedPrebooked);
+    render(<ReceptionWorkspace enabled />);
+    await openSession();
+    expect(await screen.findByText("Số 3")).toBeVisible();
+    expect(screen.queryByText("Số quầy 3")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Đổi lịch" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Số phòng 5")).not.toBeInTheDocument();
+  });
+
+  it("labels the number on the created ticket as the counter number", async () => {
+    mocks.create.mockResolvedValue(confirmedPrebooked);
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    await register();
+    expect(await screen.findByText("Số quầy")).toBeVisible();
+    expect(screen.queryByText("Số thứ tự")).not.toBeInTheDocument();
+  });
+
+  it("tells a full session apart from a stopped one", async () => {
+    mocks.list.mockResolvedValue(page([{ ...session, sessionId: "full", availableCount: 0 }, { ...session, sessionId: "stopped", status: "STOPPED" as const }]));
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Khoa"), "department-id");
+    await user.click(screen.getByRole("button", { name: "Tải buổi khám" }));
+    expect(await screen.findByText("Đã hết chỗ")).toBeVisible();
+    expect(screen.getByText("Buổi không nhận đăng ký")).toBeVisible();
+  });
+
+  it("opens the reschedule panel from an active registration", async () => {
+    mocks.registrations.mockResolvedValue(page([row]));
+    mocks.registration.mockResolvedValue(confirmedPrebooked);
+    render(<ReceptionWorkspace enabled clinicIntakeEnabled />);
+    const user = await openSession();
+    await user.click(await screen.findByRole("button", { name: "Đổi lịch" }));
+    expect(await screen.findByRole("region", { name: "Đổi lịch khám" })).toBeVisible();
   });
 });

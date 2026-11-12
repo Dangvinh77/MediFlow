@@ -55,6 +55,22 @@ class PrescriptionPersistenceAdapterTest {
     @Autowired private PrescriptionSearchAdapter search;
 
     @Test
+    void searchCanBeLimitedToOneDoctor() {
+        Drug drug = drugAdapter.save(newDrug("Omeprazol", "3000.00"));
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        var own = prescriptionAdapter.save(Prescription.create(UUID.randomUUID(), patient, doctor, UUID.randomUUID(),
+                LocalDate.now(), List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), null, "Omeprazol"))));
+        prescriptionAdapter.save(Prescription.create(UUID.randomUUID(), patient, UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), null, "Omeprazol"))));
+        entityManager.flush();
+
+        var result = search.search(null, null, doctor, null, new com.mediflow.common.api.PageQuery(0, 20));
+
+        assertThat(result.content()).containsExactly(own.getPrescriptionId());
+    }
+
+    @Test
     void searchPaginatesAndCombinesPatientStatusAndMedicationFilters() {
         Drug drug = drugAdapter.save(newDrug("Omeprazol", "3000.00"));
         UUID patient = UUID.randomUUID();

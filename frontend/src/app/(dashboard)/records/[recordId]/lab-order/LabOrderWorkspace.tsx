@@ -9,6 +9,9 @@ import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { PatientContextBanner } from "@/components/references/PatientContextBanner";
 import { pendingLabOrder, rememberLabOrder, forgetLabOrder } from "@/features/medical-record/pending-lab-order";
+import { ApiRequestError } from "@/lib/api";
+import { labApi } from "@/features/lab/api";
+import type { LabCatalogItemDTO } from "@/features/lab/types";
 
 // The route composes the two Vinh-owned contexts; neither feature imports the other.
 export function LabOrderWorkspace({ recordId }: { recordId: string }) {
@@ -23,7 +26,26 @@ function LabOrderWorkspaceContents({ recordId }: { recordId: string }) {
   const [record, setRecord] = useState<MedicalRecordDTO | null>(null);
   const [error, setError] = useState(false);
   const [orderMismatch, setOrderMismatch] = useState(false);
+  const [catalog, setCatalog] = useState<LabCatalogItemDTO[] | null>(null);
+  const [catalogPending, setCatalogPending] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let current = true;
+    labApi.catalog().then(value => {
+      if (current) setCatalog(value);
+    }).catch(cause => {
+      if (!current) return;
+      if (cause instanceof ApiRequestError && cause.status === 404 && cause.code === "LAB_CATALOG_DISABLED") {
+        setCatalog(null);
+        setCatalogError(null);
+      } else {
+        setCatalog(null);
+        setCatalogError(cause instanceof Error ? cause.message : "Lỗi kết nối danh mục");
+      }
+    }).finally(() => { if (current) setCatalogPending(false); });
+    return () => { current = false; };
+  }, [recordId]);
   useEffect(() => {
     let current = true;
     medicalRecordApi.getById(recordId).then(value => {
@@ -39,13 +61,14 @@ function LabOrderWorkspaceContents({ recordId }: { recordId: string }) {
     onRetry={() => { setError(false); setAttempt(value => value + 1); }} />;
   if (!record) return <AsyncState kind="loading" message="Đang xác minh bệnh nhân và hồ sơ khám…" />;
   if (record.status !== "OPEN") return <p role="status" className="mt-6 rounded-xl border border-border bg-surface p-5">Hồ sơ đã hoàn tất. Không thể lập chỉ định mới cho hồ sơ này.</p>;
+  if (catalogPending) return <AsyncState kind="loading" message="Đang tải danh mục xét nghiệm…" />;
   const restoredMismatch = order && (order.recordId !== record.recordId || order.patientId !== record.patientId || order.requestingDoctorId !== record.doctorId || order.requestingDepartmentId !== record.departmentId || order.careEpisodeId !== record.appointmentId || order.careEpisodeType !== "OUTPATIENT_VISIT");
   return <div className="mt-6 space-y-6">
     <PatientContextBanner label="Ngữ cảnh chỉ định xét nghiệm" patientId={record.patientId}
       departmentId={record.departmentId} doctorId={record.doctorId} date={record.examinationDate} dateLabel="Ngày khám" />
     <p className="text-sm text-muted-foreground">Gửi một lần để lập chỉ định và chuyển sang Lab. Chờ xác nhận trước khi hướng dẫn người bệnh tới thu ngân.</p>
     {orderMismatch || restoredMismatch ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Thông tin chỉ định trả về không khớp hồ sơ đang mở. Chưa chuyển yêu cầu sang xét nghiệm; không lập lại chỉ định. Liên hệ bộ phận hỗ trợ để đối soát.</p>
-    : !order ? <ClinicalLabOrderForm recordId={recordId} onCreated={value => {
+    : !order ? <ClinicalLabOrderForm recordId={recordId} catalog={catalog ?? undefined} catalogError={catalogError} onCreated={value => {
       if (value.recordId !== record.recordId || value.patientId !== record.patientId
         || value.requestingDoctorId !== record.doctorId || value.requestingDepartmentId !== record.departmentId
         || value.careEpisodeId !== record.appointmentId || value.careEpisodeType !== "OUTPATIENT_VISIT") {
@@ -63,6 +86,7 @@ function LabOrderWorkspaceContents({ recordId }: { recordId: string }) {
       careEpisodeType: order.careEpisodeType,
       careEpisodeId: order.careEpisodeId,
       priceCode: order.priceCode,
+      serviceCode: order.serviceCode,
     }} />}
   </div>;
 }

@@ -1,5 +1,6 @@
 flowchart TB
-U["Bác sĩ · Hoàn tất hồ sơ khám"] --> C["Clinical · COMPLETED"]
-C -->|"medicalrecord.completed"| R["RabbitMQ · mediflow.events"]
-R --> N["Notification · kết quả khám đã có"]
-R --> T["Report · lượt khám hoàn tất"]
+U["Thu ngân · Xác nhận thanh toán"] --> B["Billing · payment + outbox"]
+B -->|"payment.completed"| R["RabbitMQ · mediflow.events"]
+B -->|"financial.clearance.granted"| R
+R --> C["Nguồn LAB_TEST · đủ điều kiện thực hiện"]
+R --> S["Report / Notification · queue riêng"]

@@ -1,11 +1,27 @@
 import { describe, it, expect, vi } from "vitest";
 import { patientApi } from "@/features/patient/api";
 import { organizationApi } from "@/features/organization/api";
+import { medicalRecordApi } from "@/features/medical-record/api";
 import { createReferenceDirectory } from "./reference-directory";
 vi.mock("@/features/patient/api", () => ({ patientApi: { directory: vi.fn(), directoryEntry: vi.fn(), search: vi.fn(), getById: vi.fn() } }));
 vi.mock("@/features/organization/api", () => ({ organizationApi: { careLabel: vi.fn(), staff: vi.fn(), staffMember: vi.fn(), departments: vi.fn(), department: vi.fn(), accounts: vi.fn(), account: vi.fn() } }));
+vi.mock("@/features/medical-record/api", () => ({ medicalRecordApi: { getById: vi.fn(), byPatient: vi.fn() } }));
 
 describe("dashboard directory contracts", () => {
+  it("labels a record without reading it, so showing a list writes no access log", async () => {
+    const directory = createReferenceDirectory("ADMIN");
+    expect(await directory.resolve("record", "record-1")).toBe("Hồ sơ khám");
+    expect(medicalRecordApi.getById).not.toHaveBeenCalled();
+  });
+
+  it("keeps the dated label chosen from a patient's records", async () => {
+    vi.mocked(medicalRecordApi.byPatient).mockResolvedValueOnce([{ recordId: "record-2", examinationDate: "2026-11-09" }] as never);
+    const directory = createReferenceDirectory("DOCTOR");
+    await directory.search("record", "", 0, "patient-1");
+    expect(await directory.resolve("record", "record-2")).toContain("Hồ sơ 09");
+    expect(medicalRecordApi.getById).not.toHaveBeenCalled();
+  });
+
   it("never calls Patient reads for PATIENT", async () => {
     for (const role of ["PATIENT"] as const) {
       const directory = createReferenceDirectory(role);

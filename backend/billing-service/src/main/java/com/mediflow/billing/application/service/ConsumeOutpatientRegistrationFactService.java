@@ -78,9 +78,19 @@ public final class ConsumeOutpatientRegistrationFactService implements ConsumeOu
                     || cancellation.reason().isBlank() || cancellation.reason().length() > 500
                     || cancellation.cancelledAt() == null) fail();
         } else if (fact.cancellation() != null) fail();
+        if (fact.reschedule() != null) validateReschedule(fact);
         if ("AWAITING_PAYMENT".equals(fact.status()) && fact.queueNumber() != null) fail();
         if ("CONFIRMED".equals(fact.status()) && (fact.queueNumber() == null || fact.queueNumber() < 1)) fail();
         if (!UUID.fromString(fact.registrationId().toString()).equals(fact.registrationId())) fail();
+    }
+
+    private static void validateReschedule(OutpatientRegistrationChangedEvent.RegistrationFact fact) {
+        var move = fact.reschedule();
+        if (!"AWAITING_PAYMENT".equals(fact.status()) && !"CONFIRMED".equals(fact.status())) fail();
+        if (move.actorAccountId() == null || move.reason() == null || move.reason().isBlank() || move.reason().length() > 500
+                || move.previousSessionId() == null || move.previousDoctorId() == null || move.previousRoomId() == null
+                || move.previousSessionDate() == null || move.previousStartTime() == null || move.rescheduledAt() == null
+                || move.previousSessionId().equals(fact.sessionId())) fail();
     }
 
     private static String fingerprint(OutpatientRegistrationChangedEvent event) {
@@ -93,6 +103,7 @@ public final class ConsumeOutpatientRegistrationFactService implements ConsumeOu
                 fact.reservationExpiresAt().toString(), fact.priceCode(), fact.sourceType(), fact.sourceId().toString(),
                 fact.careEpisodeType(), fact.careEpisodeId().toString(), String.valueOf(fact.cancellation()),
                 fact.changedAt().toString());
+        if (fact.reschedule() != null) value += "\n" + fact.reschedule();
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(StandardCharsets.UTF_8)));

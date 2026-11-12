@@ -203,6 +203,46 @@ email/SMS/push hoặc self-booking trong slice này. Lời hẹn tái khám vẫ
 Đây là nghiệp vụ đích đã chốt; checklist ONB trong [07](07-outpatient-workflow-implementation.md)
 và tiêu chí ONB trong [06](06-acceptance-runbook.md) quyết định việc triển khai/nghiệm thu.
 
+### 4.2. Quầy điều dưỡng khoa, số phòng khám và sinh hiệu — TARGET v2.0, chưa triển khai
+
+Yêu cầu ngày 10/11/2026. Luồng này nằm sau flag `mediflow.v2.clinic-intake`, Đợt 2 trong
+[roadmap v2.0](../superpowers/plans/2026-11-10-mediflow-v2-roadmap.md). Flag tắt thì bước 6 ở
+mục 4 giữ nguyên. Chỉ áp dụng cho lượt đăng ký v2 có buổi khám.
+
+| | Số quầy | Số phòng khám |
+|---|---|---|
+| Field | `queueNumber` (đã có) | `roomQueueNumber` (mới) |
+| Cấp khi | Phiếu được xác nhận sau thu phí hoặc zero-pay | Người bệnh đến quầy điều dưỡng khoa |
+| Người cấp | Hệ thống, trong luồng quầy tiếp nhận | `NURSE` của khoa có buổi khám |
+| Đánh số theo | Khoa và ngày khám, mỗi khoa một dãy | Phòng khám và ngày, mỗi phòng một dãy |
+| Dùng để | Đối chiếu phiếu; Billing và Notification đang đọc | Gọi vào đúng phòng |
+
+1. Sau khi phiếu được xác nhận, quầy tiếp nhận hướng dẫn người bệnh đến quầy điều dưỡng của khoa.
+2. `NURSE` của khoa đối chiếu định danh và phiếu, rồi cấp số tiếp theo của phòng nơi bác sĩ được chỉ định khám. Phiếu phải
+   `CONFIRMED`, đã có mặt và đủ điều kiện tài chính. Gửi lại cùng khóa trả về đúng số đã cấp.
+3. `NURSE` đo mạch, huyết áp, nhiệt độ, nhịp thở, SpO2, cân nặng, khi cấp số hoặc trong lúc chờ.
+   Bản đo chỉ được thêm, không sửa đè. Không đo được thì ghi lý do.
+4. `NURSE` của khoa hoặc bác sĩ được phân công gọi theo số của từng phòng; hệ thống ghi người gọi
+   và thời điểm gọi.
+5. Bác sĩ bắt đầu khám. Phiếu phải có số phòng khám. Thiếu sinh hiệu chỉ cảnh báo, không chặn khám.
+6. Quay lại đọc kết quả là tiếp tục lượt đang mở, không cấp số phòng mới.
+
+Quy tắc:
+
+- Khoa của người cấp số lấy từ Organization, không lấy từ client. `NURSE` của Bộ phận Tiếp nhận
+  hoặc khoa khác không cấp số.
+- Phòng khám do bác sĩ được chỉ định trên phiếu quyết định, theo buổi khám của bác sĩ đó. Điều
+  dưỡng không tự chọn phòng.
+- Đổi bác sĩ hoặc phòng theo CL-QUE-04: hủy số cũ có lý do, nhận số tiếp theo của phòng mới. Vắng mặt và ưu tiên theo
+  CL-QUE-03. Không sửa ngầm số đã cấp.
+- Khi bật flag, `queueNumber` được cấp từ dãy theo khoa và ngày khám thay cho dãy theo buổi. Kiểu dữ liệu,
+  wire và sự kiện `OutpatientRegistrationFact` không đổi. Ngày khám lấy từ buổi khám, nên phiếu đặt
+  trước vẫn thuộc dãy của ngày đến khám.
+- Dãy của một khoa trong ngày bắt đầu từ số lớn nhất đã có của khoa đó trong ngày cộng một, để bật flag giữa ngày không
+  trùng số trong cùng buổi.
+- Điều dưỡng không kê đơn và không phát thuốc.
+- Không tự gắn cờ bất thường cho sinh hiệu khi chưa có khoảng tham chiếu được chuyên môn duyệt.
+
 ## 5. Tái khám và quay lại đọc kết quả
 
 | Trường hợp | Lượt/hồ sơ | Phí khám | Thông tin chuyên môn |
@@ -307,6 +347,32 @@ Phân biệt **hoàn tất khám chuyên môn** và **đóng nghĩa vụ của l
 hồ sơ sau khi kê đơn, Pharmacy tiếp tục cấp thuốc và đính kèm fact vào hồ sơ mà không mở lại.
 Lượt chỉ đối soát xong khi các dịch vụ/thuốc đã hoàn thành hoặc hủy hợp lệ, khoản phải thu/hoàn
 còn lại đã được xử lý. Không tạo state CLOSED trên API hiện tại nếu chưa có contract.
+
+### 7.1. Hồ sơ nhiều lượt, bàn giao, hội chẩn và đính chính — Đợt 4 v2.0
+
+Hai cờ, mặc định tắt: `mediflow.v2.treatment-course` cho quá trình điều trị, `mediflow.v2.record-amendment`
+cho bàn giao, hội chẩn và đính chính. Tắt cờ thì các endpoint này trả 404 và màn hình ẩn phần tương ứng.
+Dòng thời gian, nội dung khám có cấu trúc, danh sách tài liệu và sổ dị ứng không có cờ.
+
+- **Dòng thời gian:** hồ sơ bệnh nhân hiện từng lượt theo ngày, khoa, bác sĩ, loại lượt và kết quả. Điều dưỡng
+  chỉ thấy lượt của khoa mình. Nội dung khám có sáu mục: lý do khám, bệnh sử, tiền sử, ghi chú dị ứng, khám
+  thực thể, lời dặn.
+- **Quá trình điều trị:** bác sĩ chủ động mở và gắn từng lượt; không gộp hồi tố, không sao chép chẩn đoán hay đơn
+  thuốc. Chỉ gắn được lượt của cùng bệnh nhân. Đóng quá trình phải có quyết định và ghi chú.
+- **Bàn giao:** bác sĩ phụ trách bàn giao lượt đang mở cho bác sĩ khác, kèm lý do và việc đang chờ. Người nhận
+  chấp nhận thì thành bác sĩ phụ trách; từ đó chỉ người nhận ghi hồ sơ, kê đơn, hoàn tất và đóng lượt. Gửi nhầm
+  người thì bác sĩ phụ trách gửi yêu cầu mới; yêu cầu cũ thành "đã thay bằng yêu cầu mới". `doctorId` của hồ sơ
+  và của sự kiện vẫn là bác sĩ mở hồ sơ; `careEpisodeId` của chỉ định không đổi.
+- **Hội chẩn:** mỗi bác sĩ đọc được hồ sơ ghi ý kiến riêng khi lượt còn mở; ghi chú chỉ thêm, giữ tác giả.
+- **Đính chính:** hồ sơ đã kết thúc không bị sửa. Bác sĩ phụ trách, hoặc bác sĩ được giao, gửi đính chính cho một
+  mục kèm lý do. Trưởng khoa, hoặc bác sĩ được ADMIN cấp `MEDICAL_RECORD_REVIEW`, duyệt hoặc từ chối; không ai tự
+  duyệt đính chính của mình. Bản duyệt có mã băm nội dung để xác nhận nội bộ.
+- **Sổ dị ứng:** theo bệnh nhân, không theo lượt. Điều dưỡng và bác sĩ thêm; chỉ bác sĩ đổi trạng thái, có lý do.
+  Dị ứng nhập nhầm vẫn còn trong lịch sử.
+- **Tài liệu:** mỗi lượt có danh sách kết quả Lab và đơn thuốc chỉ đọc; tài liệu về sau thời điểm kết thúc được
+  đánh dấu "bổ sung sau khi kết thúc".
+
+Nghiệm thu: [`26-v2-wave-4-acceptance.md`](26-v2-wave-4-acceptance.md).
 
 ## 8. Nhận biết trạng thái trên frontend
 
@@ -507,3 +573,13 @@ User đã duyệt một tài khoản DOCTOR giữ nghiệp vụ chuyên môn, đ
 Trưởng khoa phân ca bác sĩ/khoa/phòng/ngày/giờ, sau đó chủ động tạo buổi nhận khám nằm trong ca với số chỗ riêng. Ca làm việc không tự tạo suất đăng ký, không phải chấm công. Sửa/hủy ca liên kết phải xử lý buổi khám theo guards hiện có; không tự đổi người khám hoặc hủy lượt đã có tiền. Chỉ phạm vi 07:00–17:00 ngoại trú; lịch ca điều dưỡng/Lab, payroll, trực đêm và inpatient/surgery chưa mở.
 
 Dashboard bác sĩ mặc định là Khám bệnh, có nút Sang Quản lý khoa khi authority bổ nhiệm hợp lệ, và nút Về Khám bệnh ở khu quản lý. Chuyển khu chỉ đổi điều hướng, không đổi role/session; cảnh báo dữ liệu chưa lưu. Backend kiểm bổ nhiệm/khoa trên mỗi thao tác, không chờ JWT cũ hết hạn sau miễn nhiệm. Dashboard quản lý không tự cấp đọc bệnh án người khác hoặc báo cáo tài chính. [Thiết kế và kiểm chứng](../superpowers/specs/2026-10-31-manager-workforce-proposal.md).
+
+## Lab: duyệt, trả, đính chính, mẫu và giá trị nguy hiểm — 11/11/2026
+
+Sau cờ `lab-review`/`lab-amendment` (mặc định tắt; xem [`27-v2-cutover-runbook.md`](27-v2-cutover-runbook.md)):
+
+- Người trả kết quả phải khác người nhập (duyệt bởi người thứ hai có năng lực duyệt trả Lab do Organization cấp).
+- Bản nháp và bản gửi duyệt/trả lại không phát sự kiện; chỉ lúc trả mới phát `lab.result.created`.
+- Đính chính kết quả đã trả là một bản sửa mới cũng phải qua duyệt, rồi phát `lab.result.amended`; không sửa đè bản cũ.
+- Một thông báo giá trị nguy hiểm cho mỗi cặp (bản sửa, chỉ số); bác sĩ của khoa chỉ định xác nhận.
+- Xét nghiệm đã vào luồng duyệt không còn nhận `PUT /api/v1/lab/{id}/results` (409 `LAB_REVIEW_REQUIRED`).

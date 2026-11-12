@@ -315,6 +315,24 @@ export interface OutboxReplayResult {
   replayed: boolean;
 }
 
+export type RegistrationSettlementKind = "VOID_UNPAID" | "REFUND_DUE" | "RESCHEDULED";
+
+export interface RegistrationSettlementDTO {
+  registrationId: string;
+  registrationRevision: number;
+  kind: RegistrationSettlementKind;
+  paymentRequestId: string | null;
+  amount: number;
+  refundedAmount: number;
+  outstandingAmount: number;
+  currency: string;
+  sourceType: string;
+  sourceId: string;
+  actorAccountId: string | null;
+  reason: string | null;
+  occurredAt: string;
+}
+
 /** Selection only; payment details must be reloaded from the by-registration endpoint. */
 export interface ScheduledPaymentQueueItem {
   registrationId: string;

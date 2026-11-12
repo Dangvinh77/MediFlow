@@ -66,6 +66,12 @@ resilience4j:
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
   profile: ${MEDIFLOW_PROFILE:compatibility-v0}
+  v2:
+    record-access-policy: ${MEDIFLOW_V2_RECORD_ACCESS_POLICY:false}
+    clinic-intake: ${MEDIFLOW_V2_CLINIC_INTAKE:false}
+    treatment-course: ${MEDIFLOW_V2_TREATMENT_COURSE:false}
+    lab-catalog: ${MEDIFLOW_V2_LABCATALOG:false}
+    record-amendment: ${MEDIFLOW_V2_RECORD_AMENDMENT:false}
   features:
     outpatient-mvp:
       enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}

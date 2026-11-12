@@ -51,7 +51,7 @@ class ConsumerInboxPostgresTest {
     @org.junit.jupiter.api.Test
     void freshSchema_preservesExactDeliveryBytesAndDedupeSemantics() {
         TestDatabase db = migrateFresh();
-        assertThat(latestVersion(db)).isEqualTo("12");
+        assertThat(latestVersion(db)).isEqualTo("28");
         ConsumerInboxBoundary boundary = boundary(db);
         String operationKey = "clinical:lab-result:v0:" + LAB_ID;
         UUID firstEvent = UUID.fromString("00000000-0000-0000-0000-000000001101");
@@ -85,6 +85,50 @@ class ConsumerInboxPostgresTest {
         assertThat(count(db, "consumer_inbox_delivery")).isEqualTo(2);
         assertThat(count(db, "consumer_inbox_operation")).isEqualTo(1);
         assertThat(count(db, "consumer_inbox_test_effect")).isEqualTo(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void labAmendment_contractAcceptsRevisionTwoAndUpOnceAndRejectsTheOriginalVersion() {
+        TestDatabase db = migrateFresh();
+        ConsumerInboxBoundary boundary = boundary(db);
+        // Real order of events: the original result is already attached when its amendment arrives.
+        db.jdbc.update("INSERT INTO medical_record (record_id, patient_id, doctor_id, department_id, "
+                        + "examination_date, symptoms) VALUES (?, ?, ?, ?, ?, ?)",
+                RECORD_ID, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 12), "visit");
+        db.jdbc.update("INSERT INTO attached_result (record_id, type, reference_id, summary, result_version) "
+                + "VALUES (?, 'LAB', ?, 'v1', 1)", RECORD_ID, LAB_ID);
+        db.jdbc.update("INSERT INTO attached_result_revision (record_id, reference_id, result_version, summary) "
+                + "VALUES (?, ?, 1, 'v1')", RECORD_ID, LAB_ID);
+        String operationKey = "clinical:lab-result:v1:" + LAB_ID + ":2";
+        UUID eventId = UUID.fromString("00000000-0000-0000-0000-000000001701");
+
+        assertThat(deliver(db, boundary, amendmentClaim(eventId, operationKey, "corr-amend"),
+                () -> insertEffect(db, "lab-amendment", operationKey))).isEqualTo(InboxOutcome.APPLIED);
+        assertThat(deliver(db, boundary, amendmentClaim(UUID.randomUUID(), operationKey, "corr-amend"),
+                () -> insertEffect(db, "lab-amendment", operationKey))).isEqualTo(InboxOutcome.DUPLICATE_OPERATION);
+        // Revision 1 belongs to lab.result.created; an amendment can never claim it.
+        String original = "clinical:lab-result:v1:" + LAB_ID + ":1";
+        assertThatThrownBy(() -> deliver(db, boundary, amendmentClaim(UUID.randomUUID(), original, "corr-bad"),
+                () -> insertEffect(db, "lab-amendment", original)))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        // Two-digit revisions are parsed whole.
+        String twelfth = "clinical:lab-result:v1:" + LAB_ID + ":12";
+        assertThat(deliver(db, boundary, amendmentClaim(UUID.randomUUID(), twelfth, "corr-twelve"),
+                () -> insertEffect(db, "lab-amendment", twelfth))).isEqualTo(InboxOutcome.APPLIED);
+        // A revision already in the history with no inbox record is a legacy effect and fails closed.
+        db.jdbc.update("INSERT INTO attached_result_revision (record_id, reference_id, result_version, summary, "
+                + "amendment_reason) VALUES (?, ?, 3, 'legacy v3', 'legacy')", RECORD_ID, LAB_ID);
+        String legacy = "clinical:lab-result:v1:" + LAB_ID + ":3";
+        assertThatThrownBy(() -> deliver(db, boundary, amendmentClaim(UUID.randomUUID(), legacy, "corr-legacy"),
+                () -> insertEffect(db, "lab-amendment", legacy)))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+        assertThat(count(db, "consumer_inbox_test_effect")).isEqualTo(2);
+    }
+
+    private static ConsumerInboxClaim amendmentClaim(UUID eventId, String operationKey, String correlationId) {
+        byte[] body = envelope(eventId, "lab.result.amended", correlationId,
+                "{\"labTestId\":\"" + LAB_ID + "\",\"resultVersion\":2,\"amendmentReason\":\"Do lai\"}");
+        return evidence().create("clinical-lab-result", "lab.result.amended", eventId, operationKey, body);
     }
 
     @org.junit.jupiter.api.Test
@@ -228,7 +272,7 @@ class ConsumerInboxPostgresTest {
 
         migrate(db, null);
 
-        assertThat(latestVersion(db)).isEqualTo("12");
+        assertThat(latestVersion(db)).isEqualTo("28");
         createEffectTable(db);
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "attached_result")).isEqualTo(2);

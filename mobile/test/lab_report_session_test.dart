@@ -8,6 +8,7 @@ import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/features/lab/domain/lab_workflow.dart';
+import 'package:mediflow_mobile/features/lab/domain/lab_catalog.dart';
 import 'package:mediflow_mobile/features/lab/presentation/lab_detail_page.dart';
 import 'package:mediflow_mobile/features/report/domain/report.dart';
 import 'package:mediflow_mobile/features/report/presentation/report_page.dart';
@@ -29,6 +30,10 @@ LabDetail labDetail(String status) => LabDetail(
 );
 
 class Workflow implements LabWorkflow {
+  @override
+  Future<LabTestTemplate> template(String testId) async =>
+      LabTestTemplate(testId: testId, serviceCode: null, template: null);
+
   Future<LabDetail> Function()? read;
   bool committed = false;
   int starts = 0;
@@ -97,6 +102,33 @@ void main() {
     ],
     child: MaterialApp(home: Scaffold(body: child)),
   );
+
+  testWidgets('legacy lab result renders raw value with "chưa gắn template"', (
+    tester,
+  ) async {
+    final workflow = Workflow()
+      ..read = () async => LabDetail(
+        id: drugId,
+        patientId: otherDrugId,
+        recordId: otherDrugId,
+        departmentId: otherDrugId,
+        type: 'Công thức máu',
+        requestedDate: '2026-10-22',
+        status: 'COMPLETED',
+        paid: false,
+        version: 1,
+        clearanceId: rxId,
+        results: const [
+          LabResultDraft(indicator: 'Hb', value: 'Không có kết quả: mẫu vỡ'),
+        ],
+      );
+    await tester.pumpWidget(
+      host('legacy', const LabDetailPage(id: drugId), workflow: workflow),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Chưa gắn template'), findsOneWidget);
+    expect(find.textContaining('Không có kết quả: mẫu vỡ'), findsOneWidget);
+  });
 
   testWidgets(
     'enabled report opens outpatient statistics instead of legacy zeros',

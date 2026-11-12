@@ -10,7 +10,10 @@ import { prepareCreation } from "../creation-intent";
 import { isSaveOutcomeUnknown } from "../save-outcome";
 import type { MailDelivery } from "../types";
 
-const labels = { PENDING: "Đang chờ gửi", SENT: "Đã chuyển đến máy chủ email / hộp thư demo", FAILED: "Gửi email chưa thành công" };
+const labels = { PENDING: "Đang gửi…", SENT: "Gửi thành công", FAILED: "Gửi thất bại" };
+const statusTone = { PENDING: "bg-surface-muted text-muted-foreground", SENT: "bg-success/10 text-success", FAILED: "bg-danger/10 text-danger" };
+// While the outbox still holds the mail, re-read its status on its own: fast at first, then slower.
+const FAST_POLLS = 15, FAST_POLL_MS = 2000, SLOW_POLL_MS = 10000;
 interface AdminAccountSecurityProps {
   accountId: string;
   username: string;
@@ -45,13 +48,25 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
     });
     return () => { disposed = true; };
   }, [accountId, attempt, patientIdForMail]);
+  const polls = useRef(0);
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    if (delivery?.status !== "PENDING") { polls.current = 0; return; }
+    const timer = window.setTimeout(() => {
+      polls.current += 1;
+      if (polls.current >= FAST_POLLS) setStalled(true);
+      setAttempt(v => v + 1);
+    }, polls.current < FAST_POLLS ? FAST_POLL_MS : SLOW_POLL_MS);
+    return () => window.clearTimeout(timer);
+  }, [delivery]);
   async function action(kind: "reset" | "retry" | "email" | "checkEmail") {
     if (lock.current || (disablePasswordActions && (kind === "reset" || kind === "retry")) || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail") || (!allowEmailChange && (kind === "email" || kind === "checkEmail"))) return;
-    if (kind === "reset" && !unknown && !window.confirm(`Cấp mật khẩu tạm mới và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
+    if (kind === "reset" && !unknown && !window.confirm(`Cấp lại mật khẩu tạm và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
     const session = getSessionKey();
     const current = () => alive.current && getSessionKey() === session;
     lock.current = true; setBusy(true); setError(null); setNotice(null);
     deliveryRevision.current += 1;
+    if (kind === "reset" || kind === "retry") { polls.current = 0; setStalled(false); }
     let intent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
     try {
       if (kind === "reset") {
@@ -63,7 +78,7 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
           ? await organizationApi.resetPatientPassword(patientIdForMail, intent.key)
           : await organizationApi.resetPassword(accountId, intent.key);
         intent.settle();
-        if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
+        if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp lại mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
       } else if (kind === "retry" && delivery) {
         const result = patientIdForMail
           ? await organizationApi.retryPatientMail(patientIdForMail, delivery.messageId)
@@ -112,11 +127,11 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
   return <section className="space-y-5 rounded-xl border border-border bg-surface p-5 sm:p-6">
     <h2 className="text-lg font-semibold">Bảo mật & gửi email tài khoản</h2>
     <p className="text-sm leading-6 text-muted-foreground">Sau khi xác minh người yêu cầu, bạn có thể cấp mật khẩu tạm và gửi hướng dẫn đến email đăng nhập. Email giả của seed được chuyển vào hộp thư demo.</p>
-    {delivery ? <p role="status" className="rounded-lg bg-surface-muted p-3 text-sm">Trạng thái thư gần nhất: <strong>{labels[delivery.status]}</strong></p> : null}
+    {delivery ? <p role="status" aria-live="polite" className={`rounded-lg p-3 text-sm ${statusTone[delivery.status]}`}>Thư mật khẩu tạm: <strong>{labels[delivery.status]}</strong>{delivery.status === "PENDING" && stalled ? " — máy chủ email phản hồi chậm, có thể gửi lại thư." : null}</p> : null}
     {notice ? <p role="status" className="text-sm leading-6 text-success">{notice}</p> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {disablePasswordActions ? <p role="status" className="text-sm text-warning">Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh.</p> : null}
-    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
+    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp lại mật khẩu vừa rồi" : "Cấp lại mật khẩu tạm qua email"}</Button>{delivery && (delivery.status === "FAILED" || (delivery.status === "PENDING" && stalled)) ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
     {emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning">Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục.</p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}>Kiểm tra kết quả đổi email</Button></div> : null}
     {unknown ? <p className="text-sm text-warning">Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại.</p> : null}
     {allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">

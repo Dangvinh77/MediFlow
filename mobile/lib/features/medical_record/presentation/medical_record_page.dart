@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediflow_loader/mediflow_loader.dart';
@@ -7,8 +9,17 @@ import '../../../core/widgets/medical_ui.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
+import '../domain/exam_lifecycle.dart';
 import '../domain/medical_record.dart';
+import '../domain/patient_timeline.dart';
+import 'close_record_sheet.dart';
 import 'follow_up_recommendation_panel.dart';
+import 'patient_allergy_section.dart';
+import 'patient_timeline_section.dart';
+import 'record_lab_orders_section.dart';
+import 'record_collaboration_section.dart';
+import 'record_documents_section.dart';
+import 'treatment_courses_section.dart';
 
 final medicalRecordRepositoryProvider = Provider<MedicalRecordRepository>(
   (ref) => throw StateError(
@@ -28,14 +39,32 @@ typedef MedicalRecordPrescriptionWorkspaceBuilder = Widget Function(
   required bool canCreate,
 });
 
+typedef MedicalRecordDocumentRouteBuilder = void Function(
+  BuildContext context,
+  RecordDocument document,
+);
+
+class _PendingRecordContentUpdate {
+  const _PendingRecordContentUpdate({
+    required this.recordId,
+    required this.changes,
+    required this.idempotencyKey,
+  });
+
+  final String recordId, idempotencyKey;
+  final Map<String, String?> changes;
+}
+
 class MedicalRecordPage extends ConsumerStatefulWidget {
   const MedicalRecordPage({
     super.key,
     this.onLabTestCreated,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   ConsumerState<MedicalRecordPage> createState() => _MedicalRecordPageState();
 }
@@ -47,9 +76,11 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
     required this.patientId,
     required this.visitId,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final String patientId, visitId;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(workspaceAccessProvider);
@@ -65,6 +96,7 @@ class MedicalRecordForVisitPage extends ConsumerWidget {
       visitId: visitId,
       repository: ref.watch(medicalRecordRepositoryProvider),
       prescriptionWorkspaceBuilder: prescriptionWorkspaceBuilder,
+      onOpenDocument: onOpenDocument,
     );
   }
 }
@@ -76,10 +108,12 @@ class _VisitRecordResolver extends StatefulWidget {
     required this.visitId,
     required this.repository,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
   });
   final String patientId, visitId;
   final MedicalRecordRepository repository;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
   @override
   State<_VisitRecordResolver> createState() => _VisitRecordResolverState();
 }
@@ -111,6 +145,7 @@ class _VisitRecordResolverState extends State<_VisitRecordResolver> {
         return MedicalRecordDetailPage(
           recordId: snapshot.data!.id,
           prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
+          onOpenDocument: widget.onOpenDocument,
         );
       }
       return Scaffold(
@@ -261,111 +296,50 @@ class _MedicalRecordPageState extends ConsumerState<MedicalRecordPage> {
   Widget _buildResults() {
     if (_loading) return const Center(child: MediFlowLoader());
     if (_error != null) {
-      return _RetryMessage(
-        error: _error!,
-        onRetry: _patientId == null ? null : () => _loadPatient(_patientId!),
-      );
+      return _recordAccessRefusal(
+            error: _error!,
+            patientId: _patientId,
+            role: ref.read(workspaceAccessProvider)?.role,
+            deniedText: 'Bạn không có quyền xem hồ sơ khám của bệnh nhân này.',
+            onDeclared: () => _loadPatient(_patientId!),
+          ) ??
+          _RetryMessage(
+            error: _error!,
+            onRetry: _patientId == null
+                ? null
+                : () => _loadPatient(_patientId!),
+          );
     }
     if (_patientId == null) {
       return const Center(
         child: Text('Chọn bệnh nhân theo tên để xem hồ sơ khám.'),
       );
     }
-    final records = _records;
-    if (records == null) return const SizedBox.shrink();
-    if (records.isEmpty) {
-      return const Center(child: Text('Bệnh nhân chưa có hồ sơ khám.'));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: records.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) => _RecordCard(
-        record: records[index],
-        onOpen: () => Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (_) => MedicalRecordDetailPage(
-              recordId: records[index].id,
-              onLabTestCreated: widget.onLabTestCreated,
-              prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
-            ),
+    if (_records == null) return const SizedBox.shrink();
+    final patientId = _patientId!;
+    return PatientTimelineSection(
+      patientId: patientId,
+      errorBuilder: (error) =>
+          _recordAccessRefusal(
+            error: error,
+            patientId: patientId,
+            role: ref.read(workspaceAccessProvider)?.role,
+            deniedText: 'Bạn không có quyền xem hồ sơ khám của bệnh nhân này.',
+            onDeclared: () => _loadPatient(patientId),
+          ) ??
+          _RetryMessage(error: error, onRetry: () => _loadPatient(patientId)),
+      onOpenRecord: (entry) => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => MedicalRecordDetailPage(
+            recordId: entry.recordId,
+            onLabTestCreated: widget.onLabTestCreated,
+            prescriptionWorkspaceBuilder: widget.prescriptionWorkspaceBuilder,
+            onOpenDocument: widget.onOpenDocument,
           ),
         ),
       ),
     );
   }
-}
-
-class _RecordCard extends StatelessWidget {
-  const _RecordCard({required this.record, required this.onOpen});
-  final MedicalRecord record;
-  final VoidCallback onOpen;
-  @override
-  Widget build(BuildContext context) => Card(
-    child: InkWell(
-      onTap: onOpen,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ngày khám: ${record.examinationDate}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                StatusPill(
-                  record.status == 'OPEN'
-                      ? 'Đang khám'
-                      : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất'
-                      : 'Trạng thái khác',
-                  tone: statusToneOf(record.status),
-                ),
-              ],
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.patient,
-              id: record.patientId,
-              label: 'Bệnh nhân',
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.doctor,
-              id: record.doctorId,
-              label: 'Bác sĩ',
-            ),
-            ReferenceLabel(
-              kind: ReferenceKind.department,
-              id: record.departmentId,
-              label: 'Khoa',
-            ),
-            if (record.appointmentId != null)
-              ReferenceLabel(
-                kind: ReferenceKind.appointment,
-                id: record.appointmentId!,
-                label: 'Lịch hẹn',
-              ),
-            Text(
-              record.diagnoses.isEmpty
-                  ? 'Chưa có chẩn đoán'
-                  : record.diagnoses.map((d) => d.name).join(' · '),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onOpen,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('Mở hồ sơ'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class MedicalRecordEditorPage extends ConsumerStatefulWidget {
@@ -586,10 +560,14 @@ class MedicalRecordDetailPage extends ConsumerStatefulWidget {
     required this.recordId,
     this.onLabTestCreated,
     this.prescriptionWorkspaceBuilder,
+    this.onOpenDocument,
+    this.referenceOnly = false,
   });
   final String recordId;
   final ValueChanged<LabTestReceipt>? onLabTestCreated;
   final MedicalRecordPrescriptionWorkspaceBuilder? prescriptionWorkspaceBuilder;
+  final MedicalRecordDocumentRouteBuilder? onOpenDocument;
+  final bool referenceOnly;
   @override
   ConsumerState<MedicalRecordDetailPage> createState() =>
       _MedicalRecordDetailPageState();
@@ -598,10 +576,12 @@ class MedicalRecordDetailPage extends ConsumerStatefulWidget {
 class _MedicalRecordDetailPageState
     extends ConsumerState<MedicalRecordDetailPage> {
   MedicalRecord? _record;
+  RecordCapabilities? _capabilities;
   Object? _error;
   bool _loading = true, _busy = false, _uncertain = false;
-  int _generation = 0;
+  int _generation = 0, _labOrdersRevision = 0;
   Object? _identity;
+  _PendingRecordContentUpdate? _pendingContentUpdate;
 
   @override
   void initState() {
@@ -610,33 +590,65 @@ class _MedicalRecordDetailPageState
     Future.microtask(_load);
   }
 
+  Future<void> _closeRecord(MedicalRecord record) async {
+    final repository = ref.read(examLifecycleRepositoryProvider);
+    final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    if (repository == null || _busy || _uncertain) return;
+    final closed = await showCloseRecordSheet(
+      context,
+      record: record,
+      repository: repository,
+    );
+    if (closed != null &&
+        mounted &&
+        ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
+      setState(() => _record = closed);
+    }
+  }
+
+  /// A capability failure leaves the record read only; it never blocks reading.
+  Future<RecordCapabilities?> _capabilitiesOrNull(
+    MedicalRecordRepository repository,
+  ) async {
+    try {
+      return await repository.capabilities(widget.recordId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _load() async {
     final generation = ++_generation;
     final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
     setState(() {
       _record = null;
+      _capabilities = null;
       _error = null;
       _loading = true;
       _uncertain = false;
     });
+    final repository = ref.read(medicalRecordRepositoryProvider);
+    final capabilitiesRequest = _capabilitiesOrNull(repository);
     try {
-      final value = await ref
-          .read(medicalRecordRepositoryProvider)
-          .getById(widget.recordId);
+      final value = await repository.getById(widget.recordId);
+      final capabilities = await capabilitiesRequest;
       if (mounted &&
           generation == _generation &&
           ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
         setState(() {
           _record = value;
+          _capabilities = capabilities;
           _loading = false;
           _identity = identity;
         });
       }
     } catch (error) {
+      final capabilities = await capabilitiesRequest;
       if (mounted &&
           generation == _generation &&
           ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
         setState(() {
+          _capabilities = capabilities;
           _error = error;
           _loading = false;
           _identity = identity;
@@ -710,7 +722,14 @@ class _MedicalRecordDetailPageState
           : _loading
           ? const Center(child: MediFlowLoader())
           : _error != null && _record == null
-          ? _RetryMessage(error: _error!, onRetry: _load)
+          ? _recordAccessRefusal(
+                  error: _error!,
+                  patientId: _capabilities?.patientId,
+                  role: access?.role,
+                  deniedText: 'Bạn không có quyền xem hồ sơ khám này.',
+                  onDeclared: _load,
+                ) ??
+                _RetryMessage(error: _error!, onRetry: _load)
           : _record == null
           ? const Center(child: Text('Không có dữ liệu hồ sơ.'))
           : _buildDetail(_record!, access?.role, outpatientEnabled),
@@ -722,25 +741,65 @@ class _MedicalRecordDetailPageState
     String? role,
     bool outpatientEnabled,
   ) {
-    final canEdit = canEditMedicalRecord(record, role: role);
-    final canComplete = canCompleteMedicalRecord(
-      record,
-      role: role,
-      outpatientEnabled: outpatientEnabled,
-    );
-    final canOrderLab = canOrderClinicalLab(
-      record,
-      role: role,
-      outpatientEnabled: outpatientEnabled,
-    );
-    final canCreatePrescription =
-        outpatientEnabled && canEditMedicalRecord(record, role: role);
-    final prescriptionBuilder = const {'ADMIN', 'DOCTOR'}.contains(role)
+    final capabilities = _capabilities;
+    final canEdit =
+        !widget.referenceOnly &&
+        record.status == 'OPEN' &&
+        capabilities?.canWriteContent == true;
+    final canComplete =
+        !widget.referenceOnly &&
+        capabilities?.canComplete == true &&
+        canCompleteMedicalRecord(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
+    final canOrderLab =
+        canEdit &&
+        canOrderClinicalLab(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
+    final canCreatePrescription = outpatientEnabled && canEdit;
+    final lifecycle = ref.watch(examLifecycleRepositoryProvider);
+    final canClose =
+        !widget.referenceOnly &&
+        lifecycle != null &&
+        capabilities?.canComplete == true &&
+        canCloseWithoutConclusion(
+          record,
+          role: role,
+          outpatientEnabled: outpatientEnabled,
+        );
+    final readOnlyNotice = record.status != 'OPEN'
+        ? null
+        : capabilities == null
+        ? 'Chưa xác định được quyền ghi, hồ sơ đang ở chế độ chỉ đọc.'
+        : switch (capabilities.writeBlockedReason) {
+            'NOT_ASSIGNED_DOCTOR' => 'Bạn đang xem hồ sơ do bác sĩ khác phụ trách. Chỉ bác sĩ phụ trách mới được ghi vào hồ sơ này.',
+            'NOT_IN_EXAM' => 'Lượt khám chưa ở trạng thái đang khám nên chưa thể ghi vào hồ sơ.',
+            _ => null,
+          };
+    final prescriptionBuilder =
+        !widget.referenceOnly && const {'ADMIN', 'DOCTOR'}.contains(role)
         ? widget.prescriptionWorkspaceBuilder
         : null;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        PatientAllergySection(
+          key: ValueKey(('patient-allergies', record.patientId)),
+          patientId: record.patientId,
+          sourceRecordId: record.id,
+          canAdd:
+              !widget.referenceOnly && const {'DOCTOR', 'NURSE'}.contains(role),
+          canManageStatus: !widget.referenceOnly && role == 'DOCTOR',
+        ),
+        if (widget.referenceOnly)
+          const NoticeBox(
+            'Lượt trước — chỉ tham khảo. Không thể thay đổi dữ liệu.',
+          ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -753,13 +812,13 @@ class _MedicalRecordDetailPageState
                 ),
                 const SizedBox(height: 8),
                 StatusPill(
-                  record.status == 'OPEN'
-                      ? 'Đang khám'
-                      : record.status == 'COMPLETED'
-                      ? 'Đã hoàn tất'
-                      : 'Trạng thái khác',
+                  _recordStatusLabel(record.status),
                   tone: statusToneOf(record.status),
                 ),
+                if (record.status == 'COMPLETED')
+                  const Text(
+                    'Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.',
+                  ),
                 ReferenceLabel(
                   kind: ReferenceKind.record,
                   id: record.id,
@@ -791,35 +850,34 @@ class _MedicalRecordDetailPageState
                   Text('Cập nhật: ${record.updatedAt}'),
                 if (record.completedAt != null)
                   Text('Hoàn tất: ${record.completedAt}'),
-              ],
-            ),
-          ),
-        ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Triệu chứng',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  record.symptoms?.trim().isNotEmpty == true
-                      ? record.symptoms!
-                      : 'Chưa ghi nhận.',
-                ),
-                if (record.disposition != null)
+                if (record.closureReason != null)
                   Text(
-                    'Hướng xử trí: ${_dispositionLabel(record.disposition!)}',
+                    'Lý do: ${recordClosureReasonLabels[record.closureReason] ?? record.closureReason}',
                   ),
-                if (record.dispositionNote?.trim().isNotEmpty == true)
-                  Text(record.dispositionNote!),
+                if (record.closureNote?.trim().isNotEmpty == true)
+                  Text(record.closureNote!),
+                if (record.closedAt != null)
+                  Text('Kết thúc lúc: ${record.closedAt}'),
+                if (record.previousRecordId case final previous?)
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => MedicalRecordDetailPage(
+                          recordId: previous,
+                          prescriptionWorkspaceBuilder:
+                              widget.prescriptionWorkspaceBuilder,
+                          onOpenDocument: widget.onOpenDocument,
+                          referenceOnly: true,
+                        ),
+                      ),
+                    ),
+                    child: const Text('Lượt trước — chỉ tham khảo'),
+                  ),
               ],
             ),
           ),
         ),
+        ..._clinicalContentSections(record),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -848,6 +906,24 @@ class _MedicalRecordDetailPageState
             ),
           ),
         ),
+        RecordDocumentsSection(
+          recordId: record.id,
+          onOpenSource: widget.onOpenDocument == null
+              ? null
+              : (document) => widget.onOpenDocument!(context, document),
+        ),
+        if (!widget.referenceOnly) ...[
+          TreatmentCoursesSection(
+            key: ValueKey(('treatment-courses', record.patientId)),
+            patientId: record.patientId,
+            recordId: record.id,
+          ),
+          RecordCollaborationSection(
+            key: ValueKey(('record-collaboration', record.id)),
+            recordId: record.id,
+            capabilities: _capabilities,
+          ),
+        ],
         if (record.status == 'COMPLETED' &&
             ref.watch(appConfigProvider).scheduledPaymentsEnabled &&
             ref.watch(followUpRecommendationRepositoryProvider) != null)
@@ -856,11 +932,19 @@ class _MedicalRecordDetailPageState
             recordId: record.id,
             canCreate: role == 'DOCTOR',
           ),
+        if (readOnlyNotice != null) NoticeBox(readOnlyNotice),
         if (_error != null)
           _RetryMessage(error: _error!, onRetry: _uncertain ? _load : null),
-        if (_uncertain)
+        if (_uncertain && _pendingContentUpdate == null)
           const NoticeBox(
             'Kết quả thao tác chưa rõ. Làm mới hồ sơ trước khi thử lại.',
+          ),
+        if (_pendingContentUpdate case final pending?)
+          OutlinedButton.icon(
+            key: const Key('record-content-retry'),
+            onPressed: _busy ? null : () => _sendContentUpdate(pending),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Gửi lại cùng yêu cầu'),
           ),
         if (_busy) const LinearProgressIndicator(),
         Wrap(
@@ -871,9 +955,9 @@ class _MedicalRecordDetailPageState
               OutlinedButton.icon(
                 onPressed: _busy || _uncertain
                     ? null
-                    : () => _editSymptoms(record),
+                    : () => _editContent(record),
                 icon: const Icon(Icons.edit_note),
-                label: const Text('Sửa triệu chứng'),
+                label: const Text('Sửa nội dung khám'),
               ),
             if (canEdit)
               OutlinedButton.icon(
@@ -894,7 +978,18 @@ class _MedicalRecordDetailPageState
           _ClinicalLabWorkflowPanel(
             record: record,
             repository: ref.read(medicalRecordRepositoryProvider),
-            onCreated: widget.onLabTestCreated,
+            onCreated: (receipt) {
+              setState(() => _labOrdersRevision++);
+              widget.onLabTestCreated?.call(receipt);
+            },
+          ),
+        if (outpatientEnabled &&
+            lifecycle != null &&
+            record.appointmentId?.trim().isNotEmpty == true)
+          RecordLabOrdersSection(
+            key: ValueKey((record.id, _identity, _labOrdersRevision)),
+            recordId: record.id,
+            canChange: canEdit,
           ),
         if (prescriptionBuilder case final buildWorkspace?)
           Card(
@@ -931,22 +1026,102 @@ class _MedicalRecordDetailPageState
               (updated) => setState(() => _record = updated),
             ),
           ),
+        if (canClose)
+          OutlinedButton(
+            onPressed: _busy || _uncertain ? null : () => _closeRecord(record),
+            child: const Text('Kết thúc không kết luận'),
+          ),
       ],
     );
   }
 
-  Future<void> _editSymptoms(MedicalRecord record) async {
+  List<Widget> _clinicalContentSections(MedicalRecord record) => [
+    if (record.symptoms?.trim().isNotEmpty == true)
+      _clinicalSection('Triệu chứng', record.symptoms!),
+    if (record.chiefComplaint?.trim().isNotEmpty == true)
+      _clinicalSection('Lý do khám', record.chiefComplaint!),
+    if (record.presentIllness?.trim().isNotEmpty == true)
+      _clinicalSection('Diễn biến bệnh', record.presentIllness!),
+    if (record.pastHistory?.trim().isNotEmpty == true)
+      _clinicalSection('Tiền sử', record.pastHistory!),
+    if (record.allergyNote?.trim().isNotEmpty == true)
+      _clinicalSection('Ghi chú dị ứng của lượt', record.allergyNote!),
+    if (record.physicalExam?.trim().isNotEmpty == true)
+      _clinicalSection('Khám thực thể', record.physicalExam!),
+    if (record.advice?.trim().isNotEmpty == true)
+      _clinicalSection('Dặn dò', record.advice!),
+    if (record.disposition != null ||
+        record.dispositionNote?.trim().isNotEmpty == true)
+      _clinicalSection(
+        'Hướng xử trí',
+        [
+          if (record.disposition != null)
+            _dispositionLabel(record.disposition!),
+          if (record.dispositionNote?.trim().isNotEmpty == true)
+            record.dispositionNote!,
+        ].join('\n'),
+      ),
+  ];
+
+  Widget _clinicalSection(String title, String content) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(content),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _editContent(MedicalRecord record) async {
     final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
-    final controller = TextEditingController(text: record.symptoms ?? '');
-    final route = DialogRoute<String?>(
+    final original = <String, String?>{
+      'symptoms': record.symptoms,
+      'chiefComplaint': record.chiefComplaint,
+      'presentIllness': record.presentIllness,
+      'pastHistory': record.pastHistory,
+      'allergyNote': record.allergyNote,
+      'physicalExam': record.physicalExam,
+      'advice': record.advice,
+    };
+    const labels = <String, String>{
+      'symptoms': 'Triệu chứng',
+      'chiefComplaint': 'Lý do khám',
+      'presentIllness': 'Diễn biến bệnh',
+      'pastHistory': 'Tiền sử',
+      'allergyNote': 'Ghi chú dị ứng của lượt',
+      'physicalExam': 'Khám thực thể',
+      'advice': 'Dặn dò',
+    };
+    final controllers = {
+      for (final field in recordContentFields)
+        field: TextEditingController(text: original[field] ?? ''),
+    };
+    final route = DialogRoute<Map<String, String?>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sửa triệu chứng'),
-        content: TextField(
-          controller: controller,
-          maxLength: 4000,
-          maxLines: 5,
-          decoration: const InputDecoration(labelText: 'Triệu chứng'),
+        title: const Text('Sửa nội dung khám'),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final field in recordContentFields)
+                  TextField(
+                    key: Key('record-content-$field'),
+                    controller: controllers[field],
+                    maxLength: 4000,
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: labels[field]),
+                  ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -954,26 +1129,90 @@ class _MedicalRecordDetailPageState
             child: const Text('Hủy'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            key: const Key('record-content-save'),
+            onPressed: () => Navigator.pop(context, <String, String?>{
+              for (final field in recordContentFields)
+                field:
+                    controllers[field]!.text.isEmpty && original[field] == null
+                    ? null
+                    : controllers[field]!.text,
+            }),
             child: const Text('Lưu'),
           ),
         ],
       ),
     );
-    final symptoms = await Navigator.of(context).push(route);
+    final edited = await Navigator.of(context).push(route);
     await route.completed;
-    controller.dispose();
-    if (symptoms == null ||
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+    if (edited == null ||
         !mounted ||
         ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
       return;
     }
-    await _run(
-      () => ref
-          .read(medicalRecordRepositoryProvider)
-          .update(record.id, symptoms: symptoms),
-      (updated) => setState(() => _record = updated),
+    final changes = changedRecordSections(original: original, edited: edited);
+    if (changes.isEmpty) return;
+    await _sendContentUpdate(
+      _PendingRecordContentUpdate(
+        recordId: record.id,
+        changes: Map.unmodifiable(changes),
+        idempotencyKey: newExamCommandKey(),
+      ),
     );
+  }
+
+  Future<void> _sendContentUpdate(_PendingRecordContentUpdate intent) async {
+    if (_busy ||
+        _identity != ref.read(workspaceAccessProvider)?.sessionIdentity ||
+        widget.referenceOnly ||
+        _record?.status != 'OPEN') {
+      return;
+    }
+    final identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    setState(() {
+      _pendingContentUpdate = intent;
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final repository = ref.read(patientTimelineRepositoryProvider);
+      if (repository == null) {
+        throw StateError('Không có kết nối để cập nhật nội dung hồ sơ.');
+      }
+      final updated = await repository.updateContent(
+        intent.recordId,
+        changes: intent.changes,
+        idempotencyKey: intent.idempotencyKey,
+      );
+      if (!mounted ||
+          ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
+        return;
+      }
+      setState(() {
+        _record = updated;
+        _pendingContentUpdate = null;
+        _uncertain = false;
+        _error = null;
+      });
+    } catch (error) {
+      if (!mounted ||
+          ref.read(workspaceAccessProvider)?.sessionIdentity != identity) {
+        return;
+      }
+      final unknown = _outcomeUnknown(error);
+      setState(() {
+        _error = error;
+        _uncertain = unknown;
+        if (!unknown) _pendingContentUpdate = null;
+      });
+    } finally {
+      if (mounted &&
+          ref.read(workspaceAccessProvider)?.sessionIdentity == identity) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   Future<void> _addDiagnosis(MedicalRecord record) async {
@@ -1211,11 +1450,18 @@ class _ClinicalLabWorkflowPanelState
     extends ConsumerState<_ClinicalLabWorkflowPanel> {
   final _labType = TextEditingController();
   final _priceCode = TextEditingController();
+  final List<ClinicalLabCatalogItem> _catalogItems = [];
+  late final ClinicalLabCatalogRepository? _catalogRepository;
   DateTime _requestedDate = DateTime.now();
+  String? _selectedCatalogGroup;
+  ClinicalLabCatalogItem? _selectedCatalogItem;
   ClinicalLabOrder? _sourceOrder;
   LabTestReceipt? _receipt;
   Object? _error;
+  Object? _catalogError;
   bool _busy = false,
+      _catalogLoading = false,
+      _catalogDisabled = true,
       _sourceUncertain = false,
       _labUncertain = false,
       _labConflict = false;
@@ -1225,6 +1471,9 @@ class _ClinicalLabWorkflowPanelState
   void initState() {
     super.initState();
     _identity = ref.read(workspaceAccessProvider)?.sessionIdentity;
+    _catalogRepository = widget.repository is ClinicalLabCatalogRepository
+        ? widget.repository as ClinicalLabCatalogRepository
+        : null;
     _progress = ref.read(_pendingLabProgressProvider);
     final pending = _progress[widget.record.id];
     if (pending != null) {
@@ -1234,7 +1483,78 @@ class _ClinicalLabWorkflowPanelState
       _labConflict = pending.labConflict;
       _error = pending.error;
     }
+    if (_sourceOrder == null && _catalogRepository != null) {
+      _catalogLoading = true;
+      unawaited(_loadCatalog());
+    }
   }
+
+  Future<void> _loadCatalog() async {
+    final identity = _identity;
+    try {
+      final items = await _catalogRepository!.labCatalog();
+      if (!_sessionIsCurrent(identity)) return;
+      setState(() {
+        _catalogLoading = false;
+        _catalogDisabled = items == null;
+        _catalogItems
+          ..clear()
+          ..addAll(items ?? const []);
+        if (_catalogItems.isNotEmpty) {
+          _selectedCatalogGroup = _catalogGroups.first;
+        }
+      });
+    } catch (error) {
+      if (!_sessionIsCurrent(identity)) return;
+      setState(() {
+        _catalogLoading = false;
+        _catalogDisabled = true;
+        _catalogError = error;
+      });
+    }
+  }
+
+  bool _sessionIsCurrent(Object? identity) =>
+      mounted && ref.read(workspaceAccessProvider)?.sessionIdentity == identity;
+
+  List<String> get _catalogGroups =>
+      _catalogItems.map((item) => item.displayGroup).toSet().toList()..sort();
+
+  List<ClinicalLabCatalogItem> get _selectedGroupItems => _catalogItems
+      .where((item) => item.displayGroup == _selectedCatalogGroup)
+      .toList(growable: false);
+
+  void _selectCatalogGroup(String? group) {
+    setState(() {
+      _selectedCatalogGroup = group;
+      _selectedCatalogItem = null;
+      _labType.clear();
+      _priceCode.clear();
+      _error = null;
+    });
+  }
+
+  void _selectCatalogItem(ClinicalLabCatalogItem? item) {
+    setState(() {
+      _selectedCatalogItem = item;
+      _labType.text = item?.name ?? '';
+      _priceCode.text = item?.priceCode ?? '';
+      _error = null;
+    });
+  }
+
+  static const _catalogGroupLabels = {
+    'HEMATOLOGY': 'Huyết học',
+    'BIOCHEMISTRY': 'Sinh hóa',
+    'IMMUNOLOGY': 'Miễn dịch',
+    'URINALYSIS': 'Nước tiểu',
+    'MICROBIOLOGY': 'Vi sinh',
+  };
+
+  String _groupLabel(String group) => _catalogGroupLabels[group] ?? group;
+
+  String _metadata(String? value) =>
+      value == null || value.trim().isEmpty ? 'Chưa có thông tin' : value;
 
   @override
   void dispose() {
@@ -1256,10 +1576,15 @@ class _ClinicalLabWorkflowPanelState
 
   Future<void> _createSourceOrder() async {
     if (_busy || _sourceUncertain || _sourceOrder != null) return;
+    if (!_catalogDisabled && _selectedCatalogItem == null) {
+      setState(() => _error = 'Chọn dịch vụ xét nghiệm trước khi gửi.');
+      return;
+    }
     final draft = ClinicalLabOrderDraft(
       labType: _labType.text,
       requestedDate: _dateString(_requestedDate),
       priceCode: _priceCode.text,
+      serviceCode: _catalogDisabled ? null : _selectedCatalogItem?.serviceCode,
     );
     final issue = validateClinicalLabOrder(draft);
     if (issue != null) {
@@ -1364,20 +1689,83 @@ class _ClinicalLabWorkflowPanelState
                 'Chỉ định được gắn với hồ sơ và lịch khám. Dùng mã giá do cơ sở phê duyệt.',
               ),
               if (_sourceOrder == null) ...[
-                TextField(
-                  controller: _labType,
-                  maxLength: 50,
-                  decoration: const InputDecoration(
-                    labelText: 'Loại xét nghiệm *',
+                if (_catalogError != null) _RetryMessage(error: _catalogError!),
+                if (_catalogLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: MediFlowLoader()),
                   ),
-                ),
-                TextField(
-                  controller: _priceCode,
-                  maxLength: 64,
-                  decoration: const InputDecoration(labelText: 'Mã giá *'),
-                ),
+                if (!_catalogLoading &&
+                    !_catalogDisabled &&
+                    _catalogItems.isEmpty)
+                  const NoticeBox(
+                    'Danh mục chưa có dịch vụ xét nghiệm để chọn.',
+                  ),
+                if (!_catalogLoading &&
+                    !_catalogDisabled &&
+                    _catalogItems.isNotEmpty) ...[
+                  DropdownButtonFormField<String>(
+                    key: const ValueKey('clinical-lab-catalog-group'),
+                    initialValue: _selectedCatalogGroup,
+                    decoration: const InputDecoration(
+                      labelText: 'Nhóm xét nghiệm',
+                    ),
+                    items: [
+                      for (final group in _catalogGroups)
+                        DropdownMenuItem(
+                          value: group,
+                          child: Text(_groupLabel(group)),
+                        ),
+                    ],
+                    onChanged: _busy ? null : _selectCatalogGroup,
+                  ),
+                  DropdownButtonFormField<ClinicalLabCatalogItem>(
+                    key: ValueKey(
+                      'clinical-lab-catalog-service-$_selectedCatalogGroup',
+                    ),
+                    initialValue: _selectedCatalogItem,
+                    decoration: const InputDecoration(
+                      labelText: 'Dịch vụ xét nghiệm',
+                    ),
+                    items: [
+                      for (final item in _selectedGroupItems)
+                        DropdownMenuItem(value: item, child: Text(item.name)),
+                    ],
+                    onChanged: _busy ? null : _selectCatalogItem,
+                  ),
+                  if (_selectedCatalogItem != null) ...[
+                    Text('Bệnh phẩm: ${_selectedCatalogItem!.specimenType}'),
+                    Text(
+                      'Chuẩn bị: ${_metadata(_selectedCatalogItem!.preparation)}',
+                    ),
+                    Text(
+                      'Thời gian trả kết quả: ${_selectedCatalogItem!.turnaroundHours == null ? 'Chưa có thông tin' : '${_selectedCatalogItem!.turnaroundHours} giờ'}',
+                    ),
+                    Text('Mã giá: ${_selectedCatalogItem!.priceCode}'),
+                    if (_selectedCatalogItem!.panel)
+                      const Text(
+                        'Dịch vụ bảng được gửi trong một đơn xét nghiệm.',
+                      ),
+                  ],
+                ],
+                if (!_catalogLoading && _catalogDisabled)
+                  TextField(
+                    key: const ValueKey('clinical-lab-manual-type'),
+                    controller: _labType,
+                    maxLength: 50,
+                    decoration: const InputDecoration(
+                      labelText: 'Loại xét nghiệm *',
+                    ),
+                  ),
+                if (!_catalogLoading && _catalogDisabled)
+                  TextField(
+                    key: const ValueKey('clinical-lab-manual-price'),
+                    controller: _priceCode,
+                    maxLength: 64,
+                    decoration: const InputDecoration(labelText: 'Mã giá *'),
+                  ),
                 OutlinedButton.icon(
-                  onPressed: _busy || _sourceUncertain
+                  onPressed: _busy || _sourceUncertain || _catalogLoading
                       ? null
                       : () async {
                           final selected = await showDatePicker(
@@ -1394,7 +1782,12 @@ class _ClinicalLabWorkflowPanelState
                   label: Text('Ngày yêu cầu: ${_dateString(_requestedDate)}'),
                 ),
                 FilledButton(
-                  onPressed: _busy || _sourceUncertain
+                  key: const ValueKey('clinical-lab-submit'),
+                  onPressed:
+                      _busy ||
+                          _sourceUncertain ||
+                          _catalogLoading ||
+                          (!_catalogDisabled && _selectedCatalogItem == null)
                       ? null
                       : _createSourceOrder,
                   child: const Text('Gửi chỉ định xét nghiệm'),
@@ -1438,6 +1831,157 @@ class _ClinicalLabWorkflowPanelState
   }
 }
 
+/// Turns a read refusal into its own screen; returns null for every other failure.
+Widget? _recordAccessRefusal({
+  required Object error,
+  required String? patientId,
+  required String? role,
+  required String deniedText,
+  required VoidCallback onDeclared,
+}) {
+  if (error is! ApiFailure) return null;
+  if (error.code == 'RECORD_ACCESS_DENIED') {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Align(alignment: Alignment.topCenter, child: Text(deniedText)),
+    );
+  }
+  if (error.code != 'RECORD_ACCESS_PURPOSE_REQUIRED') return null;
+  if (patientId == null) {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: NoticeBox(
+        'Chưa xác định được bệnh nhân của hồ sơ. Hãy tra cứu lại từ danh sách hồ sơ.',
+      ),
+    );
+  }
+  return _RecordAccessPurposeForm(
+    patientId: patientId,
+    role: role,
+    onDeclared: onDeclared,
+  );
+}
+
+class _RecordAccessPurposeForm extends ConsumerStatefulWidget {
+  const _RecordAccessPurposeForm({
+    required this.patientId,
+    required this.role,
+    required this.onDeclared,
+  });
+  final String patientId;
+  final String? role;
+  final VoidCallback onDeclared;
+
+  @override
+  ConsumerState<_RecordAccessPurposeForm> createState() =>
+      _RecordAccessPurposeFormState();
+}
+
+class _RecordAccessPurposeFormState
+    extends ConsumerState<_RecordAccessPurposeForm> {
+  static const _labels = {
+    'CONSULTATION': 'Khám bệnh',
+    'CARE_CONTINUITY': 'Tiếp nối điều trị',
+    'QUALITY_REVIEW': 'Đánh giá chất lượng',
+    'EMERGENCY': 'Cấp cứu',
+    'RECORD_MANAGEMENT': 'Quản lý hồ sơ',
+  };
+  static const _byRole = {
+    'DOCTOR': [
+      'CONSULTATION',
+      'CARE_CONTINUITY',
+      'QUALITY_REVIEW',
+      'EMERGENCY',
+    ],
+    'ADMIN': ['RECORD_MANAGEMENT', 'QUALITY_REVIEW'],
+    'NURSE': ['EMERGENCY'],
+  };
+  static const _needsReason = {'QUALITY_REVIEW', 'RECORD_MANAGEMENT'};
+  static const _minReasonLength = 10;
+
+  final _reason = TextEditingController();
+  String? _purpose;
+  Object? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  bool get _reasonRequired => _needsReason.contains(_purpose);
+  bool get _ready =>
+      _purpose != null &&
+      !_saving &&
+      (!_reasonRequired || _reason.text.trim().length >= _minReasonLength);
+
+  Future<void> _submit() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(medicalRecordRepositoryProvider)
+          .declareAccess(
+            patientId: widget.patientId,
+            purpose: _purpose!,
+            reason: _reasonRequired ? _reason.text.trim() : null,
+          );
+      if (mounted) widget.onDeclared();
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        const Text('Bạn cần khai báo mục đích trước khi xem hồ sơ này.'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final purpose in _byRole[widget.role] ?? const <String>[])
+              ChoiceChip(
+                label: Text(_labels[purpose]!),
+                selected: _purpose == purpose,
+                onSelected: _saving
+                    ? null
+                    : (_) => setState(() {
+                        _purpose = purpose;
+                        _error = null;
+                      }),
+              ),
+          ],
+        ),
+        if (_reasonRequired)
+          TextField(
+            controller: _reason,
+            maxLength: 500,
+            maxLines: 3,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'Lý do (ít nhất $_minReasonLength ký tự)',
+            ),
+          ),
+        if (_error != null) _RetryMessage(error: _error!),
+        FilledButton(
+          onPressed: _ready ? _submit : null,
+          child: const Text('Xác nhận mục đích'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _RetryMessage extends StatelessWidget {
   const _RetryMessage({required this.error, this.onRetry});
   final Object error;
@@ -1471,6 +2015,13 @@ class _RetryMessage extends StatelessWidget {
     ),
   );
 }
+
+String _recordStatusLabel(String status) => switch (status) {
+  'OPEN' => 'Đang khám',
+  'COMPLETED' => 'Đã hoàn tất khám',
+  'CLOSED_WITHOUT_CONCLUSION' => 'Kết thúc không kết luận',
+  _ => 'Trạng thái khác',
+};
 
 bool _outcomeUnknown(Object error) =>
     error is! ApiFailure ||

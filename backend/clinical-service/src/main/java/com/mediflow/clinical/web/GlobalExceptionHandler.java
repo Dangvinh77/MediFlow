@@ -1,5 +1,6 @@
 package com.mediflow.clinical.web;
 
+import com.mediflow.clinical.application.exception.InvalidRecordAccessDeclarationException;
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.common.api.ApiResponse;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -42,6 +45,11 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException exception) {
 
         return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
+    public ResponseEntity<ApiResponse<Void>> routeUnavailable(Exception exception) {
+        return build(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Không tìm thấy tài nguyên");
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
@@ -115,6 +123,11 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "INVALID_REQUEST",
                 "Request không đúng định dạng");
+    }
+
+    @ExceptionHandler(InvalidRecordAccessDeclarationException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidDeclaration(InvalidRecordAccessDeclarationException exception) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", exception.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)

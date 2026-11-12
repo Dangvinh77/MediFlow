@@ -102,3 +102,21 @@ it("shows patient-friendly care names and no obsolete hold expiry on a confirmed
   expect(screen.getByText(/Vui lòng đến quầy tiếp nhận/)).toBeVisible();
   expect(screen.queryByText("CONFIRMED")).not.toBeInTheDocument();
 });
+
+describe("patient queue numbers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks(); auth.session = "session-a"; auth.listeners.clear();
+    mocks.mine.mockResolvedValue({ content: [{ ...ownRegistration, status: "CONFIRMED", queueNumber: 3, roomQueueNumber: 5 }], totalElements: 1, totalPages: 1, number: 0, size: 10 });
+  });
+  it("names the counter and room numbers when clinic intake is on", async () => {
+    render(<PatientRegistrationWorkspace enabled clinicIntakeEnabled />);
+    expect(await screen.findByText("Số quầy")).toBeVisible();
+    expect(screen.getByText("Số phòng")).toBeVisible();
+    expect(screen.getByText("5")).toBeVisible();
+  });
+  it("keeps the old label when clinic intake is off", async () => {
+    render(<PatientRegistrationWorkspace enabled />);
+    expect(await screen.findByText("Số thứ tự")).toBeVisible();
+    expect(screen.queryByText("Số phòng")).not.toBeInTheDocument();
+  });
+});

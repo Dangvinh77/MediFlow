@@ -87,6 +87,7 @@ public class OutpatientRegistrationApplicationService {
                 && appointment.getStatus() == com.mediflow.clinical.domain.model.AppointmentStatus.IN_EXAM
                 && before.reservation().status() == OutpatientReservationStatus.CONSUMED) return;
         var after = domain(() -> before.startExam(at));
+        if (clinicIntake.enabled()) startRoomTicket(before.registrationId(), at);
         registrations.update(before, after, actor.accountId(), actor.staffId(), "EXAM_STARTED", at);
         sessions.updateCounts(session, adjustCounts(session, 0, 0, -1, 1, 0), at);
         appendFact(after, session, at);
@@ -94,15 +95,28 @@ public class OutpatientRegistrationApplicationService {
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void completeExamination(Appointment appointment, Instant at) {
+        completeExamination(appointment, at, null);
+    }
+
+    /**
+     * Ends the registration for the record's responsible doctor. After a handover that is the receiver, not the
+     * doctor of the consultation session; {@code null} means the session doctor.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void completeExamination(Appointment appointment, Instant at, java.util.UUID responsibleDoctorId) {
         var before = lockRegistration(appointment.getAppointmentId());
         var session = lockSession(before.sessionId());
         var actor = requireHumanActor("DOCTOR");
-        requireAssignedDoctor(actor, session);
+        requireAssignedDoctor(actor, session,
+                responsibleDoctorId == null ? session.configuration().doctorId() : responsibleDoctorId);
         if (!before.patientId().equals(appointment.getPatientId())) notFoundRegistration();
         var after = domain(() -> before.complete(at));
+        if (clinicIntake.enabled()) completeRoomTicket(before.registrationId(), at);
         registrations.update(before, after, actor.accountId(), actor.staffId(), "COMPLETED", at);
         appendFact(after, session, at);
     }
+
+    private static final int TEXT_REASON_MAX = 500;
 
     private final ConsultationSessionRepositoryPort sessions;
     private final OutpatientRegistrationRepositoryPort registrations;
@@ -116,6 +130,8 @@ public class OutpatientRegistrationApplicationService {
     private final Clock clock;
     private final com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records;
     private final com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations;
+    private final ClinicIntakeSettings clinicIntake;
+    private final org.springframework.beans.factory.ObjectProvider<com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort> clinicQueue;
 
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -126,6 +142,27 @@ public class OutpatientRegistrationApplicationService {
                 clock, null, null);
     }
 
+    public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
+            OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
+            PatientLookupPort patients, SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
+            ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
+            Clock clock, com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations) {
+        this(sessions, registrations, appointments, patients, authority, actors, outbox, correlationIds, idempotency,
+                clock, records, recommendations, new ClinicIntakeSettings(false));
+    }
+
+    public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
+            OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
+            PatientLookupPort patients, SchedulingAuthorityPort authority, CurrentClinicalActorPort actors,
+            ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
+            Clock clock, com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations,
+            ClinicIntakeSettings clinicIntake) {
+        this(sessions, registrations, appointments, patients, authority, actors, outbox, correlationIds, idempotency,
+                clock, records, recommendations, clinicIntake, null);
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public OutpatientRegistrationApplicationService(ConsultationSessionRepositoryPort sessions,
             OutpatientRegistrationRepositoryPort registrations, AppointmentRepositoryPort appointments,
@@ -133,7 +170,11 @@ public class OutpatientRegistrationApplicationService {
             ClinicalOutboxPort outbox, CorrelationIdProvider correlationIds, IdempotentCommandPort idempotency,
             @Qualifier("clinicalSchedulingClock") Clock clock,
             com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort records,
-            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations) {
+            com.mediflow.clinical.application.port.out.FollowUpRecommendationRepositoryPort recommendations,
+            ClinicIntakeSettings clinicIntake,
+            org.springframework.beans.factory.ObjectProvider<com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort> clinicQueue) {
+        this.clinicIntake = clinicIntake;
+        this.clinicQueue = clinicQueue;
         this.records = records;
         this.recommendations = recommendations;
         this.sessions = sessions;
@@ -168,6 +209,8 @@ public class OutpatientRegistrationApplicationService {
                         throw new DuplicateResourceException("ACTIVE_REGISTRATION_EXISTS",
                                 "Patient already has an active registration for this session");
                     }
+                    requireReasonForOpenVisit(request, session);
+                    OutpatientRegistration.ReturnLink returnLink = validatedReturnLink(request);
                     Instant now = clock.instant();
                     UUID registrationId = UUID.randomUUID();
                     OutpatientRegistration registration = OutpatientRegistration.create(registrationId,
@@ -180,6 +223,7 @@ public class OutpatientRegistrationApplicationService {
                     if (request.visitType() == OutpatientVisitType.FOLLOW_UP) {
                         registration = registration.asFollowUp(validateFollowUp(request, session));
                     }
+                    if (returnLink != null) registration = registration.withReturnLink(returnLink);
                     appointments.save(appointment);
                     registrations.insert(registration, actor.accountId(), actor.staffId(), "CREATED", now);
                     ConsultationSession after = adjustCounts(session, 1, 0, 0, 0, -1);
@@ -228,6 +272,7 @@ public class OutpatientRegistrationApplicationService {
                     Instant now = clock.instant();
                     OutpatientRegistration after = domain(() -> before.cancel(request.expectedRevision(),
                             actor.accountId(), actor.staffId(), request.reason(), now));
+                    if (clinicIntake.enabled()) cancelRoomTicket(registrationId, actor.accountId(), request.reason(), now);
                     Appointment appointment = lockAppointment(registrationId);
                     appointment.cancelScheduled(request.reason(), actor.accountId(), now);
                     appointments.save(appointment);
@@ -242,6 +287,21 @@ public class OutpatientRegistrationApplicationService {
                     appendFact(after, lockedSession, now);
                     return toDto(after, lockedSession);
                 });
+    }
+
+    /** Gives an unpaid hold's seat back once its time is up; safe to run twice or against a paid registration. */
+    @Transactional
+    public void expireHeldReservation(UUID registrationId) {
+        OutpatientRegistration visible = readRegistration(registrationId);
+        ConsultationSession session = lockSession(visible.sessionId());
+        OutpatientRegistration before = lockRegistration(registrationId);
+        requireStillIn(session, before);
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        OutpatientRegistration after = before.expire(now);
+        if (after == before) return;
+        registrations.update(before, after, null, null, "EXPIRED", now);
+        sessions.updateCounts(session, adjustCounts(session, -1, 0, 0, 0, 1), now);
+        appendFact(after, session, now);
     }
 
     public OutpatientRegistrationDTO get(UUID registrationId) {
@@ -277,11 +337,56 @@ public class OutpatientRegistrationApplicationService {
             default -> throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED",
                     "Actor role cannot view session registrations");
         }
-        return registrations.findBySession(sessionId, page).map(registration -> new RegistrationSummary(
+        var found = registrations.findBySession(sessionId, page);
+        var rooms = roomNumbers(found.content().stream().map(OutpatientRegistration::registrationId).toList());
+        return found.map(registration -> new RegistrationSummary(
                 registration.registrationId(), registration.patientId(), registration.visitType(),
                 registration.status(), registration.checkedInAt(), registration.queueNumber(),
                 registration.status() == OutpatientRegistrationStatus.CONFIRMED
-                        && registration.checkedInAt() != null && registration.reservation().clearanceId() != null));
+                        && registration.checkedInAt() != null && registration.reservation().clearanceId() != null,
+                rooms.get(registration.registrationId())));
+    }
+
+    private java.util.Optional<com.mediflow.clinical.domain.model.ClinicQueueTicket> lockActiveTicket(UUID registrationId) {
+        var queue = clinicQueue();
+        if (queue == null) return java.util.Optional.empty();
+        return queue.findActiveByRegistration(registrationId)
+                .map(found -> queue.findByIdForUpdate(found.ticketId()).orElse(found));
+    }
+
+    private void startRoomTicket(UUID registrationId, Instant at) {
+        var ticket = lockActiveTicket(registrationId).orElseThrow(() -> new BusinessRuleException("CLINICAL_ROOM_TICKET_REQUIRED",
+                "The department desk must issue a room number before the exam starts"));
+        clinicQueue().update(ticket, ticketStep(() -> ticket.startExam(at)));
+    }
+
+    /** An exam begun before the desk went live has no ticket and still finishes. */
+    private void completeRoomTicket(UUID registrationId, Instant at) {
+        lockActiveTicket(registrationId).filter(ticket -> ticket.status() == com.mediflow.clinical.domain.model.ClinicQueueTicketStatus.IN_EXAM)
+                .ifPresent(ticket -> clinicQueue().update(ticket, ticket.complete(at)));
+    }
+
+    private void cancelRoomTicket(UUID registrationId, UUID actor, String reason, Instant at) {
+        lockActiveTicket(registrationId).ifPresent(ticket -> clinicQueue().update(ticket, ticketStep(() -> ticket.cancel(actor, reason, at))));
+    }
+
+    private static com.mediflow.clinical.domain.model.ClinicQueueTicket ticketStep(
+            java.util.function.Supplier<com.mediflow.clinical.domain.model.ClinicQueueTicket> step) {
+        try {
+            return step.get();
+        } catch (IllegalStateException conflict) {
+            throw new DuplicateResourceException(conflict.getMessage(), conflict.getMessage());
+        }
+    }
+
+    private com.mediflow.clinical.application.port.out.ClinicQueueRepositoryPort clinicQueue() {
+        return clinicQueue == null ? null : clinicQueue.getIfAvailable();
+    }
+
+    /** Empty while the clinic desk is off, which keeps the field off the wire. */
+    private java.util.Map<UUID, Integer> roomNumbers(java.util.Collection<UUID> registrationIds) {
+        var queue = clinicQueue();
+        return queue == null ? java.util.Map.of() : queue.activeNumbers(registrationIds);
     }
 
     public ReservationPaymentContext paymentContext(UUID reservationId) {
@@ -307,6 +412,7 @@ public class OutpatientRegistrationApplicationService {
         OutpatientRegistration visible = readRegistration(command.registrationId());
         ConsultationSession session = lockSession(visible.sessionId());
         OutpatientRegistration before = lockRegistration(command.registrationId());
+        requireStillIn(session, before);
         var reservation = before.reservation();
         if (!before.registrationId().equals(command.sourceId())
                 || !before.registrationId().equals(command.careEpisodeId())
@@ -368,7 +474,9 @@ public class OutpatientRegistrationApplicationService {
         ConsultationSession afterCounts;
         if (command.outcome() == OutpatientPaymentOutcome.COMPLETED) {
             boolean ended = sessionHasEnded(session, now);
-            int queue = ended ? 0 : registrations.allocateQueueNumber(session.sessionId());
+            int queue = ended ? 0 : clinicIntake.enabled()
+                    ? registrations.allocateDepartmentQueueNumber(session.configuration().departmentId(), session.configuration().sessionDate())
+                    : registrations.allocateQueueNumber(session.sessionId());
             after = domain(() -> before.resolveCompleted(command.paymentOperationId(), command.fenceToken(), queue,
                     command.transactionId(), command.clearanceId(), command.completedAt(), ended, command.basis()));
             if (!ended) appointment.confirmScheduledPayment(command.clearanceId(), command.completedAt());
@@ -451,6 +559,52 @@ public class OutpatientRegistrationApplicationService {
                 || request.followUpRecommendationId() == null && (request.reason() == null || request.reason().isBlank())) {
             throw new BusinessRuleException("INVALID_REQUEST", "Follow-up requires a completed source and a recommendation or reason");
         }
+        if (request.visitType() == OutpatientVisitType.FOLLOW_UP && (request.returnSourceRecordId() != null || request.returnReason() != null)) {
+            throw new BusinessRuleException("INVALID_REQUEST", "FOLLOW_UP names its source through the previous registration");
+        }
+        if (request.independentVisitReason() != null && request.independentVisitReason().length() > TEXT_REASON_MAX) {
+            throw new BusinessRuleException("INVALID_REQUEST", "Independent visit reason is too long");
+        }
+        boolean hasReason = request.returnReason() != null && !request.returnReason().isBlank()
+                && request.returnReason().length() <= TEXT_REASON_MAX;
+        if (request.returnSourceRecordId() == null ? request.returnReason() != null : !hasReason) {
+            throw new BusinessRuleException("RETURN_SOURCE_INVALID", "A return visit needs both its source record and a reason");
+        }
+    }
+
+    /** A second visit in a department where one is still open is usually a mistake, so it must be explained. */
+    private void requireReasonForOpenVisit(RegistrationCreateRequest request, ConsultationSession target) {
+        boolean openInDepartment = registrations.findOpenVisitsByPatient(request.patientId()).stream()
+                .anyMatch(visit -> visit.departmentId().equals(target.configuration().departmentId()));
+        if (openInDepartment && (request.independentVisitReason() == null || request.independentVisitReason().isBlank())) {
+            throw new DuplicateResourceException("OPEN_VISIT_EXISTS", "Patient has an open visit in this department; give a reason to register another");
+        }
+    }
+
+    private OutpatientRegistration.ReturnLink validatedReturnLink(RegistrationCreateRequest request) {
+        String independent = request.independentVisitReason() == null || request.independentVisitReason().isBlank()
+                ? null : request.independentVisitReason();
+        if (request.returnSourceRecordId() == null) {
+            return independent == null ? null : new OutpatientRegistration.ReturnLink(null, null, independent);
+        }
+        var source = records.findById(request.returnSourceRecordId()).orElse(null);
+        if (source == null || !request.patientId().equals(source.getPatientId())
+                || source.getStatus() == com.mediflow.clinical.domain.model.MedicalRecordStatus.OPEN) {
+            throw new BusinessRuleException("RETURN_SOURCE_INVALID", "The return source must be a finished record of this patient");
+        }
+        return new OutpatientRegistration.ReturnLink(source.getRecordId(), request.returnReason(), independent);
+    }
+
+    /** The earlier record a new examination refers to; only the link is carried, never its content. */
+    public UUID previousRecordIdFor(UUID registrationId) {
+        var registration = registrations.findById(registrationId).orElse(null);
+        if (registration == null) return null;
+        if (registration.returnLink() != null && registration.returnLink().sourceRecordId() != null) {
+            return registration.returnLink().sourceRecordId();
+        }
+        if (registration.followUp() == null) return null;
+        return records.findByAppointmentId(registration.followUp().previousRegistrationId())
+                .map(com.mediflow.clinical.domain.model.MedicalRecord::getRecordId).orElse(null);
     }
 
     private OutpatientRegistration.FollowUpLink validateFollowUp(RegistrationCreateRequest request, ConsultationSession target) {
@@ -502,7 +656,7 @@ public class OutpatientRegistrationApplicationService {
         });
     }
 
-    private SchedulingAuthoritySnapshot requireActiveActor(ActorIdentity actor, UUID departmentId) {
+    SchedulingAuthoritySnapshot requireActiveActor(ActorIdentity actor, UUID departmentId) {
         SchedulingAuthoritySnapshot snapshot = authority.authority(actor.accountId(), departmentId,
                 correlationIds.currentOrCreate().toString());
         if (!actor.role().equals(snapshot.currentRole()) || !Boolean.TRUE.equals(snapshot.accountExists())
@@ -526,8 +680,12 @@ public class OutpatientRegistrationApplicationService {
         if (!Boolean.TRUE.equals(snapshot.canManageSchedules())) notFoundRegistration();
     }
 
-    private void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {
-        if (actor.staffId() == null || !actor.staffId().equals(session.configuration().doctorId())) {
+    void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session) {
+        requireAssignedDoctor(actor, session, session.configuration().doctorId());
+    }
+
+    private void requireAssignedDoctor(ActorIdentity actor, ConsultationSession session, java.util.UUID doctorId) {
+        if (actor.staffId() == null || !actor.staffId().equals(doctorId)) {
             notFoundRegistration();
         }
         var snapshot = authority.currentDoctorAuthority(actor.accountId(), correlationIds.currentOrCreate().toString());
@@ -540,7 +698,7 @@ public class OutpatientRegistrationApplicationService {
         }
     }
 
-    private void requireEligible(ConsultationSession.Configuration config) {
+    void requireEligible(ConsultationSession.Configuration config) {
         ConsultationEligibilitySnapshot snapshot = authority.consultationEligibility(config.doctorId(),
                 config.departmentId(), config.roomId(), correlationIds.currentOrCreate().toString());
         if (!Boolean.TRUE.equals(snapshot.eligible()) || !Boolean.TRUE.equals(snapshot.doctorActive())
@@ -647,6 +805,13 @@ public class OutpatientRegistrationApplicationService {
         return registrations.findById(id).orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Registration was not found"));
     }
 
+    /** A reschedule can commit between reading the registration and locking its session. */
+    private static void requireStillIn(ConsultationSession session, OutpatientRegistration registration) {
+        if (!registration.sessionId().equals(session.sessionId())) {
+            throw new DuplicateResourceException("REVISION_CONFLICT", "Registration moved to another session");
+        }
+    }
+
     private OutpatientRegistration lockRegistration(UUID id) {
         return registrations.findByIdForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Registration was not found"));
     }
@@ -655,7 +820,7 @@ public class OutpatientRegistrationApplicationService {
         return appointments.findByIdForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("RESOURCE_NOT_FOUND", "Registration was not found"));
     }
 
-    private ActorIdentity requireHumanActor(String... roles) {
+    ActorIdentity requireHumanActor(String... roles) {
         ActorIdentity actor = actors.current();
         if (actor == null || actor.accountId() == null || actor.role() == null) {
             throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "A verified clinical actor is required");
@@ -664,7 +829,7 @@ public class OutpatientRegistrationApplicationService {
         throw new ForbiddenOperationException("SCHEDULING_SCOPE_DENIED", "Actor role cannot use this registration command");
     }
 
-    private static ConsultationSession adjustCounts(ConsultationSession session, int held, int locked,
+    static ConsultationSession adjustCounts(ConsultationSession session, int held, int locked,
             int confirmed, int consumed, int available) {
         var counts = session.counts();
         return session.withCounts(new ConsultationSession.Counts(counts.heldCount() + held,
@@ -672,7 +837,7 @@ public class OutpatientRegistrationApplicationService {
                 counts.consumedCount() + consumed, counts.availableCount() + available));
     }
 
-    private OutpatientRegistrationDTO toDto(OutpatientRegistration registration, ConsultationSession session) {
+    OutpatientRegistrationDTO toDto(OutpatientRegistration registration, ConsultationSession session) {
         var config = session.configuration();
         boolean ready = registration.status() == OutpatientRegistrationStatus.CONFIRMED
                 && registration.checkedInAt() != null && registration.reservation().clearanceId() != null;
@@ -698,10 +863,16 @@ public class OutpatientRegistrationApplicationService {
                 registration.visitType(), registration.followUp() == null ? null : registration.followUp().previousRegistrationId(),
                 registration.status(), reservation.reservationId(),
                 reservation.revision(), reservation.status(), reservation.expiresAt(), registration.checkedInAt(),
-                registration.queueNumber(), ready, registration.createdAt(), registration.updatedAt(), recordId, advice);
+                registration.queueNumber(), ready, registration.createdAt(), registration.updatedAt(), recordId, advice,
+                roomNumbers(java.util.List.of(registration.registrationId())).get(registration.registrationId()));
     }
 
     private void appendFact(OutpatientRegistration registration, ConsultationSession session, Instant changedAt) {
+        appendFact(registration, session, changedAt, null);
+    }
+
+    void appendFact(OutpatientRegistration registration, ConsultationSession session, Instant changedAt,
+            OutpatientRegistrationFact.RescheduleFact reschedule) {
         var config = session.configuration();
         var reservation = registration.reservation();
         CancellationFact cancellation = registration.cancellation() == null ? null : new CancellationFact(
@@ -713,7 +884,7 @@ public class OutpatientRegistrationApplicationService {
                 registration.visitType(), reservation.reservationId(), reservation.status(), registration.status(),
                 registration.checkedInAt(), registration.queueNumber(), reservation.expiresAt(), registration.visitType() == OutpatientVisitType.FOLLOW_UP ? "OUTPATIENT_FOLLOW_UP" : PRICE_CODE,
                 "EXAM", registration.registrationId(), "OUTPATIENT_VISIT", registration.registrationId(),
-                cancellation, changedAt);
+                cancellation, changedAt, reschedule);
         String correlationId = correlationIds.currentOrCreate().toString();
         DomainEventEnvelope<OutpatientRegistrationFact> event = new DomainEventEnvelope<>(UUID.randomUUID(),
                 "outpatient.registration.changed", 1, changedAt, correlationId, "clinical-service", fact);

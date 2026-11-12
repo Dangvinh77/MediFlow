@@ -31,8 +31,9 @@ class LabResultCreatedConsumerTest {
         UUID patientId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
         UUID careEpisodeId = UUID.randomUUID();
+        Instant occurredAt = Instant.parse("2026-11-10T03:00:00Z");
         LabResultCreatedPayload payload = new LabResultCreatedPayload(
-                eventId, Instant.now(), "correlation-test", labId, patientId, recordId,
+                eventId, occurredAt, "correlation-test", labId, patientId, recordId,
                 departmentId, "HEMATOLOGY", LocalDate.now(),
                 List.of(new LabResultCreatedPayload.Result(
                         UUID.randomUUID(), "WBC", "7.2", "10^9/L", "4.0-10.0")),
@@ -42,7 +43,7 @@ class LabResultCreatedConsumerTest {
 
         verify(useCase).onLabResultCreated(
                 new LabResultCreatedCommand(eventId, recordId, labId, "Normal", 1, patientId, departmentId,
-                        CareEpisodeType.OUTPATIENT_VISIT, careEpisodeId, 1));
+                        CareEpisodeType.OUTPATIENT_VISIT, careEpisodeId, 1, occurredAt));
     }
 
     @ParameterizedTest

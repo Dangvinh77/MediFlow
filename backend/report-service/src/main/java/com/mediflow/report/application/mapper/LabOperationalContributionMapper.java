@@ -48,6 +48,34 @@ public class LabOperationalContributionMapper {
         return new ApplyOperationalContributionCommand(event, fact);
     }
 
+    /**
+     * {@code lab.result.amended} v1 corrects a result already counted under revision 1: it is checked and
+     * acknowledged but contributes nothing, so an amendment never counts as another test.
+     */
+    public void validateAmendment(DecodedCareFinanceEvent event) {
+        var metadata = event.metadata();
+        if (metadata.version() != 1 || !"lab.result.amended".equals(metadata.eventType())
+                || !"lab-service".equals(metadata.producer()) || !"labId".equals(metadata.sourceField())) {
+            throw new IllegalArgumentException("Only canonical V1 Lab amendments are accepted");
+        }
+        var payload = event.payload();
+        if (!uuid(payload, "labId").equals(metadata.sourceId())) {
+            throw new IllegalArgumentException("Lab source identity differs from decoded metadata");
+        }
+        Object version = payload.get("resultVersion");
+        Object previous = payload.get("previousResultVersion");
+        if (!(version instanceof Integer v) || !(previous instanceof Integer p) || v < 2 || p < 1 || p >= v) {
+            throw new IllegalArgumentException("Lab amendment revisions are invalid");
+        }
+        text(payload, "amendmentReason");
+        uuid(payload, "departmentId");
+        uuid(payload, "careEpisodeId");
+        if (!"OUTPATIENT_VISIT".equals(text(payload, "careEpisodeType"))) {
+            throw new IllegalArgumentException("Lab amendment care episode is unsupported");
+        }
+        Instant.parse(text(payload, "releasedAt"));
+    }
+
     private static int revision(Object value) {
         if (!(value instanceof Integer || value instanceof Long || value instanceof BigInteger)) {
             throw new IllegalArgumentException("Lab resultVersion must be an explicit integral source revision");

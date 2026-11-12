@@ -30,6 +30,17 @@ class PrescribingContextServiceTest {
         assertThatThrownBy(() -> service(List.of("CODE")).get(record,new ActorIdentity(UUID.randomUUID(),doctor,"PHARMACIST"),"trace")).hasMessageContaining("chưa được xác nhận");
         verifyNoInteractions(port);
     }
+    // Clinical answers with the doctor responsible after a handover; Pharmacy trusts that one doctor only.
+    @Test void receiverPrescribesAfterHandover() {
+        UUID receiver = UUID.randomUUID();
+        when(port.findRecord(record,"trace")).thenReturn(new OutpatientPrescriptionContextPort.Observation(true,record,patient,receiver,department,"OUTPATIENT_VISIT",episode,"OPEN",null,now));
+        assertThat(service(List.of("CODE")).get(record,new ActorIdentity(UUID.randomUUID(),receiver,"DOCTOR"),"trace").patientId()).isEqualTo(patient);
+    }
+    @Test void previousDoctorCannotPrescribeAfterHandover() {
+        UUID receiver = UUID.randomUUID();
+        when(port.findRecord(record,"trace")).thenReturn(new OutpatientPrescriptionContextPort.Observation(true,record,patient,receiver,department,"OUTPATIENT_VISIT",episode,"OPEN",null,now));
+        assertThatThrownBy(() -> service(List.of("CODE")).get(record,new ActorIdentity(UUID.randomUUID(),doctor,"DOCTOR"),"trace")).hasMessageContaining("bác sĩ khác");
+    }
     @Test void neverInventsPriceOrUsesStaleSource() {
         when(port.findRecord(record,"trace")).thenReturn(source(now));
         var admin = new ActorIdentity(UUID.randomUUID(),null,"ADMIN");

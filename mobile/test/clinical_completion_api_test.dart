@@ -365,6 +365,8 @@ void main() {
       await records.update(recordId, symptoms: ' Headache improved ');
       expect(adapter.requests.last.uri.path, '/api/v1/records/$recordId');
       expect(adapter.requests.last.data, {'symptoms': 'Headache improved'});
+      await records.update(recordId, symptoms: '  ');
+      expect(adapter.requests.last.data, {'symptoms': ''});
       adapter.data = {
         'diagnosisId': diagnosisId,
         'diagnosisName': 'Migraine',

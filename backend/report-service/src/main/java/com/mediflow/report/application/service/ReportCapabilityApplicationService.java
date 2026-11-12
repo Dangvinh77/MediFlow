@@ -23,7 +23,9 @@ public class ReportCapabilityApplicationService implements InspectReportCapabili
     @Override public ReportCapabilitiesDTO capabilities() {
         return new ReportCapabilitiesDTO(1, "AVAILABLE_EVIDENCE_ONLY", List.of(
                 singleton("medicalrecord.completed", "clinical-service", "recordId"),
-                source("lab.result.created", "lab-service", "labId", "RESULT_VERSION_ONE_ONLY"),
+                source("lab.result.created", "lab-service", "labId", "RESULT_REVISIONS"),
+                new SourceCapability("lab.result.amended", "lab-service", 1, "labId", "RESULT_REVISIONS",
+                        "NO_OPERATIONAL_EFFECT"),
                 singleton("prescription.filled", "pharmacy-service", "dispenseId"),
                 source("surgery.completed", "surgery-service", "resultId", "SOURCE_REVISION_ONE_ONLY"),
                 source("surgery.cancelled", "surgery-service", "cancellationId", "SOURCE_REVISION_ONE_ONLY"),

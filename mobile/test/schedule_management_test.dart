@@ -8,7 +8,9 @@ import 'package:mediflow_mobile/core/domain/workspace_access.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/providers.dart';
 import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
+import 'package:mediflow_mobile/features/appointment/domain/clinic_queue.dart';
 import 'package:mediflow_mobile/features/appointment/domain/schedule_management.dart';
+import 'package:mediflow_mobile/features/appointment/presentation/clinic_queue_page.dart';
 import 'package:mediflow_mobile/features/appointment/presentation/schedule_management_pages.dart';
 import 'package:mediflow_mobile/features/auth/domain/session.dart';
 
@@ -151,8 +153,10 @@ Widget host(
   required String role,
   required FakeManagement repository,
   bool scheduling = true,
+  ClinicQueueRepository? clinic,
 }) => ProviderScope(
   overrides: [
+    if (clinic != null) clinicQueueRepositoryProvider.overrideWithValue(clinic),
     workspaceAccessProvider.overrideWithValue(
       WorkspaceAccess(sessionIdentity: 'session', role: role),
     ),
@@ -162,11 +166,28 @@ Widget host(
       AppConfig(
         'http://localhost:8080/api',
         scheduledPaymentsEnabled: scheduling,
+        clinicIntakeEnabled: clinic != null,
       ),
     ),
   ],
   child: MaterialApp(home: Scaffold(body: child)),
 );
+
+class FakeImpact extends Fake implements ClinicQueueRepository {
+  final shifts = <String>[];
+
+  @override
+  Future<ScheduleImpact> shiftImpact(String shiftId) async {
+    shifts.add(shiftId);
+    return const ScheduleImpact(
+      heldCount: 0,
+      paymentLockedCount: 0,
+      confirmedCount: 1,
+      consumedCount: 0,
+      registrations: [],
+    );
+  }
+}
 
 void useTall(WidgetTester tester) {
   tester.view.physicalSize = const Size(800, 1600);
@@ -555,6 +576,67 @@ void main() {
       expect(repository.commands.single.body['expectedRevision'], 5);
       expect(find.textContaining('chưa thể sửa hoặc hủy'), findsOneWidget);
       expect(find.text('Gửi lại cùng yêu cầu'), findsNothing);
+    });
+
+    testWidgets('cancelling a shift lists affected patients first', (
+      tester,
+    ) async {
+      useTall(tester);
+      final clinic = FakeImpact();
+      await tester.pumpWidget(
+        host(
+          const SingleChildScrollView(
+            child: DepartmentShiftsPanel(departmentId: department),
+          ),
+          role: 'DOCTOR',
+          repository: repository,
+          clinic: clinic,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Lý do hủy giờ làm việc'),
+        'Đổi lịch',
+      );
+      await tester.tap(find.text('Hủy giờ làm việc'));
+      await tester.pumpAndSettle();
+
+      expect(clinic.shifts, hasLength(1));
+      expect(find.text('Bệnh nhân bị ảnh hưởng'), findsOneWidget);
+      expect(repository.commands, isEmpty);
+
+      await tester.tap(find.text('Xác nhận hủy giờ làm việc'));
+      await tester.pumpAndSettle();
+      expect(repository.commands, hasLength(1));
+      expect(repository.commands.single.body['reason'], 'Đổi lịch');
+    });
+
+    testWidgets('dismissing the affected patients sends nothing', (
+      tester,
+    ) async {
+      useTall(tester);
+      await tester.pumpWidget(
+        host(
+          const SingleChildScrollView(
+            child: DepartmentShiftsPanel(departmentId: department),
+          ),
+          role: 'DOCTOR',
+          repository: repository,
+          clinic: FakeImpact(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Lý do hủy giờ làm việc'),
+        'Đổi lịch',
+      );
+      await tester.tap(find.text('Hủy giờ làm việc'));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.text('Bệnh nhân bị ảnh hưởng'), findsNothing);
+      expect(repository.commands, isEmpty);
     });
 
     testWidgets('a cancelled shift has no actions', (tester) async {

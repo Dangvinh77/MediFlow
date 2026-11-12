@@ -23,10 +23,27 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/consultation-sessions/*/status", "/api/v2/consultation-sessions/*/registrations",
                         "/api/v2/outpatient-registrations", "/api/v2/outpatient-registrations/*",
                         "/api/v2/outpatient-registrations/*/arrival", "/api/v2/outpatient-registrations/*/cancellation",
-                        "/api/v2/records/*/follow-up-recommendations", "/api/v2/records/*/follow-up-recommendation")
+                        "/api/v2/records/*/follow-up-recommendations", "/api/v2/records/*/follow-up-recommendation",
+                        "/api/v2/outpatient-registrations/*/room-queue-ticket", "/api/v2/outpatient-registrations/*/vital-signs",
+                        "/api/v2/outpatient-registrations/*/reschedule", "/api/v2/clinic-queue",
+                        "/api/v2/clinic-queue-tickets/*/call", "/api/v2/clinic-queue-tickets/*/adjustments",
+                        "/api/v2/consultation-sessions/*/impact", "/api/v2/doctor-work-shifts/*/impact",
+                        "/api/v2/records/*/close-without-conclusion", "/api/v2/records/*/lab-orders",
+                        "/api/v2/records/*/lab-orders/*/withdrawal",
+                        "/api/v2/patients/*/open-visits", "/api/v2/doctors/me/open-visits",
+                        "/api/v2/patients/*/return-sources", "/api/v2/patients/*/timeline",
+                        "/api/v2/records/*/documents", "/api/v2/treatment-courses", "/api/v2/treatment-courses/*/visits",
+                        "/api/v2/treatment-courses/*/closure", "/api/v2/patients/*/treatment-courses",
+                        "/api/v2/records/*/handovers", "/api/v2/records/*/handovers/*/acceptance",
+                        "/api/v2/records/*/consultation-notes", "/api/v2/records/*/amendments",
+                        "/api/v2/records/*/amendments/*/decision", "/api/v2/records/*/amendment-assignments",
+                        "/api/v2/records/*/amendment-assignments/*",
+                        "/api/v2/amendments/pending", "/api/v2/patients/*/allergies",
+                        "/api/v2/patients/*/allergies/*/status")
                         .uri("lb://clinical-service"))
                 .route("scheduling-billing", route -> route.path(
                         "/api/v2/billing/payment-requests",
+                        "/api/v2/billing/registration-settlements",
                         "/api/v2/billing/payment-requests/by-registration",
                         "/api/v2/billing/payment-requests/*/payments", "/api/v2/billing/payment-operations/*",
                         "/api/v2/billing/payment-requests/*/quote",
@@ -34,6 +51,7 @@ public class SchedulingRouteConfiguration {
                         "/api/v2/billing/payment-requests/*/zero-payable-eligibility",
                         "/api/v2/billing/payment-requests/*/lab-zero-payable-eligibility")
                         .uri("lb://billing-service"))
+                .route("v2-lab", route -> route.path("/api/v2/lab/**").uri("lb://lab-service"))
                 .build();
     }
 }

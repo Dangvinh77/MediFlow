@@ -9,8 +9,10 @@ import '../../../core/providers.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
+import '../domain/lab_catalog.dart';
 import '../domain/lab_workflow.dart';
 import 'lab_labels.dart';
+import 'lab_template_result_entry.dart';
 
 final labWorkflowProvider = Provider<LabWorkflow>(
   (ref) =>
@@ -25,7 +27,7 @@ class LabDetailPage extends ConsumerWidget {
     final access = ref.watch(workspaceAccessProvider);
     if (access == null) return const SizedBox.shrink();
     return _LabDetail(
-      key: ObjectKey(access.sessionIdentity),
+      key: ValueKey((ObjectKey(access.sessionIdentity), id)),
       id: id,
       role: access.role,
       workflow: ref.watch(labWorkflowProvider),
@@ -49,11 +51,21 @@ class _LabDetail extends StatefulWidget {
 class _LabDetailState extends State<_LabDetail> {
   LabDetail? value;
   Object? error, commandError;
+  Object? _templateError;
+  LabResultTemplate? _resultTemplate;
+  String? _templateTestId;
+  String? _resolvedTemplateTestId;
+  int _templateRequest = 0;
+  bool _templateLoading = false;
+  bool _legacyResults = false;
+  bool _structuredDraftDirty = false;
+  final _structuredEntryKey = GlobalKey<LabTemplateResultEntryState>();
   bool busy = false, uncertain = false;
   bool _allowLeave = false;
   bool get _hasDraft =>
       value?.status == 'IN_PROGRESS' &&
-      (conclusion.text.isNotEmpty ||
+      (_structuredDraftDirty ||
+          conclusion.text.isNotEmpty ||
           rows.any(
             (row) =>
                 row.indicator.text.isNotEmpty ||
@@ -85,22 +97,102 @@ class _LabDetailState extends State<_LabDetail> {
 
   Future<void> load() async {
     if (busy) return;
+    final requestedId = widget.id;
     setState(() {
       busy = true;
       error = null;
     });
     try {
-      final data = await widget.workflow.detail(widget.id);
-      if (mounted) {
+      final data = await widget.workflow.detail(requestedId);
+      if (mounted && widget.id == requestedId) {
         setState(() {
           value = data;
           uncertain = false;
         });
+        await _syncTemplate(data);
+        await _checkLegacyResults(data);
       }
     } catch (e) {
-      if (mounted) setState(() => error = e);
+      if (mounted && widget.id == requestedId) setState(() => error = e);
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted && widget.id == requestedId) setState(() => busy = false);
+    }
+  }
+
+  /// Results saved before the catalogue have no template; a disabled catalogue says nothing.
+  Future<void> _checkLegacyResults(LabDetail detail) async {
+    var legacy = false;
+    if (detail.results.isNotEmpty) {
+      try {
+        legacy = (await widget.workflow.template(detail.id)).template == null;
+      } catch (_) {
+        legacy = false;
+      }
+    }
+    if (mounted && widget.id == detail.id && legacy != _legacyResults) {
+      setState(() => _legacyResults = legacy);
+    }
+  }
+
+  Future<void> _syncTemplate(LabDetail detail, {bool retry = false}) async {
+    final reader = widget.workflow;
+    final requestedId = detail.id;
+    final request = ++_templateRequest;
+    if (detail.status != 'IN_PROGRESS') {
+      setState(() {
+        _templateTestId = null;
+        _resolvedTemplateTestId = null;
+        _resultTemplate = null;
+        _templateError = null;
+        _templateLoading = false;
+        _structuredDraftDirty = false;
+      });
+      return;
+    }
+    if (!retry &&
+        _resolvedTemplateTestId == requestedId &&
+        _templateTestId == requestedId) {
+      return;
+    }
+    final previousTemplateId = _templateTestId;
+    setState(() {
+      _templateTestId = requestedId;
+      _templateError = null;
+      _templateLoading = true;
+      if (previousTemplateId != requestedId) {
+        _resultTemplate = null;
+        _structuredDraftDirty = false;
+      }
+    });
+    try {
+      final response = await reader.template(requestedId);
+      if (!mounted ||
+          widget.id != requestedId ||
+          request != _templateRequest ||
+          value?.id != requestedId) {
+        return;
+      }
+      setState(() {
+        _resultTemplate = response.template;
+        _templateTestId = requestedId;
+        _resolvedTemplateTestId = requestedId;
+        _templateLoading = false;
+        _templateError = null;
+        _structuredDraftDirty = false;
+      });
+    } catch (e) {
+      if (!mounted ||
+          widget.id != requestedId ||
+          request != _templateRequest ||
+          value?.id != requestedId) {
+        return;
+      }
+      setState(() {
+        _templateTestId = requestedId;
+        _resolvedTemplateTestId = null;
+        _templateLoading = false;
+        _templateError = e;
+      });
     }
   }
 
@@ -142,15 +234,19 @@ class _LabDetailState extends State<_LabDetail> {
       ),
     );
     if (confirmed != true || !mounted || busy || uncertain) return;
+    final commandId = widget.id;
     setState(() {
       busy = true;
       commandError = null;
     });
     try {
       final data = await call();
-      if (mounted) setState(() => value = data);
+      if (mounted && widget.id == commandId) {
+        setState(() => value = data);
+        await _syncTemplate(data);
+      }
     } catch (e) {
-      if (mounted) {
+      if (mounted && widget.id == commandId) {
         setState(() {
           commandError = e;
           uncertain =
@@ -162,7 +258,7 @@ class _LabDetailState extends State<_LabDetail> {
         });
       }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted && widget.id == commandId) setState(() => busy = false);
     }
   }
 
@@ -199,13 +295,14 @@ class _LabDetailState extends State<_LabDetail> {
       },
       child: Scaffold(
         appBar: AppBar(title: const Text('Chi tiết xét nghiệm')),
-        body: error != null
-            ? RequestError(error!, onRetry: load)
-            : v == null
-            ? const Center(child: MediFlowLoader())
+        body: v == null
+            ? error != null
+                  ? RequestError(error!, onRetry: load)
+                  : const Center(child: MediFlowLoader())
             : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
+                  if (error != null) RequestError(error!, onRetry: load),
                   Text(
                     v.type,
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -244,6 +341,11 @@ class _LabDetailState extends State<_LabDetail> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text('Kết luận: ${v.conclusion}'),
+                    ),
+                  if (_legacyResults && v.results.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Chip(label: Text('Chưa gắn template')),
                     ),
                   for (final row in v.results)
                     Card(
@@ -295,42 +397,68 @@ class _LabDetailState extends State<_LabDetail> {
                         'Nhập kết quả',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      for (var index = 0; index < rows.length; index++)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              children: [
-                                Text('Chỉ số ${index + 1}'),
-                                _field(rows[index].indicator, 'Tên chỉ số'),
-                                _field(rows[index].value, 'Giá trị'),
-                                _field(rows[index].unit, 'Đơn vị'),
-                                _field(rows[index].range, 'Khoảng tham chiếu'),
-                                if (rows.length > 1)
-                                  TextButton.icon(
-                                    onPressed: busy || uncertain
-                                        ? null
-                                        : () => setState(() {
-                                            rows.removeAt(index).dispose();
-                                          }),
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                    ),
-                                    label: const Text('Xóa chỉ số'),
+                      if (_templateError != null)
+                        RequestError(
+                          _templateError!,
+                          onRetry: () => _syncTemplate(v, retry: true),
+                        )
+                      else if (_templateLoading)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: MediFlowLoader()),
+                        )
+                      else if (_resultTemplate != null)
+                        LabTemplateResultEntry(
+                          key: _structuredEntryKey,
+                          template: _resultTemplate!,
+                          enabled: !busy && !uncertain,
+                          onDraftChanged: (dirty) {
+                            if (_structuredDraftDirty != dirty) {
+                              setState(() => _structuredDraftDirty = dirty);
+                            }
+                          },
+                        )
+                      else ...[
+                        for (var index = 0; index < rows.length; index++)
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: [
+                                  Text('Chỉ số ${index + 1}'),
+                                  _field(rows[index].indicator, 'Tên chỉ số'),
+                                  _field(rows[index].value, 'Giá trị'),
+                                  _field(rows[index].unit, 'Đơn vị'),
+                                  _field(
+                                    rows[index].range,
+                                    'Khoảng tham chiếu',
                                   ),
-                              ],
+                                  if (rows.length > 1)
+                                    TextButton.icon(
+                                      onPressed: busy || uncertain
+                                          ? null
+                                          : () => setState(() {
+                                              rows.removeAt(index).dispose();
+                                            }),
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                      ),
+                                      label: const Text('Xóa chỉ số'),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
+                        OutlinedButton.icon(
+                          onPressed: busy || uncertain
+                              ? null
+                              : () => setState(
+                                  () => rows.add(_ResultControllers()),
+                                ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Thêm chỉ số'),
                         ),
-                      OutlinedButton.icon(
-                        onPressed: busy || uncertain
-                            ? null
-                            : () => setState(
-                                () => rows.add(_ResultControllers()),
-                              ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Thêm chỉ số'),
-                      ),
+                      ],
                       OutlinedButton.icon(
                         onPressed: busy || uncertain
                             ? null
@@ -358,17 +486,13 @@ class _LabDetailState extends State<_LabDetail> {
                       ),
                       _field(conclusion, 'Kết luận'),
                       FilledButton(
-                        onPressed: busy || uncertain
+                        onPressed:
+                            busy ||
+                                uncertain ||
+                                _templateLoading ||
+                                _templateError != null
                             ? null
-                            : () => command(
-                                'Lưu kết quả xét nghiệm',
-                                () => widget.workflow.results(
-                                  v.id,
-                                  [for (final row in rows) row.draft],
-                                  conclusion.text,
-                                  date.text,
-                                ),
-                              ),
+                            : () => _submitResults(v),
                         child: const Text('Lưu kết quả'),
                       ),
                     ],
@@ -403,6 +527,22 @@ class _LabDetailState extends State<_LabDetail> {
                   if (busy) const LinearProgressIndicator(),
                 ],
               ),
+      ),
+    );
+  }
+
+  Future<void> _submitResults(LabDetail detail) async {
+    final results = _resultTemplate == null
+        ? [for (final row in rows) row.draft]
+        : _structuredEntryKey.currentState?.buildResults();
+    if (results == null || results.isEmpty) return;
+    await command(
+      'Lưu kết quả xét nghiệm',
+      () => widget.workflow.results(
+        detail.id,
+        results,
+        conclusion.text,
+        date.text,
       ),
     );
   }

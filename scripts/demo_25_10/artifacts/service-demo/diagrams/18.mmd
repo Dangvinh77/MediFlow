@@ -1,6 +1,6 @@
 flowchart TB
-U["Một thao tác ghi trên UI"] --> S["Service · ghi nghiệp vụ / outbox tùy nhánh"]
-S -->|"routing key + eventId"| R["RabbitMQ · mediflow.events"]
-R --> Q["Queue consumer đúng binding"]
-Q --> C["Consumer · dedupe + lưu effect"]
-Q -.->|"Lỗi quá số lần retry"| D["mediflow.events.dlx → DLQ"]
+U["Thu ngân · Xác nhận thanh toán"] --> B["Billing · payment + outbox"]
+B -->|"payment.completed"| R["RabbitMQ · mediflow.events"]
+B -->|"financial.clearance.granted"| R
+R --> C["Nguồn PRESCRIPTION · đủ điều kiện thực hiện"]
+R --> S["Report / Notification · queue riêng"]

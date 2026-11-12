@@ -1,16 +1,17 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
-import type { DiagnosisDTO, MedicalRecordDTO } from "../types";
+import type { DiagnosisDTO, MedicalRecordDTO, RecordCapabilitiesDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ capabilities: vi.fn(), declareAccess: vi.fn(), getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), documents: vi.fn(), allergies: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: () => mocks.role,
   getSessionKey: () => mocks.token,
   subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => { mocks.listeners.delete(listener); }; },
 }));
-vi.mock("../api", () => ({ medicalRecordApi: { getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder } }));
+vi.mock("../api", () => ({ medicalRecordApi: { capabilities: mocks.capabilities, declareAccess: mocks.declareAccess, getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder, documents: mocks.documents, allergies: mocks.allergies } }));
+vi.mock("./RecordCollaborationSection", () => ({ RecordCollaborationSection: () => null }));
 import { MedicalRecordDetail } from "./MedicalRecordDetail";
 
 const record: MedicalRecordDTO = {
@@ -20,8 +21,13 @@ const record: MedicalRecordDTO = {
   dispositionNote: null, completedAt: null,
 };
 
+const writable: RecordCapabilitiesDTO = {
+  recordId: "record-a", patientId: "patient-a", canRead: true, readBasis: "ASSIGNED_DOCTOR",
+  canWriteContent: true, canComplete: true, canRequestAmendment: false, writeBlockedReason: null,
+};
+
 describe("Medical record detail identity and permissions", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
+  beforeEach(() => { vi.clearAllMocks(); mocks.capabilities.mockReset(); mocks.capabilities.mockResolvedValue(writable); mocks.declareAccess.mockReset(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.documents.mockReset(); mocks.documents.mockResolvedValue([]); mocks.allergies.mockReset(); mocks.allergies.mockResolvedValue({ active: [], inactive: [] }); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
   it("blocks refreshing while a diagnosis is being saved", async () => {
     let resolve!: (value: DiagnosisDTO) => void;
@@ -49,6 +55,26 @@ describe("Medical record detail identity and permissions", () => {
     const clinical = screen.getByRole("heading", { name: "Nội dung khám" });
     const metadata = screen.getByText("Thông tin đối chiếu và thời điểm");
     expect(clinical.compareDocumentPosition(metadata) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const allergy = screen.getByRole("heading", { name: "Sổ dị ứng" });
+    expect(allergy.compareDocumentPosition(clinical) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows structured sections in plan order and hides empty sections", async () => {
+    mocks.getById.mockResolvedValue({ ...record, chiefComplaint: "Đau ngực", presentIllness: "Khởi phát hôm qua", pastHistory: "Tăng huyết áp", allergyNote: "Ghi chú lượt khám", physicalExam: "Mạch đều", advice: "Uống đủ nước" });
+    const firstView = render(<MedicalRecordDetail recordId="record-a" />);
+
+    const labels = ["Lý do khám chính", "Bệnh sử", "Tiền sử", "Ghi chú dị ứng của lượt khám", "Khám thực thể", "Lời dặn"];
+    const nodes = await Promise.all(labels.map((label) => screen.findByText(label)));
+    for (let index = 0; index < nodes.length - 1; index += 1) {
+      expect(nodes[index].compareDocumentPosition(nodes[index + 1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+
+    firstView.unmount();
+    mocks.getById.mockResolvedValue(record);
+    const { unmount } = render(<MedicalRecordDetail recordId="record-b" />);
+    await screen.findByText("First record");
+    expect(screen.queryByText("Lý do khám chính")).not.toBeInTheDocument();
+    unmount();
   });
 
   it("preserves a diagnosis draft after refreshing and asks before applying a closed record", async () => {
@@ -62,7 +88,7 @@ describe("Medical record detail identity and permissions", () => {
     expect(screen.getByLabelText(/Tên chẩn đoán/)).toHaveValue("Bản nháp");
     expect(screen.getByRole("button", { name: "Thêm chẩn đoán" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Xem dữ liệu mới" }));
-    expect(screen.getByText("Đã hoàn tất")).toBeVisible();
+    expect(screen.getByText("Đã hoàn tất khám")).toBeVisible();
     expect(screen.queryByLabelText(/Tên chẩn đoán/)).not.toBeInTheDocument();
   });
 
@@ -79,7 +105,7 @@ describe("Medical record detail identity and permissions", () => {
     expect(screen.getByRole("button", { name: "Cập nhật hồ sơ" })).toBeDisabled();
     expect(mocks.getById).toHaveBeenCalledTimes(1);
     await act(async () => resolve({ ...current, status: "COMPLETED" }));
-    expect(screen.getByText("Đã hoàn tất")).toBeVisible();
+    expect(screen.getByText("Đã hoàn tất khám")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Hoàn tất hồ sơ khám" })).not.toBeInTheDocument();
   });
 
@@ -153,6 +179,7 @@ describe("Medical record detail identity and permissions", () => {
 
   it.each(["ADMIN", "DOCTOR", "NURSE"])("shows only permitted actions for %s", async (role) => {
     mocks.role = role;
+    mocks.capabilities.mockResolvedValue(role === "NURSE" ? { ...writable, canWriteContent: false, canComplete: false, writeBlockedReason: "NOT_ASSIGNED_DOCTOR" } : writable);
     mocks.getById.mockResolvedValue(record);
     render(<MedicalRecordDetail recordId="record-a" />);
     await screen.findByText("First record");
@@ -233,5 +260,130 @@ describe("Medical record detail identity and permissions", () => {
     expect(screen.queryByRole("button", { name: "Thêm chẩn đoán" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sửa triệu chứng" })).not.toBeInTheDocument();
     expect(screen.getByText("Kê đơn thuốc")).toBeVisible();
+  });
+
+  describe("record capabilities", () => {
+    const openVisit = { ...record, appointmentId: "appointment-a", updatedAt: "2026-10-17T02:30:00Z" };
+    const denied = { ...writable, canWriteContent: false, canComplete: false, writeBlockedReason: "NOT_ASSIGNED_DOCTOR" };
+
+    it("hides write controls when capability denies writing", async () => {
+      mocks.getById.mockResolvedValue(openVisit);
+      mocks.capabilities.mockResolvedValue(denied);
+      render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+      await screen.findByText("First record");
+      expect(screen.queryByText("Thêm chẩn đoán", { selector: "summary" })).not.toBeInTheDocument();
+      expect(screen.queryByText("Hoàn tất lần khám", { selector: "summary" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Lập chỉ định xét nghiệm" })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Ghi nhận lượt đang mở")).not.toBeInTheDocument();
+    });
+
+    it("keeps the record read only when capabilities cannot be loaded", async () => {
+      mocks.getById.mockResolvedValue(openVisit);
+      mocks.capabilities.mockRejectedValue(new ApiRequestError("Lỗi", 500, "INTERNAL_ERROR"));
+      render(<MedicalRecordDetail recordId="record-a" />);
+      await screen.findByText("First record");
+      expect(screen.queryByText("Thêm chẩn đoán", { selector: "summary" })).not.toBeInTheDocument();
+      expect(screen.getByText(/Chưa xác định được quyền ghi/)).toBeVisible();
+    });
+
+    it("shows the responsible doctor and read-only notice for another doctor's record", async () => {
+      mocks.getById.mockResolvedValue({ ...openVisit, responsibleDoctorId: "doctor-b" });
+      mocks.capabilities.mockResolvedValue(denied);
+      render(<MedicalRecordDetail recordId="record-a" />);
+      expect(await screen.findByText(/Chỉ bác sĩ phụ trách mới được ghi/)).toBeVisible();
+      expect(document.querySelector("header")).toHaveTextContent("doctor-b");
+      expect(document.querySelector("header")).not.toHaveTextContent("doctor-a");
+      expect(screen.getAllByText("Bác sĩ mở hồ sơ").some((label) => label.closest("div")?.textContent?.includes("doctor-a"))).toBe(true);
+    });
+
+    it("separates read-only history from the open-visit write area", async () => {
+      mocks.getById.mockResolvedValue(openVisit);
+      render(<MedicalRecordDetail recordId="record-a" />);
+      const history = await screen.findByLabelText("Nội dung đã ghi");
+      expect(history).toHaveTextContent("Bác sĩ phụ trách");
+      expect(history).toHaveTextContent("doctor-a");
+      expect(history).toHaveTextContent("Cập nhật lần cuối");
+      expect(history).toHaveTextContent("First record");
+      const writeArea = screen.getByLabelText("Ghi nhận lượt đang mở");
+      expect(writeArea).toHaveTextContent("Thêm chẩn đoán");
+      expect(history).not.toHaveTextContent("Thêm chẩn đoán");
+    });
+
+    it("shows full identity banner with patient, visit date, department and doctor", async () => {
+      mocks.getById.mockResolvedValue(openVisit);
+      render(<MedicalRecordDetail recordId="record-a" />);
+      const banner = await screen.findByLabelText("Ngữ cảnh hồ sơ khám");
+      expect(banner).toHaveTextContent("patient-a");
+      expect(banner).toHaveTextContent("Ngày khám: 17/10/2026");
+      expect(banner).toHaveTextContent("department-a");
+      expect(banner).toHaveTextContent("doctor-a");
+    });
+
+    it("drops a late response after the record changes", async () => {
+      let resolveOld!: (value: MedicalRecordDTO) => void;
+      mocks.getById.mockImplementation((id: string) => id === "record-a"
+        ? new Promise<MedicalRecordDTO>(done => { resolveOld = done; })
+        : Promise.resolve({ ...record, recordId: "record-b", symptoms: "Second record" }));
+      const { rerender } = render(<MedicalRecordDetail recordId="record-a" />);
+      rerender(<MedicalRecordDetail recordId="record-b" />);
+      await screen.findByText("Second record");
+      await act(async () => resolveOld(record));
+      expect(screen.getByText("Second record")).toBeVisible();
+      expect(screen.queryByText("First record")).not.toBeInTheDocument();
+    });
+
+    it("shows purpose form on RECORD_ACCESS_PURPOSE_REQUIRED and reloads after declaring", async () => {
+      mocks.getById.mockRejectedValueOnce(new ApiRequestError("Cần khai báo", 403, "RECORD_ACCESS_PURPOSE_REQUIRED")).mockResolvedValueOnce(openVisit);
+      mocks.capabilities.mockResolvedValue({ ...denied, canRead: false, readBasis: null });
+      mocks.declareAccess.mockResolvedValue({ declarationId: "d", patientId: "patient-a", purpose: "CONSULTATION", expiresAt: "2026-11-10T01:00:00Z" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      fireEvent.click(await screen.findByRole("radio", { name: "Khám bệnh" }));
+      fireEvent.click(screen.getByRole("button", { name: "Xác nhận mục đích" }));
+      expect(await screen.findByText("First record")).toBeVisible();
+      expect(mocks.declareAccess).toHaveBeenCalledWith({ patientId: "patient-a", purpose: "CONSULTATION", reason: null });
+    });
+
+    it("shows denied state on RECORD_ACCESS_DENIED without offering purpose form", async () => {
+      mocks.getById.mockRejectedValue(new ApiRequestError("Từ chối", 403, "RECORD_ACCESS_DENIED"));
+      render(<MedicalRecordDetail recordId="record-a" />);
+      expect(await screen.findByText("Không có quyền xem hồ sơ")).toBeVisible();
+      expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Thử tải lại" })).not.toBeInTheDocument();
+    });
+
+    it("closed record shows reason and no write actions", async () => {
+      mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a", status: "CLOSED_WITHOUT_CONCLUSION", closureReason: "PATIENT_LEFT", closureNote: "Tự ý về, đã dặn tái khám", closedAt: "2026-10-17T03:00:00Z" });
+      mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_CLOSED" });
+      render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+      expect(await screen.findByText("Kết thúc không kết luận")).toBeVisible();
+      expect(screen.getByText("Bệnh nhân tự ý về")).toBeVisible();
+      expect(screen.getByText("Tự ý về, đã dặn tái khám")).toBeVisible();
+      expect(screen.queryByText("Hoàn tất lần khám")).not.toBeInTheDocument();
+      expect(screen.queryByText("Thêm chẩn đoán", { selector: "summary" })).not.toBeInTheDocument();
+      expect(screen.queryByText("Đã hoàn tất khám")).not.toBeInTheDocument();
+    });
+
+    it("shows link to previous record", async () => {
+      mocks.getById.mockResolvedValue({ ...record, previousRecordId: "record-old" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      expect(await screen.findByRole("link", { name: "Lượt trước — chỉ tham khảo" })).toHaveAttribute("href", "/records/record-old");
+      expect(screen.queryByRole("button", { name: /Sao chép lượt trước/ })).not.toBeInTheDocument();
+    });
+
+    it("prescribed is not shown as dispensed", async () => {
+      mocks.getById.mockResolvedValue({ ...record, status: "COMPLETED", disposition: "PRESCRIPTION", completedAt: "2026-10-17T03:00:00Z" });
+      mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_COMPLETED" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      await screen.findByText("Đã hoàn tất khám");
+      expect(screen.queryByText(/đã phát thuốc|đã cấp thuốc/i)).not.toBeInTheDocument();
+    });
+
+    it("labels completed record as examination completed, not signed or archived", async () => {
+      mocks.getById.mockResolvedValue({ ...record, status: "COMPLETED", completedAt: "2026-10-17T03:00:00Z" });
+      mocks.capabilities.mockResolvedValue({ ...denied, writeBlockedReason: "RECORD_COMPLETED" });
+      render(<MedicalRecordDetail recordId="record-a" />);
+      expect(await screen.findByText("Đã hoàn tất khám")).toBeVisible();
+      expect(screen.getByText("Hoàn tất khám không đồng nghĩa đã ký xác nhận hoặc chuyển lưu trữ.")).toBeVisible();
+    });
   });
 });

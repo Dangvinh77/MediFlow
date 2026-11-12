@@ -8,11 +8,14 @@ import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface ClinicalDtoMapper {
     AppointmentDTO toDto(Appointment appointment);
+    @Mapping(target = "responsibleDoctorId", expression =
+            "java(record.responsibleDoctorId().equals(record.getDoctorId()) ? null : record.responsibleDoctorId())")
     MedicalRecordDTO toDto(MedicalRecord record);
     DiagnosisDTO toDto(Diagnosis diagnosis);
 

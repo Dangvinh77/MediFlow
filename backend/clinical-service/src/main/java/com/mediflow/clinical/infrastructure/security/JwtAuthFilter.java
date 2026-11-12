@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** Verifies Bearer tokens locally before controller role checks run. */
@@ -29,6 +30,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String ROLE_PREFIX = "ROLE_";
+    private static final Set<String> READ_DECISION_CALLERS = Set.of("lab-service", "pharmacy-service");
 
     private final SecretKey signingKey;
 
@@ -76,6 +78,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         : path.endsWith("/payment-resolution")
                                 ? "PUT".equals(request.getMethod()) : "GET".equals(request.getMethod());
                 if (!exactMethod || !"billing-service".equals(subject)
+                        || !JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType) || !"SYSTEM".equals(role)
+                        || issued == null || expiration == null || expiration.getTime() <= now
+                        || issued.getTime() > now + 5000 || expiration.getTime() <= issued.getTime()
+                        || expiration.getTime() - issued.getTime() > 60000) {
+                    SecurityContextHolder.clearContext();
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    return false;
+                }
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                        new ClinicalServicePrincipal(subject), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_SYSTEM"))));
+                return true;
+            }
+            if (isReadDecisionPath(path)) {
+                Date issued = claims.getIssuedAt();
+                long now = System.currentTimeMillis();
+                if (!"GET".equals(request.getMethod()) || !READ_DECISION_CALLERS.contains(String.valueOf(subject))
                         || !JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType) || !"SYSTEM".equals(role)
                         || issued == null || expiration == null || expiration.getTime() <= now
                         || issued.getTime() > now + 5000 || expiration.getTime() <= issued.getTime()
@@ -172,6 +191,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static boolean isLabOrderContextLookup(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return path.matches("/api/v1/lab-orders/[^/]+/context");
+    }
+
+    private static boolean isReadDecisionPath(String path) {
+        return path.matches("/api/v2/clinical/patients/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/read-decision");
     }
 
     private static boolean isScheduledPaymentInternalPath(String path) {

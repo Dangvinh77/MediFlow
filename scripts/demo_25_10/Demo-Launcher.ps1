@@ -1,14 +1,21 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Backend', 'Frontend', 'Clean', 'Stop')][string]$Action,
+    [ValidateSet('Backend', 'Frontend', 'Mobile', 'Seed', 'Clean', 'Stop')][string]$Action,
     [switch]$Preview,
     [switch]$LocalOnly,
     [string]$LanAddress,
+    # Frontend only: Gateway on another PC, e.g. http://172.16.2.55:28080 (default: this PC).
+    [string]$GatewayUrl,
     [switch]$Fast,
     [switch]$Rebuild,
     [switch]$ResetData,
-    [ValidateRange(1, 3)][int]$StartupParallelism = 2
+    [ValidateRange(1, 3)][int]$StartupParallelism = 2,
+    # Mobile only: chrome (default), android (emulator) or device (phone on the same Wi-Fi).
+    [ValidateSet('chrome', 'android', 'device')][string]$Target = 'chrome',
+    [string]$Device,
+    # Seed only: create Loc's unpaid exam-fee registration now (it holds the slot 15 minutes).
+    [switch]$ExamChargeNow
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +32,26 @@ function Invoke-Docker([string[]]$Arguments) {
     $output = & docker @Arguments 2>&1
     if ($LASTEXITCODE -ne 0) { throw "Docker failed: $($Arguments -join ' ')`n$($output -join "`n")" }
     return $output
+}
+
+# The same UI switches as the backend demo profile; build-time defines for every mobile target.
+function Get-MobileDemoDefines {
+    return @(
+        '--dart-define=PHARMACY_MODE=outpatient',
+        '--dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true',
+        '--dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true',
+        '--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true',
+        '--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true',
+        '--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true',
+        '--dart-define=MEDIFLOW_CLINIC_INTAKE_UI_ENABLED=true')
+}
+
+function Assert-GatewayReady {
+    try {
+        $health = Invoke-RestMethod -Uri 'http://127.0.0.1:28080/actuator/health' -TimeoutSec 5
+        if ($health.status -eq 'UP') { return }
+    } catch { }
+    throw 'Gateway 28080 is not ready. Run start-backend.bat first and wait for READY.'
 }
 
 function Invoke-DemoBuild([switch]$Force) {
@@ -268,6 +295,7 @@ function Clean-ProjectDocker {
 
 Push-Location $repoRoot
 try {
+    if ($ExamChargeNow -and $Action -ne 'Seed') { throw '-ExamChargeNow is supported only by seed-demo.bat.' }
     if ($Preview -and $Action -ne 'Clean') { throw '-Preview is supported only by clean-docker.bat.' }
     if ($Fast -and $Rebuild) { throw 'Use either -Fast or -Rebuild.' }
     if (($Fast -or $Rebuild -or $ResetData) -and $Action -ne 'Backend') { throw 'Build/data options are supported only by start-backend.bat.' }
@@ -298,7 +326,7 @@ try {
             Write-Host 'Gateway: http://127.0.0.1:28080.'
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
-            Write-Host "Flutter: flutter run --dart-define=GATEWAY_URL=http://$($network.Address):28080/api --dart-define=ALLOW_INSECURE_HTTP=true --dart-define=MEDIFLOW_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true --dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true --dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true --dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true --dart-define=PHARMACY_MODE=outpatient"
+            Write-Host 'Mobile app: run start-mobile.bat after READY (-Target chrome | android | device).'
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
             if ($persistent) { $networkArguments += '--persistent' }
@@ -311,7 +339,8 @@ try {
             if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
             Require-Command 'node'
             Require-Command 'pnpm'
-            $env:GATEWAY_URL = 'http://127.0.0.1:28080'
+            $env:GATEWAY_URL = Resolve-DemoGatewayUrl $GatewayUrl
+            Write-Host "Gateway: $env:GATEWAY_URL"
             $env:MEDIFLOW_DEV_ALLOWED_ORIGINS = $network.Address
             $env:MEDIFLOW_SCHEDULING_UI_ENABLED = 'true'
             $env:MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED = 'true'
@@ -319,6 +348,8 @@ try {
             $env:MEDIFLOW_OUTPATIENT_UI_ENABLED = 'true'
             $env:MEDIFLOW_PHARMACY_PRESCRIPTION_MODE = 'outpatient'
             $env:MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED = 'true'
+            # Backend demo runs clinic intake v2: the nurse issues the room ticket before the exam.
+            $env:MEDIFLOW_CLINIC_INTAKE_UI_ENABLED = 'true'
             Set-Location (Join-Path $repoRoot 'frontend')
             & pnpm install --frozen-lockfile
             if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
@@ -327,6 +358,36 @@ try {
             if ($LocalOnly) { $bindAddress = '127.0.0.1' }
             & pnpm dev --hostname $bindAddress --port 3000
             if ($LASTEXITCODE -ne 0) { throw 'Frontend stopped with an error. Check the output above.' }
+        }
+        'Mobile' {
+            Require-Command 'flutter'
+            Assert-GatewayReady
+            $defines = Get-MobileDemoDefines
+            if ($Target -eq 'device') {
+                # A phone reaches the Gateway over Wi-Fi; HTTP on the LAN needs the insecure switch.
+                $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$false
+                Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias
+                $gateway = "http://$($network.Address):28080/api"
+                Write-Host "Phone Gateway: $gateway (check http://$($network.Address):28080/actuator/health on the phone)"
+                Set-Location (Join-Path $repoRoot 'mobile')
+                & flutter pub get
+                if ($LASTEXITCODE -ne 0) { throw 'flutter pub get failed.' }
+                $deviceArguments = @()
+                if ($Device) { $deviceArguments = @('-d', $Device) }
+                & flutter run @deviceArguments "--dart-define=GATEWAY_URL=$gateway" '--dart-define=ALLOW_INSECURE_HTTP=true' @defines
+            } else {
+                # run_dev.ps1 proxies Chrome to the Gateway and maps 127.0.0.1 to 10.0.2.2 for the emulator.
+                & (Join-Path $repoRoot 'mobile\tool\run_dev.ps1') -Target $Target -Demo -Gateway 'http://127.0.0.1:28080'
+            }
+            if ($LASTEXITCODE -ne 0) { throw 'Mobile app stopped with an error. Check the output above.' }
+        }
+        'Seed' {
+            Require-Command 'python'
+            Assert-GatewayReady
+            $seedArguments = @()
+            if ($ExamChargeNow) { $seedArguments += '--exam-charge-now' }
+            & python -u (Join-Path $PSScriptRoot 'seed_demo.py') @seedArguments
+            if ($LASTEXITCODE -ne 0) { throw 'Demo seeding failed. See the output above.' }
         }
         'Clean' { Clean-ProjectDocker }
         'Stop' {

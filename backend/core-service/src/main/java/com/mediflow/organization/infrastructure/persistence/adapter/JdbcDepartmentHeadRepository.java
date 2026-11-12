@@ -230,7 +230,9 @@ public class JdbcDepartmentHeadRepository implements DepartmentHeadRepository {
                 """
 SELECT a.account_id,a.staff_id,a.role,
   COALESCE(a.is_active AND a.role='DOCTOR' AND s.status='ACTIVE' AND s.job_title='DOCTOR' AND d.is_active AND d.department_type='CLINICAL',FALSE) AS practice,
-  a.is_active AS active,COALESCE(s.status='ACTIVE',FALSE) AS staff_active
+  a.is_active AS active,COALESCE(s.status='ACTIVE',FALSE) AS staff_active,
+  COALESCE(a.is_active AND a.role='LAB_TECH' AND s.status='ACTIVE' AND EXISTS(SELECT 1 FROM staff_capability_grant g
+    WHERE g.staff_id=a.staff_id AND g.capability='LAB_RESULT_RELEASE' AND g.revoked_at IS NULL),FALSE) AS lab_release
 FROM account a LEFT JOIN staff s ON s.staff_id=a.staff_id LEFT JOIN department d ON d.department_id=s.department_id WHERE a.account_id=?
 """,
                 (r, n) ->
@@ -243,7 +245,8 @@ FROM account a LEFT JOIN staff s ON s.staff_id=a.staff_id LEFT JOIN department d
                                         id,
                                         r.getString("role"),
                                         r.getBoolean("active") && r.getBoolean("staff_active")),
-                                now),
+                                now,
+                                r.getBoolean("lab_release")),
                 id);
     }
 

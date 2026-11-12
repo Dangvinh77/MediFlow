@@ -30,7 +30,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
-          <AppointmentWorkspace appointmentId={id} outpatientEnabled={outpatientUiEnabled()} />
+          <AppointmentWorkspace clinicIntakeEnabled={process.env.MEDIFLOW_CLINIC_INTAKE_UI_ENABLED === "true"} appointmentId={id} outpatientEnabled={outpatientUiEnabled()} />
         </RoleGate>
       )}
     </PageShell>

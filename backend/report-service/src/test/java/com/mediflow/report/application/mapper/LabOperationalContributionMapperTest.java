@@ -96,6 +96,39 @@ class LabOperationalContributionMapperTest {
         return Files.readAllBytes(current.resolve("backend/lab-service/src/test/resources/contracts/" + name));
     }
 
+    private DecodedCareFinanceEvent amended() throws IOException {
+        return decoder.decode("lab.result.amended", Files.readAllBytes(Path.of(
+                "../lab-service/src/test/resources/contracts/lab.result.amended.v1.json")));
+    }
+
+    @Test
+    void amendmentIsNotANewTest() throws IOException {
+        var operations = org.mockito.Mockito.mock(
+                com.mediflow.report.application.port.in.ApplyOperationalContributionUseCase.class);
+        var receiver = new com.mediflow.report.application.service.OutpatientReportFactReceiver(operations,
+                org.mockito.Mockito.mock(com.mediflow.report.application.port.in.ApplyCashReceiptUseCase.class),
+                org.mockito.Mockito.mock(com.mediflow.report.application.port.in.ApplyCashRefundUseCase.class),
+                ZoneId.of("Asia/Bangkok"));
+
+        receiver.receive(amended());
+
+        org.mockito.Mockito.verifyNoInteractions(operations);
+    }
+
+    @Test
+    void amendmentMustCarryALaterRevisionAndAReason() throws IOException {
+        var event = amended();
+        var stale = new LinkedHashMap<>(event.payload());
+        stale.put("resultVersion", 1);
+        assertThatThrownBy(() -> mapper.validateAmendment(new DecodedCareFinanceEvent(event.metadata(), stale)))
+                .isInstanceOf(IllegalArgumentException.class);
+        var noReason = new LinkedHashMap<>(event.payload());
+        noReason.put("amendmentReason", " ");
+        assertThatThrownBy(() -> mapper.validateAmendment(new DecodedCareFinanceEvent(event.metadata(), noReason)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> mapper.map(event)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     private DecodedCareFinanceEvent fixture(String name) throws IOException {
         return decoder.decode("lab.result.created", producerFixture(name));
     }

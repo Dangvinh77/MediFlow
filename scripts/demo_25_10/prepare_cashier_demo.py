@@ -12,11 +12,12 @@ import time
 import urllib.parse
 import uuid
 
+import lab_v2
 from prepare_ui_demo import SEED_LOGIN_EMAILS, ZONE, open_record, register_confirmed
 
 PATIENT_EMAILS = {'paid': 'demo.case.883.30@example.test', 'open': 'demo.case.882.30@example.test'}
 DRUG_KEYWORD, DRUG_NAME = 'DEMO-HIST-2025', 'Thuốc minh họa A'
-PRICE_CODES = {'lab': 'LAB_CBC', 'drug': 'RX-DEMO'}
+PRICE_CODES = {'drug': 'RX-DEMO'}  # Lab prices come from the catalogue (lab_v2)
 READY_ATTEMPTS = 30
 
 
@@ -45,14 +46,7 @@ def charge(api, purpose, source_id, patient_id, registration_id):
 
 
 def order_lab(api, record, patient_id, department_id, registration_id, day, stage):
-    order = api.call('doctor', 'POST', '/api/v1/records/' + record['recordId'] + '/lab-orders',
-                     {'labType': 'CBC', 'requestedDate': day, 'priceCode': PRICE_CODES['lab']},
-                     expected=(201,), stage=stage + '-order')
-    test = api.call('doctor', 'POST', '/api/v1/lab', {
-        'recordId': record['recordId'], 'patientId': patient_id, 'requestingDepartmentId': department_id,
-        'labType': 'CBC', 'requestedDate': day, 'priceCode': PRICE_CODES['lab'],
-        'sourceOrderId': order['sourceOrderId'], 'careEpisodeType': 'OUTPATIENT_VISIT',
-        'careEpisodeId': registration_id}, expected=(201,), stage=stage + '-test')
+    test = lab_v2.order(api, record['recordId'], patient_id, department_id, registration_id, day, stage)
     return test, charge(api, 'LAB_TEST', test['testId'], patient_id, registration_id)
 
 
@@ -103,9 +97,7 @@ def finish_lab(api, test, day):
         return
     if current['status'] != 'IN_PROGRESS':
         api.call('lab', 'PUT', path + '/start', {})
-    api.call('lab', 'PUT', path + '/results', {
-        'results': [{'indicator': 'WBC', 'value': '7.0', 'unit': 'G/L', 'referenceRange': '4-10'}],
-        'conclusion': 'Ket qua binh thuong', 'performedDate': day})
+    lab_v2.release(api, test['testId'], day, conclusion='Ket qua binh thuong')
 
 
 def dispense(api, prescription, stage):
@@ -117,7 +109,7 @@ def dispense(api, prescription, stage):
 def prepare(api, fixtures, now):
     if not fixtures.get('historyReady'):
         return {'ready': False, 'limitation': 'Run again 07:00-16:45 Vietnam to prepare cashier visits.'}
-    for role in ('admin', 'nurse', 'doctor', 'cashier', 'lab', 'pharmacist'):
+    for role in ('admin', 'nurse', 'doctor', 'cashier', 'lab', 'lab2', 'pharmacist'):
         api.login(role, SEED_LOGIN_EMAILS[role])
     for role, email in PATIENT_EMAILS.items():
         api.login(role, email)

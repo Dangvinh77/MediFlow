@@ -70,6 +70,7 @@ public class RabbitConfig {
             RK_PATIENT_CREATED,
             RK_APPOINTMENT_CREATED,
             RK_LAB_RESULT_CREATED,
+            "lab.result.amended",
             "medicalrecord.completed",
             "followup.recommendation.created",
             RK_PRESCRIPTION_FILLED,

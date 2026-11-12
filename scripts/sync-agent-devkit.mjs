@@ -44,7 +44,21 @@ function listMarkdown(relativeDir) {
     .sort();
 }
 
-function agentToml(sourcePath) {
+// Codex-only settings (model pins, reasoning effort, sandbox mode) are owned by the
+// existing .toml: every line between `description` and `developer_instructions` is
+// kept as-is. Only a mirror that does not exist yet gets the derived sandbox default.
+function codexSettingLines(targetPath, canWrite) {
+  const fallback = [`sandbox_mode = ${tomlString(canWrite ? "workspace-write" : "read-only")}`];
+  if (!existsSync(join(ROOT, targetPath))) return fallback;
+  const lines = read(targetPath).split("\n");
+  const end = lines.indexOf("developer_instructions = '''");
+  if (end < 0) return fallback;
+  return lines
+    .slice(0, end)
+    .filter((line) => line.trim() && !/^(name|description)\s*=/.test(line));
+}
+
+function agentToml(sourcePath, targetPath) {
   const { metadata, body } = parseFrontmatter(sourcePath);
   if (!metadata.name || !metadata.description) throw new Error(`${sourcePath}: name and description are required`);
   if (body.includes("'''")) throw new Error(`${sourcePath}: body contains unsupported TOML literal delimiter`);
@@ -52,7 +66,7 @@ function agentToml(sourcePath) {
   return [
     `name = ${tomlString(metadata.name.replaceAll("-", "_"))}`,
     `description = ${tomlString(metadata.description)}`,
-    `sandbox_mode = ${tomlString(canWrite ? "workspace-write" : "read-only")}`,
+    ...codexSettingLines(targetPath, canWrite),
     "developer_instructions = '''",
     body.trim(),
     "'''",
@@ -107,7 +121,8 @@ function expectedGeneratedFiles() {
 
   for (const filename of listMarkdown(".claude/agents")) {
     const basename = filename.slice(0, -3);
-    files.set(`.codex/agents/${basename}.toml`, agentToml(`.claude/agents/${filename}`));
+    const target = `.codex/agents/${basename}.toml`;
+    files.set(target, agentToml(`.claude/agents/${filename}`, target));
   }
 
   for (const filename of listMarkdown(".claude/commands")) {

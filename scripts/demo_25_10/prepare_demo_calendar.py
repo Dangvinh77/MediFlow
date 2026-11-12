@@ -13,7 +13,8 @@ import uuid
 
 HERE = Path(__file__).resolve().parent
 # One month holding the whole current week, so the department week board is never half empty.
-DAYS_BEFORE, DAYS_AFTER = 6, 24
+# Clinical refuses sessions for past dates (SESSION_DATE_PAST); the month starts on the run date.
+DAYS_BEFORE, DAYS_AFTER = 0, 30
 ROSTER_DOCTORS = 3
 ZONE = dt.timezone(dt.timedelta(hours=7))
 SLOTS = (('07:00', '12:00'), ('12:00', '17:00'))

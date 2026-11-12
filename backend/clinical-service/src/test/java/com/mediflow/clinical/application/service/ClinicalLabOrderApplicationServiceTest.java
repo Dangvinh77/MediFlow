@@ -200,6 +200,39 @@ class ClinicalLabOrderApplicationServiceTest {
         verify(orders).save(any(ClinicalLabOrder.class));
     }
 
+    @Test
+    void create_withCatalogOnRequiresTheServiceCode() {
+        assertThatThrownBy(() -> catalogService().create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), "LAB-CBC")))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_LAB_SERVICE_REQUIRED");
+        verify(orders, never()).save(any());
+    }
+
+    @Test
+    void create_carriesTheServiceCodeToTheLabContext() {
+        var service = catalogService();
+        var created = service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), "LAB-CBC", " CBC "));
+        assertThat(created.serviceCode()).isEqualTo("CBC");
+
+        var saved = org.mockito.ArgumentCaptor.forClass(ClinicalLabOrder.class);
+        verify(orders).save(saved.capture());
+        when(orders.findById(created.sourceOrderId())).thenReturn(Optional.of(saved.getValue()));
+        assertThat(service.get(created.sourceOrderId()).serviceCode()).isEqualTo("CBC");
+    }
+
+    @Test
+    void create_withCatalogOffKeepsTheOldFormWithoutAServiceCode() {
+        var created = service(true).create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 21), "LAB-CBC"));
+        assertThat(created.serviceCode()).isNull();
+    }
+
+    private ClinicalLabOrderApplicationService catalogService() {
+        return new ClinicalLabOrderApplicationService(appointments, records, orders, actors, staff,
+                new OutpatientMvpMode(true), true, List.of(), clock, true);
+    }
+
     private ClinicalLabOrderApplicationService service(boolean outpatientEnabled) {
         return service(outpatientEnabled, true);
     }

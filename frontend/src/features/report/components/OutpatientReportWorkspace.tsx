@@ -45,7 +45,7 @@ export function OutpatientReportWorkspace({ enabled = false }: { enabled?: boole
   if (!enabled) return (
     <PageShell title="Báo cáo">
       <p role="status" className="mt-6 rounded-xl border border-border bg-surface p-5 text-muted-foreground">Báo cáo ngoại trú chưa sẵn sàng. Vui lòng liên hệ quản trị viên.</p>
-      <Link href="/reports" className="mt-4 inline-flex min-h-11 items-center text-primary underline">Về trang báo cáo</Link>
+      <Link href="/" className="mt-4 inline-flex min-h-11 items-center text-primary underline">Về trang chủ</Link>
     </PageShell>
   );
   return <EnabledOutpatientWorkspace />;
@@ -77,13 +77,12 @@ function EnabledOutpatientWorkspace() {
     <PageShell title="Báo cáo" description="Doanh thu, lượt khám và cơ cấu dịch vụ theo năm; đổi năm để xem biểu đồ tương ứng hoặc so sánh hai năm.">
       <ReportDashboard />
       {role === "ADMIN" && <>
-      <Link href="/reports?view=monthly" className="mt-6 inline-flex min-h-11 items-center text-sm text-primary underline">Các báo cáo khác (nguồn cũ)</Link>
       <ReportDisclosure
         key={rawQuery}
         initiallyOpen={rawQuery.length > 0}
         title="Báo cáo đã đối soát"
         description={`${query.mode === "daily" ? "Theo ngày" : "Theo tháng"} · ${periodSummary} · ${query.departmentId ? "Theo khoa đã chọn" : explicit ? "Toàn viện" : "Phạm vi theo kỳ khả dụng"}`}
-        hint="Mở để chọn kỳ, lọc khoa và xem trạng thái, nguồn cùng chi tiết"
+        hint="Mở để xem báo cáo từng ngày hoặc từng tháng: biểu đồ dòng tiền, lượt khám, xét nghiệm, đơn thuốc và bảng chi tiết"
       >
         <div className="border-t border-border px-4 pb-4 sm:px-5 sm:pb-5">
           <nav aria-label="Kỳ báo cáo ngoại trú" className="flex flex-wrap gap-x-6 border-b border-border">

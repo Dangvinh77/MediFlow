@@ -16,7 +16,7 @@ import com.mediflow.pharmacy.application.port.in.CreateOutpatientPrescriptionUse
 import com.mediflow.pharmacy.application.port.in.OutpatientPrescriptionLifecycleUseCase;
 import com.mediflow.pharmacy.application.exception.OutpatientPrescriptionApiException;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
-import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
+import com.mediflow.pharmacy.application.service.PrescriptionReadAccessService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PrescriptionController {
 
     private final CreatePrescriptionUseCase createPrescriptionUseCase;
-    private final GetPrescriptionUseCase getPrescriptionUseCase;
+    private final PrescriptionReadAccessService readAccess;
     private final CancelPrescriptionUseCase cancelPrescriptionUseCase;
     private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
     private final ObjectProvider<CreateOutpatientPrescriptionUseCase> outpatientCreators;
@@ -131,12 +131,13 @@ public class PrescriptionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
     public ResponseEntity<ApiResponse<PrescriptionDTO>> getById(
             @PathVariable UUID prescriptionId,
+            Authentication authentication,
             @RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String correlationId) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                getPrescriptionUseCase.getPrescriptionById(prescriptionId),
-                normalizeCorrelationId(correlationId)));
+        String trace = normalizeCorrelationId(correlationId);
+        ActorIdentity actor = authentication.getPrincipal() instanceof ActorIdentity identity ? identity : null;
+        return ResponseEntity.ok(ApiResponse.ok(readAccess.getById(prescriptionId, actor, trace), trace));
     }
 
     /**

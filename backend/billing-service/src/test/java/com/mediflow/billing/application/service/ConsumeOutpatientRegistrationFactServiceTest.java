@@ -44,6 +44,22 @@ class ConsumeOutpatientRegistrationFactServiceTest {
         verifyNoInteractions(prices);
     }
 
+    @Test void fingerprintOfFactWithoutRescheduleIsUnchanged() {
+        UUID registration = id(1);
+        Instant at = Instant.parse("2026-10-26T01:00:00Z");
+        var fact = new OutpatientRegistrationChangedEvent.RegistrationFact(registration, 1, id(2), id(3), id(4), id(5), id(6),
+                LocalDate.of(2026, 10, 26), LocalTime.of(9, 0), LocalTime.of(9, 30), "NEW_VISIT", id(7), "HELD", "AWAITING_PAYMENT", null, null,
+                at.plusSeconds(600), "OUTPATIENT_EXAM", "EXAM", registration, "OUTPATIENT_VISIT", registration, null, at);
+        var event = new OutpatientRegistrationChangedEvent(UUID.randomUUID(), "outpatient.registration.changed", 1, at, "trace", "clinical-service", fact);
+        byte[] raw = "unchanged-envelope".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        new ConsumeOutpatientRegistrationFactService(sources, prices, quoteCatalog, false).consume(event, raw);
+
+        verify(sources).apply(eq(event), aryEq(raw), eq("b8d3a95ffced1964ca8bf0ccb33092456832d349989cf9dd8c1094da3ebb5beb"), any(), any());
+    }
+
+    private static UUID id(int n) { return UUID.fromString("00000000-0000-0000-0000-00000000000" + n); }
+
     private static OutpatientRegistrationChangedEvent event(UUID registrationId, Instant changedAt) {
         var fact = new OutpatientRegistrationChangedEvent.RegistrationFact(registrationId, 1,
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

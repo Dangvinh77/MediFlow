@@ -5,8 +5,12 @@ import 'package:mediflow_loader/mediflow_loader.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
+import '../../../core/network/api_failure.dart';
+import '../domain/clinic_queue.dart';
 import '../domain/outpatient_schedule.dart';
 import '../domain/schedule_management.dart';
+import 'clinic_queue_page.dart';
+import 'reschedule_sheet.dart';
 
 final scheduleManagementRepositoryProvider =
     Provider<ScheduleManagementRepository>(
@@ -28,6 +32,19 @@ final headsDepartmentProvider = FutureProvider.autoDispose<bool>((ref) async {
 });
 
 /// Runs one command at a time and keeps an unresolved one for an exact resend.
+/// Opens the affected-patient list after the backend refuses a schedule change.
+void _showImpactWhenBlocked(
+  BuildContext context,
+  WidgetRef ref,
+  Object? error,
+  String code,
+  Future<ScheduleImpact> Function(ClinicQueueRepository) load,
+) {
+  if (!ref.read(clinicIntakeEnabledProvider)) return;
+  if (error is! ApiFailure || error.code != code) return;
+  showScheduleImpact(context, load(ref.read(clinicQueueRepositoryProvider)));
+}
+
 mixin ScheduleCommandRunner<T extends StatefulWidget> on State<T> {
   ScheduleCommand? pendingCommand;
   Object? commandError;
@@ -247,6 +264,14 @@ class _SessionAdministrationPanelState
     )) {
       _statusReason.clear();
       _load();
+    } else if (mounted) {
+      _showImpactWhenBlocked(
+        context,
+        ref,
+        commandError,
+        'SESSION_HAS_REGISTRATIONS',
+        (clinic) => clinic.sessionImpact(session.id),
+      );
     }
   }
 
@@ -1113,6 +1138,14 @@ class _DepartmentShiftsPanelState extends ConsumerState<DepartmentShiftsPanel>
         ),
       );
       return;
+    }
+    if (ref.read(clinicIntakeEnabledProvider)) {
+      final goAhead = await showScheduleImpact(
+        context,
+        ref.read(clinicQueueRepositoryProvider).shiftImpact(shift.id),
+        confirmLabel: 'Xác nhận hủy giờ làm việc',
+      );
+      if (!goAhead || !mounted) return;
     }
     if (await runCommand(
       _repository,

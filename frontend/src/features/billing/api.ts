@@ -3,6 +3,8 @@ import type { PageResult } from "@/lib/types";
 import type {
   PrescriptionAdjustmentDTO,
   OutpatientAdjustmentDTO,
+  RegistrationSettlementDTO,
+  RegistrationSettlementKind,
   RefundLedgerPaymentRequest,
   LedgerRefundDTO,
   CompleteLedgerPaymentRequest,
@@ -45,6 +47,8 @@ export const billingApi = {
     return api.get<PageResult<ScheduledPaymentQueueItem>>(`/v2/billing/payment-requests?${query}`);
   },
   refundsDue: (prescriptionId: string) => api.get<PrescriptionAdjustmentDTO>(`/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`),
+  examRefundsDue: (registrationId: string) => api.get<OutpatientAdjustmentDTO>(`/v1/billing/exam-adjustments/${encodeURIComponent(registrationId)}/refunds-due`),
+  registrationSettlements: (kind: RegistrationSettlementKind, page: number, size: number) => api.get<PageResult<RegistrationSettlementDTO>>(`/v2/billing/registration-settlements?${new URLSearchParams({ kind, page: String(page), size: String(size) })}`),
   labRefundsDue: (labSourceId: string) => api.get<OutpatientAdjustmentDTO>(`/v1/billing/lab-adjustments/${encodeURIComponent(labSourceId)}/refunds-due`),
   recordRefund: (transactionId: string, body: RefundLedgerPaymentRequest) => api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(transactionId)}/refunds`, body),
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),

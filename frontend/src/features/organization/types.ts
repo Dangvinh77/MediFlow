@@ -196,3 +196,19 @@ export interface CreateRoomRequest extends RoomPlacement {
   departmentId: string;
   roomType: RoomType;
 }
+
+/** Capabilities an ADMIN grants explicitly; a role never implies them (Core StaffCapabilityGrantService). */
+export type StaffCapability = "LAB_RESULT_RELEASE" | "MEDICAL_RECORD_REVIEW";
+
+/** Mirrors Core StaffCapabilityGrantDTO. */
+export interface StaffCapabilityGrantDTO {
+  grantId: string;
+  staffId: string;
+  capability: StaffCapability;
+  grantedBy: string;
+  grantReason: string;
+  grantedAt: string;
+  revokedBy: string | null;
+  revocationReason: string | null;
+  revokedAt: string | null;
+}
