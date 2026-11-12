@@ -10,6 +10,12 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 
 2. KHỞI ĐỘNG BACKEND
 - Nhấp đúp start-backend.bat, chờ thông báo READY rồi giữ cửa sổ mở.
+- Launcher tự build, khôi phục dữ liệu, tạo lịch một tháng, tài khoản, quyền
+  phát hành kết quả xét nghiệm cho hai KTV, kỳ báo cáo và các lượt mẫu cho thu
+  ngân. Không cần chạy thêm file Python hay SQL nào.
+- Nên khởi động trong 07:00-16:45 giờ Việt Nam ngày demo: ngoài giờ khám, lượt
+  tái khám và hai lượt mẫu cho thu ngân chưa tạo được (cửa sổ báo PARTIAL hoặc
+  không có CASHIER DEMO READY). Khi đó chạy lại start-backend.bat trong giờ khám.
 - Lần đầu dùng qua Wi-Fi: chuột phải -> Run as administrator để tạo firewall
   cho Gateway 28080 và frontend 3000 trên mạng nội bộ.
 - Không truyền tham số: chạy phiên demo tạm; ứng dụng dừng sau hai giờ.
@@ -44,6 +50,20 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 - iOS HTTP LAN cần bản Debug được cấu hình đúng Gateway và quyền Local Network.
   Xem thêm mobile\README.md tính từ thư mục gốc dự án.
 
+4b. APP MOBILE
+- Sau khi backend báo READY, nhấp đúp start-mobile.bat. Mặc định mở app trên
+  Chrome (nhanh nhất, có hot reload). Launcher tự bật đúng cờ UI demo.
+- Android emulator (tự bật emulator nếu chưa chạy):
+    .\start-mobile.bat -Target android
+- Điện thoại thật cùng Wi-Fi (cắm cáp USB hoặc ghép nối không dây; backend
+  phải chạy không có -LocalOnly):
+    .\start-mobile.bat -Target device
+    .\start-mobile.bat -Target device -Device <id>   (xem id: flutter devices)
+  Launcher tự dùng Gateway http://<IP-máy>:28080/api cho điện thoại.
+- Cần Flutter 3.47 trong PATH; Android cần Android SDK. Chi tiết:
+  mobile\tool\HUONG_DAN.txt.
+- Dừng app: nhấn q trong cửa sổ mobile.
+
 5. DỪNG VÀ GIỮ DỮ LIỆU DEMO
 - Dừng frontend: tại cửa sổ frontend nhấn Ctrl+C (xác nhận Y nếu được hỏi).
 - Với backend đã chạy bằng -Fast, -Rebuild hoặc -ResetData, chạy:
@@ -68,6 +88,7 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
 7. NẾU CHẠY TỪ THƯ MỤC GỐC DỰ ÁN
     .\scripts\run\start-backend.bat -Fast
     .\scripts\run\start-frontend.bat
+    .\scripts\run\start-mobile.bat
     .\scripts\run\stop-backend.bat
     .\scripts\run\clean-docker.bat -Preview
 

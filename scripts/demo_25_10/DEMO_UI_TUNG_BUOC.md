@@ -1,7 +1,8 @@
 # Demo UI theo service: admin → tiếp nhận → khám → Lab → thuốc → ra về
 
-Cập nhật **04/11/2026**. Chỉ dùng dữ liệu mẫu. Hướng dẫn dùng seed của
-`scripts/run/start-backend.bat`; không chạy thêm SQL/Python giữa các quầy.
+Cập nhật **12/11/2026** (tiếp nhận khoa v2, Lab v2 duyệt hai người). Chỉ dùng dữ liệu
+mẫu. Toàn bộ dữ liệu do `scripts/run/start-backend.bat` tự chuẩn bị; **không chạy file
+Python hay SQL nào** trước hoặc giữa các quầy.
 
 Phân công dưới đây là **phân công trình bày**, không thay đổi quyền sửa source.
 Người trình bày có thể đăng nhập nhiều vai nghiệp vụ; ví dụ Huy trình bày Pharmacy
@@ -16,6 +17,7 @@ Bảng dưới đối chiếu với [bộ slide HTML](../../artifacts/service-de
 | 2 | Hoàng Anh | Patient: tìm/tạo hồ sơ, cấp account nếu cần | 3 | 05 |
 | 3 | Vinh | Clinical: tiếp nhận, đăng ký và giữ chỗ | 4 | 06 |
 | 4 | Lộc | Billing: thu phí khám | 5 | 07 |
+| 4b | Vinh | Clinical: quầy điều dưỡng khoa cấp số phòng, ghi sinh hiệu | 5b | 07 |
 | 5 | Vinh | Clinical: khám, chẩn đoán, chỉ định và tạo phiếu Lab | 6 | 08–09 |
 | 6 | Lộc | Billing: thu phí Lab | 7 | 10 |
 | 7 | Vinh | Lab: thực hiện, trả kết quả; Clinical: đọc lại kết quả | 8–9 | 11 |
@@ -49,6 +51,11 @@ Queue rỗng có thể do consumer đã xử lý, không phải bằng chứng k
    kiểm dòng **FOLLOW-UP SOURCE READY**. Nếu hiện **PARTIAL**, vẫn demo tạo hồ sơ,
    chọn lịch được nhưng chưa có lượt nguồn tái khám.
 4. Nhấp đúp **scripts/run/start-frontend.bat**. Mở **http://127.0.0.1:3000/login**.
+5. Tùy chọn app mobile: sau READY nhấp đúp **scripts/run/start-mobile.bat** (mặc định
+   Chrome; `-Target android` cho emulator, `-Target device` cho điện thoại thật).
+
+Launcher tự build, khôi phục dữ liệu, tạo lịch, tài khoản, quyền phát hành Lab cho hai
+KTV, kỳ báo cáo và bật cờ UI tiếp nhận khoa. Không cần chạy thêm lệnh nào.
 
 Không chạy lại backend giữa các quầy: một lần khởi động mới phục hồi lại dữ liệu,
 làm mất lượt bạn vừa thao tác. Phiên demo tự dừng sau hai giờ.
@@ -61,11 +68,11 @@ backend để xử lý cache frontend, vì sẽ mất lượt đang demo. Đây 
 
 ### 1.2. Ngày và lịch dùng cho luồng chính
 
-**Ngày demo D là ngày thực tế thao tác; ví dụ 04/11/2026, bắt đầu khoảng 08:00, hoàn tất trước 16:00.**
+**Ngày demo D là ngày thực tế thao tác; ví dụ 12/11/2026, bắt đầu khoảng 08:00, hoàn tất trước 16:00.**
 
 | Thông tin | Chọn/nhập chính xác |
 |---|---|
-| Ngày demo, viết tắt **D** trong các bước dưới | **04/11/2026** |
+| Ngày demo, viết tắt **D** trong các bước dưới | **12/11/2026** |
 | Khoa | **Khoa Nội tổng quát Demo (DEMO-NOI)** |
 | Bác sĩ | **Lê Bác Sĩ Demo** |
 | Tài khoản bác sĩ | **demo.staff03@example.test** |
@@ -88,7 +95,7 @@ Mật khẩu seed mẫu trong bảng (nếu chưa đổi trong phiên): **`MediF
 
 | Lượt thao tác | Đăng nhập |
 |---|---|
-| Tạo hồ sơ, cấp tài khoản, đăng ký khám | `demo.staff04@example.test` |
+| Tạo hồ sơ, cấp tài khoản, đăng ký khám, cấp số phòng | `demo.staff04@example.test` |
 | Thu phí khám, xét nghiệm và thuốc | `demo.staff19@example.test` |
 | Khám, chỉ định, đọc kết quả, kê đơn | `demo.staff03@example.test` |
 | Thực hiện xét nghiệm, nhập kết quả | `demo.staff15@example.test` |
@@ -262,27 +269,32 @@ thay thế. Phiên khởi động ngoài giờ có thể chưa chuẩn bị đư
 
 **Bàn giao:** Lộc nhận PHIEU, thu khám ngay ở mục 5.
 
-Trang: **http://127.0.0.1:3000/appointments/reception**.
+Trang: **http://127.0.0.1:3000/appointments/reception** (đi từ **Tiếp tục đăng ký khám**
+thì bệnh nhân đã được điền sẵn).
 
-1. Tại **Chọn buổi khám**, nhập **Nội tổng quát** vào ô **Khoa** → **Tìm** →
-   bấm kết quả **Khoa Nội tổng quát Demo (DEMO-NOI)**.
-2. **Từ ngày = D**, **Đến ngày = D**; ví dụ cả hai **04/11/2026**.
-   Nếu trình duyệt hiển thị tháng/ngày/năm thì chọn **11/04/2026** cho ngày 04/11 (tháng/ngày).
-3. Bấm **Tải buổi khám**. Trong nhiều thẻ lịch, chọn đúng bộ ba:
-   **Lê Bác Sĩ Demo / 07:00–17:00 / Phong kham ngoai tru demo V2** → **Chọn buổi**.
-   Luồng chính không chọn thẻ bác sĩ có tên bắt đầu bằng **BS Demo…**.
-4. Cuộn xuống form mới xuất hiện: **Tiếp nhận vào buổi [D] · 07:00**.
-5. Ô **Bệnh nhân**:
+1. Khối **1. Bệnh nhân**: kiểm dòng tên đã chọn, ví dụ **Nguyễn Văn An Demo · 12/04/1986**.
+   Nếu trống: nhập CCCD → **Tìm** → bấm kết quả có tên.
    - A: **Demo Nguyễn Lan 01**, CCCD **990000000001**.
    - B: **Nguyễn Văn An Demo**, CCCD **999881000001**.
    - C: **Trần Thị Bình Demo**, CCCD **999881000002**.
-   Nếu ô chưa có người: nhập CCCD → **Tìm** → **bấm chọn kết quả có tên**.
+2. Khối **2. Chọn buổi khám**: nhập **Nội tổng quát** vào ô **Khoa** → **Tìm** →
+   bấm kết quả **Khoa Nội tổng quát Demo (DEMO-NOI)**.
+   **Từ ngày** và **Đến ngày** mặc định là hôm nay (= D); dòng **Đã chọn:** hiển thị
+   ngày/tháng/năm, ô lịch có thể hiện theo định dạng trình duyệt.
+3. Bấm **Tải buổi khám**. Trong nhiều thẻ lịch, chọn đúng bộ ba:
+   **Lê Bác Sĩ Demo / 07:00–17:00 / Phong kham ngoai tru demo V2** → **Chọn buổi**.
+   Luồng chính không chọn thẻ bác sĩ có tên bắt đầu bằng **BS Demo…**.
+4. Cuộn xuống form mới xuất hiện: **Tiếp nhận vào buổi [D] · 07:00**, có dòng
+   **Còn … chỗ** và tên bệnh nhân đã chọn ở bước 1.
+5. Nếu muốn xem trước các phiếu đã có, bấm **Tải phiếu trong buổi**.
 6. **Loại lượt khám**: A/B chọn **Khám đợt mới**; C chọn
    **Tái khám từ lượt đã hoàn tất**, chọn nguồn theo mục 3C.
    Đây là danh sách thả xuống, **không có nút riêng “Khám mới”**.
 7. **Hình thức tiếp nhận → Đang có mặt tại quầy**.
    **Ghi chú tùy chọn**: `Demo A - tiếp nhận khám mới` (đổi A thành B/C tương ứng).
-8. Bấm **Đăng ký và giữ chỗ**. Kỳ vọng **Đang chờ thu tiền**, chưa có số thứ tự.
+8. Bấm **Đăng ký và giữ chỗ**. Kỳ vọng khối **Đang chờ thu tiền** có **Hạn giữ chỗ**,
+   bác sĩ **Lê Bác Sĩ Demo**, **Số quầy: Chưa cấp trước khi xác nhận**; trong
+   **Phiếu trong buổi** dòng bệnh nhân hiện **Chờ thanh toán · Chưa có số**.
    Chờ cập nhật xong: **Phiếu trong buổi** phải có bệnh nhân vừa đăng ký; số chỗ
    được lấy lại từ backend. Trong lúc tải lại, số chỗ cũ được ẩn và nút đăng ký bị khóa.
    Nếu hiện **Phiếu đã được tạo; chưa cập nhật được danh sách và số chỗ**, giữ phiếu
@@ -290,7 +302,8 @@ Trang: **http://127.0.0.1:3000/appointments/reception**.
    Nếu hiện **Chưa xác định phiếu đã được tạo**, dùng **Gửi lại cùng yêu cầu**;
    hệ thống giữ nguyên mã chống trùng và khóa đổi khoa/buổi trong lúc đối soát.
 9. Sao chép **Mã phiếu bàn giao thu ngân** vào **PHIEU**. Có thể bấm
-   **Mở phiếu khám vừa đăng ký** để kiểm đúng tên. Đổi sang cashier ngay.
+   **Mở phiếu khám vừa đăng ký** để kiểm đúng tên. Bấm **Tiếp nhận bệnh nhân tiếp theo**
+   khi cần làm người khác. Đổi sang cashier ngay, trước hạn giữ chỗ.
 
 Nếu đang đăng ký cho ngày sau, bước 7 phải chọn **Đăng ký trước, sẽ đến sau**.
 Khi bệnh nhân tới đúng ngày, nurse cần **Ghi nhận đã đến** sau thanh toán.
@@ -302,7 +315,7 @@ Luồng chính đã chọn có mặt tại quầy nên không bấm tiếp nhậ
 
 **UI / RabbitMQ:** **Thu phí lịch khám** → `payment.completed`; đủ nghĩa vụ → `outpatient.financial.eligibility.granted`, Clinical xác nhận phiếu.
 
-**Bàn giao:** Vinh kiểm phiếu đã confirmed, bắt đầu khám ở mục 6.
+**Bàn giao:** điều dưỡng khoa cấp số phòng ở mục 5b, sau đó bác sĩ khám ở mục 6.
 
 1. **Đăng xuất → demo.staff19@example.test / MediFlowDemo@2026**.
 2. Menu **Thu phí lịch khám**, hoặc **http://127.0.0.1:3000/billing/scheduled-payments**.
@@ -318,11 +331,37 @@ Luồng chính đã chọn có mặt tại quầy nên không bấm tiếp nhậ
 5. **Hình thức thu → Tiền mặt → Thu phí lịch khám**.
    Màn hình này lấy số tiền theo báo giá; không cần tự lập một hóa đơn khác.
 6. Nếu hiện đang xử lý, bấm **Kiểm tra trạng thái giao dịch**, sau đó **Cập nhật số dư**
-   khi cần. Kỳ vọng thanh toán hoàn tất, phiếu được xác nhận và có số thứ tự.
-7. Ghi số thứ tự bên cạnh **PHIEU**, chuyển sang bác sĩ.
+   khi cần. Kỳ vọng thanh toán hoàn tất, phiếu được xác nhận và có **số quầy**.
+7. Ghi số quầy bên cạnh **PHIEU**, chuyển sang quầy điều dưỡng khoa (mục 5b).
 
 Các số trên là policy mô phỏng của bộ demo. Nếu báo giá hiện tại khác, dùng số tiền
 UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp bảng hoặc thu lần hai.
+
+## 5b. VINH / NURSE — Clinical: quầy điều dưỡng khoa cấp số phòng
+
+**Người trình bày: Vinh · Clinical (tiếp nhận khoa v2).**
+
+**Vì sao có bước này:** đã thu tiền chưa đủ để vào khám. Điều dưỡng khoa phải
+**cấp số phòng** cho bệnh nhân đã có mặt; nếu bỏ qua, bác sĩ bấm **Bắt đầu khám** sẽ bị
+chặn với thông báo bàn khoa cần cấp số phòng trước (`CLINICAL_ROOM_TICKET_REQUIRED`).
+
+**Bàn giao:** bác sĩ thấy bệnh nhân trong nhóm **Được vào khám**, bắt đầu khám ở mục 6.
+
+1. **Đăng xuất → demo.staff04@example.test / MediFlowDemo@2026**.
+2. Menu **Quầy điều dưỡng khoa**, hoặc **http://127.0.0.1:3000/appointments/clinic-queue**.
+3. **Ngày khám → D** (mặc định hôm nay) → **Tải hàng đợi**. Mỗi phòng một khối, ví dụ
+   **P.R-… · Phong kham ngoai tru demo V2 · Tầng 1, khu Demo**.
+4. Bệnh nhân vừa thu tiền nằm ở nhóm **Chờ cấp số phòng** (chưa thu thì nằm ở
+   **Chưa đủ điều kiện · Chưa có số**). Bấm **Cấp số phòng**. Kỳ vọng dòng hiện
+   **Số quầy … · Số phòng …** và chuyển sang nhóm **Được vào khám**.
+5. Tùy chọn **Ghi sinh hiệu**: ví dụ Mạch `78`, Huyết áp tâm thu `120`, tâm trương `80`,
+   Nhiệt độ `36.8` (dùng dấu chấm), Nhịp thở `18`, SpO2 `98`, Cân nặng `60` →
+   **Lưu sinh hiệu**. Bác sĩ xem lại bằng **Xem sinh hiệu**.
+6. Tùy chọn **Gọi vào khám** (bấm lại là **Gọi lại**). Các nút **Đến muộn**, **Vắng mặt**,
+   **Ưu tiên** chỉ dùng khi muốn minh họa điều phối hàng đợi; không cần cho lượt chính.
+
+Bệnh nhân đăng ký trước (**Đăng ký trước, sẽ đến sau**) phải được ghi nhận đã đến
+trước, nếu không sẽ ở nhóm **Chưa đủ điều kiện** và không cấp số phòng được.
 
 ## 6. VINH / DOCTOR — Clinical: khám và lập yêu cầu Lab
 
@@ -334,12 +373,13 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
 
 1. **Đăng xuất → demo.staff03@example.test / MediFlowDemo@2026**.
 2. **Lịch khám của tôi**: **http://127.0.0.1:3000/appointments/my-calendar**.
-3. **Chế độ lịch → Theo ngày**, **Ngày tham chiếu → D**, ví dụ **04/11/2026** →
+3. **Chế độ lịch → Theo ngày**, **Ngày tham chiếu → D**, ví dụ **12/11/2026** →
    **Tải lịch của tôi**.
 4. Ở buổi **07:00–17:00 / Khoa Nội tổng quát Demo / Phong kham ngoai tru demo V2**,
    bấm **Xem phiếu**.
-5. Chọn đúng tên bệnh nhân và số thứ tự ghi ở mục 5 → **Xem phiếu khám**.
-   Nếu chưa thấy trạng thái mới, bấm **Cập nhật trạng thái**.
+5. Chọn đúng tên bệnh nhân, số quầy/số phòng ghi ở mục 5–5b → **Xem phiếu khám**.
+   Nếu chưa thấy trạng thái mới, bấm **Cập nhật trạng thái**. Bác sĩ cũng mở được
+   **Quầy điều dưỡng khoa** để xem hàng đợi và sinh hiệu (không cấp số phòng).
 6. **Bắt đầu khám → xác nhận trong khối xác nhận**. Chờ trạng thái đang khám →
    **Mở hồ sơ khám**. Lưu URL này, ghi **HOSO**.
 7. **Sửa triệu chứng**: nhập `Khám sức khỏe định kỳ - dữ liệu demo` → lưu thay đổi.
@@ -354,7 +394,7 @@ UI xác nhận và ghi lại khác biệt; không tự sửa số để khớp b
    | Ô | Giá trị |
    |---|---|
    | Dịch vụ (danh mục) | **Công thức máu · Bộ xét nghiệm** |
-   | Ngày yêu cầu | **D**, ví dụ **04/11/2026** |
+   | Ngày yêu cầu | **D**, ví dụ **12/11/2026** |
 
    Mã giá `LAB-CBC` đi theo danh mục, không nhập tay. Nếu khối báo
    *Không tải được danh mục xét nghiệm*, bấm tải lại trang; không nhập thủ công,
@@ -452,9 +492,6 @@ Chỉ dùng khi còn thời gian, sau mục 8.
 3. **demo.staff16@example.test** → **Phát hành**.
 4. Bác sĩ mở lại hồ sơ: tài liệu Lab hiện phiên bản 2 và giữ phiên bản cũ trong lịch sử.
 
-Kiểm tra tự động cùng luồng khi rehearsal đang chạy:
-`python scripts/demo_25_10/lab_v2_walkthrough.py CBC` → `LAB V2 WALKTHROUGH PASSED`.
-
 ## 9. VINH / DOCTOR — Clinical: đọc lại kết quả trong cùng lượt
 
 **Người trình bày: Vinh · Clinical.**
@@ -485,7 +522,7 @@ Kiểm tra tự động cùng luồng khi rehearsal đang chạy:
    | Hồ sơ khám | Hồ sơ **ngày D**, đang mở, đúng **HOSO** ở mục 6 |
    | Bác sĩ kê đơn nếu cần chọn | **Lê Bác Sĩ Demo** |
    | Khoa khám | Hệ thống lấy **Khoa Nội tổng quát Demo**, không chọn khoa khác |
-   | Ngày kê đơn | **D**, ví dụ **04/11/2026** |
+   | Ngày kê đơn | **D**, ví dụ **12/11/2026** |
    | Nhóm thu tiền thuốc nếu xuất hiện | **RX-DEMO**; nếu chỉ một nhóm và không hiện ô chọn, hệ thống đã dùng nhóm này |
    | Thuốc | Tìm **DEMO-HIST-2025**, chọn **Thuốc minh họa A** |
    | Số lượng | `2` |
@@ -630,6 +667,8 @@ nếu có; nói rõ đó là dữ liệu nền, không nhận là kết quả l�
 | Ngày minh họa đã qua | Thay D bằng ngày thực và khởi động phiên demo mới trong giờ khám, không giữ lịch quá khứ |
 | Backend báo PARTIAL, C không có lượt nguồn | Chạy tình huống A/B; muốn đủ C, khởi động phiên mới trong 07:00–16:45 |
 | Bác sĩ chưa có “Bắt đầu khám” | Kiểm đúng bác sĩ, đã thu phí, bệnh nhân đã đến, đúng ngày/giờ; nếu đặt trước thì nurse ghi nhận đã đến |
+| “Bắt đầu khám” báo cần cấp số phòng | Làm mục 5b: NURSE mở **Quầy điều dưỡng khoa → Tải hàng đợi → Cấp số phòng**, rồi bác sĩ bấm lại |
+| Không thấy menu **Quầy điều dưỡng khoa** | Khởi động frontend bằng **start-frontend.bat** (launcher bật cờ UI tiếp nhận khoa); không chạy `pnpm dev` trần |
 | Lab chưa làm được sau thu tiền | Đúng LAB/PHIEU, tải lại để chờ xác nhận tài chính; không thu lần hai |
 | Không tạo được đơn | Chọn đúng bệnh nhân và HOSO đang mở của chính lượt vừa khám |
 | Chưa xuất được thuốc | Đúng DON, đã thu đủ, tải lại xác nhận tài chính, còn tồn và chưa hết hạn |
@@ -640,7 +679,7 @@ nếu có; nói rõ đó là dữ liệu nền, không nhận là kết quả l�
 
 - [ ] Đã chạy lượt chính A; B/C chỉ đánh dấu nếu chạy riêng, giữ đúng BN/PHIEU/HOSO/LAB/DON.
 - [ ] Nurse cấp tài khoản chỉ cho bệnh nhân mới; bệnh nhân cũ dùng lại.
-- [ ] Đã thu khám → khám → thu CBC → trả CBC → đọc kết quả → kê đơn → thu thuốc → cấp thuốc → hoàn tất hồ sơ.
+- [ ] Đã thu khám → cấp số phòng → khám → thu CBC → trả CBC → đọc kết quả → kê đơn → thu thuốc → cấp thuốc → hoàn tất hồ sơ.
 - [ ] Patient xem đúng kết quả chính chủ; A đổi mật khẩu lần đầu.
 - [ ] Notification và portal đúng bệnh nhân; Report phân biệt kỳ có dữ liệu với lượt vừa demo.
 - [ ] Mỗi người chỉ đúng thao tác UI/event, không coi thao tác chỉ đọc là phát event.
@@ -659,12 +698,13 @@ Hướng dẫn là kịch bản thao tác, chưa khẳng định toàn hành tr�
 
 1. Bổ nhiệm **Lê Bác Sĩ Demo** như mục 2, rồi đăng nhập **demo.staff03@example.test**.
 2. **Sang Quản lý khoa → Lịch làm việc bác sĩ → Khoa Nội tổng quát Demo**.
-3. **Từ ngày → 02/11/2026 → Theo tuần → Tải giờ làm việc**.
-   Kỳ vọng tuần **02–08/11/2026** có các hàng **BS Demo Khoa Nội tổng quát Demo 01–06**.
+3. **Từ ngày → thứ Hai của tuần chứa D** (ví dụ **09/11/2026** nếu D là 12/11) →
+   **Theo tuần → Tải giờ làm việc**. Kỳ vọng tuần đó có các hàng
+   **BS Demo Khoa Nội tổng quát Demo 01–06**.
 4. Xem giờ/phòng/tổng giờ; cuộn ngang nếu cần. Ca đã có buổi khám sẽ bị chặn sửa/hủy.
 
 Không cần chạy lệnh tạo ca mẫu. Nếu muốn demo thao tác tạo bằng UI trên phiên mới:
-chọn **Lê Bác Sĩ Demo**, phòng **Phong kham ngoai tru demo V2**, ngày **D + 2 ngày** (ví dụ **06/11/2026** nếu D là 04/11),
+chọn **Lê Bác Sĩ Demo**, phòng **Phong kham ngoai tru demo V2**, ngày **D + 2 ngày** (ví dụ **14/11/2026** nếu D là 12/11),
 giờ **08:00–12:00 → Lưu giờ làm việc**. Sau đó từ ca vừa tạo chọn
 **Tạo buổi khám từ giờ làm việc**, giờ **09:00–11:00**, sức chứa **12 → Xác nhận tạo buổi khám**.
 Chỉ tạo khi ngày đó chưa có ca/buổi bạn đã lập; không dùng phòng calendar đã kín.
@@ -676,8 +716,8 @@ Từ 6 ngày trước đến 24 ngày sau ngày seed, mọi ngày đều có hai
 **Phong kham lich day demo**, khoa **Khoa Nội tổng quát Demo**, luân phiên ba bác sĩ
 **BS Demo Khoa Nội tổng quát Demo 01–03**, chưa được script cấp tài khoản.
 
-Lịch một tháng chỉ minh họa danh mục/lịch. `prepare_demo_calendar.py` hiện không
-cấp account cho ba bác sĩ luân phiên; không đăng nhập bằng username cũ hoặc dùng
+Lịch một tháng chỉ minh họa danh mục/lịch, do launcher tự tạo lúc khởi động. Launcher
+không cấp account cho ba bác sĩ luân phiên; không đăng nhập bằng username cũ hoặc dùng
 bác sĩ seed để khám thay. Luồng chính dùng **Lê Bác Sĩ Demo** với account email
 đã chuẩn bị. Muốn khám bằng bác sĩ khác cần cấp account/authority hợp lệ trước,
 và tái khám đổi bác sĩ cần lý do, xác nhận đồng ý theo UI.

@@ -39,6 +39,8 @@ if ($Demo) {
     $defines += '--dart-define=MEDIFLOW_SCHEDULING_UI_ENABLED=true'
     $defines += '--dart-define=MEDIFLOW_OUTPATIENT_QUOTES_UI_ENABLED=true'
     $defines += '--dart-define=MEDIFLOW_ZERO_PAYABLE_UI_ENABLED=true'
+    # Backend demo runs clinic intake v2 (room ticket before the exam).
+    $defines += '--dart-define=MEDIFLOW_CLINIC_INTAKE_UI_ENABLED=true'
 }
 
 function Get-RunningEmulator {
