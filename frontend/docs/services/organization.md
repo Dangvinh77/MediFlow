@@ -21,6 +21,19 @@ need an explicitly assigned shared task.
 
 ## Current UI baseline
 
+### Ngừng làm việc nhân viên — 2026-11-13
+
+ADMIN có nút **Ngừng làm việc** ở danh sách và chi tiết staff còn active. Hộp xác nhận nêu tên,
+giữ hồ sơ lịch sử, khóa tài khoản và nhắc bàn giao lịch/công việc. Cancel/Escape trả focus về
+nút; khóa submit trùng và bỏ response của phiên cũ. Khi thành công, cập nhật trạng thái bằng
+DTO server, ẩn nút và tải lại account panel ở trang chi tiết. Có bản dịch Việt/Anh.
+
+API PUT `/api/v1/org/staff/{id}/deactivate`, body `{}`, response StaffDTO hiện hành. Backend
+chặn tự ngừng hồ sơ và trưởng khoa/phòng chưa bàn giao; khóa tài khoản và thu hồi credential
+trong cùng transaction với staff/outbox. Network/timeout/5xx chỉ cho **Kiểm tra trạng thái**
+bằng GET staff, không tự lặp mutation hoặc tự kết luận thất bại từ response bị mất. Không hủy
+lịch Clinical, xóa hồ sơ hay thêm thao tác khôi phục trong thay đổi này.
+
 `/organization` loads all departments and paged staff as independent read sections. Detail routes
 exist for both resources. `ADMIN` can create/update departments, create/update/transfer staff, and
 use `/organization/accounts` to create or lock/unlock an account. Service-only lookup and credential

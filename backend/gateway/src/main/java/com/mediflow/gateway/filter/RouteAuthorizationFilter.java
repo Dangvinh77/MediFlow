@@ -126,6 +126,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                     Roles.PHARMACIST, Roles.CASHIER, Roles.LAB_TECH),
             rule("/api/v1/org/staff", HttpMethod.POST, Roles.ADMIN),
             rule("/api/v1/org/staff/{id}", HttpMethod.PUT, Roles.ADMIN),
+            rule("/api/v1/org/staff/{id}/deactivate", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v1/org/staff/{id}/department", HttpMethod.PUT, Roles.ADMIN),
             rule("/api/v1/org/staff/{id}/contact", HttpMethod.PUT,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE,

@@ -6,6 +6,8 @@ import com.mediflow.organization.application.event.StaffCreatedEvent;
 import com.mediflow.organization.application.event.StaffDepartmentChangedEvent;
 
 public interface EventPublisher {
+    void publishStaffDeactivated(com.mediflow.organization.application.event.StaffDeactivatedEvent event);
+
     void publishStaffContactUpdated(StaffContactUpdatedEvent event);
 
     void publishDepartmentCreated(DepartmentCreatedEvent event);

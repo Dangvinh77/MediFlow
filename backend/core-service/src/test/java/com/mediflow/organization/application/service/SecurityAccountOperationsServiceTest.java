@@ -50,6 +50,20 @@ class SecurityAccountOperationsServiceTest {
     }
 
     @Test
+    void staffIssuanceChecksActivityAfterTakingTheSameOwnerLockAsDeactivation() {
+        Staff owner = Staff.create("Former staff", UUID.randomUUID(), JobTitle.DOCTOR,
+                null, "LIC", null, "former@example.test", "012345678901");
+        owner.deactivate();
+        when(staff.findById(owner.getStaffId())).thenReturn(Optional.of(owner));
+        assertThatThrownBy(() -> service.issueStaff(UUID.randomUUID(), "key", owner.getEmail(), owner.getStaffId(), Role.DOCTOR, false))
+                .isInstanceOf(InvalidAccountException.class);
+        var order = inOrder(accounts, staff);
+        order.verify(accounts).lockOwner(owner.getStaffId(), null);
+        order.verify(staff).findById(owner.getStaffId());
+        verifyNoInteractions(creator);
+    }
+
+    @Test
     void forgotPasswordUsesGenericAckForUnknownAndEmailChangedAfterLookup() {
         when(accounts.findByUsername("missing@example.test")).thenReturn(Optional.empty());
         assertThat(service.forgotPassword("missing@example.test").accepted()).isTrue();

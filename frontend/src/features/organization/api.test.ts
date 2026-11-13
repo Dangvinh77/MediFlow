@@ -33,6 +33,11 @@ const staffPage: PageResult<StaffDTO> = {
 };
 
 describe("organizationApi facade contract", () => {
+  it("deactivates staff through the exact Gateway command without deleting the profile", async () => {
+    put.mockResolvedValueOnce({ ...staffContractFixture, active: false });
+    await expect(organizationApi.deactivateStaff(staffContractFixture.staffId)).resolves.toMatchObject({ active: false });
+    expect(put).toHaveBeenCalledWith(`/v1/org/staff/${staffContractFixture.staffId}/deactivate`, {});
+  });
   it("sends server-side search/active filters and reads only the signed staff unit endpoint", async () => {
     await organizationApi.staff({ keyword: "  Đặng An  ", activeOnly: true, page: 2 });
     expect(get).toHaveBeenCalledWith("/v1/org/staff?page=2&size=20&keyword=%C4%90%E1%BA%B7ng+An&activeOnly=true");

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { staffContractFixture } from "../contract.fixture";
 
@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   role: "ADMIN",
   session: "session-a",
   staffMember: vi.fn(),
+  deactivateStaff: vi.fn(),
   profileAccount: vi.fn(),
   mailDelivery: vi.fn(),
   resetPassword: vi.fn(),
@@ -53,6 +54,37 @@ it("puts the account state and issue action inside an administrator's staff prof
   expect(await screen.findByRole("button", { name: "Cấp tài khoản nhân sự" })).toBeVisible();
   expect(mocks.profileAccount).toHaveBeenCalledWith("staff", staffContractFixture.staffId);
   expect(screen.getByText(/Email hồ sơ: doctor@example.com/)).toBeVisible();
+});
+
+it("updates employment and reloads the linked account state after confirmation", async () => {
+  mocks.deactivateStaff.mockResolvedValue({ ...staffContractFixture, email: "doctor@example.com", active: false });
+  render(<StaffDetail staffId={staffContractFixture.staffId} />);
+  await screen.findByRole("button", { name: "Cấp tài khoản nhân sự" });
+  fireEvent.click(screen.getByRole("button", { name: "Ngừng làm việc" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận ngừng làm việc" }));
+  expect(await screen.findByText("Đã ngừng làm việc nhân viên và khóa tài khoản liên kết.")).toBeVisible();
+  expect(screen.getByText("Đã ngừng")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Ngừng làm việc" })).not.toBeInTheDocument();
+  await waitFor(() => expect(mocks.profileAccount).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole("button", { name: "Cấp tài khoản nhân sự" })).toBeDisabled();
+});
+
+it("ignores a profile read started before successful deactivation", async () => {
+  let resolveRead!: (value: typeof staffContractFixture) => void;
+  const staleRead = new Promise<typeof staffContractFixture>(resolve => { resolveRead = resolve; });
+  mocks.staffMember.mockResolvedValueOnce({ ...staffContractFixture, active: true }).mockReturnValueOnce(staleRead);
+  mocks.profileAccount.mockResolvedValue({ account: null, profileEmail: "doctor@example.com", emailSyncPending: true });
+  mocks.deactivateStaff.mockResolvedValue({ ...staffContractFixture, active: false });
+  render(<StaffDetail staffId={staffContractFixture.staffId} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Kiểm tra đồng bộ email" }));
+  await waitFor(() => expect(mocks.staffMember).toHaveBeenCalledTimes(2));
+  fireEvent.click(screen.getByRole("button", { name: "Ngừng làm việc" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xác nhận ngừng làm việc" }));
+  await screen.findByText("Đã ngừng");
+  await act(async () => { resolveRead({ ...staffContractFixture, active: true }); });
+  expect(screen.getByText("Đã ngừng")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Ngừng làm việc" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Cấp tài khoản nhân sự" })).toBeDisabled();
 });
 
 it("shows linked account state and audited email controls without exposing credentials", async () => {

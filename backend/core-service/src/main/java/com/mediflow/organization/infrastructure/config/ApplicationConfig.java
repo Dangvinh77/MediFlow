@@ -51,6 +51,15 @@ import com.mediflow.organization.application.service.ScheduleManagementScopeServ
 @Configuration
 public class ApplicationConfig {
         @Bean
+        public com.mediflow.organization.application.port.in.DeactivateStaffUseCase deactivateStaffUseCase(
+                        StaffRepository staff, DepartmentRepository departments, AccountRepository accounts,
+                        EventPublisher events, CorrelationIdProvider correlationIds,
+                        com.mediflow.organization.application.port.out.DepartmentHeadRepository heads) {
+                return new com.mediflow.organization.application.service.DeactivateStaffService(
+                                staff, departments, accounts, events, correlationIds, heads);
+        }
+
+        @Bean
         public com.mediflow.organization.application.port.in.GetCareLabelUseCase getCareLabelUseCase(
                         StaffRepository staff, DepartmentRepository departments, RoomRepository rooms) {
                 return new com.mediflow.organization.application.service.GetCareLabelService(staff, departments, rooms);
@@ -119,9 +128,9 @@ public class ApplicationConfig {
 
         @Bean
         public UpdateAccountStatusUseCase updateAccountStatusUseCase(
-                        AccountRepository accountRepository) {
+                        AccountRepository accountRepository, StaffRepository staffRepository) {
 
-                return new UpdateAccountStatusService(accountRepository);
+                return new UpdateAccountStatusService(accountRepository, staffRepository);
         }
 
         @Bean

@@ -1,5 +1,28 @@
 # Hợp đồng tích hợp tối thiểu
 
+## Ngừng làm việc nhân viên — 13/11/2026
+
+ADMIN gọi PUT `/api/v1/org/staff/{id}/deactivate` qua Gateway, body `{}`, nhận
+`ApiResponse<StaffResponse>` hiện có (`active=false`, `Cache-Control: no-store`). Actor lấy
+từ principal account đã xác minh. Không xóa UUID/hồ sơ; không hủy lịch khám hoặc công việc
+đang xử lý. Quản trị viên cần bàn giao trước khi xác nhận trên giao diện.
+
+Core Organization dùng command lock bổ nhiệm trưởng khoa hiện có trước khi khóa owner tài
+khoản, các account active, staff và khoa trong cùng
+`organizationTransactionManager`. Thao tác đổi staff sang INACTIVE, khóa mọi account active
+liên kết, tăng credential version để Gateway từ chối phiên cũ ở yêu cầu kế tiếp, và ghi durable
+outbox `staff.deactivated`: `eventId,occurredAt,correlationId,staffId,actorAccountId`.
+Gọi lại khi đã inactive là no-op; không phát fact hoặc tăng version lần nữa.
+Không có thay đổi schema. Chưa có consumer mới; relay dùng retry/DLQ hiện hành nếu fact chưa
+có binding, không coi việc ghi outbox là đã xử lý tại Clinical.
+
+404 khi staff không tồn tại; 409 `STAFF_SELF_DEACTIVATION` khi thao tác lên hồ sơ của chính
+account đang đăng nhập; 409 `STAFF_DEPARTMENT_HEAD` khi còn giữ trưởng khoa/phòng.
+Từ chối mọi role khác ADMIN ở cả Gateway/Core. Cấp account và đổi trạng thái account dùng
+cùng owner lock; không cấp/kích hoạt account cho staff inactive. UI không gửi lại mutation tự
+động sau timeout/network/5xx; chỉ đọc lại staff để xác minh `active=false`. Trạng thái chưa xác
+minh tiếp tục khóa thao tác trong hộp xác nhận.
+
 ## Tài khoản đăng nhập bằng email và khôi phục — 04/11/2026
 
 Organization trong Core giữ quyền dữ liệu tài khoản, phiên bản credential, mã khôi phục

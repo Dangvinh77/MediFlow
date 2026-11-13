@@ -72,6 +72,7 @@ public class SecurityAccountOperationsService {
         if (staffId == null || role == null || role == Role.PATIENT || role == Role.SYSTEM) {
             throw new InvalidAccountException("A staff account requires a staff owner and human staff role");
         }
+        accounts.lockOwner(staffId, null);
         Staff owner = staff.findById(staffId)
                 .orElseThrow(() -> new InvalidAccountException("Staff account owner was not found"));
         if (!owner.isActive()) throw new InvalidAccountException("Inactive staff cannot receive an account");

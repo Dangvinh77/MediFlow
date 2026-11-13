@@ -15,6 +15,7 @@ import { organizationApi } from "../api";
 import { getRole, getSessionKey } from "@/lib/auth";
 import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, JobTitle, StaffDTO } from "../types";
+import { DeactivateStaffAction } from "./DeactivateStaffAction";
 
 const STAFF_PAGE_SIZE = 20;
 
@@ -57,6 +58,7 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
   const [totalElements, setTotalElements] = useState(0);
   const [lastRequest, setLastRequest] = useState(0);
   const [keyword, setKeyword] = useState("");
+  const [deactivated, setDeactivated] = useState(false);
 
   const [request, setRequest] = useState<{ page: number; attempt: number; departmentId?: string; jobTitle?: JobTitle; keyword?: string }>({ page: 0, attempt: 0 });
 
@@ -94,6 +96,7 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
 
   return (
     <DataTableShell title={localize("Nhân sự")} description={localize("Hồ sơ nhân sự, chức danh và khoa công tác.")}>
+      {deactivated ? <p role="status" className="px-5 py-3 text-sm text-success"><L10n>Đã ngừng làm việc nhân viên và khóa tài khoản liên kết.</L10n></p> : null}
       <form className="grid items-end gap-3 border-t border-border p-5 lg:grid-cols-[minmax(16rem,2fr)_auto_minmax(11rem,1fr)_minmax(11rem,1fr)] lg:px-6" onSubmit={event => { event.preventDefault(); setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, keyword: keyword.trim() || undefined, attempt: previous.attempt + 1 })); }}>
         <Field label={localize("Tìm nhân sự")} htmlFor="staff-keyword"><input id="staff-keyword" type="search" maxLength={100} value={keyword} onChange={event => setKeyword(event.target.value)} placeholder={localize(getRole() === "ADMIN" ? "Họ tên, CCCD, chức danh hoặc khoa/phòng" : "Họ tên, chức danh hoặc khoa/phòng")} className={controlClassName} /></Field>
         <button type="submit" className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Tìm kiếm"}</L10n></button>
@@ -146,7 +149,7 @@ export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[]
                         <L10nValue>{member.active ? "Đang làm việc" : "Đã ngừng làm việc"}</L10nValue>
                       </StatusBadge>
                     </td>
-                    <td className="px-4 py-2"><Link href={`/organization/staff/${member.staffId}`} aria-label={localize(`Xem chi tiết ${member.fullName}`)} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Xem chi tiết"}</L10n></Link></td>
+                      <td className="px-4 py-2"><Link href={`/organization/staff/${member.staffId}`} aria-label={localize(`Xem chi tiết ${member.fullName}`)} className="inline-flex min-h-11 items-center rounded-lg px-2 py-2 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><L10n>{"Xem chi tiết"}</L10n></Link><DeactivateStaffAction staff={member} onChanged={updated => { setStaff(previous => previous.map(value => value.staffId === updated.staffId ? updated : value)); setDeactivated(true); }} /></td>
                   </tr>
                 ))}</L10nValue>
               </tbody>

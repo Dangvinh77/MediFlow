@@ -95,6 +95,8 @@ export const organizationApi = {
   },
   staffMember: (staffId: string) =>
     api.get<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`),
+  deactivateStaff: (staffId: string) =>
+    api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/deactivate`, {}),
   ownDepartment: (staffId: string) =>
     api.get<StaffDepartmentDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/department`),
   createStaff: (body: CreateStaffRequest, idempotencyKey: string) =>

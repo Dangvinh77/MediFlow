@@ -7,6 +7,7 @@ import type { StaffDTO } from "../types";
 const mocks = vi.hoisted(() => ({
   departments: vi.fn(),
   staff: vi.fn(),
+  deactivateStaff: vi.fn(),
   rooms: vi.fn(),
   roomTypes: vi.fn(),
   createRoomType: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock("@/lib/auth", () => ({
   getSessionKey: mocks.getSessionKey,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff, rooms: mocks.rooms, roomTypes: mocks.roomTypes, createRoomType: mocks.createRoomType, deleteRoomType: mocks.deleteRoomType } }));
+vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff, deactivateStaff: mocks.deactivateStaff, rooms: mocks.rooms, roomTypes: mocks.roomTypes, createRoomType: mocks.createRoomType, deleteRoomType: mocks.deleteRoomType } }));
 vi.mock("@/components/references/ReferenceText", () => ({ ReferenceText: ({ value }: { value: string }) => <span>Bác sĩ {value}</span> }));
 
 import { ApiRequestError } from "@/lib/api";
@@ -45,6 +46,16 @@ function staffPage(overrides: Partial<PageResult<StaffDTO>> = {}): PageResult<St
 }
 
 describe("Organization browse and actions", () => {
+  it("stops a staff member from the current page and preserves the list", async () => {
+    mocks.staff.mockResolvedValue(staffPage());
+    mocks.deactivateStaff.mockResolvedValue({ ...staffContractFixture, active: false });
+    render(<StaffTable departments={[departmentContractFixture]} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Ngừng làm việc" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận ngừng làm việc" }));
+    expect(await screen.findByText("Đã ngừng làm việc")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Xem chi tiết Nguyen Van A" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Ngừng làm việc" })).not.toBeInTheDocument();
+  });
   it("searches the server directory and resets pagination while keeping filters", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture]);
     mocks.staff.mockResolvedValue(staffPage());

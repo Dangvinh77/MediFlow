@@ -35,6 +35,7 @@ class CareRouteAuthorizationTest {
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/staff/" + ID, Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/org/profile-accounts/patient/" + ID, Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID, Set.of("ADMIN")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID + "/deactivate", Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/staff/" + ID + "/contact",
                         Set.of("ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/org/patient-accounts/" + ID + "/password", Set.of("ADMIN", "NURSE")),

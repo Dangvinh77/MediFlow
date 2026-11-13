@@ -14,6 +14,19 @@ import static org.mockito.ArgumentMatchers.argThat;
 
 class OrganizationEventOutboxAdapterTest {
     @Test
+    void deactivationFactKeepsActorAndProfileIdentityInDurableOutbox() {
+        var store = mock(OrganizationEventOutboxStore.class);
+        var publisher = new OrganizationEventOutboxAdapter(store, new Jackson2JsonMessageConverter());
+        var event = new com.mediflow.organization.application.event.StaffDeactivatedEvent(
+                UUID.randomUUID(), Instant.now(), "trace", UUID.randomUUID(), UUID.randomUUID());
+        publisher.publishStaffDeactivated(event);
+        verify(store).append(eq(event.eventId()), eq(event.occurredAt()), eq(event.correlationId()),
+                eq("staff.deactivated"), eq(event.getClass().getName()),
+                argThat(payload -> payload.contains(event.staffId().toString())
+                        && payload.contains(event.actorAccountId().toString()) && !payload.contains("email")));
+    }
+
+    @Test
     void selfContactFactUsesOutboxWithoutPrivateContactValues() {
         OrganizationEventOutboxStore store = mock(OrganizationEventOutboxStore.class);
         var publisher = new OrganizationEventOutboxAdapter(store, new Jackson2JsonMessageConverter());

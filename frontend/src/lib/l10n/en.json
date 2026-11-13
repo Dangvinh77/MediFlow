@@ -4422,5 +4422,17 @@
   "Ghi nhận dị ứng mới": "Record a new allergy",
   "{0} thuốc": "{0} drugs",
   "Hiển thị {0}–{1} trong {2} thuốc": "Showing {0}–{1} of {2} drugs",
-  "{0} / trang": "{0} / page"
+  "{0} / trang": "{0} / page",
+  "Ngừng làm việc": "End employment",
+  "Ngừng làm việc nhân viên?": "End this staff member's employment?",
+  "Xác nhận ngừng làm việc": "Confirm end of employment",
+  "Hồ sơ và lịch sử được giữ lại. Tài khoản liên kết sẽ bị khóa. Hãy bàn giao lịch làm việc và công việc đang xử lý trước khi xác nhận.": "The profile and history will be retained. Linked accounts will be disabled. Arrange handover of existing schedules and ongoing work before confirming.",
+  "Đã ngừng làm việc nhân viên và khóa tài khoản liên kết.": "Employment ended and linked accounts disabled.",
+  "Kiểm tra trạng thái": "Check status",
+  "Chưa xác định được kết quả. Hãy kiểm tra trạng thái; hệ thống sẽ không tự gửi lại yêu cầu.": "The outcome is unknown. Check the current status; the request will not be sent again automatically.",
+  "Chưa xác nhận được nhân viên đã ngừng làm việc. Hãy kiểm tra lại trạng thái trước khi tiếp tục.": "The end of employment has not been confirmed. Check the status again before continuing.",
+  "Không thể ngừng làm việc nhân viên.": "Unable to end this staff member's employment.",
+  "Không thể ngừng làm việc hồ sơ của chính mình. Hãy nhờ quản trị viên khác thực hiện.": "You cannot end your own employment. Ask another administrator to do this.",
+  "Hãy thay hoặc gỡ trưởng khoa/phòng trước khi ngừng làm việc nhân viên này.": "Reassign or remove the department head before ending this staff member's employment.",
+  "Không thể kích hoạt tài khoản của nhân viên đã ngừng làm việc.": "An account for a former staff member cannot be activated."
 }

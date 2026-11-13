@@ -28,10 +28,26 @@ class UpdateAccountStatusServiceTest {
     private AccountRepository accountRepository;
 
     private UpdateAccountStatusService service;
+    @Mock private com.mediflow.organization.application.port.out.StaffRepository staffRepository;
 
     @BeforeEach
     void setUp() {
-        service = new UpdateAccountStatusService(accountRepository);
+        service = new UpdateAccountStatusService(accountRepository, staffRepository);
+    }
+
+    @Test
+    void inactiveStaffCannotHaveAnAccountReactivated() {
+        var staff = org.mockito.Mockito.mock(com.mediflow.organization.application.port.out.StaffRepository.class);
+        var account = account(false);
+        var owner = com.mediflow.organization.domain.model.Staff.create("Former staff", UUID.randomUUID(),
+                com.mediflow.organization.domain.model.JobTitle.DOCTOR, null, "LIC", null, null, "012345678901");
+        owner.deactivate();
+        when(accountRepository.findById(account.getAccountId())).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(account.getAccountId())).thenReturn(Optional.of(account));
+        when(staff.findById(account.getStaffId())).thenReturn(Optional.of(owner));
+        assertThrows(com.mediflow.organization.domain.exception.InvalidAccountException.class,
+                () -> new UpdateAccountStatusService(accountRepository, staff).execute(account.getAccountId(), true));
+        org.mockito.Mockito.verify(accountRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
@@ -51,6 +67,9 @@ class UpdateAccountStatusServiceTest {
     @Test
     void execute_true_activatesAccount() {
         Account account = account(false);
+        var owner = com.mediflow.organization.domain.model.Staff.create("Active staff", UUID.randomUUID(),
+                com.mediflow.organization.domain.model.JobTitle.DOCTOR, null, "LIC", null, null, "012345678901");
+        when(staffRepository.findById(account.getStaffId())).thenReturn(Optional.of(owner));
         when(accountRepository.findById(account.getAccountId())).thenReturn(Optional.of(account));
         when(accountRepository.findByIdForUpdate(account.getAccountId()))
                 .thenReturn(Optional.of(account));

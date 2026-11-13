@@ -1,6 +1,7 @@
 package com.mediflow.organization.infrastructure.messaging;
 
 import com.mediflow.organization.application.event.StaffContactUpdatedEvent;
+import com.mediflow.organization.application.event.StaffDeactivatedEvent;
 import com.mediflow.organization.application.event.DepartmentCreatedEvent;
 import com.mediflow.organization.application.event.StaffCreatedEvent;
 import com.mediflow.organization.application.event.StaffDepartmentChangedEvent;
@@ -23,6 +24,11 @@ public class OrganizationEventOutboxAdapter implements EventPublisher {
     public OrganizationEventOutboxAdapter(OrganizationEventOutboxStore store, MessageConverter converter) {
         this.store = store;
         this.converter = converter;
+    }
+
+    @Override
+    public void publishStaffDeactivated(StaffDeactivatedEvent event) {
+        append(event, StaffDeactivatedEvent.ROUTING_KEY, StaffDeactivatedEvent.class.getName());
     }
 
     @Override
@@ -50,6 +56,7 @@ public class OrganizationEventOutboxAdapter implements EventPublisher {
         byte[] body = converter.toMessage(event, properties).getBody();
         if (body.length == 0) throw new IllegalStateException("Organization event serialized to empty body");
         var common = switch (event) {
+            case StaffDeactivatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             case DepartmentCreatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             case StaffCreatedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());
             case StaffDepartmentChangedEvent value -> new EventMetadata(value.eventId(), value.occurredAt(), value.correlationId());

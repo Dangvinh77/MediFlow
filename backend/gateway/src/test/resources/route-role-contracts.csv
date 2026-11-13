@@ -54,6 +54,7 @@ core-service,POST,/api/v1/org/staff,ADMIN,true
 core-service,PUT,/api/v1/org/staff/{staffId}/department,ADMIN,true
 core-service,GET,/api/v1/org/staff,ADMIN|DOCTOR|NURSE,true
 core-service,PUT,/api/v1/org/staff/{staffId},ADMIN,true
+core-service,PUT,/api/v1/org/staff/{id}/deactivate,ADMIN,true
 # Extra staff roles may read only their signed staffId; Core enforces ownership.
 core-service,GET,/api/v1/org/staff/{id},ADMIN|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH,true
 core-service,POST,/api/v1/org/operating-rooms,ADMIN,true

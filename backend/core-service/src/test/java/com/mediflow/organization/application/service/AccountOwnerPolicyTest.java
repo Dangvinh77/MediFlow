@@ -71,7 +71,11 @@ class AccountOwnerPolicyTest {
         when(accounts.findById(target.getAccountId())).thenReturn(Optional.of(target));
         when(accounts.findByIdForUpdate(target.getAccountId())).thenReturn(Optional.of(target));
         when(accounts.findActiveByOwner(staff, null)).thenReturn(List.of(previous));
-        var service = new UpdateAccountStatusService(accounts);
+        var staffRepository = mock(com.mediflow.organization.application.port.out.StaffRepository.class);
+        var owner = com.mediflow.organization.domain.model.Staff.create("Active staff", UUID.randomUUID(),
+                com.mediflow.organization.domain.model.JobTitle.ADMINISTRATIVE, null, null, null, null, "012345678901");
+        when(staffRepository.findById(staff)).thenReturn(Optional.of(owner));
+        var service = new UpdateAccountStatusService(accounts, staffRepository);
         assertThrows(DuplicateResourceException.class, () -> service.execute(target.getAccountId(), true));
         assertThat(target.isActive()).isFalse();
         assertThat(previous.isActive()).isTrue();

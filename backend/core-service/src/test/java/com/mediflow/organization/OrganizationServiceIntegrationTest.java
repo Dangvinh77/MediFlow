@@ -63,6 +63,71 @@ import java.nio.charset.StandardCharsets;
 @Testcontainers
 @org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class OrganizationServiceIntegrationTest {
+    @Autowired private com.mediflow.organization.application.port.in.DeactivateStaffUseCase deactivateStaff;
+    @Autowired private com.mediflow.organization.application.service.SecurityAccountOperationsService securityAccounts;
+
+    @Test
+    void deactivationRetainsStaffRevokesAccountAndCommitsOneAuditableFact() {
+        var member = newDoctor(newDepartment().getDepartmentId());
+        var account = createAccountUseCase.execute(uniqueEmail(), "OriginalPassword123!", member.getStaffId(), Role.DOCTOR);
+        var jdbc = new JdbcTemplate(organizationDataSource);
+        long version = jdbc.queryForObject("select credential_version from account where account_id=?", Long.class, account.getAccountId());
+        UUID actor = UUID.randomUUID();
+        deactivateStaff.execute(member.getStaffId(), actor);
+        deactivateStaff.execute(member.getStaffId(), actor);
+        assertThat(staffStore.findById(member.getStaffId()).orElseThrow().isActive()).isFalse();
+        assertThat(jdbc.queryForObject("select is_active from account where account_id=?", Boolean.class, account.getAccountId())).isFalse();
+        assertThat(jdbc.queryForObject("select credential_version from account where account_id=?", Long.class, account.getAccountId())).isEqualTo(version + 1);
+        assertThat(lookupAccountIdentityUseCase.lookup(account.getAccountId()).active()).isFalse();
+        var facts = jdbc.queryForList("select payload from organization_event_outbox where routing_key='staff.deactivated' and payload like ?", String.class, "%" + member.getStaffId() + "%");
+        assertThat(facts).singleElement().asString().contains(actor.toString());
+        assertThrows(com.mediflow.organization.domain.exception.InvalidAccountException.class,
+                () -> updateAccountStatusUseCase.execute(account.getAccountId(), true));
+    }
+
+    @Test
+    void deactivationOutboxFailureRollsBackStaffAccountAndCredentialVersion() {
+        var member = newDoctor(newDepartment().getDepartmentId());
+        var account = createAccountUseCase.execute(uniqueEmail(), "OriginalPassword123!", member.getStaffId(), Role.DOCTOR);
+        var jdbc = new JdbcTemplate(organizationDataSource);
+        long version = jdbc.queryForObject("select credential_version from account where account_id=?", Long.class, account.getAccountId());
+        jdbc.execute("ALTER TABLE organization_event_outbox ADD CONSTRAINT reject_test_deactivation CHECK (routing_key <> 'staff.deactivated') NOT VALID");
+        try {
+            assertThrows(RuntimeException.class, () -> deactivateStaff.execute(member.getStaffId(), UUID.randomUUID()));
+        } finally {
+            jdbc.execute("ALTER TABLE organization_event_outbox DROP CONSTRAINT reject_test_deactivation");
+        }
+        assertThat(staffStore.findById(member.getStaffId()).orElseThrow().isActive()).isTrue();
+        assertThat(jdbc.queryForObject("select is_active from account where account_id=?", Boolean.class, account.getAccountId())).isTrue();
+        assertThat(jdbc.queryForObject("select credential_version from account where account_id=?", Long.class, account.getAccountId())).isEqualTo(version);
+        assertThat(jdbc.queryForObject("select count(*) from organization_event_outbox where routing_key='staff.deactivated' and payload like ?", Integer.class, "%" + member.getStaffId() + "%")).isZero();
+    }
+
+    @Test
+    void concurrentIssuanceWaitsForDeactivationThenRejectsInactiveStaff() throws Exception {
+        var member = newDoctor(newDepartment().getDepartmentId());
+        race(() -> deactivateStaff.execute(member.getStaffId(), UUID.randomUUID()),
+                () -> securityAccounts.issueStaff(UUID.randomUUID(), UUID.randomUUID().toString(), member.getEmail(), member.getStaffId(), Role.DOCTOR, false),
+                com.mediflow.organization.domain.exception.InvalidAccountException.class);
+        var jdbc = new JdbcTemplate(organizationDataSource);
+        assertThat(jdbc.queryForObject("select count(*) from account where staff_id=? and is_active", Integer.class, member.getStaffId())).isZero();
+    }
+
+    @Test
+    void headAppointmentAndDeactivationSerializeWithoutLeavingAnInactiveHead() throws Exception {
+        var firstDepartment = newDepartment();
+        var first = newDoctor(firstDepartment.getDepartmentId());
+        createAccountUseCase.execute(uniqueEmail(), "OriginalPassword123!", first.getStaffId(), Role.DOCTOR);
+        race(() -> deactivateStaff.execute(first.getStaffId(), UUID.randomUUID()),
+                () -> changeHead(firstDepartment, first.getStaffId()), com.mediflow.common.exception.BusinessRuleException.class);
+        var secondDepartment = newDepartment();
+        var second = newDoctor(secondDepartment.getDepartmentId());
+        createAccountUseCase.execute(uniqueEmail(), "OriginalPassword123!", second.getStaffId(), Role.DOCTOR);
+        race(() -> changeHead(secondDepartment, second.getStaffId()),
+                () -> deactivateStaff.execute(second.getStaffId(), UUID.randomUUID()), com.mediflow.common.exception.DuplicateResourceException.class);
+        assertThat(staffStore.findById(second.getStaffId()).orElseThrow().isActive()).isTrue();
+    }
+
     @Test
     void staffDirectorySearchUsesRealPostgresLiteralAccentSearchPrivacyAndStablePaging() {
         var unit = departmentStore.save(Department.create(UUID.randomUUID(), "Khoa Nội Directory", "DIR" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT), DepartmentType.CLINICAL, null));
