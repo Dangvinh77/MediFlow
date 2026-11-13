@@ -10,17 +10,23 @@ import {
   DOSE_PRESETS,
   DOSE_STEP,
   DOSE_TIMINGS,
+  DURATION_PRESETS,
+  DURATION_UNITS,
   MAX_DAYS,
   MAX_DOSE,
   applyDosePreset,
+  applyDurationPreset,
   createDosageSchedule,
   formatDosageSchedule,
   formatDose,
+  longPrescriptionNotice,
+  scheduleDays,
   suggestQuantity,
   validateDosageSchedule,
   type DosageSchedule,
   type DoseRow,
   type DoseTiming,
+  type DurationUnit,
 } from "./dosageSchedule";
 
 interface DosageScheduleDialogProps {
@@ -36,7 +42,7 @@ const FOCUSABLE = "button:not([disabled]), input:not([disabled]), select:not([di
 
 /** Portaled out of the prescription form so Enter here can never submit the prescription. */
 export function DosageScheduleDialog({ drugName, unit, stock, initial, onApply, onClose }: DosageScheduleDialogProps) {
-  const { localize } = useLocale();
+  const { localize, t } = useLocale();
   const [schedule, setSchedule] = useState<DosageSchedule>(() => initial ?? createDosageSchedule());
   const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -85,6 +91,8 @@ export function DosageScheduleDialog({ drugName, unit, stock, initial, onApply, 
   const valid = schedule.rows.some(row => row.selected) && validateDosageSchedule(schedule) === null;
   const preview = valid ? formatDosageSchedule(schedule, unit) : "";
   const suggestion = suggestQuantity(schedule, unit);
+  const totalDays = scheduleDays(schedule);
+  const longNotice = longPrescriptionNotice(schedule);
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
@@ -175,24 +183,55 @@ export function DosageScheduleDialog({ drugName, unit, stock, initial, onApply, 
           </table>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <label htmlFor="dosage-days" className="font-medium"><L10n>{"Số ngày dùng"}</L10n></label>
-          <input
-            id="dosage-days"
-            type="number"
-            inputMode="numeric"
-            min="1"
-            max={MAX_DAYS}
-            step="1"
-            value={schedule.days}
-            onChange={event => update({ ...schedule, days: event.target.value })}
-            className={`${controlClassName} !w-24`}
-          />
-          <L10nValue>{suggestion !== null && (
-            <span className={suggestion > stock ? "text-danger" : "text-muted-foreground"}><L10n>{"Gợi ý số lượng: "}</L10n><L10nValue>{suggestion}</L10nValue> <L10nValue>{unit}</L10nValue><L10nValue>{suggestion > stock ? ` (vượt tồn ${stock})` : ""}</L10nValue>
-            </span>
-          )}</L10nValue>
-        </div>
+        <fieldset className="mt-3 rounded-lg border border-border p-3 text-sm">
+          <legend className="px-1 font-medium"><L10n>{"Thời gian dùng"}</L10n></legend>
+          <div className="flex flex-wrap gap-2" role="group" aria-label={localize("Mẫu thời gian dùng")}>
+            <L10nValue>{DURATION_PRESETS.map(preset => {
+              const active = schedule.duration === preset.duration && schedule.durationUnit === preset.durationUnit;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => update(applyDurationPreset(schedule, preset.duration, preset.durationUnit))}
+                  className={`min-h-9 rounded-lg border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-primary bg-primary/15 font-medium" : "border-control-border hover:bg-surface-muted"}`}
+                >
+                  <L10nValue>{preset.label}</L10nValue>
+                </button>
+              );
+            })}</L10nValue>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label htmlFor="dosage-duration" className="sr-only"><L10n>{"Số lượng thời gian dùng"}</L10n></label>
+            <input
+              id="dosage-duration"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max={MAX_DAYS}
+              step="1"
+              value={schedule.duration}
+              onChange={event => update({ ...schedule, duration: event.target.value })}
+              className={`${controlClassName} !w-24`}
+            />
+            <select
+              aria-label={localize("Đơn vị thời gian dùng")}
+              value={schedule.durationUnit}
+              onChange={event => update({ ...schedule, durationUnit: event.target.value as DurationUnit })}
+              className={`${controlClassName} !w-28`}
+            >
+              <L10nValue>{DURATION_UNITS.map(item => <option key={item.unit} value={item.unit}><L10nValue>{item.label}</L10nValue></option>)}</L10nValue>
+            </select>
+            <L10nValue>{totalDays !== null && schedule.durationUnit !== "Ngày" && (
+              <span className="text-muted-foreground"><L10nValue>{t("= {0} ngày", totalDays)}</L10nValue></span>
+            )}</L10nValue>
+            <L10nValue>{suggestion !== null && (
+              <span className={suggestion > stock ? "text-danger" : "text-muted-foreground"}><L10n>{"Gợi ý số lượng: "}</L10n><L10nValue>{suggestion}</L10nValue> <L10nValue>{unit}</L10nValue><L10nValue>{suggestion > stock ? ` (vượt tồn ${stock})` : ""}</L10nValue>
+              </span>
+            )}</L10nValue>
+          </div>
+          <L10nValue>{longNotice && <p className="mt-2 text-xs text-warning"><L10nValue>{longNotice}</L10nValue></p>}</L10nValue>
+        </fieldset>
 
         <p className="mt-3 text-xs font-medium text-muted-foreground"><L10n>{"Cách dùng sẽ ghi vào toa"}</L10n></p>
         <p aria-live="polite" className="mt-1 min-h-10 rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm">

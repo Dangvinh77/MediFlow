@@ -5,8 +5,12 @@ import 'package:mediflow_mobile/features/pharmacy/domain/prescription_commands.d
 
 const _id = '00000000-0000-4000-8000-000000000001';
 
-DosageSchedule _morningEvening([String days = '']) =>
-    DosageSchedule.empty().withPreset(['Sáng', 'Tối']).copyWith(days: days);
+DosageSchedule _morningEvening([
+  String duration = '',
+  DurationUnit unit = DurationUnit.day,
+]) => DosageSchedule.empty()
+    .withPreset(['Sáng', 'Tối'])
+    .copyWith(duration: duration, durationUnit: unit);
 
 DosageSchedule _withFirst(
   DosageSchedule schedule,
@@ -37,6 +41,35 @@ void main() {
     );
   });
 
+  test('writes a course in weeks or months with its day count', () {
+    expect(
+      _morningEvening('2', DurationUnit.week).format('viên'),
+      'Sáng 1 viên sau ăn; Tối 1 viên sau ăn (2 tuần – 14 ngày)',
+    );
+    expect(
+      _morningEvening('1', DurationUnit.month).format('viên'),
+      'Sáng 1 viên sau ăn; Tối 1 viên sau ăn (1 tháng – 30 ngày)',
+    );
+    expect(_morningEvening('3', DurationUnit.week).totalDays, 21);
+    expect(_morningEvening('3', DurationUnit.month).totalDays, 90);
+    expect(
+      _morningEvening('1', DurationUnit.month).suggestedQuantity('viên'),
+      60,
+    );
+  });
+
+  test('flags a course over 30 days without blocking it', () {
+    expect(
+      _morningEvening('1', DurationUnit.month).longPrescriptionNotice,
+      isNull,
+    );
+    expect(
+      _morningEvening('5', DurationUnit.week).longPrescriptionNotice,
+      contains('trên 30 ngày'),
+    );
+    expect(_morningEvening('2', DurationUnit.month).validate(), isNull);
+  });
+
   test('keeps a separate timing and dose per session', () {
     final schedule = _withFirst(
       _morningEvening(),
@@ -62,7 +95,16 @@ void main() {
       ).validate(),
       contains('Liều mỗi buổi'),
     );
-    expect(_morningEvening('0').validate(), contains('Số ngày'));
+    expect(_morningEvening('0').validate(), contains('Thời gian dùng'));
+    expect(_morningEvening('91').validate(), contains('tối đa 90 ngày'));
+    expect(
+      _morningEvening('13', DurationUnit.week).validate(),
+      contains('tối đa 90 ngày'),
+    );
+    expect(
+      _morningEvening('4', DurationUnit.month).validate(),
+      contains('tối đa 90 ngày'),
+    );
     expect(_morningEvening('7').validate(), isNull);
   });
 
@@ -80,7 +122,7 @@ void main() {
     expect(
       DosageSchedule.empty()
           .withPreset([asNeededSession])
-          .copyWith(days: '5')
+          .copyWith(duration: '5')
           .suggestedQuantity('viên'),
       isNull,
     );

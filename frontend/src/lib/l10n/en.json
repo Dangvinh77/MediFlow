@@ -4333,5 +4333,18 @@
   "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.": "Department office assigned – the department location follows this office.",
   "Chưa có văn phòng khoa – địa điểm khoa đang để trống.": "No department office yet – the department location is empty.",
   "Phòng khám đang sử dụng: {0}/2 tối thiểu": "Consultation rooms in use: {0}/2 minimum",
-  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "The lab order date cannot be earlier than this visit's examination date."
+  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "The lab order date cannot be earlier than this visit's examination date.",
+  "Thời gian dùng": "Treatment length",
+  "Mẫu thời gian dùng": "Treatment length presets",
+  "Số lượng thời gian dùng": "Treatment length amount",
+  "Đơn vị thời gian dùng": "Treatment length unit",
+  "= {0} ngày": "= {0} days",
+  "tuần": "week",
+  "1 tuần": "1 week",
+  "2 tuần": "2 weeks",
+  "1 tháng": "1 month",
+  "2 tháng": "2 months",
+  "3 tháng": "3 months",
+  "Thời gian dùng phải là số nguyên, tối đa 90 ngày (12 tuần hoặc 3 tháng).": "Treatment length must be a whole number, at most 90 days (12 weeks or 3 months).",
+  "Đơn trên 30 ngày chỉ dùng cho bệnh mạn tính ổn định thuộc danh mục được kê đơn dài ngày.": "Courses over 30 days are only for stable chronic diseases on the long-prescription list."
 }

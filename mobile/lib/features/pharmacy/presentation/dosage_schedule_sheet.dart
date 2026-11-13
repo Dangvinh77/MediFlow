@@ -41,13 +41,109 @@ class _DosageScheduleSheet extends StatefulWidget {
 
 class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
   late DosageSchedule schedule = widget.initial;
-  late final days = TextEditingController(text: widget.initial.days);
+  late final duration = TextEditingController(text: widget.initial.duration);
   String? error;
 
   @override
   void dispose() {
-    days.dispose();
+    duration.dispose();
     super.dispose();
+  }
+
+  void _applyDurationPreset((String, DurationUnit) preset) {
+    duration.text = preset.$1;
+    _update(schedule.copyWith(duration: preset.$1, durationUnit: preset.$2));
+  }
+
+  Widget _durationSection(ThemeData theme, int? suggestion, bool overStock) {
+    final total = schedule.totalDays;
+    final notice = schedule.longPrescriptionNotice;
+    final hints = [
+      if (total != null && schedule.durationUnit != DurationUnit.day)
+        AppL10n.text(context, '= $total ngày'),
+      if (suggestion != null)
+        AppL10n.text(
+          context,
+          'Gợi ý số lượng: $suggestion ${widget.unit}'
+          '${overStock ? ' (vượt tồn ${widget.stock})' : ''}',
+        ),
+    ];
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: AppL10n.text(context, 'Thời gian dùng'),
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final preset in durationPresets.entries)
+                ChoiceChip(
+                  label: LText(preset.key),
+                  selected:
+                      schedule.duration == preset.value.$1 &&
+                      schedule.durationUnit == preset.value.$2,
+                  onSelected: (_) => _applyDurationPreset(preset.value),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              SizedBox(
+                width: 96,
+                child: TextField(
+                  key: const ValueKey('dosage-duration'),
+                  controller: duration,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Số lượng thời gian dùng'),
+                    isDense: true,
+                  ),
+                  onChanged: (value) =>
+                      _update(schedule.copyWith(duration: value)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<DurationUnit>(
+                key: const ValueKey('dosage-duration-unit'),
+                value: schedule.durationUnit,
+                items: [
+                  for (final unit in DurationUnit.values)
+                    DropdownMenuItem(value: unit, child: LText(unit.label)),
+                ],
+                onChanged: (value) =>
+                    _update(schedule.copyWith(durationUnit: value)),
+              ),
+            ],
+          ),
+          if (hints.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              hints.join(' · '),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: overStock
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if (notice != null) ...[
+            const SizedBox(height: 4),
+            LText(
+              notice,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.tertiary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   void _update(DosageSchedule next) => setState(() {
@@ -214,22 +310,7 @@ class _DosageScheduleSheetState extends State<_DosageScheduleSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: days,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: AppL10n.text(context, 'Số ngày dùng'),
-                isDense: true,
-                helperText: AppL10n.text(
-                  context,
-                  suggestion == null
-                      ? null
-                      : 'Gợi ý số lượng: $suggestion ${widget.unit}'
-                            '${overStock ? ' (vượt tồn ${widget.stock})' : ''}',
-                ),
-              ),
-              onChanged: (value) => _update(schedule.copyWith(days: value)),
-            ),
+            _durationSection(theme, suggestion, overStock),
             const SizedBox(height: 8),
             LText(
               'Cách dùng sẽ ghi vào toa',

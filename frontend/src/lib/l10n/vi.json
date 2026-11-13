@@ -4333,5 +4333,18 @@
   "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.": "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.",
   "Chưa có văn phòng khoa – địa điểm khoa đang để trống.": "Chưa có văn phòng khoa – địa điểm khoa đang để trống.",
   "Phòng khám đang sử dụng: {0}/2 tối thiểu": "Phòng khám đang sử dụng: {0}/2 tối thiểu",
-  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này."
+  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.",
+  "Thời gian dùng": "Thời gian dùng",
+  "Mẫu thời gian dùng": "Mẫu thời gian dùng",
+  "Số lượng thời gian dùng": "Số lượng thời gian dùng",
+  "Đơn vị thời gian dùng": "Đơn vị thời gian dùng",
+  "= {0} ngày": "= {0} ngày",
+  "tuần": "tuần",
+  "1 tuần": "1 tuần",
+  "2 tuần": "2 tuần",
+  "1 tháng": "1 tháng",
+  "2 tháng": "2 tháng",
+  "3 tháng": "3 tháng",
+  "Thời gian dùng phải là số nguyên, tối đa 90 ngày (12 tuần hoặc 3 tháng).": "Thời gian dùng phải là số nguyên, tối đa 90 ngày (12 tuần hoặc 3 tháng).",
+  "Đơn trên 30 ngày chỉ dùng cho bệnh mạn tính ổn định thuộc danh mục được kê đơn dài ngày.": "Đơn trên 30 ngày chỉ dùng cho bệnh mạn tính ổn định thuộc danh mục được kê đơn dài ngày."
 }

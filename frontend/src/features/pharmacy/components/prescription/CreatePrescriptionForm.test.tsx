@@ -73,7 +73,7 @@ describe("CreatePrescriptionForm", () => {
     fireEvent.click(dialog.getByRole("checkbox", { name: "Sáng" }));
     fireEvent.change(dialog.getByRole("combobox", { name: "Thời điểm dùng buổi Sáng" }), { target: { value: "Trước ăn" } });
     fireEvent.click(dialog.getByRole("button", { name: "Tăng liều buổi Sáng" }));
-    fireEvent.change(dialog.getByLabelText("Số ngày dùng"), { target: { value: "4" } });
+    fireEvent.change(dialog.getByLabelText("Số lượng thời gian dùng"), { target: { value: "4" } });
     expect(dialog.getByText(/Gợi ý số lượng: 10 Viên/)).toBeVisible();
     fireEvent.click(dialog.getByRole("button", { name: "Áp dụng" }));
     expect(dosage).toHaveValue("Sáng 1,5 viên trước ăn; Tối 1 viên sau ăn (4 ngày)");
@@ -81,6 +81,31 @@ describe("CreatePrescriptionForm", () => {
     fill("Ghi chú dòng 1", " Uống đủ liệu trình "); submit();
     expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ lines: [{ drugId: id, quantity: 10,
       dosage: "Sáng 1,5 viên trước ăn; Tối 1 viên sau ăn (4 ngày)", note: "Uống đủ liệu trình" }] }));
+  });
+  it("prescribes a course in weeks or months and sizes the quantity from its days", async () => {
+    render(<CreatePrescriptionForm mode="legacy" />); await validForm();
+    const dosage = screen.getByRole("textbox", { name: /^Cách dùng dòng 1/ });
+    fireEvent.click(dosage);
+    let dialog = within(screen.getByRole("dialog"));
+    fireEvent.click(dialog.getByRole("button", { name: "2 tuần" }));
+    expect(dialog.getByRole("button", { name: "2 tuần" })).toHaveAttribute("aria-pressed", "true");
+    expect(dialog.getByText(/Gợi ý số lượng: 14 Viên/)).toBeVisible();
+    fireEvent.click(dialog.getByRole("button", { name: "Áp dụng" }));
+    expect(dosage).toHaveValue("Tối 1 viên sau ăn (2 tuần – 14 ngày)");
+    expect(screen.getByLabelText("Số lượng dòng 1")).toHaveValue(14);
+
+    fireEvent.click(dosage);
+    dialog = within(screen.getByRole("dialog"));
+    fireEvent.change(dialog.getByRole("combobox", { name: "Đơn vị thời gian dùng" }), { target: { value: "Tháng" } });
+    expect(dialog.getByText(/bệnh mạn tính ổn định/)).toBeVisible();
+    fireEvent.click(dialog.getByRole("button", { name: "Áp dụng" }));
+    expect(dosage).toHaveValue("Tối 1 viên sau ăn (2 tháng – 60 ngày)");
+
+    fireEvent.click(dosage);
+    dialog = within(screen.getByRole("dialog"));
+    fireEvent.change(dialog.getByLabelText("Số lượng thời gian dùng"), { target: { value: "4" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Áp dụng" }));
+    expect(dialog.getByRole("alert")).toHaveTextContent("tối đa 90 ngày");
   });
   it("requires a dosage: closing the dialog keeps the row but blocks creation", async () => {
     render(<CreatePrescriptionForm mode="legacy" />);
