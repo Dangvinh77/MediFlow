@@ -14,8 +14,11 @@ MEDIFLOW - HƯỚNG DẪN CHẠY TRÊN WINDOWS
   phát hành kết quả xét nghiệm cho hai KTV, kỳ báo cáo và các lượt mẫu cho thu
   ngân. Không cần chạy thêm file Python hay SQL nào.
 - Nên khởi động trong 07:00-16:45 giờ Việt Nam ngày demo: ngoài giờ khám, lượt
-  tái khám và hai lượt mẫu cho thu ngân chưa tạo được (cửa sổ báo PARTIAL hoặc
-  không có CASHIER DEMO READY). Khi đó chạy lại start-backend.bat trong giờ khám.
+  tái khám, lượt mẫu cho thu ngân và bệnh nhân seed theo người demo chưa tạo được
+  (cửa sổ báo PARTIAL hoặc không có STAGED DEMO READY). Khi đó KHÔNG cần khởi động
+  lại: trong giờ khám, nhấp đúp seed-demo.bat (backend vẫn chạy) để seed bổ sung.
+- Ngay trước phần thu phí khám của Lộc: .\seed-demo.bat -ExamChargeNow
+  (phiếu chưa thu chỉ giữ suất 15 phút).
 - Lần đầu dùng qua Wi-Fi: chuột phải -> Run as administrator để tạo firewall
   cho Gateway 28080 và frontend 3000 trên mạng nội bộ.
 - Không truyền tham số: chạy phiên demo tạm; ứng dụng dừng sau hai giờ.

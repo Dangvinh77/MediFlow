@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Backend', 'Frontend', 'Mobile', 'Clean', 'Stop')][string]$Action,
+    [ValidateSet('Backend', 'Frontend', 'Mobile', 'Seed', 'Clean', 'Stop')][string]$Action,
     [switch]$Preview,
     [switch]$LocalOnly,
     [string]$LanAddress,
@@ -11,7 +11,9 @@ param(
     [ValidateRange(1, 3)][int]$StartupParallelism = 2,
     # Mobile only: chrome (default), android (emulator) or device (phone on the same Wi-Fi).
     [ValidateSet('chrome', 'android', 'device')][string]$Target = 'chrome',
-    [string]$Device
+    [string]$Device,
+    # Seed only: create Loc's unpaid exam-fee registration now (it holds the slot 15 minutes).
+    [switch]$ExamChargeNow
 )
 
 $ErrorActionPreference = 'Stop'
@@ -291,6 +293,7 @@ function Clean-ProjectDocker {
 
 Push-Location $repoRoot
 try {
+    if ($ExamChargeNow -and $Action -ne 'Seed') { throw '-ExamChargeNow is supported only by seed-demo.bat.' }
     if ($Preview -and $Action -ne 'Clean') { throw '-Preview is supported only by clean-docker.bat.' }
     if ($Fast -and $Rebuild) { throw 'Use either -Fast or -Rebuild.' }
     if (($Fast -or $Rebuild -or $ResetData) -and $Action -ne 'Backend') { throw 'Build/data options are supported only by start-backend.bat.' }
@@ -374,6 +377,14 @@ try {
                 & (Join-Path $repoRoot 'mobile\tool\run_dev.ps1') -Target $Target -Demo -Gateway 'http://127.0.0.1:28080'
             }
             if ($LASTEXITCODE -ne 0) { throw 'Mobile app stopped with an error. Check the output above.' }
+        }
+        'Seed' {
+            Require-Command 'python'
+            Assert-GatewayReady
+            $seedArguments = @()
+            if ($ExamChargeNow) { $seedArguments += '--exam-charge-now' }
+            & python -u (Join-Path $PSScriptRoot 'seed_demo.py') @seedArguments
+            if ($LASTEXITCODE -ne 0) { throw 'Demo seeding failed. See the output above.' }
         }
         'Clean' { Clean-ProjectDocker }
         'Stop' {
