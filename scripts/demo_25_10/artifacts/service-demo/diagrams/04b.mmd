@@ -1,15 +1,15 @@
 flowchart LR
-DR(["Bác sĩ"])
-LT(["KTV Lab"])
+DR(["Doctor"])
+LT(["Lab technician"])
 AD(["Admin"])
-MG(["Trưởng khoa"])
-PA(["Bệnh nhân"])
-U6("Khám, chẩn đoán, chỉ định Lab")
-U8("Kê đơn, hoàn tất hồ sơ")
-U7("Nhập, phát hành kết quả Lab")
-U1("Quản lý khoa, nhân sự, tài khoản")
-U11("Xem báo cáo ngoại trú")
-U10("Xem thông báo, kết quả của mình")
+MG(["Department head"])
+PA(["Patient"])
+U6("Examine, diagnose, order lab tests")
+U8("Prescribe, complete medical records")
+U7("Enter and release lab results")
+U1("Manage departments, staff, accounts")
+U11("View outpatient reports")
+U10("View own notices and results")
 DR --- U6
 DR --- U8
 LT --- U7

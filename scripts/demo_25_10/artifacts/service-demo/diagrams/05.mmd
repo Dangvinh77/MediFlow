@@ -1,11 +1,11 @@
 flowchart LR
-subgraph CL["Client"]
+subgraph CL["Clients"]
 W["Web · Next.js :3000"]
 MO["Mobile · Flutter"]
 end
 E["Eureka :8761<br/>service discovery"]
-G["API Gateway :8080<br/>JWT · phân quyền<br/>Correlation-Id"]
-subgraph APP["Business services · Spring Boot · mỗi context 1 database"]
+G["API Gateway :8080<br/>JWT · authorization<br/>Correlation-Id"]
+subgraph APP["Business services · Spring Boot · one database per context"]
 CO["Core :8089<br/>Organization + Patient<br/>DB organization · patient"]
 CI["Clinical :8082<br/>DB clinical"]
 LA["Lab :8084<br/>DB lab"]

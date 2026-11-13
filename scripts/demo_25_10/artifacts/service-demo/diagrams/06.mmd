@@ -1,6 +1,6 @@
 flowchart LR
 C["Web / Mobile<br/>same-origin /api/*"] --> G["Gateway :8080"]
-E["Eureka :8761"] -.->|"tên → host:port"| G
+E["Eureka :8761"] -.->|"name → host:port"| G
 G -->|"/api/v1/org · /api/v1/patients"| CO["lb://core-service"]
 G -->|"/appointments · /records<br/>/api/v2/outpatient-registrations"| CI["lb://clinical-service"]
 G -->|"/api/v1/lab · /api/v2/lab"| LA["lb://lab-service"]

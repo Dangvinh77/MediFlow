@@ -1,11 +1,11 @@
 flowchart LR
-R["Request<br/>/api/*"] --> F1["1 · Truy vết<br/>Correlation-Id"]
-F1 --> F2["2 · Rate limit<br/>5 lần / 15 phút"]
-F2 --> F3["3 · JWT<br/>chữ ký, hạn"]
-F3 --> F4["4 · Phân quyền<br/>route + role<br/>mặc định chặn"]
-F4 --> F5["5 · Phiên<br/>credential<br/>Version"]
-F5 --> S["Service đích<br/>@PreAuthorize"]
-F2 -.->|"429"| X["ApiResponse lỗi<br/>+ correlationId"]
+R["Request<br/>/api/*"] --> F1["1 · Tracing<br/>Correlation-Id"]
+F1 --> F2["2 · Rate limit<br/>5 attempts / 15 min"]
+F2 --> F3["3 · JWT<br/>signature, expiry"]
+F3 --> F4["4 · Authorization<br/>route + role<br/>deny by default"]
+F4 --> F5["5 · Session<br/>credential<br/>Version"]
+F5 --> S["Target service<br/>@PreAuthorize"]
+F2 -.->|"429"| X["ApiResponse error<br/>+ correlationId"]
 F3 -.->|"401"| X
 F4 -.->|"403"| X
 F5 -.->|"401 / 403"| X
