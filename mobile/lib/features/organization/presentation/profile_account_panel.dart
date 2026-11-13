@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/medical_colors.dart';
@@ -47,6 +49,13 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
   bool _loading = true;
   bool _busy = false;
   int _generation = 0;
+  Timer? _deliveryPoll;
+  int _deliveryPolls = 0;
+
+  // While the outbox still holds the mail, re-read its status on its own: fast at first, then slower.
+  static const _fastPolls = 15;
+  static const _fastPollDelay = Duration(seconds: 2);
+  static const _slowPollDelay = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -85,6 +94,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
   @override
   void dispose() {
     _generation++;
+    _deliveryPoll?.cancel();
     _email.dispose();
     _emailReason.dispose();
     super.dispose();
@@ -149,6 +159,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
 
   Future<void> _load() async {
     if (!_allowed) return;
+    _deliveryPoll?.cancel();
     final generation = ++_generation;
     final sessionIdentity = widget.access.sessionIdentity;
     setState(() {
@@ -194,6 +205,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             : await repository.latestStaffMailDelivery(account.id);
         if (_matches(generation, sessionIdentity)) {
           setState(() => _delivery = delivery);
+          _watchDelivery();
         }
       } catch (error) {
         if (_matches(generation, sessionIdentity)) {
@@ -213,6 +225,52 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
 
   bool _matches(int generation, Object sessionIdentity) =>
       mounted && generation == _generation && _isCurrent(sessionIdentity);
+
+  /// Keeps a PENDING mail status moving to SENT or FAILED without a manual check.
+  void _watchDelivery({bool restart = false}) {
+    _deliveryPoll?.cancel();
+    if (restart) _deliveryPolls = 0;
+    final delivery = _delivery;
+    if (delivery == null || delivery.status != ProfileMailStatus.pending) {
+      _deliveryPolls = 0;
+      return;
+    }
+    final generation = _generation;
+    final sessionIdentity = widget.access.sessionIdentity;
+    _deliveryPoll = Timer(
+      _deliveryPolls < _fastPolls ? _fastPollDelay : _slowPollDelay,
+      () => _pollDelivery(generation, sessionIdentity, delivery.messageId),
+    );
+  }
+
+  Future<void> _pollDelivery(
+    int generation,
+    Object sessionIdentity,
+    String messageId,
+  ) async {
+    final account = _profile?.account;
+    if (account == null || !_matches(generation, sessionIdentity)) return;
+    _deliveryPolls++;
+    try {
+      final repository = ref.read(profileAccountRepositoryProvider);
+      final latest = widget.owner.isPatient
+          ? await repository.latestPatientMailDelivery(widget.owner.id)
+          : await repository.latestStaffMailDelivery(account.id);
+      // A reset issued meanwhile owns a newer message; never overwrite it.
+      if (!_matches(generation, sessionIdentity) ||
+          _delivery?.messageId != messageId ||
+          latest == null) {
+        return;
+      }
+      setState(() => _delivery = latest);
+    } catch (_) {
+      // Keep the last known status; the next tick reads it again.
+    }
+    if (_matches(generation, sessionIdentity) &&
+        _delivery?.messageId == messageId) {
+      _watchDelivery();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +433,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
           _AccountValue(label: 'Email hồ sơ', value: profile.profileEmail!),
         if (_delivery != null)
           _StatusMessage(
-            'Trạng thái thư gần nhất: ${_mailStatusName(_delivery!.status)}',
+            'Thư mật khẩu tạm: ${_mailStatusName(_delivery!.status)}',
             color: _mailColor(context, _delivery!.status),
           ),
         if (_deliveryError != null) ...[
@@ -653,6 +711,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         _commandError = null;
         _notice = 'Đã gửi yêu cầu cấp mật khẩu tạm qua email.';
       });
+      _watchDelivery(restart: true);
     } catch (error) {
       if (!_isCurrent(sessionIdentity)) return;
       setState(() {
@@ -700,6 +759,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
         _delivery = result;
         _notice = 'Đã yêu cầu gửi lại đúng thư này. Mật khẩu không bị đặt lại lần nữa.';
       });
+      _watchDelivery(restart: true);
     } catch (error) {
       if (_isCurrent(sessionIdentity)) setState(() => _commandError = error);
     } finally {
@@ -836,9 +896,9 @@ String _errorText(Object error) =>
     error is ApiFailure ? error.message : error.toString();
 
 String _mailStatusName(ProfileMailStatus status) => switch (status) {
-  ProfileMailStatus.pending => 'Đang chờ gửi',
-  ProfileMailStatus.sent => 'Đã gửi',
-  ProfileMailStatus.failed => 'Gửi chưa thành công',
+  ProfileMailStatus.pending => 'Đang gửi…',
+  ProfileMailStatus.sent => 'Gửi thành công',
+  ProfileMailStatus.failed => 'Gửi thất bại',
 };
 
 Color _mailColor(BuildContext context, ProfileMailStatus status) =>

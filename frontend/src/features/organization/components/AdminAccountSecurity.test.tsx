@@ -96,6 +96,22 @@ it.each([new Error("Lost response"), new ApiRequestError("Malformed response", 2
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(mocks.updateAccountEmail).toHaveBeenCalledTimes(1);
 });
+it("refreshes a pending mail on its own until it is sent, with no manual check button", async () => {
+  mocks.mailDelivery.mockReset()
+    .mockResolvedValueOnce({ messageId: "mail-1", status: "PENDING" })
+    .mockResolvedValue({ messageId: "mail-1", status: "SENT" });
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
+  expect(await screen.findByText("Đang gửi…")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Gửi lại thư" })).not.toBeInTheDocument();
+  expect(await screen.findByText("Gửi thành công", undefined, { timeout: 4000 })).toBeVisible();
+  expect(screen.queryByRole("button", { name: /Kiểm tra trạng thái thư/ })).not.toBeInTheDocument();
+  expect(mocks.mailDelivery).toHaveBeenCalledTimes(2);
+});
+it("shows a failed mail as failed and offers retry", async () => {
+  render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);
+  expect(await screen.findByText("Gửi thất bại")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Gửi lại thư" })).toBeVisible();
+});
 it("retries the same mail without issuing another password", async () => {
   mocks.retryMail.mockResolvedValue({ messageId: "mail-1", status: "PENDING" });
   render(<AdminAccountSecurity accountId="account-a" username="patient@example.com" />);

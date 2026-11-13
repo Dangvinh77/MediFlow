@@ -128,8 +128,10 @@ Không phụ thuộc ai. Slide: Functional Requirements → Use case → Kiến 
    **Cấp lại mật khẩu tạm qua email** (đã cấp lần đầu). **Không bấm**, vì phần II dùng mật khẩu này.
 2. **Tìm `999881000010` → Ngô Thảo Vy Demo**: chưa có tài khoản → **Cấp tài khoản bệnh nhân**.
    Hệ thống tạo tài khoản bằng email hồ sơ và gửi mật khẩu tạm qua thư.
-3. Ngay sau đó, nút đổi thành **Cấp lại mật khẩu tạm qua email** và hiện **Trạng thái thư gần nhất**.
-   Nêu: lần đầu là *cấp tài khoản*, các lần sau là *cấp lại*. Mật khẩu không bao giờ hiện trên UI.
+3. Ngay sau đó, nút đổi thành **Cấp lại mật khẩu tạm qua email** và hiện dòng **Thư mật khẩu tạm**:
+   *Đang gửi…* rồi tự chuyển sang **Gửi thành công** (xanh) hoặc **Gửi thất bại** (đỏ, kèm nút
+   **Gửi lại thư**), không cần bấm kiểm tra. Nêu: lần đầu là *cấp tài khoản*, các lần sau là *cấp lại*;
+   mật khẩu không bao giờ hiện trên UI, chỉ đi qua email. Mở `/demo-mailbox` để cho xem thư vừa tới.
 4. (Tùy chọn) **Thêm bệnh nhân** mới theo [mục 3A](DEMO_UI_TUNG_BUOC.md#a-bệnh-nhân-mới-tạo-hồ-sơ-và-cấp-tài-khoản)
    → event `patient.created`.
 

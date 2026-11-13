@@ -785,4 +785,52 @@ void main() {
       );
     },
   );
+
+  testWidgets('pending mail status turns into sent without a manual check', (
+    tester,
+  ) async {
+    final repository = ProfileAccountStub()
+      ..snapshot = ProfileAccountSnapshot(
+        account: sampleAccount(),
+        profileEmail: 'patient01@example.org',
+        emailSyncPending: false,
+      )
+      ..latestDelivery = const ProfileMailDelivery(
+        messageId: 'mail-1',
+        status: ProfileMailStatus.pending,
+      );
+    const access = WorkspaceAccess(
+      sessionIdentity: 'patient-mail-poll-session',
+      role: 'NURSE',
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profileAccountRepositoryProvider.overrideWithValue(repository),
+          workspaceAccessProvider.overrideWithValue(access),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ProfileAccountPanel(
+                owner: ProfileAccountOwner.patient(id: patientId),
+                access: access,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thư mật khẩu tạm: Đang gửi…'), findsOneWidget);
+    expect(find.textContaining('Kiểm tra trạng thái'), findsNothing);
+
+    repository.latestDelivery = const ProfileMailDelivery(
+      messageId: 'mail-1',
+      status: ProfileMailStatus.sent,
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('Thư mật khẩu tạm: Gửi thành công'), findsOneWidget);
+  });
 }
