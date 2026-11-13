@@ -7,6 +7,8 @@ import 'package:mediflow_loader/mediflow_loader.dart';
 import '../../../core/domain/follow_up_recommendation.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/providers.dart';
+import '../../../core/theme/medical_colors.dart';
+import '../../../core/widgets/medical_ui.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
@@ -453,12 +455,31 @@ class _SessionRegistrationsPageState
                   id: row.patientId,
                   label: 'Bệnh nhân',
                 ),
-                LText(
-                  '${row.visitType == 'FOLLOW_UP' ? 'Tái khám' : 'Khám mới'} · ${registrationStatusLabels[row.status] ?? row.status}',
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    LText(
+                      row.visitType == 'FOLLOW_UP' ? 'Tái khám' : 'Khám mới',
+                    ),
+                    StatusPill(
+                      registrationStatusLabels[row.status] ?? row.status,
+                      tone: registrationStatusTone(row.status),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 6),
                 LText(
                   '${row.checkedInAt != null ? 'Đã đến' : 'Chưa đến'} · ${_rowNumbers(row, clinicIntake)}',
                 ),
+                if (registrationNextStep(row) case final step?)
+                  LText(
+                    step,
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: context.medical.mutedText),
+                  ),
                 if (_errorId == row.id && _error != null) RequestError(_error!),
                 if (widget.canMarkArrival &&
                     row.checkedInAt == null &&
@@ -500,6 +521,26 @@ class _SessionRegistrationsPageState
       ),
     );
   }
+}
+
+/// Same tones as the web session table: payment pending warns, settled work
+/// succeeds, lapsed tickets fade, and a payment needing reconciliation alarms.
+StatusTone registrationStatusTone(String status) => switch (status) {
+  'AWAITING_PAYMENT' => StatusTone.warning,
+  'CONFIRMED' || 'IN_EXAM' => StatusTone.info,
+  'COMPLETED' => StatusTone.success,
+  'RECONCILIATION_REQUIRED' => StatusTone.danger,
+  _ => StatusTone.neutral,
+};
+
+/// The next thing staff wait for on this ticket, matching the web table.
+String? registrationNextStep(RegistrationRow row) {
+  if (row.readyForExam) return 'Đủ điều kiện khám';
+  if (row.status == 'AWAITING_PAYMENT') return 'Chờ thanh toán';
+  if (row.status != 'CONFIRMED') return null;
+  return row.checkedInAt == null
+      ? 'Chờ bệnh nhân đến quầy tiếp nhận'
+      : 'Chờ đến giờ khám hoặc kiểm tra điều kiện khám';
 }
 
 String _rowNumbers(RegistrationRow row, bool clinicIntake) {

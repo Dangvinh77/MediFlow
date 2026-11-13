@@ -14,6 +14,7 @@ const registrationStatusLabels = {
   'COMPLETED': 'Đã hoàn tất',
   'EXPIRED': 'Hết hạn giữ chỗ',
   'CANCELLED': 'Đã hủy',
+  'RECONCILIATION_REQUIRED': 'Cần đối soát thanh toán',
 };
 
 String displayDate(String isoDate) {

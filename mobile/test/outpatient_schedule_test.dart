@@ -8,6 +8,7 @@ import 'package:mediflow_mobile/core/domain/page_result.dart';
 import 'package:mediflow_mobile/core/domain/workspace_access.dart';
 import 'package:mediflow_mobile/core/network/api_failure.dart';
 import 'package:mediflow_mobile/core/providers.dart';
+import 'package:mediflow_mobile/core/widgets/medical_ui.dart';
 import 'package:mediflow_mobile/core/widgets/reference_widgets.dart';
 import 'package:mediflow_mobile/features/appointment/domain/outpatient_schedule.dart';
 import 'package:mediflow_mobile/features/appointment/presentation/outpatient_schedule_pages.dart';
@@ -426,6 +427,44 @@ void main() {
       expect(find.text('Đã đến · Số 4'), findsOneWidget);
       expect(find.textContaining('Tái khám'), findsOneWidget);
       expect(find.text('Ghi nhận đã đến'), findsNothing);
+      final pill = tester.widget<StatusPill>(find.byType(StatusPill));
+      expect((pill.label, pill.tone), ('Đã xác nhận', StatusTone.info));
+      expect(find.text('Đủ điều kiện khám'), findsOneWidget);
+    });
+
+    testWidgets('a confirmed patient not yet arrived shows the next step', (
+      tester,
+    ) async {
+      await tester.pumpWidget(page());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chờ bệnh nhân đến quầy tiếp nhận'), findsOneWidget);
+    });
+
+    test('registration tones and next steps match the web table', () {
+      expect(registrationStatusTone('AWAITING_PAYMENT'), StatusTone.warning);
+      expect(registrationStatusTone('COMPLETED'), StatusTone.success);
+      expect(registrationStatusTone('EXPIRED'), StatusTone.neutral);
+      expect(
+        registrationStatusTone('RECONCILIATION_REQUIRED'),
+        StatusTone.danger,
+      );
+      const unpaid = RegistrationRow(
+        id: registrationId,
+        patientId: patientId,
+        visitType: 'NEW_VISIT',
+        status: 'AWAITING_PAYMENT',
+        readyForExam: false,
+      );
+      expect(registrationNextStep(unpaid), 'Chờ thanh toán');
+      const done = RegistrationRow(
+        id: registrationId,
+        patientId: patientId,
+        visitType: 'NEW_VISIT',
+        status: 'COMPLETED',
+        readyForExam: false,
+      );
+      expect(registrationNextStep(done), isNull);
     });
   });
 
