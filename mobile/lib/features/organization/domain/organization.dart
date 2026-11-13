@@ -73,6 +73,51 @@ class Account {
   final bool active;
 }
 
+/// A workplace room; mirrors Core's `RoomResponse`.
+class Room {
+  const Room({
+    required this.id,
+    required this.departmentId,
+    required this.roomType,
+    required this.roomNumber,
+    required this.roomName,
+    required this.zone,
+    required this.location,
+    required this.active,
+  });
+  final String id, departmentId, roomType, roomNumber, roomName, zone;
+  final String location;
+  final bool active;
+}
+
+/// A room-type catalogue entry; mirrors Core's `RoomTypeResponse`.
+class RoomType {
+  const RoomType({
+    required this.code,
+    required this.name,
+    required this.description,
+    required this.departmentType,
+    required this.singlePerDepartment,
+    required this.schedulable,
+    required this.systemDefined,
+    required this.roomCount,
+  });
+  final String code, name, departmentType;
+  final String? description;
+  final bool singlePerDepartment, schedulable, systemDefined;
+  final int roomCount;
+
+  /// Same wording as the web `roomTypeRule`.
+  String get rule {
+    if (departmentType != 'CLINICAL') {
+      return 'Bộ phận làm việc tại đúng một phòng';
+    }
+    return singlePerDepartment
+        ? 'Mỗi khoa một phòng'
+        : 'Mỗi khoa có thể có nhiều phòng';
+  }
+}
+
 abstract interface class AccountDetailRepository {
   Future<Account> account(String id);
 
@@ -145,6 +190,12 @@ abstract interface class OrganizationRepository {
     int size = 20,
   });
   Future<Account> updateAccountStatus(String id, bool active);
+  Future<List<Room>> rooms({
+    String? departmentId,
+    String? roomType,
+    bool activeOnly = false,
+  });
+  Future<List<RoomType>> roomTypes();
 }
 
 bool isOrganizationId(String value) => RegExp(

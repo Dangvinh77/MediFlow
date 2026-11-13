@@ -14,6 +14,7 @@ import '../domain/organization.dart';
 import 'account_detail_page.dart';
 import 'department_staff_pages.dart';
 import 'organization_ui.dart';
+import 'room_sections.dart';
 
 class OrganizationPage extends StatelessWidget {
   const OrganizationPage({super.key});
@@ -32,24 +33,42 @@ class _OrganizationTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAdmin = access.role == 'ADMIN';
+    // Same four sections, in the same order, as the web OrganizationDirectory;
+    // account management is a header action there too.
     return DefaultTabController(
-      length: isAdmin ? 3 : 2,
+      length: 4,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TabBar(
+          if (isAdmin)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openAccounts(context),
+                  icon: const Icon(Icons.manage_accounts_outlined),
+                  label: const LText('Quản lý tài khoản'),
+                ),
+              ),
+            ),
+          const TabBar(
             isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: [
-              const Tab(text: 'Khoa phòng'),
-              const Tab(text: 'Nhân sự'),
-              if (isAdmin) const Tab(text: 'Tài khoản'),
+              Tab(child: LText('Khoa / bộ phận')),
+              Tab(child: LText('Phòng làm việc')),
+              Tab(child: LText('Nhân sự')),
+              Tab(child: LText('Danh mục khoa phòng')),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
                 DepartmentSection(repository: repository, access: access),
+                RoomSection(repository: repository),
                 StaffSection(repository: repository, access: access),
-                if (isAdmin) AccountSection(repository: repository),
+                RoomTypeCatalogSection(repository: repository),
               ],
             ),
           ),
@@ -57,6 +76,15 @@ class _OrganizationTabs extends StatelessWidget {
       ),
     );
   }
+
+  void _openAccounts(BuildContext context) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const LText('Quản lý tài khoản')),
+        body: AccountSection(repository: repository),
+      ),
+    ),
+  );
 }
 
 class DepartmentSection extends StatefulWidget {
@@ -199,7 +227,7 @@ class _DepartmentSectionState extends State<DepartmentSection> {
                               child: ListTile(
                                 title: LText(department.name),
                                 subtitle: LText(
-                                  '${department.abbreviation} · ${department.type}\n${department.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}',
+                                  '${department.abbreviation} · ${AppL10n.text(context, departmentTypeLabel(department.type))}\n${AppL10n.text(context, department.active ? 'Đang hoạt động' : 'Ngừng hoạt động')}',
                                 ),
                                 isThreeLine: true,
                                 trailing: const Icon(Icons.chevron_right),

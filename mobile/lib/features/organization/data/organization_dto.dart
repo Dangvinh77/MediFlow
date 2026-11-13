@@ -50,6 +50,52 @@ abstract final class OrganizationDto {
     );
   }
 
+  static Room room(Object? value) {
+    final json = _object(value, 'phòng làm việc');
+    final active = json['active'];
+    if (active is! bool) {
+      throw const FormatException('Trạng thái phòng làm việc không hợp lệ.');
+    }
+    return Room(
+      id: JsonReader.string(json, 'roomId'),
+      departmentId: JsonReader.string(json, 'departmentId'),
+      roomType: JsonReader.string(json, 'roomType'),
+      roomNumber: JsonReader.string(json, 'roomNumber'),
+      roomName: JsonReader.string(json, 'roomName'),
+      zone: JsonReader.string(json, 'zone'),
+      location: JsonReader.string(json, 'location'),
+      active: active,
+    );
+  }
+
+  static RoomType roomType(Object? value) {
+    final json = _object(value, 'loại phòng');
+    final departmentType = JsonReader.string(json, 'departmentType');
+    if (!departmentTypes.contains(departmentType)) {
+      throw const FormatException('Khối của loại phòng không hợp lệ.');
+    }
+    bool flag(String key) {
+      final flag = json[key];
+      if (flag is! bool) throw FormatException('Dữ liệu $key không hợp lệ.');
+      return flag;
+    }
+
+    final count = json['roomCount'];
+    if (count is! int || count < 0) {
+      throw const FormatException('Số phòng đang dùng không hợp lệ.');
+    }
+    return RoomType(
+      code: JsonReader.string(json, 'code'),
+      name: JsonReader.string(json, 'name'),
+      description: JsonReader.optionalString(json, 'description'),
+      departmentType: departmentType,
+      singlePerDepartment: flag('singlePerDepartment'),
+      schedulable: flag('schedulable'),
+      systemDefined: flag('systemDefined'),
+      roomCount: count,
+    );
+  }
+
   static Account account(Object? value) {
     final json = _object(value, 'tài khoản');
     final active = json['isActive'];

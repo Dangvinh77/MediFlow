@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/appearance_settings.dart';
 import '../../../core/theme/medical_colors.dart';
 import '../../../core/widgets/medical_ui.dart';
 import '../../../core/widgets/request_state.dart';
@@ -186,7 +187,13 @@ class _LoginHeader extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              const SizedBox(height: 36),
+              const Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(top: 4, end: 8),
+                  child: AppearanceQuickActions(color: Colors.white),
+                ),
+              ),
               const MediFlowMark(size: 60),
               const SizedBox(height: 16),
               LText(

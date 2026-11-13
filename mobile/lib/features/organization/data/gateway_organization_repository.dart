@@ -176,6 +176,36 @@ class GatewayOrganizationRepository
   }
 
   @override
+  Future<List<Room>> rooms({
+    String? departmentId,
+    String? roomType,
+    bool activeOnly = false,
+  }) async {
+    if (departmentId != null) _requireId(departmentId);
+    final value = await client.get(
+      '/v1/org/rooms',
+      query: {
+        'activeOnly': activeOnly,
+        'departmentId': ?departmentId,
+        'roomType': ?roomType,
+      },
+    );
+    if (value is! List) {
+      throw const FormatException('Danh sách phòng làm việc không hợp lệ.');
+    }
+    return value.map(OrganizationDto.room).toList(growable: false);
+  }
+
+  @override
+  Future<List<RoomType>> roomTypes() async {
+    final value = await client.get('/v1/org/room-types');
+    if (value is! List) {
+      throw const FormatException('Danh mục loại phòng không hợp lệ.');
+    }
+    return value.map(OrganizationDto.roomType).toList(growable: false);
+  }
+
+  @override
   Future<Account> account(String id) async {
     _requireId(id);
     final result = OrganizationDto.account(

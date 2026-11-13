@@ -251,7 +251,45 @@ class OrganizationStub implements OrganizationRepository {
       'accountId': id,
     });
   }
+
+  @override
+  Future<List<Room>> rooms({
+    String? departmentId,
+    String? roomType,
+    bool activeOnly = false,
+  }) async => [OrganizationDto.room(roomJson())];
+
+  @override
+  Future<List<RoomType>> roomTypes() async => [
+    OrganizationDto.roomType(roomTypeJson()),
+  ];
 }
+
+Map<String, Object?> roomJson() => {
+  'roomId': '77777777-7777-4777-8777-777777777777',
+  'departmentId': departmentId,
+  'roomType': 'CONSULTATION',
+  'roomNumber': '101',
+  'roomName': 'Phòng khám Nội 1',
+  'zone': 'Khu A',
+  'location': 'Tầng 1, Khu A',
+  'active': true,
+  'createdAt': '2026-01-01T00:00:00Z',
+  'updatedAt': null,
+};
+
+Map<String, Object?> roomTypeJson() => {
+  'code': 'CONSULTATION',
+  'name': 'Phòng khám',
+  'description': null,
+  'departmentType': 'CLINICAL',
+  'singlePerDepartment': false,
+  'schedulable': true,
+  'systemDefined': true,
+  'roomCount': 3,
+  'createdAt': null,
+  'updatedAt': null,
+};
 
 Widget host(
   OrganizationStub repository, {
@@ -507,7 +545,7 @@ void main() {
       await tester.pumpWidget(host(repository, role: 'DOCTOR'));
       await tester.pumpAndSettle();
       expect(find.text('Ngoại trú'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsNothing);
+      expect(find.text('Quản lý tài khoản'), findsNothing);
       expect(find.text('Thêm khoa phòng'), findsNothing);
       await tester.tap(find.text('Nhân sự'));
       await tester.pumpAndSettle();
@@ -517,8 +555,8 @@ void main() {
       await tester.pumpWidget(host(repository, role: 'ADMIN'));
       await tester.pumpAndSettle();
       expect(find.text('Thêm khoa phòng'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsOneWidget);
-      await tester.tap(find.text('Tài khoản'));
+      expect(find.text('Quản lý tài khoản'), findsOneWidget);
+      await tester.tap(find.text('Quản lý tài khoản'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text(
@@ -547,7 +585,7 @@ void main() {
       useTallViewport(tester);
       await tester.pumpWidget(host(repository));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Tài khoản'));
+      await tester.tap(find.text('Quản lý tài khoản'));
       await tester.pumpAndSettle();
 
       expect(find.text('nurse.01@example.org'), findsOneWidget);
@@ -666,7 +704,7 @@ void main() {
     });
     await tester.pumpWidget(host(repository, referenceReader: references));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tài khoản'));
+    await tester.tap(find.text('Quản lý tài khoản'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -840,7 +878,7 @@ void main() {
     useTallViewport(tester);
     await tester.pumpWidget(host(repository));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tài khoản'));
+    await tester.tap(find.text('Quản lý tài khoản'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -865,5 +903,47 @@ void main() {
     await tester.tap(createButton, warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(repository.accountCreates, 1);
+  });
+
+  test('room DTOs mirror Core RoomResponse and RoomTypeResponse', () {
+    final room = OrganizationDto.room(roomJson());
+    expect(room.roomNumber, '101');
+    expect(room.departmentId, departmentId);
+    final type = OrganizationDto.roomType(roomTypeJson());
+    expect(type.roomCount, 3);
+    expect(type.rule, 'Mỗi khoa có thể có nhiều phòng');
+    expect(
+      () => OrganizationDto.roomType({
+        ...roomTypeJson(),
+        'departmentType': 'SURGERY',
+      }),
+      throwsFormatException,
+    );
+  });
+
+  testWidgets('organization tabs mirror the web directory sections', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    await tester.pumpWidget(host(OrganizationStub()));
+    await tester.pumpAndSettle();
+    for (final label in const [
+      'Khoa / bộ phận',
+      'Phòng làm việc',
+      'Nhân sự',
+      'Danh mục khoa phòng',
+    ]) {
+      expect(find.text(label), findsWidgets);
+    }
+    await tester.tap(find.widgetWithText(Tab, 'Phòng làm việc'));
+    await tester.pumpAndSettle();
+    expect(find.text('P.101'), findsOneWidget);
+    expect(find.text('Phòng khám Nội 1'), findsOneWidget);
+    expect(find.text('Phòng khám · Ngoại trú'), findsOneWidget);
+    await tester.tap(find.widgetWithText(Tab, 'Danh mục khoa phòng'));
+    await tester.pumpAndSettle();
+    expect(find.text('Khối lâm sàng'), findsOneWidget);
+    expect(find.text('Dùng lập buổi khám'), findsOneWidget);
+    expect(find.text('Mỗi khoa có thể có nhiều phòng'), findsOneWidget);
   });
 }

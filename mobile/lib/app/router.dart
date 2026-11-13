@@ -123,6 +123,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       final module = modules.where((m) => m.matches(path)).firstOrNull;
       if (module != null && !module.allows(session.role)) return '/forbidden';
+      // Like the web OrganizationWorkspace: only ADMIN administers the
+      // organization; other staff opening it see their own profile.
+      if (path == '/organization' && session.role != UserRole.admin) {
+        return '/profile';
+      }
       if (path == '/pharmacy/drugs/new' ||
           (path.startsWith('/pharmacy/drugs/') && path.endsWith('/stock'))) {
         if (![UserRole.admin, UserRole.pharmacist].contains(session.role)) {
