@@ -6,12 +6,13 @@ Mở index.html trực tiếp bằng Chrome/Edge; chạy offline, không cần c
 F: toàn màn hình. P: in hoặc lưu PDF. Bấm sơ đồ để phóng to; Escape để đóng.
 Link #7 mở trực tiếp slide 7. Giao diện tự co theo màn hình; nên dùng màn hình ngang.
 
-18 slide theo hành trình bệnh nhân. Billing quay lại ở 3 điểm thu.
+23 slide: Functional Requirements, Use case, kiến trúc microservices, 3 slide Gateway chi tiết, rồi hành trình bệnh nhân. Billing quay lại ở 3 điểm thu.
+Kịch bản demo theo thứ tự và account seed: scripts/demo_25_10/DEMO_THEO_THU_TU.md.
 Phân công trình bày đúng yêu cầu: Hoàng Anh (Gateway/Organization/Patient), Vinh (Clinical/Lab), Huy (Pharmacy/Report), Lộc (Billing/Notification).
 Phân công demo không thay đổi ownership sửa source của repo.
 
 Sơ đồ SVG đã nhúng; mã Mermaid có trong diagrams/ và trong nút M.
-HTML là bản tự chứa; mở trực tiếp để trình chiếu. Mã Mermaid có thể sao chép/chỉnh riêng.
+build.mjs dùng thư viện beautiful-mermaid có sẵn của môi trường soạn để dựng lại; không cần để xem HTML.
 
 Đây là kịch bản đối chiếu source, chưa xác nhận runtime đã chạy qua toàn bộ luồng.
 Chốt đúng profile: scheduled EXAM, Lab/Rx clearance, Notification IN_APP và Report accepted periods.

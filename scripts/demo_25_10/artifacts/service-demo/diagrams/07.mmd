@@ -1,6 +1,11 @@
-flowchart TB
-U["Thu ngân · Xác nhận thanh toán"] --> B["Billing · payment + outbox"]
-B -->|"payment.completed"| R["RabbitMQ · mediflow.events"]
-B -->|"outpatient.financial.eligibility.granted"| R
-R --> C["Clinical · xác nhận phiếu"]
-R --> S["Report / Notification · queue riêng"]
+flowchart LR
+R["Request<br/>/api/*"] --> F1["1 · Truy vết<br/>Correlation-Id"]
+F1 --> F2["2 · Rate limit<br/>5 lần / 15 phút"]
+F2 --> F3["3 · JWT<br/>chữ ký, hạn"]
+F3 --> F4["4 · Phân quyền<br/>route + role<br/>mặc định chặn"]
+F4 --> F5["5 · Phiên<br/>credential<br/>Version"]
+F5 --> S["Service đích<br/>@PreAuthorize"]
+F2 -.->|"429"| X["ApiResponse lỗi<br/>+ correlationId"]
+F3 -.->|"401"| X
+F4 -.->|"403"| X
+F5 -.->|"401 / 403"| X

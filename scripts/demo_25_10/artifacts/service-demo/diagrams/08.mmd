@@ -1,5 +1,13 @@
-flowchart TB
-U["Bác sĩ · Lưu hồ sơ / chẩn đoán"] --> C["Clinical · hồ sơ đang mở"]
-C -->|"medicalrecord.created / diagnosis.added"| R["RabbitMQ · mediflow.events"]
-C --> O["Lưu chỉ định · sourceOrderId"]
-O -->|"UI chuyển bước + Lab kiểm nguồn bằng REST"| L["Lab · tạo yêu cầu ở slide 09"]
+sequenceDiagram
+participant U as Web / Mobile
+participant G as Gateway
+participant O as Organization (Core)
+participant S as Service nghiệp vụ
+U->>G: POST /api/v1/auth/login (email, mật khẩu)
+G->>O: Xác minh tài khoản (timeout 1,5s, circuit breaker)
+O-->>G: accountId, role, staffId / patientId, credentialVersion
+G-->>U: accessToken 30 phút + refreshToken 24 giờ
+U->>G: GET /api/... Authorization: Bearer
+G->>G: Kiểm JWT, role, phiên tài khoản
+G->>S: Chuyển tiếp + X-User-Id, X-User-Role, X-Correlation-Id
+S-->>U: ApiResponse

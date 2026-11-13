@@ -1,4 +1,14 @@
-flowchart TB
-U["Admin · Lưu khoa / nhân viên"] --> O["Organization · ghi dữ liệu + outbox"]
-O -->|"department.created / staff.created"| R["RabbitMQ · mediflow.events"]
-R --> Q["Queue có binding phù hợp"]
+flowchart LR
+NU(["Điều dưỡng"])
+CA(["Thu ngân"])
+PH(["Dược sĩ"])
+U2("Tạo / tìm hồ sơ bệnh nhân")
+U3("Đăng ký khám, giữ suất 15 phút")
+U4("Cấp số phòng, ghi sinh hiệu")
+U5("Thu phí khám, Lab, thuốc")
+U9("Xuất thuốc, quản lý kho")
+NU --- U2
+NU --- U3
+NU --- U4
+CA --- U5
+PH --- U9

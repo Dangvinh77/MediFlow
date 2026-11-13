@@ -13,20 +13,20 @@ Bảng dưới đối chiếu với [bộ slide HTML](../../artifacts/service-de
 
 | Thứ tự | Người demo | Service / nội dung | Mục thao tác | Slide HTML |
 |---|---|---|---|---|
-| 1 | Hoàng Anh | Gateway, port hệ thống; Organization, khoa/nhân sự/tài khoản | 2 | 03–04 |
-| 2 | Hoàng Anh | Patient: tìm/tạo hồ sơ, cấp account nếu cần | 3 | 05 |
-| 3 | Vinh | Clinical: tiếp nhận, đăng ký và giữ chỗ | 4 | 06 |
-| 4 | Lộc | Billing: thu phí khám | 5 | 07 |
-| 4b | Vinh | Clinical: quầy điều dưỡng khoa cấp số phòng, ghi sinh hiệu | 5b | 07 |
-| 5 | Vinh | Clinical: khám, chẩn đoán, chỉ định và tạo phiếu Lab | 6 | 08–09 |
-| 6 | Lộc | Billing: thu phí Lab | 7 | 10 |
-| 7 | Vinh | Lab: thực hiện, trả kết quả; Clinical: đọc lại kết quả | 8–9 | 11 |
-| 8 | Huy | Pharmacy: tạo đơn từ hồ sơ đang mở | 10 | 12 |
-| 9 | Lộc | Billing: thu tiền thuốc | 11 | 13 |
-| 10 | Huy | Pharmacy: xuất thuốc | 12 | 14 |
-| 11 | Vinh | Clinical: hoàn tất hồ sơ, hướng dẫn ra về | 13 | 15 |
-| 12 | Lộc | Notification: thông báo; PATIENT xem kết quả chính chủ | 14 | 16 |
-| 13 | Huy | Report: kỳ đã đối soát, báo cáo cuối luồng | 15 | 17 |
+| 1 | Hoàng Anh | Gateway, port hệ thống; Organization, khoa/nhân sự/tài khoản | 2 | 03–09 |
+| 2 | Hoàng Anh | Patient: tìm/tạo hồ sơ, cấp account nếu cần | 3 | 10 |
+| 3 | Vinh | Clinical: tiếp nhận, đăng ký và giữ chỗ | 4 | 11 |
+| 4 | Lộc | Billing: thu phí khám | 5 | 12 |
+| 4b | Vinh | Clinical: quầy điều dưỡng khoa cấp số phòng, ghi sinh hiệu | 5b | 12 |
+| 5 | Vinh | Clinical: khám, chẩn đoán, chỉ định và tạo phiếu Lab | 6 | 13–14 |
+| 6 | Lộc | Billing: thu phí Lab | 7 | 15 |
+| 7 | Vinh | Lab: thực hiện, trả kết quả; Clinical: đọc lại kết quả | 8–9 | 16 |
+| 8 | Huy | Pharmacy: tạo đơn từ hồ sơ đang mở | 10 | 17 |
+| 9 | Lộc | Billing: thu tiền thuốc | 11 | 18 |
+| 10 | Huy | Pharmacy: xuất thuốc | 12 | 19 |
+| 11 | Vinh | Clinical: hoàn tất hồ sơ, hướng dẫn ra về | 13 | 20 |
+| 12 | Lộc | Notification: thông báo; PATIENT xem kết quả chính chủ | 14 | 21 |
+| 13 | Huy | Report: kỳ đã đối soát, báo cáo cuối luồng | 15 | 22 |
 
 Chuẩn bị ở mục 1 trước khi lên trình bày. Chạy **một bệnh nhân A** xuyên suốt;
 B/C và quản lý lịch nâng cao là nhánh bổ sung, thực hiện sau lượt chính.

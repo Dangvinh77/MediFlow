@@ -1,0 +1,6 @@
+flowchart TB
+P["Patient / Lab / Clinical"] -->|"event nghiệp vụ"| R["RabbitMQ · mediflow.events"]
+R --> Q["notification.q"]
+Q --> N["Notification · lưu IN_APP + outbox"]
+N -->|"notification.sent"| R
+U["PATIENT · xem thông báo"] -->|"HTTP qua Gateway"| N

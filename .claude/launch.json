@@ -8,6 +8,12 @@
       "port": 8899
     },
     {
+      "name": "service-demo-slides",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8898", "--directory", "scripts/demo_25_10/artifacts/service-demo"],
+      "port": 8898
+    },
+    {
       "name": "frontend-demo",
       "runtimeExecutable": "powershell.exe",
       "runtimeArgs": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/demo_25_10/Demo-Launcher.ps1", "-Action", "Frontend", "-LocalOnly"],

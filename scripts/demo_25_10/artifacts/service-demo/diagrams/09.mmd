@@ -1,4 +1,4 @@
 flowchart TB
-U["UI · Tạo yêu cầu xét nghiệm"] --> L["Lab · kiểm chỉ định qua REST"]
-L -->|"lab.request.created"| R["RabbitMQ · mediflow.events"]
-R --> B["Billing · LAB_TEST payment request"]
+U["Admin · Lưu khoa / nhân viên"] --> O["Organization · ghi dữ liệu + outbox"]
+O -->|"department.created / staff.created"| R["RabbitMQ · mediflow.events"]
+R --> Q["Queue có binding phù hợp"]

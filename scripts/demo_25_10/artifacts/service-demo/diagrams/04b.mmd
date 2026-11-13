@@ -1,0 +1,19 @@
+flowchart LR
+DR(["Bác sĩ"])
+LT(["KTV Lab"])
+AD(["Admin"])
+MG(["Trưởng khoa"])
+PA(["Bệnh nhân"])
+U6("Khám, chẩn đoán, chỉ định Lab")
+U8("Kê đơn, hoàn tất hồ sơ")
+U7("Nhập, phát hành kết quả Lab")
+U1("Quản lý khoa, nhân sự, tài khoản")
+U11("Xem báo cáo ngoại trú")
+U10("Xem thông báo, kết quả của mình")
+DR --- U6
+DR --- U8
+LT --- U7
+AD --- U1
+AD --- U11
+MG --- U11
+PA --- U10

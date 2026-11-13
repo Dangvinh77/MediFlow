@@ -1,5 +1,31 @@
-flowchart TB
-U["Tiếp nhận · Lưu bệnh nhân"] --> P["Patient · patientId + outbox"]
-P -->|"patient.created"| R["RabbitMQ · mediflow.events"]
-R --> Q["notification.q"]
-Q --> N["Notification · thông báo chào mừng"]
+flowchart LR
+subgraph CL["Client"]
+W["Web · Next.js :3000"]
+MO["Mobile · Flutter"]
+end
+E["Eureka :8761<br/>service discovery"]
+G["API Gateway :8080<br/>JWT · phân quyền<br/>Correlation-Id"]
+subgraph APP["Business services · Spring Boot · mỗi context 1 database"]
+CO["Core :8089<br/>Organization + Patient<br/>DB organization · patient"]
+CI["Clinical :8082<br/>DB clinical"]
+LA["Lab :8084<br/>DB lab"]
+PC["Pharmacy :8085<br/>DB pharmacy"]
+BI["Billing :8086<br/>DB billing"]
+end
+MQ["RabbitMQ<br/>exchange mediflow.events"]
+SU["Support :8087<br/>Report + Notification<br/>DB report · notification"]
+W --> G
+MO --> G
+E -.-> G
+G --> CO
+G --> CI
+G --> LA
+G --> PC
+G --> BI
+G --> SU
+CO -.->|"outbox"| MQ
+CI -.-> MQ
+LA -.-> MQ
+PC -.-> MQ
+BI -.-> MQ
+MQ -.->|"consumer"| SU
