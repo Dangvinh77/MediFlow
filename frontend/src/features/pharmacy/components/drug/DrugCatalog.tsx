@@ -57,7 +57,8 @@ export function DrugCatalog() {
 }
 
 function DrugCatalogContent() {
-  const { localize } = useLocale();
+  const { localize, locale, t } = useLocale();
+  const formatCount = (value: number) => value.toLocaleString(locale === "en" ? "en-US" : "vi-VN");
   const isCurrent = usePharmacyRequestScope("canReadDrugs");
   const pathname = usePathname();
   const router = useRouter();
@@ -171,7 +172,7 @@ function DrugCatalogContent() {
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <h2 className="text-base font-semibold" aria-live="polite">
-            <L10nValue>{!loading && !error && result ? result.totalElements.toLocaleString("vi-VN") + " thuốc" : "Danh mục thuốc"}</L10nValue>
+            {!loading && !error && result ? t("{0} thuốc", formatCount(result.totalElements)) : localize("Danh mục thuốc")}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             <L10nValue>{keyword ? "Tìm theo tên: “" + keyword + "”" : "Giá và tồn kho hiện tại"}</L10nValue>
@@ -216,10 +217,10 @@ function DrugCatalogContent() {
           <DrugTable drugs={result.content} />
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-xs text-muted-foreground"><L10n>{"Hiển thị "}</L10n><L10nValue>{(result.number * result.size + 1).toLocaleString("vi-VN")}</L10nValue>–<L10nValue>{(result.number * result.size + result.content.length).toLocaleString("vi-VN")}</L10nValue> trong <L10nValue>{result.totalElements.toLocaleString("vi-VN")}</L10nValue><L10n>{" thuốc"}</L10n></p>
+              <p className="text-xs text-muted-foreground">{t("Hiển thị {0}–{1} trong {2} thuốc", formatCount(result.number * result.size + 1), formatCount(result.number * result.size + result.content.length), formatCount(result.totalElements))}</p>
               <label htmlFor="drug-page-size" className="sr-only"><L10n>{"Số dòng"}</L10n></label>
               <select id="drug-page-size" value={query.size} onChange={(event) => selectSize(event.target.value)} className={`${controlClassName} w-auto`}>
-                <L10nValue>{DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}><L10nValue>{size}</L10nValue> / trang</option>)}</L10nValue>
+                <L10nValue>{DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}>{t("{0} / trang", size)}</option>)}</L10nValue>
               </select>
             </div>
             <Pagination page={result.number} totalPages={result.totalPages} totalElements={result.totalElements} loading={loading} onPageChange={(page) => updateQuery({ page })} />

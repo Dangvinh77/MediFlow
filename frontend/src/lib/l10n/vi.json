@@ -4419,5 +4419,8 @@
   "Cần nhập một số.": "Cần nhập một số.",
   "Dùng dấu chấm cho phần thập phân, ví dụ 36.5.": "Dùng dấu chấm cho phần thập phân, ví dụ 36.5.",
   "Sinh hiệu": "Sinh hiệu",
-  "Ghi nhận dị ứng mới": "Ghi nhận dị ứng mới"
+  "Ghi nhận dị ứng mới": "Ghi nhận dị ứng mới",
+  "{0} thuốc": "{0} thuốc",
+  "Hiển thị {0}–{1} trong {2} thuốc": "Hiển thị {0}–{1} trong {2} thuốc",
+  "{0} / trang": "{0} / trang"
 }

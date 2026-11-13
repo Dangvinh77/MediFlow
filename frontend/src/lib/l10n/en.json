@@ -2396,7 +2396,7 @@
   "Người đề nghị đính chính không được tự duyệt.": "The person requesting correction is not allowed to self-review.",
   "Ngưỡng cảnh báo": "Warning threshold",
   "Ngưỡng phải là số nguyên không âm trong giới hạn cho phép.": "The threshold must be a non-negative integer within the allowable limit.",
-  "Ngưỡng tồn thấp": "Low survival threshold",
+  "Ngưỡng tồn thấp": "Low-stock threshold",
   "Ngưỡng:": "Threshold:",
   "Ngừng": "Stop",
   "Ngừng hoạt động": "Stop working",
@@ -4419,5 +4419,8 @@
   "Cần nhập một số.": "Enter a number.",
   "Dùng dấu chấm cho phần thập phân, ví dụ 36.5.": "Use a dot for decimals, for example 36.5.",
   "Sinh hiệu": "Vital signs",
-  "Ghi nhận dị ứng mới": "Record a new allergy"
+  "Ghi nhận dị ứng mới": "Record a new allergy",
+  "{0} thuốc": "{0} drugs",
+  "Hiển thị {0}–{1} trong {2} thuốc": "Showing {0}–{1} of {2} drugs",
+  "{0} / trang": "{0} / page"
 }

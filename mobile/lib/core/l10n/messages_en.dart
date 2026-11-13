@@ -1516,6 +1516,7 @@ const messagesEn = <String, String>{
   "Hai đường cùng trục để thấy lệch mùa":
       "Two lines on the same axis show seasonal differences",
   "Hiển thị": "Show",
+  "Hiển thị {0}–{1} trong {2} thuốc": "Showing {0}–{1} of {2} drugs",
   "Hiện mật khẩu": "Show password",
   "Hospital workspace": "Hospital workspace",
   "Hoàn tiền": "Refund",
@@ -2987,7 +2988,7 @@ const messagesEn = <String, String>{
       "The person requesting correction is not allowed to self-review.",
   "Ngưỡng cảnh báo": "Warning threshold",
   "Ngưỡng phải là số nguyên không âm trong giới hạn cho phép.": "The threshold must be a non-negative integer within the allowable limit.",
-  "Ngưỡng tồn thấp": "Low survival threshold",
+  "Ngưỡng tồn thấp": "Low-stock threshold",
   "Ngưỡng:": "Threshold:",
   "Ngừng": "Stop",
   "Ngừng hoạt động": "Stop working",
@@ -4576,6 +4577,7 @@ const messagesEn = <String, String>{
   "xét nghiệm": "test",
   "xét nghiệm hoàn tất": "test completed",
   "{0} (Mã tra cứu: {1})": "{0} (Lookup code: {1})",
+  "{0} / trang": "{0} / page",
   "{0} Chưa xác định kết quả khôi phục; hãy kiểm tra trạng thái yêu cầu trước khi thử lại.": "{0} Recovery results are unknown; Please check the request status before trying again.",
   "{0} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.": "{0} Replay results are unknown; Please check the event status before trying again.",
   "{0} Chưa xác định kết quả; hãy kiểm tra danh mục trước khi lập yêu cầu mới.": "{0} Undetermined results; Please check the directory before making a new request.",
@@ -4598,6 +4600,7 @@ const messagesEn = <String, String>{
   "{0} phòng {1}": "{0} room {1}",
   "{0} phải là UUID hợp lệ.": "{0} must be a valid UUID.",
   "{0} thu ròng cao nhất": "Highest net income by {0}",
+  "{0} thuốc": "{0} drugs",
   "{0} thuốc trong đơn. Hệ thống sẽ kiểm tra thanh toán và tồn kho trước khi xuất.": "{0} medication in prescription. The system will check payment and inventory before exporting.",
   "{0} thuốc trong đơn. Thông tin sẽ được kiểm tra khi tạo đơn.":
       "{0} drugs in the prescription. Details are checked when it is created.",

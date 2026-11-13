@@ -1,5 +1,5 @@
 
-import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { DrugDTO } from "../../types";
@@ -26,6 +26,7 @@ function expiryPresentation(expiryDate: string) {
 
 /** Renders catalogue rows only; loading, fetching and pagination stay in DrugCatalog. */
 export function DrugTable({ drugs }: DrugTableProps) {
+  const { locale } = useLocale();
   return (
     <div className="mt-5 overflow-x-auto">
       <table className="w-full min-w-[700px] text-left text-sm">
@@ -62,7 +63,7 @@ export function DrugTable({ drugs }: DrugTableProps) {
                 <td className="px-4 py-3"><L10nValue>{drug.unit || "—"}</L10nValue></td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex flex-col items-end gap-1">
-                    <span className="tabular-nums"><L10nValue>{drug.stockQuantity.toLocaleString("vi-VN")}</L10nValue></span>
+                    <span className="tabular-nums">{drug.stockQuantity.toLocaleString(locale === "en" ? "en-US" : "vi-VN")}</span>
                     <L10nValue>{drug.stockQuantity === 0 ? <StatusBadge tone="danger"><L10n>{"Hết hàng"}</L10n></StatusBadge> : lowStock ? <StatusBadge tone="warning"><L10n>{"Tồn thấp"}</L10n></StatusBadge> : null}</L10nValue>
                     <span className="text-xs text-muted-foreground"><L10n>{"Ngưỡng: "}</L10n>{drug.lowStockThreshold}</span>
                   </div>

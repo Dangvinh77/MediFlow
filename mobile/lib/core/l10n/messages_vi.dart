@@ -1539,6 +1539,7 @@ const messagesVi = <String, String>{
   "Hai đường cùng trục để thấy lệch mùa":
       "Hai đường cùng trục để thấy lệch mùa",
   "Hiển thị": "Hiển thị",
+  "Hiển thị {0}–{1} trong {2} thuốc": "Hiển thị {0}–{1} trong {2} thuốc",
   "Hiện mật khẩu": "Hiện mật khẩu",
   "Hospital workspace": "Không gian làm việc bệnh viện",
   "Hoàn tiền": "Hoàn tiền",
@@ -4617,6 +4618,7 @@ const messagesVi = <String, String>{
   "xét nghiệm": "xét nghiệm",
   "xét nghiệm hoàn tất": "xét nghiệm hoàn tất",
   "{0} (Mã tra cứu: {1})": "{0} (Mã tra cứu: {1})",
+  "{0} / trang": "{0} / trang",
   "{0} Chưa xác định kết quả khôi phục; hãy kiểm tra trạng thái yêu cầu trước khi thử lại.": "{0} Chưa xác định kết quả khôi phục; hãy kiểm tra trạng thái yêu cầu trước khi thử lại.",
   "{0} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.": "{0} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.",
   "{0} Chưa xác định kết quả; hãy kiểm tra danh mục trước khi lập yêu cầu mới.": "{0} Chưa xác định kết quả; hãy kiểm tra danh mục trước khi lập yêu cầu mới.",
@@ -4638,6 +4640,7 @@ const messagesVi = <String, String>{
   "{0} phòng {1}": "{0} phòng {1}",
   "{0} phải là UUID hợp lệ.": "{0} phải là UUID hợp lệ.",
   "{0} thu ròng cao nhất": "{0} thu ròng cao nhất",
+  "{0} thuốc": "{0} thuốc",
   "{0} thuốc trong đơn. Hệ thống sẽ kiểm tra thanh toán và tồn kho trước khi xuất.": "{0} thuốc trong đơn. Hệ thống sẽ kiểm tra thanh toán và tồn kho trước khi xuất.",
   "{0} thuốc trong đơn. Thông tin sẽ được kiểm tra khi tạo đơn.":
       "{0} thuốc trong đơn. Thông tin sẽ được kiểm tra khi tạo đơn.",
