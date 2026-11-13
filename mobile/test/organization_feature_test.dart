@@ -617,10 +617,7 @@ void main() {
       await tester.tap(find.text('Trang sau'));
       await tester.pumpAndSettle();
       expect(repository.accountSearches.last['page'], 1);
-      final chooseAccount = find.widgetWithText(
-        TextButton,
-        'Chọn nurse.01@example.org',
-      );
+      final chooseAccount = find.widgetWithText(TextButton, 'Chọn');
       await tester.tap(chooseAccount);
       await tester.pumpAndSettle();
       expect(

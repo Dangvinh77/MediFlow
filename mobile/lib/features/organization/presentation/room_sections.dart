@@ -146,121 +146,116 @@ class _RoomSectionState extends State<RoomSection>
               (type.code, type.name),
           ]
         : const <(String, String)>[];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SectionHeading(
-                title: 'Phòng làm việc',
-                description: 'Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.',
-                onRefresh: loading ? null : load,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      key: const ValueKey('room-filter-by'),
-                      initialValue: _dimension,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        label: LText('Lọc theo'),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: '',
-                          child: LText('Tất cả phòng'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'department',
-                          child: LText('Khoa / bộ phận'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'type',
-                          child: LText('Loại phòng'),
-                        ),
-                      ],
-                      onChanged: (value) => setState(() {
-                        _dimension = value ?? '';
-                        _target = '';
-                      }),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      key: ValueKey('room-filter-target-$_dimension'),
-                      initialValue: _target,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        label: LText('Đối tượng lọc'),
-                      ),
-                      items: [
-                        const DropdownMenuItem(
-                          value: '',
-                          child: LText('Tất cả'),
-                        ),
-                        for (final (id, name) in targets)
-                          DropdownMenuItem(
-                            value: id,
-                            child: LText(name, overflow: TextOverflow.ellipsis),
-                          ),
-                      ],
-                      onChanged: _dimension.isEmpty
-                          ? null
-                          : (value) => setState(() => _target = value ?? ''),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: AppL10n.text(context, 'Tìm phòng'),
-                  hintText: AppL10n.text(context, 'Số phòng, tên, khu'),
-                  prefixIcon: const Icon(Icons.search),
+    // Heading and filters scroll with the rooms, as on the web page, so a
+    // phone keeps most of its height for the list.
+    return RefreshIndicator(
+      onRefresh: load,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 12),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SectionHeading(
+                  title: 'Phòng làm việc',
+                  description: 'Phòng khám phân bổ cho khoa, văn phòng khoa và nơi làm việc của các khoa cận lâm sàng và phòng chức năng. Loại phòng được quản lý tại Danh mục khoa phòng.',
+                  onRefresh: loading ? null : load,
                 ),
-                onChanged: (value) => setState(() => _keyword = value.trim()),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child:
-              state ??
-              RefreshIndicator(
-                onRefresh: load,
-                child: visible.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          Padding(
-                            padding: EdgeInsets.all(24),
-                            child: LText('Chưa có phòng làm việc phù hợp.'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        key: const ValueKey('room-filter-by'),
+                        initialValue: _dimension,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          label: LText('Lọc theo'),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: '',
+                            child: LText('Tất cả phòng'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'department',
+                            child: LText('Khoa / bộ phận'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'type',
+                            child: LText('Loại phòng'),
                           ),
                         ],
-                      )
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(12),
-                        itemCount: visible.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final room = visible[index];
-                          return _RoomTile(
-                            room: room,
-                            typeName: typeNames[room.roomType] ?? room.roomType,
-                            departmentName:
-                                departmentNames[room.departmentId] ?? '—',
-                          );
-                        },
+                        onChanged: (value) => setState(() {
+                          _dimension = value ?? '';
+                          _target = '';
+                        }),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        key: ValueKey('room-filter-target-$_dimension'),
+                        initialValue: _target,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          label: LText('Đối tượng lọc'),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: LText('Tất cả'),
+                          ),
+                          for (final (id, name) in targets)
+                            DropdownMenuItem(
+                              value: id,
+                              child: LText(
+                                name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: _dimension.isEmpty
+                            ? null
+                            : (value) => setState(() => _target = value ?? ''),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: AppL10n.text(context, 'Tìm phòng'),
+                    hintText: AppL10n.text(context, 'Số phòng, tên, khu'),
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                  onChanged: (value) => setState(() => _keyword = value.trim()),
+                ),
+              ],
+            ),
+          ),
+          if (state != null)
+            SizedBox(height: 240, child: state)
+          else if (visible.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: LText('Chưa có phòng làm việc phù hợp.'),
+            )
+          else
+            for (final room in visible)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: _RoomTile(
+                  room: room,
+                  typeName: typeNames[room.roomType] ?? room.roomType,
+                  departmentName: departmentNames[room.departmentId] ?? '—',
+                ),
               ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -309,7 +304,13 @@ class _RoomTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            LText('${room.zone} · ${room.location}', style: muted),
+            LText(
+              // Like the web, skip the zone when the location already says it.
+              room.location.toLowerCase().contains(room.zone.toLowerCase())
+                  ? room.location
+                  : '${room.zone} · ${room.location}',
+              style: muted,
+            ),
             const SizedBox(height: 2),
             LText('$typeName · $departmentName', style: muted),
             const SizedBox(height: 8),
@@ -452,18 +453,21 @@ class _CategoryCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    // A narrow count keeps the description its full width.
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
+                    Tooltip(
+                      message: AppL10n.text(context, 'Số phòng đang dùng'),
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        child: Text(
                           '${type.roomCount}',
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.titleSmall?.copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        LText('Số phòng đang dùng', style: muted),
-                      ],
+                      ),
                     ),
                   ],
                 ),

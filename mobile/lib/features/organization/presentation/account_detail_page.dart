@@ -9,23 +9,13 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
 import '../domain/organization.dart';
+import 'organization_ui.dart';
 import '../domain/profile_account.dart';
 import 'profile_account_panel.dart';
 
 final accountDetailRepositoryProvider = Provider<AccountDetailRepository?>(
   (ref) => null,
 );
-
-const _roleLabels = {
-  'ADMIN': 'Quản trị viên',
-  'DOCTOR': 'Bác sĩ',
-  'NURSE': 'Điều dưỡng',
-  'PHARMACIST': 'Dược sĩ',
-  'CASHIER': 'Thu ngân',
-  'LAB_TECH': 'Kỹ thuật viên xét nghiệm',
-  'PATIENT': 'Bệnh nhân',
-  'SYSTEM': 'Hệ thống',
-};
 
 String _localTime(String? raw) {
   final value = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
@@ -165,7 +155,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
       padding: const EdgeInsets.all(16),
       children: [
         LText(account.username, style: Theme.of(context).textTheme.titleLarge),
-        LText(_roleLabels[account.role] ?? account.role),
+        LText(accountRoleLabel(account.role)),
         const SizedBox(height: 12),
         _field('Trạng thái', account.active ? 'Đang hoạt động' : 'Đã khóa'),
         if (account.staffId case final staffId?)

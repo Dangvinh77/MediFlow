@@ -22,6 +22,18 @@ const staffJobTitleLabels = {
   'ADMINISTRATIVE': 'Hành chính',
 };
 
+const accountRoleLabels = {
+  'ADMIN': 'Quản trị viên',
+  'DOCTOR': 'Bác sĩ',
+  'NURSE': 'Điều dưỡng',
+  'PHARMACIST': 'Dược sĩ',
+  'CASHIER': 'Thu ngân',
+  'LAB_TECH': 'Kỹ thuật viên xét nghiệm',
+  'PATIENT': 'Bệnh nhân',
+  'SYSTEM': 'Hệ thống',
+};
+
+String accountRoleLabel(String code) => accountRoleLabels[code] ?? code;
 String departmentTypeLabel(String code) => departmentTypeLabels[code] ?? code;
 String staffJobTitleLabel(String code) => staffJobTitleLabels[code] ?? code;
 

@@ -6,6 +6,7 @@ import 'package:mediflow_loader/mediflow_loader.dart';
 import '../../../core/domain/page_result.dart';
 import '../../../core/domain/workspace_access.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/widgets/medical_ui.dart';
 import '../../../core/widgets/paged_list.dart';
 import '../../../core/widgets/reference_widgets.dart';
 import '../../../core/widgets/request_state.dart';
@@ -77,14 +78,16 @@ class _OrganizationTabs extends StatelessWidget {
     );
   }
 
-  void _openAccounts(BuildContext context) => Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const LText('Quản lý tài khoản')),
-        body: AccountSection(repository: repository),
-      ),
-    ),
-  );
+  // Root navigator: above the shell, so the page has one app bar of its own.
+  void _openAccounts(BuildContext context) =>
+      Navigator.of(context, rootNavigator: true).push<void>(
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const LText('Quản lý tài khoản')),
+            body: AccountSection(repository: repository),
+          ),
+        ),
+      );
 }
 
 class DepartmentSection extends StatefulWidget {
@@ -985,32 +988,58 @@ class _AccountDirectoryState extends State<_AccountDirectory> {
           else ...[
             LText('${_accounts!.totalElements} tài khoản'),
             for (final account in _accounts!.items)
+              // Email on its own full-width line: a long address beside a
+              // trailing button squeezed it to one character per line.
               Card(
-                child: ListTile(
-                  title: LText(account.username),
-                  subtitle: Column(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      LText(
-                        '${account.role} · ${account.active ? 'Đang hoạt động' : 'Đã khóa'}',
+                      Text(
+                        account.username,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      TextButton(
-                        onPressed: widget.disabled
-                            ? null
-                            : () => widget.onOpen(account),
-                        child: const LText('Xem chi tiết'),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          LText(accountRoleLabel(account.role)),
+                          StatusPill(
+                            AppL10n.text(
+                              context,
+                              account.active ? 'Đang hoạt động' : 'Đã khóa',
+                            ),
+                            tone: account.active
+                                ? StatusTone.success
+                                : StatusTone.neutral,
+                          ),
+                        ],
+                      ),
+                      Wrap(
+                        spacing: 4,
+                        children: [
+                          TextButton(
+                            onPressed: widget.disabled
+                                ? null
+                                : () => widget.onOpen(account),
+                            child: const LText('Xem chi tiết'),
+                          ),
+                          TextButton(
+                            onPressed: widget.disabled
+                                ? null
+                                : () => widget.onSelect(account),
+                            child: LText(
+                              widget.selectedId == account.id
+                                  ? 'Đang chọn'
+                                  : 'Chọn',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  trailing: TextButton(
-                    onPressed: widget.disabled
-                        ? null
-                        : () => widget.onSelect(account),
-                    child: LText(
-                      widget.selectedId == account.id
-                          ? 'Đang chọn'
-                          : 'Chọn ${account.username}',
-                    ),
                   ),
                 ),
               ),
