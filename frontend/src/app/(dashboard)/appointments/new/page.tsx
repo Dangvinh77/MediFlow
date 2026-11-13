@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
@@ -8,7 +7,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Tạo lịch hẹn | MediFlow" };
 
 export default function CreateAppointmentPage() {
-  if (process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true") redirect("/appointments/reception");
   return (
     <PageShell
       title="Tạo lịch hẹn"

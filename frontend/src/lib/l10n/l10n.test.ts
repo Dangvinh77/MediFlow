@@ -11,6 +11,13 @@ it("keeps all interpolation slots in every translation", () => {
   }
 });
 
+it("translates lower-case catalog words inside a pattern but never names", () => {
+  expect(localize("Thông tin bộ phận", "en")).toBe("Unit information");
+  expect(localize("Dòng tiền theo ngày", "en")).toBe("Cash flow by day");
+  expect(localize("Trang sau", "en")).toBe("Next page");
+  expect(localize("Chi tiết Nam", "en")).toBe("Nam details");
+});
+
 it("preserves user-entered values, unknown messages and element objects", () => {
   expect(translate("Xin chào {0}", "vi", ["Nguyễn An"])).toBe("Xin chào Nguyễn An");
   expect(localize("Nguyễn An", "en")).toBe("Nguyễn An");

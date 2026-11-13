@@ -7,7 +7,7 @@ import { HeadAppointments } from "./HeadAppointments";
 import { ApiRequestError } from "@/lib/api";
 
 const mocks = vi.hoisted(() => ({
-  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(), rooms: vi.fn(async () => []), roomTypes: vi.fn(async () => []),
+  department: vi.fn(), staff: vi.fn(), headAppointments: vi.fn(), replaceHeadAppointment: vi.fn(), rooms: vi.fn(async () => []), roomTypes: vi.fn(async () => []), profileAccount: vi.fn(),
   session: vi.fn(() => "session-a"), router: { replace: vi.fn() }, settle: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
@@ -28,6 +28,23 @@ beforeEach(() => {
   mocks.headAppointments.mockResolvedValue(initial);
   mocks.rooms.mockResolvedValue([]);
   mocks.replaceHeadAppointment.mockResolvedValue(appointed);
+  mocks.profileAccount.mockResolvedValue({ account: { isActive: true, role: "DOCTOR" }, profileEmail: null, emailSyncPending: false });
+});
+
+it("shows each doctor's account state and only lets an active DOCTOR account be chosen", async () => {
+  const locked = { ...doctor, staffId: "locked", fullName: "BS Khóa" };
+  const none = { ...doctor, staffId: "none", fullName: "BS Chưa cấp" };
+  mocks.staff.mockResolvedValue({ content: [doctor, locked, none], totalPages: 1 });
+  mocks.profileAccount.mockImplementation(async (_type: string, staffId: string) => staffId === "none"
+    ? { account: null, profileEmail: null, emailSyncPending: false }
+    : { account: { isActive: staffId !== "locked", role: "DOCTOR" }, profileEmail: null, emailSyncPending: false });
+  render(<HeadAppointments departmentId={department.departmentId} />);
+  expect(await screen.findByText("Chưa cấp tài khoản")).toBeVisible();
+  expect(screen.getByText("Đã khóa")).toBeVisible();
+  expect(screen.getByText("Đang hoạt động")).toBeVisible();
+  expect(screen.getByRole("radio", { name: `Chọn ${doctor.fullName}` })).toBeEnabled();
+  expect(screen.getByRole("radio", { name: "Chọn BS Khóa" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: "Chọn BS Chưa cấp" })).toBeDisabled();
 });
 
 async function confirmAppointment(name = doctor.fullName) {

@@ -270,10 +270,10 @@ function PatientTimelineSession({ role, outpatientEnabled }: { role: ReturnType<
           </div>
           <L10nValue>{result.totalPages > 1 ? (
             <nav aria-label={localize("Phân trang dòng thời gian")} className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm">
-              <p aria-live="polite">Trang <L10nValue>{result.number + 1}</L10nValue> / {result.totalPages}</p>
+              <p aria-live="polite"><L10n>{"Trang"}</L10n> <L10nValue>{result.number + 1}</L10nValue> / {result.totalPages}</p>
               <div className="flex gap-2">
                 <button type="button" disabled={loading || result.number <= 0} onClick={() => { const next = Math.max(0, result.number - 1); setPageNumber(next); void load(activePatientId, next, appliedFilters); }} className="min-h-10 rounded-lg border border-border px-3 py-2 disabled:opacity-50"><L10n>{"Trang trước"}</L10n></button>
-                <button type="button" disabled={loading || result.number + 1 >= result.totalPages} onClick={() => { const next = result.number + 1; setPageNumber(next); void load(activePatientId, next, appliedFilters); }} className="min-h-10 rounded-lg border border-border px-3 py-2 disabled:opacity-50">Trang sau</button>
+                <button type="button" disabled={loading || result.number + 1 >= result.totalPages} onClick={() => { const next = result.number + 1; setPageNumber(next); void load(activePatientId, next, appliedFilters); }} className="min-h-10 rounded-lg border border-border px-3 py-2 disabled:opacity-50"><L10n>{"Trang sau"}</L10n></button>
               </div>
             </nav>
           ) : null}</L10nValue>

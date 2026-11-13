@@ -97,12 +97,12 @@ export function DashboardSidebar({ role, open, onClose, schedulingEnabled = fals
                 <li key={item.href}>
                   <L10nValue>{index === 0 || visibleNavigation[index - 1].group !== item.group ? (
                     <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {item.group}
+                      <L10nValue>{item.group}</L10nValue>
                     </p>
                   ) : null}</L10nValue>
                   <Link
                     href={item.href}
-                    aria-label={localize(`${item.label} — ${role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow}`)}
+                    aria-label={`${localize(item.label)} — ${localize(role === "PATIENT" && item.href === "/notifications" ? "Tin nhắn dành cho bạn" : item.eyebrow)}`}
                     aria-current={active ? "page" : undefined}
                     onClick={onClose}
                     className={`block rounded-lg border-l-2 px-3 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-surface-muted hover:text-foreground"}`}

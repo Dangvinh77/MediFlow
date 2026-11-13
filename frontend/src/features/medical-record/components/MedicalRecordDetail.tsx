@@ -7,6 +7,7 @@ import { ReferenceText } from "@/components/references/ReferenceText";
 import { Button } from "@/components/ui/Button";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TabPanel, Tabs, type TabItem } from "@/components/ui/Tabs";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
@@ -84,11 +85,6 @@ function Identifier({ label, kind, value }: { label: string; kind?: string; valu
   );
 }
 
-function WriteArea({ show, children }: { show: boolean; children: ReactNode }) {
-  const { localize } = useLocale();
-  return show ? <section aria-label={localize("Ghi nhận lượt đang mở")} className="space-y-7"><L10nValue>{children}</L10nValue></section> : <><L10nValue>{children}</L10nValue></>;
-}
-
 const getServerRole = () => null;
 const getServerToken = () => null;
 
@@ -108,6 +104,14 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
   const [refreshError, setRefreshError] = useState<RequestError | null>(null);
   const [capabilities, setCapabilities] = useState<RecordCapabilitiesDTO | null>(null);
   const [pendingRecord, setPendingRecord] = useState<MedicalRecordDTO | null>(null);
+  // The open tab lives in ?tab= so a reload, a shared link or the back button keeps it.
+  const [tab, setTab] = useState(() => typeof window === "undefined" ? "exam" : new URLSearchParams(window.location.search).get("tab") ?? "exam");
+  const chooseTab = useCallback((next: string) => {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "exam") url.searchParams.delete("tab"); else url.searchParams.set("tab", next);
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
   const record = state.status === "success" ? state.record : null;
   const recordRef = useRef<MedicalRecordDTO | null>(record);
   const activeForms = useRef({ diagnosis: false, completion: false });
@@ -306,8 +310,23 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
   const actionsBlocked = refreshing || pendingRecord !== null || writeInFlight;
   const actionClass = "inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium underline decoration-border underline-offset-4 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
+  const showLab = outpatientEnabled && Boolean(record.appointmentId);
+  const showPrescription = (role === "ADMIN" || role === "DOCTOR") && Boolean(prescriptionWorkspace);
+  const showFinish = canComplete || record.status === "COMPLETED";
+  const tabs: TabItem[] = [
+    { id: "exam", label: "Khám & chẩn đoán", badge: record.diagnoses.length },
+    ...(showLab ? [{ id: "lab", label: "Xét nghiệm" }] : []),
+    ...(showPrescription ? [{ id: "prescription", label: "Đơn thuốc" }] : []),
+    { id: "care", label: "Liệu trình & hội chẩn" },
+    { id: "documents", label: "Tài liệu" },
+    ...(showFinish ? [{ id: "finish", label: record.status === "COMPLETED" ? "Tái khám" : "Kết thúc khám" }] : []),
+    { id: "info", label: "Thông tin hồ sơ" },
+  ];
+  const activeTab = tabs.some(item => item.id === tab) ? tab : "exam";
+  const panel = { idPrefix: "record", active: activeTab };
+
   return (
-    <section className="mt-6 space-y-7">
+    <section className="mt-6 space-y-5">
       <L10nValue>{notice ? (
         <p role="status" className="border-l-2 border-success px-4 py-2 text-sm text-success">
           <L10nValue>{notice === "created" ? "Đã tạo hồ sơ khám thành công." : "Đã cập nhật hồ sơ khám thành công."}</L10nValue>
@@ -316,7 +335,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
 
       <PatientAllergyPanel patientId={record.patientId} role={role} sourceRecordId={record.recordId} />
 
-      <header className="border-b border-border pb-5">
+      <header>
         <PatientContextBanner label={localize("Ngữ cảnh hồ sơ khám")} patientId={record.patientId} departmentId={record.departmentId} doctorId={record.responsibleDoctorId ?? record.doctorId} date={record.examinationDate} dateLabel="Ngày khám">
           <StatusBadge tone={isOpen ? "info" : isClosed ? "warning" : "success"}><L10nValue>{isOpen ? "Đang khám" : isClosed ? "Kết thúc không kết luận" : "Đã hoàn tất khám"}</L10nValue></StatusBadge>
         </PatientContextBanner>
@@ -332,20 +351,6 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
           </dl>
         ) : null}</L10nValue>
         <L10nValue>{record.previousRecordId ? <p className="mt-3 text-sm"><Link href={`/records/${encodeURIComponent(record.previousRecordId)}`} className="font-medium underline underline-offset-4"><L10n>{"Lượt trước — chỉ tham khảo"}</L10n></Link></p> : null}</L10nValue>
-
-        <L10nValue>{outpatientEnabled && record.appointmentId ? (
-          <section id="record-lab-orders" aria-label={localize("Xét nghiệm của lượt khám")} className="mt-5 border-t border-border pt-4">
-            <h3 className="text-sm font-semibold"><L10n>{"Xét nghiệm của lượt khám"}</L10n></h3>
-            <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ định và theo dõi xét nghiệm theo đúng lượt khám này."}</L10n></p>
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              <L10nValue>{canWrite ? (
-                <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${actionsBlocked ? "pointer-events-none opacity-55" : ""}`} href={`/records/${record.recordId}/lab-order`}><L10n>{"Lập chỉ định xét nghiệm"}</L10n></Link>
-              ) : null}</L10nValue>
-              <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}><L10n>{"Xem phiếu xét nghiệm"}</L10n></Link>
-            </div>
-            <L10nValue>{schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} canWithdraw={canWrite && !actionsBlocked} /> : null}</L10nValue>
-          </section>
-        ) : null}</L10nValue>
       </header>
 
       <L10nValue>{refreshing ? <p role="status" className="text-sm text-muted-foreground"><L10n>{"Đang cập nhật hồ sơ…"}</L10n></p> : null}</L10nValue>
@@ -359,6 +364,11 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
 
       <L10nValue>{readOnlyNotice ? <p role="status" className="border-l-2 border-warning px-4 py-2 text-sm text-foreground"><L10nValue>{readOnlyNotice}</L10nValue></p> : null}</L10nValue>
 
+      <div className="sticky top-18 z-10 bg-background">
+        <Tabs idPrefix="record" label={localize("Các phần của hồ sơ khám")} tabs={tabs} active={activeTab} onChange={chooseTab} />
+      </div>
+
+      <TabPanel {...panel} id="exam" className="space-y-6 focus-visible:outline-none">
       <section aria-label={localize("Nội dung đã ghi")} className="space-y-4">
       <p className="text-sm text-muted-foreground"><L10n>{"Bác sĩ phụ trách: "}</L10n><ReferenceText kind="doctor" value={record.responsibleDoctorId ?? record.doctorId} fallback="Bác sĩ" /> <span aria-hidden="true">·</span><L10n>{" Cập nhật lần cuối: "}</L10n><L10nValue>{formatInstant(record.updatedAt ?? record.createdAt)}</L10nValue></p>
       <L10nValue>{effectiveCorrections.length ? <section aria-label={localize("Chỉnh sửa có hiệu lực")} className="space-y-3 rounded-xl border border-success bg-surface p-5">
@@ -398,62 +408,81 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
       </div>
       </section>
 
-      <RecordDocumentsPanel recordId={record.recordId} sourceHref={documentHref} />
-
-      <RecordCollaborationSection record={record} capabilities={capabilities} onCommandSuccess={retry} />
-
-      <WriteArea show={canWrite || canComplete}>
-      <L10nValue>{canWrite ? (
+      <L10nValue>{canWrite ? <section aria-label={localize("Ghi nhận lượt đang mở")} className="space-y-3">
         <details className="border-y border-border py-3">
           <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-primary underline decoration-border underline-offset-4"><L10n>{"Thêm chẩn đoán"}</L10n></summary>
           <AddDiagnosisForm recordId={record.recordId} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setDiagnosisActive} onBusyChange={setDiagnosisBusy} onCreated={addCreatedDiagnosis} />
         </details>
-      ) : null}</L10nValue>
-
-      <L10nValue>{(role === "ADMIN" || role === "DOCTOR") && prescriptionWorkspace ? (
-        <section className="border-b border-border pb-5" aria-labelledby="record-prescription-heading">
-          <h2 id="record-prescription-heading" className="text-lg font-semibold"><L10n>{"Đơn thuốc của hồ sơ khám"}</L10n></h2>
-          <L10nValue>{typeof prescriptionWorkspace === "function"
-            ? prescriptionWorkspace(record, outpatientEnabled && role === "DOCTOR" && canWrite && Boolean(record.appointmentId) && !actionsBlocked)
-            : prescriptionWorkspace}</L10nValue>
-        </section>
-      ) : null}</L10nValue>
-
-      <L10nValue>{canComplete ? (
-        <details className="border-b border-border pb-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Hoàn tất lần khám"}</L10n></summary>
-          <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Mở khi đã hoàn tất chẩn đoán và hướng xử trí. Hồ sơ sẽ không thể chỉnh sửa sau khi kết thúc."}</L10n></p>
-          <CompleteRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onCompleted={applyRecord} />
-        </details>
-      ) : null}</L10nValue>
-
-      <L10nValue>{canComplete && schedulingV2Enabled && role === "DOCTOR" ? (
-        <details className="border-b border-border pb-3">
-          <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Kết thúc lượt không kết luận"}</L10n></summary>
-          <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Dùng khi bệnh nhân tự ý về hoặc từ chối khám. Không cần chẩn đoán, nhưng mọi chỉ định xét nghiệm phải có kết quả hoặc đã hủy."}</L10n></p>
-          <CloseRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onClosed={applyRecord} />
-        </details>
-      ) : null}</L10nValue>
-
-      <L10nValue>{canWrite ? (
-        <details className="border-t border-border pt-3">
+        <details>
           <summary className="min-h-10 cursor-pointer py-2 text-sm font-medium text-muted-foreground"><L10n>{"Tác vụ khác"}</L10n></summary>
           <div className="flex flex-wrap gap-1 pt-1">
-            <L10nValue>{canWrite ? <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={`/records/${record.recordId}/edit`}><L10n>{"Sửa triệu chứng"}</L10n></Link> : null}</L10nValue>
+            <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-foreground"}`} href={`/records/${record.recordId}/edit`}><L10n>{"Sửa triệu chứng"}</L10n></Link>
           </div>
         </details>
+      </section> : null}</L10nValue>
+      </TabPanel>
+
+      <L10nValue>{showLab && record.appointmentId ? (
+        <TabPanel {...panel} id="lab" className="focus-visible:outline-none">
+          <section id="record-lab-orders" aria-label={localize("Xét nghiệm của lượt khám")}>
+            <h2 className="text-lg font-semibold"><L10n>{"Xét nghiệm của lượt khám"}</L10n></h2>
+            <p className="mt-1 text-sm text-muted-foreground"><L10n>{"Chỉ định và theo dõi xét nghiệm theo đúng lượt khám này."}</L10n></p>
+            <div className="mt-2 flex flex-wrap items-center gap-1">
+              <L10nValue>{canWrite ? (
+                <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${actionsBlocked ? "pointer-events-none opacity-55" : ""}`} href={`/records/${record.recordId}/lab-order`}><L10n>{"Lập chỉ định xét nghiệm"}</L10n></Link>
+              ) : null}</L10nValue>
+              <Link aria-disabled={actionsBlocked || undefined} tabIndex={actionsBlocked ? -1 : undefined} onClick={(event) => { if (actionsBlocked) event.preventDefault(); }} className={`${actionClass} ${actionsBlocked ? "pointer-events-none opacity-55" : "text-primary"}`} href={`/lab?episodeId=${encodeURIComponent(record.appointmentId)}`}><L10n>{"Xem phiếu xét nghiệm"}</L10n></Link>
+            </div>
+            <L10nValue>{schedulingV2Enabled ? <RecordLabOrdersPanel recordId={record.recordId} cancelOrder={canWrite && !actionsBlocked ? cancelLabOrder : undefined} canWithdraw={canWrite && !actionsBlocked} /> : null}</L10nValue>
+          </section>
+        </TabPanel>
       ) : null}</L10nValue>
 
-      </WriteArea>
+      <L10nValue>{showPrescription ? (
+        <TabPanel {...panel} id="prescription" className="focus-visible:outline-none">
+          <section aria-labelledby="record-prescription-heading">
+            <h2 id="record-prescription-heading" className="text-lg font-semibold"><L10n>{"Đơn thuốc của hồ sơ khám"}</L10n></h2>
+            <L10nValue>{typeof prescriptionWorkspace === "function"
+              ? prescriptionWorkspace(record, outpatientEnabled && role === "DOCTOR" && canWrite && Boolean(record.appointmentId) && !actionsBlocked)
+              : prescriptionWorkspace}</L10nValue>
+          </section>
+        </TabPanel>
+      ) : null}</L10nValue>
 
-      <L10nValue>{record.status === "COMPLETED" ? <FollowUpRecommendationPanel
-        recordId={record.recordId}
-        enabled={schedulingV2Enabled}
-        canCreate={role === "DOCTOR"}
-      /> : null}</L10nValue>
+      <TabPanel {...panel} id="care" className="focus-visible:outline-none">
+        <RecordCollaborationSection record={record} capabilities={capabilities} onCommandSuccess={retry} />
+      </TabPanel>
 
-      <details className="border-t border-border pt-4 text-sm">
-        <summary className="min-h-10 cursor-pointer py-2 font-medium text-muted-foreground"><L10n>{"Thông tin đối chiếu và thời điểm"}</L10n></summary>
+      <TabPanel {...panel} id="documents" className="focus-visible:outline-none">
+        <RecordDocumentsPanel recordId={record.recordId} sourceHref={documentHref} />
+      </TabPanel>
+
+      <L10nValue>{showFinish ? (
+        <TabPanel {...panel} id="finish" className="space-y-4 focus-visible:outline-none">
+          <L10nValue>{canComplete ? (
+            <details className="border-b border-border pb-3">
+              <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Hoàn tất lần khám"}</L10n></summary>
+              <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Mở khi đã hoàn tất chẩn đoán và hướng xử trí. Hồ sơ sẽ không thể chỉnh sửa sau khi kết thúc."}</L10n></p>
+              <CompleteRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onCompleted={applyRecord} />
+            </details>
+          ) : null}</L10nValue>
+          <L10nValue>{canComplete && schedulingV2Enabled && role === "DOCTOR" ? (
+            <details className="border-b border-border pb-3">
+              <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-foreground underline decoration-border underline-offset-4"><L10n>{"Kết thúc lượt không kết luận"}</L10n></summary>
+              <p className="pb-2 text-sm text-muted-foreground"><L10n>{"Dùng khi bệnh nhân tự ý về hoặc từ chối khám. Không cần chẩn đoán, nhưng mọi chỉ định xét nghiệm phải có kết quả hoặc đã hủy."}</L10n></p>
+              <CloseRecordForm record={record} disabled={actionsBlocked} isInteractionBlocked={isInteractionBlocked} onActivityChange={setCompletionActive} onBusyChange={setCompletionBusy} onClosed={applyRecord} />
+            </details>
+          ) : null}</L10nValue>
+          <L10nValue>{record.status === "COMPLETED" ? <FollowUpRecommendationPanel
+            recordId={record.recordId}
+            enabled={schedulingV2Enabled}
+            canCreate={role === "DOCTOR"}
+          /> : null}</L10nValue>
+        </TabPanel>
+      ) : null}</L10nValue>
+
+      <TabPanel {...panel} id="info" className="text-sm focus-visible:outline-none">
+        <h2 className="text-lg font-semibold"><L10n>{"Thông tin đối chiếu và thời điểm"}</L10n></h2>
         <dl className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
           <Identifier label={localize("Mã hồ sơ")} kind="record" value={record.recordId} />
           <Identifier label={localize("Bệnh nhân")} kind="patient" value={record.patientId} />
@@ -465,7 +494,7 @@ function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = fals
           <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Cập nhật"}</L10n></dt><dd className="mt-1"><L10nValue>{formatInstant(record.updatedAt)}</L10nValue></dd></div>
           <div><dt className="text-xs font-medium text-muted-foreground"><L10n>{"Hoàn tất"}</L10n></dt><dd className="mt-1"><L10nValue>{formatInstant(record.completedAt)}</L10nValue></dd></div>
         </dl>
-      </details>
+      </TabPanel>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
         <Link href="/records" className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"><L10n>{"Quay lại tra cứu"}</L10n></Link>

@@ -53,7 +53,7 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
   const [types, setTypes] = useState<RoomTypeDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [dimension, setDimension] = useState<FilterDimension>(fixedDepartment ? "type" : "");
+  const [dimension, setDimension] = useState<FilterDimension>("");
   const [target, setTarget] = useState("");
   const [keyword, setKeyword] = useState("");
   const [form, setForm] = useState<RoomForm | null>(null);
@@ -82,7 +82,8 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
   const departmentFilter = fixedDepartment?.departmentId ?? (dimension === "department" ? target : "");
   const typeFilter = dimension === "type" ? target : "";
   const filterTypes = fixedDepartment ? roomTypesFor(types, fixedDepartment.departmentType) : types;
-  const visibleRooms = (rooms ?? []).filter(room => (!departmentFilter || room.departmentId === departmentFilter)
+  // Inside a department every room listed already belongs to it, so there is nothing to filter.
+  const visibleRooms = fixedDepartment ? rooms ?? [] : (rooms ?? []).filter(room => (!departmentFilter || room.departmentId === departmentFilter)
     && (!typeFilter || room.roomType === typeFilter)
     && normalize(`${room.roomNumber} ${room.roomName} ${room.zone} ${room.location}`).includes(normalize(keyword.trim())));
   const formDepartment = form ? departmentById.get(form.departmentId) : undefined;
@@ -91,7 +92,10 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
 
   function startCreate() {
     setNotice(null); setFormError(null);
-    setForm(emptyForm(fixedDepartment?.departmentId ?? departmentFilter));
+    const departmentId = fixedDepartment?.departmentId ?? departmentFilter;
+    const choices = roomTypesFor(types, departmentById.get(departmentId)?.departmentType).map(type => type.code);
+    // Preselect the only fitting type and default the location to the department's own.
+    setForm({ ...emptyForm(departmentId), roomType: choices.length === 1 ? choices[0] : "", location: departmentById.get(departmentId)?.location ?? "" });
   }
 
   function startEdit(room: RoomDTO) {
@@ -166,13 +170,13 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
       </ul>
     </div> : null}</L10nValue>
     <L10nValue>{notice ? <p role="status" className="mx-5 mb-4 rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success"><L10nValue>{notice}</L10nValue></p> : null}</L10nValue>
-    <L10nValue>{form ? <form aria-label={localize(form.roomId ? "Sửa phòng làm việc" : "Thêm phòng làm việc")} onSubmit={save} noValidate className="grid gap-4 border-t border-border p-5 md:grid-cols-2 xl:grid-cols-3">
-      <Field label={localize("Khoa / bộ phận")} htmlFor="room-department" required>
+    <L10nValue>{form ? <form aria-label={localize(form.roomId ? "Sửa phòng làm việc" : "Thêm phòng làm việc")} onSubmit={save} noValidate className="grid items-start gap-4 border-t border-border p-5 md:grid-cols-2">
+      <L10nValue>{fixedDepartment ? null : <Field label={localize("Khoa / bộ phận")} htmlFor="room-department" required>
         <select id="room-department" value={form.departmentId} disabled={Boolean(form.roomId || fixedDepartment) || saving} onChange={event => chooseDepartment(event.target.value)} className={controlClassName}>
           <option value=""><L10n>{"Chọn khoa/bộ phận"}</L10n></option>
           <L10nValue>{departments.filter(department => department.active || department.departmentId === form.departmentId).map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</L10nValue>
         </select>
-      </Field>
+      </Field>}</L10nValue>
       <Field label={localize("Loại phòng")} htmlFor="room-type" required hint={selectedType ? `${selectedType.description ? `${selectedType.description} ` : ""}${roomTypeRule(selectedType)}.` : !form.departmentId ? "Chọn khoa/bộ phận trước để thấy các loại phòng phù hợp." : formDepartment && allowedTypes.length === 0 ? `${departmentCategoryLabels[formDepartment.departmentType]} chưa có loại phòng nào trong danh mục.` : undefined}>
         <select id="room-type" value={form.roomType} disabled={Boolean(form.roomId) || !form.departmentId || saving} onChange={event => setForm(current => current && ({ ...current, roomType: event.target.value as RoomType }))} className={controlClassName}>
           <option value=""><L10n>{"Chọn loại phòng"}</L10n></option>
@@ -184,11 +188,11 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
       <Field label={localize("Tên phòng")} htmlFor="room-name" required><input id="room-name" maxLength={100} value={form.roomName} disabled={saving} onChange={event => setForm(current => current && ({ ...current, roomName: event.target.value }))} placeholder={localize("Ví dụ: Phòng khám Nội 1")} className={controlClassName} /></Field>
       <Field label="Khu" htmlFor="room-zone" required><input id="room-zone" maxLength={50} value={form.zone} disabled={saving} onChange={event => setForm(current => current && ({ ...current, zone: event.target.value }))} placeholder={localize("Ví dụ: Khu A")} className={controlClassName} /></Field>
       <Field label={localize("Vị trí / địa điểm")} htmlFor="room-location" required><input id="room-location" maxLength={255} value={form.location} disabled={saving} onChange={event => setForm(current => current && ({ ...current, location: event.target.value }))} placeholder={localize("Ví dụ: Tầng 1, Khu A")} className={controlClassName} /></Field>
-      <L10nValue>{formError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger md:col-span-2 xl:col-span-3"><L10nValue>{formError}</L10nValue></p> : null}</L10nValue>
-      <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3"><Button type="submit" variant="primary" loading={saving}><L10nValue>{form.roomId ? "Lưu thay đổi" : "Thêm phòng"}</L10nValue></Button><Button type="button" disabled={saving} onClick={() => { setForm(null); setFormError(null); }}><L10n>{"Hủy"}</L10n></Button></div>
+      <L10nValue>{formError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger md:col-span-2"><L10nValue>{formError}</L10nValue></p> : null}</L10nValue>
+      <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="submit" variant="primary" loading={saving}><L10nValue>{form.roomId ? "Lưu thay đổi" : "Thêm phòng"}</L10nValue></Button><Button type="button" disabled={saving} onClick={() => { setForm(null); setFormError(null); }}><L10n>{"Hủy"}</L10n></Button></div>
     </form> : formError ? <p role="alert" className="mx-5 mb-4 text-sm text-danger"><L10nValue>{formError}</L10nValue></p> : null}</L10nValue>
-    <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
-      <L10nValue>{!fixedDepartment ? <Field label={localize("Lọc theo")} htmlFor="room-filter-by"><select id="room-filter-by" value={dimension} onChange={event => { setDimension(event.target.value as FilterDimension); setTarget(""); }} className={controlClassName}><option value=""><L10n>{"Tất cả phòng"}</L10n></option><option value="department"><L10n>{"Khoa / bộ phận"}</L10n></option><option value="type"><L10n>{"Loại phòng"}</L10n></option></select></Field> : null}</L10nValue>
+    <L10nValue>{fixedDepartment ? null : <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
+      <Field label={localize("Lọc theo")} htmlFor="room-filter-by"><select id="room-filter-by" value={dimension} onChange={event => { setDimension(event.target.value as FilterDimension); setTarget(""); }} className={controlClassName}><option value=""><L10n>{"Tất cả phòng"}</L10n></option><option value="department"><L10n>{"Khoa / bộ phận"}</L10n></option><option value="type"><L10n>{"Loại phòng"}</L10n></option></select></Field>
       <Field label={localize("Đối tượng lọc")} htmlFor="room-filter-target" hint={!dimension ? "Chọn tiêu chí ở ô Lọc theo trước." : undefined}><select id="room-filter-target" value={target} disabled={!dimension} onChange={event => setTarget(event.target.value)} className={controlClassName}>
         <option value=""><L10nValue>{dimension === "department" ? "Tất cả khoa/bộ phận" : dimension === "type" ? "Tất cả loại phòng" : "—"}</L10nValue></option>
         <L10nValue>{dimension === "department" ? departmentCategories.map(category => {
@@ -201,22 +205,22 @@ export function RoomDirectory({ fixedDepartment, onRoomsChanged }: { fixedDepart
         }) : null}</L10nValue>
       </select></Field>
       <Field label={localize("Tìm phòng")} htmlFor="room-keyword"><input id="room-keyword" type="search" value={keyword} onChange={event => setKeyword(event.target.value)} placeholder={localize("Số phòng, tên, khu")} className={controlClassName} /></Field>
-    </div>
+    </div>}</L10nValue>
     <L10nValue>{error ? <AsyncState kind="error" message={localize(error)} onRetry={() => { setError(null); setRooms(null); setAttempt(value => value + 1); }} />
       : !rooms ? <AsyncState kind="loading" message={localize("Đang tải phòng làm việc…")} />
       : visibleRooms.length === 0 ? <AsyncState kind="empty" message={localize("Chưa có phòng làm việc phù hợp.")} />
-      : <div className="overflow-x-auto border-t border-border"><table className="w-full min-w-3xl text-left text-sm">
+      : <div className="overflow-x-auto border-t border-border"><table className={`w-full text-left text-sm ${fixedDepartment ? "" : "min-w-3xl"}`}>
         <caption className="sr-only"><L10nValue>{title}</L10nValue></caption>
-        <thead className="border-b border-border text-muted-foreground"><tr><L10nValue>{["Số phòng", "Tên phòng", "Khu", "Vị trí", "Loại phòng", ...(fixedDepartment ? [] : ["Khoa / bộ phận"]), "Trạng thái", ...(admin ? ["Thao tác"] : [])].map(label => <th key={label} scope="col" className="px-4 py-3"><L10nValue>{label}</L10nValue></th>)}</L10nValue></tr></thead>
+        <thead className="border-b border-border text-muted-foreground"><tr><L10nValue>{["Số phòng", "Tên phòng", ...(fixedDepartment ? ["Vị trí"] : ["Khu", "Vị trí"]), "Loại phòng", ...(fixedDepartment ? [] : ["Khoa / bộ phận"]), "Trạng thái", ...(admin ? ["Thao tác"] : [])].map(label => <th key={label} scope="col" className="whitespace-nowrap px-3 py-3"><L10nValue>{label}</L10nValue></th>)}</L10nValue></tr></thead>
         <tbody><L10nValue>{visibleRooms.map(room => <tr key={room.roomId} className="border-b border-border last:border-0">
-          <td className="px-4 py-2 font-semibold tabular-nums">{room.roomNumber}</td>
-          <td className="px-4 py-2">{room.roomName}</td>
-          <td className="px-4 py-2">{room.zone}</td>
-          <td className="px-4 py-2">{room.location}</td>
-          <td className="px-4 py-2"><L10nValue>{roomTypeName(types, room.roomType)}</L10nValue></td>
-          <L10nValue>{!fixedDepartment ? <td className="px-4 py-2"><L10nValue>{departmentById.get(room.departmentId)?.departmentName ?? "—"}</L10nValue></td> : null}</L10nValue>
-          <td className="px-4 py-2"><StatusBadge tone={room.active ? "success" : "neutral"}><L10nValue>{room.active ? "Đang sử dụng" : "Ngừng sử dụng"}</L10nValue></StatusBadge></td>
-          <L10nValue>{admin ? <td className="px-4 py-2"><div className="flex flex-nowrap gap-2"><Button type="button" onClick={() => startEdit(room)} aria-label={localize(`Sửa phòng ${room.roomNumber}`)}><L10n>{"Sửa"}</L10n></Button><Button type="button" variant={room.active ? "danger" : "secondary"} onClick={() => void toggle(room)} aria-label={localize(`${room.active ? "Ngừng" : "Mở lại"} phòng ${room.roomNumber}`)}><L10nValue>{room.active ? "Ngừng" : "Mở lại"}</L10nValue></Button></div></td> : null}</L10nValue>
+          <td className="whitespace-nowrap px-3 py-2 font-semibold tabular-nums">{room.roomNumber}</td>
+          <td className="px-3 py-2">{room.roomName}</td>
+          <L10nValue>{fixedDepartment ? <td className="px-3 py-2">{room.location}{normalize(room.location).includes(normalize(room.zone)) ? null : <span className="block text-xs text-muted-foreground">{room.zone}</span>}</td>
+            : <><td className="px-3 py-2">{room.zone}</td><td className="px-3 py-2">{room.location}</td></>}</L10nValue>
+          <td className="px-3 py-2"><L10nValue>{roomTypeName(types, room.roomType)}</L10nValue></td>
+          <L10nValue>{!fixedDepartment ? <td className="px-3 py-2"><L10nValue>{departmentById.get(room.departmentId)?.departmentName ?? "—"}</L10nValue></td> : null}</L10nValue>
+          <td className="whitespace-nowrap px-3 py-2"><StatusBadge tone={room.active ? "success" : "neutral"}><L10nValue>{room.active ? "Đang sử dụng" : "Ngừng sử dụng"}</L10nValue></StatusBadge></td>
+          <L10nValue>{admin ? <td className="whitespace-nowrap px-3 py-2"><div className="flex flex-nowrap gap-2"><Button type="button" onClick={() => startEdit(room)} aria-label={localize(`Sửa phòng ${room.roomNumber}`)}><L10n>{"Sửa"}</L10n></Button><Button type="button" variant={room.active ? "danger" : "secondary"} onClick={() => void toggle(room)} aria-label={localize(`${room.active ? "Ngừng" : "Mở lại"} phòng ${room.roomNumber}`)}><L10nValue>{room.active ? "Ngừng" : "Mở lại"}</L10nValue></Button></div></td> : null}</L10nValue>
         </tr>)}</L10nValue></tbody>
       </table></div>}</L10nValue>
   </DirectorySection>;

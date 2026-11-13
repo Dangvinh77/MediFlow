@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordCapabilitiesDTO } from "../types";
 
+const openTab = (name: string | RegExp) => fireEvent.click(screen.getByRole("tab", { name }));
 const mocks = vi.hoisted(() => ({ capabilities: vi.fn(), declareAccess: vi.fn(), getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), documents: vi.fn(), allergies: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
@@ -54,6 +55,7 @@ describe("Medical record detail identity and permissions", () => {
     expect(context).toHaveTextContent("patient-a");
     const clinical = screen.getByRole("heading", { name: "Nội dung khám" });
     const metadata = screen.getByText("Thông tin đối chiếu và thời điểm");
+    expect(metadata).not.toBeVisible();
     expect(clinical.compareDocumentPosition(metadata) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const allergy = screen.getByRole("heading", { name: "Sổ dị ứng" });
     expect(allergy.compareDocumentPosition(clinical) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -99,6 +101,7 @@ describe("Medical record detail identity and permissions", () => {
     mocks.complete.mockReturnValue(new Promise<MedicalRecordDTO>(done => { resolve = done; }));
     render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
     await screen.findByText("First record");
+    openTab(/Kết thúc khám/);
     fireEvent.click(screen.getByText("Hoàn tất lần khám"));
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Hoàn tất hồ sơ khám" }));
@@ -194,8 +197,10 @@ describe("Medical record detail identity and permissions", () => {
 
     fireEvent.click(screen.getByText("Tác vụ khác"));
     expect(screen.queryByRole("link", { name: "Kê đơn cho lượt khám" })).not.toBeInTheDocument();
+    openTab(/Xét nghiệm/);
     expect(screen.getByRole("link", { name: "Lập chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
     expect(screen.getByRole("link", { name: "Xem phiếu xét nghiệm" })).toHaveAttribute("href", "/lab?episodeId=appointment-a");
+    openTab(/Kết thúc khám/);
     expect(screen.getByLabelText("Ghi chú xử trí")).not.toBeVisible();
     fireEvent.click(screen.getByText("Hoàn tất lần khám"));
     expect(screen.getByLabelText("Ghi chú xử trí")).toBeVisible();
@@ -206,14 +211,20 @@ describe("Medical record detail identity and permissions", () => {
     mocks.getById.mockResolvedValue(appointmentRecord);
     render(<MedicalRecordDetail recordId="record-a" outpatientEnabled prescriptionWorkspace={<div>Embedded prescription workspace</div>} />);
     const workspace = await screen.findByText("Embedded prescription workspace");
+    expect(workspace).not.toBeVisible();
+    openTab("Đơn thuốc");
     expect(workspace).toBeVisible();
-    expect(workspace.compareDocumentPosition(screen.getByText("Hoàn tất lần khám")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The tabs follow the visit: prescribing comes before finishing the visit.
+    const order = screen.getAllByRole("tab").map(tab => tab.textContent);
+    expect(order.findIndex(name => name?.startsWith("Đơn thuốc"))).toBeLessThan(order.findIndex(name => name?.startsWith("Kết thúc khám")));
   });
 
   it("gives the embedded doctor workspace no create permission for a COMPLETED record", async () => {
     mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a", status: "COMPLETED" });
     render(<MedicalRecordDetail recordId="record-a" outpatientEnabled prescriptionWorkspace={(_record, canCreate) => <div>Embedded prescription workspace · {canCreate ? "can-create" : "read-only"}</div>} />);
-    expect(await screen.findByText(/read-only/)).toBeVisible();
+    await screen.findByText(/read-only/);
+    openTab("Đơn thuốc");
+    expect(screen.getByText(/read-only/)).toBeVisible();
   });
 
   it("does not render the prescription workspace for a NURSE", async () => {

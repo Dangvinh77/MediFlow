@@ -18,21 +18,63 @@ class VitalSignSheet extends ConsumerStatefulWidget {
   ConsumerState<VitalSignSheet> createState() => _VitalSignSheetState();
 }
 
+/// One indicator with the device's measurable range, mirrored from Clinical's
+/// VitalSignObservation. The range only catches typing mistakes; it never
+/// judges whether a value is clinically abnormal.
 class _Field {
-  const _Field(this.name, this.label, {this.decimal = false});
-  final String name, label;
-  final bool decimal;
+  const _Field(
+    this.name,
+    this.label,
+    this.unit,
+    this.min,
+    this.max, {
+    this.decimals = 0,
+  });
+  final String name, label, unit;
+  final num min, max;
+  final int decimals;
+  bool get decimal => decimals > 0;
+  String get scale => '$min – $max';
 }
 
 const _fields = [
-  _Field('pulseBpm', 'Mạch (lần/phút)'),
-  _Field('systolicMmhg', 'Huyết áp tâm thu (mmHg)'),
-  _Field('diastolicMmhg', 'Huyết áp tâm trương (mmHg)'),
-  _Field('temperatureC', 'Nhiệt độ (°C)', decimal: true),
-  _Field('respiratoryRate', 'Nhịp thở (lần/phút)'),
-  _Field('spo2Percent', 'SpO2 (%)'),
-  _Field('weightKg', 'Cân nặng (kg)', decimal: true),
+  _Field('pulseBpm', 'Mạch (lần/phút)', 'lần/phút', 20, 250),
+  _Field('systolicMmhg', 'Huyết áp tâm thu (mmHg)', 'mmHg', 50, 300),
+  _Field('diastolicMmhg', 'Huyết áp tâm trương (mmHg)', 'mmHg', 20, 200),
+  _Field('temperatureC', 'Nhiệt độ (°C)', '°C', 30, 45, decimals: 1),
+  _Field('respiratoryRate', 'Nhịp thở (lần/phút)', 'lần/phút', 5, 80),
+  _Field('spo2Percent', 'SpO2 (%)', '%', 50, 100),
+  _Field('weightKg', 'Cân nặng (kg)', 'kg', 0.5, 400, decimals: 2),
 ];
+
+/// The problem with one entered value, or null. Empty is allowed: a reason covers it.
+String? vitalFieldError(String name, String raw, String systolic) {
+  final field = _fields.firstWhere((item) => item.name == name);
+  final text = raw.trim();
+  if (text.isEmpty) return null;
+  if (text.contains(',')) {
+    return '${field.label}: dùng dấu chấm cho phần thập phân, ví dụ 36.5.';
+  }
+  if (!field.decimal && !RegExp(r'^\d+$').hasMatch(text)) {
+    return '${field.label}: cần nhập số nguyên.';
+  }
+  if (field.decimal && !RegExp(r'^\d+(\.\d+)?$').hasMatch(text)) {
+    return '${field.label}: cần nhập một số.';
+  }
+  final fraction = text.contains('.') ? text.split('.')[1].length : 0;
+  if (fraction > field.decimals) {
+    return '${field.label}: tối đa ${field.decimals} chữ số thập phân.';
+  }
+  final value = num.parse(text);
+  if (value < field.min || value > field.max) {
+    return '${field.label}: ngoài thang đo ${field.scale} ${field.unit}.';
+  }
+  final upper = int.tryParse(systolic.trim());
+  if (name == 'diastolicMmhg' && upper != null && value >= upper) {
+    return 'Huyết áp tâm trương phải nhỏ hơn tâm thu.';
+  }
+  return null;
+}
 
 class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
   final _controllers = {
@@ -43,6 +85,8 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
   Object? _error;
   VitalSignInput? _pending;
   bool _busy = false;
+  // Errors show under each field once the nurse tried to save, or while typing after that.
+  bool _checked = false;
 
   String get _scope => 'vitals:${widget.registrationId}';
 
@@ -64,17 +108,15 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
         values[field.name] = null;
         continue;
       }
-      if (raw.contains(',')) {
-        _issue =
-            '${field.label}: dùng dấu chấm cho phần thập phân, ví dụ 36.5.';
-        return null;
-      }
-      final pattern = field.decimal
-          ? RegExp(r'^\d+(\.\d+)?$')
-          : RegExp(r'^\d+$');
-      if (!pattern.hasMatch(raw)) {
-        _issue =
-            '${field.label}: ${field.decimal ? 'cần nhập một số.' : 'cần nhập số nguyên.'}';
+      final problem = vitalFieldError(
+        field.name,
+        raw,
+        _controllers['systolicMmhg']!.text,
+      );
+      if (problem != null) {
+        // The detail is shown under the field itself.
+        _issue = 'Kiểm tra lại các chỉ số được đánh dấu đỏ.';
+        _checked = true;
         return null;
       }
       values[field.name] = field.decimal ? double.parse(raw) : int.parse(raw);
@@ -146,16 +188,37 @@ class _VitalSignSheetState extends ConsumerState<VitalSignSheet> {
             'Ghi sinh hiệu',
             style: Theme.of(context).textTheme.titleMedium,
           ),
+          const SizedBox(height: 4),
+          const LText(
+            'Thang đo là giới hạn đo được của thiết bị, dùng để bắt lỗi nhập liệu. Dùng dấu chấm cho số thập phân.',
+          ),
           for (final field in _fields) ...[
             const SizedBox(height: 8),
             TextField(
+              key: ValueKey('vital-${field.name}'),
               controller: _controllers[field.name],
               enabled: !locked,
+              onChanged: (_) {
+                if (_checked) setState(() {});
+              },
               keyboardType: TextInputType.numberWithOptions(
                 decimal: field.decimal,
               ),
               decoration: InputDecoration(
                 labelText: AppL10n.text(context, field.label),
+                suffixText: AppL10n.text(context, field.unit),
+                helperText:
+                    '${AppL10n.text(context, 'Thang đo')}: ${field.scale} · ${AppL10n.text(context, field.decimal ? 'Tối đa ${field.decimals} chữ số thập phân' : 'Số nguyên')}',
+                errorText: !_checked
+                    ? null
+                    : AppL10n.text(
+                        context,
+                        vitalFieldError(
+                          field.name,
+                          _controllers[field.name]!.text,
+                          _controllers['systolicMmhg']!.text,
+                        ),
+                      ),
                 border: const OutlineInputBorder(),
               ),
             ),

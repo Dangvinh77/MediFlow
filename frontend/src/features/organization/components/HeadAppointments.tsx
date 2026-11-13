@@ -41,6 +41,8 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
   }, [departmentId]);
   const { markDirty, markSaved } = useUnsavedChanges();
   const [doctors, setDoctors] = useState<StaffDTO[] | null>(null);
+  // Account state per doctor: only an active DOCTOR account can be appointed (HEAD_INELIGIBLE otherwise).
+  const [accounts, setAccounts] = useState<Record<string, "ACTIVE" | "LOCKED" | "NONE" | "UNKNOWN">>({});
   const [doctorError, setDoctorError] = useState("");
   const [doctorAttempt, setDoctorAttempt] = useState(0);
   useEffect(() => {
@@ -55,7 +57,14 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
       }
       return rows;
     }
-    load().then(rows => { if (alive && session === getSessionKey()) setDoctors(rows); })
+    load().then(rows => {
+      if (!alive || session !== getSessionKey()) return;
+      setDoctors(rows); setAccounts({});
+      void Promise.all(rows.map(row => Promise.resolve().then(() => organizationApi.profileAccount("staff", row.staffId))
+        .then(profile => [row.staffId, !profile.account ? "NONE" : profile.account.isActive && profile.account.role === "DOCTOR" ? "ACTIVE" : "LOCKED"] as const)
+        .catch(() => [row.staffId, "UNKNOWN"] as const)))
+        .then(entries => { if (alive && session === getSessionKey()) setAccounts(Object.fromEntries(entries)); });
+    })
       .catch(cause => { if (alive && session === getSessionKey()) setDoctorError(cause instanceof Error ? cause.message : "Không thể tải danh sách bác sĩ của khoa."); });
     return () => { alive = false; };
   }, [departmentId, doctorAttempt]);
@@ -121,11 +130,12 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
             : doctors.length === 0 ? <AsyncState kind="empty" message={localize("Khoa chưa có bác sĩ đang làm việc.")} />
             : <div className="overflow-x-auto rounded-lg border border-border"><table className="w-full text-left text-sm">
               <caption className="sr-only"><L10n>{"Chọn bác sĩ để bổ nhiệm hoặc miễn nhiệm"}</L10n></caption>
-              <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only"><L10n>{"Chọn"}</L10n></span></th><th scope="col" className="px-3 py-2"><L10n>{"Họ tên"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chuyên môn"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chức vụ"}</L10n></th></tr></thead>
+              <thead className="bg-surface-muted text-muted-foreground"><tr><th scope="col" className="w-12 px-3 py-2"><span className="sr-only"><L10n>{"Chọn"}</L10n></span></th><th scope="col" className="px-3 py-2"><L10n>{"Họ tên"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chuyên môn"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Tài khoản"}</L10n></th><th scope="col" className="px-3 py-2"><L10n>{"Chức vụ"}</L10n></th></tr></thead>
               <tbody><L10nValue>{doctors.map(doctor => <tr key={doctor.staffId} className={`border-t border-border ${staffId === doctor.staffId ? "bg-primary/5" : ""}`}>
-                <td className="px-3 py-2"><input type="radio" name={`head-candidate-${departmentId}`} aria-label={localize(`Chọn ${doctor.fullName}`)} checked={staffId === doctor.staffId} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
+                <td className="px-3 py-2"><input type="radio" name={`head-candidate-${departmentId}`} aria-label={localize(`Chọn ${doctor.fullName}`)} checked={staffId === doctor.staffId} disabled={accounts[doctor.staffId] === "NONE" || accounts[doctor.staffId] === "LOCKED"} onChange={() => toggleDoctor(doctor.staffId)} className="size-5 accent-primary" /></td>
                 <td className="px-3 py-2 font-medium">{doctor.fullName}</td>
                 <td className="px-3 py-2"><L10nValue>{doctor.specialization || "Chưa cập nhật"}</L10nValue></td>
+                <td className="whitespace-nowrap px-3 py-2"><L10nValue>{accountBadge(accounts[doctor.staffId])}</L10nValue></td>
                 <td className="px-3 py-2"><L10nValue>{snapshot.staffId === doctor.staffId ? <StatusBadge tone="success"><L10n>{"Trưởng khoa đương nhiệm"}</L10n></StatusBadge> : <span className="text-muted-foreground"><L10n>{"Bác sĩ"}</L10n></span>}</L10nValue></td>
               </tr>)}</L10nValue></tbody>
             </table></div>}</L10nValue>
@@ -137,4 +147,11 @@ export function HeadAppointments({ departmentId, onSnapshot }: { departmentId: s
       <details><summary className="cursor-pointer text-sm font-medium"><L10n>{"Lịch sử bổ nhiệm ("}</L10n>{snapshot.history.length})</summary><p className="mt-2 text-xs text-muted-foreground"><L10n>{"Giờ Việt Nam (UTC+7)"}</L10n></p><ul className="mt-3 space-y-2"><L10nValue>{snapshot.history.map(item => <li key={item.appointmentId} className="rounded-lg border border-border p-3 text-sm"><ReferenceText kind="doctor" value={item.staffId} /><p className="mt-1 text-muted-foreground"><L10nValue>{formatHistoryTime(item.startedAt)}</L10nValue> – <L10nValue>{item.endedAt ? formatHistoryTime(item.endedAt) : "Đang hiệu lực"}</L10nValue></p></li>)}</L10nValue></ul></details>
     </>}</L10nValue>
   </section>;
+}
+
+function accountBadge(state: "ACTIVE" | "LOCKED" | "NONE" | "UNKNOWN" | undefined) {
+  if (state === "ACTIVE") return <StatusBadge tone="success"><L10n>{"Đang hoạt động"}</L10n></StatusBadge>;
+  if (state === "LOCKED") return <StatusBadge tone="danger"><L10n>{"Đã khóa"}</L10n></StatusBadge>;
+  if (state === "NONE") return <StatusBadge tone="neutral"><L10n>{"Chưa cấp tài khoản"}</L10n></StatusBadge>;
+  return <span className="text-muted-foreground"><L10nValue>{state === "UNKNOWN" ? "Không rõ" : "…"}</L10nValue></span>;
 }

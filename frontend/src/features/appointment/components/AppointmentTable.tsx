@@ -221,7 +221,7 @@ export function AppointmentTable() {
                             href={`/appointments/${appointment.appointmentId}`}
                             className="inline-flex min-h-9 items-center rounded-lg border border-control-border px-3 text-sm font-semibold text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                           >
-                            Xem
+                            <L10n>{"Xem"}</L10n>
                           </Link>
                         ) : "—"}</L10nValue>
                       </td>

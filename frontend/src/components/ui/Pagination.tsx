@@ -1,5 +1,5 @@
-
-import { L10n, L10nValue } from "@/components/i18n/LocaleProvider";
+"use client";
+import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
 interface PaginationProps {
   page: number;
   totalPages: number;
@@ -15,6 +15,7 @@ export function Pagination({
   loading,
   onPageChange,
 }: PaginationProps) {
+  const { localize } = useLocale();
   if (totalPages <= 1 && totalElements === undefined) return null;
 
   const previousDisabled = loading || page === 0;
@@ -23,7 +24,7 @@ export function Pagination({
   return (
     <nav
       className="mt-4 flex flex-wrap items-center justify-end gap-3"
-      aria-label="Phân trang"
+      aria-label={localize("Phân trang")}
     >
       <button
         type="button"
@@ -33,7 +34,7 @@ export function Pagination({
         className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
       ><L10n>{"Trang trước"}</L10n></button>
       <span className="text-sm text-muted-foreground">
-        Trang <L10nValue>{page + 1}</L10nValue>/<L10nValue>{Math.max(totalPages, 1)}</L10nValue>
+        <L10n>{"Trang"}</L10n> <L10nValue>{page + 1}</L10nValue>/<L10nValue>{Math.max(totalPages, 1)}</L10nValue>
         <L10nValue>{totalElements !== undefined ? (
           <> · <L10nValue>{totalElements}</L10nValue><L10n>{" kết quả"}</L10n></>
         ) : null}</L10nValue>
@@ -45,7 +46,7 @@ export function Pagination({
         onClick={() => onPageChange(page + 1)}
         className="min-h-12 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Trang sau
+        <L10n>{"Trang sau"}</L10n>
       </button>
     </nav>
   );

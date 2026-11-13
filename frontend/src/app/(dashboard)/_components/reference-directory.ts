@@ -33,7 +33,8 @@ export function createReferenceDirectory(role: Role | null): ReferenceDirectory 
         return { items: save(kind, result.content.map(patient => ({ id: patient.maBenhNhan, label: `${patient.hoTen} · ${formatLocalDate(patient.ngaySinh)}` }))), hasMore: result.number + 1 < result.totalPages };
       }
       if (kind === "department") {
-        const items = (await organizationApi.departments(true)).filter(item => `${item.departmentName} ${item.abbreviation}`.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")))
+        // A scope names a department category, e.g. CLINICAL for registration: only clinics receive patients.
+        const items = (await organizationApi.departments(true)).filter(item => !scope || item.departmentType === scope).filter(item => `${item.departmentName} ${item.abbreviation}`.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")))
           .map(item => ({ id: item.departmentId, label: `${item.departmentName} (${item.abbreviation})` }));
         return { items: save(kind, items.slice(page * 20, (page + 1) * 20)), hasMore: items.length > (page + 1) * 20 };
       }

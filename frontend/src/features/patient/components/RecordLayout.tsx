@@ -1,5 +1,5 @@
-
-import { L10nValue } from "@/components/i18n/LocaleProvider";
+"use client";
+import { L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -34,5 +34,6 @@ export function RecordIdentity({ name, subtitle, children }: { name: string; sub
 }
 
 export function RecordBreadcrumb({ href, parent, current }: { href: string; parent: string; current: string }) {
-  return <nav aria-label="Đường dẫn" className="mt-5 flex flex-wrap items-center gap-2 text-sm"><Link href={href} className="rounded text-muted-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"><L10nValue>{parent}</L10nValue></Link><span aria-hidden="true" className="text-muted-foreground">/</span><span aria-current="page"><L10nValue>{current}</L10nValue></span></nav>;
+  const { localize } = useLocale();
+  return <nav aria-label={localize("Đường dẫn")} className="mt-5 flex flex-wrap items-center gap-2 text-sm"><Link href={href} className="rounded text-muted-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"><L10nValue>{parent}</L10nValue></Link><span aria-hidden="true" className="text-muted-foreground">/</span><span aria-current="page"><L10nValue>{current}</L10nValue></span></nav>;
 }

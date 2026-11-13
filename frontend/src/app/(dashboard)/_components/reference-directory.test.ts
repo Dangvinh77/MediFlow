@@ -22,6 +22,17 @@ describe("dashboard directory contracts", () => {
     expect(medicalRecordApi.getById).not.toHaveBeenCalled();
   });
 
+  it("lists only clinical departments when registration scopes the picker", async () => {
+    vi.mocked(organizationApi.departments).mockResolvedValue([
+      { departmentId: "noi", departmentName: "Khoa Nội", abbreviation: "NOI", departmentType: "CLINICAL" },
+      { departmentId: "xn", departmentName: "Khoa Xét nghiệm", abbreviation: "XN", departmentType: "SUBCLINICAL" },
+      { departmentId: "tc", departmentName: "Phòng Tài chính", abbreviation: "TC", departmentType: "FUNCTIONAL" },
+    ] as never);
+    const directory = createReferenceDirectory("NURSE");
+    expect((await directory.search("department", "", 0, "CLINICAL")).items.map(item => item.id)).toEqual(["noi"]);
+    expect((await directory.search("department", "", 0)).items).toHaveLength(3);
+  });
+
   it("never calls Patient reads for PATIENT", async () => {
     for (const role of ["PATIENT"] as const) {
       const directory = createReferenceDirectory(role);

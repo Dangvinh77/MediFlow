@@ -379,6 +379,10 @@ def main():
                 print("Reused and verified the existing calendar; calendar writes skipped.", flush=True)
             else:
                 write_calendar(prepare_calendar(calendar_api), evidence)
+            # Doctors with an active, a locked and no account, for the head-appointment demo.
+            from prepare_head_candidates import prepare as prepare_heads, write_fixtures as write_heads
+            write_heads(prepare_heads(DemoApi(manifest['gateway'], evidence / 'head-candidates-journal.local.json',
+                                              evidence / 'stop')), evidence)
         print(f"TIMING UI preparation: {time.monotonic() - phase_started:.1f}s", flush=True)
         result_text = "PASS: isolated infrastructure ready, six business health checks plus Gateway/Eureka.\nThis is topology smoke, not all business workflows.\n"
         if report_evidence:

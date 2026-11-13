@@ -11,8 +11,19 @@ const patterns = Object.entries(messages).filter(([source]) => /\{\d+\}/.test(so
     if (/^\{\d+\}$/.test(part)) { slots.push(part); return "(.+?)"; }
     return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }).join("");
-  return { regex: new RegExp(`^${pattern}$`, "s"), target, slots };
-});
+  return { regex: new RegExp(`^${pattern}$`, "s"), target, slots, literal: source.replace(/\{\d+\}/g, "").length };
+// The most specific message wins: "Dòng tiền theo ngày" before "Dòng tiền theo {0}".
+}).sort((a, b) => b.literal - a.literal);
+
+/**
+ * A lower-case slot holding catalog copy ("bộ phận", "ngày") is translated too. Names and codes start with a
+ * capital or digit and stay verbatim, so a patient called "An" never becomes an English word.
+ */
+function translateSlot(value: string): string {
+  const first = value.charAt(0);
+  if (first === first.toUpperCase()) return value;
+  return messages[value] ?? value;
+}
 
 export function translate(source: string, locale: Locale, values: readonly unknown[] = []): string {
   const message = (locale === "en" ? messages[source] : viMessages[source]) ?? source;
@@ -30,7 +41,13 @@ export function localize<T>(value: T, locale: Locale): T {
   if (locale === "en" && translated === undefined) {
     for (const { regex, target, slots } of patterns) {
       const match = regex.exec(trimmed);
-      if (match) { translated = target.replace(/\{\d+\}/g, slot => match[slots.indexOf(slot) + 1] ?? slot); break; }
+      if (match) {
+        translated = target.replace(/\{\d+\}/g, slot => {
+          const captured = match[slots.indexOf(slot) + 1];
+          return captured === undefined ? slot : translateSlot(captured);
+        });
+        break;
+      }
     }
   }
   return (translated === undefined ? value : value.replace(trimmed, () => translated)) as T;

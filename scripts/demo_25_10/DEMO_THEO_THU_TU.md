@@ -1,6 +1,6 @@
 # Demo theo thứ tự người trình bày: Hoàng Anh → Vinh → Huy → Lộc → luồng xuyên suốt
 
-Cập nhật **12/11/2026**. File này trả lời câu hỏi: *mỗi người dùng tài khoản nào, mở bệnh nhân nào,
+Cập nhật **13/11/2026**. File này trả lời câu hỏi: *mỗi người dùng tài khoản nào, mở bệnh nhân nào,
 để demo phần của mình mà không phải chờ hay mở màn hình của người khác.*
 
 - **Phần I** — mỗi người demo độc lập trên bệnh nhân đã được seed sẵn đúng trạng thái.
@@ -15,7 +15,9 @@ file này chỉ ra **điểm bắt đầu** và **mục cần làm** trong hư�
 
 1. `scripts/run/start-backend.bat` (nên dùng `-Fast` để giữ dữ liệu) → backend **tự seed toàn bộ**
    bệnh nhân demo cho cả 4 người, chờ lần lượt các dòng
-   **FOLLOW-UP SOURCE READY**, **CASHIER DEMO READY**, **STAGED DEMO READY**, **CALENDAR READY**, **READY**.
+   **FOLLOW-UP SOURCE READY**, **DRUG STOCK READY**, **CASHIER DEMO READY**, **STAGED DEMO READY**,
+   **CALENDAR READY**, **HEAD CANDIDATES READY**, **READY**.
+   Mỗi thuốc seed có **hàng nghìn đơn vị** (viên 5.000, gói/lọ 1.500), đủ kê đơn 3 tháng trở lên.
    Seed lượt khám chỉ tạo được **trong giờ khám 07:00–16:45 (giờ Việt Nam)**. Nếu bật backend ngoài giờ,
    **không cần khởi động lại**: khi phòng khám mở, nhấp đúp **`scripts/run/seed-demo.bat`** để seed bổ sung.
 2. `scripts/run/start-frontend.bat` → mở **http://127.0.0.1:3000/login**.
@@ -122,6 +124,19 @@ Không phụ thuộc ai. Slide: Functional Requirements → Use case → Kiến 
 **Lê Bác Sĩ Demo**, tài khoản. Tùy chọn: bổ nhiệm/miễn nhiệm trưởng khoa —
 [DEMO_UI_TUNG_BUOC.md mục 2.2](DEMO_UI_TUNG_BUOC.md#22-tùy-chọn-bổ-nhiệmmiễn-nhiệm-trên-ui).
 
+- **Phòng làm việc của khoa**: trong chi tiết khoa chỉ còn nút **Thêm phòng làm việc**; phòng tạo ở đây
+  tự thuộc khoa đang xem nên không còn ô lọc/tìm phòng. Ô Khoa ẩn, vị trí điền sẵn theo khoa.
+- **Bổ nhiệm trưởng khoa** — mỗi khoa lâm sàng có sẵn bác sĩ ở ba trạng thái tài khoản (cột **Tài khoản**):
+
+  | Bác sĩ | Tài khoản | Bổ nhiệm |
+  |---|---|---|
+  | BS Ứng viên **TK01** / **TK02** … | **Đang hoạt động** | Chọn được → nhập lý do → **Bổ nhiệm → Xác nhận bổ nhiệm** |
+  | BS Ứng viên **KHOA** … | **Đã khóa** | Nút chọn bị khóa |
+  | BS Demo … **01–03** (lịch luân phiên) | **Chưa cấp tài khoản** | Nút chọn bị khóa |
+
+  Nêu: chỉ bác sĩ có tài khoản DOCTOR đang hoạt động mới được bổ nhiệm; backend vẫn chặn
+  (`HEAD_INELIGIBLE`) nếu gọi API trực tiếp. Danh sách email nằm trong `DEMO-HEAD-CANDIDATES.local.md`.
+
 **c. Patient và tài khoản** (NURSE `demo.staff04`)
 
 1. **Bệnh nhân → tìm `999881000001`**: hồ sơ cũ, đã có tài khoản; khối tài khoản hiện nút
@@ -147,10 +162,17 @@ Ba bệnh nhân, ba điểm vào. Không cần chờ Lộc thu tiền.
 1. (Tùy chọn, minh họa đăng ký) Mở **/appointments/reception**, chọn buổi
    **Lê Bác Sĩ Demo / 07:00–17:00**, bấm **Tải phiếu trong buổi**: phiếu của Lê Minh Châu đã ở
    trạng thái **đã xác nhận**, tức là thu ngân đã thu phí khám. Đây là chỗ thay cho bước chờ Lộc.
-2. NURSE `demo.staff04` → **Quầy điều dưỡng khoa** → **Tải hàng đợi** → Lê Minh Châu ở nhóm
-   **Chờ cấp số phòng** → **Cấp số phòng** (tùy chọn **Ghi sinh hiệu**) — [mục 5b](DEMO_UI_TUNG_BUOC.md#5b-vinh--nurse--clinical-quầy-điều-dưỡng-khoa-cấp-số-phòng).
-3. DOCTOR `demo.staff03` → **Lịch khám của tôi** → **Xem phiếu** → Lê Minh Châu →
-   **Bắt đầu khám → Mở hồ sơ khám** → thêm chẩn đoán → **Chỉ định xét nghiệm** CBC →
+2. NURSE `demo.staff04` → **Quầy điều dưỡng khoa** → **Tải hàng đợi** → Lê Minh Châu ở bảng
+   **Chờ cấp số phòng** → **Cấp số phòng** — [mục 5b](DEMO_UI_TUNG_BUOC.md#5b-vinh--nurse--clinical-quầy-điều-dưỡng-khoa-cấp-số-phòng).
+   Hàng đợi mỗi phòng là bảng cột **Số thứ tự · Bệnh nhân · Sinh hiệu · Thao tác**.
+3. (Tùy chọn) **Ghi sinh hiệu** mở bảng nhập ngay dưới dòng bệnh nhân: cột **Chỉ số · Giá trị · Đơn vị ·
+   Thang đo hợp lệ**. Để minh họa bắt lỗi, nhập Mạch `300` → ô viền đỏ, báo *Ngoài thang đo 20 – 250 lần/phút*;
+   nhập HA tâm thu 120, tâm trương 130 → *Huyết áp tâm trương phải nhỏ hơn tâm thu*; nhiệt độ `36,5` →
+   *dùng dấu chấm*. Sửa lại: Mạch 80, HA 120/80, Nhiệt độ 36.8, Nhịp thở 18, SpO2 98, Cân nặng 60 → **Lưu sinh hiệu**.
+   Nêu: thang đo là giới hạn đo được của thiết bị để bắt lỗi gõ; hệ thống không phán đoán bình thường/bất thường.
+4. DOCTOR `demo.staff03` → **Lịch khám của tôi** → **Xem phiếu** → Lê Minh Châu →
+   **Bắt đầu khám → Mở hồ sơ khám** → tab **Khám & chẩn đoán** → **Thêm chẩn đoán** → tab **Xét nghiệm** →
+   **Lập chỉ định xét nghiệm** CBC →
    **Lập chỉ định → Tạo yêu cầu từ chỉ định** — [mục 6](DEMO_UI_TUNG_BUOC.md#6-vinh--doctor--clinical-khám-và-lập-yêu-cầu-lab).
    Khoản Lab của ca này để chờ thu; Vinh **không** đợi, chuyển sang ca b.
 
@@ -167,14 +189,50 @@ Ba bệnh nhân, ba điểm vào. Không cần chờ Lộc thu tiền.
 **c. Đã có kết quả → kê đơn và hoàn tất hồ sơ** — Võ Quốc Huy Demo `999881000005`
 
 1. DOCTOR `demo.staff03` → **Lịch khám của tôi** → Võ Quốc Huy → **Mở hồ sơ khám**
-   (hoặc `/records/<recordId>` trong `DEMO-STAGED.local.md`).
-2. **Xem xét nghiệm của lượt khám** → CBC đã phát hành của đúng lượt.
-3. **/pharmacy/prescriptions/new** → bệnh nhân `999881000005`, hồ sơ đang mở hôm nay,
-   **Thuốc minh họa A** × 2 → **Tạo đơn thuốc**.
-4. Quay lại hồ sơ → **Hoàn tất khám**: **Theo dõi ngoại trú**, tích xác nhận →
-   **Hoàn tất hồ sơ khám** → `medicalrecord.completed`.
+   (hoặc `/records/<recordId>` trong `DEMO-STAGED.local.md`). Màn hình chia tab — xem
+   [mục I.2d](#i2d-chi-tiết-hồ-sơ-khám--đi-qua-từng-tab).
+2. Tab **Xét nghiệm** → CBC đã phát hành của đúng lượt.
+3. Tab **Đơn thuốc** → **Kê đơn cho lượt khám** → **Thuốc minh họa A**, liều 1 viên × 2 lần/ngày,
+   thời gian **3 tháng** (chip) → số lượng tự tính 180 → **Tạo đơn thuốc**. Tồn kho seed đủ cho đơn dài ngày.
+4. Tab **Kết thúc khám** → mở **Hoàn tất lần khám**: **Theo dõi ngoại trú**, tích xác nhận →
+   **Hoàn tất hồ sơ khám** → `medicalrecord.completed`. Tab đổi tên thành **Tái khám** để đề xuất ngày tái khám.
    Nêu: bác sĩ hoàn tất ngay sau khi kê đơn; Pharmacy vẫn thu tiền và cấp thuốc sau đó,
    không cần chờ bệnh nhân thanh toán. Chỉ Lab chưa xong mới chặn hoàn tất.
+
+### I.2d. Chi tiết hồ sơ khám — đi qua từng tab
+
+Bố cục theo các hệ thống EMR thật: **phần nhận diện luôn ở trên**, nội dung chia **tab theo thứ tự lượt khám**.
+Thanh tab dính dưới thanh trên cùng khi cuộn; tab đang mở lưu trên địa chỉ (`?tab=…`) nên tải lại trang,
+gửi link hay bấm Back vẫn đúng tab. Đổi tab **không mất bản nháp** đang nhập (chẩn đoán, đơn thuốc).
+Bàn phím: ← → để chuyển tab, Home/End về tab đầu/cuối.
+
+**Luôn hiển thị phía trên tab**
+
+| Khối | Nội dung | Nêu khi demo |
+|---|---|---|
+| **Sổ dị ứng** | Dị ứng đang hiệu lực của bệnh nhân; form **Ghi nhận dị ứng mới** thu gọn | Dị ứng là thông tin an toàn, xem được ở mọi tab |
+| **Thẻ bệnh nhân** | Họ tên · ngày sinh, ngày khám, khoa, bác sĩ, trạng thái **Đang khám / Đã hoàn tất / Kết thúc không kết luận** | Không bao giờ nhầm bệnh nhân khi chuyển tab |
+| Thông báo | Đang cập nhật, chỉ đọc (không phải bác sĩ phụ trách), dữ liệu đổi khi đang nhập | Quyền ghi do backend quyết định |
+
+**Các tab** (tab chỉ hiện khi có ý nghĩa với lượt và vai đang đăng nhập)
+
+| Tab | Hiện khi | Có gì | Thao tác demo |
+|---|---|---|---|
+| **Khám & chẩn đoán** (số chẩn đoán) | Luôn có | Triệu chứng, hướng xử trí, nội dung lâm sàng, danh sách chẩn đoán ICD, đính chính có hiệu lực | **Thêm chẩn đoán**, **Tác vụ khác → Sửa triệu chứng** (chỉ khi đang khám) |
+| **Xét nghiệm** | Lượt có lịch hẹn | Chỉ định và trạng thái xét nghiệm của đúng lượt | **Lập chỉ định xét nghiệm**, **Xem phiếu xét nghiệm**, rút chỉ định chưa thực hiện |
+| **Đơn thuốc** | ADMIN/DOCTOR | Đơn của hồ sơ; bác sĩ phụ trách kê khi đang khám | **Kê đơn cho lượt khám** (liều, ngày/tuần/tháng) |
+| **Liệu trình & hội chẩn** | Luôn có | Đợt điều trị, bàn giao hồ sơ, ghi chú hội chẩn, yêu cầu sửa hồ sơ đã hoàn tất | Theo quyền trả về từ backend |
+| **Tài liệu** | Luôn có | Phiếu xét nghiệm, đơn thuốc gắn với hồ sơ | Mở tài liệu gốc |
+| **Kết thúc khám** / **Tái khám** | Có quyền hoàn tất, hoặc hồ sơ đã hoàn tất | **Hoàn tất lần khám**, **Kết thúc lượt không kết luận**; sau hoàn tất: đề xuất tái khám | Hoàn tất / đề xuất ngày tái khám |
+| **Thông tin hồ sơ** | Luôn có | Mã hồ sơ, bệnh nhân, bác sĩ mở hồ sơ, khoa, lịch hẹn, các mốc thời gian | Dùng khi đối chiếu log/correlation |
+
+**Kịch bản 2 phút** (DOCTOR `demo.staff03`, hồ sơ đang mở của Võ Quốc Huy):
+
+1. Mở hồ sơ → chỉ vào **Sổ dị ứng** và **thẻ bệnh nhân** (luôn ở trên).
+2. **Khám & chẩn đoán** → **Thêm chẩn đoán** J06.9, gõ dở phần mô tả.
+3. Bấm tab **Xét nghiệm** → CBC đã phát hành → quay lại tab đầu: phần mô tả vẫn còn → **Lưu**.
+4. **Đơn thuốc** → kê đơn 3 tháng. Bấm F5: vẫn ở tab Đơn thuốc (địa chỉ có `?tab=prescription`).
+5. **Kết thúc khám** → Hoàn tất. Tab chuyển thành **Tái khám**; **Thông tin hồ sơ** có thời điểm hoàn tất.
 
 ### I.3. HUY — Pharmacy, Report (6–8 phút)
 

@@ -1,17 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import nextConfig from "../../../next.config";
 
-const mocks = vi.hoisted(() => ({ redirect: vi.fn((url: string) => { throw new Error(`redirect:${url}`); }) }));
-vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
-import ReportsPage from "@/app/(dashboard)/reports/page";
-
-afterEach(() => { vi.clearAllMocks(); });
-
+// Next forwards the query string of a config redirect, so legacy ?view=monthly links keep working.
 describe("Report landing", () => {
-  it("always opens the merged report", async () => {
-    await expect(ReportsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/reports/outpatient");
-  });
-  it("keeps old legacy links working by forwarding their query", async () => {
-    await expect(ReportsPage({ searchParams: Promise.resolve({ view: "monthly", year: "2024" }) }))
-      .rejects.toThrow("redirect:/reports/outpatient?view=monthly&year=2024");
+  it("always opens the merged report from a config redirect, not from render", async () => {
+    const redirects = await nextConfig.redirects!();
+    expect(redirects).toContainEqual({ source: "/reports", destination: "/reports/outpatient", permanent: false });
+    expect(redirects).toContainEqual({ source: "/pharmacy", destination: "/pharmacy/drugs", permanent: false });
   });
 });

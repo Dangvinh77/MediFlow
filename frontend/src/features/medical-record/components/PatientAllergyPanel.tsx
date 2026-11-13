@@ -258,8 +258,11 @@ function PatientAllergyPanelContent({
             </div>
           ) : null}</L10nValue>
           <L10nValue>{canAdd ? (
-            <form onSubmit={submitAllergy} className="space-y-3 border-t border-border pt-4">
-              <h3 className="font-semibold"><L10n>{"Ghi nhận dị ứng"}</L10n></h3>
+            // Collapsed by default: the allergy list stays the first thing seen above the record.
+            <details open={command.uncertain || undefined} className="border-t border-border pt-3">
+            <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-primary underline decoration-border underline-offset-4"><L10n>{"Ghi nhận dị ứng mới"}</L10n></summary>
+            <form onSubmit={submitAllergy} className="space-y-3 pt-2">
+              <h3 className="sr-only"><L10n>{"Ghi nhận dị ứng"}</L10n></h3>
               <fieldset disabled={command.busy || command.uncertain} className="space-y-3">
                 <Field label={localize("Dị nguyên")} htmlFor="allergy-substance" required hint="Tối đa 200 ký tự.">
                   <input id="allergy-substance" value={substance} maxLength={200} required className={controlClassName} onChange={(event) => setSubstance(event.target.value)} />
@@ -275,6 +278,7 @@ function PatientAllergyPanelContent({
                 <Button type="submit" variant="primary" loading={command.busy} disabled={!substance.trim() || substance.trim().length > 200}><L10n>{"Ghi nhận dị ứng"}</L10n></Button>
               </fieldset>
             </form>
+            </details>
           ) : null}</L10nValue>
           <L10nValue>{command.error ? <CommandFeedback error={command.error} uncertain={command.uncertain} /> : null}</L10nValue>
           <L10nValue>{command.uncertain ? <Button type="button" variant="secondary" onClick={retryUncertainCommand} data-testid="allergy-command-retry" disabled={command.busy}><L10n>{"Gửi lại cùng yêu cầu"}</L10n></Button> : null}</L10nValue>

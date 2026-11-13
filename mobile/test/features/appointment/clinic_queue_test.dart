@@ -654,6 +654,37 @@ void main() {
       expect(find.textContaining('dùng dấu chấm'), findsOneWidget);
       expect(clinic.vitals, isEmpty);
     });
+
+    testWidgets('vital sheet shows each scale and flags an out-of-range row', (
+      tester,
+    ) async {
+      final clinic = FakeClinic([]);
+      await tester.pumpWidget(
+        host(
+          const VitalSignSheet(registrationId: registrationId),
+          clinic: clinic,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Thang đo: 20 – 250 · Số nguyên'), findsOneWidget);
+      await enter(tester, 'Mạch (lần/phút)', '300');
+      await enter(tester, 'Huyết áp tâm thu (mmHg)', '120');
+      await enter(tester, 'Huyết áp tâm trương (mmHg)', '130');
+      await tapText(tester, 'Lưu sinh hiệu');
+      expect(
+        find.text('Mạch (lần/phút): ngoài thang đo 20 – 250 lần/phút.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Huyết áp tâm trương phải nhỏ hơn tâm thu.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Kiểm tra lại các chỉ số được đánh dấu đỏ.'),
+        findsOneWidget,
+      );
+      expect(clinic.vitals, isEmpty);
+    });
   });
 
   group('reschedule', () {

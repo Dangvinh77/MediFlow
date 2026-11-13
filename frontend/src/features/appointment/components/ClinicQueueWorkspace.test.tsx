@@ -43,8 +43,8 @@ describe("department nurse desk", () => {
   it("separates waiting for a room number from allowed to examine", async () => {
     mocks.clinicQueue.mockResolvedValue([base, waiting]);
     render(<ClinicQueueWorkspace enabled />);
-    const needNumber = await screen.findByRole("list", { name: "Chờ cấp số phòng" });
-    const allowed = screen.getByRole("list", { name: "Được vào khám" });
+    const needNumber = await screen.findByRole("table", { name: "Chờ cấp số phòng" });
+    const allowed = screen.getByRole("table", { name: "Được vào khám" });
     expect(within(needNumber).getByText("patient-1")).toBeVisible();
     expect(within(needNumber).queryByText("patient-2")).not.toBeInTheDocument();
     expect(within(allowed).getByText("patient-2")).toBeVisible();

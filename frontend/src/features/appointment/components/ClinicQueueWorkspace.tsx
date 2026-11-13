@@ -2,7 +2,7 @@
 import { L10n, L10nValue, useLocale } from "@/components/i18n/LocaleProvider";
 
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { CommandIntentError, prepareCommandIntent } from "@/lib/command-intent";
@@ -10,6 +10,7 @@ import { formatInstant } from "@/lib/format";
 import { getSessionKey } from "@/lib/session";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ReferenceText } from "@/components/references/ReferenceText";
 import { appointmentApi } from "../api";
 import { queueNumberText, roomNumberText } from "../presentation";
@@ -161,34 +162,37 @@ export function ClinicQueueWorkspace({ enabled }: { enabled: boolean }) {
     const inLine = entry.stage === "WAITING_CALL" || entry.stage === "CALLED";
     const room = roomNumberText(entry.roomQueueNumber);
     const active = adjusting?.registrationId === entry.registrationId ? adjusting : null;
-    return <li key={entry.registrationId} className="space-y-2 py-3 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium"><ReferenceText kind="patient" value={entry.patientId} fallback="Bệnh nhân" /></span>
-        <span className="tabular-nums"><L10nValue>{queueNumberText(entry.queueNumber, true)}</L10nValue><L10nValue>{room ? ` · ${room}` : ""}</L10nValue></span>
-        <L10nValue>{entry.priority ? <span className="font-semibold"><L10n>{"Được ưu tiên"}</L10n></span> : null}</L10nValue>
-        <L10nValue>{entry.checkedInAt ? <span><L10nValue>{entry.vitalSignsRecorded ? "Đã có sinh hiệu" : "Chưa có sinh hiệu"}</L10nValue></span> : null}</L10nValue>
-        <L10nValue>{entry.calledAt ? <span><L10n>{"Đã gọi lúc "}</L10n><L10nValue>{formatInstant(entry.calledAt)}</L10nValue></span> : null}</L10nValue>
-      </div>
-      <L10nValue>{entry.continuationRequired ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-2"><L10n>{"Buổi khám đã hết giờ nhưng lượt khám còn mở, cần xử lý tiếp."}</L10n></p> : null}</L10nValue>
-      <div className="flex flex-wrap gap-2">
-        <L10nValue>{entry.stage === "WAITING_ROOM_TICKET" && role === "NURSE" ? <Button type="button" variant="primary" disabled={locked} onClick={() => issue(entry)}><L10n>{"Cấp số phòng"}</L10n></Button> : null}</L10nValue>
-        <L10nValue>{inLine ? <Button type="button" variant="primary" disabled={locked} onClick={() => call(entry)}><L10nValue>{entry.stage === "CALLED" ? "Gọi lại" : "Gọi vào khám"}</L10nValue></Button> : null}</L10nValue>
-        <L10nValue>{inLine ? actionButton(entry, "LATE") : null}</L10nValue>
-        <L10nValue>{inLine ? actionButton(entry, "NO_SHOW") : null}</L10nValue>
-        <L10nValue>{entry.stage === "ABSENT" ? actionButton(entry, "RETURNED") : null}</L10nValue>
-        <L10nValue>{(inLine || entry.stage === "ABSENT") && !entry.priority ? actionButton(entry, "PRIORITY") : null}</L10nValue>
-        <L10nValue>{entry.checkedInAt && role === "NURSE" ? <Button type="button" variant="secondary" disabled={locked} onClick={() => setRecording(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Ghi sinh hiệu"}</L10n></Button> : null}</L10nValue>
-        <L10nValue>{entry.checkedInAt ? <Button type="button" variant="secondary" onClick={() => setViewing(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Xem sinh hiệu"}</L10n></Button> : null}</L10nValue>
-      </div>
-      <L10nValue>{active ? <form className="space-y-2 rounded-lg border border-border p-3" onSubmit={event => { event.preventDefault(); adjust(entry, active.type); }}>
-        <p className="font-medium"><L10nValue>{adjustmentLabels[active.type]}</L10nValue></p>
-        <label className="block space-y-1" htmlFor={`clinic-reason-${entry.registrationId}`}><L10n>{"Lý do"}</L10n><textarea id={`clinic-reason-${entry.registrationId}`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
-        </label>
-        <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary" loading={busy} disabled={locked || !reason.trim()}><L10n>{"Xác nhận"}</L10n></Button><Button type="button" disabled={locked} onClick={() => setAdjusting(null)}><L10n>{"Quay lại"}</L10n></Button></div>
-      </form> : null}</L10nValue>
-      <L10nValue>{recording === entry.registrationId ? <VitalSignForm registrationId={entry.registrationId} onSaved={() => { setRecording(null); setHistoryVersion(value => value + 1); setNotice("Đã lưu sinh hiệu."); void load(); }} /> : null}</L10nValue>
-      <L10nValue>{viewing === entry.registrationId ? <VitalSignHistory registrationId={entry.registrationId} refreshKey={historyVersion} /> : null}</L10nValue>
-    </li>;
+    const expanded = Boolean(active) || recording === entry.registrationId || viewing === entry.registrationId;
+    return <Fragment key={entry.registrationId}>
+      <tr className={`border-t border-border align-top ${expanded ? "bg-primary/5" : ""}`}>
+        <td className="whitespace-nowrap px-3 py-3 tabular-nums"><span className="block font-semibold"><L10nValue>{queueNumberText(entry.queueNumber, true)}</L10nValue></span><L10nValue>{room ? <span className="block text-xs text-muted-foreground"><L10nValue>{room}</L10nValue></span> : null}</L10nValue></td>
+        <td className="px-3 py-3"><span className="font-medium"><ReferenceText kind="patient" value={entry.patientId} fallback="Bệnh nhân" /></span>
+          <L10nValue>{entry.priority ? <span className="mt-1 block"><StatusBadge tone="warning"><L10n>{"Được ưu tiên"}</L10n></StatusBadge></span> : null}</L10nValue></td>
+        <td className="px-3 py-3"><L10nValue>{entry.checkedInAt ? <StatusBadge tone={entry.vitalSignsRecorded ? "success" : "neutral"}><L10nValue>{entry.vitalSignsRecorded ? "Đã có sinh hiệu" : "Chưa có sinh hiệu"}</L10nValue></StatusBadge> : <span className="text-muted-foreground">—</span>}</L10nValue>
+          <L10nValue>{entry.calledAt ? <span className="mt-1 block text-xs text-muted-foreground"><L10n>{"Đã gọi lúc "}</L10n><L10nValue>{formatInstant(entry.calledAt)}</L10nValue></span> : null}</L10nValue></td>
+        <td className="px-3 py-3"><div className="flex flex-wrap gap-2 [&_button]:whitespace-nowrap">
+          <L10nValue>{entry.stage === "WAITING_ROOM_TICKET" && role === "NURSE" ? <Button type="button" variant="primary" disabled={locked} onClick={() => issue(entry)}><L10n>{"Cấp số phòng"}</L10n></Button> : null}</L10nValue>
+          <L10nValue>{inLine ? <Button type="button" variant="primary" disabled={locked} onClick={() => call(entry)}><L10nValue>{entry.stage === "CALLED" ? "Gọi lại" : "Gọi vào khám"}</L10nValue></Button> : null}</L10nValue>
+          <L10nValue>{inLine ? actionButton(entry, "LATE") : null}</L10nValue>
+          <L10nValue>{inLine ? actionButton(entry, "NO_SHOW") : null}</L10nValue>
+          <L10nValue>{entry.stage === "ABSENT" ? actionButton(entry, "RETURNED") : null}</L10nValue>
+          <L10nValue>{(inLine || entry.stage === "ABSENT") && !entry.priority ? actionButton(entry, "PRIORITY") : null}</L10nValue>
+          <L10nValue>{entry.checkedInAt && role === "NURSE" ? <Button type="button" variant="secondary" aria-expanded={recording === entry.registrationId} disabled={locked} onClick={() => setRecording(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Ghi sinh hiệu"}</L10n></Button> : null}</L10nValue>
+          <L10nValue>{entry.checkedInAt ? <Button type="button" variant="secondary" aria-expanded={viewing === entry.registrationId} onClick={() => setViewing(current => current === entry.registrationId ? null : entry.registrationId)}><L10n>{"Xem sinh hiệu"}</L10n></Button> : null}</L10nValue>
+        </div></td>
+      </tr>
+      <L10nValue>{entry.continuationRequired || expanded ? <tr className="bg-primary/5"><td colSpan={4} className="space-y-3 px-3 pb-4">
+        <L10nValue>{entry.continuationRequired ? <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-2"><L10n>{"Buổi khám đã hết giờ nhưng lượt khám còn mở, cần xử lý tiếp."}</L10n></p> : null}</L10nValue>
+        <L10nValue>{active ? <form className="space-y-2 rounded-lg border border-border bg-surface p-3" onSubmit={event => { event.preventDefault(); adjust(entry, active.type); }}>
+          <p className="font-medium"><L10nValue>{adjustmentLabels[active.type]}</L10nValue></p>
+          <label className="block space-y-1" htmlFor={`clinic-reason-${entry.registrationId}`}><L10n>{"Lý do"}</L10n><textarea id={`clinic-reason-${entry.registrationId}`} maxLength={500} disabled={locked} value={reason} onChange={event => setReason(event.target.value)} className="min-h-16 w-full rounded-lg border border-control-border bg-surface px-3 py-2" />
+          </label>
+          <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary" loading={busy} disabled={locked || !reason.trim()}><L10n>{"Xác nhận"}</L10n></Button><Button type="button" disabled={locked} onClick={() => setAdjusting(null)}><L10n>{"Quay lại"}</L10n></Button></div>
+        </form> : null}</L10nValue>
+        <L10nValue>{recording === entry.registrationId ? <VitalSignForm registrationId={entry.registrationId} onSaved={() => { setRecording(null); setHistoryVersion(value => value + 1); setNotice("Đã lưu sinh hiệu."); void load(); }} /> : null}</L10nValue>
+        <L10nValue>{viewing === entry.registrationId ? <VitalSignHistory registrationId={entry.registrationId} refreshKey={historyVersion} /> : null}</L10nValue>
+      </td></tr> : null}</L10nValue>
+    </Fragment>;
   }
 
   return <div className="space-y-5">
@@ -214,7 +218,17 @@ export function ClinicQueueWorkspace({ enabled }: { enabled: boolean }) {
         <L10nValue>{groups.map(group => {
           const items = roomEntries.filter(entry => group.stages.includes(entry.stage));
           if (!items.length) return null;
-          return <div key={group.title}><h3 className="font-semibold"><L10nValue>{group.title}</L10nValue></h3><ul aria-label={localize(group.title)} className="divide-y divide-border"><L10nValue>{items.map(row)}</L10nValue></ul></div>;
+          return <div key={group.title} className="space-y-2"><h3 className="font-semibold"><L10nValue>{group.title}</L10nValue> <span className="text-sm font-normal text-muted-foreground">({items.length})</span></h3>
+            <div className="overflow-x-auto rounded-lg border border-border"><table aria-label={localize(group.title)} className="w-full min-w-2xl table-fixed text-left text-sm">
+              <colgroup><col className="w-28" /><col className="w-[28%]" /><col className="w-36" /><col /></colgroup>
+              <thead className="bg-surface-muted text-muted-foreground"><tr>
+                <th scope="col" className="px-3 py-2"><L10n>{"Số thứ tự"}</L10n></th>
+                <th scope="col" className="px-3 py-2"><L10n>{"Bệnh nhân"}</L10n></th>
+                <th scope="col" className="px-3 py-2"><L10n>{"Sinh hiệu"}</L10n></th>
+                <th scope="col" className="px-3 py-2"><L10n>{"Thao tác"}</L10n></th>
+              </tr></thead>
+              <tbody><L10nValue>{items.map(row)}</L10nValue></tbody>
+            </table></div></div>;
         })}</L10nValue>
       </section>;
     })}</L10nValue>

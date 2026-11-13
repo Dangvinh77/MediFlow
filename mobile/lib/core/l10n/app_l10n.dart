@@ -14,25 +14,38 @@ class AppL10n extends InheritedWidget {
   bool updateShouldNotify(AppL10n oldWidget) => language != oldWidget.language;
 }
 
-final _patterns = messagesEn.entries
-    .where((entry) => RegExp(r'\{\d+\}').hasMatch(entry.key))
-    .map((entry) {
-      final slots = <String>[];
-      final pattern = entry.key.splitMapJoin(
-        RegExp(r'\{\d+\}'),
-        onMatch: (match) {
-          slots.add(match[0]!);
-          return '(.+?)';
-        },
-        onNonMatch: RegExp.escape,
-      );
-      return (
-        regex: RegExp('^$pattern\$', dotAll: true),
-        target: entry.value,
-        slots: slots,
-      );
-    })
-    .toList();
+final _patterns =
+    messagesEn.entries
+        .where((entry) => RegExp(r'\{\d+\}').hasMatch(entry.key))
+        .map((entry) {
+          final slots = <String>[];
+          final pattern = entry.key.splitMapJoin(
+            RegExp(r'\{\d+\}'),
+            onMatch: (match) {
+              slots.add(match[0]!);
+              return '(.+?)';
+            },
+            onNonMatch: RegExp.escape,
+          );
+          return (
+            regex: RegExp('^$pattern\$', dotAll: true),
+            target: entry.value,
+            slots: slots,
+            literal: entry.key.replaceAll(RegExp(r'\{\d+\}'), '').length,
+          );
+        })
+        .toList()
+      // The most specific message wins: "Dòng tiền theo ngày" before "Dòng tiền theo {0}".
+      ..sort((a, b) => b.literal.compareTo(a.literal));
+
+/// A lower-case slot holding catalog copy ("bộ phận", "ngày") is translated
+/// too. Names and codes start with a capital or digit and stay verbatim.
+String _translateSlot(String value) {
+  if (value.isEmpty) return value;
+  final first = value[0];
+  if (first == first.toUpperCase()) return value;
+  return messagesEn[value] ?? value;
+}
 
 String translate(String source, String language) {
   final trimmed = source.trim();
@@ -49,7 +62,7 @@ String translate(String source, String language) {
     if (match == null) continue;
     final value = item.target.replaceAllMapped(RegExp(r'\{\d+\}'), (slot) {
       final index = item.slots.indexOf(slot[0]!);
-      return index < 0 ? slot[0]! : match.group(index + 1)!;
+      return index < 0 ? slot[0]! : _translateSlot(match.group(index + 1)!);
     });
     return source.replaceFirst(trimmed, value);
   }

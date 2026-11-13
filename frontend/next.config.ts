@@ -32,6 +32,14 @@ const nextConfig: NextConfig = {
       { source: "/billing/refunds", destination: "/billing", permanent: false },
       { source: "/appointments/my-shifts", destination: "/appointments/my-calendar", permanent: false },
       { source: "/appointments/department/calendar", destination: "/appointments/department", permanent: false },
+      // Entry routes without content of their own. Redirected here, not with redirect() during render,
+      // which trips React's dev-only "negative time stamp" performance error. The query string carries over.
+      { source: "/pharmacy", destination: "/pharmacy/drugs", permanent: false },
+      { source: "/reports", destination: "/reports/outpatient", permanent: false },
+      // With real scheduling, registration happens at reception.
+      ...(process.env.MEDIFLOW_SCHEDULING_UI_ENABLED === "true"
+        ? [{ source: "/appointments/new", destination: "/appointments/reception", permanent: false }]
+        : []),
     ];
   },
   async rewrites() {

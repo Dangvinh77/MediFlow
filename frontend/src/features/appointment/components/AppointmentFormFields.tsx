@@ -44,7 +44,7 @@ export function AppointmentFormFields({
             />
           </FormField>
           <FormField label="Mã khoa" name="departmentId" error={errors.departmentId} required hint="Tìm khoa theo tên hoặc tên viết tắt.">
-            <ReferenceInput kind="department"
+            <ReferenceInput kind="department" scope="CLINICAL"
               {...accessibility("departmentId")}
               id="departmentId"
               value={values.departmentId}

@@ -26,6 +26,10 @@ def prepare_seeds(gateway, evidence, cancel_file=None):
     cashier_api = DemoApi(gateway, evidence / 'cashier-journal.local.json', cancel_file)
     write_cashier(prepare_cashier(cashier_api, fixtures, dt.datetime.now(ZONE)), evidence)
 
+    # Thousands of units per drug, so a 3-month prescription can be dispensed in the demo.
+    from prepare_drug_stock import prepare as prepare_stock
+    prepare_stock(DemoApi(gateway, evidence / 'drug-stock-journal.local.json', cancel_file))
+
     # One patient per presenter hand-off; a failed case is reported, never blocks READY.
     from prepare_staged_demo import prepare as prepare_staged, write_fixtures as write_staged
     staged_api = DemoApi(gateway, evidence / 'staged-journal.local.json', cancel_file)

@@ -17,7 +17,7 @@ export function Field({ label, htmlFor, hint, error, required = false, children 
     <div className="space-y-1.5">
       <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground">
         <L10nValue>{label}</L10nValue>
-        <L10nValue>{required ? <span className="ml-1 text-danger" aria-label="bắt buộc">*</span> : null}</L10nValue>
+        <L10nValue>{required ? <><span aria-hidden="true" className="ml-1 text-danger">*</span><span className="sr-only"><L10nValue>{"bắt buộc"}</L10nValue></span></> : null}</L10nValue>
       </label>
       <L10nValue>{children}</L10nValue>
       <L10nValue>{error ? (

@@ -35,8 +35,8 @@ function ResultsPage<T>({ load, render, empty }: Props<T>) {
     <L10nValue>{state.data.content.length ? state.data.content.map(render) : <p role="status"><L10nValue>{empty}</L10nValue></p>}</L10nValue>
     <nav aria-label={localize("Phân trang kết quả")} className="flex items-center gap-4">
       <Button variant="secondary" disabled={page === 0} onClick={() => changePage(page - 1)}><L10n>{"Trang trước"}</L10n></Button>
-      <span>Trang <L10nValue>{page + 1}</L10nValue> / <L10nValue>{Math.max(1, state.data.totalPages)}</L10nValue></span>
-      <Button variant="secondary" disabled={page + 1 >= state.data.totalPages} onClick={() => changePage(page + 1)}>Trang sau</Button>
+      <span><L10n>{"Trang"}</L10n> <L10nValue>{page + 1}</L10nValue> / <L10nValue>{Math.max(1, state.data.totalPages)}</L10nValue></span>
+      <Button variant="secondary" disabled={page + 1 >= state.data.totalPages} onClick={() => changePage(page + 1)}><L10n>{"Trang sau"}</L10n></Button>
     </nav>
   </div>;
 }

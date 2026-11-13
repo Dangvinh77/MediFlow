@@ -63,6 +63,22 @@ describe("vital signs", () => {
     expect(mocks.createVitalSigns).not.toHaveBeenCalled();
   });
 
+  it("shows each indicator's device scale and flags an out-of-range value on its own row", async () => {
+    render(<VitalSignForm registrationId="r1" onSaved={vi.fn()} />);
+    expect(screen.getByRole("row", { name: /Mạch/ })).toHaveTextContent("20 – 250");
+    expect(screen.getByRole("row", { name: /Nhiệt độ/ })).toHaveTextContent("Tối đa 1 chữ số thập phân");
+    fill("Mạch (lần/phút)", "300");
+    fireEvent.blur(screen.getByLabelText("Mạch (lần/phút)"));
+    expect(screen.getByLabelText("Mạch (lần/phút)")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Ngoài thang đo 20 – 250 lần/phút.")).toBeVisible();
+    fillComplete(); fill("Huyết áp tâm thu (mmHg)", "180"); fill("Huyết áp tâm trương (mmHg)", "190"); fill("Nhiệt độ (°C)", "36.55");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Lưu sinh hiệu" }));
+    expect(screen.getByLabelText("Huyết áp tâm trương (mmHg)")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Huyết áp tâm trương phải nhỏ hơn tâm thu.");
+    expect(screen.getByText("Tối đa 1 chữ số thập phân.")).toBeVisible();
+    expect(mocks.createVitalSigns).not.toHaveBeenCalled();
+  });
+
   it("does not read a failed history load as no measurement", async () => {
     mocks.listVitalSigns.mockRejectedValue(new Error("offline"));
     render(<VitalSignHistory registrationId="r1" />);
