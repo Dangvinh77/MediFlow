@@ -15,7 +15,7 @@ Không cộng các task này vào tỷ lệ 18 task/72 subtask của baseline tr
   tỷ lệ do dự án tự quy định, không tra cứu hoặc quyết toán với cơ quan BHXH.
 - Clinical quản lý lịch khám ngoại trú và giữ suất. Organization cung cấp staff/khoa/đủ điều kiện.
 - Quản lý lịch theo buổi/sức chứa; DOCTOR xem lịch cá nhân ngày/tuần, không tự sửa/xóa ca.
-  TTL giữ chỗ 15 phút không là thời lượng khám; không mở chấm công hoặc tự động phân ca.
+  TTL giữ chỗ 2 giờ không là thời lượng khám; không mở chấm công hoặc tự động phân ca.
 - Không tự sửa ý nghĩa wire V1 hoặc ghi đè snapshot tiền cũ để áp dụng chính sách mới.
 - Chốt 27/10: NURSE tiếp nhận phiếu giấy, cấp tài khoản PATIENT cho người bệnh mới lần đầu;
   dùng web là tùy chọn. Đổi mật khẩu ban đầu khi lần đầu dùng tài khoản, không chặn đăng ký/

@@ -29,6 +29,11 @@ export const registrationStatusLabels: Record<RegistrationStatus, string> = {
   COMPLETED: "Đã hoàn tất", EXPIRED: "Hết hạn giữ chỗ", CANCELLED: "Đã hủy", RECONCILIATION_REQUIRED: "Cần đối soát thanh toán",
 };
 
+export const registrationStatusTones: Record<RegistrationStatus, StatusTone> = {
+  AWAITING_PAYMENT: "warning", CONFIRMED: "info", IN_EXAM: "info",
+  COMPLETED: "success", EXPIRED: "neutral", CANCELLED: "neutral", RECONCILIATION_REQUIRED: "danger",
+};
+
 export function registrationOutcomeLabel(item: { status: RegistrationStatus; checkedInAt: string | null; stage?: string | null }): string {
   if (item.stage === "ABSENT") return "Vắng mặt";
   if (item.status === "CONFIRMED") return item.checkedInAt ? "Đã đến · Chờ khám" : "Đã thanh toán · Chờ đến";

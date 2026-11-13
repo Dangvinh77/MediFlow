@@ -142,6 +142,10 @@ def initialize_infrastructure(options, evidence, containers, pg, rabbit, workspa
     checked_command("docker", "cp", str(HERE / "seed_report_demo.sql"), pg + ":/tmp/report-demo.sql")
     checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
             "-d", "mediflow_report", "-f", "/tmp/report-demo.sql", log=evidence / "report-demo-seed.log")
+    # Head candidates carry the seeded demo password, so no account goes through the email path.
+    checked_command("docker", "cp", str(HERE / "seed_head_candidates.sql"), pg + ":/tmp/head-candidates.sql")
+    checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",
+            "-d", "mediflow_organization", "-f", "/tmp/head-candidates.sql", log=evidence / "head-candidates-seed.log")
     if options.scheduling:
         checked_command("docker", "cp", str(HERE / "seed_outpatient_scheduling.sql"), pg + ":/tmp/scheduling.sql")
         checked_command("docker", "exec", pg, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres",

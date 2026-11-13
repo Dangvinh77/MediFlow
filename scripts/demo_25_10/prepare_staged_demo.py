@@ -10,7 +10,7 @@ no business SQL is written. Each case uses its own seeded patient (one visit per
   huy_dispense     patient07  prescription paid                      -> pharmacist dispenses
 
 Lộc's exam-fee charge cannot be seeded at start-up: an unpaid registration holds its slot for
-15 minutes only. Create it right before Lộc presents:
+two hours only. Create it within two hours before Lộc presents:
 
     scripts\\run\\seed-demo.bat -ExamChargeNow
 
@@ -155,7 +155,7 @@ def prepare(api, fixtures, now):
 
 
 def exam_charge_now(api, fixtures, now):
-    """Register EXAM_CHARGE_CCCD at the counter and leave the exam fee unpaid for 15 minutes."""
+    """Register EXAM_CHARGE_CCCD at the counter and leave the exam fee unpaid (the slot is held two hours)."""
     login_staff(api)
     day, session = today_session(api, fixtures, now)
     patient = find_patient(api, EXAM_CHARGE_CCCD)
@@ -196,7 +196,7 @@ def write_fixtures(result, evidence):
             else:
                 failure = result['failed'].get(key, {})
                 lines.append(f'| {owner} | {failure.get("hoTen", "?")} | {failure.get("cccd", CASES[key])} | **LỖI** | {failure.get("error", "")} | |')
-        lines += ['', 'Lộc: khoản phí khám chờ thu tạo ngay trước lúc trình bày (giữ suất 15 phút):',
+        lines += ['', 'Lộc: khoản phí khám chờ thu tạo ngay trước lúc trình bày (giữ suất 2 giờ):',
                   '`scripts\\run\\seed-demo.bat -ExamChargeNow` (CCCD ' + EXAM_CHARGE_CCCD + ').', '']
         for key, patient in result.get('reserved', {}).items():
             lines.append(f'- Giữ nguyên ({key}): {patient["hoTen"]}, CCCD {patient["cccd"]}')
@@ -211,7 +211,7 @@ def write_fixtures(result, evidence):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--exam-charge-now', action='store_true',
-                        help='Create the unpaid exam-fee registration for Lộc right now (holds 15 minutes).')
+                        help='Create the unpaid exam-fee registration for Lộc right now (holds two hours).')
     options = parser.parse_args()
     manifest = json.loads((HERE / 'evidence/active-rehearsal.local.json').read_text(encoding='utf-8'))
     gateway, evidence = validate_manifest(manifest)

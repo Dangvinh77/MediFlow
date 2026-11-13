@@ -38,6 +38,7 @@ public class LocalDemoSeedTest {
     private final ManageAccountsUseCase getAccounts = mock(ManageAccountsUseCase.class);
     private final CreateAccountUseCase createAccount = mock(CreateAccountUseCase.class);
     private final ManageRoomsUseCase manageRooms = mock(ManageRoomsUseCase.class);
+    private final UpdateAccountStatusUseCase accountStatus = mock(UpdateAccountStatusUseCase.class);
     private final List<Room> rooms = new ArrayList<>();
     private final GetPatientUseCase getPatients = mock(GetPatientUseCase.class);
     private final CreatePatientUseCase createPatient = mock(CreatePatientUseCase.class);
@@ -58,7 +59,7 @@ public class LocalDemoSeedTest {
         orgJdbc = database();
         patientJdbc = database();
         organization = new OrganizationDemoSeeder(orgJdbc, transactions(orgJdbc), getDepartments,
-                createDepartment, getStaff, createStaff, getAccounts, createAccount, manageRooms);
+                createDepartment, getStaff, createStaff, getAccounts, createAccount, manageRooms, accountStatus);
         patient = new PatientDemoSeeder(patientJdbc, transactions(patientJdbc), getPatients, createPatient);
         try (var input = getClass().getResourceAsStream("/demo-seed.json")) {
             data = new ObjectMapper().readTree(input);
@@ -107,7 +108,7 @@ public class LocalDemoSeedTest {
     @Test void freshDatasetHasExactCountsAndAuthoritativePatientLinks() {
         runSeed();
         assertThat(departments).hasSize(14);
-        assertThat(staff).hasSize(27);
+        assertThat(staff).hasSize(54);
         assertThat(rooms).hasSize(32);
         assertThat(rooms.stream().filter(room -> room.getRoomType().equals("CONSULTATION"))).hasSize(18);
         // Every member of a functional unit has an account; such units have one workplace room.
@@ -121,12 +122,17 @@ public class LocalDemoSeedTest {
         assertThat(departments).allSatisfy(row -> assertThat(row.getProfile().description()).isNotBlank());
         assertThat(staff).allSatisfy(row -> assertThat(row.getProfile().qualification()).isNotBlank());
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(29);
+        assertThat(accounts).hasSize(56);
         assertThat(accounts.stream().filter(a -> a.getRole() == Role.PATIENT).map(Account::getPatientId))
                 .containsExactly(patients.get(0).maBenhNhan(), patients.get(1).maBenhNhan());
-        assertThat(count(orgJdbc)).isEqualTo(102);
+        assertThat(count(orgJdbc)).isEqualTo(156);
         assertThat(count(patientJdbc)).isEqualTo(10);
         assertThat(orgJdbc.queryForObject("select count(*) from local_demo_mailbox_account", Integer.class)).isEqualTo(29);
+        // Head candidates: each clinical department has two active doctors and one locked one,
+        // all with the fixed demo password, so no account is issued through the email path.
+        var clinical = departments.stream().filter(row -> row.getDepartmentType() == DepartmentType.CLINICAL).count();
+        assertThat(accounts.stream().filter(a -> a.getUsername().startsWith("demo.head."))).hasSize((int) (clinical * 3));
+        verify(accountStatus, times((int) clinical)).execute(any(UUID.class), eq(false));
         assertThat(orgJdbc.queryForObject("select synthetic_email from local_demo_mailbox_account where seed_key='account-demo.admin'", String.class))
                 .isEqualTo("demo.staff01@example.test");
     }
@@ -154,7 +160,7 @@ public class LocalDemoSeedTest {
         clearInvocations(createDepartment, createStaff, createPatient, createAccount);
         runSeed();
         verifyNoInteractions(createDepartment, createStaff, createPatient, createAccount);
-        assertThat(count(orgJdbc)).isEqualTo(102);
+        assertThat(count(orgJdbc)).isEqualTo(156);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 
@@ -176,7 +182,7 @@ public class LocalDemoSeedTest {
         assertThatThrownBy(() -> organization.seedAccounts(data, ids, patientIds))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("identity conflict");
         verifyNoInteractions(createAccount);
-        assertThat(count(orgJdbc)).isEqualTo(73);
+        assertThat(count(orgJdbc)).isEqualTo(100);
     }
 
     @Test void patientFailureRollsBackReceiptsAndNextStartupResumes() {
@@ -187,7 +193,7 @@ public class LocalDemoSeedTest {
         }).when(createPatient).create(any());
         assertThatThrownBy(() -> patient.seed(data)).hasMessage("simulated outage");
         assertThat(count(patientJdbc)).isZero();
-        assertThat(count(orgJdbc)).isEqualTo(73);
+        assertThat(count(orgJdbc)).isEqualTo(100);
         // Organization is already committed; its normal creation ports are never called again.
         clearInvocations(createDepartment, createStaff);
         organization.seedMasters(data);
@@ -195,7 +201,7 @@ public class LocalDemoSeedTest {
         doAnswer(call -> addPatient(call.getArgument(0))).when(createPatient).create(any());
         runSeed();
         assertThat(patients).hasSize(10);
-        assertThat(accounts).hasSize(29);
+        assertThat(accounts).hasSize(56);
         assertThat(count(patientJdbc)).isEqualTo(10);
     }
 

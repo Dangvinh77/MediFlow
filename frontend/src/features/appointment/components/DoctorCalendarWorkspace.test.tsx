@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "../api";
@@ -95,7 +95,20 @@ describe("doctor calendar queue numbers", () => {
   it("names the counter and room numbers when clinic intake is on", async () => {
     render(<DoctorCalendarWorkspace enabled clinicIntakeEnabled />);
     await userEvent.click(await screen.findByRole("button", { pressed: false }));
-    expect(await screen.findByText(/Số quầy 3 · Số phòng 5/)).toBeVisible();
+    expect(await screen.findByText("Số quầy 3")).toBeVisible();
+    expect(screen.getByText("Số phòng 5")).toBeVisible();
+  });
+  it("lists the session's registrations as a table with one row per ticket", async () => {
+    render(<DoctorCalendarWorkspace enabled clinicIntakeEnabled />);
+    await userEvent.click(await screen.findByRole("button", { pressed: false }));
+    const table = await screen.findByRole("table", { name: "Phiếu của buổi khám" });
+    expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Số thứ tự", "Bệnh nhân", "Loại khám", "Trạng thái", "Tiếp nhận", "Thao tác"]);
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(1);
+    expect(within(rows[0]).getByText("Khám mới")).toBeVisible();
+    expect(within(rows[0]).getByText("Đã xác nhận")).toBeVisible();
+    expect(within(rows[0]).getByText("Đủ điều kiện khám")).toBeVisible();
+    expect(within(rows[0]).getByRole("link", { name: "Xem phiếu khám" })).toHaveAttribute("href", "/appointments/r1");
   });
   it("keeps the short number when clinic intake is off", async () => {
     render(<DoctorCalendarWorkspace enabled />);

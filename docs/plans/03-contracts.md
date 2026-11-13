@@ -700,7 +700,7 @@ unique intent, chống trùng lượt active cùng patient/session, giữ một 
 Database guard chống last-seat race; hai registration khác key không thể cùng lấy suất cuối.
 AT_COUNTER đặt checkedInAt=server now; PREBOOKED=null, arrival command ghi lần đầu bằng server time.
 Không thêm command 'xác nhận tiếp nhận' trước thu cho người đã AT_COUNTER.
-PREBOOKED ở slice này cũng hoàn tất thu trong TTL 15 phút từ lúc đăng ký; khi CONFIRMED,
+PREBOOKED ở slice này cũng hoàn tất thu trong TTL 2 giờ từ lúc đăng ký; khi CONFIRMED,
 reservation không bị TTL HELD giải phóng, được giữ cho ngày/buổi đã chọn. Khi đến chỉ ghi
 arrival và xử lý khoản phát sinh nếu có. Đặt trước để tới ngày khám mới thu là policy khác,
 chưa được mở bằng receptionMode này.
@@ -710,8 +710,8 @@ không có expiry từ quote sau khi payment/zero-liability hoàn tất; khi b�
 đối chiếu ledger hiện hành, refund/revocation, đúng patient/registration và receipt chống trùng.
 Không suy quyền này từ một payment request còn pending hoặc chỉ từ trạng thái UI CONFIRMED.
 
-Reservation hết hạn tại server now+15 phút khi HELD; past session date hoặc buổi đã kết thúc không nhận mới.
-Chỉ giới hạn reservation bởi buổi/TTL, không chia 15 phút thành thời lượng khám. Tại t==expiresAt hold
+Reservation hết hạn tại server now+2 giờ khi HELD; past session date hoặc buổi đã kết thúc không nhận mới.
+Chỉ giới hạn reservation bởi buổi/TTL, không chia TTL giữ suất thành thời lượng khám. Tại t==expiresAt hold
 không còn payable, trừ khi payment lease đã chuyển PAYMENT_LOCKED trước thời điểm đó. Bắt đầu thu cũng
 phải trước endTime của buổi; late arrival đã thanh toán được xử lý vận hành, không tự đổi bác sĩ/ca.
 
@@ -951,7 +951,7 @@ currency,lines,grossAmount,supportAmount,patientPayable,issuedAt,expiresAt}`.
 Line fields `{sourceId,sourceType,priceCode,catalogueVersion,policyVersion,description,quantity,
 unitPrice,grossAmount,supportRate,supportAmount,patientPayable}`; mọi decimal dùng JSON string.
 Missing quote trả 404 BILLING_QUOTE_NOT_FOUND. Query không được hỗ trợ phải bị từ chối.
-Quote EXAM hết hạn không muộn hơn hold; Lab dùng TTL 15 phút. Trước PREPARING phải kiểm quote
+Quote EXAM hết hạn không muộn hơn hold (tối đa 2 giờ); Lab dùng TTL 72 giờ (`MEDIFLOW_BILLING_LAB_QUOTE_TTL`, mặc định PT72H). Trước PREPARING phải kiểm quote
 current và chưa hết hạn. Sau acquire lease hợp lệ, commit giữ snapshot đã khóa, không tự bỏ
 khóa do thời gian trôi qua. Thiết kế dài hạn cần command cấp lại quote hết hạn; slice hiện tại chưa có command renew.
 GET không tạo quote mới. EXAM hết hold phải xử lý hết hạn rồi đăng ký mới; LAB cần hủy/tạo

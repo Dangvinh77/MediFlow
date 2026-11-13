@@ -24,6 +24,7 @@ import com.mediflow.clinical.application.dto.request.RegistrationCreateRequest;
 import com.mediflow.clinical.application.port.out.IdempotentCommandPort;
 import com.mediflow.clinical.domain.model.ConsultationSession;
 import com.mediflow.clinical.domain.model.OutpatientReceptionMode;
+import com.mediflow.clinical.domain.model.OutpatientRegistration;
 import com.mediflow.clinical.domain.model.OutpatientRegistrationStatus;
 import com.mediflow.clinical.domain.model.OutpatientVisitType;
 import com.mediflow.common.api.PageQuery;
@@ -71,7 +72,7 @@ class RegistrationIntakeRegressionTest {
     }
 
     private void afterHoldExpired() {
-        h.clock = Clock.fixed(IntakeHarness.NOW.plusSeconds(15 * 60), ZoneOffset.UTC);
+        h.clock = Clock.fixed(IntakeHarness.NOW.plus(OutpatientRegistration.PAYMENT_HOLD), ZoneOffset.UTC);
     }
 
     @Test void eligibilityIsRecheckedAtSubmission() {

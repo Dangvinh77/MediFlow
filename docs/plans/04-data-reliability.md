@@ -10,7 +10,7 @@ Các yêu cầu sau chưa là xác nhận migration/guard đã tồn tại; tri�
   cùng guard; kiểm trước ở UI hoặc read-then-write không đủ chống vượt sức chứa.
 - Nhân sự/khoa từ Core có authoritative UUID và trạng thái; provider lỗi fail closed cho tạo mới.
   Không tự hủy phiếu đã thu chỉ vì một lần Core timeout; đưa vào xử lý thay đổi có audit.
-- TTL 15 phút dùng server clock; payment-in-progress có operation ổn định và recovery. Không
+- TTL giữ suất 2 giờ dùng server clock; payment-in-progress có operation ổn định và recovery. Không
   giải phóng reservation trong khi trạng thái thu chưa xác định; có reconciliation worker/cursor
   bền vững để tránh giữ suất vô hạn. Hết deadline cần đối soát outcome trước release; late paid
   sau release là exception được ghi nhận, không ghi đè người đã chiếm suất.
@@ -101,7 +101,7 @@ Rebuild isolated chỉ áp dụng Report data, không chạy lại business comm
 ## Quan sát và phục hồi
 
 TARGET schedule dùng protocol [03 phụ lục A](03-contracts.md#opd-scheduling-v2): giữ suất
-`HELD` 15 phút, còn `PAYMENT_LOCKED` phải được Billing trả kết quả thu hoặc đóng operation
+`HELD` 2 giờ, còn `PAYMENT_LOCKED` phải được Billing trả kết quả thu hoặc đóng operation
 trước khi giải phóng. `reconcileAfter` chỉ đánh thức đối soát. Timeout hoặc missing operation
 không chứng minh chưa thu; giữ khóa, retry và cảnh báo. `close-if-unpaid` và cash commit
 khóa cùng operation trong Billing để chỉ một kết quả thắng. Không kéo dài transaction DB

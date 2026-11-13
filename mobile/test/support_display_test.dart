@@ -5,6 +5,22 @@ import 'package:mediflow_mobile/features/report/domain/report.dart';
 import 'package:mediflow_mobile/features/report/presentation/report_page.dart';
 
 void main() {
+  test('notification text groups raw stored amounts only', () {
+    expect(
+      notificationText('Đã ghi nhận khoản thanh toán 36000 VND.'),
+      'Đã ghi nhận khoản thanh toán 36.000 VND.',
+    );
+    expect(
+      notificationText('Hoàn tiền 150000.00 VND'),
+      'Hoàn tiền 150.000 VND',
+    );
+    expect(notificationText('Tổng 1250500.50 VNĐ'), 'Tổng 1.250.500,5 VNĐ');
+    expect(
+      notificationText('Đã thanh toán 36.000 VND, phí 950 VND, năm 2026'),
+      'Đã thanh toán 36.000 VND, phí 950 VND, năm 2026',
+    );
+  });
+
   test('notification labels use patient-facing terms', () {
     expect(notificationChannelLabel('IN_APP'), 'Trong ứng dụng');
     expect(notificationStatusLabel('PENDING'), 'Đang chờ gửi');

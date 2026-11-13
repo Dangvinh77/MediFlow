@@ -17,7 +17,7 @@ public class CarePaymentReceiptService implements ReactToCarePaymentReceiptUseCa
             case "SETTLEMENT_PAYMENT" -> "SETTLEMENT_PAYMENT_RECEIPT";
             default -> "PAYMENT_RECEIPT";
         };
-        String amount = receipt.amount().toPlainString() + " " + receipt.currency();
+        String amount = MoneyText.of(receipt.amount(), receipt.currency());
         String title = "ADMISSION_DEPOSIT".equals(receipt.classification()) ? "Đã nhận tiền cọc" : "Đã ghi nhận thanh toán";
         String content = "ADMISSION_DEPOSIT".equals(receipt.classification())
                 ? "Đã ghi nhận tiền cọc " + amount + ". Đây chưa phải số viện phí quyết toán."

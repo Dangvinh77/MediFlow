@@ -45,6 +45,7 @@ class LocalDemoSeedConfigurationTest {
                 .withBean(ManageAccountsUseCase.class, () -> mock(ManageAccountsUseCase.class))
                 .withBean(CreateAccountUseCase.class, () -> mock(CreateAccountUseCase.class))
                 .withBean(ManageRoomsUseCase.class, () -> mock(ManageRoomsUseCase.class))
+                .withBean(UpdateAccountStatusUseCase.class, () -> mock(UpdateAccountStatusUseCase.class))
                 .withBean(GetPatientUseCase.class, () -> mock(GetPatientUseCase.class))
                 .withBean(CreatePatientUseCase.class, () -> mock(CreatePatientUseCase.class));
         wired.run(it -> {

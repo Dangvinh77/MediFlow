@@ -34,7 +34,7 @@ Giữ evidence commit/flags/IDs, request/response redacted, ảnh UI và số ef
 | WF-T05 | CASHIER xem khám mới 100.000 hỗ trợ 50% rồi thu | Quote 50.000; trả đủ mới xác nhận phiếu và EXAM eligibility |
 | WF-T06 | CASHIER nhập giá/tỷ lệ tự sửa hoặc sai lượt | Server không nhận giá client, không allocate sang lượt khác |
 | WF-T07 | CASHIER thu một phần hoặc retry sau timeout | Chưa đủ thì không unlock; same intent không thu hai lần; tra outcome trước retry |
-| WF-T08 | Không thu tới khi hold hết 15 phút | Suất được giải phóng; charge không được thu theo quote/reservation đã hết hiệu lực |
+| WF-T08 | Không thu tới khi hold hết 2 giờ | Suất được giải phóng; charge không được thu theo quote/reservation đã hết hiệu lực |
 | WF-T09 | Hết hạn/đổi ca đồng thời payment đang xử lý, restart | Không mất receipt/overbook; pending có recovery, late paid vào đối soát |
 | WF-T10 | Chính sách hỗ trợ 0%, 100%, số tiền cần làm tròn | Từng dòng đúng HALF_UP/VND; zero payable không tạo cash payment giả |
 | WF-T11 | ADMIN thay policy sau phát quote/sau thanh toán | Quote còn hạn giữ snapshot; quote hết hạn cần xác nhận lại; receipt cũ không đổi |

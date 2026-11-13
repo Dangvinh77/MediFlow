@@ -54,7 +54,7 @@ cuối ca, không chồng ca/phòng/bác sĩ. Không coi giới hạn 07:00–17
 
 MVP quản lý **buổi nhận khám và sức chứa**, không chia cứng mỗi người bệnh 15 phút.
 Ví dụ bác sĩ A nhận khám 07:00–11:00 tại phòng 101, tối đa 12 lượt; đây là dữ liệu minh họa,
-không là định mức chuyên môn. TTL giữ suất 15 phút bên dưới là thời hạn hoàn tất đăng ký/thu,
+không là định mức chuyên môn. TTL giữ suất 2 giờ bên dưới là thời hạn hoàn tất đăng ký/thu,
 không phải thời lượng khám. Một suất là một chỗ trong buổi; giờ trên phiếu là khung dự kiến.
 
 | Use case | Role đích | Thao tác và kết quả |
@@ -93,7 +93,8 @@ Quy tắc đăng ký:
 
 1. Chọn ngày và khoa, chỉ liệt kê bác sĩ hoạt động, đúng khoa, có lịch nhận khám còn suất.
 2. Y tá chọn một suất; backend kiểm lại và giữ suất nguyên tử. Không chỉ kiểm danh sách trên UI.
-3. Mặc định giữ suất **15 phút**, là chính sách demo do dự án chọn; hiển thị thời điểm hết hạn.
+3. Mặc định giữ suất **2 giờ** (đổi từ 15 phút ngày 13/11/2026: đủ cho hàng chờ thu ngân giờ cao điểm),
+   là chính sách do dự án chọn; hiển thị thời điểm hết hạn. Buổi đã kết thúc thì không thu nữa.
 4. Sau khi đủ nghĩa vụ tài chính, xác nhận cùng suất, không chọn bác sĩ lại sau khi đã thu tiền.
 5. Hết hạn chưa thu thì giải phóng suất. Bắt đầu thu phải có quyền giữ suất ổn định cho payment
    operation đó; tác vụ hết hạn không được giải phóng suất đang xử lý giao dịch chưa rõ kết quả.
@@ -117,7 +118,7 @@ flowchart TD
     A[Người bệnh đến quầy] --> B[Tìm hoặc tạo hồ sơ bệnh nhân]
     B --> C[Chọn khám mới hoặc tái khám]
     C --> D[Chọn khoa và lịch bác sĩ còn suất]
-    D --> E[Đăng ký và giữ suất 15 phút]
+    D --> E[Đăng ký và giữ suất 2 giờ]
     E --> F[Billing tính giá và hỗ trợ mô phỏng]
     F --> G{Người bệnh còn phải trả?}
     G -->|Có| H[Thu ngân ghi nhận thanh toán]
@@ -152,8 +153,8 @@ Các bước tại quầy:
 6. Bác sĩ được phân công gọi người bệnh, kiểm tra đúng lượt và bắt đầu khám. Thanh toán không
    tự động ghi “đã khám”; phải có người thực hiện và thời điểm thực tế.
 
-Với **đặt lịch trước**, slice PREBOOKED trong 03 yêu cầu hoàn tất thu trong 15 phút từ lúc
-đăng ký; sau xác nhận, suất được giữ cho buổi đã chọn, không tiếp tục hết hạn sau 15 phút.
+Với **đặt lịch trước**, slice PREBOOKED trong 03 yêu cầu hoàn tất thu trong 2 giờ từ lúc
+đăng ký; sau xác nhận, suất được giữ cho buổi đã chọn, không tiếp tục hết hạn sau 2 giờ.
 Khi đến vẫn ghi nhận có mặt, kiểm lại lịch và xử lý nghĩa vụ phát sinh nếu có; không thu phí
 khám lần hai. Đặt trước nhưng chờ tới ngày khám mới thu cần chính sách giữ suất riêng,
 chưa nằm trong slice này. MVP mới chưa cung cấp self-booking nếu chưa có API/ownership
@@ -426,7 +427,7 @@ phân biệt đăng ký theo chuyên khoa/phòng với đặt trước để ch�
 cầu mọi nơi phân công giống MediFlow. [Bệnh viện Đa khoa Bạc Liêu công bố quy trình khám](https://bvdkbaclieu.gov.vn/gioi-thieu/quy-trinh-kham-chua-benh)
 theo hướng dẫn 1313/QĐ-BYT và phân biệt nhóm BHYT/không BHYT/theo yêu cầu.
 Đây là nguồn tham khảo tổ chức luồng, không xác nhận mức BHYT hoặc tuân thủ pháp luật của demo.
-Giữ suất 15 phút, catalogue giá và tỷ lệ hỗ trợ trong mục 6 là quyết định của dự án.
+Giữ suất 2 giờ, hạn chỉ định xét nghiệm 72 giờ, catalogue giá và tỷ lệ hỗ trợ trong mục 6 là quyết định của dự án.
 
 ## 11. Baseline kỹ thuật và các bất biến phải giữ
 

@@ -17,7 +17,7 @@ public class RefundNoticeService implements ReactToRefundNoticeUseCase {
         if (!sources.claim("payment.refunded", command.refundTransactionId(), command.sourceFingerprint())) return;
         history.deliverInApp(new CareNotificationIntent(UUID.randomUUID(), command.patientId(), command.eventId(),
                 "payment.refunded", command.refundTransactionId(), command.correlationId(), "PAYMENT_REFUNDED",
-                "Biên nhận hoàn tiền", "Thu ngân đã ghi nhận hoàn tiền " + command.amount().setScale(2).toPlainString() + " " + command.currency()
+                "Biên nhận hoàn tiền", "Thu ngân đã ghi nhận hoàn tiền " + MoneyText.of(command.amount(), command.currency())
                 + " cho giao dịch " + command.originalTransactionId() + ". Đây không phải quyết toán cuối cùng hoặc xác nhận trạng thái điều trị."));
     }
 }

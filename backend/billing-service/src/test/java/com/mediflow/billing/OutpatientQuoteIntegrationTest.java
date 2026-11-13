@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class OutpatientQuoteIntegrationTest {
     private static final String SECRET = "billing-quote-integration-secret-at-least-32-bytes";
     // Payment completes before the quote TTL; execution is observed after that TTL by PostgreSQL.
-    private static final Instant CHANGED_AT = Instant.now().minusSeconds(3600)
+    private static final Instant CHANGED_AT = Instant.now().minusSeconds(3 * 3600)
             .truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -118,7 +118,8 @@ class OutpatientQuoteIntegrationTest {
         assertThat(quote.grossAmount()).isEqualByComparingTo("100000");
         assertThat(quote.supportAmount()).isEqualByComparingTo("50000");
         assertThat(quote.patientPayable()).isEqualByComparingTo("50000");
-        assertThat(quote.expiresAt()).isEqualTo(CHANGED_AT.plusSeconds(15 * 60L));
+        // The two-hour quote cap wins over the later reservation expiry.
+        assertThat(quote.expiresAt()).isEqualTo(CHANGED_AT.plus(java.time.Duration.ofHours(2)));
         assertThat(jdbc.queryForObject("SELECT requested_amount FROM PAYMENT_REQUEST WHERE payment_request_id=?",
                 BigDecimal.class, requestId)).isEqualByComparingTo("50000");
         var charge = jdbc.queryForMap("""
@@ -266,7 +267,7 @@ class OutpatientQuoteIntegrationTest {
         var fact = new OutpatientRegistrationChangedEvent.RegistrationFact(registrationId, 1, patientId,
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 LocalDate.ofInstant(CHANGED_AT, ZoneOffset.UTC), LocalTime.of(9, 0), LocalTime.of(9, 30), "NEW_VISIT",
-                reservationId, "HELD", "AWAITING_PAYMENT", null, null, CHANGED_AT.plusSeconds(20 * 60L),
+                reservationId, "HELD", "AWAITING_PAYMENT", null, null, CHANGED_AT.plusSeconds(140 * 60L),
                 priceCode, "EXAM", registrationId, "OUTPATIENT_VISIT", registrationId, null, CHANGED_AT);
         return new OutpatientRegistrationChangedEvent(UUID.randomUUID(), "outpatient.registration.changed", 1,
                 CHANGED_AT, "quote-trace", "clinical-service", fact);

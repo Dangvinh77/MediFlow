@@ -34,7 +34,7 @@ class LabTestChargeConfigurationTest {
         });
     }
     private ApplicationContextRunner runner() {
-        // Spring Boot converts "PT15M" to Duration through its shared conversion service; a bare runner has none.
+        // Spring Boot converts "PT72H" to Duration through its shared conversion service; a bare runner has none.
         return new ApplicationContextRunner()
                 .withInitializer(context -> context.getBeanFactory().setConversionService(
                         org.springframework.boot.convert.ApplicationConversionService.getSharedInstance()))

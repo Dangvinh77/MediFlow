@@ -74,6 +74,12 @@ public record OutpatientRegistration(
         }
     }
 
+    /**
+     * How long an unpaid registration holds its slot. Two hours covers the walk from reception to a
+     * busy cashier queue; payment is still refused once the session has ended.
+     */
+    public static final java.time.Duration PAYMENT_HOLD = java.time.Duration.ofHours(2);
+
     public static OutpatientRegistration create(
             UUID registrationId,
             UUID reservationId,
@@ -84,7 +90,7 @@ public record OutpatientRegistration(
         Objects.requireNonNull(session, "session is required");
         Objects.requireNonNull(now, "registration time is required");
         ConsultationSession.Configuration config = session.configuration();
-        Instant expiresAt = now.plus(15, ChronoUnit.MINUTES);
+        Instant expiresAt = now.plus(PAYMENT_HOLD);
         Reservation reservation = new Reservation(reservationId, 1, OutpatientReservationStatus.HELD,
                 expiresAt, null, null, null, null, null, null, null);
         return new OutpatientRegistration(registrationId, 1, patientId, session.sessionId(), receptionMode,

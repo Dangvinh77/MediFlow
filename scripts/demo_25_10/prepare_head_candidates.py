@@ -1,54 +1,56 @@
-"""Seed department-head candidates through the disposable Gateway.
+"""Verify the seeded department-head candidates through the disposable Gateway.
 
-Each active clinical department gets doctors in three account states, so the admin can
-demonstrate who may be appointed head on the department detail screen:
-  * ACTIVE  - an issued, active DOCTOR account: eligible;
-  * LOCKED  - an issued account the admin then deactivated: refused with HEAD_INELIGIBLE;
+Each active clinical department has doctors in three account states, so the admin can demonstrate
+who may be appointed head on the department detail screen:
+  * TK01 / TK02 - active DOCTOR account: eligible;
+  * KHOA        - account that starts locked: refused with HEAD_INELIGIBLE;
   * the rotating roster doctors from prepare_demo_calendar have no account at all: refused too.
-Uses public APIs and a resumable journal only. Accounts get the usual system-issued temporary
-password, delivered to the local demo mailbox; nothing is sent to a real address.
+The candidates come from seed_head_candidates.sql (disposable demo) or demo-seed.json (local Core
+seed) with the fixed demo password, so nothing is issued through the temporary-password email
+path. This step only reads through the Gateway and writes the table.
 """
 import json
 from pathlib import Path
-import uuid
+import urllib.parse
 
 HERE = Path(__file__).resolve().parent
 ADMIN_LOGIN_EMAIL = 'demo.staff01@example.test'
-# (suffix, display state, keep the account active)
-CANDIDATES = (('TK01', 'Tài khoản hoạt động', True), ('TK02', 'Tài khoản hoạt động', True),
-              ('KHOA', 'Tài khoản đã khóa', False))
+PREFIX = 'demo.head.'
+STATES = {True: 'Tài khoản hoạt động', False: 'Tài khoản đã khóa'}
+
+
+def pages(api, path, **query):
+    page = 0
+    while True:
+        result = api.call('admin', 'GET', path + '?' + urllib.parse.urlencode({**query, 'page': page, 'size': 100}))
+        yield from result['content']
+        page += 1
+        if page >= result['totalPages']:
+            return
 
 
 def prepare(api):
     api.login('admin', ADMIN_LOGIN_EMAIL)
-    departments = [row for row in api.call('admin', 'GET', '/api/v1/org/departments?activeOnly=true')
-                   if row['active'] and row['departmentType'] == 'CLINICAL']
+    departments = {row['departmentId']: row for row in api.call('admin', 'GET', '/api/v1/org/departments?activeOnly=true')
+                   if row['active'] and row['departmentType'] == 'CLINICAL'}
+    candidates = sorted((row for row in pages(api, '/api/v1/org/staff', jobTitle='DOCTOR')
+                         if (row.get('email') or '').lower().startswith(PREFIX) and row['departmentId'] in departments),
+                        key=lambda row: (departments[row['departmentId']]['departmentName'], row['email']))
+    missing = [row['departmentName'] for key, row in departments.items()
+               if not any(c['departmentId'] == key for c in candidates)]
+    if missing:
+        raise RuntimeError('Seeded head candidates missing for: ' + ascii(missing))
     result = []
-    for department in departments:
-        department_id = department['departmentId']
-        token = uuid.uuid5(uuid.NAMESPACE_URL, 'mediflow-head-candidates/' + department_id).hex[:10]
-        for index, (suffix, state, keep_active) in enumerate(CANDIDATES, 1):
-            # Stable identity, so a rerun replays the same commands instead of adding doctors.
-            identity = '97' + str(uuid.uuid5(uuid.NAMESPACE_URL, f'{department_id}/head/{index}').int % 10**10).zfill(10)
-            email = f'head.{token}.{suffix.lower()}@example.test'
-            full_name = f'BS Ứng viên {suffix} {department["departmentName"][:50]}'
-            stage = f'head-candidate-{department_id}-{suffix}'
-            staff = api.call('admin', 'POST', '/api/v1/org/staff', {
-                'identityNumber': identity, 'fullName': full_name, 'departmentId': department_id,
-                'jobTitle': 'DOCTOR', 'specialization': department['departmentName'][:100],
-                'licenseNumber': f'DEMO-HEAD-{token}-{suffix}', 'phoneNumber': None, 'email': email,
-            }, expected=(200, 201), stage=stage + '-staff')
-            account = api.call('admin', 'POST', '/api/v1/org/accounts', {
-                'username': email, 'staffId': staff['staffId'], 'patientId': None, 'role': 'DOCTOR',
-            }, expected=(200, 201), stage=stage + '-account')
-            if not keep_active:
-                account = api.call('admin', 'PUT', f'/api/v1/org/accounts/{account["accountId"]}/status',
-                                   {'isActive': False}, stage=stage + '-lock')
-            if bool(account['isActive']) != keep_active:
-                raise RuntimeError('Head candidate account state differs; reconcile: ' + full_name)
-            result.append({'departmentName': department['departmentName'], 'fullName': full_name,
-                           'email': email, 'state': state, 'eligible': keep_active})
-        print(f'HEAD CANDIDATES PREPARED: department {department_id}', flush=True)
+    for staff in candidates:
+        account = api.call('admin', 'GET', f'/api/v1/org/profile-accounts/staff/{staff["staffId"]}')['account']
+        active = bool(account and account['isActive'])
+        expected = not staff['email'].lower().endswith('.khoa@example.test')
+        if account is None or active != expected:
+            # A changed state is an admin decision on this dataset; report it rather than reset it.
+            print(f'HEAD CANDIDATE STATE CHANGED: {ascii(staff["fullName"])}', flush=True)
+        result.append({'departmentName': departments[staff['departmentId']]['departmentName'],
+                       'fullName': staff['fullName'], 'email': staff['email'],
+                       'state': STATES[active] if account else 'Chưa cấp tài khoản', 'eligible': active})
     return result
 
 
@@ -59,7 +61,8 @@ def write_fixtures(result, evidence):
              '(các "BS Demo … 01–03" của lịch luân phiên) bị từ chối với thông báo chưa đủ điều kiện.', '',
              '| Khoa | Bác sĩ | Email đăng nhập | Trạng thái tài khoản |', '|---|---|---|---|']
     lines += [f'| {row["departmentName"]} | {row["fullName"]} | {row["email"]} | {row["state"]} |' for row in result]
-    lines += ['', 'Mật khẩu tạm của tài khoản mới nằm trong hộp thư demo (/demo-mailbox); đăng nhập lần đầu phải đổi mật khẩu.']
+    lines += ['', 'Các tài khoản này được seed sẵn với mật khẩu mặc định của bộ dữ liệu demo (giống các tài khoản demo khác); '
+              'không cấp qua hệ thống nên không có email gửi đi.']
     output = evidence / 'DEMO-HEAD-CANDIDATES.local.md'
     output.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print(f'HEAD CANDIDATES READY: {len(result)} doctors; {output}', flush=True)

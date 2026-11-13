@@ -281,7 +281,8 @@ public class OutpatientRegistrationSourceAdapter implements OutpatientRegistrati
         String description = quoteLine == null ? price.description() : quoteLine.description();
         java.time.Instant requestExpiresAt = fact.reservationExpiresAt();
         if (quoteLine != null) {
-            java.time.Instant quoteMaximum = fact.changedAt().plusSeconds(15 * 60L);
+            // The exam quote never outlives the two-hour unpaid hold set by Clinical.
+            java.time.Instant quoteMaximum = fact.changedAt().plus(java.time.Duration.ofHours(2));
             if (quoteMaximum.isBefore(requestExpiresAt)) requestExpiresAt = quoteMaximum;
             if (!requestExpiresAt.isAfter(fact.changedAt())) {
                 jdbc.update("UPDATE outpatient_registration_source SET request_issue_status='PRICE_INVALID',updated_at=? WHERE registration_id=?",

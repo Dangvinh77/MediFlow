@@ -126,7 +126,7 @@ class NotificationEventConsumerTest {
         consumer.onMessage(messageFor(RabbitConfig.RK_PAYMENT_COMPLETED, payload));
 
         verify(sendNotificationUseCase).handleEvent(argThat(trigger ->
-                trigger.content().contains(invoiceId.toString()) && trigger.content().contains("150000")));
+                trigger.content().contains(invoiceId.toString()) && trigger.content().contains("150.000")));
     }
 
     @Test

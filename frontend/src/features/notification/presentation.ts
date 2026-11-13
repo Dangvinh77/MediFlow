@@ -11,7 +11,20 @@ export const statusPresentation: Record<NotificationStatus, { label: string; ton
 };
 
 
-/** Older stored templates used the English role name. Preserve the message otherwise. */
+/** Groups a stored raw amount ("36000", "150000.00") the Vietnamese way: 36.000, 150.000, 1.250,5. */
+function groupedAmount(integer: string, fraction: string | undefined) {
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const kept = fraction?.replace(/0+$/, "");
+  return kept ? `${grouped},${kept}` : grouped;
+}
+
+/**
+ * Older stored messages used the English role name and raw amounts ("36000 VND"). Rewrite only
+ * those two shapes for display; the message is otherwise preserved.
+ */
 export function notificationText(value: string) {
-  return value.replace(/\bnurse\b/gi, "điều dưỡng");
+  return value
+    .replace(/\bnurse\b/gi, "điều dưỡng")
+    .replace(/(?<![\d.,])(\d{4,})(?:\.(\d{1,2}))?(?=\s?(?:VND|VNĐ|đ)(?![\p{L}\d]))/gu,
+      (_match, integer: string, fraction: string | undefined) => groupedAmount(integer, fraction));
 }

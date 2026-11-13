@@ -20,7 +20,8 @@ import java.util.UUID;
 /** CONTRACT-CARE-BILLING-01 — one {@code lab.request.created} fact issues one LAB_TEST request.
  * Transaction wrapper is infrastructure-owned. Replays never re-price the original operation. */
 public final class LabTestPlannedRequestService implements IssueLabTestChargeUseCase {
-    public static final Duration DEFAULT_QUOTE_TTL = Duration.ofMinutes(15);
+    /** Ordered tests are paid and sampled within the visit, fasting tests the next morning. */
+    public static final Duration DEFAULT_QUOTE_TTL = Duration.ofHours(72);
 
     private final LabTestChargeRepositoryPort repository;
     private final PriceCatalogPort prices;

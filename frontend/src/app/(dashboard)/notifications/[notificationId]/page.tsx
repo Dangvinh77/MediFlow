@@ -4,6 +4,9 @@ import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { NotificationDetail } from "@/features/notification/components/NotificationDetail";
 import { isUuid } from "@/lib/validation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Chi tiết thông báo | MediFlow" };
 interface Props { params: Promise<{ notificationId: string }>; searchParams: Promise<{ notice?: string; patientId?: string; page?: string }> }
 export default async function Page({ params, searchParams }: Props) {
   const { notificationId } = await params;

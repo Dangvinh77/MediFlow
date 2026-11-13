@@ -42,7 +42,7 @@ class Workspace:
         self.owner = hashlib.sha256(str(self.root).casefold().encode()).hexdigest()
         inputs = hashlib.sha256((str(scheduling) + ':' + str(report_demo)).encode())
         names = ['MediFlow_Demo_Database_2026-10-25.sql', 'seed_outpatient_scheduling.sql',
-                 'seed_report_demo.sql']
+                 'seed_report_demo.sql', 'seed_head_candidates.sql']
         if report_demo:
             names.extend(('report_demo_seed.py', 'prepare_report_demo.py'))
         for name in names:

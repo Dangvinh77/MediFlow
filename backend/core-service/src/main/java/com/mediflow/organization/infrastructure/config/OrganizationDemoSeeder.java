@@ -26,12 +26,22 @@ public class OrganizationDemoSeeder {
     private final ManageAccountsUseCase accounts;
     private final CreateAccountUseCase createAccount;
     private final ManageRoomsUseCase rooms;
+    private final UpdateAccountStatusUseCase accountStatus;
 
     public OrganizationDemoSeeder(JdbcTemplate jdbc, TransactionTemplate transaction,
             GetDepartmentUseCase departments, CreateDepartmentUseCase createDepartment,
             GetStaffUseCase staff, CreateStaffUseCase createStaff,
             ManageAccountsUseCase accounts, CreateAccountUseCase createAccount,
             ManageRoomsUseCase rooms) {
+        this(jdbc, transaction, departments, createDepartment, staff, createStaff, accounts, createAccount, rooms, null);
+    }
+
+    public OrganizationDemoSeeder(JdbcTemplate jdbc, TransactionTemplate transaction,
+            GetDepartmentUseCase departments, CreateDepartmentUseCase createDepartment,
+            GetStaffUseCase staff, CreateStaffUseCase createStaff,
+            ManageAccountsUseCase accounts, CreateAccountUseCase createAccount,
+            ManageRoomsUseCase rooms, UpdateAccountStatusUseCase accountStatus) {
+        this.accountStatus = accountStatus;
         this.jdbc = jdbc;
         this.transaction = transaction;
         this.departments = departments;
@@ -144,8 +154,14 @@ public class OrganizationDemoSeeder {
                         }
                         return account.getAccountId();
                     }
-                    return createAccount.execute(accountEmail, text(row, "password"),
+                    UUID created = createAccount.execute(accountEmail, text(row, "password"),
                             staffId, patientId, role).getAccountId();
+                    // Only a newly created account starts locked; a later admin decision is preserved.
+                    if (!row.path("active").asBoolean(true)) {
+                        Objects.requireNonNull(accountStatus, "Account status use case is required for locked seed accounts")
+                                .execute(created, false);
+                    }
+                    return created;
                 });
                 registerDemoMailboxAccount(text(row, "key"), accountId, accountEmail);
             }

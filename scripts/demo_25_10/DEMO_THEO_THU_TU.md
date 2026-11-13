@@ -135,7 +135,9 @@ Không phụ thuộc ai. Slide: Functional Requirements → Use case → Kiến 
   | BS Demo … **01–03** (lịch luân phiên) | **Chưa cấp tài khoản** | Nút chọn bị khóa |
 
   Nêu: chỉ bác sĩ có tài khoản DOCTOR đang hoạt động mới được bổ nhiệm; backend vẫn chặn
-  (`HEAD_INELIGIBLE`) nếu gọi API trực tiếp. Danh sách email nằm trong `DEMO-HEAD-CANDIDATES.local.md`.
+  (`HEAD_INELIGIBLE`) nếu gọi API trực tiếp. Danh sách email nằm trong `DEMO-HEAD-CANDIDATES.local.md`
+  (dạng `demo.head.<khoa>.tk01@example.test`). Các tài khoản này được Core **seed sẵn với mật khẩu mặc định**
+  của bộ demo nên không có email cấp mật khẩu nào được gửi.
 
 **c. Patient và tài khoản** (NURSE `demo.staff04`)
 
@@ -255,7 +257,7 @@ Bàn phím: ← → để chuyển tab, Home/End về tab đầu/cuối.
 
 ### I.4. LỘC — Billing, Notification (8–10 phút)
 
-**a. Thu phí khám.** Phiếu chưa thu chỉ **giữ suất 15 phút**, nên khoản này được tạo **ngay trước lúc Lộc lên**:
+**a. Thu phí khám.** Phiếu chưa thu **giữ suất 2 giờ**, nên khoản này nên tạo **trong vòng 2 giờ trước lúc Lộc lên**:
 
 ```powershell
 .\scripts\run\seed-demo.bat -ExamChargeNow
@@ -291,7 +293,7 @@ hoặc cấp tài khoản cho người này như I.1c).
 |---|---|---|---|---|
 | 1 | Hoàng Anh | `demo.staff04` | Tìm `999881000001` → **Tiếp tục đăng ký khám** | [3B](DEMO_UI_TUNG_BUOC.md#b-bệnh-nhân-cũ-đến-khám-đợt-mới) |
 | 2 | Vinh | `demo.staff04` | Chọn buổi Lê Bác Sĩ Demo, **Khám đợt mới**, **Đăng ký và giữ chỗ** | [4](DEMO_UI_TUNG_BUOC.md#4-vinh--nurse--clinical-chọn-buổi-và-đăng-ký-khám) |
-| 3 | Lộc | `demo.staff19` | Thu phí khám 50.000 (trong 15 phút) | [5](DEMO_UI_TUNG_BUOC.md#5-lộc--cashier--billing-thu-phí-khám) |
+| 3 | Lộc | `demo.staff19` | Thu phí khám 50.000 (trong 2 giờ) | [5](DEMO_UI_TUNG_BUOC.md#5-lộc--cashier--billing-thu-phí-khám) |
 | 4 | Vinh | `demo.staff04` | Cấp số phòng, ghi sinh hiệu | [5b](DEMO_UI_TUNG_BUOC.md#5b-vinh--nurse--clinical-quầy-điều-dưỡng-khoa-cấp-số-phòng) |
 | 5 | Vinh | `demo.staff03` | Bắt đầu khám, chẩn đoán Z00, chỉ định CBC | [6](DEMO_UI_TUNG_BUOC.md#6-vinh--doctor--clinical-khám-và-lập-yêu-cầu-lab) |
 | 6 | Lộc | `demo.staff19` | Thu CBC 36.000 | [7](DEMO_UI_TUNG_BUOC.md#7-lộc--cashier--billing-thu-phí-cbc) |
@@ -337,7 +339,7 @@ sequenceDiagram
 |---|---|
 | Không có dòng `STAGED DEMO READY` | Backend khởi động ngoài 07:00–16:45, hoặc một ca lỗi: đọc `DEMO-STAGED.local.md`. Trong giờ khám, chạy `scripts/run/seed-demo.bat` (backend vẫn chạy) để seed lại phần còn thiếu |
 | Ca của mình đã bị người khác thao tác | Chuyển sang phần II với patient09, hoặc demo trên ca kế tiếp cùng người (ví dụ Vinh dùng ca c thay ca b) |
-| `--exam-charge-now` báo lỗi phiếu đã có | Phiếu hôm nay đã tạo; nếu đã quá 15 phút thì hết hạn giữ suất, demo thu phí bằng phần II bước 2–3 |
+| `--exam-charge-now` báo lỗi phiếu đã có | Phiếu hôm nay đã tạo; nếu đã quá 2 giờ thì hết hạn giữ suất, demo thu phí bằng phần II bước 2–3 |
 | Lab ca b không hiện xác nhận thu | **Tải lại trạng thái**; xác nhận thu đến qua event, thường vài giây |
 | Không chạy `lab_v2_walkthrough.py` trong ngày demo | Script đó tự chọn bệnh nhân "Demo" và có thể lấy trùng bệnh nhân seed ở trên |
 

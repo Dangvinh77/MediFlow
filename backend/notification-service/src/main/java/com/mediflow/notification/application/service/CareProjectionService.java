@@ -28,7 +28,7 @@ public class CareProjectionService implements ReactToCareProjectionUseCase {
     @Override
     public void onAdmissionDepositRequested(AdmissionDepositRequestedCommand c) {
         if (!repository.claim(c.eventId(), "admission.deposit.requested", c.fingerprint())) return;
-        String amount = c.suggestedAmount().toPlainString() + " VND";
+        String amount = MoneyText.of(c.suggestedAmount(), "VND");
         String content = "Bệnh viện đề nghị đặt cọc " + amount + " cho đợt nhập viện."
                 + (blank(c.reason()) ? "" : " Lý do: " + c.reason());
         deliver(c.eventId(), "admission.deposit.requested", c.admissionId(), c.patientId(), c.correlationId(),
@@ -76,7 +76,7 @@ public class CareProjectionService implements ReactToCareProjectionUseCase {
     }
 
     private static String settlementContent(SettlementCompletedCommand c) {
-        String amount = c.balance().abs().toPlainString() + " VND";
+        String amount = MoneyText.of(c.balance().abs(), "VND");
         return switch (c.outcome()) {
             case "PAID_IN_FULL" -> "Quyết toán viện phí đã hoàn tất, không còn khoản nợ.";
             case "ADDITIONAL_PAYMENT_REQUIRED" -> "Quyết toán viện phí cần thanh toán thêm " + amount + ".";

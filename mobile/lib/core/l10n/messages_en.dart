@@ -267,7 +267,7 @@ const messagesEn = <String, String>{
   "Bạn không có quyền xem thông báo của bệnh nhân này.":
       "You do not have permission to view this patient's notifications.",
   "Bạn không có quyền xem thông báo này.":
-      "You do not have permission to view this notice.",
+      "You do not have permission to view this notification.",
   "Bạn không có quyền xem thông báo.":
       "You do not have permission to view notifications.",
   "Bạn không có quyền xem thông tin tổ chức.":
@@ -2292,7 +2292,7 @@ const messagesEn = <String, String>{
       "The received results do not match the requirements.",
   "Kết quả thu phí không khớp yêu cầu.":
       "Fee collection results do not match requirements.",
-  "Kết quả tra cứu thông báo": "Notice search results",
+  "Kết quả tra cứu thông báo": "Notification search results",
   "Kết quả tìm thuốc": "Drug search results",
   "Kết quả tạo chưa xác định. Hãy quay lại danh sách và làm mới trước khi tạo lại để tránh hồ sơ trùng.": "The generation result is unknown. Please go back to the list and refresh before creating again to avoid duplicate records.",
   "Kết quả tạo chưa xác định. Không gửi lại biểu mẫu này để tránh tạo trùng tài khoản.": "The generation result is unknown. Do not resubmit this form to avoid creating duplicate accounts.",
@@ -2370,6 +2370,7 @@ const messagesEn = <String, String>{
   "Loại khoản phí": "Type of charge",
   "Loại khoản thu": "Revenue type",
   "Loại khoản thu không hợp lệ.": "Invalid revenue type.",
+  "Loại khám": "Visit type",
   "Loại lượt": "Visit type",
   "Loại lượt khám": "Visit type",
   "Loại nguồn hoàn tiền": "Refund source type",
@@ -3209,6 +3210,7 @@ const messagesEn = <String, String>{
       "The login session has changed. Reload your profile to continue.",
   "Phiếu buổi {0}": "Session ticket {0}",
   "Phiếu của buổi": "Session slip",
+  "Phiếu của buổi khám": "Session registrations",
   "Phiếu khám": "Examination form",
   "Phiếu khám của tôi": "My medical certificate",
   "Phiếu khám của tôi | MediFlow": "My medical examination form | MediFlow",
@@ -3640,16 +3642,16 @@ const messagesEn = <String, String>{
   "Thêm ít nhất một chẩn đoán trước khi hoàn tất.":
       "Add at least one diagnostic before completion.",
   "Thêm ý kiến hội chẩn": "More consultation opinions",
-  "Thông báo": "Notice",
+  "Thông báo": "Notifications",
   "Thông báo chưa gửi được. Vui lòng kiểm tra thông tin người nhận rồi thử lại.": "Notification has not been sent. Please check the recipient information and try again.",
-  "Thông báo của tôi": "My notice",
-  "Thông báo dành cho bạn": "Notice for you",
+  "Thông báo của tôi": "My notifications",
+  "Thông báo dành cho bạn": "Notifications for you",
   "Thông báo không hợp lệ.": "Notification is invalid.",
   "Thông báo trong ứng dụng không nhận địa chỉ gửi.":
       "In-app notifications do not receive delivery addresses.",
   "Thông báo trả về không khớp bệnh nhân đã chọn.":
       "The message returned does not match the selected patient.",
-  "Thông báo | MediFlow": "Notice | MediFlow",
+  "Thông báo | MediFlow": "Notifications | MediFlow",
   "Thông tin biên nhận": "Receipt information",
   "Thông tin bàn giao": "Handover information",
   "Thông tin bàn giao không hợp lệ.": "Invalid handover information.",

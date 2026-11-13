@@ -91,13 +91,13 @@ class LabTestPlannedRequestServiceTest {
     }
 
     @Test
-    void quoteEnabled_outpatientUsesServerQuoteAndPersistsPatientPayableWithFifteenMinuteExpiry() {
+    void quoteEnabled_outpatientUsesServerQuoteAndPersistsPatientPayableWithConfiguredExpiry() {
         when(repository.lockRecordedSource(command)).thenReturn(Optional.empty());
         UUID account = UUID.randomUUID();
         when(repository.openAndLockExactAccount(command)).thenReturn(account);
         UUID requestId = UUID.randomUUID();
         var issuedAt = Instant.parse("2026-10-26T08:00:00Z");
-        var expiresAt = issuedAt.plus(Duration.ofMinutes(15));
+        var expiresAt = issuedAt.plus(Duration.ofHours(72));
         var catalog = mock(OutpatientQuoteCatalogPort.class);
         var quoteRepository = mock(OutpatientQuoteRepositoryPort.class);
         var issuer = new IssueOutpatientQuoteService(quoteRepository);

@@ -42,7 +42,7 @@ class CareProjectionServiceTest {
         verify(repository).deliverInApp(captor.capture());
         assertThat(captor.getValue().patientId()).isEqualTo(patientId);
         assertThat(captor.getValue().sourceId()).isEqualTo(admissionId);
-        assertThat(captor.getValue().content()).contains("150000.00 VND");
+        assertThat(captor.getValue().content()).contains("150.000 VND");
     }
 
     @Test
@@ -85,7 +85,7 @@ class CareProjectionServiceTest {
         verify(repository).deliverInApp(captor.capture());
         assertThat(captor.getValue().sourceId()).isEqualTo(admissionId);
         assertThat(captor.getValue().patientId()).isEqualTo(patientId);
-        assertThat(captor.getValue().content()).contains("50000.00 VND");
+        assertThat(captor.getValue().content()).contains("50.000 VND");
         assertThat(captor.getValue().templateKey()).isEqualTo("SETTLEMENT_COMPLETED");
     }
 
@@ -100,6 +100,6 @@ class CareProjectionServiceTest {
 
         var captor = ArgumentCaptor.forClass(CareNotificationIntent.class);
         verify(repository).deliverInApp(captor.capture());
-        assertThat(captor.getValue().content()).contains("20000.00 VND");
+        assertThat(captor.getValue().content()).contains("20.000 VND");
     }
 }

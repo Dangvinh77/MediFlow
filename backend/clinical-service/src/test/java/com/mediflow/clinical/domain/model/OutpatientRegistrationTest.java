@@ -22,7 +22,7 @@ class OutpatientRegistrationTest {
         assertThat(registration.status()).isEqualTo(OutpatientRegistrationStatus.AWAITING_PAYMENT);
         assertThat(registration.reservation().status()).isEqualTo(OutpatientReservationStatus.HELD);
         assertThat(registration.checkedInAt()).isEqualTo(NOW);
-        assertThat(registration.reservation().expiresAt()).isEqualTo(NOW.plusSeconds(15 * 60));
+        assertThat(registration.reservation().expiresAt()).isEqualTo(NOW.plusSeconds(2 * 3600));
     }
 
     private static ConsultationSession rescheduleTarget() {

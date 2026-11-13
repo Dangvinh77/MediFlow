@@ -59,7 +59,7 @@ def active_backend():
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--exam-charge-now', action='store_true',
-                        help="Create Lộc's unpaid exam-fee registration now (holds its slot 15 minutes).")
+                        help="Create Lộc's unpaid exam-fee registration now (holds its slot two hours).")
     options = parser.parse_args()
     from prepare_ui_demo import ZONE, DemoApi
     gateway, evidence = active_backend()

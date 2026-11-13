@@ -11,7 +11,8 @@ import { formatLocalDate } from "@/lib/format";
 import Link from "next/link";
 import { ScheduleDateInput } from "./ScheduleDateInput";
 import { ReferenceText } from "@/components/references/ReferenceText";
-import { queueNumberText, roomNumberText, registrationStatusLabels, sessionStatusLabels } from "../presentation";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { queueNumberText, roomNumberText, registrationStatusLabels, registrationStatusTones, sessionStatusLabels } from "../presentation";
 import { appointmentApi } from "../api";
 import type { DoctorCalendarDTO, DoctorWorkShiftDTO, RegistrationSummary } from "../types";
 
@@ -149,11 +150,25 @@ function DoctorCalendarWorkspaceContent({ enabled, clinicIntakeEnabled }: { enab
       <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold"><L10n>{"Phiếu của buổi "}</L10n><L10nValue>{calendar?.sessions.filter(session => session.sessionId === selectedSession).map(session => `${formatLocalDate(session.sessionDate)} · ${session.startTime}–${session.endTime}`)}</L10nValue></h2><Button type="button" loading={registrationLoading} onClick={() => void loadRegistrations(selectedSession, registrationPage)}><L10n>{"Tải lại"}</L10n></Button></div>
       <L10nValue>{registrationError ? <AsyncState kind="error" message={localize(registrationError.message)} correlationId={registrationError.correlationId} onRetry={() => void loadRegistrations(selectedSession)} /> : null}</L10nValue>
       <L10nValue>{registrationLoading ? <AsyncState kind="loading" message={localize("Đang tải phiếu khám…")} /> : null}</L10nValue>
-      <L10nValue>{registrations ? registrations.length ? <ul className="mt-3 divide-y divide-border"><L10nValue>{registrations.map(item => <li key={item.registrationId} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
-        <div className="space-y-1"><p className="font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></p><p className="text-muted-foreground"><L10nValue>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</L10nValue> · <L10nValue>{registrationStatusLabels[item.status]}</L10nValue></p></div>
-        <div className="space-y-1"><p><L10nValue>{item.checkedInAt ? "Đã đến" : "Chưa đến"}</L10nValue> · <L10nValue>{queueNumberText(item.queueNumber, clinicIntakeEnabled)}</L10nValue><L10nValue>{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? ` · ${roomNumberText(item.roomQueueNumber)}` : ""}</L10nValue></p><p className="text-muted-foreground"><L10nValue>{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</L10nValue></p></div>
-        <Link href={`/appointments/${encodeURIComponent(item.registrationId)}`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted"><L10n>{"Xem phiếu khám"}</L10n></Link>
-      </li>)}</L10nValue></ul> : <p role="status" className="mt-3 text-sm text-muted-foreground"><L10n>{"Buổi này chưa có phiếu."}</L10n></p> : null}</L10nValue>
+      <L10nValue>{registrations ? registrations.length ? <div className="relative mt-3 overflow-x-auto rounded-lg border border-border"><table aria-label={localize("Phiếu của buổi khám")} className="w-full min-w-[56rem] table-fixed text-left text-sm">
+        <colgroup><col className="w-28" /><col className="w-[24%]" /><col className="w-24" /><col className="w-40" /><col /><col className="w-40" /></colgroup>
+        <thead className="bg-surface-muted text-muted-foreground"><tr>
+          <th scope="col" className="px-3 py-2"><L10n>{"Số thứ tự"}</L10n></th>
+          <th scope="col" className="px-3 py-2"><L10n>{"Bệnh nhân"}</L10n></th>
+          <th scope="col" className="px-3 py-2"><L10n>{"Loại khám"}</L10n></th>
+          <th scope="col" className="px-3 py-2"><L10n>{"Trạng thái"}</L10n></th>
+          <th scope="col" className="px-3 py-2"><L10n>{"Tiếp nhận"}</L10n></th>
+          <th scope="col" className="px-3 py-2"><span className="sr-only"><L10n>{"Thao tác"}</L10n></span></th>
+        </tr></thead>
+        <tbody><L10nValue>{registrations.map(item => <tr key={item.registrationId} className="border-t border-border align-middle">
+          <td className="px-3 py-3 tabular-nums"><p className="font-medium"><L10nValue>{queueNumberText(item.queueNumber, clinicIntakeEnabled)}</L10nValue></p><L10nValue>{clinicIntakeEnabled && roomNumberText(item.roomQueueNumber) ? <p className="text-xs text-muted-foreground"><L10nValue>{roomNumberText(item.roomQueueNumber)}</L10nValue></p> : null}</L10nValue></td>
+          <td className="break-words px-3 py-3 font-medium"><ReferenceText kind="patient" value={item.patientId} fallback="Bệnh nhân" /></td>
+          <td className="px-3 py-3"><L10nValue>{item.visitType === "FOLLOW_UP" ? "Tái khám" : "Khám mới"}</L10nValue></td>
+          <td className="px-3 py-3"><StatusBadge tone={registrationStatusTones[item.status]}><L10nValue>{registrationStatusLabels[item.status]}</L10nValue></StatusBadge></td>
+          <td className="px-3 py-3"><p><L10nValue>{item.checkedInAt ? "Đã đến" : "Chưa đến"}</L10nValue></p><p className="text-xs text-muted-foreground"><L10nValue>{item.readyForExam ? "Đủ điều kiện khám" : item.status === "CONFIRMED" && !item.checkedInAt ? "Chờ bệnh nhân đến quầy tiếp nhận" : item.status === "AWAITING_PAYMENT" ? "Chờ thanh toán" : item.status === "CONFIRMED" ? "Chờ đến giờ khám hoặc kiểm tra điều kiện khám" : ""}</L10nValue></p></td>
+          <td className="px-3 py-3 text-right"><Link href={`/appointments/${encodeURIComponent(item.registrationId)}`} className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg border border-border px-3 py-1.5 font-medium hover:bg-surface-muted"><L10n>{"Xem phiếu khám"}</L10n></Link></td>
+        </tr>)}</L10nValue></tbody>
+      </table></div> : <p role="status" className="mt-3 text-sm text-muted-foreground"><L10n>{"Buổi này chưa có phiếu."}</L10n></p> : null}</L10nValue>
       <L10nValue>{registrations && registrationPages > 1 ? <nav aria-label={localize("Trang phiếu buổi khám")} className="mt-4 flex items-center justify-between gap-3"><Button type="button" disabled={registrationLoading || registrationPage === 0} onClick={() => void loadRegistrations(selectedSession, registrationPage - 1)}><L10n>{"Trang trước"}</L10n></Button><span className="text-sm"><L10n>{"Trang"}</L10n> <L10nValue>{registrationPage + 1}</L10nValue> / <L10nValue>{registrationPages}</L10nValue></span><Button type="button" disabled={registrationLoading || registrationPage + 1 >= registrationPages} onClick={() => void loadRegistrations(selectedSession, registrationPage + 1)}><L10n>{"Trang sau"}</L10n></Button></nav> : null}</L10nValue>
     </section> : null}</L10nValue>
   </div>;

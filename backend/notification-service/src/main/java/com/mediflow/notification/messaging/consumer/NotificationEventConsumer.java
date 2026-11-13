@@ -182,7 +182,7 @@ public class NotificationEventConsumer {
     private void handlePaymentCompleted(PaymentCompletedPayload e) {
         dispatch(RabbitConfig.RK_PAYMENT_COMPLETED, e.eventId(), e.patientId(), null, null, Map.of(
                 "maHoaDon", String.valueOf(e.invoiceId()),
-                "tongTien", e.totalAmount() == null ? "" : e.totalAmount().toPlainString()));
+                "tongTien", com.mediflow.notification.application.service.MoneyText.amount(e.totalAmount())));
     }
 
     private void handlePaymentFailed(PaymentFailedPayload e) {
@@ -199,7 +199,7 @@ public class NotificationEventConsumer {
         }
         // No contact inference, receipt claim or clinical authorization: private IN_APP only.
         dispatch(RabbitConfig.RK_INVOICE_CREATED, e.eventId(), e.patientId(), null, null, Map.of(
-                "invoiceId", e.invoiceId().toString(), "totalAmount", e.totalAmount().toPlainString()));
+                "invoiceId", e.invoiceId().toString(), "totalAmount", com.mediflow.notification.application.service.MoneyText.amount(e.totalAmount())));
     }
 
     private void dispatch(String routingKey, UUID eventId, UUID patientId, String email, String phone,

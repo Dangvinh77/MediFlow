@@ -27,7 +27,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ tone, children }: StatusBadgeProps) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone]}`}>
       <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${markerClasses[tone]}`} />
       <L10nValue>{children}</L10nValue>
     </span>

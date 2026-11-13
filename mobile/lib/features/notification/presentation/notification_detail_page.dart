@@ -138,7 +138,7 @@ class _NotificationDetailState extends State<_NotificationDetail> {
             LText(notificationFailureLabel(item.failureReason)),
           const SizedBox(height: 16),
           const LText('Nội dung'),
-          SelectableText(item.content),
+          SelectableText(notificationText(item.content)),
           const SizedBox(height: 16),
           ExpansionTile(
             title: const LText('Thông tin tra cứu'),

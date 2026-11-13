@@ -34,7 +34,7 @@ public class LabTestChargeConfiguration {
             ObjectProvider<OutpatientQuoteCatalogPort> quoteCatalog,
             ObjectProvider<IssueOutpatientQuoteService> quoteIssuer,
             @Value("${mediflow.billing.outpatient-quotes.enabled:false}") boolean quotesEnabled,
-            @Value("${mediflow.billing.outpatient-quotes.lab-ttl:PT15M}") java.time.Duration quoteTtl,
+            @Value("${mediflow.billing.outpatient-quotes.lab-ttl:PT72H}") java.time.Duration quoteTtl,
             PlatformTransactionManager manager) {
         var service = new LabTestPlannedRequestService(repository, prices, cancellations,
                 quoteCatalog.getIfAvailable(), quoteIssuer.getIfAvailable(), quotesEnabled, quoteTtl, Clock.systemUTC());

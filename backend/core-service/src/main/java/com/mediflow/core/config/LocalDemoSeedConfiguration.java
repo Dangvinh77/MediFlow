@@ -34,9 +34,10 @@ public class LocalDemoSeedConfiguration {
             GetDepartmentUseCase departments, CreateDepartmentUseCase createDepartment,
             GetStaffUseCase staff, CreateStaffUseCase createStaff,
             ManageAccountsUseCase accounts, CreateAccountUseCase createAccount,
-            com.mediflow.organization.application.port.in.ManageRoomsUseCase rooms) {
+            com.mediflow.organization.application.port.in.ManageRoomsUseCase rooms,
+            UpdateAccountStatusUseCase accountStatus) {
         return new OrganizationDemoSeeder(new JdbcTemplate(source), new TransactionTemplate(transactions),
-                departments, createDepartment, staff, createStaff, accounts, createAccount, rooms);
+                departments, createDepartment, staff, createStaff, accounts, createAccount, rooms, accountStatus);
     }
 
     @Bean

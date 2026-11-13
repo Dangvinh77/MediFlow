@@ -37,7 +37,7 @@ class RefundNoticeContractTest {
         new RefundNoticeService(history, sources).receive(command);
         var captured = org.mockito.ArgumentCaptor.forClass(CareNotificationIntent.class); verify(history).deliverInApp(captured.capture());
         assertThat(captured.getValue().templateKey()).isEqualTo("PAYMENT_REFUNDED");
-        assertThat(captured.getValue().content()).contains(command.originalTransactionId().toString(), command.amount().toPlainString(), "không phải quyết toán");
+        assertThat(captured.getValue().content()).contains(command.originalTransactionId().toString(), com.mediflow.notification.application.service.MoneyText.of(command.amount(), command.currency()), "không phải quyết toán");
         assertThat(captured.getValue().patientId()).isEqualTo(command.patientId());
     }
     @ParameterizedTest @ValueSource(strings = {"version", "producer", "amount", "currency", "reason", "occurredAt", "patientId", "originalTransactionId", "careEpisodeType", "sourceRevision", "supersedesTransactionId"})

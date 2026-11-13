@@ -153,7 +153,7 @@ class PrescriptionNoticeContractTest {
         var capture = ArgumentCaptor.forClass(CareNotificationIntent.class);
         verify(history).deliverInApp(capture.capture());
         assertThat(capture.getValue().templateKey()).isEqualTo("PRESCRIPTION_PAYMENT_REQUEST");
-        assertThat(capture.getValue().content()).contains("2000", "không phải biên nhận", "không xác nhận thuốc đã được cấp");
+        assertThat(capture.getValue().content()).contains("2.000 VND", "không phải biên nhận", "không xác nhận thuốc đã được cấp");
         verifyNoInteractions(legacy);
         var disabled = new NotificationEventConsumer(legacy, new NotificationTemplates(), mapper);
         assertThatThrownBy(() -> disabled.onMessage(new Message(paymentRequestFixture(), properties)))

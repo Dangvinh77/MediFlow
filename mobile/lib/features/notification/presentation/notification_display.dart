@@ -22,3 +22,18 @@ String notificationTimeLabel(String raw) {
 
 String notificationFailureLabel(String? reason) =>
     'Thông báo chưa gửi được. Vui lòng kiểm tra thông tin người nhận rồi thử lại.';
+
+final _rawAmount = RegExp(
+  r'(?<![\d.,])(\d{4,})(?:\.(\d{1,2}))?(?=\s?(?:VND|VNĐ|đ)(?![\p{L}\d]))',
+  unicode: true,
+);
+
+/// Older stored messages carry raw amounts ("36000 VND"); show them grouped (36.000 VND).
+String notificationText(String value) =>
+    value.replaceAllMapped(_rawAmount, (match) {
+      final integer = match
+          .group(1)!
+          .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+      final fraction = (match.group(2) ?? '').replaceFirst(RegExp(r'0+$'), '');
+      return fraction.isEmpty ? integer : '$integer,$fraction';
+    });
