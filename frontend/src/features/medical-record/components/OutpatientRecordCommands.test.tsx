@@ -146,6 +146,18 @@ describe("outpatient record commands", () => {
     expect(onCreated).toHaveBeenCalledTimes(1);
   });
 
+  it("does not send a lab order dated before the visit", async () => {
+    render(<ClinicalLabOrderForm recordId="record-a" visitDate="2026-10-20" onCreated={vi.fn()} />);
+    fillLabOrder();
+    const date = screen.getByLabelText("Ngày yêu cầu", { exact: false });
+    expect(date).toHaveAttribute("min", "2026-10-20");
+    fireEvent.change(date, { target: { value: "2026-10-16" } });
+
+    await act(async () => fireEvent.submit(screen.getByRole("button", { name: "Gửi chỉ định xét nghiệm" }).closest("form")!));
+    expect(screen.getByText("Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.")).toBeVisible();
+    expect(mocks.createLabOrder).not.toHaveBeenCalled();
+  });
+
   it("blocks a retry after a Clinical lab create has an unknown outcome", async () => {
     mocks.createLabOrder.mockRejectedValue(new ApiRequestError("Kết quả chưa rõ", 503, "TEMPORARY_FAILURE"));
     const view = render(<ClinicalLabOrderForm recordId="record-a" onCreated={vi.fn()} />);

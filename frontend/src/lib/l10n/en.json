@@ -4332,5 +4332,6 @@
   "Khoa chưa đủ điều kiện hoạt động": "The department does not yet meet its operating requirements",
   "Đã có văn phòng khoa – địa điểm khoa lấy theo văn phòng này.": "Department office assigned – the department location follows this office.",
   "Chưa có văn phòng khoa – địa điểm khoa đang để trống.": "No department office yet – the department location is empty.",
-  "Phòng khám đang sử dụng: {0}/2 tối thiểu": "Consultation rooms in use: {0}/2 minimum"
+  "Phòng khám đang sử dụng: {0}/2 tối thiểu": "Consultation rooms in use: {0}/2 minimum",
+  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "The lab order date cannot be earlier than this visit's examination date."
 }

@@ -71,7 +71,7 @@ function LabOrderWorkspaceContents({ recordId }: { recordId: string }) {
       departmentId={record.departmentId} doctorId={record.doctorId} date={record.examinationDate} dateLabel="Ngày khám" />
     <p className="text-sm text-muted-foreground"><L10n>{"Gửi một lần để lập chỉ định và chuyển sang Lab. Chờ xác nhận trước khi hướng dẫn người bệnh tới thu ngân."}</L10n></p>
     <L10nValue>{orderMismatch || restoredMismatch ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger"><L10n>{"Thông tin chỉ định trả về không khớp hồ sơ đang mở. Chưa chuyển yêu cầu sang xét nghiệm; không lập lại chỉ định. Liên hệ bộ phận hỗ trợ để đối soát."}</L10n></p>
-    : !order ? <ClinicalLabOrderForm recordId={recordId} catalog={catalog ?? undefined} catalogError={catalogError} onCreated={value => {
+    : !order ? <ClinicalLabOrderForm recordId={recordId} visitDate={record.examinationDate} catalog={catalog ?? undefined} catalogError={catalogError} onCreated={value => {
       if (value.recordId !== record.recordId || value.patientId !== record.patientId
         || value.requestingDoctorId !== record.doctorId || value.requestingDepartmentId !== record.departmentId
         || value.careEpisodeId !== record.appointmentId || value.careEpisodeType !== "OUTPATIENT_VISIT") {

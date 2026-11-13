@@ -2889,6 +2889,8 @@ const messagesVi = <String, String>{
   "Ngày báo cáo": "Ngày báo cáo",
   "Ngày bắt đầu không được sau ngày kết thúc.":
       "Ngày bắt đầu không được sau ngày kết thúc.",
+  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.":
+      "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.",
   "Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.":
       "Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.",
   "Ngày hẹn": "Ngày hẹn",

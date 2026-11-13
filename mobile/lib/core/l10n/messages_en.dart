@@ -2859,6 +2859,7 @@ const messagesEn = <String, String>{
   "Ngày báo cáo": "Report date",
   "Ngày bắt đầu không được sau ngày kết thúc.":
       "The start date cannot be after the end date.",
+  "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.": "The lab order date cannot be earlier than this visit's examination date.",
   "Ngày hoặc khoa chưa phù hợp. Vui lòng kiểm tra lại.":
       "The date or department is not suitable. Please check again.",
   "Ngày hẹn": "Appointment date",

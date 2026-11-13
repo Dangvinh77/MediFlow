@@ -192,10 +192,22 @@ class RegistrationIntakeRegressionTest {
                 .isInstanceOfSatisfying(DuplicateResourceException.class, e -> assertThat(e.getCode()).isEqualTo("IDEMPOTENCY_CONFLICT"));
     }
 
-    @Test void samePatientMayRegisterAnotherSessionSameDay() {
+    @Test void samePatientCannotHoldTwoActiveRegistrationsInOneDepartmentOnOneDay() {
         UUID patient = UUID.randomUUID();
         var other = h.session();
-        when(h.registrations.existsActivePatientSession(patient, session.sessionId())).thenReturn(true);
+        when(h.registrations.existsActivePatientDepartmentDay(patient, h.departmentId, other.configuration().sessionDate()))
+                .thenReturn(true);
+        assertThatThrownBy(() -> h.registrationService(true).create(request(patient, other, OutpatientReceptionMode.AT_COUNTER), "key"))
+                .isInstanceOfSatisfying(DuplicateResourceException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("ACTIVE_DEPARTMENT_DAY_REGISTRATION_EXISTS"));
+        verify(h.registrations, never()).insert(any(), any(), any(), any(), any());
+    }
+
+    @Test void samePatientMayRegisterAgainSameDayOnceEarlierVisitIsNoLongerActive() {
+        UUID patient = UUID.randomUUID();
+        var other = h.session();
+        when(h.registrations.existsActivePatientDepartmentDay(patient, h.departmentId, other.configuration().sessionDate()))
+                .thenReturn(false);
         var dto = h.registrationService(true).create(request(patient, other, OutpatientReceptionMode.AT_COUNTER), "key");
         assertThat(dto.data().patientId()).isEqualTo(patient);
     }

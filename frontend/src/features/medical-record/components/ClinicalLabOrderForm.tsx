@@ -27,6 +27,8 @@ interface ClinicalLabOrderFormProps {
   onCreated: (order: ClinicalLabOrderDTO) => void;
   catalog?: CatalogChoice[] | null;
   catalogError?: string | null;
+  /** The visit date; an order of this visit cannot be dated earlier. */
+  visitDate?: string | null;
 }
 
 const groupLabels: Record<string, string> = {
@@ -42,7 +44,7 @@ function localToday() {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function ClinicalLabOrderForm({ recordId, onCreated, catalog, catalogError }: ClinicalLabOrderFormProps) {
+export function ClinicalLabOrderForm({ recordId, onCreated, catalog, catalogError, visitDate }: ClinicalLabOrderFormProps) {
   const { localize } = useLocale();
   const command = useCommand();
   const { markDirty, markSaved } = useUnsavedChanges();
@@ -62,6 +64,9 @@ export function ClinicalLabOrderForm({ recordId, onCreated, catalog, catalogErro
       setValidation(catalog && !selectedService
         ? "Chọn một dịch vụ xét nghiệm trong danh mục."
         : "Nhập loại xét nghiệm, mã giá và ngày yêu cầu không ở tương lai."); return;
+    }
+    if (visitDate && requestedDate < visitDate) {
+      setValidation("Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này."); return;
     }
     setValidation(null);
     markDirty();
@@ -106,7 +111,7 @@ export function ClinicalLabOrderForm({ recordId, onCreated, catalog, catalogErro
         <Field label={localize("Loại xét nghiệm")} htmlFor="order-lab-type" required><input id="order-lab-type" required maxLength={50} className={controlClassName} value={labType} onChange={(event) => setLabType(event.target.value)} /></Field>
         <Field label={localize("Mã giá")} htmlFor="order-price" required><input id="order-price" required maxLength={64} className={controlClassName} value={priceCode} onChange={(event) => setPriceCode(event.target.value)} /></Field>
       </>}</L10nValue>
-      <Field label={localize("Ngày yêu cầu")} htmlFor="order-date" required><input id="order-date" required type="date" max={localToday()} className={controlClassName} value={requestedDate} onChange={(event) => setRequestedDate(event.target.value)} /></Field>
+      <Field label={localize("Ngày yêu cầu")} htmlFor="order-date" required><input id="order-date" required type="date" min={visitDate ?? undefined} max={localToday()} className={controlClassName} value={requestedDate} onChange={(event) => setRequestedDate(event.target.value)} /></Field>
       <div className="sm:col-span-2"><Button type="submit" variant="primary" loading={command.busy}><L10n>{"Gửi chỉ định xét nghiệm"}</L10n></Button></div>
     </fieldset>
     <L10nValue>{command.uncertain || restoredUncertain ? <p className="text-sm text-warning"><L10n>{"Chưa xác định kết quả lập chỉ định trong hồ sơ. Không lập lại; cần đối soát hồ sơ với bộ phận hỗ trợ trước khi tiếp tục. Lab có thể chưa nhận được yêu cầu."}</L10n></p> : null}</L10nValue>

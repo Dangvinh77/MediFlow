@@ -19,10 +19,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 
 /** Signs SYSTEM service tokens and validates Billing's response envelope before advancing receipts. */
 public final class PharmacyBillingPrescriptionRevisionAdapter implements PrescriptionRevisionBillingPort {
+    private static final Logger log = LoggerFactory.getLogger(PharmacyBillingPrescriptionRevisionAdapter.class);
     private final PharmacyBillingRevisionFeignClient client;
     private final ObjectMapper mapper;
     private final Clock clock;
@@ -62,21 +65,33 @@ public final class PharmacyBillingPrescriptionRevisionAdapter implements Prescri
                 case ABORT -> client.abort(payload.prescriptionId(), operationId, payload, "Bearer " + token, correlationId);
             };
             validateResponse(response, operationId, payload, correlationId, operation);
-        } catch (FeignException failure) {
-            if (failure.status() == 408 || failure.status() == 429) {
-                throw new PharmacyUpstreamUnavailableException();
-            }
-            if (failure.status() >= 400 && failure.status() < 500 && failure.status() != 401 && failure.status() != 403) {
-                throw businessError(failure.contentUTF8());
-            }
-            throw new PharmacyUpstreamUnavailableException();
         } catch (BusinessRuleException rejected) {
             throw rejected;
         } catch (PharmacyUpstreamUnavailableException unavailable) {
             throw unavailable;
-        } catch (Exception unavailable) {
+        } catch (Exception failure) {
+            // The Feign circuit breaker wraps Billing's HTTP answer (e.g. NoFallbackAvailableException), so a
+            // definitive 4xx refusal must be found in the cause chain, not only as a bare FeignException.
+            FeignException answer = feignAnswer(failure);
+            if (answer == null) {
+                log.warn("Billing revision {} for operation {} returned an unusable receipt: {}", operation, operationId,
+                        failure.toString());
+                throw new PharmacyUpstreamUnavailableException();
+            }
+            int status = answer.status();
+            if (status >= 400 && status < 500 && status != 401 && status != 403 && status != 408 && status != 429) {
+                throw businessError(answer.contentUTF8());
+            }
+            log.warn("Billing revision {} for operation {} answered HTTP {}", operation, operationId, status);
             throw new PharmacyUpstreamUnavailableException();
         }
+    }
+
+    private static FeignException feignAnswer(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause() == cause ? null : cause.getCause()) {
+            if (cause instanceof FeignException feign) return feign;
+        }
+        return null;
     }
 
     private void validateResponse(ResponseEntity<String> response, UUID operationId,

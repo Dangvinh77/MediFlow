@@ -131,6 +131,11 @@ public class ClinicalLabOrderApplicationService implements CreateClinicalLabOrde
         }
 
         staffAuthority.requireAssignedDoctor(record.responsibleDoctorId(), record.getDepartmentId());
+        // An order belongs to this visit, so it cannot be dated before the visit itself.
+        if (record.getExaminationDate() != null && request.requestedDate().isBefore(record.getExaminationDate())) {
+            throw new InvalidClinicalDataException("CLINICAL_LAB_ORDER_DATE_BEFORE_VISIT",
+                    "Ngày chỉ định xét nghiệm không được trước ngày khám của lượt này.");
+        }
         ClinicalLabOrder order = ClinicalLabOrder.create(record.getRecordId(), record.getPatientId(),
                 appointment.getDoctorId(), appointment.getDepartmentId(), appointment.getAppointmentId(),
                 request.labType(), request.requestedDate(), request.priceCode(), clock.instant(), serviceCode);

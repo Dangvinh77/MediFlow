@@ -209,6 +209,11 @@ public class OutpatientRegistrationApplicationService {
                         throw new DuplicateResourceException("ACTIVE_REGISTRATION_EXISTS",
                                 "Patient already has an active registration for this session");
                     }
+                    if (registrations.existsActivePatientDepartmentDay(request.patientId(),
+                            session.configuration().departmentId(), session.configuration().sessionDate())) {
+                        throw new DuplicateResourceException("ACTIVE_DEPARTMENT_DAY_REGISTRATION_EXISTS",
+                                "Bệnh nhân đã có phiếu khám còn hiệu lực tại khoa này trong ngày. Hãy dùng phiếu hiện có hoặc hủy phiếu đó trước khi đăng ký mới.");
+                    }
                     requireReasonForOpenVisit(request, session);
                     OutpatientRegistration.ReturnLink returnLink = validatedReturnLink(request);
                     Instant now = clock.instant();

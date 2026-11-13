@@ -116,6 +116,17 @@ class ClinicalLabOrderApplicationServiceTest {
     }
 
     @Test
+    void create_rejectsLabDateBeforeTheVisit() {
+        var service = service(true);
+
+        assertThatThrownBy(() -> service.create(record.getRecordId(), new CreateClinicalLabOrderRequest(
+                "CBC", LocalDate.of(2026, 9, 17), "LAB-CBC")))
+                .isInstanceOfSatisfying(InvalidClinicalDataException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("CLINICAL_LAB_ORDER_DATE_BEFORE_VISIT"));
+        verify(orders, never()).save(any());
+    }
+
+    @Test
     void create_rejectsBlankPriceBeforePersisting() {
         var service = service(true);
 

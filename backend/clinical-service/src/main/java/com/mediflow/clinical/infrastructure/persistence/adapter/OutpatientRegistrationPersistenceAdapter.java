@@ -161,6 +161,19 @@ public class OutpatientRegistrationPersistenceAdapter implements OutpatientRegis
     }
 
     @Override
+    public boolean existsActivePatientDepartmentDay(UUID patientId, UUID departmentId, java.time.LocalDate date) {
+        // Two sessions are locked separately, so the patient lock keeps concurrent creates from both passing.
+        jdbc.queryForObject("SELECT pg_advisory_xact_lock(hashtext(?))", Object.class, "registration-patient:" + patientId);
+        Boolean exists = jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM outpatient_registration r
+                    JOIN consultation_session s ON s.session_id = r.session_id
+                    WHERE r.patient_id = ? AND s.department_id = ? AND s.session_date = ?
+                    AND r.status IN ('AWAITING_PAYMENT','CONFIRMED','IN_EXAM','RECONCILIATION_REQUIRED'))
+                """, Boolean.class, patientId, departmentId, date);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResult<OutpatientRegistration> findByPatient(UUID patientId, PageQuery page) {
         long total = jdbc.queryForObject("SELECT count(*) FROM outpatient_registration WHERE patient_id = ?",
