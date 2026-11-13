@@ -23,6 +23,10 @@ NAMES = ["eureka-server", "core-service", "clinical-service", "lab-service",
 PORTS = dict(zip(NAMES, [28761, 28089, 28082, 28084, 28085, 28086, 28087, 28080]))
 BASE_PORTS = PORTS.copy()
 DATABASES = ["organization", "patient", "clinical", "lab", "pharmacy", "billing", "notification", "report"]
+# The management image serves the RabbitMQ web UI so exchanges, queues and event flow can be shown.
+BROKER_IMAGE = "rabbitmq:3.13-management-alpine"
+BROKER_UI_BASE_PORT = 28672
+BROKER_USER, BROKER_PASSWORD = "rehearsal", "rehearsal-local"
 
 
 def command(*args, log=None, check=True):
@@ -66,6 +70,8 @@ def parse_options(argv=None):
                         help="Retain this checkout's isolated infrastructure and reuse its preparation journals")
     parser.add_argument("--reset-data", action="store_true",
                         help="Replace only the verified persistent demo infrastructure")
+    parser.add_argument("--broker-ui-lan", action="store_true",
+                        help="Also expose the RabbitMQ management UI on the local network (requires --lan)")
     parser.add_argument("--startup-parallelism", type=int, choices=(1, 2, 3), default=2)
     parser.add_argument("--prepare-report-demo", action="store_true",
                         help="Seed and accept the closed synthetic Report fixture through ADMIN Gateway APIs")
@@ -80,6 +86,8 @@ def parse_options(argv=None):
         parser.error("--prepare-report-demo requires --scheduling")
     if options.port_offset < 0 or max(BASE_PORTS.values()) + options.port_offset > 65535:
         parser.error("--port-offset must keep every local port in 1..65535")
+    if options.broker_ui_lan and not options.lan:
+        parser.error("--broker-ui-lan requires --lan")
     if options.port_offset and options.prepare_ui_demo:
         parser.error("--port-offset cannot be combined with UI preparation, whose fixture scripts require port 28080")
     return options
@@ -87,6 +95,38 @@ def parse_options(argv=None):
 
 def server_bind_address(name, lan=False):
     return "0.0.0.0" if name == "gateway" and lan else "127.0.0.1"
+
+
+def broker_ui_bind_address(options):
+    return "0.0.0.0" if options.broker_ui_lan else "127.0.0.1"
+
+
+def broker_ui_port(options):
+    return BROKER_UI_BASE_PORT + options.port_offset
+
+
+def start_broker(run, rabbit, labels, options):
+    """Run the disposable broker: AMQP on a private loopback port, management UI on a fixed port."""
+    return run("docker", "run", "-d", "--name", rabbit, *labels, "--hostname", "rehearsal-rabbit",
+               "-e", "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=+S 2:2", "-e", "RABBITMQ_DEFAULT_USER=" + BROKER_USER,
+               "-e", "RABBITMQ_DEFAULT_PASS=" + BROKER_PASSWORD, "-p", "127.0.0.1::5672",
+               "-p", f"{broker_ui_bind_address(options)}:{broker_ui_port(options)}:15672", BROKER_IMAGE)
+
+
+def ensure_broker_ui(run, workspace, rabbit, options, stop_file):
+    """A retained broker created before the UI existed runs the plain image; replace only that container.
+
+    Services redeclare exchanges and queues on reconnect, and producers publish through their outbox,
+    so swapping the disposable broker keeps every database untouched.
+    """
+    mapped = run("docker", "port", rabbit, "15672/tcp", check=False)
+    if mapped.returncode == 0 and mapped.stdout.strip():
+        return
+    print("Retained broker has no management UI; replacing only the broker container.", flush=True)
+    run("docker", "rm", "-f", workspace.state["containers"]["rabbit"]["id"])
+    identity = start_broker(run, rabbit, workspace.docker_labels, options).stdout
+    workspace.track("rabbit", rabbit, identity)
+    await_broker(rabbit, stop_file)
 
 
 def snapshot_environment_value(value, pgport, eureka_port=28761):
@@ -162,9 +202,7 @@ def initialize_infrastructure(options, evidence, containers, pg, rabbit, workspa
         if not int(value):
             raise RuntimeError("Empty restored context: " + context)
     (evidence / "restored-contexts.json").write_text(json.dumps(counts, indent=2), encoding="utf-8")
-    rabbit_id = checked_command("docker", "run", "-d", "--name", rabbit, *labels, "--hostname", "rehearsal-rabbit",
-            "-e", "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=+S 2:2", "-e", "RABBITMQ_DEFAULT_USER=rehearsal",
-            "-e", "RABBITMQ_DEFAULT_PASS=rehearsal-local", "-p", "127.0.0.1::5672", "rabbitmq:3.13-alpine")
+    rabbit_id = start_broker(checked_command, rabbit, labels, options)
     containers.append(rabbit)
     if workspace:
         workspace.track("rabbit", rabbit, rabbit_id.stdout.strip())
@@ -240,9 +278,10 @@ def main():
             pg, rabbit = reused["pg"], reused["rabbit"]
             containers.extend([pg, rabbit])
             pgport = run_command("docker", "port", pg, "5432/tcp").stdout.strip().rsplit(":", 1)[1]
-            rabbitport = run_command("docker", "port", rabbit, "5672/tcp").stdout.strip().rsplit(":", 1)[1]
             await_ready(lambda: run_command("docker", "exec", pg, "pg_isready", "-U", "postgres", check=False).returncode == 0)
             await_broker(rabbit, evidence / "stop")
+            ensure_broker_ui(run_command, workspace, rabbit, options, evidence / "stop")
+            rabbitport = run_command("docker", "port", rabbit, "5672/tcp").stdout.strip().rsplit(":", 1)[1]
             print("Reusing isolated database/broker; snapshot restore skipped.", flush=True)
         else:
             if workspace:
@@ -251,6 +290,9 @@ def main():
         check_stop(evidence / "stop")
         save_manifest()
         print(f"TIMING infrastructure: {time.monotonic() - phase_started:.1f}s", flush=True)
+        ui_host = "<this-PC-LAN-IP>" if options.broker_ui_lan else "127.0.0.1"
+        print(f"RabbitMQ UI: http://{ui_host}:{broker_ui_port(options)} "
+              f"(user {BROKER_USER} / {BROKER_PASSWORD}); exchange mediflow.events", flush=True)
         health = {}
         phase_started = time.monotonic()
         app_processes = {}

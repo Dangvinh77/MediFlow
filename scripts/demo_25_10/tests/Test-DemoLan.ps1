@@ -36,6 +36,11 @@ function global:Test-DemoAdministrator { return $true }
 Enable-DemoLanFirewall -InterfaceAlias 'Wi-Fi'
 Assert-True ($global:rules.Count -eq 2) 'Expected only two demo port rules.'
 Assert-True (@($global:rules | Where-Object { $_.LocalPort -notin @(28080,3000) -or $_.RemoteAddress -ne 'LocalSubnet' -or $_.InterfaceAlias -ne 'Wi-Fi' -or $_.Direction -ne 'Inbound' }).Count -eq 0) 'Firewall scope expanded beyond LAN demo.'
+$global:rules = @()
+Enable-DemoLanFirewall -InterfaceAlias 'Wi-Fi' -ExtraPorts @(28672)
+Assert-True ($global:rules.Count -eq 3 -and @($global:rules | Where-Object { $_.LocalPort -eq 28672 -and $_.RemoteAddress -eq 'LocalSubnet' }).Count -eq 1) 'Opt-in broker UI rule must be LocalSubnet-scoped.'
+$global:rules = @()
+Enable-DemoLanFirewall -InterfaceAlias 'Wi-Fi'
 function global:Test-DemoAdministrator { return $false }
 Enable-DemoLanFirewall -InterfaceAlias 'Wi-Fi'
 Assert-True ($global:rules.Count -eq 2) 'Non-admin path attempted a firewall mutation.'

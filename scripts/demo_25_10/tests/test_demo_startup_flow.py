@@ -141,5 +141,39 @@ class StartupFlowTest(unittest.TestCase):
         self.assertEqual(result.report_demo.prepare.call_args.args[1], result.here / 'evidence/workspace')
 
 
+class BrokerUiTest(unittest.TestCase):
+    def broker_run_args(self, *arguments):
+        calls = []
+        run = lambda *args, **kwargs: calls.append(args) or SimpleNamespace(stdout='id\n', returncode=0)
+        runner.start_broker(run, 'mediflow-rehearsal-x-rabbit', [], runner.parse_options(list(arguments)))
+        return calls[0]
+
+    def test_broker_uses_management_image_with_loopback_ui_by_default(self):
+        args = self.broker_run_args()
+        self.assertIn('rabbitmq:3.13-management-alpine', args)
+        self.assertIn('127.0.0.1:28672:15672', args)
+        self.assertIn('127.0.0.1::5672', args)
+
+    def test_lan_ui_is_opt_in_and_amqp_stays_loopback(self):
+        args = self.broker_run_args('--lan', '--broker-ui-lan')
+        self.assertIn('0.0.0.0:28672:15672', args)
+        self.assertIn('127.0.0.1::5672', args)
+        with self.assertRaises(SystemExit):
+            runner.parse_options(['--broker-ui-lan'])
+
+    def test_retained_plain_broker_is_replaced_but_ui_broker_is_kept(self):
+        workspace = Mock(docker_labels=['--label', 'a=b'], state={'containers': {'rabbit': {'id': 'old-id'}}})
+        for has_ui, expected_rm in ((True, 0), (False, 1)):
+            calls = []
+            def run(*args, **kwargs):
+                calls.append(args)
+                missing = args[:2] == ('docker', 'port') and not has_ui
+                return SimpleNamespace(stdout='' if missing else '127.0.0.1:28672\n', returncode=1 if missing else 0)
+            with patch.object(runner, 'await_broker'):
+                runner.ensure_broker_ui(run, workspace, 'rabbit', runner.parse_options([]), None)
+            self.assertEqual(sum(call[:2] == ('docker', 'rm') for call in calls), expected_rm)
+        workspace.track.assert_called_once()
+
+
 if __name__ == '__main__':
     unittest.main()

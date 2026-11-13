@@ -10,6 +10,8 @@ param(
     [switch]$Fast,
     [switch]$Rebuild,
     [switch]$ResetData,
+    # Backend only: also open the RabbitMQ UI (port 28672) to other PCs on the local subnet.
+    [switch]$BrokerUiLan,
     [ValidateRange(1, 3)][int]$StartupParallelism = 2,
     # Mobile only: chrome (default), android (emulator) or device (phone on the same Wi-Fi).
     [ValidateSet('chrome', 'android', 'device')][string]$Target = 'chrome',
@@ -298,7 +300,8 @@ try {
     if ($ExamChargeNow -and $Action -ne 'Seed') { throw '-ExamChargeNow is supported only by seed-demo.bat.' }
     if ($Preview -and $Action -ne 'Clean') { throw '-Preview is supported only by clean-docker.bat.' }
     if ($Fast -and $Rebuild) { throw 'Use either -Fast or -Rebuild.' }
-    if (($Fast -or $Rebuild -or $ResetData) -and $Action -ne 'Backend') { throw 'Build/data options are supported only by start-backend.bat.' }
+    if (($Fast -or $Rebuild -or $ResetData -or $BrokerUiLan) -and $Action -ne 'Backend') { throw 'Build/data/broker options are supported only by start-backend.bat.' }
+    if ($BrokerUiLan -and $LocalOnly) { throw 'Use either -LocalOnly or -BrokerUiLan, not both.' }
     if ($Action -in @('Backend', 'Clean', 'Stop')) {
         Require-Command 'docker'
         & docker info *> $null
@@ -312,7 +315,11 @@ try {
             }
             . (Join-Path $repoRoot 'scripts\load-smtp-local.ps1') -ConfigPath (Join-Path $repoRoot 'smtp.local.env')
             $network = Resolve-DemoNetwork -Configurations @(Get-NetIPConfiguration) -LanAddress $LanAddress -LocalOnly:$LocalOnly
-            if (-not $LocalOnly) { Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias }
+            if (-not $LocalOnly) {
+                $extraPorts = @()
+                if ($BrokerUiLan) { $extraPorts = @(28672) }
+                Enable-DemoLanFirewall -InterfaceAlias $network.InterfaceAlias -ExtraPorts $extraPorts
+            }
             if ($env:MEDIFLOW_PUBLIC_WEB_URL -match '^http://(localhost|127\.0\.0\.1)(:3000)?/?$') {
                 $env:MEDIFLOW_PUBLIC_WEB_URL = "http://$($network.Address):3000"
             }
@@ -327,8 +334,11 @@ try {
             Write-Host "Mobile Gateway: http://$($network.Address):28080/api"
             Write-Host "Email/web origin: $env:MEDIFLOW_PUBLIC_WEB_URL"
             Write-Host 'Mobile app: run start-mobile.bat after READY (-Target chrome | android | device).'
+            if ($BrokerUiLan) { Write-Host "RabbitMQ UI: http://$($network.Address):28672 (rehearsal / rehearsal-local)" }
+            else { Write-Host 'RabbitMQ UI: http://127.0.0.1:28672 (rehearsal / rehearsal-local); add -BrokerUiLan for other PCs.' }
             $networkArguments = @()
             if (-not $LocalOnly) { $networkArguments += '--lan' }
+            if ($BrokerUiLan) { $networkArguments += '--broker-ui-lan' }
             if ($persistent) { $networkArguments += '--persistent' }
             if ($ResetData) { $networkArguments += '--reset-data' }
             & python -u (Join-Path $PSScriptRoot 'rehearse_snapshot.py') --scheduling --prepare-ui-demo --prepare-report-demo --keep --startup-parallelism $StartupParallelism @networkArguments

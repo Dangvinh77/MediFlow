@@ -48,12 +48,14 @@ function Test-DemoAdministrator {
         [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Enable-DemoLanFirewall([string]$InterfaceAlias) {
+# ExtraPorts is opt-in (e.g. 28672 for the RabbitMQ UI with -BrokerUiLan); the default stays 28080/3000.
+function Enable-DemoLanFirewall([string]$InterfaceAlias, [int[]]$ExtraPorts = @()) {
+    $ports = @(28080, 3000) + @($ExtraPorts)
     if (-not (Test-DemoAdministrator)) {
-        Write-Warning 'If firewall rules are missing or the adapter changed, run start-backend.bat as administrator once. Only LAN ports 28080 and 3000 are allowed.'
+        Write-Warning "If firewall rules are missing or the adapter changed, run start-backend.bat as administrator once. Only LAN ports $($ports -join ', ') are allowed."
         return
     }
-    foreach ($port in @(28080, 3000)) {
+    foreach ($port in $ports) {
         $name = "MediFlow-Lan-Demo-$port"
         $rule = Get-NetFirewallRule -Name $name -ErrorAction SilentlyContinue
         if ($rule) {

@@ -118,7 +118,7 @@ class ResultReplayAcceptance:
     def _assert_owned_running_container(self) -> None:
         info = _docker("inspect", "--format", "{{.Config.Image}} {{.State.Running}}", self.broker_name)
         image, separator, running = info.rpartition(" ")
-        if not separator or image != "rabbitmq:3.13-alpine" or running != "true":
+        if not separator or image not in ("rabbitmq:3.13-alpine", "rabbitmq:3.13-management-alpine") or running != "true":
             raise RuntimeError("Manifest broker is not the expected running disposable RabbitMQ image")
 
     def _consume(self) -> None:
