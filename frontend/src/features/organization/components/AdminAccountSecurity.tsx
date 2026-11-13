@@ -47,7 +47,7 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
   }, [accountId, attempt, patientIdForMail]);
   async function action(kind: "reset" | "retry" | "email" | "checkEmail") {
     if (lock.current || (disablePasswordActions && (kind === "reset" || kind === "retry")) || (unknown && kind !== "reset") || (emailUnknown && kind !== "checkEmail") || (!allowEmailChange && (kind === "email" || kind === "checkEmail"))) return;
-    if (kind === "reset" && !unknown && !window.confirm(`Cấp mật khẩu tạm mới và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
+    if (kind === "reset" && !unknown && !window.confirm(`Cấp lại mật khẩu tạm và gửi email cho ${username}? Mật khẩu hiện tại sẽ hết hiệu lực.`)) return;
     const session = getSessionKey();
     const current = () => alive.current && getSessionKey() === session;
     lock.current = true; setBusy(true); setError(null); setNotice(null);
@@ -63,7 +63,7 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
           ? await organizationApi.resetPatientPassword(patientIdForMail, intent.key)
           : await organizationApi.resetPassword(accountId, intent.key);
         intent.settle();
-        if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
+        if (current()) { setDelivery(result); setUnknown(false); setNotice("Đã cấp lại mật khẩu tạm. Người dùng sẽ nhận hướng dẫn qua email và phải đổi mật khẩu khi đăng nhập."); }
       } else if (kind === "retry" && delivery) {
         const result = patientIdForMail
           ? await organizationApi.retryPatientMail(patientIdForMail, delivery.messageId)
@@ -116,7 +116,7 @@ export function AdminAccountSecurity({ accountId, username, patientIdForMail, al
     {notice ? <p role="status" className="text-sm leading-6 text-success">{notice}</p> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {disablePasswordActions ? <p role="status" className="text-sm text-warning">Tạm khóa cấp lại mật khẩu và gửi lại thư khi hồ sơ/email chưa thể xác minh.</p> : null}
-    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp mật khẩu vừa rồi" : "Cấp mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
+    <div className="flex flex-wrap gap-3"><Button type="button" variant="primary" disabled={disablePasswordActions || emailUnknown} loading={busy} onClick={() => void action("reset")}>{unknown ? "Đối soát lần cấp lại mật khẩu vừa rồi" : "Cấp lại mật khẩu tạm qua email"}</Button><Button type="button" disabled={busy} onClick={() => { setError(null); setAttempt(v => v + 1); }}>Kiểm tra trạng thái thư</Button>{delivery && delivery.status !== "SENT" ? <Button type="button" disabled={busy || disablePasswordActions || unknown || emailUnknown} onClick={() => void action("retry")}>Gửi lại thư</Button> : null}</div>
     {emailUnknown ? <div className="space-y-3"><p className="text-sm text-warning">Chưa xác nhận kết quả đổi email. Kiểm tra email hiện tại trước khi tiếp tục.</p><Button type="button" loading={busy} onClick={() => void action("checkEmail")}>Kiểm tra kết quả đổi email</Button></div> : null}
     {unknown ? <p className="text-sm text-warning">Chưa xác nhận lần cấp mật khẩu vừa rồi. Dùng nút đối soát để tiếp tục cùng yêu cầu; không tạo thêm lần đặt lại.</p> : null}
     {allowEmailChange ? <form onSubmit={submitEmail} className="space-y-4 border-t border-border pt-5">

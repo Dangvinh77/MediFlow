@@ -67,8 +67,8 @@ it("loads the linked account from the patient profile and offers one reset actio
 
   expect(await screen.findByText("Tài khoản đã khóa")).toBeVisible();
   expect(mocks.profileAccount).toHaveBeenCalledWith("patient", patientId);
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: "Cấp tài khoản bệnh nhân" })).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/mật khẩu/i)).not.toBeInTheDocument();
   expect(document.body.textContent).not.toMatch(/secret-password|passwordHash/i);
@@ -91,7 +91,7 @@ it("does not expose account actions when the lookup returns another patient iden
   render(<PatientAccountIssuance patientId={patientId} />);
 
   expect(await screen.findByRole("alert")).toHaveTextContent("không khớp hồ sơ");
-  expect(screen.queryByRole("button", { name: "Cấp mật khẩu tạm qua email" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Cấp tài khoản bệnh nhân" })).not.toBeInTheDocument();
   expect(mocks.resetPatientPassword).not.toHaveBeenCalled();
 });
@@ -102,7 +102,7 @@ it("issues from a verified unlinked profile and stays on the profile after reloa
   render(<PatientAccountIssuance patientId={patientId} />);
 
   fireEvent.click(await screen.findByRole("button", { name: "Cấp tài khoản bệnh nhân" }));
-  expect(await screen.findByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeVisible();
+  expect(await screen.findByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeVisible();
   expect(mocks.provisionPatientAccount).toHaveBeenCalledWith(patientId, expect.any(String));
   expect(mocks.profileAccount).toHaveBeenCalledTimes(2);
   expect(mocks.router.replace).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ it("lets nurses manage email and reset only the patient linked to this profile",
   mocks.resetPatientPassword.mockResolvedValue({ messageId: "mail-2", status: "PENDING" });
   render(<PatientAccountIssuance patientId={patientId} />);
 
-  fireEvent.click(await screen.findByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Cấp lại mật khẩu tạm qua email" }));
   await waitFor(() => expect(mocks.resetPatientPassword).toHaveBeenCalledWith(patientId, expect.any(String)));
   expect(mocks.resetPassword).not.toHaveBeenCalled();
   expect(screen.getByLabelText("Email đăng nhập mới")).toBeVisible();
@@ -127,7 +127,7 @@ it("blocks reset and mail retry while patient email synchronization is pending",
   render(<PatientAccountIssuance patientId={patientId} />);
 
   expect(await screen.findByText(/chờ đồng bộ/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
   expect(await screen.findByRole("button", { name: "Gửi lại thư" })).toBeDisabled();
   expect(mocks.resetPatientPassword).not.toHaveBeenCalled();
   expect(mocks.retryPatientMail).not.toHaveBeenCalled();
@@ -139,9 +139,9 @@ it("lets a nurse recheck synchronization before sending credentials", async () =
   mocks.profileAccount.mockResolvedValueOnce({ ...active, emailSyncPending: true })
     .mockResolvedValue(active);
   render(<PatientAccountIssuance patientId={patientId} />);
-  expect(await screen.findByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeDisabled();
+  expect(await screen.findByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Kiểm tra đồng bộ email" }));
-  await waitFor(() => expect(screen.getByRole("button", { name: "Cấp mật khẩu tạm qua email" })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Cấp lại mật khẩu tạm qua email" })).toBeEnabled());
   expect(mocks.profileAccount).toHaveBeenCalledTimes(2);
   expect(mocks.resetPatientPassword).not.toHaveBeenCalled();
 });
@@ -182,9 +182,9 @@ it("keeps the patient account state isolated when the signed-in session changes"
   let resolve!: (value: { messageId: string; status: "PENDING" }) => void;
   mocks.resetPatientPassword.mockReturnValue(new Promise(done => { resolve = done; }));
   render(<PatientAccountIssuance patientId={patientId} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Cấp mật khẩu tạm qua email" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Cấp lại mật khẩu tạm qua email" }));
   await waitFor(() => expect(mocks.resetPatientPassword).toHaveBeenCalledOnce());
   mocks.session = "session-b";
   await act(async () => resolve({ messageId: "mail-old", status: "PENDING" }));
-  expect(screen.queryByText(/Đã cấp mật khẩu tạm/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Đã cấp lại mật khẩu tạm/)).not.toBeInTheDocument();
 });

@@ -414,7 +414,7 @@ void main() {
         tester
             .widget<ButtonStyleButton>(
               find.ancestor(
-                of: find.text('Cấp mật khẩu tạm qua email'),
+                of: find.text('Cấp lại mật khẩu tạm qua email'),
                 matching: find.byWidgetPredicate(
                   (widget) => widget is ButtonStyleButton,
                 ),
@@ -676,7 +676,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final reset = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Cấp mật khẩu tạm qua email'),
+      find.widgetWithText(OutlinedButton, 'Cấp lại mật khẩu tạm qua email'),
     );
     expect(reset.onPressed, isNull);
     expect(find.textContaining('đã lưu trữ'), findsOneWidget);
@@ -716,7 +716,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final reset = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Cấp mật khẩu tạm qua email'),
+      find.widgetWithText(OutlinedButton, 'Cấp lại mật khẩu tạm qua email'),
     );
     expect(reset.onPressed, isNull);
     expect(find.textContaining('chưa khớp'), findsOneWidget);
@@ -770,13 +770,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cấp mật khẩu tạm qua email'));
+      await tester.tap(find.text('Cấp lại mật khẩu tạm qua email'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xác nhận đặt lại'));
       await tester.pumpAndSettle();
       expect(find.text('Timed out'), findsOneWidget);
 
-      await tester.tap(find.text('Đối soát lần cấp mật khẩu vừa rồi'));
+      await tester.tap(find.text('Đối soát lần cấp lại mật khẩu vừa rồi'));
       await tester.pumpAndSettle();
       expect(repository.resetKeys, ['reset-key', 'reset-key']);
       expect(

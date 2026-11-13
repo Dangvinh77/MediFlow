@@ -402,8 +402,8 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
               icon: const Icon(Icons.lock_reset),
               label: Text(
                 _intents.resetOutcomeUnknown
-                    ? 'Đối soát lần cấp mật khẩu vừa rồi'
-                    : 'Cấp mật khẩu tạm qua email',
+                    ? 'Đối soát lần cấp lại mật khẩu vừa rồi'
+                    : 'Cấp lại mật khẩu tạm qua email',
               ),
             ),
             if (_delivery?.status == ProfileMailStatus.failed)
@@ -600,7 +600,7 @@ class _ProfileAccountPanelState extends ConsumerState<ProfileAccountPanel> {
             );
           }
           return AlertDialog(
-            title: const Text('Cấp mật khẩu tạm mới?'),
+            title: const Text('Cấp lại mật khẩu tạm?'),
             content: Text(
               'Mật khẩu hiện tại của ${account.username} sẽ hết hiệu lực. Hướng dẫn đăng nhập sẽ được gửi đến email tài khoản.',
             ),
