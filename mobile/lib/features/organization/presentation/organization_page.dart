@@ -13,6 +13,7 @@ import 'access_boundary.dart';
 import '../domain/organization.dart';
 import 'account_detail_page.dart';
 import 'department_staff_pages.dart';
+import 'organization_ui.dart';
 
 class OrganizationPage extends StatelessWidget {
   const OrganizationPage({super.key});
@@ -351,7 +352,7 @@ class _StaffSectionState extends State<StaffSection> {
                   DropdownMenuItem(
                     value: title,
                     child: LText(
-                      title,
+                      staffJobTitleLabel(title),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -442,16 +443,16 @@ class _StaffResults extends StatelessWidget {
       jobTitle: jobTitle,
       page: page,
     ),
-    itemBuilder: (context, staff) => Card(
-      child: ListTile(
-        title: LText(staff.name),
-        subtitle: LText(
-          '${staff.jobTitle} · ${staff.active ? 'Đang làm việc' : 'Ngừng hoạt động'}',
-        ),
-        isThreeLine: true,
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => onOpenStaff(staff.id),
-      ),
+    itemBuilder: (context, staff) => OrganizationListTile(
+      title: staff.name,
+      subtitle: [
+        AppL10n.text(context, staffJobTitleLabel(staff.jobTitle)),
+        if (staff.specialization?.trim().isNotEmpty ?? false)
+          staff.specialization!.trim(),
+      ].join(' · '),
+      statusLabel: staff.active ? 'Đang làm việc' : 'Đã ngừng',
+      active: staff.active,
+      onTap: () => onOpenStaff(staff.id),
     ),
   );
 }

@@ -45,16 +45,27 @@ class OrganizationField extends StatelessWidget {
   final String label;
   final String? value;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(width: 128, child: LText(label)),
-        Expanded(
-          child: SelectableText(value?.isNotEmpty == true ? value! : '—'),
-        ),
-      ],
-    ),
-  );
+  // Label above value, matching the web detail sections' `dt`/`dd` layout.
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LText(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            value?.isNotEmpty == true ? value! : '—',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
 }

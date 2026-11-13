@@ -13,6 +13,7 @@ import '../../appointment/presentation/schedule_management_pages.dart';
 import '../domain/organization.dart';
 import '../domain/profile_account.dart';
 import 'access_boundary.dart';
+import 'organization_ui.dart';
 import 'profile_account_panel.dart';
 
 class DepartmentDetailPage extends StatelessWidget {
@@ -94,44 +95,73 @@ class _DepartmentDetailState extends State<_DepartmentDetail> {
       );
     }
     final department = _department!;
+    final unit = departmentUnit(department.type);
+    final clinical = department.type == 'CLINICAL';
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          LText(
-            department.name,
-            style: Theme.of(context).textTheme.headlineSmall,
+          OrganizationIdentityCard(
+            name: department.name,
+            subtitle: department.abbreviation,
+            statusLabel: department.active
+                ? 'Đang hoạt động'
+                : 'Ngừng hoạt động',
+            active: department.active,
+            action: widget.access.role == 'ADMIN'
+                ? FilledButton.icon(
+                    onPressed: () => _edit(department),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const LText('Chỉnh sửa'),
+                  )
+                : null,
           ),
-          const SizedBox(height: 12),
-          OrganizationField('Viết tắt', department.abbreviation),
-          OrganizationField('Loại', department.type),
-          if (department.headId != null)
-            ReferenceLabel(
-              kind: ReferenceKind.staff,
-              id: department.headId!,
-              label: 'Trưởng khoa',
-            ),
-          OrganizationField('Địa điểm', department.location),
-          OrganizationField(
-            'Trạng thái',
-            department.active ? 'Đang hoạt động' : 'Ngừng hoạt động',
+          const SizedBox(height: 16),
+          OrganizationDetailSection(
+            title: 'Thông tin $unit',
+            children: [
+              OrganizationField(
+                'Loại $unit',
+                departmentTypeLabel(department.type),
+              ),
+              OrganizationField(
+                clinical
+                    ? 'Địa điểm (văn phòng chung của khoa)'
+                    : 'Địa điểm (phòng làm việc chung)',
+                department.location ?? 'Chưa có – chưa chỉ định văn phòng',
+              ),
+              OrganizationField('Tạo lúc', department.createdAt),
+              OrganizationField('Cập nhật', department.updatedAt),
+            ],
           ),
-          OrganizationField('Tạo lúc', department.createdAt),
-          OrganizationField('Cập nhật', department.updatedAt),
-          if (widget.access.role == 'ADMIN')
-            OutlinedButton.icon(
-              onPressed: () => _edit(department),
-              icon: const Icon(Icons.edit_outlined),
-              label: const LText('Chỉnh sửa khoa phòng'),
-            ),
-          if (widget.access.role == 'ADMIN' && department.type == 'CLINICAL')
+          const SizedBox(height: 16),
+          OrganizationDetailSection(
+            title: clinical ? 'Trưởng khoa' : 'Tổ chức làm việc',
+            children: [
+              if (!clinical)
+                const LText(
+                  'Bộ phận làm việc chung tại một phòng; không bổ nhiệm trưởng bộ phận. Mọi nhân sự có tài khoản và thao tác trực tiếp trên hệ thống.',
+                )
+              else if (department.headId == null)
+                const LText(
+                  'Chưa bổ nhiệm. Lịch làm việc của khoa do quản trị viên quản lý.',
+                )
+              else
+                ReferenceLabel(
+                  kind: ReferenceKind.staff,
+                  id: department.headId!,
+                  label: 'Trưởng khoa',
+                ),
+            ],
+          ),
+          if (widget.access.role == 'ADMIN' && clinical)
             Consumer(
               builder: (context, ref, _) =>
                   ref.watch(appConfigProvider).scheduledPaymentsEnabled
                   ? Padding(
-                      padding: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: 16),
                       child: HeadAppointmentPanel(
                         key: ValueKey(department.id),
                         departmentId: department.id,
@@ -337,7 +367,7 @@ class _DepartmentFormState extends State<_DepartmentForm> {
                   DropdownMenuItem(
                     value: type,
                     child: LText(
-                      type,
+                      departmentTypeLabel(type),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -525,25 +555,61 @@ class _StaffDetailState extends State<_StaffDetail> {
       );
     }
     final staff = _staff!;
+    final isAdmin = widget.access.role == 'ADMIN';
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          LText(staff.name, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          ReferenceLabel(
-            kind: ReferenceKind.department,
-            id: staff.departmentId,
-            label: 'Khoa phòng',
+          OrganizationIdentityCard(
+            name: staff.name,
+            subtitle: staffJobTitleLabel(staff.jobTitle),
+            statusLabel: staff.active ? 'Đang làm việc' : 'Đã ngừng',
+            active: staff.active,
+            action: isAdmin
+                ? FilledButton.icon(
+                    onPressed: () => _edit(staff),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const LText('Chỉnh sửa'),
+                  )
+                : null,
           ),
-          OrganizationField('Chức danh', staff.jobTitle),
-          OrganizationField('Chuyên môn', staff.specialization),
-          OrganizationField('Số chứng chỉ', staff.licenseNumber),
-          OrganizationField('Điện thoại', staff.phoneNumber),
-          OrganizationField('Email', staff.email),
-          if (widget.access.role == 'ADMIN')
+          const SizedBox(height: 16),
+          OrganizationDetailSection(
+            title: 'Thông tin công tác',
+            children: [
+              OrganizationField(
+                'Chức danh',
+                staffJobTitleLabel(staff.jobTitle),
+              ),
+              OrganizationField('Chuyên môn', staff.specialization),
+              if (isAdmin)
+                OrganizationField('Giấy phép hành nghề', staff.licenseNumber),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: ReferenceLabel(
+                  kind: ReferenceKind.department,
+                  id: staff.departmentId,
+                  label: 'Đơn vị công tác',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          OrganizationDetailSection(
+            title: 'Thông tin liên hệ',
+            children: [
+              OrganizationField('Điện thoại', staff.phoneNumber),
+              OrganizationField('Email', staff.email),
+              if (isAdmin) ...[
+                OrganizationField('Tạo lúc', staff.createdAt),
+                OrganizationField('Cập nhật', staff.updatedAt),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isAdmin)
             ProfileAccountPanel(
               key: ValueKey((
                 'staff-account',
@@ -558,18 +624,6 @@ class _StaffDetailState extends State<_StaffDetail> {
               access: widget.access,
               profileEmail: staff.email,
               onChanged: _load,
-            ),
-          OrganizationField(
-            'Trạng thái',
-            staff.active ? 'Đang làm việc' : 'Ngừng hoạt động',
-          ),
-          OrganizationField('Tạo lúc', staff.createdAt),
-          OrganizationField('Cập nhật', staff.updatedAt),
-          if (widget.access.role == 'ADMIN')
-            OutlinedButton.icon(
-              onPressed: () => _edit(staff),
-              icon: const Icon(Icons.edit_outlined),
-              label: const LText('Chỉnh sửa hoặc chuyển khoa'),
             ),
         ],
       ),
@@ -834,7 +888,7 @@ class _StaffFormState extends State<_StaffForm> {
                   DropdownMenuItem(
                     value: title,
                     child: LText(
-                      title,
+                      staffJobTitleLabel(title),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
